@@ -38,6 +38,8 @@ function withSensitiveHeaders<T extends NextResponse>(response: T, path?: string
   // handler's no-referrer policy must also be set here.
   if (path?.startsWith("/reviews/future-person/claims/") ||
       path?.startsWith("/api/reviews/future-person/claims/") ||
+      path?.startsWith("/reviews/appeals/") ||
+      path?.startsWith("/api/reviews/appeals/") ||
       (path !== undefined && /^\/api\/legal-evidence\/[^/]+\/review-download$/.test(path))) {
     response.headers.set("Referrer-Policy", "no-referrer");
   }
@@ -158,8 +160,8 @@ export async function proxy(request: NextRequest) {
     path.startsWith("/chat") ||
     path.startsWith("/settings");
 
-  const isClaimReviewPage=path.startsWith("/reviews/future-person/claims/");
-  const sensitive = isProtected || path.startsWith("/api/") || path.startsWith("/withdraw/") || isClaimReviewPage;
+  const isReviewPage=path.startsWith("/reviews/future-person/claims/") || path.startsWith("/reviews/appeals/");
+  const sensitive = isProtected || path.startsWith("/api/") || path.startsWith("/withdraw/") || isReviewPage;
 
   if (!user && isProtected) {
     const url = request.nextUrl.clone();

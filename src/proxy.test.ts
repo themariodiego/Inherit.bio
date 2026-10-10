@@ -92,8 +92,9 @@ describe("the first-sign-in jurisdiction gate (G5.1a)", () => {
   });
 });
 
-describe("Future Person documentary review response privacy", () => {
+describe("documentary review response privacy", () => {
   const review = "/api/reviews/future-person/claims/12345678-1234-4234-8234-000000000002";
+  const appealReview = "/api/reviews/appeals/12345678-1234-4234-8234-000000000002";
   const strict = (response: Response) => {
     for (const [name, value] of Object.entries(SENSITIVE_RESPONSE_HEADERS)) {
       expect(response.headers.get(name)).toBe(name === "Referrer-Policy" ? "no-referrer" : value);
@@ -101,7 +102,8 @@ describe("Future Person documentary review response privacy", () => {
   };
 
   it.each([review, `${review}/verify-documents`, `${review}/release`,
-    "/reviews/future-person/claims/12345678-1234-4234-8234-000000000002"])(
+    "/reviews/future-person/claims/12345678-1234-4234-8234-000000000002", appealReview,
+    "/reviews/appeals/12345678-1234-4234-8234-000000000002"])(
     "keeps no-referrer on the review page and native API response for %s", async path => {
       const response = await visit(path);
       expect(response.status).toBe(200); strict(response);
@@ -111,27 +113,31 @@ describe("Future Person documentary review response privacy", () => {
     },
   );
 
-  it("keeps all strict headers on a proxy-produced deletion-notice refusal", async () => {
+  it.each([`${review}/verify-documents`, appealReview])("keeps all strict headers on a proxy-produced deletion-notice refusal for %s", async path => {
     mocks.profile = { deletion_requested_at: "2026-09-25T00:00:00Z", jurisdiction_code: "GB" };
-    const response = await visit(`${review}/verify-documents`);
+    const response = await visit(path);
     expect(response.status).toBe(423);
     expect(await response.json()).toEqual({ error: "account_deletion_notice_period" }); strict(response);
   });
 
-  it("keeps all strict headers on both declared and connection location refusals", async () => {
+  it.each([`${review}/verify-documents`, appealReview])("keeps all strict headers on a declared location refusal for %s", async path => {
     mocks.profile = { deletion_requested_at: null, jurisdiction_code: "IR" };
-    const declared = await visit(`${review}/verify-documents`);
+    const declared = await visit(path);
     expect(declared.status).toBe(451);
     expect(await declared.json()).toEqual({ error: "not_available_in_jurisdiction" }); strict(declared);
+  });
+
+  it("keeps all strict headers on a connection location refusal before reading the session", async () => {
     mocks.sessionReads = 0;
-    for (const path of [review, "/reviews/future-person/claims/12345678-1234-4234-8234-000000000002"]) {
+    for (const path of [review, appealReview, "/reviews/future-person/claims/12345678-1234-4234-8234-000000000002",
+      "/reviews/appeals/12345678-1234-4234-8234-000000000002"]) {
       const located = await proxy(new NextRequest(`https://inherit.bio${path}`, { headers: { "x-vercel-ip-country": "IR" } }));
       expect(located.status).toBe(451); strict(located);
     }
     expect(mocks.sessionReads).toBe(0);
   });
 
-  it.each(["/api/export", "/api/reviews/appeals/12345678-1234-4234-8234-000000000002",
+  it.each(["/api/export", "/api/reviews/appeals-extra/12345678-1234-4234-8234-000000000002",
     "/api/reviews/future-person/claims-extra/12345678-1234-4234-8234-000000000002"])(
     "preserves the complete original sensitive header set outside the exact namespaces: %s", async path => {
       const response = await visit(path);

@@ -42,9 +42,12 @@ pnpm gate:env && pnpm gate:jurisdictions && pnpm gate:sql-includes
 New migration tables must also have an explicit disposition in
 `docs/export-member-plan.json`; regenerate its native test block with
 `pnpm exec tsx scripts/export-member-plan.ts`. The source inventory preflight
-checks literal new table declarations. Hosted CI then checks the complete
-actual database catalog immediately after fresh startup and repeats the
-unchanged full database suite later.
+checks literal new table declarations, the exact whole-plan provenance and
+account/Future classifications, graph exclusions, and SQL include/startup order.
+Update the active plan byte/hash/source-commit pin when its reviewed contents
+change; the separate proposal stays inert. Hosted CI checks the complete actual
+database catalog immediately after fresh startup and runs the unchanged full
+database suite later; the targeted census does not replace that suite.
 
 
 The source-inventory command checks exact environment reads, TEST-only token

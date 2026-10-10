@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
-import { closeSync, constants, fstatSync, lstatSync, openSync, readSync, realpathSync } from "node:fs";
+import { closeSync, constants, fstatSync, lstatSync, openSync, readFileSync, readSync, realpathSync } from "node:fs";
 import { dirname, isAbsolute, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium } from "@playwright/test";
@@ -60,6 +60,39 @@ function assertPassiveLocalCliMarkers(root: string): void {
   }
 }
 
+// CLI 2.116's public writeDockerEnvFile writes this exact Edge Runtime output.
+// It is not a renderer input. Inspect metadata only: never open/read/hash its
+// secret-bearing contents or admit sibling files or multiline-env artifacts.
+const localEdgeRuntimeOutput = "supabase/.temp/start-secrets/supabase_edge_runtime_sequence/env/docker.env";
+function assertLocalEdgeRuntimeOutput(root: string): void {
+  const file = join(root, localEdgeRuntimeOutput), owner = process.getuid?.();
+  let named: ReturnType<typeof lstatSync>;
+  try { named = lstatSync(file); } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") return;
+    throw error;
+  }
+  if (!named.isFile() || named.isSymbolicLink() || named.uid !== owner || named.nlink !== 1
+    || (named.mode & 0o777) !== 0o600 || named.size < 1 || named.size > 65_536) {
+    throw new Error("email-capture:unsafe-local-runtime-output");
+  }
+  let directory = dirname(file);
+  while (directory !== root) {
+    const stat = lstatSync(directory);
+    if (realpathSync(directory) !== directory || !stat.isDirectory() || stat.isSymbolicLink()
+      || stat.uid !== owner || (stat.mode & 0o022) !== 0) {
+      throw new Error("email-capture:unsafe-local-runtime-output");
+    }
+    directory = dirname(directory);
+  }
+  const options = { encoding: "utf8", flag: constants.O_RDONLY | constants.O_NOFOLLOW } as const;
+  const config = readFileSync(join(root, "supabase/config.toml"), options);
+  const lock = readFileSync(join(root, "pnpm-lock.yaml"), options);
+  if ((config.match(/^project_id\s*=\s*"sequence"\s*$/gmu)?.length ?? 0) !== 1
+    || !/^      supabase:\n        specifier: \^2\.116\.0\n        version: 2\.116\.0\n/mu.test(lock)) {
+    throw new Error("email-capture:unsafe-local-runtime-output");
+  }
+}
+
 /** No growing list of source paths: every tracked or untracked input is bound. */
 export function assertEmailCaptureCheckout(projectRoot: string, contentCommitSha: string, outputDirectory: string): void {
   const root = realpathSync(projectRoot);
@@ -72,6 +105,7 @@ export function assertEmailCaptureCheckout(projectRoot: string, contentCommitSha
   // Includes unstaged changes, the index, deletions and all nonignored new files.
   if (git(["status", "--porcelain", "--untracked-files=all"]).trim()) throw new Error("email-capture:uncommitted-renderer-inputs");
   assertPassiveLocalCliMarkers(root);
+  assertLocalEdgeRuntimeOutput(root);
   // Ignore only known installation/build/test outputs, never arbitrary ignored
   // source or config files. In particular, ignored .env files are not attested.
   const generated = ["node_modules/**", "worker/node_modules/**", ".next/**", "out/**", "build/**", "coverage/**", "test-results/**", "playwright-report/**", "next-env.d.ts", "tsconfig.tsbuildinfo",
@@ -83,9 +117,16 @@ export function assertEmailCaptureCheckout(projectRoot: string, contentCommitSha
     // markers. Linked-project/config/env inputs remain refused below.
     "supabase/.temp/cli-latest",
     "supabase/.branches/_current_branch",
+    localEdgeRuntimeOutput,
   ];
-  if (git(["ls-files", "--others", "--ignored", "--exclude-standard", "-z", "--", ".", ...generated.map((path) => `:(top,exclude)${path}`)])) {
-    throw new Error("email-capture:untracked-ignored-inputs");
+  const ignored = git(["ls-files", "--others", "--ignored", "--exclude-standard", "-z", "--", ".", ...generated.map((path) => `:(top,exclude)${path}`)]);
+  if (ignored) {
+    const paths = ignored.split("\0").filter(Boolean);
+    // Bounded escaped filenames only, never ignored-file contents. Refusal
+    // remains strict even when this diagnostic cannot show every path.
+    const diagnostic = { count: paths.length, paths: paths.slice(0, 16).map(name => name.length <= 256 ? name : "[path too long]"),
+      truncated: paths.length > 16 || paths.some(name => name.length > 256) };
+    throw new Error(`email-capture:untracked-ignored-inputs:${JSON.stringify(diagnostic)}`);
   }
   if (git(["rev-parse", "HEAD"]).trim() !== contentCommitSha) throw new Error("email-capture:content-commit-changed");
 }

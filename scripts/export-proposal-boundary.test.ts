@@ -40,6 +40,12 @@ describe("inert export proposal and current contract boundary", () => {
     expect(() => verifyExportProposalBoundary(root)).toThrow("Export artifact provenance differs");
     expect(readFileSync(path.join(root, active))).toEqual(readFileSync(path.join(repository, active)));
   });
+  it("refuses a changed active plan even while the inert proposal is unchanged", () => {
+    const root = fixture();
+    writeFileSync(path.join(root, active), readFileSync(path.join(root, active), "utf8") + "\n");
+    expect(() => verifyExportProposalBoundary(root)).toThrow("Export artifact provenance differs");
+    expect(readFileSync(path.join(root, proposal))).toEqual(readFileSync(path.join(repository, proposal)));
+  });
   it("refuses a real production re-export of future data", () => {
     const root = fixture();
     plant(root, "src/promotion.ts", "export { default } from '../docs/proposals/requester-statement-export-member-plan.json';\n");
