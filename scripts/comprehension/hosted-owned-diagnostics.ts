@@ -5,13 +5,16 @@ import { z } from "zod";
 export const HOSTED_BOOTSTRAP_PREFIX = "OWNED_BOOTSTRAP_FAILURE_V1|";
 const stages = ["host-admission", "source-attestation", "source-copy", "migration-copy",
   "native-start", "native-inventory", "native-ledger", "native-keys", "bootstrap-keys",
-  "production-build", "bootstrap-cleanup"] as const;
+  "production-build", "bootstrap-cleanup", "session-stack-acquisition", "session-bootstrap-keys",
+  "session-reference-seed", "session-upload-capacity", "session-runtime-preflight", "session-storage-proxy",
+  "session-app-configuration", "session-mail-capture", "session-main-app-ready", "session-embryo-app-ready",
+  "session-chromium-launch", "session-build-jurisdiction", "session-native-embryo-publication"] as const;
 const schema = z.object({ stage: z.enum(stages),
   classification: z.enum(["spawn-refused", "exit-nonzero", "signal", "timeout", "output-limit", "setup-refused"]),
   exitCode: z.number().int().min(0).max(255).nullable(),
   signal: z.enum(["SIGABRT", "SIGALRM", "SIGBUS", "SIGHUP", "SIGINT", "SIGKILL", "SIGPIPE",
     "SIGQUIT", "SIGSEGV", "SIGTERM", "SIGXCPU", "SIGXFSZ"]).nullable(),
-  cleanup: z.enum(["not-started", "retained", "unreturned", "uncertain"]),
+  cleanup: z.enum(["not-started", "retained", "unreturned", "uncertain", "complete"]),
 }).strict();
 export type HostedBootstrapDiagnostic = z.infer<typeof schema>;
 export function hostedBootstrapDiagnosticLine(value: unknown): string | null {

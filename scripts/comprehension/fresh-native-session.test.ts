@@ -208,3 +208,99 @@ describe("native currentness around every real read/action", () => {
     expect(reader.record).toHaveBeenCalledTimes(1);
   });
 });
+
+
+import { emitOwnedFreshSetupFailure } from "./fresh-t6-browser";
+import { createHostedBootstrapDiagnostics, HOSTED_BOOTSTRAP_PREFIX } from "./hosted-owned-diagnostics";
+
+// These observe the real closed refusal producer with injected lifetime only.
+// No native/browser/model process or synthetic participant evidence is created.
+describe("owned later setup diagnostics remain separate from the original refusal", () => {
+  const stages = ["stack-acquisition", "bootstrap-keys", "reference-seed", "upload-capacity", "runtime-preflight",
+    "storage-proxy", "app-configuration", "mail-capture", "main-app-ready", "embryo-app-ready", "chromium-launch",
+    "build-jurisdiction", "native-embryo-publication"] as const;
+  it.each(stages)("selects only the registered %s stage through physical fragmented frames", stage => {
+    const capture = createHostedBootstrapDiagnostics(), lines: string[] = [];
+    const original = freshRuntimeCommandFailure("exit-nonzero", 7);
+    emitOwnedFreshSetupFailure(stage, original, "unreturned", line => {
+      lines.push(line);
+      for (const byte of Buffer.from(line + "\n")) capture.push(Uint8Array.of(byte));
+    });
+    expect(lines).toHaveLength(1);expect(Buffer.byteLength(lines[0])).toBeLessThanOrEqual(512);
+    expect(capture.finish()).toEqual([{ stage: `session-${stage}`, classification: "exit-nonzero", exitCode: 7,
+      signal: null, cleanup: "unreturned" }]);
+    expect(() => { throw original; }).toThrow(original);
+  });
+  it("retains exact legacy setup output and failed outcome after actual injected cleanup completes", async () => {
+    const legacy: string[] = [], closed: string[] = [], capture = createHostedBootstrapDiagnostics();
+    const close = vi.fn(async () => {});
+    await expect(refuseFreshSetup("native-embryo-publication", new Error("synthetic-private-canary"), close,
+      line => legacy.push(line), line => { closed.push(line);capture.push(Buffer.from(line + "\n")); }))
+      .rejects.toThrow("Fresh comprehension setup refused; no inference was started");
+    expect(close).toHaveBeenCalledTimes(1);
+    expect(legacy.map(line => JSON.parse(line))).toEqual([{ kind: "fresh-native-setup-failure", stage: "native-embryo-publication",
+      classification: "setup-refused", exitCode: null, signal: null, cleanup: "complete" }]);
+    expect(closed).toHaveLength(1);
+    expect(capture.finish()).toEqual([{ stage: "session-native-embryo-publication", classification: "setup-refused",
+      exitCode: null, signal: null, cleanup: "complete" }]);
+    expect(closed.join()).not.toContain("synthetic-private-canary");
+  });
+  it("keeps the actual cleanup refusal identity while projecting only the original operation's closed fields", async () => {
+    const legacy: string[] = [], capture = createHostedBootstrapDiagnostics();
+    const operation = ciRuntimeSetupFailure("transport-api-headers", new SyntaxError("synthetic-private-canary"));
+    const cleanup = ciRuntimeSetupFailure("cleanup-ownership", new Error("synthetic-private-canary"));
+    const original = ciRuntimeCleanupFailure(operation, cleanup);
+    await expect(refuseFreshSetup("storage-proxy", original, async () => { throw cleanup; }, line => legacy.push(line),
+      line => { expect(line).not.toMatch(/runtimeStage|cleanupFailure|synthetic-private-canary/);capture.push(Buffer.from(line + "\n")); }))
+      .rejects.toBe(cleanup);
+    expect(legacy.map(line => JSON.parse(line))).toEqual([{ kind: "fresh-native-setup-failure", stage: "storage-proxy",
+      runtimeStage: "transport-api-headers", classification: "invalid-response", exitCode: null, signal: null,
+      cleanupFailure: { runtimeStage: "cleanup-ownership", classification: "setup-refused", exitCode: null, signal: null }, cleanup: "uncertain" }]);
+    expect(capture.finish()).toEqual([{ stage: "session-storage-proxy", classification: "setup-refused",
+      exitCode: null, signal: null, cleanup: "uncertain" }]);
+  });
+  it.each([false, true])("never substitutes failed diagnostic I/O for original cleanup outcome %s", async uncertain => {
+    const cleanup = new Error("actual-cleanup-control");
+    const result = refuseFreshSetup("mail-capture", freshRuntimeCommandFailure("exit-nonzero", 9),
+      async () => { if (uncertain) throw cleanup; }, () => {}, () => { throw new Error("synthetic-private-canary"); });
+    if (uncertain) await expect(result).rejects.toBe(cleanup);
+    else await expect(result).rejects.toThrow("Fresh comprehension setup refused; no inference was started");
+  });
+  it("does not read arbitrary exception fields or admit an unknown stage", () => {
+    const getter = vi.fn(() => { throw new Error("synthetic-private-canary"); }), original = {};
+    for (const key of ["message", "stack", "stdout", "stderr", "classification", "exitCode", "signal", "observation"])
+      Object.defineProperty(original, key, { get: getter });
+    const capture = createHostedBootstrapDiagnostics(), emit = vi.fn((line: string) => capture.push(Buffer.from(line + "\n")));
+    emitOwnedFreshSetupFailure("reference-seed", original, "complete", emit);
+    expect(capture.finish()).toEqual([{ stage: "session-reference-seed", classification: "setup-refused",
+      exitCode: null, signal: null, cleanup: "complete" }]);
+    expect(getter).not.toHaveBeenCalled();emit.mockClear();
+    emitOwnedFreshSetupFailure("synthetic-private-canary" as Parameters<typeof emitOwnedFreshSetupFailure>[0], original, "complete", emit);
+    expect(emit).not.toHaveBeenCalled();expect(getter).not.toHaveBeenCalled();
+  });
+  it("never selects plain setup JSON, unknown expanded fields or later bytes after EOF", () => {
+    const capture = createHostedBootstrapDiagnostics();
+    capture.push(Buffer.from(JSON.stringify({ kind: "fresh-native-setup-failure", stage: "mail-capture",
+      classification: "setup-refused", exitCode: null, signal: null, cleanup: "complete" }) + "\n"));
+    capture.push(Buffer.from(HOSTED_BOOTSTRAP_PREFIX + JSON.stringify({ stage: "session-mail-capture",
+      classification: "setup-refused", exitCode: null, signal: null, cleanup: "complete", observation: "synthetic-private-canary" }) + "\n"));
+    expect(capture.finish()).toEqual([]);
+    emitOwnedFreshSetupFailure("mail-capture", new Error("synthetic-private-canary"), "complete",
+      line => capture.push(Buffer.from(line + "\n")));
+    expect(capture.finish()).toEqual([]);
+  });
+});
+
+
+import { OwnedAppReadinessFailure } from "./app-readiness";
+it("projects a genuine closed readiness refusal without forwarding its nested observation", async () => {
+  const failure = new OwnedAppReadinessFailure({ exitCode: 1, signalCode: null }, 3100, "child-exited", null, []);
+  const legacy: string[] = [], capture = createHostedBootstrapDiagnostics();
+  await expect(refuseFreshSetup("main-app-ready", failure, async () => {}, line => legacy.push(line),
+    line => { expect(line).not.toMatch(/appReadiness|launcher|port|reason|responseStatus/);capture.push(Buffer.from(line + "\n")); }))
+    .rejects.toThrow("Fresh comprehension setup refused; no inference was started");
+  expect(legacy.map(line => JSON.parse(line))).toEqual([{ kind: "fresh-native-setup-failure", stage: "main-app-ready",
+    classification: "setup-refused", exitCode: null, signal: null, cleanup: "complete", appReadiness: failure.observation }]);
+  expect(capture.finish()).toEqual([{ stage: "session-main-app-ready", classification: "setup-refused",
+    exitCode: null, signal: null, cleanup: "complete" }]);
+});

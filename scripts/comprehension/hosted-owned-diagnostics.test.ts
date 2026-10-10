@@ -16,7 +16,7 @@ it.each(["unknown-stage", "message", "key", "invalid-code", "invalid-signal", "u
   if (kind === "key") input.credential = "synthetic-private-canary";
   if (kind === "invalid-code") input.exitCode = 256;
   if (kind === "invalid-signal") input.signal = "synthetic-private-canary";
-  if (kind === "unknown-cleanup") input.cleanup = "complete";
+  if (kind === "unknown-cleanup") input.cleanup = "completed";
   if (kind === "unknown-class") input.classification = "synthetic-private-canary";
   expect(hostedBootstrapDiagnosticLine(input)).toBeNull();
   const capture = createHostedBootstrapDiagnostics();capture.push(Buffer.from(HOSTED_BOOTSTRAP_PREFIX + JSON.stringify(input) + "\n"));
