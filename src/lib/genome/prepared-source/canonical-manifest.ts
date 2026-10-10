@@ -1,5 +1,6 @@
 import { preparedStoredArtifactSchema, preparedArtifactObjectIdentity } from "./artifact-identity";
 import "server-only";
+import { genomeOriginalKeySchema } from "../../uploads/genome-object-key";
 import { createHash } from "node:crypto";
 import { isDeepStrictEqual as equal } from "node:util";
 import { z } from "zod";
@@ -68,14 +69,15 @@ function ownValue(value: unknown, key: PropertyKey): unknown {
 
 /** Bound the JSON tree BEFORE cloning or serialization. Strings in these
  * metadata schemas are <=128 characters; no genetic payload belongs here. */
-function preflight(raw: unknown, maxBytes: number) {
+function preflight(raw: unknown, maxBytes: number, originalLocators = false) {
   let bytes = 0, visits = 0;
   function add(count: number) { bytes += count; if (bytes > maxBytes) throw new CanonicalManifestError("too_large"); }
-  function visit(value: unknown, depth: number): void {
+  function visit(value: unknown, depth: number, field?: string): void {
     if (++visits > maxBytes || depth > 14) throw new CanonicalManifestError("too_large");
     if (value === null) { add(4); return; }
     if (typeof value === "string") {
-      if (value.length > 128) throw new CanonicalManifestError("invalid_manifest");
+      if (value.length > 128 && !(originalLocators && (field === "objectKey" || field === "name")
+        && genomeOriginalKeySchema.safeParse(value).success)) throw new CanonicalManifestError("invalid_manifest");
       add(Buffer.byteLength(JSON.stringify(value))); return;
     }
     if (typeof value === "number" && Number.isFinite(value)) { add(String(value).length); return; }
@@ -102,7 +104,7 @@ function preflight(raw: unknown, maxBytes: number) {
       const descriptor = Object.getOwnPropertyDescriptor(value, key)!;
       if (typeof key !== "string" || !descriptor.enumerable || !("value" in descriptor))
         throw new CanonicalManifestError("invalid_manifest");
-      if (count++) add(1); visit(key, depth + 1); add(1); visit(descriptor.value, depth + 1);
+      if (count++) add(1); visit(key, depth + 1); add(1); visit(descriptor.value, depth + 1, key);
     }
   }
   visit(raw, 0);
@@ -269,4 +271,13 @@ export function decodeCanonicalCoordinatePage(bytes: Uint8Array, expected: Canon
 }
 
 /** Shared closed-JSON metadata bound for other prepared index manifests. */
-export { preflight as assertPreparedMetadataBounds };
+export function assertPreparedMetadataBounds(raw: unknown, maxBytes: number) {
+  preflight(raw, maxBytes);
+}
+
+/** Exact original locator metadata may exceed the canonical manifest's 128-character
+ * field limit. Every other bound remains unchanged, and only the two provider/
+ * receipt key fields may carry this closed, finite grammar. */
+export function assertGenomeOriginalMetadataBounds(raw: unknown, maxBytes: number) {
+  preflight(raw, maxBytes, true);
+}

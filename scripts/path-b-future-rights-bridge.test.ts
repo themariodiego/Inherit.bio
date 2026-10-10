@@ -212,6 +212,7 @@ it("closes the complete later Path B replacement inventory, including dynamic re
     `${appealInformationFile}|public.activate_rights_session_v1`,
     "20261010063629_adult_upload_notice_context.sql|private.complete_own_upload_finalization_v1",
     "20261010063629_adult_upload_notice_context.sql|public.read_adult_upload_revision_v1",
+    ...["private.issue_other_adult_held_upload_v1", "private.authorize_storage_upload_insert", "private.own_upload_finalization_v1", "private.begin_own_upload_finalization_v2"].map(name => `20261010125904_genome_storage_namespace.sql|${name}`),
   ].sort());
   expect(patches).toEqual(["20260930231000_path_b_normalization.sql|public.respond_adult_upload_revision_v1"]);
 });
@@ -242,6 +243,7 @@ it("reviews shared replacements across all six authored Path B migration stages"
     `${appealInformationFile}|public.activate_rights_session_v1`,
     "20261010063629_adult_upload_notice_context.sql|private.complete_own_upload_finalization_v1",
     "20261010063629_adult_upload_notice_context.sql|public.read_adult_upload_revision_v1",
+    ...["private.issue_other_adult_held_upload_v1", "private.authorize_storage_upload_insert", "private.own_upload_finalization_v1", "private.begin_own_upload_finalization_v2"].map(name => `20261010125904_genome_storage_namespace.sql|${name}`),
   ].sort());
   expect(allPatches).toEqual([
     "20260930231000_path_b_normalization.sql|public.respond_adult_upload_revision_v1",

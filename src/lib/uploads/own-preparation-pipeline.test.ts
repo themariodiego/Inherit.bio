@@ -76,6 +76,49 @@ async function sourceContainersFixture(text?: string, eventsPerContainer = 1) {
 }
 
 describe("own preparation bounded pipeline", () => {
+  it.each([false, true])("prepares the complete namespaced original through every real phase gzip=%s", async gzip => {
+    const f = setup(undefined, gzip);
+    const source = f.options.original.source;
+    const key = `${randomUUID()}/${source.subjectId}/${randomUUID()}/original-${randomUUID()}.${gzip ? "vcf.gz" : "vcf"}`;
+    source.objectKey = key;
+    const result = await runOwnPreparationPipeline(f.options);
+    expect(result.scan.source).toEqual(source);
+    expect(result.canonicalRunsReceipt.canonicalSummary).toMatchObject({ variantCount: 1, observedCallCount: 3, usableObservedCount: 2 });
+    expect(result.scanReceipt.pointerCount).toBe(4);
+    expect(result.publication.members.length).toBeGreaterThan(3);
+    const checkpoints = vi.mocked(f.options.checkpoint).mock.calls.map(([value]) => value);
+    expect(checkpoints.at(-1)?.phase).toBe("publication-preflight");
+    expect(checkpoints.every(value => value.sourceScan.source.objectKey === key && value.resume.scan.source.objectKey === key)).toBe(true);
+    expect(result.nextArtifactSequence).toBe(f.artifacts.length);
+  });
+  it("resumes the exact namespaced checkpoint without replaying the original source", async () => {
+    const f = setup(); let saved: OwnPreparationCheckpoint | undefined;
+    f.options.original.source.objectKey = `${randomUUID()}/${f.options.original.source.subjectId}/${randomUUID()}/original-${randomUUID()}.vcf`;
+    f.options.checkpoint = async checkpoint => {
+      if (checkpoint.phase === "canonical-materialization") { saved = structuredClone(checkpoint); throw new Error("worker_yield"); }
+      return checkpoint;
+    };
+    await expect(runOwnPreparationPipeline(f.options)).rejects.toThrow("worker_yield");
+    const reads = vi.mocked(f.options.original.readRange).mock.calls.length;
+    f.options.resume = saved; f.options.firstArtifactSequence = saved!.nextArtifactSequence;
+    f.options.checkpoint = vi.fn(async checkpoint => structuredClone(checkpoint));
+    const result = await runOwnPreparationPipeline(f.options);
+    expect(result.scan.source).toEqual(f.options.original.source);
+    expect(vi.mocked(f.options.original.readRange).mock.calls).toHaveLength(reads);
+    expect(vi.mocked(f.options.checkpoint).mock.calls.at(-1)?.[0].phase).toBe("publication-preflight");
+    expect(result.nextArtifactSequence).toBe(f.artifacts.length);
+  });
+  it("refuses a changed namespaced checkpoint acknowledgement before any artifact write", async () => {
+    const f = setup();
+    f.options.original.source.objectKey = `${randomUUID()}/${f.options.original.source.subjectId}/${randomUUID()}/original-${randomUUID()}.vcf`;
+    f.options.checkpoint = async checkpoint => {
+      const changed = structuredClone(checkpoint);
+      changed.sourceScan.source.objectKey = changed.sourceScan.source.objectKey.replace(/^[^/]+/, randomUUID());
+      return changed;
+    };
+    await expect(runOwnPreparationPipeline(f.options)).rejects.toMatchObject({ code: "integrity_mismatch" });
+    expect(f.options.writeArtifact).not.toHaveBeenCalled();
+  });
   it("keeps real synthetic pipeline bytes, authority order and checkpoints identical with optional metrics", async () => {
     const baseline = setup(), measured = setup();
     Object.assign(measured.options, { jobId: baseline.options.jobId, attemptId: baseline.options.attemptId });

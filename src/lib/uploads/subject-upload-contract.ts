@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { genomeStagingKeySchema, genomeKeyMatchesUpload } from "./genome-object-key";
 import type { FileKind } from "../genome/types";
 import { SINGLE_REQUEST_MAXIMUM_BYTES } from "./subject-upload-transport";
 
@@ -12,10 +13,10 @@ export const uploadSessionBody = z.union([
   z.object({ cohortId: uuid, declaredFormat: z.enum(["VCF", "VCF.GZ", "gVCF", "pgt_table"]), ...declaration }).strict(),
 ]);
 export const directUploadReceipt = z.object({
-  transport: z.literal("direct-storage"), uploadId: uuid, bucket: z.literal("genomes"), stagingKey: uuid,
+  transport: z.literal("direct-storage"), uploadId: uuid, bucket: z.literal("genomes"), stagingKey: genomeStagingKeySchema,
   uploadToken: z.string().min(1), authorizationHeader: z.literal("Bearer {uploadToken}"),
   maximumBytes: z.number().int().positive().safe(), expiresAt: z.iso.datetime({ offset: true }),
-}).strict();
+}).strict().refine(value => genomeKeyMatchesUpload(value.stagingKey, value.uploadId));
 const byteCeiling = z.number().int().positive().safe();
 /** The deployment's own-upload ceilings and this account's reserved total, as
  * `public.own_upload_limits_v1` returns them. Ceilings are deployment capacity,

@@ -39,6 +39,22 @@ select public.sign_own_upload_artifact_v1('76200000-0000-4000-8000-000000000001'
  array['own-adult-dna'],1,1,1,1,1,repeat('b',64));
 create temporary table role_upload as select pg_temp.issue_role_upload() receipt;
 grant select on role_upload to service_role;
+select ok((select split_part(receipt->>'stagingKey','/',1)=receipt->>'accountId'
+ and split_part(receipt->>'stagingKey','/',2)=(select id::text from upload_role_subject)
+ and split_part(receipt->>'stagingKey','/',3)=receipt->>'uploadId'
+ and split_part(receipt->>'stagingKey','/',4) ~ '^original-[0-9a-f-]{36}\.part$' from role_upload),
+ 'native issuance uses exact account/subject/upload/opaque-part namespace');
+select throws_ok($$update public.upload_sessions set staging_object_name=gen_random_uuid()::text
+ where id=(select (receipt->>'uploadId')::uuid from role_upload)$$,'22023','upload_key_unavailable',
+ 'a current native session cannot be rewritten to a fresh flat locator');
+select throws_ok($$insert into public.upload_sessions select (jsonb_populate_record(null::public.upload_sessions,
+ to_jsonb(u)||jsonb_build_object('id',gen_random_uuid(),'staging_object_name',gen_random_uuid()::text))).*
+ from public.upload_sessions u where id=(select (receipt->>'uploadId')::uuid from role_upload)$$,
+ '22023','upload_key_unavailable','new token-bound native rows cannot mint a legacy flat locator');
+
+select throws_ok($$update public.upload_sessions set final_object_name=account_id::text || '/' || subject_id::text || '/' || id::text || '/original-' || gen_random_uuid()::text || '.g.vcf'
+ where id=(select (receipt->>'uploadId')::uuid from role_upload)$$,'22023','upload_key_unavailable',
+ 'declared VCF cannot admit a gVCF locator through a partial suffix match');
 select throws_ok($$update public.upload_sessions set declared_format=null
  where id=(select (receipt->>'uploadId')::uuid from role_upload)$$,
  '23514',null,'token-bound sessions require a non-null declared format');

@@ -267,10 +267,14 @@ test("account deletion schedules a seven-day hold and can be cancelled", async (
   expect(objects?.length).toBe(files?.length);
   for (const object of objects ?? []) {
     expect(object.state).toBe("current");
-    const { data: stored } = await admin.storage
+    const split = object.object_name.lastIndexOf("/");
+    const folder = object.object_name.slice(0, split + 1).replace(/\/$/, "");
+    const leaf = object.object_name.slice(split + 1);
+    const { data: stored, error } = await admin.storage
       .from(object.bucket_id)
-      .list("", { search: object.object_name });
-    expect(stored?.some((entry) => entry.name === object.object_name)).toBe(true);
+      .list(folder, { search: leaf });
+    expect(error).toBeNull();
+    expect(stored?.some((entry) => entry.name === leaf)).toBe(true);
   }
 
   // During notice, non-allowlisted application operations are locked.

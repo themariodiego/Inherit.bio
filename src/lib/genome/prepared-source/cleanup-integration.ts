@@ -2,7 +2,7 @@ import "server-only";
 import { isDeepStrictEqual } from "node:util";
 import { z } from "zod";
 import type { createAdminClient } from "../../supabase/admin";
-import { assertPreparedMetadataBounds } from "./canonical-manifest";
+import { assertGenomeOriginalMetadataBounds, assertPreparedMetadataBounds } from "./canonical-manifest";
 import { drainOwnPreparedCleanup } from "./cleanup";
 
 type Admin = ReturnType<typeof createAdminClient>;
@@ -16,7 +16,9 @@ function boundedRpc(admin: Admin, external?: AbortSignal) {
     signal.throwIfAborted(); const operation = rpc(name, args);
     if (typeof operation.abortSignal !== "function") throw new Error("prepared_cleanup_unavailable");
     const result = await operation.abortSignal(signal); signal.throwIfAborted();
-    assertPreparedMetadataBounds(result.data, 16384); return result;
+    const bound = name === "prepare_own_prepared_file_cleanup_v1" || name === "prepare_own_prepared_file_cleanup_claimed_v1"
+      ? assertGenomeOriginalMetadataBounds : assertPreparedMetadataBounds;
+    bound(result.data, 16384); return result;
   };
 }
 export const originalDeletionTarget = z.object({ token: z.uuid(), bucket: z.literal("genomes"), name: z.string().min(1) }).strict();

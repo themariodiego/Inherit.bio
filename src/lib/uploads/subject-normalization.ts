@@ -1,4 +1,5 @@
 import "server-only";
+import { genomeOriginalKeySchema } from "./genome-object-key";
 import { hasEmptyRequestBody } from "../empty-request-body";
 
 import { createHash } from "node:crypto";
@@ -26,13 +27,13 @@ const uuid = z.uuid().regex(/^[0-9a-f-]+$/);
 const positive = z.number().int().positive().safe();
 const sha = z.string().regex(/^[0-9a-f]{64}$/);
 const manifestSchema = z.object({ status: z.literal("authorized"), fileId: uuid, claim: uuid, subjectId: uuid,
-  bucket: z.literal("genomes"), objectKey: uuid, objectId: uuid, sizeBytes: positive,
+  bucket: z.literal("genomes"), objectKey: genomeOriginalKeySchema, objectId: uuid, sizeBytes: positive,
   rawSha256: sha, decodedSha256: sha, sourceRevision: positive, maximumDecodedBytes: positive,
   fileType: z.enum(["array_23andme", "array_ancestry", "array_myheritage", "array_ftdna", "vcf", "gvcf"]),
 }).strict();
 type Manifest = z.infer<typeof manifestSchema>;
 const cleanupSchema = z.object({ status: z.literal("build_cleanup_required"), fileId: uuid, claim: uuid,
-  bucket: z.literal("genomes"), objectKey: uuid, objectId: uuid }).strict();
+  bucket: z.literal("genomes"), objectKey: genomeOriginalKeySchema, objectId: uuid }).strict();
 type Operation = "begin" | "check" | "stage" | "complete" | "fail" | "reject-build" | "check-rejected" | "finish-rejected";
 type Rpc = (name: "own_upload_normalization_v1", args: { p_operation: Operation; p_account_id: string;
   p_session_id: string; p_file_id: string; p_claim: string | null; p_payload: unknown | null }) =>

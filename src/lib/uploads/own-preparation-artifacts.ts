@@ -2,7 +2,7 @@ import "server-only";
 import { createHash } from "node:crypto";
 import { isDeepStrictEqual } from "node:util";
 import { z } from "zod";
-import { assertPreparedMetadataBounds } from "../genome/prepared-source/canonical-manifest";
+import { assertGenomeOriginalMetadataBounds, assertPreparedMetadataBounds } from "../genome/prepared-source/canonical-manifest";
 import type { PreparedArtifactDescriptor } from "../genome/prepared-source/storage-writer";
 import { preparedStoredArtifactSchema, preparedArtifactObjectIdentity, type PreparedStoredArtifact } from "../genome/prepared-source/artifact-identity";
 import { readVerifiedPreparedArtifact } from "../genome/prepared-source/verified-artifact-reader";
@@ -35,6 +35,13 @@ export async function preparationWait<T>(pending: Promise<T>, signal: AbortSigna
 }
 export function preparationJson(value: unknown, maximum = 4_000_000): Uint8Array {
   assertPreparedMetadataBounds(value, maximum);
+  const bytes = Buffer.from(JSON.stringify(value)); if (bytes.length > maximum) preparationFail("too_large"); return bytes;
+}
+/** Checkpoints contain the exact original source locator as well as prepared
+ * metadata. Only that closed locator grammar can exceed the ordinary string
+ * bound; artifact/run metadata continues to use preparationJson unchanged. */
+export function preparationCheckpointJson(value: unknown, maximum = 4_000_000): Uint8Array {
+  assertGenomeOriginalMetadataBounds(value, maximum);
   const bytes = Buffer.from(JSON.stringify(value)); if (bytes.length > maximum) preparationFail("too_large"); return bytes;
 }
 /** Size one already codec-validated event without serializing long allele

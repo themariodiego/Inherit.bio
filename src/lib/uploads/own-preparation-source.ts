@@ -1,4 +1,5 @@
 import "server-only";
+import { genomeOriginalKeySchema } from "./genome-object-key";
 import { createHash } from "node:crypto";
 import { Readable } from "node:stream";
 import { pipeline } from "node:stream/promises";
@@ -16,7 +17,7 @@ const hash = z.string().regex(/^[0-9a-f]{64}$/);
 export const ownPreparationOriginalSchema = z.object({
   fileId: z.uuid(), subjectId: z.uuid(), sourceRevision: integer,
   rawSha256: hash, decodedSha256: hash, bucket: z.literal("genomes"),
-  objectId: z.uuid(), objectKey: z.uuid(), sizeBytes: integer,
+  objectId: z.uuid(), objectKey: genomeOriginalKeySchema, sizeBytes: integer,
   fileType: z.enum(["vcf", "gvcf"]), maximumDecodedBytes: integer,
 }).strict();
 export type OwnPreparationOriginal = z.infer<typeof ownPreparationOriginalSchema>;

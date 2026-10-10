@@ -1,10 +1,11 @@
 import "server-only";
+import { genomeUploadObjectKeySchema } from "./genome-object-key";
 import { createHash, randomBytes } from "node:crypto";
 import { z } from "zod";
 import type { createAdminClient } from "../supabase/admin";
 
 const workSchema = z.object({ manifestId: z.uuid(), objects: z.array(z.object({
-  objectId: z.uuid(), bucketId: z.literal("genomes"), objectName: z.uuid().regex(/^[0-9a-f-]+$/),
+  objectId: z.uuid(), bucketId: z.literal("genomes"), objectName: genomeUploadObjectKeySchema,
   ordinal: z.number().int().positive(),
 }).strict()).min(1).max(2) }).strict().refine(work =>
   new Set(work.objects.map(object => object.objectName)).size === work.objects.length

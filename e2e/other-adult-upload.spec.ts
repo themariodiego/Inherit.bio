@@ -37,6 +37,7 @@ import { PATH_B_CHOICES_COPY as CHOICES } from "../src/copy/upload/other-adult";
 import { parseArtifactFile } from "../src/lib/legal/artifact-file";
 import { artifactStatements, heldFinalizationReceipt } from "../src/lib/uploads/other-adult-upload";
 import { directUploadReceipt } from "../src/lib/uploads/subject-upload-contract";
+import { genomeStagingStorageUrl } from "../scripts/genome-staging-storage-url";
 import { localE2eProject } from "../scripts/local-e2e-project";
 
 /**
@@ -233,9 +234,8 @@ async function addFile(page: Page, person: { name: string }, fixture = FIXTURE) 
   const issuedHeaders = page.waitForResponse(response => response.url() === `${ORIGIN}/api/files/upload-session`
     && response.request().method() === "POST");
   const storedResponse = page.waitForResponse(response => {
-    const url = new URL(response.url());
-    return url.origin === SUPABASE_URL && /^\/storage\/v1\/object\/genomes\/[0-9a-f-]{36}$/.test(url.pathname)
-      && !url.search && response.request().method() === "POST";
+    return genomeStagingStorageUrl(response.url(), SUPABASE_URL)
+      && response.request().method() === "POST";
   });
   // Keep unused observations handled if an earlier stage refuses the upload.
   void issuedHeaders.catch(() => {}); void storedResponse.catch(() => {});

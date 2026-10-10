@@ -19,7 +19,7 @@ import { createCanonicalRsidRuns, mergeCanonicalRsidRuns, encodeCanonicalRsidBlo
 import { materializeCanonicalRsidMerge } from "../genome/prepared-source/materialize-canonical-rsid";
 import { prepareGenomePublication } from "../genome/prepared-source/prepare-genome-publication";
 import { scanOwnPreparationSource, readOwnPreparationLines, type OwnPreparationSourceOptions, type OwnPreparationScan, ownPreparationScanSchema } from "./own-preparation-source";
-import { createOwnPreparationArtifacts, preparationRecordBytes, preparationActive, preparationFail, preparationJson, preparationWait,
+import { createOwnPreparationArtifacts, preparationRecordBytes, preparationActive, preparationFail, preparationJson, preparationCheckpointJson, preparationWait,
   type OwnPreparationArtifactIO } from "./own-preparation-artifacts";
 import { createOwnPreparationRunStore, type PreparationBlock, type PreparationRun, type PreparationRunHandle } from "./own-preparation-runs";
 
@@ -80,7 +80,7 @@ export async function runOwnPreparationPipeline(options: OwnPreparationPipelineO
   if (options.original.signal !== signal) preparationFail("invalid_state");
   let saved: OwnPreparationCheckpoint | undefined;
   if (options.resume) {
-    preparationJson(options.resume); saved = structuredClone(options.resume);
+    preparationCheckpointJson(options.resume); saved = structuredClone(options.resume);
     const checkedScan = ownPreparationScanSchema.parse(saved.sourceScan);
     if (saved.version !== "own-preparation-checkpoint-v1" || saved.state !== "provisional"
       || !isDeepStrictEqual(checkedScan.source, options.original.source)
@@ -101,10 +101,10 @@ export async function runOwnPreparationPipeline(options: OwnPreparationPipelineO
     inputs: PreparationRunHandle[] = [], outputs: PreparationRunHandle[] = [], generation = (checkpointGenerations.get(phase) ?? -1) + 1, completedInputRuns = inputs.length) {
     const expected: OwnPreparationCheckpoint = { version: "own-preparation-checkpoint-v1", state: "provisional", phase,
       sourceScan: scan, generation, completedInputRuns, inputs, outputs, terminal, resume: state, nextArtifactSequence: artifacts.nextSequence };
-    preparationJson(expected);
+    preparationCheckpointJson(expected);
     await preparationWait(options.check(null, signal), signal);
     const ack = await preparationWait(options.checkpoint(structuredClone(expected), signal), signal);
-    preparationJson(ack);
+    preparationCheckpointJson(ack);
     if (!isDeepStrictEqual(expected, ack)) preparationFail("integrity_mismatch");
     checkpointGenerations.set(phase, generation);
     options.metrics?.checkpointCompleted(phase);

@@ -1,13 +1,14 @@
 import "server-only";
+import { genomeOriginalKeySchema } from "../../uploads/genome-object-key";
 import { createHash, randomBytes } from "node:crypto";
 import { isDeepStrictEqual } from "node:util";
 import { z } from "zod";
 import type { createAdminClient } from "../../supabase/admin";
 import { preparedStorageConfig } from "./storage-common";
-import { assertPreparedMetadataBounds } from "./canonical-manifest";
+import { assertGenomeOriginalMetadataBounds } from "./canonical-manifest";
 const uuid = z.uuid().regex(/^[0-9a-f-]+$/);
 const claimSchema = z.object({ version: z.literal("own-original-retirement-v1"), fileId: uuid, manifestId: uuid,
-  objectId: uuid, bucket: z.literal("genomes"), objectKey: uuid, storageVersion: uuid,
+  objectId: uuid, bucket: z.literal("genomes"), objectKey: genomeOriginalKeySchema, storageVersion: uuid,
   byteCount: z.number().int().positive().max(Number.MAX_SAFE_INTEGER), sha256: z.string().regex(/^[0-9a-f]{64}$/),
   expiresAt: z.iso.datetime({ offset: true }), claimExpiresAt: z.iso.datetime({ offset: true }) }).strict();
 type Result = { data: unknown; error: unknown };
@@ -39,7 +40,7 @@ export async function drainOwnOriginalRetirement(admin: ReturnType<typeof create
   const rpc = admin.rpc.bind(admin) as unknown as Rpc;
   async function call(name: string, args: Record<string, unknown>) {
     active(); const response = await wait(rpc(name, args).abortSignal(signal)); active();
-    if (response.error) throw new Error("original_retirement_unavailable"); assertPreparedMetadataBounds(response.data, 16384); return response.data;
+    if (response.error) throw new Error("original_retirement_unavailable"); assertGenomeOriginalMetadataBounds(response.data, 16384); return response.data;
   }
   try {
     const raw = await call("claim_own_original_retirement_v1", { p_claim_token_hash: token });
@@ -65,10 +66,10 @@ export async function drainOwnOriginalRetirement(admin: ReturnType<typeof create
       count += part.value.byteLength; if (count > 16384) throw new Error("original_retirement_unavailable"); text += decoder.decode(part.value, { stream: true }); }
       text += decoder.decode();
     } finally { try { void reader.cancel().catch(() => {}); reader.releaseLock(); } catch { /* preserve original failure */ } reader = undefined; }
-    const observed: unknown = JSON.parse(text); assertPreparedMetadataBounds(observed, 16384);
+    const observed: unknown = JSON.parse(text); assertGenomeOriginalMetadataBounds(observed, 16384);
     // Provider object schema may contain ordinary bounded metadata. Only this
     // exact object's ID/key/version/size is accepted as deletion observation.
-    const rows = z.array(z.object({ id: uuid, name: uuid, bucket_id: z.literal("genomes"), version: uuid,
+    const rows = z.array(z.object({ id: uuid, name: genomeOriginalKeySchema, bucket_id: z.literal("genomes"), version: uuid,
       metadata: z.object({ size: z.number().int().positive() }).passthrough() }).passthrough()).length(1).parse(observed);
     const row = rows[0]; if (row.id !== claim.objectId || row.name !== claim.objectKey || row.version !== claim.storageVersion || row.metadata.size !== claim.byteCount) throw new Error("original_retirement_unavailable");
     const evidence = { version: "own-original-delete-evidence-v1", provider: "supabase", disposition: "original-payload-deleted",

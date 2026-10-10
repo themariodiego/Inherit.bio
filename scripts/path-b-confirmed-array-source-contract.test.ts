@@ -66,7 +66,15 @@ describe("registered confirmed Path B array source extension", () => {
     expect(() => assertClosedGuards(migration.replace(before, after))).toThrow();
   });
   it("retains complete own source, VCF parser and original operator commands byte-exact", () => {
-    expect(hash(read("src/lib/uploads/own-preparation-source.ts"))).toBe("c6cbd7ec666035ff45d784ac5066eebd92cf519a6d129071f957c27c44fc222a");
+    const ownSource = read("src/lib/uploads/own-preparation-source.ts");
+    const namespaceImport = 'import { genomeOriginalKeySchema } from "./genome-object-key";\n';
+    const namespaceKey = "objectKey: genomeOriginalKeySchema";
+    expect(ownSource.split(namespaceImport)).toHaveLength(2);
+    expect(ownSource.split(namespaceKey)).toHaveLength(2);
+    // The registered locator grammar changes only the exact original-key
+    // schema. The complete parser/current-read authority stays byte-exact.
+    expect(hash(ownSource.replace(namespaceImport, "").replace(namespaceKey, "objectKey: z.uuid()")))
+      .toBe("c6cbd7ec666035ff45d784ac5066eebd92cf519a6d129071f957c27c44fc222a");
     expect(hash(read("src/lib/uploads/incremental-vcf-normalization.ts"))).toBe("a11ec80efc265f90f43a913116452bcda350eef20b5e3ff1bbc3015062f22573");
     expect(hash(read("scripts/path-b-normalization-worker.run.mts"))).toBe("3a39226c00f9ee20152d41be66e2aa1e9da7097249d2d4a0eff2ba2347ff61f9");
     const worker = read("src/lib/uploads/path-b-normalization-worker.ts");

@@ -8127,7 +8127,8 @@
       "prefixIds": [
         "storage.subject-v2",
         "storage.cohort-v2",
-        "storage.raw-legacy"
+        "storage.raw-legacy",
+        "storage.raw-flat-legacy"
       ],
       "authenticatedSelect": "deny-for-new-and-legacy-objects",
       "authenticatedList": "deny",
@@ -21844,7 +21845,7 @@
       "bucket": "genomes",
       "prefix": "{account_id}/{subject_id}/{upload_id}/{filename}",
       "disposition": "kept",
-      "filenameContract": "the-filename-placeholder-is-one-server-generated-opaque-single-segment-name-with-an-allowlisted-normalized-extension; slash-backslash-dot-segments-control-characters-and-original-filenames-are-forbidden",
+      "filenameContract": "the-filename-placeholder-is-one-server-generated-opaque-single-segment-name-with-an-allowlisted-normalized-extension; slash-backslash-dot-segments-control-characters-and-original-filenames-are-forbidden; staging-is-original-opaque-v4-uuid.part-and-final-has-the-same-fixed-original-stem-with-extension-is-vcf-vcf.gz-g.vcf-or-txt-selected-from-the-declared-format-and-kept-only-after-existing-server-format-structure-and-hash-verification",
       "authority": "Database-owned upload session; clients never supply an arbitrary object path or object-name segment."
     },
     {
@@ -21907,6 +21908,15 @@
       "disposition": "kept",
       "newWrites": "forbidden",
       "authority": "Legacy reads and purge resolve through genome_files rows and subject joins, never prefix inference."
+    },
+    {
+      "id": "storage.raw-flat-legacy",
+      "bucket": "genomes",
+      "prefix": "{server_uuid}",
+      "disposition": "kept",
+      "newWrites": "forbidden",
+      "authority": "Existing flat UUID original and staging locators are retained byte-for-byte for database-selected reads, resumption and exact-key purge; current own/held subject issuers generate storage.subject-v2 keys. No prefix-derived permission and no object relocation.",
+      "filenameContract": "existing-server-generated-v4-UUID-only; not-an-original-filename"
     }
   ],
   "supersededProposals": [

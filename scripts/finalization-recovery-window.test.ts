@@ -82,9 +82,16 @@ describe("what a person gets if their finalization dies", () => {
     const recovery = readFileSync(
       path.join(ROOT, "src/components/uploads/staged-upload-recovery.tsx"), "utf8");
     expect(recovery).toContain("Try this upload again");
-    // The rationale is in the migration's header, above the definition.
-    const { text } = installedDefinition("function private.own_upload_finalization_v1");
-    expect(text).toContain("no session-independent finalization");
+    // Keep the original rationale and check the actual newest copied body's
+    // account/session binding and current authority before any resume branch.
+    const originalRationale = readFileSync(
+      path.join(MIGRATIONS, "20260909213000_own_upload_finalization_resume.sql"), "utf8");
+    expect(originalRationale).toContain("no session-independent finalization");
+    const { body } = installedDefinition("function private.own_upload_finalization_v1");
+    expect(body).toContain("u.account_id is distinct from p_account_id or u.auth_session_id is distinct from p_session_id");
+    expect(body).toContain("private.subject_upload_store_authority_v1(u.upload_authority_kind,p_account_id,p_session_id,u.subject_id)");
+    expect(body.indexOf("private.subject_upload_store_authority_v1"))
+      .toBeLessThan(body.indexOf("if p_start then"));
     const jobs = readdirSync(path.join(ROOT, "src/app/api/jobs"));
     expect(jobs).not.toContain("finalization");
   });

@@ -1,4 +1,5 @@
 import "server-only";
+import { genomeStagingKeySchema, genomeOriginalKeySchema, genomeKeyMatchesUpload } from "./genome-object-key";
 
 import { createSHA256 } from "hash-wasm";
 import { FinalizationInterrupted, startFinalizationLease, waitForFinalization } from "./finalization-lease";
@@ -21,14 +22,18 @@ const uuid = z.uuid().regex(/^[0-9a-f-]+$/);
 const positive = z.number().int().positive().safe();
 const digest = z.string().regex(/^[0-9a-f]{64}$/);
 const manifestSchema = z.object({ status: z.literal("authorized"), uploadId: uuid, claim: uuid,
-  bucket: z.literal("genomes"), stagingKey: uuid, finalKey: uuid, expectedSize: positive,
+  bucket: z.literal("genomes"), stagingKey: genomeStagingKeySchema, finalKey: genomeOriginalKeySchema, expectedSize: positive,
   expectedSha256: digest.nullable(), declaredFormat: z.enum(SUBJECT_UPLOAD_FORMATS), maximumDecodedBytes: positive,
-}).strict().refine(value => value.stagingKey !== value.finalKey);
+}).strict().refine(value => value.stagingKey !== value.finalKey
+  && genomeKeyMatchesUpload(value.stagingKey, value.uploadId)
+  && genomeKeyMatchesUpload(value.finalKey, value.uploadId)
+  && (!value.stagingKey.includes("/") || !value.finalKey.includes("/")
+    || value.stagingKey.split("/").slice(0, 3).join("/") === value.finalKey.split("/").slice(0, 3).join("/")));
 type Manifest = z.infer<typeof manifestSchema>;
 const alreadyComplete = z.object({ status: z.literal("complete"), fileId: uuid }).strict();
 /** Another adult's file revision that already stopped at the held state (Path B, TEST-LOCAL). */
 const alreadyHeld = z.object({ status: z.literal("held"), fileId: uuid }).strict();
-const cleanupSchema = z.object({ bucket: z.literal("genomes"), stagingKey: uuid, finalKey: uuid }).strict();
+const cleanupSchema = z.object({ bucket: z.literal("genomes"), stagingKey: genomeStagingKeySchema, finalKey: genomeOriginalKeySchema }).strict();
 class FinalizationUnavailable extends Error { constructor() { super("upload_unavailable"); } }
 function fail(): never { throw new FinalizationUnavailable(); }
 
@@ -90,7 +95,9 @@ async function runFinalization(request: Request, uploadId: string, fenced: boole
         status: "stored_quarantined", analysisState: "quarantined", noticeState: "queued" }));
     }
     const parsed = manifestSchema.safeParse(begin.data);
-    if (!parsed.success || parsed.data.uploadId !== uploadId) fail();
+    if (!parsed.success || parsed.data.uploadId !== uploadId
+      || !genomeKeyMatchesUpload(parsed.data.stagingKey, uploadId, actor.accountId)
+      || !genomeKeyMatchesUpload(parsed.data.finalKey, uploadId, actor.accountId)) fail();
     manifest = parsed.data;
     const lease = manifest;
     const authorization = { ...args, p_claim: lease.claim };

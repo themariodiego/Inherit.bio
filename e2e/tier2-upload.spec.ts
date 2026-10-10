@@ -100,14 +100,17 @@ for (const sample of cases) {
     // Deliberately bypass preflight with a supported declaration. The issuer
     // sees only size/hash/format; the real finalizer must inspect Storage bytes.
     // Keep its bearer solely in this native browser closure, never in output.
-    const staged = await page.evaluate(async ({ declaration, bytes, storageOrigin, apiKey }) => {
+    const staged = await page.evaluate(async ({ declaration, bytes, storageOrigin, apiKey, accountId }) => {
       const response = await fetch("/api/files/upload-session", { method: "POST", credentials: "same-origin", redirect: "error",
         headers: { "content-type": "application/json" }, body: JSON.stringify(declaration) });
       if (response.status !== 201) throw new Error("Expected real upload issuance");
       const issued = await response.json();
       const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+      const currentStaging = /^(?:[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}\/){3}original-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\.part$/;
+      const exactKey = uuid.test(issued.stagingKey) || (currentStaging.test(issued.stagingKey)
+        && issued.stagingKey.split("/")[0] === accountId && issued.stagingKey.split("/")[2] === issued.uploadId);
       if (Object.keys(issued).sort().join() !== ["transport", "uploadId", "bucket", "stagingKey", "uploadToken", "authorizationHeader", "maximumBytes", "expiresAt"].sort().join()
-        || issued.transport !== "direct-storage" || issued.bucket !== "genomes" || !uuid.test(issued.uploadId) || !uuid.test(issued.stagingKey)
+        || issued.transport !== "direct-storage" || issued.bucket !== "genomes" || !uuid.test(issued.uploadId) || !exactKey
         || typeof issued.uploadToken !== "string" || !issued.uploadToken || issued.authorizationHeader !== "Bearer {uploadToken}"
         || issued.maximumBytes !== bytes.length || !(Date.parse(issued.expiresAt) > Date.now())) throw new Error("Invalid restricted upload receipt");
       const stored = await fetch(`${storageOrigin}/storage/v1/object/genomes/${issued.stagingKey}`, {
@@ -115,7 +118,7 @@ for (const sample of cases) {
           apikey: apiKey, "content-type": "application/octet-stream", "x-upsert": "false" }, body: new Uint8Array(bytes) });
       await stored.arrayBuffer();
       return { status: stored.status, uploadId: issued.uploadId as string, stagingKey: issued.stagingKey as string };
-    }, { declaration: { ...declaration, declaredFormat: sample.declaration }, bytes: [...sample.bytes], storageOrigin: SUPABASE_URL,
+    }, { declaration: { ...declaration, declaredFormat: sample.declaration }, bytes: [...sample.bytes], storageOrigin: SUPABASE_URL, accountId,
       apiKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? ANON_KEY });
     expect(staged.status).toBe(200);
     expect(await footprint(accountId)).toEqual({ ...empty, storage: 1 });

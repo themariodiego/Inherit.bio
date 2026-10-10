@@ -1,4 +1,5 @@
 import "server-only";
+import { genomeOriginalKeySchema } from "@/lib/uploads/genome-object-key";
 import {createHash} from "node:crypto";
 import {Readable} from "node:stream";
 import {createGunzip} from "node:zlib";
@@ -10,7 +11,7 @@ import {ownExportSnapshotSchema} from "./own-subject-content";
 import type {Zip64Member} from "./archive-zip64";
 const uuid=z.uuid(),hash=z.string().regex(/^[a-f0-9]{64}$/u),date=z.iso.datetime({offset:true});
 const legacySource=z.object({version:z.literal("account-original-download-v1"),fileId:uuid,
- sourceRevision:z.number().int().positive().safe(),rawSha256:hash,bucket:z.literal("genomes"),objectId:uuid,objectKey:uuid,
+ sourceRevision:z.number().int().positive().safe(),rawSha256:hash,bucket:z.literal("genomes"),objectId:uuid,objectKey:genomeOriginalKeySchema,
  storageVersion:z.uuid({version:"v4"}),sizeBytes:z.number().int().positive().safe(),expiresAt:date}).strict();
 const byteSource=z.discriminatedUnion("version",[legacySource,preparedOriginalDownloadSourceSchema]);
 const receiptSchema=z.object({version:z.literal("account-archive-original-v1"),exportId:uuid,attemptId:uuid,
