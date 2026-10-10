@@ -1,3 +1,7 @@
+## 2026-10-10: fitted TEST report plain wording
+
+The complete readability gate found grade 9.7 above the existing limit 9 and three unregistered words in the new accessible label. The fitted TEST component now uses shorter sentences and existing plain words. Every invented-reference disclosure, OBSERVED/MODELLED basis, exact model warning, clinical hold, sibling hold, source attribution and figure value is preserved. The original first-sentence assertions and every browser/native/quality assertion remain unchanged. The old failed gate output is preserved. This entry records a wording correction; it is not a readability, native or browser pass. Actual final checks remain required.
+
 ## 2026-10-10 — Add the synthetic fitted embryo producer and preserve own-call coverage
 
 The existing below-0.80 coverage journey remains. A separate invented TEST-only fit now supplies the full predictor and interval package for the existing 8-of-10 own-call fixture. The native admission, source/package hashes, fixed precision, original first-embryo history, own-subject attribution and three rendered surfaces remain mandatory. The second fixture retains all 1,200 neutral rows, including its original twelve no-calls. Its exact QC expectation is therefore 1,196 called loci out of 1,208; the first embryo has 1,208 out of 1,208. Both retain the actual pass result and empty refusal reasons. Only the new incorrect perfect-call expectation was corrected. The original 347-pass/one-failure result is retained, followed by 348 passing assertions across sixteen whole files.

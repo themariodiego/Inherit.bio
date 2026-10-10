@@ -47,7 +47,7 @@ function FittedTestCoverage({ value, subjectIds, embryoId }: { value: Statistica
     data-interpretation="held" data-publication="synthetic-fitted-test-only"
     className="space-y-3 text-sm leading-relaxed text-ink">
     <p className="title">Invented fitted TEST model</p>
-    <p>Every reference observation is invented. This tests the calculation and display; it gives no medical interpretation.</p>
+    <p>Every reference observation is invented. This tests the maths and what you see on screen. It gives no medical interpretation.</p>
     <ul className="space-y-4">
       {rows.map(row => <li key={row.embryoId} data-embryo-id={row.embryoId} data-coverage-state={row.coverageState}
         data-finding-kind={row.finding?.kind ?? "none"} data-test-result={row.result === null ? "unavailable" : "fitted"}>
@@ -64,7 +64,7 @@ function FittedTestCoverage({ value, subjectIds, embryoId }: { value: Statistica
           {row.finding ? <p data-slot="coverage-failure">{INSUFFICIENT_COVERAGE_INTRO}</p> : null}
         </ClaimBlock>}
         {row.result === null ? null : <ClaimBlock subject={{ subjectId: subjectIds.get(row.embryoId)! }}
-          aria-label="Modelled invented TEST interval" figures={[{ kind: "interval", class: "estimate", basis: "modelled",
+          aria-label="TEST model: low and high from data we made" figures={[{ kind: "interval", class: "estimate", basis: "modelled",
             provenance: { kind: "computed", module: "embryos/synthetic-statistical-fit" },
             point: Number(row.result.point), low: Number(row.result.interval[0]), high: Number(row.result.interval[1]) }]}>
           <p data-slot="modelled-test-interval">MODELLED invented-control probability and range. This is not a clinical result.</p>
