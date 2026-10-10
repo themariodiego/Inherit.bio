@@ -2,15 +2,24 @@ import assert from "node:assert/strict";
 import { isIP } from "node:net";
 import { localE2eProject } from "./local-e2e-project";
 import { assertLocalProviderEnvironment } from "./local-storage-browser-config";
+import { assertOwnedLinuxCapability, type OwnedLinuxCapability } from "./owned-linux-runtime";
 
 type Environment = Readonly<Record<string, string | undefined>>;
 export const CI_RUNTIME_IMAGE = "inherit-ci-browser:local";
 export const CI_RUNTIME_CONTAINER = "inherit-ci-browser-runtime";
 export const CI_RUNTIME_LABEL = "inherit.ci-browser-runtime";
 export const CI_CONTROL_URL = "http://127.0.0.1:8130";
-export function assertCiRuntime(env: Environment, platform = process.platform) {
+export function assertCiRuntime(env: Environment, platform = process.platform, operator?: OwnedLinuxCapability) {
   assertLocalProviderEnvironment(env, true, []);
-  assertCiJob(env, platform);
+  if (operator) {
+    assertOwnedLinuxCapability(operator);
+    assert(platform === "linux" && !env.CI && !env.GITHUB_ACTIONS && !env.GITHUB_JOB && !env.RUNNER_ENVIRONMENT,
+      "Owned operator runtime must not claim a CI job");
+    localE2eProject(env);
+    assert(!env.DEBUG && !env.PWDEBUG && (env.INHERIT_LOCAL_E2E_PROJECT ?? "sequence") === "sequence"
+      && (!env.CANONICAL_COPILOT_CONTROL_URL || env.CANONICAL_COPILOT_CONTROL_URL === CI_CONTROL_URL),
+    "Exact owned operator scope required");
+  } else assertCiJob(env, platform);
 }
 function assertCiJob(env: Environment, platform: NodeJS.Platform) {
   localE2eProject(env);
@@ -36,9 +45,14 @@ export function checkedGateway(value: unknown): { address: string; network: stri
 }
 export const APP_ENV_NAMES = ["INHERIT_UPLOAD_SIGNING_JWK", "INHERIT_CANONICAL_UPLOADS_PAUSED", "NEXT_PUBLIC_SUPABASE_URL",
   "NEXT_PUBLIC_SUPABASE_ANON_KEY", "SUPABASE_SERVICE_ROLE_KEY", "BYOK_ENCRYPTION_KEY", "JOBS_SECRET", "CRON_SECRET",
-  "EMAIL_FROM", "RESEND_API_KEY", "RESEND_BASE_URL", "NEXT_PUBLIC_SITE_URL", "NEXT_PUBLIC_APP_URL", "INHERIT_TEST_JURISDICTION"] as const;
+  "EMAIL_FROM", "RESEND_API_KEY", "RESEND_BASE_URL", "NEXT_PUBLIC_SITE_URL", "NEXT_PUBLIC_APP_URL", "INHERIT_TEST_JURISDICTION", "INHERIT_TEST_REQUESTER_STATEMENTS"] as const;
 /** Fixed app variants: main, jurisdiction-off, paused, local-model, and prepared-source. */
-export const APP_PORTS = [3100, 3101, 3102, 3103, 3104] as const;
+export const APP_PORTS = [3100, 3101, 3102, 3103, 3104, 3105] as const;
+export const EMBRYO_APP_PORT = 3105;
+export const EMBRYO_APP_ENV = Object.freeze({
+  INHERIT_EMBRYO_R2_ORIGIN: "https://embryo.fragments.test:8141",
+  INHERIT_EMBRYO_R2_BUCKET: "inherit-embryo-ci",
+});
 export const PREPARED_APP_PORT = 3104;
 export const PREPARED_APP_ENV = Object.freeze({
   INHERIT_PREPARED_WGS_ENABLED: "true",
@@ -67,6 +81,7 @@ export const LOCAL_MODEL_ENV_NAMES = Object.keys(LOCAL_MODEL_ENV) as ReadonlyArr
 /** Extra fields belong only to their fixed local-model or prepared variant. */
 export function admittedAppEnvironmentNames(port: number): readonly string[] {
   return port === LOCAL_MODEL_PORT ? [...APP_ENV_NAMES, ...LOCAL_MODEL_ENV_NAMES]
+    : port === EMBRYO_APP_PORT ? [...APP_ENV_NAMES, ...Object.keys(EMBRYO_APP_ENV), "RESEND_WEBHOOK_SECRET"]
     : port === PREPARED_APP_PORT ? [...APP_ENV_NAMES, ...Object.keys(PREPARED_APP_ENV)] : APP_ENV_NAMES;
 }
 export function checkedAppEnvironment(value: unknown, port: number): Record<string, string> {
@@ -81,9 +96,15 @@ export function checkedAppEnvironment(value: unknown, port: number): Record<stri
     && env.RESEND_BASE_URL === "http://127.0.0.1:8124"
     && env.NEXT_PUBLIC_APP_URL === `http://localhost:${port}` && env.NEXT_PUBLIC_SITE_URL === `http://localhost:${port}`
     && env.INHERIT_TEST_JURISDICTION === (port === 3101 ? "" : "1")
+    && env.INHERIT_TEST_REQUESTER_STATEMENTS === (port === 3102 ? "1" : "")
     && env.INHERIT_CANONICAL_UPLOADS_PAUSED === (port === 3102 ? "true" : "false"), "App scope differs from its fixed CI variant");
   if (port === LOCAL_MODEL_PORT) {
     for (const name of LOCAL_MODEL_ENV_NAMES) assert(env[name] === LOCAL_MODEL_ENV[name], "Local-model variant differs from its fixed attestation");
+  }
+  if (port === EMBRYO_APP_PORT) {
+    for (const [name, value] of Object.entries(EMBRYO_APP_ENV))
+      assert(env[name] === value, "Embryo variant differs from its fixed fragment scope");
+    assert(/^whsec_[A-Za-z0-9+/]{43}=$/.test(env.RESEND_WEBHOOK_SECRET), "Missing isolated ephemeral webhook verifier");
   }
   if (port === PREPARED_APP_PORT) {
     for (const [name, value] of Object.entries(PREPARED_APP_ENV))
@@ -96,8 +117,18 @@ export function checkedAppEnvironment(value: unknown, port: number): Record<stri
 
 /** Unlike job bootstrap, each server has its own exact app origin. Validate the
  * shared job identity first, then the actual scoped values without normalization. */
-export function checkedCiLauncherEnvironment(env: Environment, port: number, platform = process.platform) {
-  assertCiJob(env, platform);
+export function checkedCiLauncherEnvironment(env: Environment, port: number, platform = process.platform, operator?: OwnedLinuxCapability) {
+  if (operator) {
+    // Main-origin provider assertions belong to bootstrap; each app keeps its
+    // own exact original origin contract below.
+    assertOwnedLinuxCapability(operator);
+    assert(platform === "linux" && !env.CI && !env.GITHUB_ACTIONS && !env.GITHUB_JOB && !env.RUNNER_ENVIRONMENT
+      && !env.DEBUG && !env.PWDEBUG, "Owned operator runtime must not claim a CI job");
+    localE2eProject(env);
+    assert((env.INHERIT_LOCAL_E2E_PROJECT ?? "sequence") === "sequence"
+      && (!env.CANONICAL_COPILOT_CONTROL_URL || env.CANONICAL_COPILOT_CONTROL_URL === CI_CONTROL_URL),
+    "Exact owned operator launcher scope required");
+  } else assertCiJob(env, platform);
   assert(env.INHERIT_CI_BROWSER_RUNTIME === "ready", "Runtime preflight must pass first");
   return checkedAppEnvironment(Object.fromEntries(admittedAppEnvironmentNames(port).map(name => [name, env[name]])), port);
 }

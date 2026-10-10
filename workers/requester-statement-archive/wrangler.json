@@ -1,0 +1,20 @@
+{
+  "name": "inherit-case-archive-closed-source",
+  "main": "src/private-transport.ts",
+  "compatibility_date": "2026-09-08",
+  "workers_dev": false,
+  "preview_urls": false,
+  "routes": [],
+  "observability": {
+    "enabled": false
+  },
+  "vars": {
+    "CASE_ARCHIVE_TEST_ENABLED": "0",
+    "CASE_ARCHIVE_BUCKET_NAME": "",
+    "CASE_ARCHIVE_BINDING_SHA256": ""
+  },
+  "r2_buckets": [],
+  "durable_objects": {
+    "bindings": []
+  }
+}

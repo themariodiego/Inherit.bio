@@ -28,7 +28,7 @@ import { TRACKER_HOST_FRAGMENTS, type ObservedRequests } from "./helpers";
  */
 export const STATE_AUDIT_ORIGINS: ReadonlySet<string> = new Set(LOCAL_BROWSER_ORIGINS);
 
-function watchContext(context: BrowserContext): ObservedRequests {
+export function watchContext(context: BrowserContext): ObservedRequests {
   const origins = new Set<string>();
   const urls: string[] = [];
   context.on("request", request => {
@@ -47,7 +47,7 @@ function goneMidRead(error: unknown): boolean {
   return /Execution context was destroyed|Target page, context or browser has been closed|has been closed/.test(message);
 }
 
-async function auditContext(context: BrowserContext, observed: ObservedRequests, label: string): Promise<void> {
+export async function auditContext(context: BrowserContext, observed: ObservedRequests, label: string): Promise<void> {
   const offenders = [...observed.origins].filter(origin => !STATE_AUDIT_ORIGINS.has(origin));
   expect(offenders, `${label}: unexpected third-party origins: ${offenders.join(", ")}\nURLs: `
     + observed.urls.filter(url => offenders.some(origin => url.startsWith(origin))).slice(0, 10).join("\n"))

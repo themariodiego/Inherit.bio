@@ -110,12 +110,14 @@ describe("the cohort-created body", () => {
    * nonce, the configure route and the session's fixed deadline, and the
    * whole branch stays closed: no other key appears.
    */
-  it("carries the exact embryo branch of upload-session-v1 built so far", () => {
+  it("carries the exact embryo branch of upload-session-v1", () => {
     const body = cohortCreatedBody({ cohort: cohort(), ingest: mint({ expiresAt: "2026-09-22T12:00:00.123456+00:00" }) }, NONCE, ORIGIN);
     expect(Object.keys(body.upload_session).sort()).toEqual([
-      "chunkBytes", "configureRoute", "expiresAt", "maximumChunks", "maximumInputBytes",
-      "operationNonce", "sampleHandles", "session", "transport", "uploadId",
+      "chunkBytes", "chunkRoute", "completeRoute", "configureRoute", "expiresAt", "maximumChunks",
+      "maximumInputBytes", "operationNonce", "sampleHandles", "session", "transport", "uploadId",
     ]);
+    expect(body.upload_session.chunkRoute).toBe("/api/embryo-ingest/11111111-1111-4111-8111-111111111111/chunks/[sequence]");
+    expect(body.upload_session.completeRoute).toBe("/api/embryo-ingest/11111111-1111-4111-8111-111111111111/complete");
     expect(body.upload_session.operationNonce).toBe(NONCE);
     expect(body.upload_session.configureRoute).toBe("/api/embryo-ingest/11111111-1111-4111-8111-111111111111/configure");
     expect(body.upload_session.expiresAt).toBe("2026-09-22T12:00:00.123Z");

@@ -370,3 +370,101 @@ test("signed-out current-session deletion closes only the empty reservation with
   expect(session.data).toEqual({ status: "consumed", ended_at: expect.any(String) });
   expect(await refusalRows(), "deletion must not create either refusal-bar record").toEqual(refusalsBefore);
 });
+
+
+/** Holds the real native refusal request; no pending flag or response is fabricated. */
+test("/withdraw/[token] processing: the signed-out session announces its pending choice and commits only after release", async ({ page, request }) => {
+  const inviter = { email: `adult-processing-inviter-${crypto.randomUUID()}@e2e.local`, password: "adult-processing-pw" };
+  const address = `adult-processing-refuser-${crypto.randomUUID()}@e2e.local`;
+  await createConfirmedUser(inviter.email, inviter.password);
+  await signIn(page, inviter.email, inviter.password);
+  const { link, token } = await inviteAndRead(page, request, address, "the independent processing invitation");
+  const admin = adminClient();
+  const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
+  const invitation = await admin.from("subject_invitations")
+    .select("id, target_id, status, terminal_at").eq("token_hash", tokenHash)
+    .eq("invitation_kind", "adult_subject").single();
+  expect(invitation.error).toBeNull();
+  expect(invitation.data?.status).toBe("pending");
+  const credential = await admin.from("token_hashes").select("id").eq("token_hash", tokenHash).single();
+  expect(credential.error).toBeNull();
+
+  await page.request.post("/auth/sign-out");
+  await page.context().clearCookies();
+  await page.goto(link);
+  await page.getByRole("button", { name: "Continue", exact: true }).click();
+  await expect(page).toHaveURL("http://localhost:3100/withdraw/session");
+  await expect(page.getByRole("link", { name: "Sign in to accept", exact: true })).toBeVisible();
+  const session = await admin.from("rights_sessions").select("id, status")
+    .eq("token_hash_id", credential.data!.id).eq("purpose", "adult-subject-invitation").single();
+  expect(session.error).toBeNull();
+  expect(session.data?.status).toBe("active");
+  const subjectBefore = await admin.from("subjects").select("lifecycle").eq("id", invitation.data!.target_id).single();
+  expect(subjectBefore.error).toBeNull();
+
+  let release!: () => void;
+  const held = new Promise<void>((resolve) => { release = resolve; });
+  let intercepted = 0;
+  await page.route("**/api/withdraw/session", async (route) => {
+    if (route.request().method() !== "POST") { await route.continue(); return; }
+    intercepted += 1;
+    const body = route.request().postDataJSON() as Record<string, unknown>;
+    expect(Object.keys(body).sort()).toEqual(["nonce", "operation"]);
+    expect(body.operation).toBe("refuse");
+    expect(typeof body.nonce).toBe("string");
+    expect(String(body.nonce).length).toBeGreaterThan(0);
+    expect(route.request().url()).not.toContain(token);
+    expect(JSON.stringify(body)).not.toContain(token);
+    await held;
+    await route.continue();
+  });
+  const nativeResponse = page.waitForResponse(response =>
+    new URL(response.url()).pathname === "/api/withdraw/session" && response.request().method() === "POST");
+  try {
+    await page.getByRole("button", { name: "Refuse", exact: true }).click();
+    const saving = page.locator('[role="status"][data-state="processing"]');
+    await expect(saving).toHaveText("Saving your choice…");
+    await expect(saving).toBeVisible();
+    await expect(saving).toHaveAttribute("aria-live", "polite");
+    const refuse = page.getByRole("button", { name: "Refuse", exact: true });
+    const remove = page.getByRole("button", { name: "Delete reserved record", exact: true });
+    await expect(refuse).toBeDisabled();
+    await expect(remove).toBeDisabled();
+    await expect(page.getByRole("heading", { name: "Review invitation", exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Invitation refused", exact: true })).toHaveCount(0);
+    await expect.poll(() => intercepted).toBe(1);
+    await refuse.dispatchEvent("click");
+    await remove.dispatchEvent("click");
+    const stillPending = await admin.from("subject_invitations")
+      .select("id, target_id, status, terminal_at").eq("id", invitation.data!.id).single();
+    expect(stillPending.error).toBeNull();
+    expect(stillPending.data).toEqual(invitation.data);
+    const stillActive = await admin.from("rights_sessions").select("id, status").eq("id", session.data!.id).single();
+    expect(stillActive.error).toBeNull();
+    expect(stillActive.data).toEqual(session.data);
+    const sameSubject = await admin.from("subjects").select("lifecycle").eq("id", invitation.data!.target_id).single();
+    expect(sameSubject.error).toBeNull();
+    expect(sameSubject.data).toEqual(subjectBefore.data);
+    expect(intercepted).toBe(1);
+  } finally {
+    release();
+  }
+  const response = await nativeResponse;
+  expect(response.status()).toBe(202);
+  expect(await response.json()).toEqual({ status: "accepted", operation: "refuse" });
+  expect(response.headers()["cache-control"]).toContain("no-store");
+  await expect(page.getByRole("heading", { name: "Invitation refused", exact: true })).toBeVisible();
+  await expect(page.locator('[role="status"][data-state="processing"]')).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Refuse", exact: true })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Delete reserved record", exact: true })).toHaveCount(0);
+  const terminal = await admin.from("subject_invitations").select("status, terminal_at").eq("id", invitation.data!.id).single();
+  expect(terminal.error).toBeNull();
+  expect(terminal.data).toEqual({ status: "refused", terminal_at: expect.any(String) });
+  const spent = await admin.from("rights_sessions").select("status").eq("id", session.data!.id).single();
+  expect(spent.error).toBeNull();
+  expect(spent.data).toEqual({ status: "consumed" });
+  const closed = await admin.from("subjects").select("lifecycle").eq("id", invitation.data!.target_id).single();
+  expect(closed.error).toBeNull();
+  expect(closed.data).toEqual({ lifecycle: "purged" });
+  expect(intercepted).toBe(1);
+});

@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const state = vi.hoisted(() => ({ files: new Map<string, string>(), commands: [] as string[][],
-  owner: "", probeFails: false, wrongOwner: false, running: true, exitCode: 0, logs: "ISOLATED_RUNTIME_READY" }));
+  cacheKind: "directory", owner: "", probeFails: false, wrongOwner: false, running: true, exitCode: 0, logs: "ISOLATED_RUNTIME_READY" }));
 vi.mock("./ci-browser-config", async importOriginal => ({
   ...await importOriginal<typeof import("./ci-browser-config")>(),
   // Pure environment/platform refusal is tested separately. These lifecycle
@@ -10,6 +10,7 @@ vi.mock("./ci-browser-config", async importOriginal => ({
 vi.mock("node:fs", () => ({
   existsSync: (file: string) => state.files.has(file),
   realpathSync: (file: string) => file,
+  lstatSync: () => ({ isDirectory: () => state.cacheKind === "directory", isSymbolicLink: () => state.cacheKind === "symlink" }),
   readdirSync: () => ["package.json", ".git"],
   readFileSync: (file: string) => {
     if (!state.files.has(file)) throw new Error("missing test file");
@@ -42,8 +43,9 @@ vi.mock("node:child_process", () => ({ execFileSync: (program: string, args: str
 } }));
 import { recordCiBuild, startCiBrowserRuntime } from "./ci-browser-runtime";
 beforeEach(() => {
-  state.files.clear(); state.commands.length = 0; state.owner = ""; state.probeFails = false; state.wrongOwner = false; state.running = true; state.exitCode = 0; state.logs = "ISOLATED_RUNTIME_READY";
+  state.files.clear(); state.commands.length = 0; state.cacheKind = "directory"; state.owner = ""; state.probeFails = false; state.wrongOwner = false; state.running = true; state.exitCode = 0; state.logs = "ISOLATED_RUNTIME_READY";
   state.files.set(".next/BUILD_ID", "synthetic-build");
+  state.files.set(`${process.cwd()}/.next/cache`, "synthetic-cache-directory");
   vi.stubEnv("RUNNER_TEMP", "/synthetic-ci-tmp");
   vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "http://127.0.0.1:54321");
   vi.stubEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY", "synthetic-public");
@@ -59,10 +61,10 @@ describe("owned isolated CI runtime lifecycle", () => {
     const creation = state.commands.find(command => command[1] === "create")!;
     expect(creation).toContain("--read-only"); expect(creation).toContain("--cap-drop=ALL");
     expect(creation).toContain("--cap-add=NET_ADMIN"); expect(creation).toContain("--security-opt=no-new-privileges");
-    expect(creation.filter(value => value.startsWith("127.0.0.1:"))).toEqual(["127.0.0.1:3100:3100", "127.0.0.1:3101:3101", "127.0.0.1:3102:3102", "127.0.0.1:3103:3103", "127.0.0.1:3104:3104", "127.0.0.1:8130:8130"]);
+    expect(creation.filter(value => value.startsWith("127.0.0.1:"))).toEqual(["127.0.0.1:3100:3100", "127.0.0.1:3101:3101", "127.0.0.1:3102:3102", "127.0.0.1:3103:3103", "127.0.0.1:3104:3104", "127.0.0.1:3105:3105", "127.0.0.1:8130:8130"]);
     expect(creation.join(" ")).not.toMatch(/--privileged|docker\.sock|--network=host|--env/);
     const values = (flag: string) => creation.flatMap((value, index) => value === flag ? [creation[index + 1]] : []);
-    expect(values("--add-host")).toEqual(["model.copilot.test:203.0.114.10", "prepared.artifacts.test:203.0.114.11"]);
+    expect(values("--add-host")).toEqual(["model.copilot.test:203.0.114.10", "prepared.artifacts.test:203.0.114.11", "embryo.fragments.test:203.0.114.12"]);
     expect(values("--dns")).toEqual(["127.0.0.1"]);
     expect(values("--dns-option")).toEqual(["attempts:1", "timeout:1"]);
     expect(values("--dns-search")).toEqual(["."]);
@@ -71,6 +73,22 @@ describe("owned isolated CI runtime lifecycle", () => {
     runtime.stop(); runtime.stop();
     expect(state.commands.filter(command => command[1] === "rm")).toEqual([["docker", "rm", "-f", "inherit-ci-browser-runtime"]]);
     expect(state.files.has("/synthetic-ci-tmp/inherit-ci-browser-owner.json")).toBe(false);
+  });
+  it("reuses readonly build bytes while owning a bounded cache for this simulation only", async () => {
+    const runtime = await startCiBrowserRuntime(undefined, true);
+    const creation = state.commands.find(command => command[1] === "create")!;
+    const values = (flag: string) => creation.flatMap((value, index) => value === flag ? [creation[index + 1]] : []);
+    expect(values("--mount")).toEqual([`type=bind,src=${process.cwd()},dst=/app,readonly`,
+      `type=bind,src=${process.cwd()}/.next,dst=/app/.next,readonly`]);
+    expect(values("--tmpfs").map(value => value.split(":")[0])).toEqual(["/tmp", "/tls", "/app/.next/cache"]);
+    expect(values("--tmpfs")[2]).toBe(`/app/.next/cache:rw,nosuid,nodev,noexec,size=128m,mode=0700,uid=${process.getuid!()},gid=${process.getgid!()}`);
+    runtime.stop(); expect(state.commands.filter(command => command[1] === "rm")).toHaveLength(1);
+  });
+  it.each(["missing", "symlink", "file"])("refuses a %s cache route before creating any native container", async kind => {
+    state.cacheKind = kind;
+    if (kind === "missing") state.files.delete(`${process.cwd()}/.next/cache`);
+    await expect(startCiBrowserRuntime(undefined, true)).rejects.toThrow("genuine build cache directory");
+    expect(state.commands.some(command => command[1] === "create")).toBe(false);
   });
   it("reports an exited namespace immediately, retains phase diagnostics and never starts TLS or the app", async () => {
     state.running = false; state.exitCode = 4;
@@ -124,14 +142,16 @@ describe("owned isolated CI runtime lifecycle", () => {
       expect(result.stdout).toBe("synthetic firewall refusal\nISOLATED_RUNTIME_FAILED phase=ipv4-policy exit=19\n");
     } finally { fs.rmSync(directory, { recursive: true, force: true }); }
   });
-  it("keeps both synthetic TLS destinations on loopback without widening the firewall", async () => {
+  it("keeps all three synthetic TLS destinations on loopback without widening the firewall", async () => {
     const fs = await vi.importActual<typeof import("node:fs")>("node:fs");
     const namespace = fs.readFileSync("scripts/ci-browser/namespace.sh", "utf8");
     expect(namespace.split("\n").filter(line => line.startsWith("ip address add "))).toEqual([
       "ip address add 203.0.114.10/32 dev lo", "ip address add 203.0.114.11/32 dev lo",
+      "ip address add 203.0.114.12/32 dev lo",
     ]);
     expect(namespace.split("\n").filter(line => line.startsWith("ip route get "))).toEqual([
       "ip route get 203.0.114.10 | grep -q 'dev lo'", "ip route get 203.0.114.11 | grep -q 'dev lo'",
+      "ip route get 203.0.114.12 | grep -q 'dev lo'",
     ]);
     expect(namespace.split("\n").filter(line => /^ip6?tables -A /.test(line))).toEqual([
       "iptables -A OUTPUT -d 127.0.0.11 -j DROP", "iptables -A OUTPUT -p udp --dport 53 -j DROP",
@@ -143,7 +163,7 @@ describe("owned isolated CI runtime lifecycle", () => {
     ]);
     const tls = fs.readFileSync("scripts/ci-browser/tls.sh", "utf8");
     expect(tls.match(/subjectAltName=[^\\]+/g)).toEqual([
-      "subjectAltName=DNS:model.copilot.test,DNS:prepared.artifacts.test",
+      "subjectAltName=DNS:model.copilot.test,DNS:prepared.artifacts.test,DNS:embryo.fragments.test",
     ]);
   });
   it("leaves a preexisting ownership receipt untouched without creating a container", async () => {

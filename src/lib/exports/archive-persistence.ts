@@ -1,4 +1,5 @@
 import "server-only";
+import { addAbortListener } from "node:events";
 import { z } from "zod";
 import {
   ARCHIVE_OPERATION_TIMEOUT_MS, ARCHIVE_METADATA_PAGE_SEGMENTS, ARCHIVE_SEGMENT_BYTES,
@@ -52,6 +53,7 @@ export function createArchivePersistence(discoveredJob: unknown, rpc: ArchiveWor
   let attempt: ArchiveAttempt | undefined, begun = false, busy = false, closed = false;
   let cleanupRequired = false, leaseDeadline = job.deadline;
   const stopped = new AbortController();
+  let completedOperationReason: DOMException | undefined;
   function fail(code: ErrorCode): never {
     closed = true; stopped.abort(); throw new ArchivePersistenceError(code, cleanupRequired);
   }
@@ -81,9 +83,19 @@ export function createArchivePersistence(discoveredJob: unknown, rpc: ArchiveWor
     signal: AbortSignal, schema: z.ZodType<T>): Promise<T> {
     const deadline = Math.min(job.deadline, leaseDeadline, Date.now() + ARCHIVE_OPERATION_TIMEOUT_MS);
     const timeout = new AbortController();
-    const combined = AbortSignal.any([signal, stopped.signal, timeout.signal]);
+    // These links exist only for this RPC. Native any() keeps weak dependency
+    // registries on the long-lived parents until GC; thousands of renewals make
+    // those registry scans quadratic. Disposable native listeners preserve the
+    // same first reason and cannot be suppressed by stopImmediatePropagation.
+    const joined = new AbortController();
+    const links = [signal, stopped.signal, timeout.signal].map(source => {
+      if (source.aborted) joined.abort(source.reason);
+      return addAbortListener(source, () => joined.abort(source.reason));
+    });
+    const combined = joined.signal;
     const timer = setTimeout(() => timeout.abort(), Math.max(0, deadline - Date.now()));
     timer.unref();
+    let completed = false;
     let interrupt = () => {};
     const interrupted = new Promise<never>((_, reject) => {
       interrupt = () => reject(new ArchivePersistenceError(
@@ -108,6 +120,7 @@ export function createArchivePersistence(discoveredJob: unknown, rpc: ArchiveWor
       if (!response || response.error !== null) fail("unavailable");
       const result = schema.safeParse(response.data);
       if (!result.success) fail("unavailable");
+      completed = true;
       return result.data;
     } catch (error) {
       closed = true; stopped.abort();
@@ -117,7 +130,16 @@ export function createArchivePersistence(discoveredJob: unknown, rpc: ArchiveWor
       }
       throw new ArchivePersistenceError("unavailable", cleanupRequired);
     } finally {
-      clearTimeout(timer); combined.removeEventListener("abort", interrupt); timeout.abort();
+      clearTimeout(timer); combined.removeEventListener("abort", interrupt);
+      try {
+        if (completed) {
+          // A completed transport still closes its signal. Reuse only its immutable
+          // native cleanup reason; actual deadlines, cancellations and failures
+          // retain their own reasons and every RPC still checks current authority.
+          timeout.abort(completedOperationReason);
+          completedOperationReason ??= Object.freeze(timeout.signal.reason as DOMException);
+        } else timeout.abort();
+      } finally { for (const link of links) link[Symbol.dispose](); }
     }
   }
   function receipt(value: string) {

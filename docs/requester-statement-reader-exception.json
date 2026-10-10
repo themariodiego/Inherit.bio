@@ -1,0 +1,58 @@
+{
+  "test-requester-own-correction-statement-v1": {
+    "default": "closed",
+    "scope": "TEST only; actual requester own literal NEW correction statement",
+    "source": "private.new_correction_case_envelopes",
+    "format": "reviewer-only-case-statement-v1",
+    "member": "subjects/{actual-own-subject-id}/my-correction-statements.json",
+    "outputFields": [
+      "correctionId",
+      "statement"
+    ],
+    "ownershipDoors": [
+      "private.current_requester_correction_statement_v1",
+      "private.current_account_correction_statement_v1"
+    ],
+    "withheld": [
+      "reviewer reason/notes",
+      "foreign statements",
+      "contact",
+      "working package",
+      "wrapped key",
+      "authority session/token",
+      "legacy opaque fields"
+    ],
+    "caseDeadline": "unchanged original submission plus 30 days",
+    "copyDeadline": "minimum existing archive deadline and original case deadline",
+    "terminal": "whole ZIP revocation; full native copy graph; actual provider fence/readback/durable ACK; all copies disposed before case completion",
+    "appeals": "nonempty existing opaque appeal class refuses; no NEW appeal producer or key is invented"
+  },
+  "test-requester-own-appeal-statement-v1": {
+    "default": "closed",
+    "scope": "TEST only; actual requester literal NEW appeal original statement; source-only unbound proposal",
+    "source": "private.new_appeal_case_envelopes",
+    "format": "reviewer-only-case-statement-v1",
+    "outputFields": [
+      "appealId",
+      "statement"
+    ],
+    "ownershipDoors": [
+      "private.current_new_appeal_own_session_v1"
+    ],
+    "ownership": "Exact current appeal-evidence case session, source candidate/hash, original random author and contact revision; no account/email/reference/reviewer inference.",
+    "withheld": [
+      "reviewer reason/notes",
+      "foreign statements",
+      "contact",
+      "working package",
+      "wrapped key",
+      "authority session/token",
+      "legacy opaque fields"
+    ],
+    "caseDeadline": "unchanged original submission plus 30 days",
+    "copyDeadline": "minimum existing archive deadline and original case deadline",
+    "completeArchive": "unimplemented; original V6 nonempty appeal refusal stays; do not count a direct DTO as the whole account or claimant ZIP",
+    "activation": "genuine native candidate issuer, provider transaction and credential activation remain unimplemented; no current case session is fabricated",
+    "terminal": "requires whole ZIP revocation, complete copy graph, all tasks/cancellation settled, provider fence/readback/durable ACK and actual final physical absence"
+  }
+}

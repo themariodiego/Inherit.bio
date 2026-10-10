@@ -3,13 +3,14 @@
 import assert from "node:assert/strict";
 import { spawn, type ChildProcess } from "node:child_process";
 import { createPrivateKey, createPublicKey } from "node:crypto";
-import { readFileSync } from "node:fs";
+import { closeSync, createReadStream, readFileSync } from "node:fs";
+import { receiveOwnedLinuxChildProof, type OwnedLinuxCapability } from "../owned-linux-runtime";
 import http from "node:http";
 import net from "node:net";
 import { createInterface } from "node:readline";
 import { checkedCiLauncherEnvironment, checkedAppEnvironment, CI_RUNTIME_CONTAINER } from "../ci-browser-config";
-import { startPreparedArtifactFixture } from "./prepared-artifact-fixture";
-import { createPreparedArtifactProofWriter } from "./prepared-artifact-proof";
+import { startCiArtifactGateway } from "./artifact-gateway-start";
+import { forwardProfileDiagnostics } from "./profile-diagnostic-filter";
 const mode = process.argv[2];
 const port = Number(process.argv[3]);
 const children = new Set<ChildProcess>();
@@ -51,10 +52,22 @@ function track(...items: net.Socket[]) {
 const cleanEnv = { NODE_ENV: "production" as const, PATH: "/usr/local/bin:/usr/bin:/bin", NEXT_TELEMETRY_DISABLED: "1" };
 try {
   if (mode === "host") {
-    const env = checkedCiLauncherEnvironment(process.env, port);
+    let operator: OwnedLinuxCapability | undefined;
+    if (process.env.INHERIT_OWNED_LINUX_RUNTIME_FD !== undefined) {
+      assert(process.env.INHERIT_OWNED_LINUX_RUNTIME_FD === "3", "Exact anonymous operator-control descriptor required");
+      const source = createReadStream("", { fd: 3, autoClose: false });
+      const chunks: Buffer[] = []; let size = 0;
+      const timer = setTimeout(() => source.destroy(new Error("Operator-control input timed out")), 10_000);
+      try {
+        for await (const chunk of source) { size += chunk.length; assert(size < 8192, "Bounded public operator-control proof required"); chunks.push(chunk); }
+        operator = receiveOwnedLinuxChildProof(Buffer.concat(chunks).toString("utf8").trim(), 3);
+      } finally { clearTimeout(timer); source.destroy(); closeSync(3); }
+    }
+    const env = checkedCiLauncherEnvironment(process.env, port, process.platform, operator);
     const user = `${process.env.INHERIT_CI_RUNTIME_UID}:${process.env.INHERIT_CI_RUNTIME_GID}`;
     assert(/^[1-9][0-9]*:[1-9][0-9]*$/.test(user), "Unprivileged runtime identity required");
-    const exec = (args: string[]) => own(spawn("docker", ["exec", "-i", "--user", user, CI_RUNTIME_CONTAINER, "node", "--import", "tsx", "/app/scripts/ci-browser/server.mts", ...args], { stdio: ["pipe", "pipe", "pipe"] }));
+    const exec = (args: string[]) => own(spawn("docker", ["exec", "-i", "--user", user, CI_RUNTIME_CONTAINER, "node", "--import", "tsx", "/app/scripts/ci-browser/server.mts", ...args],
+      { ...(operator ? { env: { ...cleanEnv, DOCKER_HOST: process.env.DOCKER_HOST } } : {}), stdio: ["pipe", "pipe", "pipe"] }));
     if (port === 3100) {
       const relay = exec(["mail"]);
       relay.stderr?.resume();
@@ -87,7 +100,7 @@ try {
       });
     }
     const child = exec(["inside", String(port), process.env.INHERIT_CI_GATEWAY ?? ""]);
-    child.stdout?.pipe(process.stdout); child.stderr?.resume();
+    closers.push(forwardProfileDiagnostics([child.stdout,child.stderr],line=>process.stderr.write(line+"\n")));
     child.stdin!.write(JSON.stringify(env) + "\n");
   } else {
     assert(process.getuid!() > 0);
@@ -127,15 +140,14 @@ try {
       input.on("line", line => { void (async () => {
         assert(!initialized && line.length < 65_536, "Single bounded app configuration required"); initialized = true;
         const env = checkedAppEnvironment(JSON.parse(line), port);
-        if (port === 3104) {
+        if (port === 3104 || port === 3105) {
           const signingKey = JSON.parse(env.INHERIT_UPLOAD_SIGNING_JWK);
           assert(signingKey.kty === "EC" && signingKey.crv === "P-256" && typeof signingKey.kid === "string",
             "Synthetic upload signer required");
           const publicKey = createPublicKey(createPrivateKey({ key: signingKey, format: "jwk" })).export({ format: "jwk" });
-          const artifacts = await startPreparedArtifactFixture({
+          const artifacts = await startCiArtifactGateway(port, {
             publicJwk: { kty: publicKey.kty, crv: publicKey.crv, x: publicKey.x, y: publicKey.y, kid: signingKey.kid },
             key: readFileSync("/tls/fixture/model.key"), cert: readFileSync("/tls/fixture/model.crt"),
-            onChange: createPreparedArtifactProofWriter(),
           });
           closers.push(() => { void artifacts.close(); });
         }
@@ -168,8 +180,10 @@ try {
           cwd: "/app", env: { ...cleanEnv, ...env, NODE_ENV: "production", NODE_EXTRA_CA_CERTS: "/tls/fixture/ca.crt" },
           detached: true, stdio: ["ignore", "pipe", "pipe"],
         }));
-        // Drain app diagnostics without persisting request/provider secrets.
-        app.stdout?.resume(); app.stderr?.resume();
+        // Only complete, bounded, enum-only profile diagnostics cross either
+        // launcher hop. Playwright retains web-server stderr; stdout is ignored.
+        // Every other app log stays discarded.
+        closers.push(forwardProfileDiagnostics([app.stdout,app.stderr],line=>process.stderr.write(line+"\n")));
         console.log(`Started isolated production app variant ${port}`);
       })().catch(() => { console.error("Isolated app initialization failed; no request or environment details retained"); stop(true); }); });
     }
