@@ -1,9 +1,13 @@
 import type { ChildProcess } from "node:child_process";
+import { EventEmitter } from "node:events";
+import { PassThrough } from "node:stream";
+import type { AppLauncherDiagnostic } from "../ci-browser/app-launcher-diagnostic";
 import { afterEach, expect, it, vi } from "vitest";
 import { OwnedAppReadinessFailure, waitForOwnedApp } from "./app-readiness";
 import { refuseFreshSetup } from "./fresh-t6-browser";
 
-const child = (exitCode: number | null = null, signalCode: NodeJS.Signals | null = null) => ({ exitCode, signalCode } as ChildProcess);
+const child = (exitCode: number | null = null, signalCode: NodeJS.Signals | null = null) =>
+  Object.assign(new EventEmitter(), { exitCode, signalCode, stdout: null, stderr: null }) as ChildProcess;
 afterEach(() => { vi.useRealTimers(); vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 it("requires the actual exact 200 response and retains the manual redirect and per-request limit", async () => {
   const fetch = vi.fn().mockResolvedValue(new Response(null, { status: 200 })); vi.stubGlobal("fetch", fetch);
@@ -60,4 +64,33 @@ it("projects validated facts before later mutation or inherited serialization ca
 it("refuses ports and reasons outside the closed startup observation contract", () => {
   expect(() => new OwnedAppReadinessFailure(child(), 443 as 3100, "deadline", null, [])).toThrow("Closed readiness port");
   expect(() => new OwnedAppReadinessFailure(child(), 3100, "private-token" as "deadline", null, [])).toThrow("Closed readiness port");
+});
+it("captures filtered final diagnostics after exit and before pipe close", async () => {
+  vi.useFakeTimers(); const launcher: AppLauncherDiagnostic[] = [];
+  const exiting = Object.assign(child(1), { stdout: new PassThrough(), stderr: new PassThrough() });
+  const fetch = vi.fn(); vi.stubGlobal("fetch", fetch);
+  const outcome = waitForOwnedApp(exiting, 3100, new AbortController().signal, launcher).catch(error => error);
+  launcher.push({ mode: "host", port: 3100, stage: "mail-relay", outcome: "child-exit", exitCode: 1, signal: null });
+  exiting.emit("close", 1, null); await vi.advanceTimersByTimeAsync(100);
+  const error = await outcome;
+  expect(error.observation.launcher).toEqual(launcher); expect(error.observation.reason).toBe("child-exited");
+  expect(fetch).not.toHaveBeenCalled(); expect(exiting.listenerCount("close")).toBe(0);
+  exiting.stdout.destroy(); exiting.stderr.destroy();
+});
+it("keeps the original 60-second limit when an exited child's pipes do not close", async () => {
+  vi.useFakeTimers(); const exiting = Object.assign(child(1), { stdout: new PassThrough(), stderr: new PassThrough() });
+  const outcome = waitForOwnedApp(exiting, 3100, new AbortController().signal, []).catch(error => error);
+  await vi.advanceTimersByTimeAsync(59_900); let settled = false; void outcome.then(() => { settled = true; });
+  await Promise.resolve(); expect(settled).toBe(false);
+  await vi.advanceTimersByTimeAsync(100); const error = await outcome;
+  expect(error.observation.reason).toBe("child-exited"); expect(error.observation.exitCode).toBe(1);
+  expect(exiting.listenerCount("close")).toBe(0); exiting.stdout.destroy(); exiting.stderr.destroy();
+});
+it("preserves caller cancellation while collecting an exited child's final pipe facts", async () => {
+  vi.useFakeTimers(); const exiting = Object.assign(child(1), { stdout: new PassThrough(), stderr: new PassThrough() });
+  const controller = new AbortController(), reason = new Error("caller cancellation");
+  const outcome = waitForOwnedApp(exiting, 3100, controller.signal, []).catch(error => error);
+  controller.abort(reason); await vi.advanceTimersByTimeAsync(100);
+  expect(await outcome).toBe(reason); expect(exiting.listenerCount("close")).toBe(0);
+  exiting.stdout.destroy(); exiting.stderr.destroy();
 });

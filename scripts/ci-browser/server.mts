@@ -10,7 +10,7 @@ import net from "node:net";
 import { createInterface } from "node:readline";
 import { checkedCiLauncherEnvironment, checkedAppEnvironment, CI_RUNTIME_CONTAINER } from "../ci-browser-config";
 import { startCiArtifactGateway } from "./artifact-gateway-start";
-import { forwardProfileDiagnostics } from "./profile-diagnostic-filter";
+import { forwardMailRelayDiagnostics, forwardProfileDiagnostics } from "./profile-diagnostic-filter";
 import { appLauncherDiagnosticLine, type AppLauncherStage } from "./app-launcher-diagnostic";
 const mode = process.argv[2];
 const port = Number(process.argv[3]);
@@ -80,7 +80,7 @@ try {
     if (port === 3100) {
       stage = "mail-relay"; diagnostic("starting");
       const relay = exec(["mail"], "mail-relay");
-      relay.stderr?.resume();
+      closers.push(forwardMailRelayDiagnostics(relay.stderr, line => process.stderr.write(line + "\n")));
       await new Promise<void>((resolve, reject) => {
         const timer = setTimeout(() => reject(new Error("Mail relay readiness failed")), 10_000);
         relay.once("exit", () => { clearTimeout(timer); reject(new Error("Mail relay exited")); });
@@ -117,9 +117,11 @@ try {
   } else {
     assert(process.getuid!() > 0);
     assert.match(readFileSync("/proc/self/status", "utf8"), /^CapEff:\s+0+$/m);
+    if (mode === "mail") diagnostic("ready");
     const input = createInterface({ input: process.stdin });
     closers.push(() => input.close()); input.once("close", () => stop());
     if (mode === "mail") {
+      stage = "mail-relay"; diagnostic("starting");
       const pending = new Map<number, { response: http.ServerResponse; timer: NodeJS.Timeout }>(); let sequence = 0;
       closers.push(() => { for (const item of pending.values()) { clearTimeout(item.timer); item.response.destroy(); } pending.clear(); });
       const server = http.createServer((request, response) => {
@@ -134,7 +136,7 @@ try {
         });
       });
       server.on("connection", socket => track(socket));
-      server.on("error", () => stop(true)); closers.push(() => server.close());
+      server.on("error", () => { diagnostic("refused"); stop(true); }); closers.push(() => server.close());
       input.on("line", line => {
         try {
           assert(line.length <= 1_500_000);
@@ -146,7 +148,7 @@ try {
           item.response.writeHead(reply.status, { "content-type": "application/json", "content-length": body.length }).end(body);
         } catch { stop(true); }
       });
-      server.listen(8124, "127.0.0.1", () => process.stdout.write("MAIL_RELAY_READY\n"));
+      server.listen(8124, "127.0.0.1", () => { diagnostic("ready"); process.stdout.write("MAIL_RELAY_READY\n"); });
     } else {
       assert(mode === "inside"); let initialized = false;
       input.on("line", line => { void (async () => {

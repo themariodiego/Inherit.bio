@@ -28,19 +28,33 @@ export async function waitForOwnedApp(child: ChildProcess, port: 3100 | 3105, si
   launcher: readonly AppLauncherDiagnostic[]) {
   const deadline = Date.now() + 60_000;
   let responseStatus: number | null = null;
-  while (Date.now() < deadline) {
-    signal.throwIfAborted();
-    if (child.exitCode !== null || child.signalCode !== null) {
-      throw new OwnedAppReadinessFailure(child, port, "child-exited", responseStatus, launcher);
+  let closed = (!child.stdout || child.stdout.closed) && (!child.stderr || child.stderr.closed);
+  const onClose = () => { closed = true; };
+  child.once("close", onClose);
+  try {
+    while (Date.now() < deadline) {
+      signal.throwIfAborted();
+      if (child.exitCode !== null || child.signalCode !== null) {
+        // Exit precedes stdio close. Collect the existing filtered final facts
+        // within the same readiness deadline before projecting the refusal.
+        while (!closed && Date.now() < deadline) {
+          signal.throwIfAborted();
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
+        signal.throwIfAborted();
+        throw new OwnedAppReadinessFailure(child, port, "child-exited", responseStatus, launcher);
+      }
+      try {
+        const result = await fetch(`http://localhost:${port}/`, {
+          signal: AbortSignal.any([signal, AbortSignal.timeout(2_000)]), redirect: "manual",
+        });
+        responseStatus = result.status;
+        if (responseStatus === 200) return;
+      } catch { signal.throwIfAborted(); }
+      await new Promise(resolve => setTimeout(resolve, 100));
     }
-    try {
-      const result = await fetch(`http://localhost:${port}/`, {
-        signal: AbortSignal.any([signal, AbortSignal.timeout(2_000)]), redirect: "manual",
-      });
-      responseStatus = result.status;
-      if (responseStatus === 200) return;
-    } catch { signal.throwIfAborted(); }
-    await new Promise(resolve => setTimeout(resolve, 100));
+    throw new OwnedAppReadinessFailure(child, port, "deadline", responseStatus, launcher);
+  } finally {
+    child.removeListener("close", onClose);
   }
-  throw new OwnedAppReadinessFailure(child, port, "deadline", responseStatus, launcher);
 }

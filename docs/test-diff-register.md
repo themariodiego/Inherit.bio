@@ -1,3 +1,11 @@
+## 2026-10-10 — Retain closed mail-child startup facts
+
+The exact `cdc539e2` key-free owned native attempt stopped before app readiness. The original safe result identifies a main-app child exit with code 1 and no HTTP status; the retained launcher steps end at host mail-relay starting. This does not establish the child failure's cause. Source review found that the host discarded relay stderr, including the existing canonical diagnostic frames.
+
+The relay now forwards only complete canonical mail-mode runtime-proof and mail-relay frames from stderr through the existing bounded filter. The child emits fixed readiness after its unchanged unprivileged UID and zero-capability checks, and fixed starting, ready or refused facts at its existing local listen boundary. Relay stdout remains the synthetic mail protocol; message bodies, arbitrary errors, environment and provider logs are excluded. New controls cover both filter hops, raw/private and foreign-frame refusal, truncated records and the unchanged readiness/privilege contract. Commands, limits, input protocol, cleanup and journal rules remain unchanged. These source controls do not prove a native rerun, mail delivery or a user flow.
+
+Root's separate readiness change collects already filtered final diagnostics between child exit and actual stdio close within the original 60-second deadline, preserves cancellation, and always removes its close listener; native acceptance of the combined changes remains unrun.
+
 ## 2026-10-10 — Correct current citation/figure inventories and assert visible mail text
 
 The original exact `23555` hosted unit run passed 10,952 cases and failed two strict inventories: the unchanged citation scan observes 117 source files rather than its old 115 pin, and the new `/embryos` reviewed-library coverage surface was absent from the figure census. The citation test retains the exact 59 unreviewed entries, original backlog hash, 53 citations and 120 claims. The hub is now explicitly pending paired native-publication/browser figure proof; clinical interpretation remains held. Both original QC entries, two-seed contracts and all review assertions remain. A separate census control prevents the hub from borrowing QC seed proof. These two cheap inventories now join the existing mandatory pre-draft command with its one worker and 5-second assertion cap.
