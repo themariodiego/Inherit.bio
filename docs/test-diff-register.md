@@ -6,6 +6,8 @@ The native fixture retains every quarantine, recipient, fixed 30-day deadline, r
 
 The first focused run passed 180 cases and failed the two adult render cases because their old no-address assertion also rejected the newly required fixed contact. Those cases now use the existing exact-one-privacy-contact checker and explicitly refuse an extra recipient address, a repeated contact and a lookalike address. Attribution, disclaimer, no Record Key, one credential link, fixed deadline and every other original assertion remain.
 
+The first clean source-inventory run retained 629 passes, with two failed exact Path B replacement inventories and six email capture cases pending at setup. Both inventories add exactly the successor's existing finalizer and safe reader definitions; no earlier entry or dynamic-patch assertion is removed. The whole finalizer inverse remains separately tested. The new worktree's root dependency symlink correctly remained an unbound ignored input under the capture guard. That local link is preserved, and a normal dependency directory links to the same installed package entries without an install or guard change. Only the two affected whole inventory files are retried on clean committed source. The original failed run is retained; no native or provider result is inferred from a source inventory.
+
 Native/browser execution and real provider delivery remain unrun for this new source. G5.3's full 30-day browser proof and real-jurisdiction review are not closed; the broader G5.4 rights requirements are unchanged. No real contact or email is used.
 
 ## 2026-10-10 — Keep the assigned appeal reason label exact while its real POST is held
