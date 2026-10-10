@@ -63,6 +63,26 @@ describe("closed setup diagnosis preserves failed ownership outcomes", () => {
       expect(lines.join()).not.toContain(canary);
     } finally { await resource.cleanup(); }
   });
+  it("retains the exact Storage or browser transport boundary without exposing assertion values", async () => {
+    const lines: string[] = [];
+    const operation = ciRuntimeSetupFailure("transport-api-headers", new SyntaxError(canary));
+    await expect(refuseFreshSetup("storage-proxy", ciRuntimeSetupFailure("storage-browser-transport", operation),
+      async () => {}, line => lines.push(line))).rejects.toThrow("setup refused");
+    expect(lines.map(line => JSON.parse(line))).toEqual([{ kind: "fresh-native-setup-failure", stage: "storage-proxy",
+      runtimeStage: "transport-api-headers", classification: "invalid-response", exitCode: null, signal: null, cleanup: "complete" }]);
+    expect(lines.join()).not.toContain(canary);
+  });
+  it("preserves both a refused provider check and uncertain proxy cleanup", async () => {
+    const operation = ciRuntimeSetupFailure("storage-provider-denial", new Error(canary));
+    const cleanup = ciRuntimeSetupFailure("storage-proxy-cleanup", new Error(canary));
+    const lines: string[] = [];
+    await expect(refuseFreshSetup("storage-proxy", ciRuntimeCleanupFailure(operation, cleanup),
+      async () => {}, line => lines.push(line))).rejects.toThrow("setup refused");
+    expect(lines.map(line => JSON.parse(line))).toEqual([{ kind: "fresh-native-setup-failure", stage: "storage-proxy",
+      runtimeStage: "storage-provider-denial", classification: "setup-refused", exitCode: null, signal: null,
+      cleanupFailure: { runtimeStage: "storage-proxy-cleanup", classification: "setup-refused", exitCode: null, signal: null }, cleanup: "complete" }]);
+    expect(lines.join()).not.toContain(canary);
+  });
 });
 const input = (taskId: ParticipantCInput["taskId"] = "T6"): ParticipantCInput => {
   const task = bindings.tasks.find(task => task.id === taskId)!;
