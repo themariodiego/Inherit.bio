@@ -1,11 +1,11 @@
 /** Coverage-only disclosures. A reviewed library is not every possible
  * disease-causing variant, and file coverage never publishes carrier status. */
-export const CARRIER_LIBRARY_HEADING = "Reviewed file positions";
+export const CARRIER_LIBRARY_HEADING = "File positions checked";
 export const CARRIER_LIBRARY_NOT_NEGATIVE = "This is not a negative result.";
 export const CARRIER_LIBRARY_READ_FAILED = "The reviewed file checks could not be read. Try again later.";
 export const CARRIER_LIBRARY_REFERENCE_LABEL = "Reference";
 export const CARRIER_LIBRARY_SCOPE =
-  "These are the distinct positions in the complete current reviewed reference library, not all variants that can cause this condition.";
+  "The count covers only the positions in the complete current reviewed reference library. It is not a full check for this condition.";
 export const CARRIER_LIBRARY_HELD =
   "Carrier status is held while its full scientific display is reviewed. These file checks do not tell you whether the embryo is a carrier.";
 export const CARRIER_LIBRARY_CONFIRMATION =
