@@ -1,3 +1,7 @@
+## 2026-10-10 — Complete each native auth navigation before the next case
+
+PR313 run `38050574477/a1` passed the held-script hydration case. Its no-JavaScript case inspected the submitted request before the resulting document navigation finished. The next route visit could therefore collide with that pending navigation. Register the navigation wait before native submission, wait for its complete load, and require its response to belong to the exact inspected request. Keep every credential-exclusion, native field/button, URL, method, body and provider-request assertion and the original limits.
+
 ## 2026-10-10 — Auth fieldset native attribute assertion
 
 PR313 run `38048230468/a1` passed the four original processing cases, but its two new hydration controls failed because Playwright 1.62.1's disabled matcher excludes `FIELDSET`. Assert its exact native `disabled` attribute; retain every input/button disability, empty native FormData, credential-free submission, held-script/request control and existing limit. This corrects the matcher without a product change or a browser acceptance claim.

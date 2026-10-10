@@ -160,12 +160,16 @@ test("auth forms without JavaScript exclude credentials from native submission",
       });
       expect(await form.evaluate((node) => [...new FormData(node as HTMLFormElement).keys()])).toEqual([]);
       const submitted = page.waitForRequest((request) => request.isNavigationRequest());
+      const navigation = page.waitForNavigation({ waitUntil: "load" });
       await form.evaluate((node) => (node as HTMLFormElement).requestSubmit());
       const request = await submitted;
       expect(request.method()).toBe("GET");
       expect(new URL(request.url()).pathname).toBe(path);
       expect(new URL(request.url()).search).toBe("");
       expect(request.postData()).toBeNull();
+      const response = await navigation;
+      expect(response).not.toBeNull();
+      expect(response!.request()).toBe(request);
     }
     expect(authRequests).toBe(0);
   } finally {
