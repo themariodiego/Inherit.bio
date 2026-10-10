@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const state = vi.hoisted(() => ({ files: new Map<string, string>(), commands: [] as string[][],
-  cacheKind: "directory", owner: "", probeFails: false, wrongOwner: false, running: true, exitCode: 0, logs: "ISOLATED_RUNTIME_READY" }));
+  cacheKind: "directory", owner: "", probeFails: false, wrongOwner: false, running: true, exitCode: 0, logs: "ISOLATED_RUNTIME_READY",
+  failCommand: "", failError: undefined as unknown, gateway: "", namespaceState: "", removeFails: false }));
 vi.mock("./ci-browser-config", async importOriginal => ({
   ...await importOriginal<typeof import("./ci-browser-config")>(),
   // Pure environment/platform refusal is tested separately. These lifecycle
@@ -21,6 +22,8 @@ vi.mock("node:fs", () => ({
 }));
 vi.mock("node:child_process", () => ({ execFileSync: (program: string, args: string[]) => {
   state.commands.push([program, ...args]);
+  if (state.failCommand && args.includes(state.failCommand)) throw state.failError;
+  if (state.removeFails && args[0] === "rm") throw Object.assign(new Error("synthetic cleanup private material"), { status: 23 });
   if (program === "git") return args[0] === "rev-parse" ? "a".repeat(40) : "";
   if (args[0] === "create") { state.owner = args[args.indexOf("--label") + 1].split("=")[1]; return "container-id"; }
   if (args[0] === "ps") return "";
@@ -28,8 +31,8 @@ vi.mock("node:child_process", () => ({ execFileSync: (program: string, args: str
   if (args[0] === "network") return "sequence";
   if (args[0] === "logs") return state.logs;
   if (args[0] === "inspect") {
-    if (args[2]?.includes(".State.ExitCode")) return JSON.stringify({ running: state.running, exitCode: state.exitCode });
-    if (args.at(-1) === "supabase_kong_sequence") return JSON.stringify({ name: "/supabase_kong_sequence", project: "sequence", running: true,
+    if (args[2]?.includes(".State.ExitCode")) return state.namespaceState || JSON.stringify({ running: state.running, exitCode: state.exitCode });
+    if (args.at(-1) === "supabase_kong_sequence") return state.gateway || JSON.stringify({ name: "/supabase_kong_sequence", project: "sequence", running: true,
       networks: { supabase_network_sequence: { IPAddress: "172.19.0.3" } } });
     return state.wrongOwner ? "different-owner" : state.owner;
   }
@@ -42,8 +45,10 @@ vi.mock("node:child_process", () => ({ execFileSync: (program: string, args: str
   return "";
 } }));
 import { recordCiBuild, startCiBrowserRuntime } from "./ci-browser-runtime";
+import { ciRuntimeFailureDiagnostic } from "./ci-browser-runtime-failure";
 beforeEach(() => {
   state.files.clear(); state.commands.length = 0; state.cacheKind = "directory"; state.owner = ""; state.probeFails = false; state.wrongOwner = false; state.running = true; state.exitCode = 0; state.logs = "ISOLATED_RUNTIME_READY";
+  state.failCommand = ""; state.failError = undefined; state.gateway = ""; state.namespaceState = ""; state.removeFails = false;
   state.files.set(".next/BUILD_ID", "synthetic-build");
   state.files.set(`${process.cwd()}/.next/cache`, "synthetic-cache-directory");
   vi.stubEnv("RUNNER_TEMP", "/synthetic-ci-tmp");
@@ -87,26 +92,44 @@ describe("owned isolated CI runtime lifecycle", () => {
   it.each(["missing", "symlink", "file"])("refuses a %s cache route before creating any native container", async kind => {
     state.cacheKind = kind;
     if (kind === "missing") state.files.delete(`${process.cwd()}/.next/cache`);
-    await expect(startCiBrowserRuntime(undefined, true)).rejects.toThrow("genuine build cache directory");
+    await expect(startCiBrowserRuntime(undefined, true)).rejects.toThrow("stage=build-cache; classification=guard-refused");
     expect(state.commands.some(command => command[1] === "create")).toBe(false);
   });
-  it("reports an exited namespace immediately, retains phase diagnostics and never starts TLS or the app", async () => {
+  it("reports an exited namespace immediately with only stage and exit code, and never starts TLS or the app", async () => {
     state.running = false; state.exitCode = 4;
     state.logs = "iptables: Read-only file system\nISOLATED_RUNTIME_FAILED phase=ipv4-policy exit=4";
-    await expect(startCiBrowserRuntime()).rejects.toThrow("exited before readiness (exit 4). Namespace diagnostics:\n" + state.logs);
+    const error = await startCiBrowserRuntime().catch(error => error);
+    expect(ciRuntimeFailureDiagnostic(error)).toEqual({ runtimeStage: "namespace-running", classification: "guard-refused", exitCode: 4, signal: null, namespacePhase: "ipv4-policy" });
+    expect(error.message).not.toContain(state.logs);
     expect(state.commands.filter(command => command[1] === "logs")).toHaveLength(1);
     expect(state.commands.filter(command => command[1] === "rm")).toHaveLength(1);
     expect(state.commands.some(command => command[1] === "exec")).toBe(false);
   });
+  it.each([
+    "ISOLATED_RUNTIME_FAILED phase=resolver-file exit=4",
+    "ISOLATED_RUNTIME_FAILED phase=ipv4-policy exit=7",
+    "ISOLATED_RUNTIME_FAILED phase=ipv4-policy exit=4\nISOLATED_RUNTIME_FAILED phase=ipv6-policy exit=4",
+    "ISOLATED_RUNTIME_FAILED phase=ipv4-policy exit=4 private-canary",
+  ])("refuses a stopped namespace without trusting the unknown, mismatched or ambiguous marker %s", async marker => {
+    state.running = false; state.exitCode = 4; state.logs = marker;
+    const error = await startCiBrowserRuntime().catch(error => error);
+    expect(ciRuntimeFailureDiagnostic(error)).toEqual({ runtimeStage: "namespace-running", classification: "guard-refused", exitCode: 4, signal: null });
+    expect(error.message).not.toMatch(/resolver-file|private-canary|ipv4-policy|ipv6-policy/);
+    expect(state.commands.some(command => command[1] === "exec")).toBe(false);
+    expect(state.commands.filter(command => command[1] === "rm")).toHaveLength(1);
+  });
   it("refuses an exited process even when its log contains an earlier ready marker", async () => {
     state.running = false;
-    await expect(startCiBrowserRuntime()).rejects.toThrow("exited before readiness (exit 0)");
+    const error = await startCiBrowserRuntime().catch(error => error);
+    expect(ciRuntimeFailureDiagnostic(error)).toEqual({ runtimeStage: "namespace-running", classification: "guard-refused", exitCode: 0, signal: null });
     expect(state.commands.some(command => command[1] === "exec")).toBe(false);
   });
-  it("keeps the ten-second deadline and bounds diagnostics while setup remains running", async () => {
+  it("keeps the ten-second deadline and suppresses namespace output while setup remains running", async () => {
     state.logs = "x".repeat(9000) + "\nISOLATED_RUNTIME_FAILED phase=resolver-file exit=1";
     vi.spyOn(Date, "now").mockReturnValueOnce(0).mockReturnValue(10_000);
-    await expect(startCiBrowserRuntime()).rejects.toThrow("Runtime policy did not become ready. Namespace diagnostics:\n" + state.logs.slice(-8192));
+    const error = await startCiBrowserRuntime().catch(error => error);
+    expect(ciRuntimeFailureDiagnostic(error)).toEqual({ runtimeStage: "namespace-ready", classification: "guard-refused", exitCode: null, signal: null });
+    expect(error.message).not.toMatch(/x{20}|resolver-file/);
     expect(state.commands.some(command => command[1] === "exec")).toBe(false);
     expect(state.commands.filter(command => command[1] === "rm")).toHaveLength(1);
   });
@@ -168,23 +191,54 @@ describe("owned isolated CI runtime lifecycle", () => {
   });
   it("leaves a preexisting ownership receipt untouched without creating a container", async () => {
     state.files.set("/synthetic-ci-tmp/inherit-ci-browser-owner.json", "unrelated-receipt");
-    await expect(startCiBrowserRuntime()).rejects.toThrow("prior runtime ownership receipt");
+    await expect(startCiBrowserRuntime()).rejects.toThrow("stage=owner-receipt; classification=guard-refused");
     expect(state.commands.some(command => command[1] === "create" || command[1] === "rm")).toBe(false);
     expect(state.files.get("/synthetic-ci-tmp/inherit-ci-browser-owner.json")).toBe("unrelated-receipt");
   });
   it("cleans up on failed mandatory probe without starting or returning an app", async () => {
     state.probeFails = true;
-    await expect(startCiBrowserRuntime()).rejects.toThrow("Docker operation failed");
+    await expect(startCiBrowserRuntime()).rejects.toThrow("stage=isolated-probe-command; classification=setup-refused");
     expect(state.commands.filter(command => command[1] === "rm")).toHaveLength(1);
     expect(state.commands.some(command => command.some(arg => arg.endsWith("server.mts")))).toBe(false);
   });
   it("refuses stale build configuration before Docker and refuses changed ownership on cleanup", async () => {
     vi.stubEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY", "other-synthetic-public");
-    await expect(startCiBrowserRuntime()).rejects.toThrow("build receipt");
+    await expect(startCiBrowserRuntime()).rejects.toThrow("stage=build-receipt; classification=guard-refused");
     expect(state.commands.some(command => command[0] === "docker")).toBe(false);
     vi.stubEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY", "synthetic-public");
     const runtime = await startCiBrowserRuntime(); state.wrongOwner = true;
-    expect(() => runtime.stop()).toThrow("no unrelated container was removed");
+    expect(() => runtime.stop()).toThrow("stage=cleanup-ownership; classification=guard-refused");
     expect(state.commands.some(command => command[1] === "rm")).toBe(false);
+  });
+  it.each([
+    ["create", "container-create", false], ["start", "container-start", true], ["logs", "namespace-logs", true],
+    ["/app/scripts/ci-browser/tls.sh", "tls-bootstrap", true], ["iptables", "policy-ipv4-read", true],
+    ["ip6tables", "policy-ipv6-read", true],
+  ])("keeps the exact %s failure boundary and cleans up only after creation", async (command, stage, created) => {
+    state.failCommand = command as string;
+    state.failError = Object.assign(new Error("private argv/env/stdout/stderr canary"), { status: 17, stdout: "private stdout", stderr: "private stderr" });
+    const error = await startCiBrowserRuntime().catch(error => error);
+    expect(ciRuntimeFailureDiagnostic(error)).toEqual({ runtimeStage: stage, classification: "exit-nonzero", exitCode: 17, signal: null });
+    expect(error.message).not.toMatch(/private|canary|argv|stdout|stderr/);
+    expect(error.cause).toBeUndefined();
+    expect(state.commands.filter(command => command[1] === "rm")).toHaveLength(created ? 1 : 0);
+    expect(state.files.has("/synthetic-ci-tmp/inherit-ci-browser-owner.json")).toBe(false);
+  });
+  it.each([["gateway", "gateway-inspection"], ["namespace", "namespace-state"]])("labels malformed %s responses without returning their bytes", async (response, stage) => {
+    if (response === "gateway") state.gateway = "private malformed canary";
+    else state.namespaceState = "private malformed canary";
+    const error = await startCiBrowserRuntime().catch(error => error);
+    expect(ciRuntimeFailureDiagnostic(error)).toEqual({ runtimeStage: stage, classification: "invalid-response", exitCode: null, signal: null });
+    expect(error.message).not.toMatch(/private|canary/);
+  });
+  it("preserves the original probe failure alongside cleanup refusal and retains its ownership receipt", async () => {
+    state.probeFails = true; state.removeFails = true;
+    const error = await startCiBrowserRuntime().catch(error => error);
+    expect(ciRuntimeFailureDiagnostic(error)).toEqual({ runtimeStage: "isolated-probe-command", classification: "setup-refused", exitCode: null, signal: null,
+      cleanupFailure: { runtimeStage: "cleanup-remove", classification: "exit-nonzero", exitCode: 23, signal: null } });
+    expect(state.files.has("/synthetic-ci-tmp/inherit-ci-browser-owner.json")).toBe(true);
+    expect(state.commands.filter(command => command[1] === "rm")).toHaveLength(1);
+    expect(error.message).not.toMatch(/private|transport/);
+    expect(error.cause).toBeUndefined();
   });
 });
