@@ -25,7 +25,17 @@ export function emitHostedBootstrapFailure(stage: HostedBootstrapDiagnostic["sta
   cleanup: HostedBootstrapDiagnostic["cleanup"], emit = (line: string) => { process.stderr.write(line + "\n"); }) {
   // A diagnostic I/O failure must never replace the original refusal or its
   // independently required cleanup result.
-  try { const line = hostedBootstrapDiagnosticLine({ stage, ...metadata, cleanup }); if (line) emit(line); } catch { /* Original error remains. */ }
+  try {
+    // The real runtime classifier also carries registered inner-stage metadata.
+    // Select only own data fields; no accessor or unrelated value is evaluated.
+    const field = (key: string): unknown => Object.getOwnPropertyDescriptor(metadata, key)?.value;
+    const classification = field("classification");
+    const line = hostedBootstrapDiagnosticLine({ stage,
+      classification: classification === "guard-refused" || classification === "invalid-response"
+        ? "setup-refused" : classification,
+      exitCode: field("exitCode"), signal: field("signal"), cleanup });
+    if (line) emit(line);
+  } catch { /* Original error remains. */ }
 }
 export function createHostedBootstrapDiagnostics() {
   const records: HostedBootstrapDiagnostic[] = [];
