@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { fittedFailureFrom } from "./statistical-fit-diagnostic";
 import { runNextEmbryoStatisticalCoverage, runNextEmbryoStatisticalFit,
   type StatisticalWorkerRpc, type StatisticalFitWorkerRpc } from "./statistical-worker";
 import { TEST_STATISTICAL_SCORE_PANEL } from "./statistical-coverage";
@@ -251,5 +252,40 @@ describe("distinct fitted TEST worker lifecycle", () => {
     f.changeFit((op, value) => { if (op === "read" || op === "fail") throw new Error("synthetic-private-fit-canary");return value; });
     await expect(runNextEmbryoStatisticalFit({ rpc: f.rpc })).rejects.toMatchObject({ code: "unavailable", message: "unavailable" });
     expect(f.operations.at(-1)).toBe("fail");expect(f.saved).toEqual([]);
+  });
+});
+
+
+describe("fitted operation safe failure metadata", () => {
+  it.each(["claim", "check", "read", "save"] as const)("binds only the last %s operation and safe refusal code", async operation => {
+    vi.stubEnv("INHERIT_TEST_JURISDICTION", "1");const f = await fittedFixture();
+    f.changeFit((op, value) => op === operation ? { arbitrary: "synthetic-private-rpc-canary" } : value);
+    const error = await runNextEmbryoStatisticalFit({ rpc: f.rpc }).catch(value => value);
+    expect(error).toMatchObject({ code: "invalid_response", message: "invalid_response" });
+    expect(fittedFailureFrom(error)).toEqual({ outer: "NOT_OBSERVED", inner: "RPC_REFUSED",
+      operation: operation.toUpperCase(), code: "invalid_response" });
+    expect(Object.keys(error)).toEqual(["code"]);expect(error.message).not.toContain("synthetic-private-rpc-canary");
+    if (operation !== "save") expect(f.saved).toEqual([]);
+  });
+  it("keeps uncertain native transport and failed failure-write opaque", async () => {
+    vi.stubEnv("INHERIT_TEST_JURISDICTION", "1");const f = await fittedFixture();
+    f.changeFit((op, value) => { if (op === "read" || op === "fail") throw new Error("synthetic-private-operation-canary");return value; });
+    const error = await runNextEmbryoStatisticalFit({ rpc: f.rpc }).catch(value => value);
+    expect(error).toMatchObject({ code: "unavailable", message: "unavailable" });
+    expect(fittedFailureFrom(error)).toEqual({ outer: "NOT_OBSERVED", inner: "RPC_REFUSED", operation: "FAIL", code: "unavailable" });
+    expect(f.saved).toEqual([]);
+  });
+  it("keeps the real failed return unchanged and does not label it complete", async () => {
+    vi.stubEnv("INHERIT_TEST_JURISDICTION", "1");const f = await fittedFixture();
+    f.changeFit((op, value) => { if (op === "read") throw new Error("synthetic-private-operation-canary");return value; });
+    const result = await runNextEmbryoStatisticalFit({ rpc: f.rpc });
+    expect(result).toEqual({ status: "failed" });expect(JSON.stringify(result)).toBe('{"status":"failed"}');
+    expect(fittedFailureFrom(result)).toEqual({ outer: "NOT_OBSERVED", inner: "WORK_RETURNED_FAILURE", operation: "FAIL", code: "unavailable" });
+    expect(f.saved).toEqual([]);
+  });
+  it("does not add diagnostic properties to a genuinely saved fitted result", async () => {
+    vi.stubEnv("INHERIT_TEST_JURISDICTION", "1");const f = await fittedFixture(8);
+    const result = await runNextEmbryoStatisticalFit({ rpc: f.rpc });
+    expect(result).toEqual({ status: "saved_fitted_test" });expect(Object.getOwnPropertyNames(result)).toEqual(["status"]);
   });
 });

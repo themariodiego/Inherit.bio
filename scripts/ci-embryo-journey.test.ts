@@ -2,6 +2,7 @@ import { EventEmitter } from "node:events";
 import { PassThrough } from "node:stream";
 import type { ChildProcess } from "node:child_process";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { encodeFittedFailure, fittedFailureFrom } from "../src/lib/embryos/statistical-fit-diagnostic";
 import { checkedEmbryoWorkerEnvironment, EMBRYO_JOURNEY_ENV, EMBRYO_WORKER_ARGS, EMBRYO_WORKER_LIMIT_MS,
   runEmbryoWorkerInside, withEmbryoJourney, type EmbryoJourneyIo } from "./ci-embryo-journey";
 
@@ -344,5 +345,57 @@ describe("bounded embryo worker process lifecycle", () => {
     const h = processFixture();
     await expect(runEmbryoWorkerInside(worker, AbortSignal.abort(), h.dependencies)).rejects.toThrow("cancelled");
     expect(h.dependencies.spawn).not.toHaveBeenCalled();
+  });
+});
+
+
+describe("fitted process safe refusal observations", () => {
+  afterEach(() => vi.useRealTimers());
+  function processFixture() {
+    const child = Object.assign(new EventEmitter(), { pid: 12345, stdout: new PassThrough(), stderr: new PassThrough() });
+    return { child, dependencies: { spawn: vi.fn(() => child as unknown as ChildProcess), kill: vi.fn() } };
+  }
+  it.each(["WORK_EXIT", "WORK_TERMINAL_REFUSED", "WORK_OUTPUT_BOUND", "WORK_SPAWN_REFUSED", "WORK_CANCELLED"] as const)(
+    "keeps %s a failure even beside a valid private-free worker packet", async kind => {
+      const h = processFixture(), controller = new AbortController();
+      const result = runEmbryoFittedStatisticalWorkerInside(worker, controller.signal, h.dependencies);
+      const packet = encodeFittedFailure({ outer: "NOT_OBSERVED", inner: "RPC_REFUSED", operation: "SAVE", code: "unavailable" });
+      h.child.stderr.write(packet + "\n");
+      if (kind === "WORK_EXIT") { h.child.stdout.write("fitted_saved\n");h.child.emit("close", 1); }
+      if (kind === "WORK_TERMINAL_REFUSED") { h.child.stdout.write("fitted_saved\nextra");h.child.emit("close", 0); }
+      if (kind === "WORK_OUTPUT_BOUND") { h.child.stdout.write("x".repeat(513));h.child.emit("close", 0); }
+      if (kind === "WORK_SPAWN_REFUSED") { h.child.emit("error", new Error("synthetic-private-process-canary"));h.child.emit("close", 0); }
+      if (kind === "WORK_CANCELLED") { controller.abort();h.child.stdout.write("fitted_saved\n");h.child.emit("close", 0); }
+      const error = await result.catch(value => value);
+      expect(error).toBeInstanceOf(Error);expect(error.message).toContain("not a clean completion");
+      expect(fittedFailureFrom(error)).toEqual({ outer: "NOT_OBSERVED", inner: kind, operation: "SAVE", code: "unavailable" });
+      expect(error.message).not.toContain("synthetic-private-process-canary");
+    });
+  it("observes the unchanged deadline without accepting an exact terminal after stop", async () => {
+    vi.useFakeTimers();const h = processFixture();
+    const result = runEmbryoFittedStatisticalWorkerInside(worker, new AbortController().signal, h.dependencies);
+    const error = result.catch(value => value);
+    await vi.advanceTimersByTimeAsync(90_000);expect(h.dependencies.kill).toHaveBeenCalledWith(12345, "SIGTERM");
+    h.child.stdout.write("fitted_saved\n");
+    await vi.advanceTimersByTimeAsync(5000);expect(h.dependencies.kill).toHaveBeenCalledWith(12345, "SIGKILL");
+    await vi.advanceTimersByTimeAsync(1000);expect(fittedFailureFrom(await error).inner).toBe("WORK_DEADLINE");
+    expect(vi.getTimerCount()).toBe(0);
+  });
+  it("refuses synchronous spawn loss using only the closed failure label", async () => {
+    const dependencies = { spawn: vi.fn(() => { throw new Error("synthetic-private-spawn-canary"); }), kill: vi.fn() };
+    const error = await runEmbryoFittedStatisticalWorkerInside(worker, new AbortController().signal, dependencies).catch(value => value);
+    expect(fittedFailureFrom(error).inner).toBe("WORK_SPAWN_REFUSED");expect(error.message).not.toContain("synthetic-private");
+    expect(dependencies.kill).not.toHaveBeenCalled();
+  });
+  it.each(["synthetic-private-stderr-canary", "x".repeat(513)])("never emits arbitrary or overflowing stderr %#", async text => {
+    const h = processFixture(), result = runEmbryoFittedStatisticalWorkerInside(worker, new AbortController().signal, h.dependencies);
+    h.child.stderr.write(text);h.child.emit("close", 1);const error = await result.catch(value => value);
+    expect(fittedFailureFrom(error)).toEqual({ outer: "NOT_OBSERVED", inner: "WORK_EXIT", operation: "NOT_OBSERVED", code: "NOT_OBSERVED" });
+    expect(error.message).not.toContain(text);
+  });
+  it("retains successful exact stdout/close even when unrelated stderr is drained", async () => {
+    const h = processFixture(), result = runEmbryoFittedStatisticalWorkerInside(worker, new AbortController().signal, h.dependencies);
+    h.child.stderr.write("synthetic-private-stderr-canary");h.child.stdout.write("fitted_saved\n");h.child.emit("close", 0);
+    await result;expect(h.dependencies.kill).not.toHaveBeenCalled();
   });
 });

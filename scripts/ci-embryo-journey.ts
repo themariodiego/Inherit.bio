@@ -5,6 +5,8 @@ import path from "node:path";
 import { promisify } from "node:util";
 import { assertCiRuntime, CI_RUNTIME_CONTAINER } from "./ci-browser-config";
 import { ownedLinuxEnvironment, type OwnedLinuxCapability } from "./owned-linux-runtime";
+import { attachFittedFailure, decodeFittedFailure, encodeFittedFailure, fittedCommandFailure,
+  isFittedJourneyCommand, type FittedFailureInner } from "../src/lib/embryos/statistical-fit-diagnostic";
 
 type Environment = Readonly<Record<string, string | undefined>>;
 type Execute = (args: string[], input?: string, timeout?: number) => Promise<string>;
@@ -140,36 +142,52 @@ export async function runEmbryoFittedStatisticalWorkerInside(value: unknown, sig
 }): Promise<void> {
   const env = checkedEmbryoWorkerEnvironment(value);
   assert(!signal.aborted, "Embryo worker was cancelled before launch");
-  const child = dependencies.spawn(env);
+  let child: ChildProcess;
+  try { child = dependencies.spawn(env); }
+  catch { throw attachFittedFailure(new Error("Embryo worker outcome was not a clean completion"),
+    { outer: "NOT_OBSERVED", inner: "WORK_SPAWN_REFUSED", operation: "NOT_OBSERVED", code: "NOT_OBSERVED" }); }
+  let failure: FittedFailureInner = "WORK_TERMINAL_REFUSED", diagnostic = "", diagnosticOverflow = false;
   let output = "", stopped = false, escalation: NodeJS.Timeout | undefined, terminal: NodeJS.Timeout | undefined;
   await new Promise<void>((resolve, reject) => {
     let finished = false;
     const finish = (okay = false) => {
       if (finished) return;
       finished = true; clearTimeout(deadline); clearTimeout(escalation); clearTimeout(terminal);
-      signal.removeEventListener("abort", stop);
-      if (okay) resolve(); else reject(new Error("Embryo worker outcome was not a clean completion"));
+      signal.removeEventListener("abort", abort);
+      if (okay) resolve(); else {
+        const observed = diagnosticOverflow ? null : decodeFittedFailure(diagnostic);
+        reject(attachFittedFailure(new Error("Embryo worker outcome was not a clean completion"),
+          { outer: "NOT_OBSERVED", inner: failure, operation: observed?.operation ?? "NOT_OBSERVED",
+            code: observed?.code ?? "NOT_OBSERVED" }));
+      }
     };
     const kill = (kind: NodeJS.Signals) => {
       if (child.pid) { try { dependencies.kill(child.pid, kind); } catch { /* exit remains authoritative */ } }
     };
-    const stop = () => {
+    const stop = (reason: FittedFailureInner) => {
       if (stopped || finished) return;
-      stopped = true; kill("SIGTERM");
+      failure = reason;stopped = true; kill("SIGTERM");
       escalation = setTimeout(() => { kill("SIGKILL"); terminal = setTimeout(() => finish(), 1000); }, 5000);
     };
-    const deadline = setTimeout(stop, EMBRYO_WORKER_LIMIT_MS);
-    signal.addEventListener("abort", stop, { once: true });
+    const abort = () => stop("WORK_CANCELLED");
+    const deadline = setTimeout(() => stop("WORK_DEADLINE"), EMBRYO_WORKER_LIMIT_MS);
+    signal.addEventListener("abort", abort, { once: true });
     child.stdout?.on("data", chunk => {
       if (stopped) return;
       output += chunk.toString();
-      if (output.length > 512) { output = ""; stop(); }
+      if (output.length > 512) { output = ""; stop("WORK_OUTPUT_BOUND"); }
     });
-    child.stderr?.resume();
-    child.once("error", stop);
-    child.once("close", code => finish(!stopped && code === 0
-      && output === "fitted_saved\n"));
-    if (signal.aborted) stop();
+    child.stderr?.on("data", chunk => {
+      if (diagnosticOverflow) return;
+      diagnostic += chunk.toString();
+      if (diagnostic.length > 512) { diagnostic = "";diagnosticOverflow = true; }
+    });
+    child.once("error", () => stop("WORK_SPAWN_REFUSED"));
+    child.once("close", code => {
+      if (!stopped) failure = code === 0 ? "WORK_TERMINAL_REFUSED" : "WORK_EXIT";
+      finish(!stopped && code === 0 && output === "fitted_saved\n");
+    });
+    if (signal.aborted) abort();
   });
 }
 
@@ -183,7 +201,11 @@ function defaultIo(env: Environment, operator?: OwnedLinuxCapability): EmbryoJou
         child.child.stdin?.on("error", () => {});
         child.child.stdin?.end(input);
         return (await child).stdout.trim();
-      } catch { throw new Error("Embryo journey fixed local command failed; diagnostics withheld"); }
+      } catch (error) {
+        if (isFittedJourneyCommand(args, input, CI_RUNTIME_CONTAINER))
+          throw new Error(`Embryo journey fitted command failed; ${encodeFittedFailure(fittedCommandFailure(error))}`);
+        throw new Error("Embryo journey fixed local command failed; diagnostics withheld");
+      }
     },
     root: () => realpathSync(process.cwd()),
     owner: () => {

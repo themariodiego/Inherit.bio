@@ -2,7 +2,9 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { runEmbryoStatisticalWorkerInside, runEmbryoFittedStatisticalWorkerInside } from "../ci-embryo-journey";
+import { encodeFittedFailure, fittedFailureFrom } from "../../src/lib/embryos/statistical-fit-diagnostic";
 
+let fittedMode = false;
 const controller = new AbortController();
 const stop = () => controller.abort();
 process.once("SIGTERM", stop);
@@ -26,14 +28,15 @@ try {
     const fitted = value as Record<string, unknown>;
     assert(Object.keys(fitted).length === 2 && Object.keys(fitted).every(key => key === "kind" || key === "environment")
       && fitted.kind === "fitted-test", "Exact fitted worker input required");
+    fittedMode = true;
     await runEmbryoFittedStatisticalWorkerInside(fitted.environment, controller.signal);
     process.stdout.write("EMBRYO_STATISTICAL_FITTED_JOURNEY_WORKER_COMPLETE\n");
   } else {
     await runEmbryoStatisticalWorkerInside(JSON.parse(input), controller.signal);
     process.stdout.write("EMBRYO_STATISTICAL_JOURNEY_WORKER_COMPLETE\n");
   }
-} catch {
-  process.stderr.write("embryo_statistical_journey_worker_unavailable\n");
+} catch (error) {
+  process.stderr.write(fittedMode ? encodeFittedFailure(fittedFailureFrom(error)) + "\n" : "embryo_statistical_journey_worker_unavailable\n");
   process.exitCode = 1;
 } finally {
   controller.abort();

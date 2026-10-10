@@ -93,7 +93,16 @@ end $quadratic$;
 -- p_artifact must equal the ENTIRE source literal before any fitting occurs.
 create function private.embryo_test_fit_package_raw_v1(p_artifact jsonb) returns jsonb
 language plpgsql immutable set search_path='' set extra_float_digits=3 as $fit$
-declare a jsonb; centers double precision[]:=array_fill(0::double precision,array[10]);
+declare a jsonb;
+ decoded_reference double precision[][]:=array_fill(0::double precision,array[96,10]);
+ decoded_training double precision[][]:=array_fill(0::double precision,array[64,10]);
+ decoded_training_liabilities double precision[]:=array_fill(0::double precision,array[64]);
+ decoded_holdout double precision[][]:=array_fill(0::double precision,array[48,10]);
+ decoded_holdout_liabilities double precision[]:=array_fill(0::double precision,array[48]);
+ decoded_family double precision[][]:=array_fill(0::double precision,array[32,10]);
+ decoded_family_liabilities double precision[]:=array_fill(0::double precision,array[32]);
+ decoded_calibration boolean[]:=array_fill(false,array[200]);
+ centers double precision[]:=array_fill(0::double precision,array[10]);
  design double precision[][]:=array_fill(0::double precision,array[64,11]);
  work double precision[][]:=array_fill(0::double precision,array[11,22]);
  rhs double precision[]:=array_fill(0::double precision,array[11]);
@@ -112,25 +121,43 @@ begin
  if p_artifact is distinct from private.embryo_test_fit_artifact_v1() then
   raise exception using errcode='22023',message='synthetic_fit_artifact_refused';end if;
  a:=p_artifact;
+ -- Decode every mathematically consumed scalar once, after whole-artifact equality.
+ -- Original JSON metadata and every arithmetic loop below retain their exact order.
+ for r in 0..95 loop for i in 1..10 loop
+  decoded_reference[r+1][i]:=(a#>>array['reference',r::text,'dosages',(i-1)::text])::double precision;
+ end loop;end loop;
+ for r in 0..63 loop
+  for i in 1..10 loop decoded_training[r+1][i]:=(a#>>array['training',r::text,'dosages',(i-1)::text])::double precision;end loop;
+  decoded_training_liabilities[r+1]:=(a#>>array['training',r::text,'liability'])::double precision;
+ end loop;
+ for r in 0..47 loop
+  for i in 1..10 loop decoded_holdout[r+1][i]:=(a#>>array['holdout',r::text,'dosages',(i-1)::text])::double precision;end loop;
+  decoded_holdout_liabilities[r+1]:=(a#>>array['holdout',r::text,'liability'])::double precision;
+ end loop;
+ for r in 0..31 loop
+  for i in 1..10 loop decoded_family[r+1][i]:=(a#>>array['familyControls',r::text,'dosages',(i-1)::text])::double precision;end loop;
+  decoded_family_liabilities[r+1]:=(a#>>array['familyControls',r::text,'liability'])::double precision;
+ end loop;
+ for r in 0..199 loop decoded_calibration[r+1]:=(a#>>array['calibration',r::text,'event'])::boolean;end loop;
  for i in 1..10 loop
-  for r in 0..95 loop centers[i]:=centers[i]+(a#>>array['reference',r::text,'dosages',(i-1)::text])::double precision;end loop;
+  for r in 0..95 loop centers[i]:=centers[i]+decoded_reference[r+1][i];end loop;
   centers[i]:=centers[i]/96;
  end loop;
  for i in 1..10 loop for j in 1..10 loop
   for r in 0..95 loop reference_cov[i][j]:=reference_cov[i][j]
-   +((a#>>array['reference',r::text,'dosages',(i-1)::text])::double precision-centers[i])
-    *((a#>>array['reference',r::text,'dosages',(j-1)::text])::double precision-centers[j]);end loop;
+   +(decoded_reference[r+1][i]-centers[i])
+    *(decoded_reference[r+1][j]-centers[j]);end loop;
   reference_cov[i][j]:=reference_cov[i][j]/95;
  end loop;end loop;
  for r in 1..64 loop design[r][1]:=1;
-  for i in 2..11 loop design[r][i]:=(a#>>array['training',(r-1)::text,'dosages',(i-2)::text])::double precision-centers[i-1];end loop;
+  for i in 2..11 loop design[r][i]:=decoded_training[r][i-1]-centers[i-1];end loop;
  end loop;
  for i in 1..11 loop
   for j in 1..11 loop
    for r in 1..64 loop work[i][j]:=work[i][j]+design[r][i]*design[r][j];end loop;
    work[i][j+11]:=case when i=j then 1 else 0 end;
   end loop;
-  for r in 1..64 loop rhs[i]:=rhs[i]+design[r][i]*(a#>>array['training',(r-1)::text,'liability'])::double precision;end loop;
+  for r in 1..64 loop rhs[i]:=rhs[i]+design[r][i]*decoded_training_liabilities[r];end loop;
  end loop;
  for k in 1..11 loop
   pivot:=k;
@@ -145,14 +172,14 @@ begin
  for i in 1..11 loop for j in 1..11 loop coefficients[i]:=coefficients[i]+work[i][j+11]*rhs[j];end loop;end loop;
  for r in 1..64 loop
   prediction:=0;for j in 1..11 loop prediction:=prediction+design[r][j]*coefficients[j];end loop;
-  value:=(a#>>array['training',(r-1)::text,'liability'])::double precision-prediction;
+  value:=decoded_training_liabilities[r]-prediction;
   residual_variance:=residual_variance+value*value;
  end loop;residual_variance:=residual_variance/53;
  for i in 1..11 loop for j in 1..11 loop fit_cov[i][j]:=work[i][j+11]*residual_variance;end loop;end loop;
  for r in 0..47 loop
   prediction:=coefficients[1];
-  for i in 1..10 loop prediction:=prediction+((a#>>array['holdout',r::text,'dosages',(i-1)::text])::double precision-centers[i])*coefficients[i+1];end loop;
-  observed:=array_append(observed,(a#>>array['holdout',r::text,'liability'])::double precision);predicted:=array_append(predicted,prediction);
+  for i in 1..10 loop prediction:=prediction+(decoded_holdout[r+1][i]-centers[i])*coefficients[i+1];end loop;
+  observed:=array_append(observed,decoded_holdout_liabilities[r+1]);predicted:=array_append(predicted,prediction);
  end loop;
  for k in 1..256 loop
   sampled_o:='{}';sampled_p:='{}';
@@ -170,14 +197,14 @@ begin
   pair_predictions:='{}';
   for r in (2*k)..(2*k+1) loop
    prediction:=coefficients[1];for i in 1..10 loop prediction:=prediction
-    +((a#>>array['familyControls',r::text,'dosages',(i-1)::text])::double precision-centers[i])*coefficients[i+1];end loop;
+    +(decoded_family[r+1][i]-centers[i])*coefficients[i+1];end loop;
    pair_predictions:=array_append(pair_predictions,prediction);
   end loop;
-  pair_o:=array_append(pair_o,(a#>>array['familyControls',(2*k)::text,'liability'])::double precision
-   -(a#>>array['familyControls',(2*k+1)::text,'liability'])::double precision);
+  pair_o:=array_append(pair_o,decoded_family_liabilities[2*k+1]
+   -decoded_family_liabilities[2*k+2]);
   pair_p:=array_append(pair_p,pair_predictions[1]-pair_predictions[2]);
  end loop;
- for r in 0..199 loop if (a#>>array['calibration',r::text,'event'])::boolean then events:=events+1;end if;end loop;
+ for r in 0..199 loop if decoded_calibration[r+1] then events:=events+1;end if;end loop;
  point:=events::double precision/200;denom:=1+z^2/200;center:=(point+z^2/400)/denom;
  half:=z*sqrt(point*(1-point)/200+z^2/(4*200^2))/denom;
  return jsonb_build_object('version','embryo-synthetic-fit-package-v1','provenance',a->'provenance',
