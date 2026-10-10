@@ -4,6 +4,7 @@ import { mkdtemp, open, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { ARCHIVE_OPERATION_TIMEOUT_MS, ARCHIVE_SEGMENT_BYTES } from "./archive-segments";
+import type {RequesterStatementRuntime} from "./requester-statement-runtime";
 
 /** A byte producer only: the caller supplies the complete, authorized manifest
  * and its captured receipt. No route, source selection or ready state is here. */
@@ -18,6 +19,7 @@ export type Zip64Spool = Readonly<{
   dispose: () => Promise<void>;
 }>;
 export type Zip64Options = Readonly<{
+  sensitiveRuntime?: RequesterStatementRuntime;
   members: AsyncIterable<Zip64Member>;
   expectedMemberCount: number;
   expectedPayloadBytes: number;
@@ -101,7 +103,14 @@ export function zip64EndRecords(count: number, directoryBytes: number, directory
   return end;
 }
 
-function refusedArchive(dispose: () => Promise<void>, deadline: number): ReadableStream<Uint8Array> {
+function refusedArchive(dispose: () => Promise<void>, deadline: number, runtime?:RequesterStatementRuntime): ReadableStream<Uint8Array> {
+  if(runtime){
+    const actual=runtime.cleanup("zip-refused-spool-dispose",dispose);
+    return new ReadableStream<Uint8Array>({
+      async start(controller){try{await runtime.wait(actual,deadline);controller.error(new Zip64Error("input"));}catch{controller.error(new Zip64Error("cleanup"));}},
+      async cancel(){await runtime.wait(actual,deadline);},
+    },{highWaterMark:0});
+  }
   let timer: ReturnType<typeof setTimeout>;
   const cleanup = Promise.race([Promise.resolve().then(dispose), new Promise<never>((_, reject) => {
     const remaining = Number.isSafeInteger(deadline) ? deadline - Date.now() : ARCHIVE_OPERATION_TIMEOUT_MS;
@@ -132,13 +141,17 @@ export function createZip64Archive(options: Zip64Options): ReadableStream<Uint8A
       || typeof members?.[Symbol.asyncIterator] !== "function" || typeof options.spool.append !== "function" || typeof options.spool.replay !== "function") fail("input");
     dosDate(modifiedAt); selectMembers = members[Symbol.asyncIterator].bind(members);
     append = options.spool.append.bind(options.spool); replay = options.spool.replay.bind(options.spool);
-  } catch { return refusedArchive(dispose, deadline); }
+  } catch { return refusedArchive(dispose, deadline,options.sensitiveRuntime); }
   const abort = new AbortController(), signal = AbortSignal.any([options.signal, abort.signal]);
   let reader: ReadableStreamDefaultReader<Uint8Array> | undefined, iterator: AsyncIterator<Zip64Member> | undefined;
   let cleanup: Promise<void> | undefined, streamController: ReadableStreamDefaultController<Uint8Array>;
   let finished = false;
   const active = () => { if (Date.now() >= deadline) fail("deadline"); if (signal.aborted) fail("aborted"); };
-  function bestEffortCancel() { try { void reader?.cancel().catch(() => {}); } catch { /* Detached, bounded by operation race. */ } }
+  let readerCancellation:Promise<void>|undefined;
+  function bestEffortCancel() {
+    if(options.sensitiveRuntime&&reader){const selected=reader;readerCancellation??=options.sensitiveRuntime.cleanup("zip-member-reader-cancel",()=>selected.cancel());void readerCancellation.catch(()=>{});}
+    else try { void reader?.cancel().catch(() => {}); } catch { /* Original unmarked path. */ }
+  }
   async function operation<T>(code: Failure, work: (current: AbortSignal) => Promise<T>): Promise<T> {
     active(); const local = new AbortController(), current = AbortSignal.any([signal, local.signal]);
     const timer = setTimeout(() => local.abort(), Math.min(ARCHIVE_OPERATION_TIMEOUT_MS, deadline - Date.now())); timer.unref();
@@ -149,15 +162,24 @@ export function createZip64Archive(options: Zip64Options): ReadableStream<Uint8A
     });
     try {
       if (current.aborted) rejectAbort();
-      const pending = Promise.resolve().then(() => { active(); if (current.aborted) fail("deadline"); return work(current); });
+      const execute=()=>{active();if(current.aborted)fail("deadline");return work(current);};
+      const pending=options.sensitiveRuntime?.track(`zip-${code}`,execute)??Promise.resolve().then(execute);
       const value = await Promise.race([pending, cancelled]); active(); if (current.aborted) fail("deadline"); return value;
     } catch (error) { if (error instanceof Zip64Error) throw error; return fail(code); }
     finally { clearTimeout(timer); current.removeEventListener("abort", rejectAbort); local.abort(); }
   }
   const check = async () => { if (await operation("authority", checkAuthority) !== authorityReceipt) fail("authority"); };
   function clean(): Promise<void> {
-    if (cleanup) return cleanup;
+    if (cleanup) return options.sensitiveRuntime?options.sensitiveRuntime.wait(cleanup,deadline):cleanup;
     bestEffortCancel();
+    if(options.sensitiveRuntime){
+      const runtime=options.sensitiveRuntime;
+      cleanup=runtime.cleanup("zip-complete-owned-cleanup",async()=>{
+        try{if(readerCancellation)await readerCancellation;if(iterator?.return)await iterator.return();}
+        finally{await dispose();}
+      });
+      return runtime.wait(cleanup,deadline);
+    }
     try { void iterator?.return?.().catch(() => {}); } catch { /* Never wait for a hostile iterator. */ }
     cleanup = new Promise<void>((resolve, reject) => {
       const timer = setTimeout(() => reject(new Zip64Error("cleanup")), Math.max(1, Math.min(ARCHIVE_OPERATION_TIMEOUT_MS, deadline - Date.now()))); timer.unref();
@@ -186,7 +208,8 @@ export function createZip64Archive(options: Zip64Options): ReadableStream<Uint8A
           if (result.done) return { done: true as const };
           if (!record(result.value, "name,open,sizeBytes")) fail("input");
           const { name, sizeBytes, open } = result.value;
-          nameBytes(name); if (!safe(sizeBytes) || typeof open !== "function") fail("input");
+          const checkedName=nameBytes(name);if(options.sensitiveRuntime){options.sensitiveRuntime.own(checkedName);options.sensitiveRuntime.clear(checkedName);}
+          if (!safe(sizeBytes) || typeof open !== "function") fail("input");
           return { done: false as const, value: Object.freeze({ name, sizeBytes, open }) };
         }); await check();
         if (next.done) break;
@@ -197,35 +220,50 @@ export function createZip64Archive(options: Zip64Options): ReadableStream<Uint8A
         if (prefixes.some(prefix => name.startsWith(`${prefix}/`))) fail("order");
         prefixes.push(name);
         if (sum(payload, sizeBytes) > expectedPayloadBytes) fail("size");
-        const memberOffset = offset, header = zip64MemberHeaders(name, sizeBytes, memberOffset, 0, modifiedAt).local;
+        const memberOffset = offset, firstHeaders=zip64MemberHeaders(name, sizeBytes, memberOffset, 0, modifiedAt),header=firstHeaders.local;
+        if(options.sensitiveRuntime){for(const bytes of Object.values(firstHeaders))options.sensitiveRuntime.own(bytes);
+          options.sensitiveRuntime.clear(firstHeaders.descriptor);options.sensitiveRuntime.clear(firstHeaders.central);}
         await check();
         const source = await operation("source", async current => {
           const result = await openMember(signal);
-          if (current.aborted) { try { void result.cancel().catch(() => {}); } catch {} fail("aborted"); }
+          if (current.aborted) {
+            if(options.sensitiveRuntime)await options.sensitiveRuntime.cleanup("zip-late-member-open-cancel",()=>result.cancel());
+            else try { void result.cancel().catch(() => {}); } catch {}
+            fail("aborted");
+          }
           return result;
         });
-        reader = source.getReader(); await check(); offset = sum(offset, header.length); yield header;
+        reader = source.getReader(); await check(); offset = sum(offset, header.length);
+        try{yield header;}finally{options.sensitiveRuntime?.clear(header);}
         let size = 0, crc = 0xffffffff;
         for (;;) {
           await check(); const chunk = await operation("source", async () => {
             const result = await reader!.read();
             if (result.done) return { done: true as const };
-            if (!(result.value instanceof Uint8Array) || !result.value.length || result.value.length > ARCHIVE_SEGMENT_BYTES) fail("source");
-            return { done: false as const, value: Buffer.from(result.value) };
+            try{
+              if (!(result.value instanceof Uint8Array) || !result.value.length || result.value.length > ARCHIVE_SEGMENT_BYTES) fail("source");
+              const copy=Buffer.from(result.value);options.sensitiveRuntime?.own(copy);
+              return { done: false as const, value: copy };
+            }finally{if(options.sensitiveRuntime&&result.value instanceof Uint8Array)result.value.fill(0);}
           }); await check();
           if (chunk.done) break;
           size = sum(size, chunk.value.length); if (size > sizeBytes) fail("size");
-          const bytes = chunk.value; crc = crcStep(crc, bytes); active(); offset = sum(offset, bytes.length); yield bytes;
+          const bytes = chunk.value;
+          try{crc = crcStep(crc, bytes); active(); offset = sum(offset, bytes.length); yield bytes;}
+          finally{options.sensitiveRuntime?.clear(bytes);}
         }
         reader.releaseLock(); reader = undefined;
         if (size !== sizeBytes) fail("size");
-        const { descriptor, central } = zip64MemberHeaders(name, size, memberOffset, (crc ^ 0xffffffff) >>> 0, modifiedAt);
+        const finalHeaders=zip64MemberHeaders(name, size, memberOffset, (crc ^ 0xffffffff) >>> 0, modifiedAt),{descriptor,central}=finalHeaders;
+        if(options.sensitiveRuntime){for(const bytes of Object.values(finalHeaders))options.sensitiveRuntime.own(bytes);options.sensitiveRuntime.clear(finalHeaders.local);}
         const recordHash = createHash("sha256").update(central).digest("hex");
         directoryHash.update(central);
         await check(); await operation("spool", current => append(central, current)); await check();
         if (createHash("sha256").update(central).digest("hex") !== recordHash) fail("spool");
         directoryBytes = sum(directoryBytes, central.length);
-        payload = sum(payload, size); count = sum(count, 1); offset = sum(offset, descriptor.length); yield descriptor;
+        options.sensitiveRuntime?.clear(central);
+        payload = sum(payload, size); count = sum(count, 1); offset = sum(offset, descriptor.length);
+        try{yield descriptor;}finally{options.sensitiveRuntime?.clear(descriptor);}
       }
       if (count !== expectedMemberCount) fail("count"); if (payload !== expectedPayloadBytes) fail("size");
       await check(); reader = replay(signal).getReader(); const observed = createHash("sha256"); let observedBytes = 0;
@@ -233,27 +271,40 @@ export function createZip64Archive(options: Zip64Options): ReadableStream<Uint8A
         await check(); const chunk = await operation("spool", async () => {
           const result = await reader!.read();
           if (result.done) return { done: true as const };
-          if (!(result.value instanceof Uint8Array) || !result.value.length || result.value.length > ARCHIVE_SEGMENT_BYTES) fail("spool");
-          return { done: false as const, value: Buffer.from(result.value) };
+          try{
+            if (!(result.value instanceof Uint8Array) || !result.value.length || result.value.length > ARCHIVE_SEGMENT_BYTES) fail("spool");
+            const copy=Buffer.from(result.value);options.sensitiveRuntime?.own(copy);return {done:false as const,value:copy};
+          }finally{if(options.sensitiveRuntime&&result.value instanceof Uint8Array)result.value.fill(0);}
         }); await check();
         if (chunk.done) break;
         observedBytes = sum(observedBytes, chunk.value.length); if (observedBytes > directoryBytes) fail("spool");
-        const bytes = chunk.value; observed.update(bytes); yield bytes;
+        const bytes = chunk.value;try{observed.update(bytes);yield bytes;}finally{options.sensitiveRuntime?.clear(bytes);}
       }
       reader.releaseLock(); reader = undefined;
       if (observedBytes !== directoryBytes || observed.digest("hex") !== directoryHash.digest("hex")) fail("spool");
       const end = zip64EndRecords(count, directoryBytes, offset); sum(sum(offset, directoryBytes), end.length);
-      await clean(); await check(); yield end; await check();
+      options.sensitiveRuntime?.own(end);
+      await clean(); await check();try{yield end;}finally{options.sensitiveRuntime?.clear(end);}await check();
     } finally { await clean(); }
   }
   const generator = produce();
   return new ReadableStream<Uint8Array>({
     start(controller) { streamController = controller; if (signal.aborted) onAbort(); },
     async pull(controller) {
-      try { const next = await generator.next(); if (signal.aborted) return; if (next.done) { finished = true; stopTimer(); controller.close(); } else controller.enqueue(next.value); }
+      const actual=async()=>{
+      try { const next = await (options.sensitiveRuntime?.track("zip-generator-next",()=>generator.next())??generator.next()); if (signal.aborted) return; if (next.done) { finished = true; stopTimer(); controller.close(); } else controller.enqueue(next.value); }
       catch (error) { stopTimer(); if (!signal.aborted) controller.error(error instanceof Zip64Error ? error : new Zip64Error("source")); }
+      };await(options.sensitiveRuntime?.track("zip-stream-pull-callback",actual)??actual());
     },
-    async cancel() { finished = true; stopTimer(); abort.abort(); await clean(); void generator.return(undefined).catch(() => {}); },
+    async cancel() {
+      const actual=async()=>{
+      finished = true; stopTimer(); abort.abort();
+      try{await clean();}finally{
+        if(options.sensitiveRuntime)await options.sensitiveRuntime.wait(options.sensitiveRuntime.cleanup("zip-generator-return",()=>generator.return(undefined)),deadline);
+        else void generator.return(undefined).catch(() => {});
+      }
+      };await(options.sensitiveRuntime?.cleanup("zip-stream-cancel-callback",actual)??actual());
+    },
   }, { highWaterMark: 0 });
 }
 

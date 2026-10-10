@@ -1,0 +1,1334 @@
+{
+  "version": "approved-unbound-erasure-selector-v1",
+  "authority": "private sealed approved claimant subject/custody/source tuple; no caller selectors",
+  "physicalStoreCount": 153,
+  "legacyStoreCount": 147,
+  "newStoreReason": "The six existing private archive children are now explicitly classified. No table is created.",
+  "stores": [
+    {
+      "target": "account-model-and-provider-configuration",
+      "store": "public.profiles",
+      "keys": [],
+      "selector": "false",
+      "disposition": "excluded-for-approved-unbound-subject; any live FK dependency refuses the whole plan; parent/account/shared historical state retained"
+    },
+    {
+      "target": "account-model-and-provider-configuration",
+      "store": "public.llm_settings",
+      "keys": [],
+      "selector": "false",
+      "disposition": "excluded-for-approved-unbound-subject; any live FK dependency refuses the whole plan; parent/account/shared historical state retained"
+    },
+    {
+      "target": "account-model-and-provider-configuration",
+      "store": "public.llm_keys",
+      "keys": [],
+      "selector": "false",
+      "disposition": "excluded-for-approved-unbound-subject; any live FK dependency refuses the whole plan; parent/account/shared historical state retained"
+    },
+    {
+      "target": "account-model-and-provider-configuration",
+      "store": "public.consent_grants",
+      "keys": [],
+      "selector": "false",
+      "disposition": "excluded-for-approved-unbound-subject; any live FK dependency refuses the whole plan; parent/account/shared historical state retained"
+    },
+    {
+      "target": "account-model-and-provider-configuration",
+      "store": "public.provider_recipient_grants",
+      "keys": [],
+      "selector": "false",
+      "disposition": "excluded-for-approved-unbound-subject; any live FK dependency refuses the whole plan; parent/account/shared historical state retained"
+    },
+    {
+      "target": "account-model-and-provider-configuration",
+      "store": "public.template_reviews",
+      "keys": [],
+      "selector": "false",
+      "disposition": "excluded-for-approved-unbound-subject; any live FK dependency refuses the whole plan; parent/account/shared historical state retained"
+    },
+    {
+      "target": "ancestry-regions",
+      "store": "public.ancestry_regions",
+      "keys": [
+        "ancestry_result_id",
+        "region_code"
+      ],
+      "selector": "t.subject_id=p_subject",
+      "disposition": "exact-current-row"
+    },
+    {
+      "target": "ancestry-results",
+      "store": "public.ancestry_results",
+      "keys": [
+        "id"
+      ],
+      "selector": "t.subject_id=p_subject or t.file_id=p_file",
+      "disposition": "exact-current-row"
+    },
+    {
+      "target": "appeal-and-correction-working-packages",
+      "store": "public.appeal_intakes",
+      "keys": [
+        "id"
+      ],
+      "selector": "(t.target_kind in('subject','claimed-subject') and t.target_id=p_subject) or t.appellant_principal_id in (select id from public.subject_principals where subject_id=p_subject)",
+      "disposition": "exact-current-row"
+    },
+    {
+      "target": "appeal-and-correction-working-packages",
+      "store": "public.appeal_evidence",
+      "keys": [
+        "id"
+      ],
+      "selector": "t.appeal_id in (select id from public.appeal_intakes where (target_kind in('subject','claimed-subject') and target_id=p_subject) or appellant_principal_id in (select id from public.subject_principals where subject_id=p_subject))",
+      "disposition": "exact-current-row"
+    },
+    {
+      "target": "appeal-and-correction-working-packages",
+      "store": "public.appeal_assignments",
+      "keys": [
+        "id"
+      ],
+      "selector": "t.appeal_id in (select id from public.appeal_intakes where (target_kind in('subject','claimed-subject') and target_id=p_subject) or appellant_principal_id in (select id from public.subject_principals where subject_id=p_subject))",
+      "disposition": "exact-current-row"
+    },
+    {
+      "target": "appeal-and-correction-working-packages",
+      "store": "public.correction_requests",
+      "keys": [
+        "id"
+      ],
+      "selector": "t.subject_id=p_subject or t.claimant_principal_id in (select id from public.subject_principals where subject_id=p_subject)",
+      "disposition": "exact-current-row"
+    },
+    {
+      "target": "appeal-and-correction-working-packages",
+      "store": "public.correction_working_data",
+      "keys": [
+        "id"
+      ],
+      "selector": "t.correction_id in (select id from public.correction_requests where subject_id=p_subject or claimant_principal_id in (select id from public.subject_principals where subject_id=p_subject))",
+      "disposition": "exact-current-row"
+    },
+    {
+      "target": "appeal-and-correction-working-packages",
+      "store": "public.correction_assignments",
+      "keys": [
+        "id"
+      ],
+      "selector": "t.correction_id in (select id from public.correction_requests where subject_id=p_subject or claimant_principal_id in (select id from public.subject_principals where subject_id=p_subject))",
+      "disposition": "exact-current-row"
+    },
+    {
+      "target": "appeal-and-correction-working-packages",
+      "store": "public.legal_reviews",
+      "keys": [
+        "id"
+      ],
+      "selector": "(t.target_kind in('subject','claimed-subject') and t.target_id=p_subject)",
+      "disposition": "exact-current-row"
+    },
+    {
+      "target": "audit-principal-link-key-envelope",
+      "store": "public.audit_principal_links",
+      "keys": [
+        "audit_principal_id"
+      ],
+      "selector": "t.audit_principal_id=p_audit",
+      "disposition": "exact-current-row"
+    },
+    {
+      "target": "audit-principal-link-key-envelope",
+      "store": "public.audit_principal_link_keys",
+      "keys": [
+        "audit_principal_id"
+      ],
+      "selector": "t.audit_principal_id=p_audit",
+      "disposition": "exact-current-row"
+    },
+    {
+      "target": "audit-principal-link-key-envelope",
+      "store": "private.legal_audit_account_principals",
+      "keys": [],
+      "selector": "false",
+      "disposition": "excluded-for-approved-unbound-subject; any live FK dependency refuses the whole plan; parent/account/shared historical state retained"
+    },
+    {
+      "target": "chat-derived-contexts",
+      "store": "public.chat_messages",
+      "keys": [
+        "id"
+      ],
+      "selector": "t.chat_id in (select id from public.chats where scope_kind='subject' and subject_id=p_subject) or (t.chat_id,t.turn_id) in (select distinct chat_id,turn_id from public.chat_messages where p_subject=any(retrieved_subject_ids) union select distinct chat_id,turn_id from public.copilot_context_history where p_subject=any(retrieved_subject_ids))",
+      "disposition": "exact-current-row"
+    },
+    {
+      "target": "chat-derived-contexts",
+      "store": "public.chats",
+      "keys": [
+        "id"
+      ],
+      "selector": "t.id in (select id from public.chats where scope_kind='subject' and subject_id=p_subject)",
+      "disposition": "exact-current-row"
+    },
+    {
+      "target": "chat-derived-contexts",
+      "store": "public.copilot_context_tokens",
+      "keys": [
+        "id"
+      ],
+      "selector": "(t.scope_kind='subject' and t.target_id=p_subject) or t.chat_id in (select id from public.chats where id in (select id from public.chats where scope_kind='subject' and subject_id=p_subject) or id in (select chat_id from (select distinct chat_id,turn_id from public.chat_messages where p_subject=any(retrieved_subject_ids) union select distinct chat_id,turn_id from public.copilot_context_history where p_subject=any(retrieved_subject_ids)) z))",
+      "disposition": "exact-current-row"
+    },
+    {
+      "target": "chat-derived-contexts",
+      "store": "public.copilot_context_history",
+      "keys": [
+        "id"
+      ],
+      "selector": "t.chat_id in (select id from public.chats where scope_kind='subject' and subject_id=p_subject) or (t.chat_id,t.turn_id) in (select distinct chat_id,turn_id from public.chat_messages where p_subject=any(retrieved_subject_ids) union select distinct chat_id,turn_id from public.copilot_context_history where p_subject=any(retrieved_subject_ids))",
+      "disposition": "exact-current-row"
+    },
+    {
+      "target": "chat-derived-contexts",
+      "store": "public.copilot_turn_dependencies",
+      "keys": [
+        "chat_id",
+        "turn_id",
+        "dependency_kind",
+        "dependency_id"
+      ],
+      "selector": "t.chat_id in (select id from public.chats where scope_kind='subject' and subject_id=p_subject) or (t.chat_id,t.turn_id) in (select distinct chat_id,turn_id from public.chat_messages where p_subject=any(retrieved_subject_ids) union select distinct chat_id,turn_id from public.copilot_context_history where p_subject=any(retrieved_subject_ids))",
+      "disposition": "exact-current-row"
+    },
+    {
+      "target": "claim-review-working-packages",
+      "store": "public.future_person_claims",
+      "keys": [
+        "id"
+      ],
+      "selector": "t.embryo_id=p_embryo",
+      "disposition": "exact-current-row"
+    },
+    {
+      "target": "claim-review-working-packages",
+      "store": "public.future_person_claim_sessions",
+      "keys": [
+        "id"
+      ],
+      "selector": "t.embryo_id=p_embryo",
+      "disposition": "exact-current-row"
+    },
+    {
+      "target": "claim-review-working-packages",
+      "store": "public.future_person_claim_documents",
+      "keys": [
+        "id"
+      ],
+      "selector": "t.claim_id in (select id from public.future_person_claims where embryo_id=p_embryo)",
+      "disposition": "exact-current-row"
+    },
+    {
+      "target": "claim-review-working-packages",
+      "store": "public.future_person_claim_review_packages",
+      "keys": [
+        "id"
+      ],
+      "selector": "t.claim_id in (select id from public.future_person_claims where embryo_id=p_embryo)",
+      "disposition": "exact-current-row"
+    },
+    {
+      "target": "claim-review-working-packages",
+      "store": "public.future_person_claim_assignments",
+      "keys": [
+        "id"
+      ],
+      "selector": "t.claim_id in (select id from public.future_person_claims where embryo_id=p_embryo)",
+      "disposition": "exact-current-row"
+    },
+    {
+      "target": "claim-review-working-packages",
+      "store": "public.future_person_claim_objections",
+      "keys": [
+        "id"
+      ],
+      "selector": "t.claim_id in (select id from public.future_person_claims where embryo_id=p_embryo)",
+      "disposition": "exact-current-row"
+    },
+    {
+      "target": "claim-review-working-packages",
+      "store": "private.future_person_claim_intakes",
+      "keys": [
+        "id"
+      ],
+      "selector": "t.id in (select id from private.claim_reviews where matched_embryo_id=p_embryo or matched_claimant_principal_id=p_claimant or id in (select id from public.future_person_claims where embryo_id=p_embryo))",
+      "disposition": "exact-current-row"
+    },
+    {
+      "target": "claim-review-working-packages",
+      "store": "private.claim_documents",
+      "keys": [
+        "id"
+      ],
+      "selector": "t.intake_id in (select id from private.claim_reviews where matched_embryo_id=p_embryo or matched_claimant_principal_id=p_claimant or id in (select id from public.future_person_claims where embryo_id=p_embryo))",
+      "disposition": "exact-current-row"
+    },
+    {
+      "target": "claim-review-working-packages",
+      "store": "private.claim_reviews",
+      "keys": [
+        "id"
+      ],
+      "selector": "t.id in (select id from private.claim_reviews where matched_embryo_id=p_embryo or matched_claimant_principal_id=p_claimant or id in (select id from public.future_person_claims where embryo_id=p_embryo))",
+      "disposition": "exact-current-row"
+    },
+    {
+      "target": "claim-review-working-packages",
+      "store": "private.claim_review_assignments",
+      "keys": [
+        "review_id",
+        "reviewer_account_id",
+        "assignment_revision"
+      ],
+      "selector": "t.review_id in (select id from private.claim_reviews where matched_embryo_id=p_embryo or matched_claimant_principal_id=p_claimant or id in (select id from public.future_person_claims where embryo_id=p_embryo))",
+      "disposition": "exact-current-row"
+    },
+    {
+      "target": "claim-review-working-packages",
+      "store": "private.claim_review_reads",
+      "keys": [
+        "id"
+      ],
+      "selector": "t.review_id in (select id from private.claim_reviews where matched_embryo_id=p_embryo or matched_claimant_principal_id=p_claimant or id in (select id from public.future_person_claims where embryo_id=p_embryo))",
+      "disposition": "exact-current-row"
+    },
+    {
+      "target": "claim-review-working-packages",
+      "store": "private.claim_review_decisions",
+      "keys": [
+        "id"
+      ],
+      "selector": "t.review_id in (select id from private.claim_reviews where matched_embryo_id=p_embryo or matched_claimant_principal_id=p_claimant or id in (select id from public.future_person_claims where embryo_id=p_embryo))",
+      "disposition": "exact-current-row"
+    },
+    {
+      "target": "claim-review-working-packages",
+      "store": "private.claim_review_downloads",
+      "keys": [
+        "id"
+      ],
+      "selector": "t.review_id in (select id from private.claim_reviews where matched_embryo_id=p_embryo or matched_claimant_principal_id=p_claimant or id in (select id from public.future_person_claims where embryo_id=p_embryo))",
+      "disposition": "exact-current-row"
+    },
+    {
+      "target": "claim-review-working-packages",
+      "store": "private.claim_review_receipt_sessions",
+      "keys": [
+        "download_id",
+        "nonce_hash"
+      ],
+      "selector": "t.download_id in (select id from private.claim_review_downloads where review_id in (select id from private.claim_reviews where matched_embryo_id=p_embryo or matched_claimant_principal_id=p_claimant or id in (select id from public.future_person_claims where embryo_id=p_embryo)))",
+      "disposition": "exact-current-row"
+    },
+    {
+      "target": "claim-review-working-packages",
+      "store": "private.claim_review_chunk_receipts",
+      "keys": [
+        "download_id",
+        "sequence"
+      ],
+      "selector": "t.download_id in (select id from private.claim_review_downloads where review_id in (select id from private.claim_reviews where matched_embryo_id=p_embryo or matched_claimant_principal_id=p_claimant or id in (select id from public.future_person_claims where embryo_id=p_embryo)))",
+      "disposition": "exact-current-row"
+    },
+    {
+      "target": "claimant-reverification-authority",
+      "store": "public.future_person_claimant_principals",
+      "keys": [
+        "id"
+      ],
+      "selector": "t.id=p_claimant",
+      "disposition": "exact-current-row"
+    },
+    {
+      "target": "claimant-reverification-authority",
+      "store": "public.future_person_claimant_identity_hmacs",
+      "keys": [
+        "claimant_principal_id",
+        "hmac_key_revision"
+      ],
+      "selector": "t.claimant_principal_id=p_claimant",
+      "disposition": "exact-current-row"
+    },
+    {
+      "target": "claimant-reverification-authority",
+      "store": "public.future_person_recovery_key_hashes",
+      "keys": [
+        "claimant_principal_id"
+      ],
+      "selector": "t.claimant_principal_id=p_claimant",
+      "disposition": "exact-current-row"
+    },
+    {
+      "target": "cloud-provider-working-state",
+      "store": "public.cloud_provider_payloads",
+      "keys": [
+        "id"
+      ],
+      "selector": "t.cloud_model_call_id in (select id from public.cloud_model_calls where model_context_id in (select id from public.model_contexts where generation_session_id in (select id from public.copilot_generation_sessions where chat_id in (select id from public.chats where id in (select id from public.chats where scope_kind='subject' and subject_id=p_subject) or id in (select chat_id from (select distinct chat_id,turn_id from public.chat_messages where p_subject=any(retrieved_subject_ids) union select distinct chat_id,turn_id from public.copilot_context_history where p_subject=any(retrieved_subject_ids)) z)))))",
+      "disposition": "exact-current-row"
+    },
+    {
+      "target": "cloud-provider-working-state",
+      "store": "public.cloud_provider_attempts",
+      "keys": [
+        "id"
+      ],
+      "selector": "t.cloud_model_call_id in (select id from public.cloud_model_calls where model_context_id in (select id from public.model_contexts where generation_session_id in (select id from public.copilot_generation_sessions where chat_id in (select id from public.chats where id in (select id from public.chats where scope_kind='subject' and subject_id=p_subject) or id in (select chat_id from (select distinct chat_id,turn_id from public.chat_messages where p_subject=any(retrieved_subject_ids) union select distinct chat_id,turn_id from public.copilot_context_history where p_subject=any(retrieved_subject_ids)) z)))))",
+      "disposition": "exact-current-row"
+    },
+    {
+      "target": "cloud-provider-working-state",
+      "store": "public.cloud_model_calls",
+      "keys": [
+        "id"
+      ],
+      "selector": "t.id in (select id from public.cloud_model_calls where model_context_id in (select id from public.model_contexts where generation_session_id in (select id from public.copilot_generation_sessions where chat_id in (select id from public.chats where id in (select id from public.chats where scope_kind='subject' and subject_id=p_subject) or id in (select chat_id from (select distinct chat_id,turn_id from public.chat_messages where p_subject=any(retrieved_subject_ids) union select distinct chat_id,turn_id from public.copilot_context_history where p_subject=any(retrieved_subject_ids)) z)))))",
+      "disposition": "exact-current-row"
+    },
+    {
+      "target": "contact-refusal-and-rate-limit-state",
+      "store": "public.encrypted_contact_references",
+      "keys": [
+        "id"
+      ],
+      "selector": "t.principal_id in (select id from public.subject_principals where subject_id=p_subject)",
+      "disposition": "exact-current-row"
+    },
+    {
+      "target": "contact-refusal-and-rate-limit-state",
+      "store": "public.contact_hmac_indexes",
+      "keys": [
+        "contact_reference_id",
+        "hmac_key_revision"
+      ],
+      "selector": "t.contact_reference_id in (select id from public.encrypted_contact_references where principal_id in (select id from public.subject_principals where subject_id=p_subject))",
+      "disposition": "exact-current-row"
+    },
+    {
+      "target": "contact-refusal-and-rate-limit-state",
+      "store": "public.subject_control_refusal_authorities",
+      "keys": [
+        "id"
+      ],
+      "selector": "t.subject_id=p_subject or t.principal_id in (select id from public.subject_principals where subject_id=p_subject)",
+      "disposition": "exact-current-row"
+    },
+    {
+      "target": "contact-refusal-and-rate-limit-state",
+      "store": "public.contact_refusal_bars",
+      "keys": [],
+      "selector": "false",
+      "disposition": "excluded-for-approved-unbound-subject; any live FK dependency refuses the whole plan; parent/account/shared historical state retained"
+    },
+    {
+      "target": "contact-refusal-and-rate-limit-state",
+      "store": "public.rate_limit_hmac_buckets",
+      "keys": [],
+      "selector": "false",
+      "disposition": "excluded-for-approved-unbound-subject; any live FK dependency refuses the whole plan; parent/account/shared historical state retained"
+    },
+    {
+      "target": "disposition-proposals-and-transient-authority",
+      "store": "public.embryo_disposition_proposals",
+      "keys": [
+        "id"
+      ],
+      "selector": "t.embryo_id=p_embryo",
+      "disposition": "exact-current-row"
+    },
+    {
+      "target": "disposition-proposals-and-transient-authority",
+      "store": "public.embryo_disposition_confirmations",
+      "keys": [
+        "proposal_id",
+        "confirmer_principal_id"
+      ],
+      "selector": "t.proposal_id in (select id from public.embryo_disposition_proposals where embryo_id=p_embryo)",
+      "disposition": "exact-current-row"
+    },
+    {
+      "target": "disposition-proposals-and-transient-authority",
+      "store": "public.retention_notice_campaigns",
+      "keys": [
+        "id"
+      ],
+      "selector": "t.retention_row_id in (select id from public.retention_rows where ((target_kind='subject' and target_id=p_subject) or (target_kind='claim' and target_id=p_claimant and retention_id='future-person.claimed-unbound-24mo')) and retention_id<>'future-person.claimant-reverification-until-request')",
+      "disposition": "exact-current-row"
+    },
+    {
+      "target": "drafts-invitations-and-candidates",
+      "store": "public.adult_subject_drafts",
+      "keys": [
+        "id"
+      ],
+      "selector": "t.subject_id=p_subject",
+      "disposition": "exact-current-row"
+    },
+    {
+      "target": "drafts-invitations-and-candidates",
+      "store": "public.embryo_cohort_drafts",
+      "keys": [],
+      "selector": "false",
+      "disposition": "excluded-for-approved-unbound-subject; any live FK dependency refuses the whole plan; parent/account/shared historical state retained"
+    },
+    {
+      "target": "drafts-invitations-and-candidates",
+      "store": "public.subject_invitations",
+      "keys": [
+        "id"
+      ],
+      "selector": "(t.target_kind in('subject','claimed-subject') and t.target_id=p_subject) or t.inviter_principal_id in (select id from public.subject_principals where subject_id=p_subject) or t.invitee_principal_id in (select id from public.subject_principals where subject_id=p_subject)",
+      "disposition": "exact-current-row"
+    },
+    {
+      "target": "drafts-invitations-and-candidates",
+      "store": "public.invitation_candidates",
+      "keys": [
+        "id"
+      ],
+      "selector": "t.invitation_id in (select id from public.subject_invitations where (target_kind in('subject','claimed-subject') and target_id=p_subject) or inviter_principal_id in (select id from public.subject_principals where subject_id=p_subject) or invitee_principal_id in (select id from public.subject_principals where subject_id=p_subject))",
+      "disposition": "exact-current-row"
+    },
+    {
+      "target": "drafts-invitations-and-candidates",
+      "store": "public.invitation_reminders",
+      "keys": [
+        "id"
+      ],
+      "selector": "t.invitation_id in (select id from public.subject_invitations where (target_kind in('subject','claimed-subject') and target_id=p_subject) or inviter_principal_id in (select id from public.subject_principals where subject_id=p_subject) or invitee_principal_id in (select id from public.subject_principals where subject_id=p_subject))",
+      "disposition": "exact-current-row"
+    },
+    {
+      "target": "drafts-invitations-and-candidates",
+      "store": "public.draft_participant_slots",
+      "keys": [
+        "id"
+      ],
+      "selector": "t.adult_draft_id in (select id from public.adult_subject_drafts where subject_id=p_subject)",
+      "disposition": "exact-current-row"
+    },
+    {
+      "target": "embryo-figures",
+      "store": "public.embryo_figures",
+      "keys": [
+        "id"
+      ],
+      "selector": "t.finding_id in (select id from public.embryo_scores where embryo_id=p_embryo)",
+      "disposition": "exact-current-row"
+    },
+    {
+      "target": "embryo-projections",
+      "store": "public.embryos",
+      "keys": [
+        "id"
+      ],
+      "selector": "t.id=p_embryo",
+      "disposition": "exact-current-row"
+    },
+    {
+      "target": "embryo-qc",
+      "store": "public.embryo_qc",
+      "keys": [
+        "embryo_id"
+      ],
+      "selector": "t.embryo_id=p_embryo",
+      "disposition": "exact-current-row"
+    },
+    {
+      "target": "embryo-qc",
+      "store": "private.embryo_split_ordinals",
+      "keys": [],
+      "selector": "false",
+      "disposition": "excluded-for-approved-unbound-subject; any live FK dependency refuses the whole plan; parent/account/shared historical state retained"
+    },
+    {
+      "target": "embryo-scores",
+      "store": "public.embryo_scores",
+      "keys": [
+        "id"
+      ],
+      "selector": "t.embryo_id=p_embryo",
+      "disposition": "exact-current-row"
+    },
+    {
+      "target": "future-person-identity-profiles",
+      "store": "public.future_person_identity",
+      "keys": [
+        "id"
+      ],
+      "selector": "t.embryo_id=p_embryo",
+      "disposition": "exact-current-row"
+    },
+    {
+      "target": "generated-artifacts",
+      "store": "public.report_artifacts",
+      "keys": [
+        "id"
+      ],
+      "selector": "t.subject_id=p_subject",
+      "disposition": "exact-current-row"
+    },
+    {
+      "target": "generated-artifacts",
+      "store": "public.generated_exports",
+      "keys": [
+        "id"
+      ],
+      "selector": "t.id in (select id from public.generated_exports where target_kind='subject' and target_id=p_subject)",
+      "disposition": "exact-current-row"
+    },
+    {
+      "target": "generated-artifacts",
+      "store": "public.download_sessions",
+      "keys": [
+        "id"
+      ],
+      "selector": "(t.target_kind in('subject','claimed-subject') and t.target_id=p_subject) or t.principal_id in (select id from public.subject_principals where subject_id=p_subject)",
+      "disposition": "exact-current-row"
+    },
+    {
+      "target": "generated-artifacts",
+      "store": "public.model_contexts",
+      "keys": [
+        "id"
+      ],
+      "selector": "t.id in (select id from public.model_contexts where generation_session_id in (select id from public.copilot_generation_sessions where chat_id in (select id from public.chats where id in (select id from public.chats where scope_kind='subject' and subject_id=p_subject) or id in (select chat_id from (select distinct chat_id,turn_id from public.chat_messages where p_subject=any(retrieved_subject_ids) union select distinct chat_id,turn_id from public.copilot_context_history where p_subject=any(retrieved_subject_ids)) z))))",
+      "disposition": "exact-current-row"
+    },
+    {
+      "target": "generated-artifacts",
+      "store": "private.own_analysis_runs",
+      "keys": [
+        "id"
+      ],
+      "selector": "t.subject_id=p_subject or t.file_id=p_file",
+      "disposition": "exact-current-row"
+    },
+    {
+      "target": "genome-files",
+      "store": "public.genome_files",
+      "keys": [
+        "id"
+      ],
+      "selector": "t.id=p_file",
+      "disposition": "exact-current-row"
+    },
+    {
+      "target": "legal-audit-chain-retention",
+      "store": "public.legal_audit_log",
+      "keys": [],
+      "selector": "false",
+      "disposition": "excluded-for-approved-unbound-subject; any live FK dependency refuses the whole plan; parent/account/shared historical state retained"
+    },
+    {
+      "target": "legal-audit-chain-retention",
+      "store": "public.legal_audit_retention_checkpoints",
+      "keys": [],
+      "selector": "false",
+      "disposition": "excluded-for-approved-unbound-subject; any live FK dependency refuses the whole plan; parent/account/shared historical state retained"
+    },
+    {
+      "target": "legal-evidence-working-and-private-objects",
+      "store": "public.legal_evidence_ingest_sessions",
+      "keys": [
+        "id"
+      ],
+      "selector": "(t.target_kind in('subject','claimed-subject') and t.target_id=p_subject) or t.principal_id in (select id from public.subject_principals where subject_id=p_subject)",
+      "disposition": "exact-current-row"
+    },
+    {
+      "target": "legal-evidence-working-and-private-objects",
+      "store": "public.legal_evidence_fragments",
+      "keys": [
+        "session_id",
+        "fragment_ordinal"
+      ],
+      "selector": "t.session_id in (select id from public.legal_evidence_ingest_sessions where (target_kind in('subject','claimed-subject') and target_id=p_subject) or principal_id in (select id from public.subject_principals where subject_id=p_subject))",
+      "disposition": "exact-current-row"
+    },
+    {
+      "target": "legal-evidence-working-and-private-objects",
+      "store": "public.legal_evidence_documents",
+      "keys": [
+        "id"
+      ],
+      "selector": "t.session_id in (select id from public.legal_evidence_ingest_sessions where (target_kind in('subject','claimed-subject') and target_id=p_subject) or principal_id in (select id from public.subject_principals where subject_id=p_subject))",
+      "disposition": "exact-current-row"
+    },
+    {
+      "target": "legal-evidence-working-and-private-objects",
+      "store": "public.legal_evidence_review_copies",
+      "keys": [
+        "id"
+      ],
+      "selector": "t.document_id in (select id from public.legal_evidence_documents where session_id in (select id from public.legal_evidence_ingest_sessions where (target_kind in('subject','claimed-subject') and target_id=p_subject) or principal_id in (select id from public.subject_principals where subject_id=p_subject)))",
+      "disposition": "exact-current-row"
+    },
+    {
+      "target": "legal-evidence-working-and-private-objects",
+      "store": "public.legal_evidence_assignments",
+      "keys": [
+        "id"
+      ],
+      "selector": "t.document_id in (select id from public.legal_evidence_documents where session_id in (select id from public.legal_evidence_ingest_sessions where (target_kind in('subject','claimed-subject') and target_id=p_subject) or principal_id in (select id from public.subject_principals where subject_id=p_subject)))",
+      "disposition": "exact-current-row"
+    },
+    {
+      "target": "legal-evidence-working-and-private-objects",
+      "store": "public.legal_evidence_working_data",
+      "keys": [
+        "id"
+      ],
+      "selector": "t.document_id in (select id from public.legal_evidence_documents where session_id in (select id from public.legal_evidence_ingest_sessions where (target_kind in('subject','claimed-subject') and target_id=p_subject) or principal_id in (select id from public.subject_principals where subject_id=p_subject)))",
+      "disposition": "exact-current-row"
+    },
+    {
+      "target": "legal-evidence-working-and-private-objects",
+      "store": "private.claim_document_sessions",
+      "keys": [
+        "id"
+      ],
+      "selector": "t.intake_id in (select id from private.claim_reviews where matched_embryo_id=p_embryo or matched_claimant_principal_id=p_claimant or id in (select id from public.future_person_claims where embryo_id=p_embryo))",
+      "disposition": "exact-current-row"
+    },
+    {
+      "target": "legal-evidence-working-and-private-objects",
+      "store": "private.claim_document_fragments",
+      "keys": [
+        "session_id",
+        "sequence"
+      ],
+      "selector": "t.session_id in (select id from private.claim_document_sessions where intake_id in (select id from private.claim_reviews where matched_embryo_id=p_embryo or matched_claimant_principal_id=p_claimant or id in (select id from public.future_person_claims where embryo_id=p_embryo)))",
+      "disposition": "exact-current-row"
+    },
+    {
+      "target": "mail-token-and-rights-delivery-state",
+      "store": "public.mail_outbox",
+      "keys": [
+        "id"
+      ],
+      "selector": "t.id in (select id from public.mail_outbox where (target_kind in('subject','claimed-subject') and target_id=p_subject) or recipient_principal_id in (select id from public.subject_principals where subject_id=p_subject))",
+      "disposition": "exact-current-row"
+    },
+    {
+      "target": "mail-token-and-rights-delivery-state",
+      "store": "public.mail_deliveries",
+      "keys": [
+        "id"
+      ],
+      "selector": "t.outbox_id in (select id from public.mail_outbox where (target_kind in('subject','claimed-subject') and target_id=p_subject) or recipient_principal_id in (select id from public.subject_principals where subject_id=p_subject))",
+      "disposition": "exact-current-row"
+    },
+    {
+      "target": "mail-token-and-rights-delivery-state",
+      "store": "public.mail_provider_attempts",
+      "keys": [
+        "id"
+      ],
+      "selector": "t.outbox_id in (select id from public.mail_outbox where (target_kind in('subject','claimed-subject') and target_id=p_subject) or recipient_principal_id in (select id from public.subject_principals where subject_id=p_subject))",
+      "disposition": "exact-current-row"
+    },
+    {
+      "target": "mail-token-and-rights-delivery-state",
+      "store": "public.token_hashes",
+      "keys": [
+        "id"
+      ],
+      "selector": "t.id in (select id from public.token_hashes where candidate_id in (select id from public.token_candidates where outbox_id in (select id from public.mail_outbox where (target_kind in('subject','claimed-subject') and target_id=p_subject) or recipient_principal_id in (select id from public.subject_principals where subject_id=p_subject))))",
+      "disposition": "exact-current-row"
+    },
+    {
+      "target": "mail-token-and-rights-delivery-state",
+      "store": "public.token_candidates",
+      "keys": [
+        "id"
+      ],
+      "selector": "t.id in (select id from public.token_candidates where outbox_id in (select id from public.mail_outbox where (target_kind in('subject','claimed-subject') and target_id=p_subject) or recipient_principal_id in (select id from public.subject_principals where subject_id=p_subject)))",
+      "disposition": "exact-current-row"
+    },
+    {
+      "target": "mail-token-and-rights-delivery-state",
+      "store": "public.rights_sessions",
+      "keys": [
+        "id"
+      ],
+      "selector": "t.id in (select id from public.rights_sessions where principal_id in (select id from public.subject_principals where subject_id=p_subject) or (target_kind='claimed-subject' and target_id=p_subject) or token_hash_id in (select id from public.token_hashes where candidate_id in (select id from public.token_candidates where outbox_id in (select id from public.mail_outbox where (target_kind in('subject','claimed-subject') and target_id=p_subject) or recipient_principal_id in (select id from public.subject_principals where subject_id=p_subject)))))",
+      "disposition": "exact-current-row"
+    },
+    {
+      "target": "mail-token-and-rights-delivery-state",
+      "store": "public.rights_nonces",
+      "keys": [
+        "rights_session_id",
+        "nonce_revision"
+      ],
+      "selector": "t.rights_session_id in (select id from public.rights_sessions where principal_id in (select id from public.subject_principals where subject_id=p_subject) or (target_kind='claimed-subject' and target_id=p_subject) or token_hash_id in (select id from public.token_hashes where candidate_id in (select id from public.token_candidates where outbox_id in (select id from public.mail_outbox where (target_kind in('subject','claimed-subject') and target_id=p_subject) or recipient_principal_id in (select id from public.subject_principals where subject_id=p_subject)))))",
+      "disposition": "exact-current-row"
+    },
+    {
+      "target": "mail-token-and-rights-delivery-state",
+      "store": "private.invitation_terminal_notices",
+      "keys": [],
+      "selector": "false",
+      "disposition": "excluded-for-approved-unbound-subject; any live FK dependency refuses the whole plan; parent/account/shared historical state retained"
+    },
+    {
+      "target": "mail-token-and-rights-delivery-state",
+      "store": "private.embryo_withdrawal_credentials",
+      "keys": [],
+      "selector": "false",
+      "disposition": "excluded-for-approved-unbound-subject; any live FK dependency refuses the whole plan; parent/account/shared historical state retained"
+    },
+    {
+      "target": "mail-token-and-rights-delivery-state",
+      "store": "public.future_person_claim_notices",
+      "keys": [
+        "id"
+      ],
+      "selector": "t.claim_id in (select id from public.future_person_claims where embryo_id=p_embryo) or t.outbox_id in (select id from public.mail_outbox where (target_kind in('subject','claimed-subject') and target_id=p_subject) or recipient_principal_id in (select id from public.subject_principals where subject_id=p_subject))",
+      "disposition": "exact-current-row"
+    },
+    {
+      "target": "mail-token-and-rights-delivery-state",
+      "store": "public.future_person_claim_release_credentials",
+      "keys": [
+        "id"
+      ],
+      "selector": "t.claimant_principal_id=p_claimant or t.subject_id=p_subject",
+      "disposition": "exact-current-row"
+    },
+    {
+      "target": "polygenic-results",
+      "store": "public.user_prs",
+      "keys": [
+        "id"
+      ],
+      "selector": "t.subject_id=p_subject or t.file_id=p_file",
+      "disposition": "exact-current-row"
+    },
+    {
+      "target": "portrait-pair-results",
+      "store": "public.portrait_results",
+      "keys": [
+        "id"
+      ],
+      "selector": "t.parent_a_subject_id=p_subject or t.parent_b_subject_id=p_subject",
+      "disposition": "exact-current-row"
+    },
+    {
+      "target": "record-key-authority",
+      "store": "public.future_person_record_key_recipients",
+      "keys": [],
+      "selector": "false",
+      "disposition": "excluded-for-approved-unbound-subject; any live FK dependency refuses the whole plan; parent/account/shared historical state retained"
+    },
+    {
+      "target": "record-key-authority",
+      "store": "public.future_person_record_key_hashes",
+      "keys": [
+        "embryo_id",
+        "recipient_principal_id",
+        "recipient_set_revision",
+        "key_revision"
+      ],
+      "selector": "t.embryo_id=p_embryo",
+      "disposition": "exact-current-row"
+    },
+    {
+      "target": "record-key-authority",
+      "store": "public.future_person_record_key_print_rights",
+      "keys": [
+        "id"
+      ],
+      "selector": "t.embryo_id=p_embryo",
+      "disposition": "exact-current-row"
+    },
+    {
+      "target": "result-suppressions",
+      "store": "public.suppressions",
+      "keys": [
+        "id"
+      ],
+      "selector": "t.subject_id=p_subject",
+      "disposition": "exact-current-row"
+    },
+    {
+      "target": "storage-objects",
+      "store": "storage.objects",
+      "keys": [
+        "id",
+        "bucket_id",
+        "name"
+      ],
+      "selector": "t.bucket_id='future-person-identity' and t.name in (select object_key from private.claim_documents where intake_id in (select id from private.claim_reviews where matched_embryo_id=p_embryo or matched_claimant_principal_id=p_claimant or id in (select id from public.future_person_claims where embryo_id=p_embryo)))",
+      "disposition": "exact-current-row"
+    },
+    {
+      "target": "subject-bound-authority-and-lifecycle-terminalization",
+      "store": "public.subject_consents",
+      "keys": [
+        "id"
+      ],
+      "selector": "t.subject_id=p_subject",
+      "disposition": "exact-current-row"
+    },
+    {
+      "target": "subject-bound-authority-and-lifecycle-terminalization",
+      "store": "public.consent_signatures",
+      "keys": [
+        "id"
+      ],
+      "selector": "(t.target_kind in('subject','claimed-subject') and t.target_id=p_subject) or t.signer_principal_id in (select id from public.subject_principals where subject_id=p_subject)",
+      "disposition": "exact-current-row"
+    },
+    {
+      "target": "subject-bound-authority-and-lifecycle-terminalization",
+      "store": "public.attestations",
+      "keys": [
+        "id"
+      ],
+      "selector": "(t.target_kind in('subject','claimed-subject') and t.target_id=p_subject) or t.principal_id in (select id from public.subject_principals where subject_id=p_subject)",
+      "disposition": "exact-current-row"
+    },
+    {
+      "target": "subject-bound-authority-and-lifecycle-terminalization",
+      "store": "public.attestation_contradictions",
+      "keys": [
+        "id"
+      ],
+      "selector": "t.subject_id=p_subject or t.principal_id in (select id from public.subject_principals where subject_id=p_subject)",
+      "disposition": "exact-current-row"
+    },
+    {
+      "target": "subject-bound-authority-and-lifecycle-terminalization",
+      "store": "public.embryo_donor_attributions",
+      "keys": [],
+      "selector": "false",
+      "disposition": "excluded-for-approved-unbound-subject; any live FK dependency refuses the whole plan; parent/account/shared historical state retained"
+    },
+    {
+      "target": "subject-bound-authority-and-lifecycle-terminalization",
+      "store": "public.purpose_grants",
+      "keys": [
+        "grant_id"
+      ],
+      "selector": "(t.target_kind in('subject','claimed-subject') and t.target_id=p_subject) or t.signer_principal_id in (select id from public.subject_principals where subject_id=p_subject) or t.data_subject_principal_id in (select id from public.subject_principals where subject_id=p_subject)",
+      "disposition": "exact-current-row"
+    },
+    {
+      "target": "subject-bound-authority-and-lifecycle-terminalization",
+      "store": "public.directional_grants",
+      "keys": [
+        "grant_id",
+        "grant_revision"
+      ],
+      "selector": "t.recipient_principal_id in (select id from public.subject_principals where subject_id=p_subject) or t.grant_id in (select grant_id from public.purpose_grants where target_kind='subject' and target_id=p_subject)",
+      "disposition": "exact-current-row"
+    },
+    {
+      "target": "subject-bound-authority-and-lifecycle-terminalization",
+      "store": "public.subject_principals",
+      "keys": [
+        "id"
+      ],
+      "selector": "t.subject_id=p_subject",
+      "disposition": "exact-current-row"
+    },
+    {
+      "target": "subject-bound-authority-and-lifecycle-terminalization",
+      "store": "public.subjects",
+      "keys": [
+        "id"
+      ],
+      "selector": "t.id=p_subject",
+      "disposition": "exact-current-row"
+    },
+    {
+      "target": "subject-bound-authority-and-lifecycle-terminalization",
+      "store": "public.embryo_cohorts",
+      "keys": [],
+      "selector": "false",
+      "disposition": "excluded-for-approved-unbound-subject; any live FK dependency refuses the whole plan; parent/account/shared historical state retained"
+    },
+    {
+      "target": "subject-demographics",
+      "store": "public.subject_demographics",
+      "keys": [
+        "subject_id"
+      ],
+      "selector": "t.subject_id=p_subject",
+      "disposition": "exact-current-row"
+    },
+    {
+      "target": "subject-relationships",
+      "store": "public.subject_relationships",
+      "keys": [
+        "id"
+      ],
+      "selector": "t.subject_id=p_subject or t.data_subject_principal_id in (select id from public.subject_principals where subject_id=p_subject) or t.recipient_principal_id in (select id from public.subject_principals where subject_id=p_subject)",
+      "disposition": "exact-current-row"
+    },
+    {
+      "target": "upload-and-ingest-working-state",
+      "store": "public.upload_sessions",
+      "keys": [
+        "id"
+      ],
+      "selector": "t.subject_id=p_subject or t.finalized_file_id=p_file",
+      "disposition": "exact-current-row"
+    },
+    {
+      "target": "upload-and-ingest-working-state",
+      "store": "public.upload_chunks",
+      "keys": [
+        "upload_session_id",
+        "chunk_ordinal"
+      ],
+      "selector": "t.upload_session_id in (select id from public.upload_sessions where subject_id=p_subject or finalized_file_id=p_file)",
+      "disposition": "exact-current-row"
+    },
+    {
+      "target": "upload-and-ingest-working-state",
+      "store": "public.upload_staging_objects",
+      "keys": [
+        "object_id"
+      ],
+      "selector": "t.upload_session_id in (select id from public.upload_sessions where subject_id=p_subject or finalized_file_id=p_file)",
+      "disposition": "exact-current-row"
+    },
+    {
+      "target": "upload-and-ingest-working-state",
+      "store": "public.embryo_ingest_sessions",
+      "keys": [],
+      "selector": "false",
+      "disposition": "excluded-for-approved-unbound-subject; any live FK dependency refuses the whole plan; parent/account/shared historical state retained"
+    },
+    {
+      "target": "upload-and-ingest-working-state",
+      "store": "public.embryo_ingest_fragments",
+      "keys": [],
+      "selector": "false",
+      "disposition": "excluded-for-approved-unbound-subject; any live FK dependency refuses the whole plan; parent/account/shared historical state retained"
+    },
+    {
+      "target": "upload-and-ingest-working-state",
+      "store": "public.embryo_fragment_handle_maps",
+      "keys": [],
+      "selector": "false",
+      "disposition": "excluded-for-approved-unbound-subject; any live FK dependency refuses the whole plan; parent/account/shared historical state retained"
+    },
+    {
+      "target": "upload-and-ingest-working-state",
+      "store": "public.embryo_mapping_challenges",
+      "keys": [],
+      "selector": "false",
+      "disposition": "excluded-for-approved-unbound-subject; any live FK dependency refuses the whole plan; parent/account/shared historical state retained"
+    },
+    {
+      "target": "upload-and-ingest-working-state",
+      "store": "public.pending_source_rows",
+      "keys": [
+        "id"
+      ],
+      "selector": "t.subject_id=p_subject or t.worker_job_id in (select id from public.worker_jobs where subject_id=p_subject or file_id=p_file)",
+      "disposition": "exact-current-row"
+    },
+    {
+      "target": "upload-and-ingest-working-state",
+      "store": "public.embryo_ingest_chunks",
+      "keys": [],
+      "selector": "false",
+      "disposition": "excluded-for-approved-unbound-subject; any live FK dependency refuses the whole plan; parent/account/shared historical state retained"
+    },
+    {
+      "target": "upload-and-ingest-working-state",
+      "store": "public.embryo_ingest_delete_objects",
+      "keys": [],
+      "selector": "false",
+      "disposition": "excluded-for-approved-unbound-subject; any live FK dependency refuses the whole plan; parent/account/shared historical state retained"
+    },
+    {
+      "target": "upload-and-ingest-working-state",
+      "store": "public.embryo_ingest_unwinds",
+      "keys": [],
+      "selector": "false",
+      "disposition": "excluded-for-approved-unbound-subject; any live FK dependency refuses the whole plan; parent/account/shared historical state retained"
+    },
+    {
+      "target": "upload-and-ingest-working-state",
+      "store": "private.embryo_ingest_write_intents",
+      "keys": [],
+      "selector": "false",
+      "disposition": "excluded-for-approved-unbound-subject; any live FK dependency refuses the whole plan; parent/account/shared historical state retained"
+    },
+    {
+      "target": "upload-and-ingest-working-state",
+      "store": "private.embryo_ingest_write_fences",
+      "keys": [],
+      "selector": "false",
+      "disposition": "excluded-for-approved-unbound-subject; any live FK dependency refuses the whole plan; parent/account/shared historical state retained"
+    },
+    {
+      "target": "upload-and-ingest-working-state",
+      "store": "private.embryo_ingest_object_disposals",
+      "keys": [],
+      "selector": "false",
+      "disposition": "excluded-for-approved-unbound-subject; any live FK dependency refuses the whole plan; parent/account/shared historical state retained"
+    },
+    {
+      "target": "variant-rows",
+      "store": "public.user_variants",
+      "keys": [
+        "id"
+      ],
+      "selector": "t.subject_id=p_subject or t.file_id=p_file",
+      "disposition": "exact-current-row"
+    },
+    {
+      "target": "variant-rows",
+      "store": "public.embryo_variants",
+      "keys": [
+        "id"
+      ],
+      "selector": "t.embryo_id=p_embryo or t.source_file_id=p_file",
+      "disposition": "exact-current-row"
+    },
+    {
+      "target": "variant-rows",
+      "store": "public.report_observed_calls",
+      "keys": [
+        "file_id",
+        "source_line"
+      ],
+      "selector": "t.file_id=p_file or t.subject_id=p_subject",
+      "disposition": "exact-current-row"
+    },
+    {
+      "target": "variant-rows",
+      "store": "private.own_normalization_batches",
+      "keys": [],
+      "selector": "false",
+      "disposition": "excluded-for-approved-unbound-subject; any live FK dependency refuses the whole plan; parent/account/shared historical state retained"
+    },
+    {
+      "target": "variant-rows",
+      "store": "private.own_normalization_runs",
+      "keys": [],
+      "selector": "false",
+      "disposition": "excluded-for-approved-unbound-subject; any live FK dependency refuses the whole plan; parent/account/shared historical state retained"
+    },
+    {
+      "target": "variant-rows",
+      "store": "private.own_normalization_positions",
+      "keys": [],
+      "selector": "false",
+      "disposition": "excluded-for-approved-unbound-subject; any live FK dependency refuses the whole plan; parent/account/shared historical state retained"
+    },
+    {
+      "target": "variant-rows",
+      "store": "private.own_preparation_artifacts",
+      "keys": [],
+      "selector": "false",
+      "disposition": "excluded-for-approved-unbound-subject; any live FK dependency refuses the whole plan; parent/account/shared historical state retained"
+    },
+    {
+      "target": "variant-rows",
+      "store": "private.own_preparation_jobs",
+      "keys": [
+        "id"
+      ],
+      "selector": "t.subject_id=p_subject or t.file_id=p_file",
+      "disposition": "exact-current-row"
+    },
+    {
+      "target": "variant-rows",
+      "store": "private.own_prepared_manifest_members",
+      "keys": [],
+      "selector": "false",
+      "disposition": "excluded-for-approved-unbound-subject; any live FK dependency refuses the whole plan; parent/account/shared historical state retained"
+    },
+    {
+      "target": "variant-rows",
+      "store": "private.own_prepared_manifests",
+      "keys": [],
+      "selector": "false",
+      "disposition": "excluded-for-approved-unbound-subject; any live FK dependency refuses the whole plan; parent/account/shared historical state retained"
+    },
+    {
+      "target": "variant-rows",
+      "store": "private.own_preparation_checkpoints",
+      "keys": [],
+      "selector": "false",
+      "disposition": "excluded-for-approved-unbound-subject; any live FK dependency refuses the whole plan; parent/account/shared historical state retained"
+    },
+    {
+      "target": "variant-rows",
+      "store": "private.own_prepared_cleanup_entries",
+      "keys": [],
+      "selector": "false",
+      "disposition": "excluded-for-approved-unbound-subject; any live FK dependency refuses the whole plan; parent/account/shared historical state retained"
+    },
+    {
+      "target": "variant-rows",
+      "store": "private.own_prepared_cleanups",
+      "keys": [],
+      "selector": "false",
+      "disposition": "excluded-for-approved-unbound-subject; any live FK dependency refuses the whole plan; parent/account/shared historical state retained"
+    },
+    {
+      "target": "variant-rows",
+      "store": "private.own_original_retirements",
+      "keys": [],
+      "selector": "false",
+      "disposition": "excluded-for-approved-unbound-subject; any live FK dependency refuses the whole plan; parent/account/shared historical state retained"
+    },
+    {
+      "target": "variant-rows",
+      "store": "private.embryo_split_variants",
+      "keys": [],
+      "selector": "false",
+      "disposition": "excluded-for-approved-unbound-subject; any live FK dependency refuses the whole plan; parent/account/shared historical state retained"
+    },
+    {
+      "target": "variant-rows",
+      "store": "private.embryo_canonical_source_parts",
+      "keys": [
+        "file_id",
+        "part_id"
+      ],
+      "selector": "t.file_id=p_file",
+      "disposition": "exact-current-row"
+    },
+    {
+      "target": "variant-rows",
+      "store": "private.embryo_canonical_sources",
+      "keys": [
+        "file_id"
+      ],
+      "selector": "t.file_id=p_file",
+      "disposition": "exact-current-row"
+    },
+    {
+      "target": "variant-rows",
+      "store": "private.embryo_canonical_parts",
+      "keys": [
+        "id"
+      ],
+      "selector": "t.id in (select part_id from private.embryo_canonical_source_parts where file_id=p_file)",
+      "disposition": "exact-current-row"
+    },
+    {
+      "target": "variant-rows",
+      "store": "private.future_person_custody_slices",
+      "keys": [
+        "subject_id"
+      ],
+      "selector": "t.subject_id=p_subject",
+      "disposition": "exact-current-row"
+    },
+    {
+      "target": "worker-and-model-working-state",
+      "store": "public.worker_jobs",
+      "keys": [
+        "id"
+      ],
+      "selector": "t.id in (select id from public.worker_jobs where subject_id=p_subject or file_id=p_file)",
+      "disposition": "exact-current-row"
+    },
+    {
+      "target": "worker-and-model-working-state",
+      "store": "public.worker_job_batches",
+      "keys": [
+        "worker_job_id",
+        "batch_ordinal"
+      ],
+      "selector": "t.worker_job_id in (select id from public.worker_jobs where subject_id=p_subject or file_id=p_file)",
+      "disposition": "exact-current-row"
+    },
+    {
+      "target": "worker-and-model-working-state",
+      "store": "public.analysis_jobs",
+      "keys": [
+        "id"
+      ],
+      "selector": "t.worker_job_id in (select id from public.worker_jobs where subject_id=p_subject or file_id=p_file)",
+      "disposition": "exact-current-row"
+    },
+    {
+      "target": "worker-and-model-working-state",
+      "store": "public.copilot_generation_sessions",
+      "keys": [
+        "id"
+      ],
+      "selector": "t.id in (select id from public.copilot_generation_sessions where chat_id in (select id from public.chats where id in (select id from public.chats where scope_kind='subject' and subject_id=p_subject) or id in (select chat_id from (select distinct chat_id,turn_id from public.chat_messages where p_subject=any(retrieved_subject_ids) union select distinct chat_id,turn_id from public.copilot_context_history where p_subject=any(retrieved_subject_ids)) z)))",
+      "disposition": "exact-current-row"
+    },
+    {
+      "target": "generated-artifacts",
+      "store": "private.export_archive_jobs",
+      "keys": [
+        "export_id"
+      ],
+      "selector": "t.export_id in (select id from public.generated_exports where target_kind='subject' and target_id=p_subject)",
+      "disposition": "exact-current-row"
+    },
+    {
+      "target": "generated-artifacts",
+      "store": "private.export_archive_attempts",
+      "keys": [
+        "id"
+      ],
+      "selector": "t.export_id in (select id from public.generated_exports where target_kind='subject' and target_id=p_subject)",
+      "disposition": "exact-current-row"
+    },
+    {
+      "target": "generated-artifacts",
+      "store": "private.export_archive_downloads",
+      "keys": [
+        "id"
+      ],
+      "selector": "t.export_id in (select id from public.generated_exports where target_kind='subject' and target_id=p_subject)",
+      "disposition": "exact-current-row"
+    },
+    {
+      "target": "generated-artifacts",
+      "store": "private.export_archive_manifest_pages",
+      "keys": [
+        "attempt_id",
+        "page"
+      ],
+      "selector": "t.attempt_id in (select id from private.export_archive_attempts where export_id in (select id from public.generated_exports where target_kind='subject' and target_id=p_subject))",
+      "disposition": "exact-current-row"
+    },
+    {
+      "target": "generated-artifacts",
+      "store": "private.export_archive_segments",
+      "keys": [
+        "attempt_id",
+        "ordinal"
+      ],
+      "selector": "t.attempt_id in (select id from private.export_archive_attempts where export_id in (select id from public.generated_exports where target_kind='subject' and target_id=p_subject))",
+      "disposition": "exact-current-row"
+    },
+    {
+      "target": "generated-artifacts",
+      "store": "private.export_archive_nonce_uses",
+      "keys": [
+        "nonce_hash"
+      ],
+      "selector": "t.export_id in (select id from public.generated_exports where target_kind='subject' and target_id=p_subject)",
+      "disposition": "exact-current-row"
+    }
+  ]
+}

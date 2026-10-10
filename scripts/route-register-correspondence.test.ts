@@ -4,6 +4,7 @@ import path from "node:path";
 import ts from "typescript";
 import { describe, expect, it } from "vitest";
 import { exportedMethods, migrationBuckets } from "./route-gate";
+import { storageBucketsInSource, UNRESOLVED_STORAGE_BUCKET } from "./storage-contract-census";
 
 /**
  * `docs/route-register.json` is the binding response-contract authority: a
@@ -23,8 +24,8 @@ import { exportedMethods, migrationBuckets } from "./route-gate";
  *
  * Registered-but-unbuilt is deliberately not failed here. The register is
  * written from the brief and describes routes the product has not reached
- * yet; 53 of them are unbuilt today and that is a backlog, not a defect. The
- * count is asserted loosely below only so a broken walker cannot pass.
+ * yet; 27 of them remain unbuilt after the native appeal review and notice routes.
+ * The exact current count prevents a broken walker from passing silently.
  *
  * Known divergences live in `docs/route-divergence.json` and are checked in
  * both directions: an unlisted one fails, and a listed one that no longer
@@ -209,8 +210,9 @@ describe("the route register and the App Router describe the same surface", () =
   it("leaves the unbuilt half of the register alone, but still measures it", () => {
     const builtUrls = new Set(built.map(route => route.url));
     const unbuilt = entries.filter(entry => !concretePaths(entry).some(candidate => builtUrls.has(candidate)));
-    // A backlog, not a failure. The bound only catches a matcher that broke.
-    expect(unbuilt.length).toBeGreaterThan(30);
+    // The four native appeal/evidence endpoints reduce the remaining backlog.
+    // Keep the exact census: new implementations require an explicit review.
+    expect(unbuilt.length).toBe(27);
     expect(unbuilt.length).toBeLessThan(entries.length);
   });
 });
@@ -249,7 +251,7 @@ describe("the route register and the App Router describe the same surface", () =
  * describe in a ledger anchored to literal evidence in the files that produce
  * them.
  *
- * What a static walk cannot see, stated rather than assumed: two live call
+ * What a static walk cannot see, stated rather than assumed: three live call
  * sites choose their bucket from a database manifest at run time, so their
  * bucket is invisible here and the database's own check constraint is
  * compared instead; object keys almost always come from a database column, so
@@ -283,8 +285,8 @@ function registerDocument(): Register {
   return JSON.parse(readFileSync(REGISTER, "utf8")) as Register;
 }
 
-/** A bucket named by a database manifest rather than by a literal in the code. */
-const DATABASE_SELECTED = "(database-selected)";
+/** Retained ledger spelling; an unresolved expression is not proof of its provider. */
+const DATABASE_SELECTED = UNRESOLVED_STORAGE_BUCKET;
 
 /**
  * Next.js answers HEAD for any route exporting GET, so a contract keyed on
@@ -342,23 +344,122 @@ function codeFiles(): string[] {
  * Every place the code addresses a Storage bucket, as `bucket file`. Both
  * forms count: the client's `storage.from("genomes")` and the REST path
  * `/storage/v1/object/authenticated/genomes/<key>` the server and worker
- * build by hand. A `from()` whose argument is not a literal is recorded as
- * database-selected rather than dropped, because that is exactly the case a
- * static walk would otherwise lose in silence.
+ * build by hand. Exact local immutable string constants and explicit named
+ * import/export aliases resolve without loading a module. Every unresolved
+ * bucket retains the historical database-selected ledger spelling rather
+ * than being dropped; that spelling does not establish its actual provider.
  */
-function storageCallSites(): string[] {
-  const fromCall = /storage\s*\.\s*from\(\s*(?:"([A-Za-z0-9._-]+)"|'([A-Za-z0-9._-]+)')?/g;
-  const objectUrl = /\/storage\/v1\/object\/(?:authenticated\/|public\/|sign\/|upload\/sign\/)?([A-Za-z0-9._-]+)(?=[/`'"$\s)])/g;
+function storageCallSites(sources: ReadonlyMap<string, string> = new Map(codeFiles()
+  .map(file => [file, readFileSync(file, "utf8")] as const))): string[] {
   const sites = new Set<string>();
-  for (const file of codeFiles()) {
-    const source = readFileSync(file, "utf8");
-    for (const match of source.matchAll(fromCall)) {
-      sites.add(`${match[1] ?? match[2] ?? DATABASE_SELECTED} ${file}`);
-    }
-    for (const match of source.matchAll(objectUrl)) sites.add(`${match[1]} ${file}`);
+  for (const [file, source] of sources) {
+    for (const bucket of storageBucketsInSource(source, file, sources)) sites.add(`${bucket} ${file}`);
   }
   return [...sites].sort();
 }
+
+describe("storage call-site extraction", () => {
+  it("reads the bucket of SDK and REST metadata calls without inventing an info bucket", () => {
+    expect(storageBucketsInSource([
+      'client.storage.from("exports").info(key)',
+      '`/storage/v1/object/info/exports/${key}`',
+    ].join("\n"))).toEqual(["exports"]);
+    expect(storageBucketsInSource([
+      'client.storage.from(ARCHIVE_BUCKET).info(key)',
+      '`/storage/v1/object/info/${ARCHIVE_BUCKET}/${key}`',
+      '`/storage/v1/object/${ARCHIVE_BUCKET}/${key}`',
+    ].join("\n"))).toEqual([DATABASE_SELECTED]);
+  });
+
+  it("retains unknown literal buckets, dynamic buckets and every existing REST operation", () => {
+    expect(storageBucketsInSource('client.storage.from("unregistered-bucket").info(key)'))
+      .toEqual(["unregistered-bucket"]);
+    // A genuine SDK bucket named info still counts; only the REST operation
+    // segment is excluded from bucket classification.
+    expect(storageBucketsInSource('client.storage.from("info").download(key)')).toEqual(["info"]);
+    for (const operation of ["", "authenticated/", "public/", "sign/", "upload/sign/", "info/"]) {
+      expect(storageBucketsInSource("`/storage/v1/object/" + operation + "unregistered-bucket/${key}`"))
+        .toEqual(["unregistered-bucket"]);
+      expect(storageBucketsInSource("`/storage/v1/object/" + operation + "${bucket}/${key}`"))
+        .toEqual([DATABASE_SELECTED]);
+    }
+    expect(storageBucketsInSource('client.storage.from(bucket).remove(keys)')).toEqual([DATABASE_SELECTED]);
+    expect(storageBucketsInSource('client.info(key)')).toEqual([]);
+  });
+
+  it("resolves immutable local strings and named import/export aliases for SDK and REST key producers", () => {
+    const sources = new Map([
+      ["src/lib/provider.ts", 'const LOCAL = "unregistered-bucket"; export { LOCAL as BUCKET };'],
+      ["src/lib/alias.ts", 'export { BUCKET as STORED_BUCKET } from "./provider";'],
+      ["src/lib/keys.ts", 'export function key(id: string) { return `unregistered-prefix/${id}`; }'],
+      ["src/app/api/planted/route.ts", [
+        'import { STORED_BUCKET as selected } from "@/lib/alias";',
+        'import { key as produceKey } from "@/lib/keys";',
+        'const bucket = selected as const;',
+        'client.storage.from(bucket).upload(produceKey(id), bytes);',
+        '`/storage/v1/object/info/${bucket}/${produceKey(id)}`;',
+        '`/storage/v1/object/` + bucket + `/` + produceKey(id);',
+      ].join("\n")],
+    ]);
+    expect(storageCallSites(sources)).toEqual(["unregistered-bucket src/app/api/planted/route.ts"]);
+    expect(contractLedger.storageCallSites.map(site => site.site))
+      .not.toContain("unregistered-bucket src/app/api/planted/route.ts");
+    expect(registerDocument().storagePrefixes.map(prefix => prefix.bucket)).not.toContain("unregistered-bucket");
+  });
+
+  it("reads an imported constant REST prefix through its exact local alias", () => {
+    const sources = new Map([
+      ["src/lib/urls.ts", 'export const URL_PREFIX = "/storage/v1/object/public/new-provider/";'],
+    ]);
+    expect(storageBucketsInSource('import { URL_PREFIX as prefix } from "./urls"; fetch(prefix + key);',
+      "src/lib/caller.ts", sources)).toEqual(["new-provider"]);
+    expect(storageBucketsInSource('const bucket = ("new-" + "provider") as const; client["storage"]["from"](bucket).upload(key, bytes);'))
+      .toEqual(["new-provider"]);
+  });
+
+  it.each([
+    'import { BUCKET } from "./missing"; client.storage.from(BUCKET).upload(key, bytes);',
+    'import { BUCKET } from "provider-package"; client.storage.from(BUCKET).upload(key, bytes);',
+    'import * as provider from "./provider"; client.storage.from(provider.BUCKET).upload(key, bytes);',
+    'let BUCKET = "exports"; client.storage.from(BUCKET).upload(key, bytes);',
+    'const BUCKET = getBucket(); client.storage.from(BUCKET).upload(key, bytes);',
+    'const BUCKET = "exports"; function write(BUCKET: string) { client.storage.from(BUCKET).upload(key, bytes); }',
+    'const BUCKET = "exports"; const write = function BUCKET() { client.storage.from(BUCKET).upload(key, bytes); };',
+    'const BUCKET = "exports"; BUCKET = other; client.storage.from(BUCKET).upload(key, bytes);',
+    'client.storage[method]("exports").upload(key, bytes);',
+    '`/storage/v1/object/info/${getBucket()}/${key}`;',
+    '`/storage/v1/object/${"prefix-" + getBucket()}/${key}`;',
+  ])("retains a census refusal for an unresolved or dynamic producer: %s", source => {
+    expect(storageBucketsInSource(source)).toEqual([DATABASE_SELECTED]);
+  });
+
+  it("does not guess through mutable, duplicate, wildcard, cyclic or ambiguous exported providers", () => {
+    const caller = 'import { BUCKET as bucket } from "./provider"; client.storage.from(bucket).upload(key, bytes);';
+    for (const provider of ['export let BUCKET = "exports";', 'export const BUCKET = "exports"; export { BUCKET };',
+      'export * from "./leaf";', 'export { BUCKET } from "./cycle";']) {
+      expect(storageBucketsInSource(caller, "src/caller.ts", new Map([
+        ["src/provider.ts", provider], ["src/leaf.ts", 'export const BUCKET = "exports";'],
+        ["src/cycle.ts", 'export { BUCKET } from "./provider";'],
+      ]))).toEqual([DATABASE_SELECTED]);
+    }
+    expect(storageBucketsInSource(caller, "src/caller.ts", new Map([
+      ["src/provider.ts", 'export const BUCKET = "exports";'],
+      ["src/provider.tsx", 'export const BUCKET = "genomes";'],
+    ]))).toEqual([DATABASE_SELECTED]);
+  });
+
+  it("records a new unresolved imported provider at its actual file instead of dropping it", () => {
+    expect(storageCallSites(new Map([["src/new-key-producer.ts",
+      'import { BUCKET } from "unresolved-provider"; client.storage.from(BUCKET).upload(makeKey(), bytes);']])))
+      .toEqual([`${DATABASE_SELECTED} src/new-key-producer.ts`]);
+    expect(contractLedger.storageCallSites.map(site => site.site)).not.toContain(`${DATABASE_SELECTED} src/new-key-producer.ts`);
+  });
+
+  it("keeps oversized REST producers visible when bounded string resolution refuses", () => {
+    expect(storageBucketsInSource(JSON.stringify(`/storage/v1/object/new-provider/${"x".repeat(4096)}`)))
+      .toEqual([DATABASE_SELECTED]);
+  });
+});
 
 /** The buckets a database row is allowed to name, from the migrations' own check constraints. */
 function databaseBucketAllowlist(): { buckets: string[]; constraints: number } {
@@ -552,6 +653,7 @@ describe("the register's storage prefixes and the buckets the code addresses agr
     expect(prefixes.length).toBeGreaterThan(5);
     expect(sites.length).toBeGreaterThan(10);
     expect(sites).toContain("genomes src/lib/uploads/subject-upload-browser.ts");
+    expect(sites).toContain("legal-evidence src/lib/future-person/claim-objects.ts");
   });
 
   it("records every live storage call site with the bucket it names", () => {
@@ -568,7 +670,7 @@ describe("the register's storage prefixes and the buckets the code addresses agr
     const { buckets, constraints } = databaseBucketAllowlist();
     expect(constraints).toBeGreaterThan(1);
     expect(buckets.length).toBeGreaterThan(3);
-    // The two database-selected call sites take their bucket from a manifest
+    // The three database-selected call sites take their bucket from a manifest
     // this allowlist constrains, so it is the only authority a static walk
     // has for them. An undeclared name here is the same defect the route
     // ledger already records against the migrations that create the bucket.
@@ -868,6 +970,29 @@ function formMethodIssues(submissions: FormSubmission[], entries: Entry[]): stri
 
 type ClientFormReview = { file: string; forms: number; sha256: string };
 
+// The guarded embryo/future-person flows add ten client-handled forms. Keep
+// their complete-source review separate so the original fourteen-form
+// inventory remains checked alongside the complete integrated inventory.
+const GUARDED_FLOW_CLIENT_FORM_REVIEW: ClientFormReview[] = [
+  { file: "src/components/embryo/upload/draft-form.tsx", forms: 1, sha256: "c216fd24a0d903e38171cf53079abe439f1656d010560de8f32694a253dfdc2e" },
+  { file: "src/components/embryo/upload/signing-form.tsx", forms: 1, sha256: "09ef84e65cf77e765d40d4034fb9b5345a19196857cd1bc4e6781b820eaffcf8" },
+  { file: "src/components/embryo/upload/upload-stage.tsx", forms: 2, sha256: "4404ca716bf5d60510687e31c64036ca316939962e7abe048b7f704ac668eac1" },
+  { file: "src/components/future-person/claim-form.tsx", forms: 1, sha256: "15879dd96632b930bcaf494fc2f47cabd9b75bddfc328ab104bc8610be10fbdb" },
+  { file: "src/components/future-person/claim-review.tsx", forms: 1, sha256: "ef96f46a4dec3c6cf56759c7699fdcc71613c14d3171f25e549c75ba2d7f3f6c" },
+  { file: "src/components/future-person/keyless-pending-review.tsx", forms: 1, sha256: "d44c1530368a229dc5b3f75339ba541cdb04ce0f0f8442558792306f3a5f7c31" },
+  { file: "src/components/future-person/owner-objection.tsx", forms: 1, sha256: "77a7bef89da3708b7227c7c22f4fca3d89a60a8cde3c3eba18b003a2a561db7d" },
+  { file: "src/components/settings/embryo-disposition.tsx", forms: 1, sha256: "e8bb3c6be7c5d03113e867af7204b0d92e8ab6825f107699220db1e2f810f634" },
+  { file: "src/components/settings/future-person-profile.tsx", forms: 1, sha256: "44edb4bbd08e2d2ff567aa354b43e4c4f27a8b16d1f77882c9a78670f6169788" },
+];
+
+// These two published TEST-only intake forms cancel native submission before
+// reading their fields and send JSON to their separate registered POST doors.
+// Bind the complete sources and opening counts; keep the original core census.
+const FUTURE_INTAKE_CLIENT_FORM_REVIEW: ClientFormReview[] = [
+  { file: "src/components/future-person/appeal-intake-form.tsx", forms: 1, sha256: "dccc4b01bedb410696e2e69113041fa7e59224ce79055ebdd4b60fa71c267d2f" },
+  { file: "src/components/future-person/correction-request.tsx", forms: 1, sha256: "37cd036ad9371ed5fffaef46d844edd8b26b567ea38bef46be99144c0597b99c" },
+];
+
 /**
  * These existing actionless client forms cancel default submission in their
  * attached handlers. Their current-page targets remain unresolved here. Seal
@@ -878,8 +1003,8 @@ type ClientFormReview = { file: string; forms: number; sha256: string };
 const CLIENT_FORM_REVIEW: ClientFormReview[] = [
   { file: "src/components/auth/auth-form.tsx", forms: 1, sha256: "150e3548289b39b7f3eb9f0988c2803a76d56209346ad18e9962288cf218261f" },
   { file: "src/components/chat/chat-panel.tsx", forms: 1, sha256: "77759a6b209673bef9ea9c5ca46e031a03e1cfb7a73f7e9e437ca519eb1dfdd1" },
-  { file: "src/components/chat/own-chat-panel.tsx", forms: 1, sha256: "ac2fc16c32ab1cb0bf127422937df7753d8408e2ee233badb38b599c9c5bc882" },
-  { file: "src/components/embryo/co-parent-review-form.tsx", forms: 1, sha256: "8dcca90eb9444fa99ad954852df12f5fb406f62847a04d1280561befe9b7093b" },
+  { file: "src/components/chat/own-chat-panel.tsx", forms: 1, sha256: "935d0925a414a1f377fbae00c6d06cccb6cc3817d02aa46d2d0972224b97f89c" },
+  { file: "src/components/embryo/co-parent-review-form.tsx", forms: 1, sha256: "e37f7be36d8b6eed42a49a5c91a2d1d715f549881fd2dcae67b6eb5d77584675" },
   { file: "src/components/embryo/invitation-refusal-form.tsx", forms: 1, sha256: "d1d5e36f18b1299ea3c21a6ef0369487250d5f2e0cae5c693486833d309ff6a3" },
   { file: "src/components/family/invite-adult-form.tsx", forms: 1, sha256: "1866d5e668f9069c0d94a2aa8c8d3f8e55ccd341403a029915fb39d8ac8e04d7" },
   { file: "src/components/settings/jurisdiction-form.tsx", forms: 1, sha256: "995f24840ae8e802a2f4d6b8be1c0ce3dbe804dfa75fc9b62a64572395c8fe6c" },
@@ -887,6 +1012,8 @@ const CLIENT_FORM_REVIEW: ClientFormReview[] = [
   { file: "src/components/uploads/other-adult-upload-card.tsx", forms: 2, sha256: "1ab2652e70ddca9ed64966a10dbf557244f4e31c3a0390dd631f5a9265c84137" },
   { file: "src/components/uploads/own-upload-flow.tsx", forms: 1, sha256: "f78a81339439a1b91840e7138ad560055d61d618f788715d1fb0651f73a7fede" },
   { file: "src/components/uploads/path-b-request-form.tsx", forms: 1, sha256: "0002fe0e675e8f4634b43bd92476f6d5672d62139f7b11924b31d099d2e2e280" },
+  ...GUARDED_FLOW_CLIENT_FORM_REVIEW,
+  ...FUTURE_INTAKE_CLIENT_FORM_REVIEW,
 ];
 
 function clientFormReviewIssues(submissions: FormSubmission[], reviews: ClientFormReview[], source: (file: string) => string): string[] {
@@ -913,7 +1040,13 @@ describe("native form methods match their registered targets", () => {
     const all = codeFiles().filter(file => file.endsWith(".tsx"))
       .flatMap(file => nativeFormSubmissions(readFileSync(file, "utf8"), file, entries));
     expect(clientFormReviewIssues(all, CLIENT_FORM_REVIEW, file => readFileSync(file, "utf8"))).toEqual([]);
-    expect(all).toHaveLength(14);
+    const guardedFlowFiles = new Set(GUARDED_FLOW_CLIENT_FORM_REVIEW.map(review => review.file));
+    const futureIntakeFiles = new Set(FUTURE_INTAKE_CLIENT_FORM_REVIEW.map(review => review.file));
+    const coreForms = all.filter(form => !futureIntakeFiles.has(form.file));
+    expect(coreForms.filter(form => !guardedFlowFiles.has(form.file))).toHaveLength(14);
+    expect(coreForms).toHaveLength(24);
+    expect(all.filter(form => futureIntakeFiles.has(form.file))).toHaveLength(2);
+    expect(all).toHaveLength(26);
     const submissions = all.filter(form => form.routeId !== null);
     expect(submissions).toEqual([
       { file: "src/app/(app)/genome/[subject]/data/browser/page.tsx", routeId: "genome.browser", method: "GET" },

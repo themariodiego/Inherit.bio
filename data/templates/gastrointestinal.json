@@ -130,7 +130,7 @@
     "slug": "hemochromatosis-hfe-c282y-rs1800562",
     "category": "gastrointestinal",
     "title": "Iron buildup (C282Y) · HFE",
-    "summary": "HFE rs1800562, or C282Y, is the main DNA change behind inherited hemochromatosis. This recessive trait causes too much iron to be taken in from food. Over decades, excess iron can harm the liver, joints, and other organs. About 1 in 200 people with northern European ancestry have two copies. Most never develop disease. In a large study, iron-related disease affected about 28% of men and 1% of women with two copies. This reports inherited risk, not current health.",
+    "summary": "Researchers followed adults with northern European ancestry for about twelve years. Among people with two C282Y copies, iron-related disease was found more often in men than women. Blood-iron readings and diagnosed disease are different outcomes. This group finding does not show your iron level or health.",
     "evidence": "emerging",
     "variants": [
       {
@@ -211,7 +211,7 @@
     "slug": "bitter-taste-tas2r38-rs713598",
     "category": "gastrointestinal",
     "title": "Bitter taste perception · TAS2R38",
-    "summary": "rs713598 in TAS2R38 is also called Ala49Pro. It is the main DNA change in the classic taster or non-taster difference for PTC and PROP bitter compounds. These include chemicals in broccoli, kale, Brussels sprouts, and other cruciferous vegetables. The G copy, or Pro49, is part of the taster PAV type. It is linked to stronger bitterness. Some studies find a small effect on vegetable choice and intake.",
+    "summary": "A study linked three changes in a bitter-taste receptor gene to sensitivity to PTC, a bitter test chemical. Their combined patterns mattered. This report reads one position, which does not establish the whole pattern. A PTC test does not measure liking for vegetables.",
     "evidence": "emerging",
     "variants": [
       {
@@ -237,7 +237,7 @@
     "slug": "celiac-hla-dq2-tag-rs2187668",
     "category": "gastrointestinal",
     "title": "Celiac disease HLA background · HLA-DQA1",
-    "summary": "Celiac disease, an immune reaction to gluten, occurs almost exclusively in people carrying the HLA-DQ2.5 or DQ8 molecules. rs2187668 is a well-validated tag for the DQ2.5 haplotype (HLA-DQA1*05:01–DQB1*02:01), which is present in around 90% of people with celiac disease. The genetics are far more useful for ruling out than ruling in: about a quarter of Europeans carry DQ2.5, yet only a few percent of carriers ever develop celiac disease.",
+    "summary": "Researchers tested six DNA markers as stand-ins for HLA types linked to celiac disease. They compared them with lab typing in three European celiac populations. This tested a typing method. This one-marker report cannot identify celiac disease or predict a later case.",
     "evidence": "emerging",
     "variants": [
       {

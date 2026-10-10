@@ -1,8 +1,9 @@
 import { createHash } from "node:crypto";
 import { existsSync, readFileSync, statSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import citations from "../../../data/citations.json";
-import claims from "../../../data/claims.json";
+import allCitations from "../../../data/citations.json";
+import allClaims from "../../../data/claims.json";
+import primaryTranche from "../../../docs/sources/reviews/primary-source-tranche-20261002.json";
 import mental from "../../../data/templates/mental-health.json";
 import addiction from "../../../data/templates/addiction.json";
 import environmental from "../../../data/templates/environmental-sensitivity.json";
@@ -15,6 +16,12 @@ import neurodegenerative from "../../../data/templates/neurodegenerative.json";
 import type { ReportTemplate } from "../genome/reports";
 import { validateClaimRegistry, type ClaimOccurrence } from "./registry";
 import { readStudyContext } from "../genome/study-context";
+
+// Retain every original assertion over its exact reviewed population. The
+// separate tranche fixture pins the entire retained population and the exact
+// additive union; neither a new source nor a date can hide an old record.
+const citations = allCitations.filter((source) => !primaryTranche.addedSourceIds.includes(source.id));
+const claims = allClaims.filter((claim) => !primaryTranche.addedClaimIds.includes(claim.claim_id));
 
 // This is an independent seed-text binding fixture, NOT a rendered corpus.
 // No complete-channel or G1.11/G4.7 acceptance is claimed by this test.

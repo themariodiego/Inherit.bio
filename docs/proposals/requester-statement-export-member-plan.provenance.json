@@ -1,0 +1,23 @@
+{
+  "version": "requester-statement-export-proposal-provenance-v1",
+  "status": "unbound-source-only",
+  "active": {
+    "file": "docs/export-member-plan.json",
+    "bytes": 71856,
+    "sha256": "76749aa78ecd1987fa242605be8c5e2a169e68a27322ebc05669275d21276953",
+    "sourceCommit": "28e20c1af57c439c1dc356c899d9a90a01313305"
+  },
+  "proposal": {
+    "file": "docs/proposals/requester-statement-export-member-plan.json",
+    "bytes": 70465,
+    "sha256": "3c943fa3171ee7891d93447b3391906d5a927993998d11643e28850e269a149c",
+    "sourceManifestSha256": "1d70e9bea9a6969a5370a685356f4011a4da4314cb5d463fc1d0b21ef253f324"
+  },
+  "approvedComputedImports": [
+    {
+      "file": "src/lib/future-person/review-pdf.ts",
+      "sourceSha256": "f0a79b3adf7260f308add54c205193582130a5dbb9ea44e1de0a63ad4f552783",
+      "expression": "import(/* webpackIgnore: true */ /* turbopackIgnore: true */ moduleUrl)"
+    }
+  ]
+}

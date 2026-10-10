@@ -54,6 +54,10 @@ const SURFACE_FILES = new Set(["route.ts", "page.tsx", "layout.tsx"]);
  * reviewable and a new one cannot join them silently.
  */
 export const WITHOUT_CHECK: Record<string, string> = {
+  "src/app/api/reviews/future-person/claims/[id]/release/route.ts":
+    "Distinct final Future Person rights review under own current Auth/recent MFA and exact operation-specific named assignment, current claim/notice/session/document revisions and one-use proof. Every current full-document acknowledgement, minimum/profile/parent authority and immutable provider-committed notice deadline is rechecked by the subject-first SQL transaction. It opens no analytical capability and must remain independent of jurisdiction, embryo_analysis and QC.",
+  "src/app/api/reviews/future-person/claim-objections/[id]/route.ts":
+    "Current named human objection reviewer under own live Auth, recent MFA, exact operation assignment and current claim/objection/notice revisions. Both documents require complete byte acknowledgement; decisions mutate only the pending claim and must remain independent of analysis, jurisdiction and QC. No analytical capability is opened.",
   "src/app/api/family/acknowledge/route.ts":
     "Records an acknowledgement, a Tier-2 result-gate cookie and a one-time portrait acknowledgement stamp. It returns no genetic result and opens no capability; the surfaces it precedes resolve capability themselves.",
   "src/app/(app)/embryos/acknowledge.ts":
@@ -68,12 +72,16 @@ export const WITHOUT_CHECK: Record<string, string> = {
     "Subject rights review page for an activated rights session; rights are not a restricted capability and must answer in every jurisdiction.",
   "src/app/api/withdraw/session/route.ts":
     "Rights session responses (confirm, refuse, delete); rights are not a restricted capability and must answer in every jurisdiction.",
+  "src/app/api/future-person/claim/session/objection/route.ts":
+    "Current-owner claim objection under a purpose-specific cookie or independently fresh own Auth with configured MFA, same-origin CSRF and single-use operation proof; subject-first SQL rechecks the exact delivered notice, current owner and immutable claim clock. It suspends only that claim, returns no analytical data and must work independently of jurisdiction, QC and embryo_analysis.",
   "src/app/api/rights/activate/route.ts":
     "Activates a rights session from a mailed token; rights are not a restricted capability.",
   "src/app/api/cohorts/[id]/restrict/route.ts":
     "Withdrawal-class cohort restriction under an operation token bound to the account, session, operation and target. A cohort exists only through create_embryo_cohort_draft_v1, create_embryo_draft_invitation_v1, accept_embryo_co_parent_invitation_v1 and grant_cohort_purpose_v1, each of which checks jurisdiction in the database, and restriction must work in every jurisdiction.",
   "src/app/api/embryos/[id]/disposition/route.ts":
     "Future-person disposition under an operation token bound to the account, session, operation and target, on a cohort that exists only through the database functions that check jurisdiction at creation, invitation, acceptance and grant.",
+  "src/app/api/embryos/[id]/future-person-identity/route.ts":
+    "Optional parent matching-data save/delete under own recent Auth, exact current evidenced parent/recipient authority, account/session/operation/target proof and a subject-first database recheck. It opens no analytical capability. Saving requires the current signed upload artifact; the parent's deletion right remains independent of a new upload consent and embryo_analysis.",
   "src/app/api/embryo-cohorts/[id]/record-key-cards/route.ts":
     "Delivery of Record Key cards under an operation token, on a cohort that exists only through the database functions that check jurisdiction at creation, invitation, acceptance and grant; it opens no analysis.",
 };

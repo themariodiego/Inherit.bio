@@ -128,23 +128,45 @@ describe("the env gate holds .env.example to what the code reads", () => {
     // `INHERIT_HMAC_KEYRING` directly as the default argument of
     // `keyedDigestSet`; all three are declared in the template and named in
     // the guide.
-    expect(result.directReadKeyCount).toBe(21);
-    // The preserved scanner factory adds exactly INHERIT_CLAMD_ADDRESS and
-    // one default-process.env binding. Its production path remains unused.
-    expect(result.boundReadKeyCount).toBe(17);
-    expect(result.boundBindingCount).toBe(8);
+    // NEW appeals-open reads both TEST flags directly; the complete source
+    // census had 23 direct keys. The account R2 adapter now explicitly reads
+    // its declared TEST flag, owner DSN and public CA: three additional keys.
+    expect(result.directReadKeyCount).toBe(26);
+    // V5 adds six private server settings and one harness-owned TEST flag.
+    // Four source modules add a distinct process.env binding each: requester
+    // statement policy, R2 native adapter, gateway adapter, private transport.
+    // Source-authored expected ledger; not a recorded gate execution.
+    expect(result.boundReadKeyCount).toBe(24);
+    // Future Person adds the TEST-LOCAL flag binding in futurePersonClaimsOpen.
+    // The scanner selector adds INHERIT_CLAMD_ADDRESS as its ninth binding.
+    // Exact scanner census: base 9 + NEW captures 5 across four modules = 14.
+    // The conservative typed-parameter heuristic also captures `expected`
+    // and `gateway`; this number is scanner bindings, not distinct env keys.
+    // Keep that detector and every other assertion unchanged.
+    expect(result.boundBindingCount).toBe(14);
     expect(result.dynamicReadSiteCount).toBe(1);
-    expect(result.readKeyCount).toBe(38);
-    expect(result.templateKeyCount).toBe(31);
+    expect(result.readKeyCount).toBe(48);
+    expect(result.templateKeyCount).toBe(40);
     // Every key an operator is told to fill in is named in the guide they
     // follow, and the ten further names the guide writes as configuration are
     // the recorded ones: the two labels the Supabase CLI prints, the worker's
     // own project URL, and the seven nobody should ever set by hand.
-    expect(result.guideDocumentedKeyCount).toBe(31);
-    expect(result.guideNamedCount).toBe(41);
+    expect(result.guideDocumentedKeyCount).toBe(40);
+    expect(result.guideNamedCount).toBe(51);
     expect(result.guideNamedCount).toBe(result.templateKeyCount + GUIDE_FOREIGN_NAMES.length);
-    expect(result.runtimeInjectedKeyCount).toBe(7);
+    expect(result.runtimeInjectedKeyCount).toBe(8);
   });
+
+  it.each(["INHERIT_TEST_ACCOUNT_ARCHIVE_R2", "INHERIT_TEST_ACCOUNT_ARCHIVE_R2_DATABASE", "INHERIT_TEST_ACCOUNT_ARCHIVE_R2_DATABASE_CA_CERT"])(
+    "retains the new account R2 declaration for %s rather than exempting it", (key) => {
+      const source = readFileSync(path.join(REPOSITORY_ROOT, "src/lib/exports/account-archive-r2.ts"), "utf8");
+      expect(moduleEnvReads(source).direct).toContain(key);
+      const root = plant({ template: withoutTemplateLine(key) });
+      expect(runEnvGate(root).failures).toContain(
+        `undocumented environment variable: not recorded in RUNTIME_INJECTED in ${GATE}: ${key}`,
+      );
+    },
+  );
 
   it("fails when a module reads a variable the template does not declare", () => {
     const root = plant({

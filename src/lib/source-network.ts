@@ -7,9 +7,10 @@ import { isIP } from "node:net";
  * normalized only in bounded request memory, then keyed, never stored).
  *
  * This module reads the client address for one reason, the per-network
- * invitation limit the owner allowed on 28 September 2026. The value goes
- * straight into a keyed digest (`src/lib/invitation-quota.ts`), the bucket is
- * purged within 24 hours, and it is never used to infer a jurisdiction.
+ * limits the owner allowed on 28 September 2026 (invitation attempts and the
+ * register's other per-network limits). The value goes straight into a keyed
+ * digest (`networkBucketDigests` in `src/lib/rate-limit-keys.ts`), the bucket
+ * is purged within 24 hours, and it is never used to infer a jurisdiction.
  * `scripts/jurisdiction-inference.test.ts` allows exactly the one call in
  * `sourceNetwork` below; any other read, here or elsewhere, fails it, and so
  * does any other module importing this one.

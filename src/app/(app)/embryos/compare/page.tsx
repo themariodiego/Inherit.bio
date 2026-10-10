@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
+import { CohortPermission } from "@/components/embryo/cohort-permission";
+import { loadCohortPermission } from "@/lib/embryos/cohort-permission";
 import { loadEmbryoInputFacts } from "@/lib/embryos/input-facts-load";
 import { notFound, redirect } from "next/navigation";
 import { CompareTable } from "@/components/embryo/compare/compare-table";
+import { CarrierLibraryCoverage } from "@/components/embryo/carrier-library-coverage";
 import { ContextStrip } from "@/components/embryo/compare/context-strip";
 import { QcTable } from "@/components/embryo/compare/qc-table";
 import { StandingStatement } from "@/components/embryo/compare/standing-statement";
@@ -18,6 +21,7 @@ import {
   NO_RANGE_YET,
   QUALITY_CHECK_HEADING,
   REGISTRY_EMPTY_SENTENCE,
+  SAVED_SCIENTIFIC_REVIEW_SENTENCE,
   READ_FAILED_HEADING,
   READ_FAILED_SENTENCE,
   SHAPE_BLOCKED_HEADING,
@@ -48,6 +52,9 @@ import { allowedConditions, registryIsEmpty } from "@/lib/embryos/allowed-condit
 import { EmbryoReadError, isCanonicalId, rowsOrThrow, selectCohort, type EmbryoCohortView } from "@/lib/embryos/cohorts";
 import { EmbryoShapeError, type ComparisonResultRow, type RscEmbryoComparison } from "@/lib/embryos/policy";
 import { projectComparison, type EmbryoQcRow, type EmbryoScoreRow } from "@/lib/embryos/projection";
+import { readEmbryoQcRows } from "@/lib/embryos/qc-reader";
+import { loadSavedEmbryoCarrierHold } from "@/lib/embryos/carrier-hold";
+import { loadSavedCarrierLibraryCoverage } from "@/lib/embryos/carrier-library-read";
 import { acknowledged } from "@/lib/embryos/tier2";
 import type { FindingLayer } from "@/lib/genome/taxonomy";
 import { route } from "@/lib/primary-routes";
@@ -91,12 +98,14 @@ async function loadComparison(cohort: EmbryoCohortView): Promise<RscEmbryoCompar
   const embryoIds = cohort.embryos.map((embryo) => embryo.id);
   const registered = new Set(allowedConditions().map((entry) => entry.condition_id));
   const [qcResult, scoreResult] = await Promise.all([
-    admin.from("embryo_qc").select("*").in("embryo_id", embryoIds),
+    readEmbryoQcRows(admin, cohort.id, embryoIds),
     // A score outside the registry is never read (requestRule).
     registered.size > 0
       ? admin
           .from("embryo_scores")
           .select("embryo_id, condition_id, condition_name, finding, evidence_label, coverage_state, citation_ids, not_covered_reason")
+          // Private carrier observations have a saved publication hold.
+          .is("computation_receipt", null)
           .in("embryo_id", embryoIds)
           .in("condition_id", [...registered])
       : { data: [] as never[], error: null },
@@ -174,12 +183,14 @@ export default async function EmbryoComparePage(props: PageProps<"/embryos/compa
       return frame(<BlockingState state="empty">{FILES_NOT_ADDED_SENTENCE}</BlockingState>);
     case "processing":
       return frame(<BlockingState state="processing">{STILL_CHECKING_STATUS}</BlockingState>);
-    case "consent-required":
+    case "consent-required": {
+      const permission = await loadCohortPermission(user.id, cohort);
       return frame(
-        <BlockingState state="consent-required">
+        <><BlockingState state="consent-required">
           {waitingForResultsBody(waitingRole(analysisConsent(cohort)) ?? ROLE_OTHER_PARENT)}
-        </BlockingState>,
+        </BlockingState>{permission ? <CohortPermission cohortId={cohort.id} artifact={permission} /> : null}</>,
       );
+    }
     case "gated":
       return frame(<EmbryoResultGate action={acknowledgeEmbryoGate} />);
     case "complete":
@@ -187,7 +198,12 @@ export default async function EmbryoComparePage(props: PageProps<"/embryos/compa
   }
 
   let comparison: RscEmbryoComparison;
+  let savedHold: Awaited<ReturnType<typeof loadSavedEmbryoCarrierHold>>;
+  let savedCoverage: Awaited<ReturnType<typeof loadSavedCarrierLibraryCoverage>>;
   try {
+    savedCoverage = await loadSavedCarrierLibraryCoverage(user.id, cohort);
+    if (savedCoverage) savedHold = { status: "held", reason: "scientific_disclosures_pending" };
+    else savedHold = await loadSavedEmbryoCarrierHold(user.id, cohort.id);
     comparison = await loadComparison(cohort);
   } catch (error) {
     if (error instanceof EmbryoShapeError) {
@@ -215,6 +231,8 @@ export default async function EmbryoComparePage(props: PageProps<"/embryos/compa
 
   const subjectIds = new Map(cohort.embryos.map((embryo) => [embryo.id, embryo.subjectId]));
   const layers = layerOf();
+  const riskRangeEmbryoIds = new Set(comparison.embryos.filter((embryo) => comparison.result_rows.some((row) =>
+    row.findings.some((finding) => finding.embryo_label === embryo.display_label && finding.finding?.kind === "absolute_risk"))).map((embryo) => embryo.id));
   const rowsFor = (layer: FindingLayer): ComparisonResultRow[] =>
     comparison.result_rows.filter((row) => layers.get(row.findings[0].condition_id) === layer);
   const conditionNames = new Map(
@@ -229,6 +247,9 @@ export default async function EmbryoComparePage(props: PageProps<"/embryos/compa
     <>
       <div className="space-y-6">
         <StandingStatement text={comparison.standing_statement} />
+        {savedHold ? <p data-slot="saved-analysis-held" className="max-w-prose text-sm leading-relaxed text-ink">
+          {SAVED_SCIENTIFIC_REVIEW_SENTENCE}
+        </p> : null}
         <ContextStrip counts={comparison.context_counts} />
       </div>
       <TradeOffPanel tradeOffs={comparison.trade_offs} conditionNames={conditionNames} embryoCount={comparison.embryos.length} />
@@ -240,13 +261,21 @@ export default async function EmbryoComparePage(props: PageProps<"/embryos/compa
         {(["variant_call", "estimate"] as const).map((layer) => (
           <CompareTable key={layer} layer={layer} embryos={comparison.embryos} rows={rowsFor(layer)} subjectIds={subjectIds} />
         ))}
+        {savedCoverage ? <div data-slot="carrier-library-comparison" className="space-y-6">
+          {cohort.embryos.map(embryo => <div key={embryo.id} className="space-y-3">
+            <p className="label text-ink">{embryo.displayLabel}</p>
+            <CarrierLibraryCoverage rows={savedCoverage.filter(row => row.embryoId === embryo.id)}
+              subjectId={embryo.subjectId}
+              conditionNames={new Map(allowedConditions().map(entry => [entry.condition_id, entry.condition_name]))} />
+          </div>)}
+        </div> : null}
       </section>
 
       <section aria-labelledby="quality-check-heading" data-density-top-level-section className="space-y-4">
         <h2 id="quality-check-heading" className="title text-ink">
           {QUALITY_CHECK_HEADING}
         </h2>
-        <QcTable embryos={comparison.embryos} subjectIds={subjectIds} />
+        <QcTable embryos={comparison.embryos} subjectIds={subjectIds} riskRangeEmbryoIds={riskRangeEmbryoIds} />
       </section>
 
       <section aria-labelledby="how-sure-heading" data-density-top-level-section className="space-y-3">

@@ -14,6 +14,8 @@ import { coverageSpec, dropoutSpec, isZeroRate, rateSpec } from "@/components/em
 import { verdictWord } from "@/components/embryo/compare/qc-table";
 import {
   DROPOUT_NOT_MEASURED,
+  DROPOUT_NOT_MEASURED_NO_RANGE,
+  QC_BASIS_NOT_RECORDED,
   NONE_WORD,
   NOT_MEASURABLE_FROM_FILE,
   NOT_STATED_BY_SOURCE,
@@ -35,12 +37,14 @@ const RATE_FIELDS = [
 
 const SOURCE_FIELDS = ["source_laboratory", "source_assay", "amplification_method", "allelic_dropout_method"] as const;
 
-export function QcBlock({ qc, embryoId, subjectId }: { qc: QcDto; embryoId: string; subjectId: string }) {
-  const figures: StandaloneFigureSpec[] = [coverageSpec(qc)];
+export function QcBlock({ qc, embryoId, subjectId, hasRiskRanges = false }: { qc: QcDto; embryoId: string; subjectId: string; hasRiskRanges?: boolean }) {
+  const coverage = coverageSpec(qc);
+  const figures: StandaloneFigureSpec[] = coverage ? [coverage] : [];
   const rateIndex = new Map<(typeof RATE_FIELDS)[number], number>();
   for (const field of RATE_FIELDS) {
     const value = qc[field];
-    if (value !== null && !isZeroRate(value)) rateIndex.set(field, figures.push(rateSpec(value)) - 1);
+    const spec = rateSpec(qc, field);
+    if (value !== null && spec && !isZeroRate(value)) rateIndex.set(field, figures.push(spec) - 1);
   }
   const dropout = dropoutSpec(qc, embryoId);
   const dropoutIndex = dropout ? figures.push(dropout) - 1 : null;
@@ -54,7 +58,7 @@ export function QcBlock({ qc, embryoId, subjectId }: { qc: QcDto; embryoId: stri
       renderFigures={(nodes: ReactNode[]) => (
         <dl data-slot="qc-block" className="grid gap-x-6 gap-y-2 text-sm sm:grid-cols-[auto_1fr]">
           <dt className="font-medium text-ink">{QC_FIELD_LABELS.call_rate}</dt>
-          <dd data-slot="qc-coverage">{nodes[0]}</dd>
+          <dd data-slot="qc-coverage">{coverage ? nodes[0] : QC_BASIS_NOT_RECORDED}</dd>
           <dt className="font-medium text-ink">{QC_FIELD_LABELS.qc_verdict}</dt>
           <dd data-slot="qc-verdict" data-verdict={qc.qc_verdict}>
             {verdictWord(qc.qc_verdict)}
@@ -64,11 +68,11 @@ export function QcBlock({ qc, embryoId, subjectId }: { qc: QcDto; embryoId: stri
             ) : null}
           </dd>
           {RATE_FIELDS.map((field) => (
-            <RateRow key={field} label={QC_FIELD_LABELS[field]} field={field} value={qc[field]} node={rateIndex.has(field) ? nodes[rateIndex.get(field)!] : null} />
+            <RateRow key={field} label={QC_FIELD_LABELS[field]} field={field} value={qc[field]} node={rateIndex.has(field) ? nodes[rateIndex.get(field)!] : rateSpec(qc, field) && isZeroRate(qc[field]) ? NONE_WORD : null} />
           ))}
           <dt className="font-medium text-ink">{QC_FIELD_LABELS.allelic_dropout_estimate}</dt>
           <dd data-slot="qc-dropout" data-measured={dropoutIndex !== null ? "true" : "false"}>
-            {dropoutIndex !== null ? nodes[dropoutIndex] : DROPOUT_NOT_MEASURED}
+            {dropoutIndex !== null ? nodes[dropoutIndex] : qc.allelic_dropout_estimate === null ? hasRiskRanges ? DROPOUT_NOT_MEASURED : DROPOUT_NOT_MEASURED_NO_RANGE : QC_BASIS_NOT_RECORDED}
           </dd>
           {SOURCE_FIELDS.map((field) => (
             <SourceRow key={field} label={QC_FIELD_LABELS[field]} field={field} value={qc[field]} />
@@ -86,7 +90,7 @@ function RateRow({ label, field, value, node }: { label: string; field: string; 
     <>
       <dt className="font-medium text-ink">{label}</dt>
       <dd data-slot="qc-rate" data-field={field}>
-        {value === null ? NOT_MEASURABLE_FROM_FILE : isZeroRate(value) ? NONE_WORD : node}
+        {value === null ? NOT_MEASURABLE_FROM_FILE : node === null ? QC_BASIS_NOT_RECORDED : isZeroRate(value) ? NONE_WORD : node}
       </dd>
     </>
   );

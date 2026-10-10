@@ -3,7 +3,7 @@ import path from "node:path";
 import { expect, test } from "@playwright/test";
 import { assertNoThirdParty, axeViolations, createConfirmedUser, signIn, watchRequests } from "./helpers";
 import { uploadOwnFileWithChosenReports } from "./own-report-helpers";
-import { PUBLIC_ROUTES, TINY_FIXTURE, VISIT, DOCUMENTS, CHECKED_ELSEWHERE, registeredPages, authenticatedRoutes } from "./accessibility-sweeps";
+import { PUBLIC_ROUTES, TINY_FIXTURE, VISIT, DOCUMENTS, CHECKED_ELSEWHERE, registeredPages, authenticatedRoutes, POPULATED_EMBRYO_AUDITS } from "./accessibility-sweeps";
 
 const AUTHENTICATED_ACCOUNT = {
   email: `a11y-auth-${randomUUID()}@e2e.local`,
@@ -30,6 +30,10 @@ test("axe: every registered authenticated page, both themes", async ({ page }) =
     ...Object.keys(VISIT), ...Object.keys(CHECKED_ELSEWHERE)]);
   expect(pages.filter(path => !audited.has(path)).sort(),
     "every registered kept page is audited somewhere, in both themes").toEqual([]);
+
+  expect(registered.filter(route => route.startsWith("/embryos") && route !== "/embryos/request-data").sort(),
+    "every data-bearing Embryo route also has a populated audit through the genuine native producer")
+    .toEqual(Object.keys(POPULATED_EMBRYO_AUDITS).sort());
 
   await createConfirmedUser(AUTHENTICATED_ACCOUNT.email, AUTHENTICATED_ACCOUNT.password);
   await signIn(page, AUTHENTICATED_ACCOUNT.email, AUTHENTICATED_ACCOUNT.password);

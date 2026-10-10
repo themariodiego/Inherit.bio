@@ -8,6 +8,7 @@ import { capturedAncestryResult, ownChatAncestryReceiptSchema, OWN_ANCESTRY_HREF
 import { capturedChatCitations, ownChatCitationSchema, type OwnChatProjection } from "./own-chat-content";
 import type { OwnCopilotAuthority } from "./own-provider-authority";
 import { computeOwnAncestryContentV3, SEVEN_OWN_ANCESTRY_PANEL } from "../uploads/own-ancestry-content-v3";
+import { computeOwnAncestryContentV4 } from "../uploads/own-ancestry-content-v4";
 import { computeOwnAncestryContent, CURRENT_OWN_ANCESTRY_PANEL, type OwnAncestryCall } from "../uploads/own-ancestry-content";
 import { parseVcf } from "../genome/parsers/vcf";
 import { presentRegionalShares } from "../ancestry/regional-present";
@@ -33,6 +34,13 @@ beforeEach(() => {
 });
 
 describe("exact captured ancestry read", () => {
+  it("keeps revision-4 classification in the actual checked chat reader and projection", async () => {
+    const saved = { ...receipt, content: computeOwnAncestryContentV4({ source, panel: SEVEN_OWN_ANCESTRY_PANEL, calls: [] }) };
+    mocks.rpc.mockResolvedValue({ data: JSON.parse(JSON.stringify(saved)), error: null });
+    const captures = await readOwnChatAncestry(authority, projection, async () => {});
+    expect(captures).toEqual([saved]);
+    expect(capturedAncestryResult(captures[0]).basis).toBe(saved.content.figureBasis.shares.basis);
+  });
   it("passes the same immutable authority, projection and selected file to the narrow reader", async () => {
     const check = vi.fn().mockResolvedValue(undefined);
     expect(await readOwnChatAncestry(authority, projection, check)).toEqual([receipt]);

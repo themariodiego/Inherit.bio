@@ -65,6 +65,8 @@ export function CoParentReviewForm({ review, countries, refusalNonce }: {
     <section className="mx-auto max-w-5xl px-6 py-16" role="status">
       <h1 className="display">You have accepted the invitation</h1>
       <p className="lede mt-5 text-ink">Your two signed statements are recorded. The group still needs to be finalized. This does not start analysis or share your own genome.</p>
+      <p className="mt-3 text-sm">When the group is ready, collect your own Record Key Cards in Your data.</p>
+      <a href={route("settings.data")} className="link-target quiet-link mt-4 text-sm">Go to Your data</a>
       <a href={route("app.overview")} className="link-target quiet-link mt-4 text-sm">Go to your overview</a>
     </section>
   );

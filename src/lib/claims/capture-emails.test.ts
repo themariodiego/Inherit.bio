@@ -1,11 +1,12 @@
-import { mkdtemp, readFile } from "node:fs/promises";
+import { access, mkdir, mkdtemp, readFile, readdir, symlink } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
+import { pathToFileURL } from "node:url";
 import { beforeAll, describe, expect, it, vi } from "vitest";
 import { renderMail, mailSubject } from "../email";
-import { captureEmailClaims, sha256, type EmailCaptureResult } from "./capture-emails";
+import { captureEmailClaims as sourceCaptureEmailClaims, sha256, type EmailCaptureResult } from "./capture-emails";
 import { EMAIL_RENDERERS, emailFixtures } from "./email-fixtures";
 import { assertEmailFixtureCoverage, discoverEmailExports, readEmailInventory, readPublicDigestCatalog } from "./email-inventory";
 
@@ -17,9 +18,9 @@ const resolvers = { registry: noCanonicalRegistry, resolveSeed: () => false, res
 describe("independent production email fixture inventory", () => {
   it("covers all actual named exports and both account-deletion entrypoints", () => {
     const discovered = readEmailInventory(projectRoot), fixtures = emailFixtures(readPublicDigestCatalog(projectRoot));
-    // 14 exports in 13 files since the Path B upload-time notice (adult-upload-notice.tsx).
-    expect(discovered).toHaveLength(14);
-    expect(new Set(discovered.map((e) => e.path)).size).toBe(13);
+    expect(discovered).toHaveLength(20);
+    expect(new Set(discovered.map((e) => e.path)).size).toBe(18);
+    expect(discovered).toContainEqual({ path: "src/emails/appeal-evidence.tsx", exportName: "AppealEvidenceEmail" });
     expect(discovered.filter((e) => e.path.endsWith("account-deletion.tsx")).map((e) => e.exportName)).toEqual([
       "AccountDeletionCancelledEmail", "AccountDeletionNoticeEmail",
     ]);
@@ -44,13 +45,17 @@ describe("independent production email fixture inventory", () => {
   it("does not accept missing, duplicate or mismatched fixtures", () => {
     const found = readEmailInventory(projectRoot), fixtures = emailFixtures(readPublicDigestCatalog(projectRoot));
     expect(() => assertEmailFixtureCoverage(found, fixtures.filter((f) => f.mail.id !== "account-deletion-cancelled"))).toThrow("missing-fixture");
+    expect(() => assertEmailFixtureCoverage(found, fixtures.filter((f) => f.mail.id !== "appeal-evidence"))).toThrow("missing-fixture");
     expect(() => assertEmailFixtureCoverage(found, [...fixtures, fixtures[0]])).toThrow("invalid-fixture-inventory");
     expect(() => assertEmailFixtureCoverage(found, [{ ...fixtures[0], exportName: "WrongEmail" }, ...fixtures.slice(1)])).toThrow("fixture-export-mismatch");
   });
   it("expands all current conditional branches and explicitly distinguishes empty digest scope", () => {
     const fixtures = emailFixtures(readPublicDigestCatalog(projectRoot));
-    // 33 since Path B: its signature request and its notice for array and VCF files.
-    expect(fixtures).toHaveLength(33);
+    expect(fixtures).toHaveLength(39);
+    expect(fixtures.filter((fixture) => fixture.mail.id === "appeal-evidence")).toEqual([
+      expect.objectContaining({ entrypoint: "src/emails/appeal-evidence.tsx", exportName: "AppealEvidenceEmail",
+        mail: { id: "appeal-evidence", payload: { continueUrl: "https://example.test/fixture#synthetic-appeal" } } }),
+    ]);
     expect(fixtures.filter((f) => f.mail.id === "embryo-disposition-notice").map((f) => f.mail.payload)).toEqual(expect.arrayContaining([
       expect.objectContaining({ disposition: "stored" }), expect.objectContaining({ disposition: "transferred" }),
       expect.objectContaining({ disposition: "donated" }), expect.objectContaining({ disposition: "discarded" }),
@@ -66,9 +71,28 @@ describe("independent production email fixture inventory", () => {
 });
 
 describe("actual production email HTML and envelope capture", () => {
-  let outputDirectory: string, result: EmailCaptureResult;
+  let outputDirectory: string, fixtureRoot: string, sourceHead: string, sourceTree: string, result: EmailCaptureResult;
+  let captureEmailClaims: typeof sourceCaptureEmailClaims;
   beforeAll(async () => {
-    outputDirectory = join(await mkdtemp(join(tmpdir(), "inherit-email-capture-test-")), "capture");
+    const directory = await mkdtemp(join(tmpdir(), "inherit-email-capture-test-"));
+    outputDirectory = join(directory, "capture");
+    fixtureRoot = join(directory, "repo");
+    const git = async (args: string[], cwd = projectRoot) => (await promisify(execFile)("git",
+      ["-c", "core.hooksPath=/dev/null", "-c", "core.fsmonitor=false", ...args], { cwd, timeout: 15_000 })).stdout.trim();
+    sourceHead = await git(["rev-parse", "HEAD"]);
+    sourceTree = await git(["rev-parse", "HEAD^{tree}"]);
+    // Render the exact committed source, isolated from the live checkout's
+    // early CLI outputs and parallel tests. The production checkout guard is
+    // unchanged and still executes before and after this real capture.
+    await git(["clone", "--quiet", "--shared", "--no-checkout", "--", projectRoot, fixtureRoot]);
+    await git(["checkout", "--quiet", "--detach", sourceHead], fixtureRoot);
+    expect(await git(["rev-parse", "HEAD"], fixtureRoot)).toBe(sourceHead);
+    expect(await git(["rev-parse", "HEAD^{tree}"], fixtureRoot)).toBe(sourceTree);
+    await mkdir(join(fixtureRoot, "node_modules"));
+    for (const name of await readdir(join(projectRoot, "node_modules")))
+      await symlink(join(projectRoot, "node_modules", name), join(fixtureRoot, "node_modules", name));
+    expect(await git(["status", "--porcelain", "--untracked-files=all"], fixtureRoot)).toBe("");
+    captureEmailClaims = (await import(pathToFileURL(join(fixtureRoot, "src/lib/claims/capture-emails.ts")).href)).captureEmailClaims;
     const fetch = vi.spyOn(globalThis, "fetch").mockRejectedValue(new Error("No outbound request allowed"));
     try {
       result = await captureEmailClaims({ outputDirectory, ...resolvers });
@@ -76,10 +100,18 @@ describe("actual production email HTML and envelope capture", () => {
     } finally { fetch.mockRestore(); }
   }, 60_000);
 
+  it("binds the isolated renderer to the exact source HEAD without consuming live CLI markers", async () => {
+    expect(result.contentCommitSha).toBe(sourceHead);
+    for (const file of ["src/lib/claims/capture-emails.ts", "src/lib/claims/collect-dom.ts"])
+      expect(await readFile(join(fixtureRoot, file))).toEqual(await readFile(join(projectRoot, file)));
+    for (const file of ["supabase/.temp/cli-latest", "supabase/.branches/_current_branch"])
+      await expect(access(join(fixtureRoot, file))).rejects.toMatchObject({ code: "ENOENT" });
+  });
+
   it("retains every expected fixture before reporting actual annotation failures", () => {
-    expect(result.receipts).toHaveLength(33);
-    expect(result.observations).toHaveLength(66);
-    expect(result.requiredSurfaces).toHaveLength(66);
+    expect(result.receipts).toHaveLength(39);
+    expect(result.observations).toHaveLength(78);
+    expect(result.requiredSurfaces).toHaveLength(78);
     expect(result.observations.every((o) => o.channel === "email" && o.contentCommitSha === result.contentCommitSha)).toBe(true);
     expect(result.audit.ok).toBe(false);
     expect(result.audit.issues.map((i) => i.code)).toEqual(expect.arrayContaining(["missing-channel", "missing-region", "empty-corpus"]));
@@ -106,6 +138,15 @@ describe("actual production email HTML and envelope capture", () => {
     expect(JSON.parse(await readFile(join(outputDirectory, "capture.json"), "utf8"))).toEqual(result);
     expect(sha256(await readFile(join(outputDirectory, result.collector.path)))).toBe(result.collector.sha256);
   });
+  it("captures the new generic appeal body and subject without account or target content", async () => {
+    const receipt = result.receipts.find((row) => row.fixtureId === "appeal-evidence--evidence");
+    expect(receipt).toBeDefined();
+    const html = await readFile(join(outputDirectory, receipt!.html.path), "utf8");
+    expect(html).toContain('href="https://example.test/fixture#synthetic-appeal"');
+    expect(html).toContain("Opening the link does not confirm an account or access to any record.");
+    expect(await readFile(join(outputDirectory, receipt!.subject.path), "utf8")).toBe("Continue your Inherit request");
+    expect(result.observations.filter((row) => row.surface.includes("#fixture=appeal-evidence--evidence"))).toHaveLength(2);
+  });
   it("preserves actual public digest prose without fabricating wrappers or exemptions", () => {
     const full = result.observations.find((o) => o.surface.endsWith("#fixture=research-digest--public-catalog"))!;
     expect(full.claims).toEqual([]);
@@ -129,8 +170,8 @@ describe("actual production email HTML and envelope capture", () => {
         registry: { resolveCitation: () => undefined, resolveClaim: () => undefined },
         resolveSeed: () => false, resolveComputed: () => false });
         console.log(JSON.stringify({ receipts: result.receipts.length, observations: result.observations.length, ok: result.audit.ok })); })();`;
-    const output = await promisify(execFile)(resolve("node_modules/.bin/tsx"), ["-e", script], { cwd: projectRoot, timeout: 30_000 });
-    expect(JSON.parse(output.stdout)).toEqual({ receipts: 33, observations: 66, ok: false });
+    const output = await promisify(execFile)(resolve("node_modules/.bin/tsx"), ["-e", script], { cwd: fixtureRoot, timeout: 30_000 });
+    expect(JSON.parse(output.stdout)).toEqual({ receipts: 39, observations: 78, ok: false });
     const retained: EmailCaptureResult = JSON.parse(await readFile(join(directory, "capture.json"), "utf8"));
     expect(retained.observations).toEqual(result.observations);
     expect(retained.collector.sha256).toBe(result.collector.sha256);

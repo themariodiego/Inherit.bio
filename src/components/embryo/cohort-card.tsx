@@ -9,6 +9,7 @@
  */
 import Link from "next/link";
 import { EmbryoChip } from "@/components/embryo/embryo-chip";
+import { CarrierLibraryCoverage } from "@/components/embryo/carrier-library-coverage";
 import { formatDate } from "@/components/embryo/format";
 import {
   COMPARE_THESE_LINK,
@@ -24,12 +25,17 @@ import {
 } from "@/copy/embryos/index";
 import { analysisConsent } from "@/lib/embryos/access";
 import type { EmbryoCohortView } from "@/lib/embryos/cohorts";
+import type { CarrierLibraryCoverageRow } from "@/lib/embryos/carrier-library-read";
+import { allowedConditions } from "@/lib/embryos/allowed-conditions";
+import { CARRIER_LIBRARY_READ_FAILED } from "@/copy/embryos/carrier-library";
 import { route } from "@/lib/primary-routes";
 
 export interface CohortCardProps {
   cohort: EmbryoCohortView;
   /** The register's copy when this cohort's contributors refuse the capability; null when permitted. */
   jurisdictionCopy: string | null;
+  coverage?: readonly CarrierLibraryCoverageRow[] | null;
+  coverageReadFailed?: boolean;
 }
 
 /** The role word the analysis line names; nobody is named. */
@@ -37,9 +43,10 @@ export function analysisRole(cohort: EmbryoCohortView): string | null {
   return waitingRole(analysisConsent(cohort));
 }
 
-export function CohortCard({ cohort, jurisdictionCopy }: CohortCardProps) {
+export function CohortCard({ cohort, jurisdictionCopy, coverage = null, coverageReadFailed = false }: CohortCardProps) {
   const role = analysisRole(cohort);
   const dispositions = new Set(cohort.embryos.map((embryo) => embryo.status));
+  const conditionNames = new Map(allowedConditions().map(entry => [entry.condition_id, entry.condition_name]));
   return (
     <li
       data-slot="cohort-card"
@@ -75,9 +82,17 @@ export function CohortCard({ cohort, jurisdictionCopy }: CohortCardProps) {
             <span data-slot="embryo-state" className="ml-auto shrink-0 text-sm text-ink-muted">
               {EMBRYO_STATUS[embryo.status]}
             </span>
+            {coverage ? <div className="w-full py-2">
+              <CarrierLibraryCoverage rows={coverage.filter(row => row.embryoId === embryo.id)}
+                subjectId={embryo.subjectId}
+                conditionNames={conditionNames} />
+            </div> : null}
           </li>
         ))}
       </ul>
+      {coverageReadFailed ? <p data-slot="carrier-library-read-failed" role="status" className="text-sm text-ink">
+        {CARRIER_LIBRARY_READ_FAILED}
+      </p> : null}
       {role ? (
         <p role="status" data-slot="analysis-state" className="text-sm leading-relaxed text-ink">
           {waitingForResultsStatus(role)}

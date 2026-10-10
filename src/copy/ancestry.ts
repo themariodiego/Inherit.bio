@@ -19,6 +19,7 @@ import type { PANEL } from "@/lib/ancestry/panel";
 /** The panel facts a sentence names: how many markers, and when it was built. */
 export type PanelFacts = Pick<typeof PANEL, "markers" | "version"> & { known?: boolean };
 export const UNKNOWN_REFERENCE_PANEL = "The panel and version for this stored result were not recorded or are not recognised. Its required marker count is unknown.";
+export const UNCLASSIFIED_ANCESTRY_RESULT = "We cannot show the numbers in this saved ancestry result. Its record does not say how they were made. You can make a new result from your file.";
 export const UNKNOWN_REFERENCE_TREE = "The reference tree and version for this stored call were not recorded or are not recognised.";
 
 // ---------------------------------------------------------------------------
@@ -271,7 +272,8 @@ export const LINEAGE_NO_BRANCH =
 export const XX_GLOSS =
   "In plain terms: this is expected when the file comes from someone without a Y chromosome, e.g. most women.";
 
-/** The true reason the card shows nothing yet; the capability is registered as withheld. */
+/** The true reason the card shows nothing yet; the capability is not shipped,
+ * and no evidenced-impossibility dossier establishes a withholding. */
 export const NEANDERTHAL_BODY =
   "We can’t show this yet. Inherit has not yet built and licence-checked the marker list this needs, and we will not guess. This page will say so until that changes.";
 

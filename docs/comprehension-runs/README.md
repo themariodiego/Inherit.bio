@@ -112,8 +112,12 @@ Whenever a key appears, the order is fixed:
    and settings, or if the measured cost per simulation, times the planned
    sessions, plus 25%, exceeds what the journal has left.
 
-Until embryo ingest lands (G2.6), T6 and T7 are skipped and no full run can
-be clean, so step 4 spends budget the two qualifying runs will need.
+The exclusive factory now has native source paths for all ten tasks, including
+T6/T7. Source/unit checks alone do not qualify those paths: an actual fresh
+Linux smoke, cleanup/isolation proof and the existing calibration must precede
+paid full rounds. See [the owned Linux operator path](owned-linux-operator.md)
+for the separate authenticated owner-shell pipe; ordinary hosted CI remains
+a mandatory source qualification and is not impersonated by that path.
 
 ## Checking a record without a model
 
@@ -134,8 +138,8 @@ pnpm comprehension:records status
 G3.3 is met when the last two full runs, in the order they were run, share one
 product revision and one set of settings and both meet every threshold. A
 full run that is not clean breaks the sequence, including one with skipped
-tasks: until participant-c can be seeded (embryo ingest, G2.6), T6 and T7 are
-skipped and no run can be clean. A changed model, endpoint, label,
+tasks or an unqualified participant-c native lifecycle. A changed model,
+endpoint, label,
 temperature, limit or inference worker is a different set of settings.
 
 If three successive product revisions close without two clean runs, the

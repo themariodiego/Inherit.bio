@@ -1,5 +1,5 @@
 begin;
-select plan(16);
+select plan(25);
 \ir fixtures/invitation_quota_keys.inc
 -- `claim_mail_outbox` takes the oldest deliverable row, so a developer
 -- database holding other queued mail would hand this suite someone else's
@@ -41,6 +41,9 @@ select is((select count(*) from public.purpose_grants
 
 create temporary table claimed_invitation_mail as
 select * from public.claim_mail_outbox();
+
+\ir fixtures/mail_attempt_retry.inc
+select * from pg_temp.assert_mail_retry((select outbox_id from claimed_invitation_mail),(select idempotency_key from claimed_invitation_mail),(select delivery_token from claimed_invitation_mail));
 
 select matches((select delivery_token from claimed_invitation_mail),
   '^[A-Za-z0-9_-]{43}$',

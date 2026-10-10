@@ -1,0 +1,58 @@
+name: Fresh participant-c smoke
+
+# Manual instrument validation only. Never a standard CI partition, release
+# gate, paid call, human round, or acceptance claim.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  fresh-t6:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      INHERIT_DISPOSABLE_LOCAL_E2E: "true"
+      NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0
+      SUPABASE_SERVICE_ROLE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU
+      NEXT_PUBLIC_SITE_URL: http://localhost:3100
+      NEXT_PUBLIC_APP_URL: http://localhost:3100
+      INHERIT_TEST_JURISDICTION: "1"
+      BYOK_ENCRYPTION_KEY: 5vL1kK0jgWTTr0oQvIrnT2mWXBPY0R1JX0uKTdcm9Ug=
+      JOBS_SECRET: e2e-jobs-secret
+      CRON_SECRET: e2e-cron-secret
+      EMAIL_FROM: Inherit <inherit@e2e.local>
+      RESEND_API_KEY: re_e2e_mock
+      RESEND_BASE_URL: http://127.0.0.1:8124
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec playwright install --with-deps chromium
+      - name: Prepare credential-free runtime image
+        run: docker build --tag inherit-ci-browser:local --file scripts/ci-browser/Dockerfile scripts/ci-browser
+      - name: Create private deterministic smoke configuration
+        run: pnpm exec tsx scripts/comprehension/fresh-t6-smoke-config.mts
+      - name: Build once and create four separate genuine T6/T7 runtimes
+        run: pnpm exec tsx scripts/comprehension/run-fresh-t6.mts "$RUNNER_TEMP/inherit-t6-smoke.json" --prepare
+      - name: Retain synthetic instrument record
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fresh-t6-synthetic-instrument-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/inherit-t6-records
+            ${{ runner.temp }}/inherit-t6-effort/dry-spend.jsonl
+          if-no-files-found: ignore
+      # An uncertain source/ownership/cleanup failure is never repaired by
+      # pruning or adopting Docker resources. The disposable job ends instead.
