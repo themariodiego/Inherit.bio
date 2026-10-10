@@ -23,13 +23,19 @@ select is_empty($$select policyname from pg_policies where schemaname='storage'
 select set_eq($$select p.oid::regprocedure::text from pg_proc p join pg_namespace n on n.oid=p.pronamespace
  where n.nspname in ('public','private','storage') and p.prosrc like '%generated-artifacts%'$$,
  array['private.prepare_own_report_purge_v1(uuid,timestamp with time zone)','private.execute_own_report_purge_v1(uuid)',
- 'private.future_person_deletion_graph_rows_v1(uuid,uuid,uuid,uuid,uuid)'],
- 'only the exact own-report and claimant deletion functions carry the retention target literal');
+ 'private.future_person_deletion_graph_rows_pre_new_correction_v1(uuid,uuid,uuid,uuid,uuid)',
+ 'private.future_person_deletion_graph_rows_pre_requester_v1(uuid,uuid,uuid,uuid,uuid)'],
+ 'only the exact own-report and preserved claimant deletion delegates carry the retention target literal');
+select ok(not has_function_privilege(r,f,'execute'),r||' cannot bypass the current graph through '||f)
+ from unnest(array['anon','authenticated','service_role','inherit_upload_only'])r
+ cross join unnest(array[
+ 'private.future_person_deletion_graph_rows_pre_new_correction_v1(uuid,uuid,uuid,uuid,uuid)',
+ 'private.future_person_deletion_graph_rows_pre_requester_v1(uuid,uuid,uuid,uuid,uuid)'])f;
 select set_eq($$select store_name from public.purge_target_stores where target_id='generated-artifacts'$$,
  array['public.report_artifacts','public.generated_exports','public.download_sessions','public.model_contexts','private.own_analysis_runs',
  'private.path_b_report_bindings','private.export_archive_jobs','private.export_archive_attempts','private.export_archive_downloads',
- 'private.export_archive_manifest_pages','private.export_archive_segments','private.export_archive_nonce_uses'],
- 'the generated-artifacts target keeps every prior store, the exact Path B binding and all six registered archive children');
+ 'private.export_archive_manifest_pages','private.export_archive_segments','private.export_archive_nonce_uses','private.account_archive_r2_allocations'],
+ 'the generated-artifacts target keeps every prior store, the exact Path B binding, all six archive children and the retained R2 allocation');
 
 -- The single-object form cannot be recorded again. Foreign keys are off so
 -- each insert reaches only the check it is aimed at.

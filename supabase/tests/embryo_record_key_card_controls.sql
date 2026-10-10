@@ -89,7 +89,7 @@ select is(pg_temp.card_controls_probe($p$update auth.sessions set not_after=cloc
   where id='7a000000-0000-4000-8000-0000000000b1'$p$),
   '42501:recent_reauthentication_required', 'an expired live Auth row is refused');
 select is(pg_temp.card_controls_probe($p$update auth.users set banned_until=clock_timestamp()+interval '1 day'
-  where id='7a000000-0000-0000-000000000002'$p$),
+  where id='7a000000-0000-0000-0000-000000000002'$p$),
   '42501:card controls unavailable', 'an otherwise recent session cannot restore a banned account');
 select is(pg_temp.card_controls_probe($p$update public.embryo_basis_bindings set basis_revision=basis_revision+1
   where cohort_id=(select cohort_id from fin)$p$)::jsonb, '{"items":[],"nextCursor":null}'::jsonb,

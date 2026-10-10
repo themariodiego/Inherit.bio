@@ -61,7 +61,7 @@ insert into public.correction_requests(id,subject_id,claimant_principal_id,corre
 insert into public.correction_working_data(correction_id,working_ciphertext,working_revision,expires_at)
  values('83000000-0000-4000-8000-000000000010',convert_to('Synthetic reviewer notes never exported','UTF8'),2,now()+interval '1 day');
 select set_eq($$select id from private.export_account_requester_rows_v1('83000000-0000-4000-8000-000000000001',array[(select subject from requester_ids)])$$,
- $$values('83000000-0000-4000-8000-000000000010'::uuid),('83000000-0000-4000-8000-000000000020'::uuid)$$,
+ $$select id from (values ('83000000-0000-4000-8000-000000000010'::uuid),('83000000-0000-4000-8000-000000000020'::uuid)) expected(id)$$,
  'the complete own census includes correction and appeal, excluding another author even on the same owned subject');
 select is((select count(*) from private.export_account_requester_rows_v1('83000000-0000-4000-8000-000000000002',array[(select subject from requester_ids)])),
  0::bigint,'another account cannot select the owned subject');
@@ -92,7 +92,7 @@ $$;
 create temporary table requester_page as select pg_temp.own_page()value;
 select is((select value->>'count' from requester_page),'2','real consumed account pager returns the whole owned partition');
 select set_eq($$select k from requester_page,jsonb_array_elements(value->'rows')r,jsonb_object_keys(r->'frame')k$$,
- $$values('scope'),('envelope'),('binding')$$,'each native frame contains only original scope, envelope and authority binding');
+ $$select key from (values ('scope'),('envelope'),('binding')) expected(key)$$,'each native frame contains only original scope, envelope and authority binding');
 select ok((select not(value::text like '%Synthetic reviewer notes%' or value::text like '%contactCiphertext%') from requester_page),
  'no reviewer notes/contact package are returned');
 select is(pg_temp.own_page((select value->>'nextAfterId' from requester_page))->'rows','[]'::jsonb,'exact keyset EOF is empty');

@@ -41,8 +41,16 @@ select ok((select p.prosecdef and pg_get_userbyid(p.proowner)='postgres' and md5
  ('private.future_person_export_snapshot_v1(text)','7ae505cb92d301a41a2a263be1702547',false),
  ('private.future_person_bound_export_snapshot_v1(jsonb,uuid)','6f202bda0cc049ed12306e4ef5916352',false),
  ('public.future_person_export_members_v1(text,uuid,uuid,text,text)','8510090f140b1680cca24da74fdc48c5',true),
- ('public.export_archive_account_members_v1(text,uuid,uuid,text,uuid,text)','1e04b020763456c3c95ca362e3cae7d2',true)
+ ('public.export_archive_account_members_pre_requester_v1(text,uuid,uuid,text,uuid,text)','1e04b020763456c3c95ca362e3cae7d2',false)
  )x(signature,body_md5,service_execute);
+select ok((select prosecdef and pg_get_userbyid(proowner)='postgres'
+ and md5(prosrc)='b88c74c6a3fa64fff3fac75858996ad0'
+ and proconfig=array['search_path=""','lock_timeout=250ms']::text[]
+ and has_function_privilege('service_role',oid,'execute')
+ and not exists(select 1 from unnest(array['anon','authenticated','inherit_upload_only'])r
+  where has_function_privilege(r,p.oid,'execute'))
+ from pg_proc p where oid='public.export_archive_account_members_v1(text,uuid,uuid,text,uuid,text)'::regprocedure),
+ 'the exact current requester wrapper is service-only and delegates scientific JSON to the preserved precision serializer');
 
 set local role anon;
 select throws_ok($$select public.read_embryo_qc_rows_v1('ad340000-0000-4000-8000-000000000001',array['ad340000-0000-4000-8000-000000000002']::uuid[])$$,

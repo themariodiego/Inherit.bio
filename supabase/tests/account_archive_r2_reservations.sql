@@ -74,6 +74,22 @@ select throws_ok($$select pg_temp.worker('acknowledge',pg_temp.segment(0,(select
 select throws_ok($$select private.complete_account_archive_r2_write_v1('79700000-0000-4000-8000-000000000030',0,
  (select capture->>'authorityReceipt' from archive_fixture),repeat('1',64),(select frame||'{"objectId":"79700000-0000-4000-8000-000000000099"}' from r2_fixture),'version1','etag1')$$,
  '42501','account_archive_r2_unavailable','native complete refuses changed exact frame');
+create function pg_temp.complete_r2(version text,etag text) returns uuid language sql as $$
+ select private.complete_account_archive_r2_write_v1('79700000-0000-4000-8000-000000000030',0,
+ (select capture->>'authorityReceipt' from archive_fixture),repeat('1',64),(select frame from r2_fixture),version,etag);
+$$;
+select throws_ok(format('select pg_temp.complete_r2(%L,%L)',
+ case when field='version' then value else 'version1' end,
+ case when field='etag' then value else 'etag1' end),
+ '42501','account_archive_r2_unavailable',field||' refuses '||label)
+ from (values ('empty',''),('overflow',repeat('a',257)),('invalid','bad/value'),('null',null))invalid(label,value)
+ cross join (values ('version'),('etag'))fields(field);
+savepoint exact_provider_boundary;
+select lives_ok($$select pg_temp.complete_r2(repeat('v',256),repeat('e',256))$$,
+ 'both provider identifiers admit the full declared 256-character boundary');
+select ok((select char_length(provider_version)=256 and char_length(provider_etag)=256
+ from private.account_archive_r2_allocations where ordinal=0),'the exact boundary persists through both native column CHECKs');
+rollback to exact_provider_boundary;
 select is(private.complete_account_archive_r2_write_v1('79700000-0000-4000-8000-000000000030',0,
  (select capture->>'authorityReceipt' from archive_fixture),repeat('1',64),(select frame from r2_fixture),'version1','etag1'),
  (select (frame->>'objectId')::uuid from r2_fixture),'reviewed owner callback records exact provider identity');
@@ -125,6 +141,21 @@ $$;
 select throws_ok($$select private.ack_account_archive_r2_disposal_v1('79700000-0000-4000-8000-000000000030',1,repeat('4',64),
  (select disposal from r2_fixture),jsonb_set(pg_temp.evidence(),'{marker,allocationSha256}',to_jsonb(repeat('f',64))))$$,
  '42501','account_archive_r2_unavailable','foreign permanent marker cannot ACK');
+create function pg_temp.ack_marker(version text,etag text) returns boolean language sql as $$
+ select private.ack_account_archive_r2_disposal_v1('79700000-0000-4000-8000-000000000030',1,repeat('4',64),
+ (select disposal from r2_fixture),jsonb_set(jsonb_set(pg_temp.evidence(),'{marker,version}',coalesce(to_jsonb(version),'null'::jsonb)),
+ '{marker,etag}',coalesce(to_jsonb(etag),'null'::jsonb)));
+$$;
+select throws_ok(format('select pg_temp.ack_marker(%L,%L)',
+ case when field='version' then value else 'marker1' end,
+ case when field='etag' then value else 'marker-etag' end),
+ '42501','account_archive_r2_unavailable','marker '||field||' refuses '||label)
+ from (values ('empty',''),('overflow',repeat('a',257)),('invalid','bad/value'),('null',null))invalid(label,value)
+ cross join (values ('version'),('etag'))fields(field);
+savepoint exact_marker_boundary;
+select ok(pg_temp.ack_marker(repeat('v',256),repeat('e',256)),
+ 'both permanent-marker identifiers admit the full 256-character boundary');
+rollback to exact_marker_boundary;
 select ok(private.ack_account_archive_r2_disposal_v1('79700000-0000-4000-8000-000000000030',1,repeat('4',64),
  (select disposal from r2_fixture),pg_temp.evidence()),'owner records complete exact fence evidence');
 select is((select count(*) from private.account_archive_r2_allocations),2::bigint,'disposal evidence retains all allocation metadata');

@@ -61,7 +61,7 @@ returns public.rights_sessions language plpgsql security definer set search_path
 declare rs public.rights_sessions;
 begin
  perform 1 from private.new_correction_intake_config where singleton and enabled for share;
- if not found or p_nonce is null or p_nonce!~'^[A-Za-z0-9_-]{16,256}$' then
+ if not found or p_nonce is null or char_length(p_nonce) not between 16 and 256 or p_nonce!~'^[A-Za-z0-9_-]+$' then
   raise exception using errcode='42501',message='not_found';end if;
  rs:=private.future_person_rights_session_v1(p_session_hash,true);
  if rs.id is null or not private.rights_action_permitted_v1(rs.purpose,'correct','api.future-person-correction')

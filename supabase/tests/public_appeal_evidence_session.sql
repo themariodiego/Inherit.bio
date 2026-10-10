@@ -86,7 +86,8 @@ select is((select intake.deadline-candidate.expires_at from private.new_public_a
  join public.token_candidates candidate on candidate.id=intake.candidate_id where intake.id=
  (select (value#>>'{frame,scope,caseId}')::uuid from public_appeal_prepared)),interval '23 days',
  'native token issuance never changes the original case clock');
-select is(pg_temp.deletion_probe('update public.mail_outbox set expires_at=clock_timestamp()-interval ''1 second'' where purpose=''appeal-evidence''',
+-- Synthetic expired-mail metadata preserves the original case/candidate clocks.
+select is(pg_temp.deletion_probe('update public.mail_outbox set created_at=clock_timestamp()-interval ''2 seconds'',not_before=clock_timestamp()-interval ''2 seconds'',expires_at=clock_timestamp()-interval ''1 second'' where id=(select outbox_id from public_appeal_claim)',
  'select public.authorize_mail_submission_v1((select outbox_id from public_appeal_claim),(select attempt_ordinal from public_appeal_claim))'),
  'false','expired credential delivery refuses even while the case deadline remains open');
 select is((public.read_new_public_appeal_mail_contact_v1((select outbox_id from public_appeal_claim),

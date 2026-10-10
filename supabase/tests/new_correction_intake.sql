@@ -19,6 +19,15 @@ insert into public.subject_principals(id,account_id,principal_kind) values
  ('84000000-0000-4000-8000-000000000001','7a000000-0000-0000-0000-000000000001','reviewer');
 insert into private.new_correction_reviewers(principal_id,principal_revision,purpose_revision) values
  ('84000000-0000-4000-8000-000000000001',1,1);
+select is((private.assert_new_correction_actor_v1(pg_temp.h('deletion-rights'),repeat('a',16))).id,
+ (private.future_person_rights_session_v1(pg_temp.h('deletion-rights'),false)).id,
+ 'the original minimum sixteen-character nonce admits the actual current actor');
+select is((private.assert_new_correction_actor_v1(pg_temp.h('deletion-rights'),repeat('a',256))).id,
+ (private.future_person_rights_session_v1(pg_temp.h('deletion-rights'),false)).id,
+ 'the full declared 256-character nonce admits the actual current actor');
+select throws_ok(format('select private.assert_new_correction_actor_v1(pg_temp.h(''deletion-rights''),%L)',nonce),
+ '42501','not_found','nonce refuses '||label)
+ from (values ('short',repeat('a',15)),('overflow',repeat('a',257)),('empty',''),('invalid',repeat('a',16)||'!'),('null',null))invalid(label,nonce);
 select throws_ok($$select public.prepare_new_correction_v1(repeat('f',64),'new-correction-foreign-aaaaaaaa','display-label')$$,
  '42501','not_found','a nonexistent claimant session cannot borrow a current source');
 select throws_ok($$select public.prepare_new_correction_v1(pg_temp.h('deletion-rights'),'new-correction-field-aaaaaaaa','reviewer-note')$$,

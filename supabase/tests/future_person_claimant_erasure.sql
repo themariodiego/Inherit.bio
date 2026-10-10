@@ -193,9 +193,9 @@ select is((select count(*) from private.future_person_custody_slices where subje
  and audit_principal_id=private.future_person_audit_selector_v1(subject_id)),1::bigint,
  'new approved custody has one exact immutable random audit selector');
 -- Whole-graph proof remains separate from the source marker protocol.
-select is((select count(*) from public.purge_target_stores),158::bigint,
- 'all six existing private archive children join the exact physical purge census');
-\ir fixtures/purge_store_census_158.inc
+select is((select count(*) from public.purge_target_stores),173::bigint,
+ 'all 173 existing and new requester, R2 and appeal stores join the exact physical purge census');
+\ir fixtures/purge_store_census_173.inc
 select is((select count(*) from public.purge_target_stores where target_id='generated-artifacts'
  and store_name in('private.export_archive_jobs','private.export_archive_attempts','private.export_archive_downloads',
  'private.export_archive_manifest_pages','private.export_archive_segments','private.export_archive_nonce_uses')),6::bigint,

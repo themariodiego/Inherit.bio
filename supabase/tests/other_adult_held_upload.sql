@@ -447,11 +447,24 @@ select ok((select md5(prosrc)='7c176e100123ecbdf9aedd8ee41b0539' from pg_proc
  and not exists(select 1 from unnest(array['anon','authenticated','inherit_upload_only']) r
    where has_function_privilege(r,'public.activate_rights_session_v1(text,text,text)','execute'))
  and (to_regprocedure('public.activate_rights_session_before_keyless_objection_v1(text,text,text)') is null
-   or ((select md5(prosrc)='5f92f26f9e5f94f7593f833d17db7d6c' from pg_proc
-     where oid='public.activate_rights_session_v1(text,text,text)'::regprocedure)
-    and not exists(select 1 from unnest(array['anon','authenticated','inherit_upload_only','service_role']) r
-      where has_function_privilege(r,to_regprocedure('public.activate_rights_session_before_keyless_objection_v1(text,text,text)'),'execute')))),
- 'the exact held activation body is only behind the current service door; the actual023 delegate remains API-denied');
+   or (not exists(select 1 from unnest(array['anon','authenticated','inherit_upload_only','service_role']) r
+      where has_function_privilege(r,to_regprocedure('public.activate_rights_session_before_keyless_objection_v1(text,text,text)'),'execute'))
+    and ((to_regprocedure('public.activate_rights_session_before_public_appeal_v1(text,text,text)') is null
+      and (select md5(prosrc)='5f92f26f9e5f94f7593f833d17db7d6c' from pg_proc
+       where oid='public.activate_rights_session_v1(text,text,text)'::regprocedure))
+     or (to_regprocedure('public.activate_rights_session_before_public_appeal_v1(text,text,text)') is not null
+      and (select md5(prosrc)='5f92f26f9e5f94f7593f833d17db7d6c' from pg_proc
+       where oid='public.activate_rights_session_before_public_appeal_v1(text,text,text)'::regprocedure)
+      and (select md5(prosrc)='3dfcbba9fe1f0cee01e1ae31390009e8' from pg_proc
+       where oid='public.activate_rights_before_appeal_notice_v1(text,text,text)'::regprocedure)
+      and (select md5(prosrc)='7549c495723f36b9cd684c4bff8876e1' from pg_proc
+       where oid='public.activate_rights_session_v1(text,text,text)'::regprocedure)
+      and not exists(select 1 from unnest(array['anon','authenticated','inherit_upload_only','service_role'])r
+       cross join unnest(array[
+        'public.activate_rights_session_before_public_appeal_v1(text,text,text)',
+        'public.activate_rights_before_appeal_notice_v1(text,text,text)'])f
+       where has_function_privilege(r,f,'execute')))))),
+ 'the exact held, keyless, evidence and notice bodies form the reviewed service door; every preserved delegate remains API-denied');
 select ok(to_regprocedure('private.assert_account_path_b_deletion_supported_v1(uuid)') is null
  or ((select md5(prosrc)='6382fbb06d5525dc983806ecefebb629' from pg_proc
     where oid=to_regprocedure('private.assert_account_path_b_deletion_supported_v1(uuid)'))
@@ -459,7 +472,7 @@ select ok(to_regprocedure('private.assert_account_path_b_deletion_supported_v1(u
     where has_function_privilege(r,to_regprocedure('private.assert_account_path_b_deletion_supported_v1(uuid)'),'execute'))),
  'only the exact installed account Path B refusal helper may join the lifecycle census, with every API role denied');
 select ok(to_regprocedure('private.export_account_class_inventory_v1(uuid,jsonb)') is null
- or ((select md5(prosrc)='4acd95ba8f9b21a3a27ed03d50eec761' and prosecdef and proconfig=array['search_path=""','lock_timeout=250ms']::text[]
+ or ((select md5(prosrc)='2a612f18058f087e9a12136f57a7c157' and prosecdef and proconfig=array['search_path=""','lock_timeout=250ms']::text[]
   and proowner=(select oid from pg_roles where rolname='postgres') from pg_proc
   where oid=to_regprocedure('private.export_account_class_inventory_v1(uuid,jsonb)'))
   and not exists(select 1 from unnest(array['anon','authenticated','inherit_upload_only','service_role'])r

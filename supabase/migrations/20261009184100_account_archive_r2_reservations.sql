@@ -27,8 +27,8 @@ create table private.account_archive_r2_allocations (
  check(provider_key~'^export/[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$'),
  check(jsonb_typeof(write_identity)='object'),
  check((written_at is null)=(provider_version is null) and (written_at is null)=(provider_etag is null)),
- check(provider_version is null or provider_version~'^[A-Za-z0-9._-]{1,256}$'),
- check(provider_etag is null or provider_etag~'^[A-Za-z0-9._-]{1,256}$'),
+ check(provider_version is null or (char_length(provider_version) between 1 and 256 and provider_version~'^[A-Za-z0-9._-]+$')),
+ check(provider_etag is null or (char_length(provider_etag) between 1 and 256 and provider_etag~'^[A-Za-z0-9._-]+$')),
  check((disposal_claim is null)=(disposal_claim_expires_at is null)),
  check((disposed_at is null)=(disposal_evidence is null))
 );
@@ -131,8 +131,8 @@ language plpgsql security definer set search_path=pg_catalog,private as $$
 declare frame jsonb;
 begin
  frame:=private.current_account_archive_r2_write_v1(p_attempt,p_ordinal,p_receipt,p_claim);
- if p_frame is distinct from frame or p_version is null or p_version!~'^[A-Za-z0-9._-]{1,256}$'
-  or p_etag is null or p_etag!~'^[A-Za-z0-9._-]{1,256}$' then
+ if p_frame is distinct from frame or p_version is null or char_length(p_version) not between 1 and 256 or p_version!~'^[A-Za-z0-9._-]+$'
+  or p_etag is null or char_length(p_etag) not between 1 and 256 or p_etag!~'^[A-Za-z0-9._-]+$' then
   raise exception using errcode='42501',message='account_archive_r2_unavailable';end if;
  -- Caller performed the actual create-only PUT and same-version complete
  -- EOF/hash readback while this transaction held the current authority locks.
@@ -252,7 +252,8 @@ begin
   or marker->>'objectKey' is distinct from value#>>'{locator,objectKey}' or marker->>'kind' is distinct from 'permanent-empty-fence'
   or marker->'byteCount' is distinct from '0'::jsonb or marker->'writeBindingSha256' is distinct from 'null'::jsonb
   or marker->>'allocationSha256' is distinct from value->>'allocationSha256'
-  or coalesce(marker->>'version','')!~'^[A-Za-z0-9._-]{1,256}$' or coalesce(marker->>'etag','')!~'^[A-Za-z0-9._-]{1,256}$' then
+  or char_length(coalesce(marker->>'version','')) not between 1 and 256 or coalesce(marker->>'version','')!~'^[A-Za-z0-9._-]+$'
+  or char_length(coalesce(marker->>'etag','')) not between 1 and 256 or coalesce(marker->>'etag','')!~'^[A-Za-z0-9._-]+$' then
   raise exception using errcode='42501',message='account_archive_r2_unavailable';end if;
  update private.account_archive_r2_allocations set disposed_at=clock_timestamp(),disposal_evidence=p_evidence where attempt_id=p_attempt and ordinal=p_ordinal;
  update private.export_archive_segments set delete_acknowledged_at=clock_timestamp() where attempt_id=p_attempt and ordinal=p_ordinal;
