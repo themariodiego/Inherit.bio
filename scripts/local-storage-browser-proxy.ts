@@ -5,6 +5,7 @@ import { createInterface } from "node:readline";
 import { localE2eProject } from "./local-e2e-project";
 import { localBrowserTarget, localBrowserUpstreamTimeout, LOCAL_STORAGE_ORIGIN } from "./local-storage-browser-config";
 import { verifyBrowserTransport } from "./local-storage-browser-transport";
+import { successfulGenomeStagingPost } from "./genome-staging-storage-url";
 import { ciRuntimeCleanupFailure, ciRuntimeSetupFailure, CI_RUNTIME_SETUP_STAGES } from "./ci-browser-runtime-failure";
 
 /** The existing actual installed-provider transport, shared by the ordinary
@@ -140,8 +141,7 @@ const proxy = http.createServer(async (request, response) => {
         Object.assign(responseHeaders, await gatewayCors(target, request.headers.origin, request.method ?? "GET", request.headers));
       }
       responseHeaders["content-length"] = String(output.length);
-      if (request.method === "POST" && /^\/storage\/v1\/object\/genomes\/[0-9a-f-]{36}$/.test(target.pathname)
-        && result.status >= 200 && result.status < 300) forwardedUploads++;
+      if (successfulGenomeStagingPost(target.href, LOCAL_STORAGE_ORIGIN, request.method, result.status)) forwardedUploads++;
       response.writeHead(result.status, responseHeaders); response.end(output);
       return;
     }

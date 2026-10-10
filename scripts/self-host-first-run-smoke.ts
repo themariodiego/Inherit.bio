@@ -12,7 +12,7 @@ import { regionalBelowMinimum } from "../src/copy/regional-ancestry";
 import { presentRegionalShares } from "../src/lib/ancestry/regional-present";
 import { estimateRegionalAdmixture, REGIONAL_AIMS } from "../src/lib/genome/regional-admixture";
 import { SEVEN_ANCESTRY_PANEL } from "../src/lib/uploads/own-ancestry-content-v3";
-import { genomeStagingKeySchema } from "../src/lib/uploads/genome-object-key";
+import { genomeStagingStorageUrl } from "./genome-staging-storage-url";
 import { directUploadReceipt, subjectFinalizationReceipt, subjectNormalizationReceipt,
   subjectSynchronousReportReceipt } from "../src/lib/uploads/subject-upload-contract";
 import { checkedConfig, isRecord, LOCAL } from "./self-host-local-contract";
@@ -37,9 +37,7 @@ function json(value: string): unknown { try { return JSON.parse(value); } catch 
 
 /** Locator grammar only; the actual response remains bound to the issued key. */
 export function stockStorageUploadUrl(raw: string): boolean {
-  const url = new URL(raw), prefix = "/storage/v1/object/genomes/";
-  return url.origin === LOCAL.origin && !url.username && !url.password && !url.hash && !url.search
-    && url.pathname.startsWith(prefix) && genomeStagingKeySchema.safeParse(url.pathname.slice(prefix.length)).success;
+  return genomeStagingStorageUrl(raw, LOCAL.origin);
 }
 
 export function requireRemoteRunner(env: Readonly<Record<string, string | undefined>>, platform: string, version: string, args: string[]): void {
