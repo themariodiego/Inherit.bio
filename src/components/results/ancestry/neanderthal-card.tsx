@@ -2,7 +2,7 @@
  * <NeanderthalCard> — `#neanderthal` (brief §4.6, acceptance 32). Server
  * component. No marker list for this estimate has been built and
  * licence-checked, so the card states that and nothing else; the capability
- * is registered as withheld. The eyebrow is a paragraph because "ancestry"
+ * is registered as not shipped. The eyebrow is a paragraph because "ancestry"
  * is a term of art and may not head a section; the mandated Denisovan
  * sentence follows the body verbatim.
  */

@@ -32,6 +32,67 @@ carrier-pair arithmetic carried `withheld` without a dossier, which the rule
 above forbids and which would have labelled ordinary unfinished work as an
 evidenced impossibility.
 
+## Current source and the seven open capabilities — 10 October 2026
+
+The status counts above and G7.4 remain unchanged. `not shipped` distinguishes
+unfinished or unreleased work from an evidenced impossibility. The older
+descriptions in the table below are retained as history; this dated section
+supersedes their claims about absent embryo routes, workers and result rows.
+
+The capability implementation at `cdc539e2` was exercised by complete hosted run
+[38036552268, attempt 1](https://github.com/themariodiego/Inherit.bio/actions/runs/38036552268)
+on `cdc539e2baeff912ca689bdb2106cf9674e46273`, tested as
+`1c46fbd6c4f1ee0ecb5ccea89aba360ed2129c89` against main
+`40b8372b778fce85ed0f6c066767d6c29929ef87`, tree
+`6eaae52e180d78d5606e0a774f3a51aa671bdf37`. It completed all nine jobs and
+601 browser cases without skips or retries. This is hosted TEST evidence,
+not production delivery, clinical activation or scientific approval. It does
+not qualify the later unpublished runtime diagnostic changes.
+
+| Open capability | Current implemented subset and evidence | Remaining work and decision boundary | Governing decision or contract |
+| --- | --- | --- | --- |
+| Sequence ingest (BAM, CRAM) | Refusal before issuance and cleanup of a misdeclared upload are implemented in `src/lib/uploads/subject-upload-contract.ts` and proved by `e2e/tier2-upload.spec.ts`. VCF/gVCF processing is a separate existing capability; it does not call variants from reads. | No BAM/CRAM variant caller, validated read-quality pipeline or admitted transport contract exists. Building and validating those is engineering and data work; raising a size cap cannot supply them. No impossibility has been established. | ADR 0016; `genetic-file-ingest-v1` in `docs/route-register.json`. |
+| Carrier status | Exact-allele reviewed assertions and current-source readers exist in `src/lib/family/carrier-assertions.ts` and `src/lib/family/carrier-canonical.ts`. The original report-template prohibition remains. Embryo library file coverage is a separate read in `src/lib/embryos/carrier-library-read.ts`, and explicitly holds carrier interpretation. | The own-genome carrier result surface is unbuilt. The approved inactive reference import is already recorded in the handoff; each condition still needs the chosen named reviewer's actual review and activation, followed by its complete scientific display and proof. Imported assertions or position coverage alone do not publish carrier status. | `docs/carrier-importer-design.md`; `docs/variant-evidence-binding.md`; the carrier review decisions in `docs/protocol/decisions.md`. |
+| Neanderthal ancestry | `src/components/results/ancestry/neanderthal-card.tsx` renders the exact missing-marker/licence reason from `src/copy/ancestry.ts`, no quantity. The same page's lineage and modern ancestry computations are independent. | A licence-checked marker list, defined estimate and validation remain unbuilt. No three built alternatives establish that an honest estimate is impossible. The reason may say “yet” because this work is within the operator's control. | Brief §4.6 and alternative outcome 1; `docs/dataset-licenses.md`. |
+| Carrier-pair arithmetic | `src/lib/family/carrier-pair.ts` implements the scoped arithmetic; Health picture and Portrait use current exact-allele readers, not rsID-wide labels. Synthetic reviewed-reference browser cases exercise those readers and their refusals. | The inactive import is not a remaining import task. The named reviewer must still review and activate each condition through the existing transaction; complete clinical evidence, source coverage, consent and jurisdiction gates remain. Neither arithmetic nor a synthetic reviewed release establishes clinical availability. | ADR 0017 and ADR 0015; `docs/carrier-importer-design.md` and `docs/variant-evidence-binding.md`. |
+| Embryo ingest | The configure, mapping, chunk and completion routes under `src/app/api/embryo-ingest/`, `src/lib/embryos/split-worker.ts` and the browser upload flow are built. `e2e/embryo-ingest-journey.spec.ts` and `e2e/embryo-third-party-journey.spec.ts` execute real TEST consent, upload, native split and publication; the third-party uploader receives no parent's Record Key Cards or analysis authority. | `embryoIngestBuilt()` in `src/lib/embryos/upload-stage.ts` remains TEST-jurisdiction only and `EMBRYO_INGEST_AVAILABLE` remains false. Production offering, actual provider/lifecycle qualification and the retained evidence-only basis refusals remain separate release work. The routes, sanitiser and executor are no longer missing. | ADR 0020, ADR 0016 and ADR 0035. |
+| Embryo quality | Current published QC reaches `src/app/(app)/embryos/[embryoId]/page.tsx` and the comparison QC table. The two native publication journeys above and the two distinct QC seed receipts exercise actual rows rather than seeded final grants. Missing depth, laboratory labels and dropout methods remain honest absent measurements. | Production release stays held. Native file quality does not supply a laboratory method, outcome study or clinical interpretation. The separate scientific finding-state pairs still need their own complete proof; the registered hub library figure also remains pending paired proof. | ADR 0020 and `docs/variant-evidence-binding.md`; `docs/figures-register.json`. |
+| Embryo comparison | `src/app/(app)/embryos/compare/page.tsx` is exercised after real parent-authorized publication. The journey asserts the exact no-ranking statement, joint-selection and availability text, no ranking control, and honest absence of calibrated condition results. | The compiled condition registry is empty. The six scientific finding-state obligations remain open; current QC and library counts cannot substitute for score coverage, a calibrated model, within-family evidence or clinical activation. Statistical estimates stay research only and embryo sex is not published. | ADR 0019 and ADR 0034; `docs/route-divergence.json`. |
+
+### Honest absence and the dossier rule
+
+The absence reasons are short and specific: the BAM/CRAM provider message
+and the own chooser's `OWN_UPLOAD_COPY.sequenceReadsUnavailable` direct the
+person to a VCF; `NEANDERTHAL_BODY` states the missing
+licence-checked markers; `NO_CLASSIFIED_POSITIONS` says that no negative
+carrier screen follows; `INGEST_UNAVAILABLE_SENTENCE` states that this site
+cannot take embryo files; `NO_RESULTS_SENTENCE` and `NO_ROWS_SENTENCE` name
+the empty embryo model registry while preserving the real quality check.
+Each reason is at most 40 words. None promises an externally controlled
+approval. Quality's missing-method and missing-source statements describe
+only the measurement the current file cannot supply.
+
+No scoped dossier or three actually built, materially different failed
+designs was found for any of these seven capabilities. The pharmacogenomics
+dossier and its three verbatim design failures remain historical evidence
+for that separate capability; they are not seven reusable failures. A
+refused input, a synthetic negative test or an unrun design is not a failed
+alternative implementation.
+
+If withholding is later proposed for any one of these seven, its own dossier
+must supply all nine elements from the brief: (1) the exact capability;
+(2) a legal, scientific, data-availability or safety obstacle; (3) primary
+source evidence and access date; (4) three materially different designs
+actually built, with each named gate failure; (5) the narrowest honest subset
+and its delivery evidence; (6) a testable change that would remove the
+obstacle; (7) the actual reason of at most 40 words, with no “soon”, “yet” or
+“currently” when dependent on external reform, decision or outcome evidence;
+(8) an ADR; and (9) its own `withheld` register entry. An external gate blocker
+also needs the exact command, verbatim output and three attempted approach
+families. Missing implementation or an outstanding review satisfies neither
+route. The status counts, all seven `not shipped` rows and G7.4 remain as
+recorded until their substantive release requirements are met.
+
 ## Capabilities
 
 | Capability | Status | Honest UI state today | Evidence | Open work |

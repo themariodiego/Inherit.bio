@@ -5,6 +5,7 @@ import { createInterface } from "node:readline";
 import { localE2eProject } from "./local-e2e-project";
 import { localBrowserTarget, localBrowserUpstreamTimeout, LOCAL_STORAGE_ORIGIN } from "./local-storage-browser-config";
 import { verifyBrowserTransport } from "./local-storage-browser-transport";
+import { ciRuntimeCleanupFailure, ciRuntimeSetupFailure, CI_RUNTIME_SETUP_STAGES } from "./ci-browser-runtime-failure";
 
 /** The existing actual installed-provider transport, shared by the ordinary
  * browser bootstrap and exclusive comprehension stacks. No result rows, Auth
@@ -187,8 +188,10 @@ proxy.on("connect", (_request, socket) => socket.destroy()); // No tunnel, inclu
       }
     } finally { reader.close(); }
   })();
+  let stage: typeof CI_RUNTIME_SETUP_STAGES[number] = "storage-provider-ready";
   try {
   assert((await requestProvider({ init: publicJwk })).ready, "Installed provider did not start");
+  stage = "storage-proxy-listen";
   await new Promise<void>((resolve, reject) => {
     proxy.once("error", reject); proxy.listen(0, "127.0.0.1", resolve);
   });
@@ -198,6 +201,7 @@ proxy.on("connect", (_request, socket) => socket.destroy()); // No tunnel, inclu
   // deliberately invalid upload must remain refused by the actual provider,
   // while its CORS response follows the unchanged gateway's policy.
   for (const method of ["OPTIONS", "POST"]) {
+    stage = method === "OPTIONS" ? "storage-gateway-options" : "storage-provider-denial";
     const boundary = await new Promise<{ status: number; origin?: string; allowedHeaders?: string }>((resolve, reject) => {
       const request = http.request({ hostname: "127.0.0.1", port: address.port, method,
         path: `${selectedProject.apiOrigin}/storage/v1/object/genomes/00000000-0000-4000-8000-000000000001`,
@@ -211,8 +215,10 @@ proxy.on("connect", (_request, socket) => socket.destroy()); // No tunnel, inclu
     });
     assert(method === "OPTIONS" ? boundary.status === 200 : boundary.status >= 400 && boundary.status < 500,
       "Proxy must preserve actual gateway/provider HTTP decisions");
+    stage = "storage-gateway-policy";
     const policy = await gatewayCors(new URL(`${selectedProject.apiOrigin}/storage/v1/object/genomes/00000000-0000-4000-8000-000000000001`),
       "http://localhost:3100", "POST", {});
+    stage = "storage-cors-preserved";
     assert.equal(boundary.origin, policy["access-control-allow-origin"], "Proxy must preserve gateway CORS policy");
     if (method === "OPTIONS") {
       const allowedHeaders = boundary.allowedHeaders?.toLowerCase().split(",").map(header => header.trim()) ?? [];
@@ -220,8 +226,14 @@ proxy.on("connect", (_request, socket) => socket.destroy()); // No tunnel, inclu
         "The actual local gateway must allow the browser's public API-key header");
     }
   }
+  stage = "storage-browser-transport";
   await verifyBrowserTransport(`http://127.0.0.1:${address.port}`, () => forwardedTransportProbes, environment);
   console.log("PASS actual provider denial/CORS preflight and native/manual browser versus direct APIRequest/route.fetch transport; issuer and Auth keys unchanged.");
     return { url: `http://127.0.0.1:${address.port}`, uploads: () => forwardedUploads, close };
-  } catch (error) { await close(); throw error; }
+  } catch (error) {
+    const failure = ciRuntimeSetupFailure(stage, error);
+    try { await close(); }
+    catch (cleanup) { throw ciRuntimeCleanupFailure(failure, ciRuntimeSetupFailure("storage-proxy-cleanup", cleanup)); }
+    throw failure;
+  }
 }

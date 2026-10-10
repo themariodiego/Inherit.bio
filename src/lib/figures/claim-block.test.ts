@@ -138,4 +138,10 @@ describe("figureText", () => {
     expect(figureText(absolute, 1000).unit).toBe("about 120 in 1,000 people like you");
     expect(figureText(absolute, null).unit).toBe("Fewer than 1 in a million, both for you and for the comparison group.");
   });
+
+  it("states the exact reviewed-condition position copy without changing existing coverage wording", () => {
+    expect(figureText({ ...base, kind: "coverage", class: "quality", read: 1180, needed: 1200,
+      wording: "reviewed-condition", condition: "Synthetic condition" })).toEqual({
+      value: "Your file was checked at 1,180 of the 1,200 positions known for Synthetic condition.", unit: null });
+  });
 });

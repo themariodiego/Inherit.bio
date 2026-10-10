@@ -4,6 +4,7 @@ import { loadCohortPermission } from "@/lib/embryos/cohort-permission";
 import { loadEmbryoInputFacts } from "@/lib/embryos/input-facts-load";
 import { notFound, redirect } from "next/navigation";
 import { CompareTable } from "@/components/embryo/compare/compare-table";
+import { CarrierLibraryCoverage } from "@/components/embryo/carrier-library-coverage";
 import { ContextStrip } from "@/components/embryo/compare/context-strip";
 import { QcTable } from "@/components/embryo/compare/qc-table";
 import { StandingStatement } from "@/components/embryo/compare/standing-statement";
@@ -55,6 +56,7 @@ import { readEmbryoQcRows } from "@/lib/embryos/qc-reader";
 import { loadSavedEmbryoCarrierHold } from "@/lib/embryos/carrier-hold";
 import { loadSavedEmbryoStatisticalCoverage } from "@/lib/embryos/statistical-read";
 import { StatisticalCoverage } from "@/components/embryo/statistical-coverage";
+import { loadSavedCarrierLibraryCoverage } from "@/lib/embryos/carrier-library-read";
 import { acknowledged } from "@/lib/embryos/tier2";
 import type { FindingLayer } from "@/lib/genome/taxonomy";
 import { route } from "@/lib/primary-routes";
@@ -200,8 +202,11 @@ export default async function EmbryoComparePage(props: PageProps<"/embryos/compa
   let comparison: RscEmbryoComparison;
   let savedHold: Awaited<ReturnType<typeof loadSavedEmbryoCarrierHold>>;
   let statisticalCoverage: Awaited<ReturnType<typeof loadSavedEmbryoStatisticalCoverage>>;
+  let savedCoverage: Awaited<ReturnType<typeof loadSavedCarrierLibraryCoverage>>;
   try {
-    savedHold = await loadSavedEmbryoCarrierHold(user.id, cohort.id);
+    savedCoverage = await loadSavedCarrierLibraryCoverage(user.id, cohort);
+    if (savedCoverage) savedHold = { status: "held", reason: "scientific_disclosures_pending" };
+    else savedHold = await loadSavedEmbryoCarrierHold(user.id, cohort.id);
     statisticalCoverage = await loadSavedEmbryoStatisticalCoverage(user.id, cohort.id, cohort.embryos.map(embryo => embryo.id));
     comparison = await loadComparison(cohort);
   } catch (error) {
@@ -261,6 +266,14 @@ export default async function EmbryoComparePage(props: PageProps<"/embryos/compa
         {(["variant_call", "estimate"] as const).map((layer) => (
           <CompareTable key={layer} layer={layer} embryos={comparison.embryos} rows={rowsFor(layer)} subjectIds={subjectIds} />
         ))}
+        {savedCoverage ? <div data-slot="carrier-library-comparison" className="space-y-6">
+          {cohort.embryos.map(embryo => <div key={embryo.id} className="space-y-3">
+            <p className="label text-ink">{embryo.displayLabel}</p>
+            <CarrierLibraryCoverage rows={savedCoverage.filter(row => row.embryoId === embryo.id)}
+              subjectId={embryo.subjectId}
+              conditionNames={new Map(allowedConditions().map(entry => [entry.condition_id, entry.condition_name]))} />
+          </div>)}
+        </div> : null}
       </section>
 
       <section aria-labelledby="quality-check-heading" data-density-top-level-section className="space-y-4">

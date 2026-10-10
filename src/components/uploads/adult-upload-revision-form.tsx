@@ -52,6 +52,7 @@ export function AdultUploadRevisionForm({ review }: { review: AdultUploadRevisio
       </header>
       <div className="surface surface-pad rec-stack mt-10">
         <p className="max-w-measure">{COPY.added(day(revision.addedOn), revision.fileKind)}</p>
+        <p className="max-w-measure text-sm leading-relaxed">{COPY.uploader(revision.uploaderName)}</p>
         <div>
           <h2 className="title">{COPY.seeHeading}</h2>
           <p className="mt-2 max-w-measure text-sm leading-relaxed text-ink-muted">{COPY.see(revision.label)}</p>
@@ -67,6 +68,7 @@ export function AdultUploadRevisionForm({ review }: { review: AdultUploadRevisio
           <Button type="button" variant="outline" disabled={busy} onClick={() => void answer("delete")}>{COPY.deleteButton}</Button>
         </div>
         <p className="max-w-measure text-sm text-ink-muted">{COPY.deleteDetail}</p>
+        <p className="max-w-measure text-sm text-ink-muted">{COPY.contact}</p>
         {status === "failed" ? <p role="alert" className="text-sm">{COPY.failed}</p> : null}
       </div>
     </section>

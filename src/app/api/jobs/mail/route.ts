@@ -59,10 +59,12 @@ const adultSubjectInvitationPayload = z
   .strict();
 
 // The upload-time notice for another adult's held file (Path B, TEST-LOCAL
-// only). Dates and a file kind; never a name, an address or a file name.
+// only). The native safe uploader label is optional for older queued notices;
+// never a recipient address, request-selected label or file name.
 const adultUploadNoticePayload = z
   .object({
     fileKind: z.enum(["array", "vcf"]),
+    uploaderName: z.string().regex(/^\p{L}[\p{L} .'-]{0,59}$/u).nullable().optional(),
     uploadedOn: z.iso.date(),
     deleteBy: z.iso.date(),
   })

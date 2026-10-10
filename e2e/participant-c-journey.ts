@@ -17,7 +17,8 @@ export type ParticipantCMail = { to: string | string[]; html?: string };
  * signature, permission, job advancement or provider ACK is substituted. */
 export async function seedParticipantC(options: { page: Page; browser: Browser;
   ownerEmail: string; parentEmail: string; password: typeof participantCPassword; qcSeed?: "b";
-  messages: ParticipantCMail[]; runtime: { runWorker(id: string): Promise<void>; proof(id: string): Promise<unknown> } }) {
+  messages: ParticipantCMail[]; jobsSecret?: string;
+  runtime: { runWorker(id: string): Promise<void>; proof(id: string): Promise<unknown> } }) {
   const { page, browser, ownerEmail, parentEmail, password, messages, runtime } = options;
   if (options.qcSeed !== undefined && options.qcSeed !== "b") throw new Error("Unregistered QC seed");
   const qcSeed = options.qcSeed === "b";
@@ -56,7 +57,8 @@ export async function seedParticipantC(options: { page: Page; browser: Browser;
     await page.getByRole("button", { name: SEND_INVITATION_BUTTON }).click();
     await expect(page.locator('[data-stage="waiting"]')).toBeVisible();
     await expect(page.locator('[data-slot="file-form"]')).toHaveCount(0);
-    const message = await drainMailUntil(page.request, () => messages.find(item => [item.to].flat().includes(parentEmail) && item.html?.includes("/withdraw/request#")));
+    const message = await drainMailUntil(page.request, () => messages.find(item => [item.to].flat().includes(parentEmail) && item.html?.includes("/withdraw/request#")),
+      "the parent invitation this journey requested", options.jobsSecret);
     const emailed = message.html!.match(/http:\/\/localhost:3105\/withdraw\/request#[A-Za-z0-9_-]{43}/)?.[0];
     expect(emailed).toBeTruthy();
     await other.goto(emailed!);

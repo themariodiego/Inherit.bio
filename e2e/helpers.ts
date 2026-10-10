@@ -104,13 +104,15 @@ export async function drainMailUntil<T>(
   request: { post: (url: string, options: { headers: Record<string, string> }) => Promise<JobResponse> },
   found: () => T | undefined,
   what = "the mail this journey requested",
+  jobsSecret = JOBS_SECRET,
 ): Promise<T> {
+  assert(typeof jobsSecret === "string" && jobsSecret.length > 0, "Explicit mail-job secret required");
   let value = found();
   const admin = adminClient();
   const outcomes: string[] = [];
   for (let attempt = 0; attempt < 40 && value === undefined; attempt++) {
     const response = await request.post("/api/jobs/mail", {
-      headers: { authorization: `Bearer ${JOBS_SECRET}` },
+      headers: { authorization: `Bearer ${jobsSecret}` },
     });
     outcomes.push(await jobRan(response, `mail drain ${attempt + 1}`));
     value = found();

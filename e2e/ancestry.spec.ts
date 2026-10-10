@@ -6,7 +6,7 @@ import path from "node:path";
 import { axeViolations, createConfirmedUser, firstViewportInteractives, signIn } from "./helpers";
 import { FIGURE_BASES, MODELLED_MARKER } from "../src/lib/figures/contract";
 import { LINEAGE_NO_BRANCH, LINEAGE_NO_POSITIONS, LINEAGE_NO_RANGE, LINEAGE_RESOLUTION_LIMIT,
-  LINEAGE_UNREADABLE, UNKNOWN_REFERENCE_TREE } from "../src/copy/ancestry";
+  LINEAGE_UNREADABLE, NEANDERTHAL_BODY, UNKNOWN_REFERENCE_TREE } from "../src/copy/ancestry";
 import { REGIONAL_CAVEAT, REGIONAL_RANGE_NOTE } from "../src/lib/genome/regional-admixture";
 import regionalManifest from "../data/ref/aims-seven-region-manifest.json";
 import { LINEAGE_TREES } from "../src/lib/ancestry/panel";
@@ -274,6 +274,9 @@ test("/genome/[subject]/ancestry not-covered: the grey state's exact sentence, n
 
   await expect(page.locator("#neanderthal")).toBeVisible();
   await expect(page.locator("#neanderthal")).toContainText("How much of your DNA came from Neanderthals");
+  await expect(page.locator("#neanderthal").getByText(NEANDERTHAL_BODY, { exact: true })).toBeVisible();
+  await expect(page.locator("#neanderthal [data-figure-kind]")).toHaveCount(0);
+  await expect(page.locator("#neanderthal")).not.toContainText("%");
   expect(await page.content()).not.toContain("archaic-hominin");
 
   for (const theme of ["light", "dark"] as const) {

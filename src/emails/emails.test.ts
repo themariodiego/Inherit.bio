@@ -477,20 +477,26 @@ describe("Path B mails", () => {
   });
 
   it.each([["array", "a raw data file"], ["vcf", "a VCF file"]] as const)(
-    "notices a held %s file with its dates, the fixed deletion and one link, and nothing else", async (fileKind, kind) => {
-      const mail = { id: "adult-upload-notice", payload: { fileKind, uploadedOn: "2026-09-28", deleteBy: "2026-10-28",
+    "notices a held %s file with its safe uploader, fixed deletion, contact and one link", async (fileKind, kind) => {
+      const mail = { id: "adult-upload-notice", payload: { fileKind, uploaderName: fileKind === "array" ? "Alex Synthetic" : null, uploadedOn: "2026-09-28", deleteBy: "2026-10-28",
         reviewUrl: invitationUrl } } as const;
       expect(mailSubject(mail)).toBe("A DNA file was added for you on Inherit");
       const html = stripMarkers(await renderMail(mail));
       expect(html).toContain("A DNA file was added for you");
       expect(html).toContain("On 28 September 2026, the person you gave permission to added a DNA file for you on Inherit.");
       expect(html).toContain(`It is ${kind}.`);
+      expect(html).toContain(`Who added it: ${fileKind === "array" ? "Alex Synthetic" : "Someone with an Inherit account"}.`);
+      expect(html).toContain("If the link does not work, or you did not expect this, write to privacy@inherit.bio.");
+      expect(html).not.toContain("verified identity");
       expect(html).toContain("Nothing is made from it unless you say yes");
       expect(html).toContain("If you do nothing, it is deleted on 28 October 2026, 30 days after it was added.");
       expect(html).toContain("You do not need an account.");
       expect(html.match(/href="/g)).toHaveLength(1);
       expect(html).toContain(invitationUrl);
-      expectSafeBody(html);
+      expectSafeBody(html, true);
+      for (const addition of ["participant@e2e.local", "privacy@inherit.bio", "privacy@inherit.bio.attacker@example.test"]) {
+        expect(() => expectSafeBody(html + addition, true)).toThrow();
+      }
     });
 });
 

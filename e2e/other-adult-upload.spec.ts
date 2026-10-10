@@ -6,6 +6,7 @@ import fs from "node:fs";
 import http from "node:http";
 import path from "node:path";
 import type { Page, APIRequestContext } from "@playwright/test";
+import { toPlainText } from "@react-email/components";
 import {
   adminClient,
   adultInvitationToken,
@@ -68,6 +69,7 @@ const PERSON_ARTIFACT = parseArtifactFile(fs.readFileSync(path.join(process.cwd(
 const UPLOADER_STATEMENTS = artifactStatements(UPLOADER_ARTIFACT.body);
 const PERSON_STATEMENTS = artifactStatements(PERSON_ARTIFACT.body);
 const PASSWORD = "synthetic-path-b-password";
+const UPLOADER_NAME = "Alex Synthetic";
 const UPLOADER = { email: `path-b-uploader-${randomUUID()}@e2e.local`, password: PASSWORD };
 const PATH_A_INVITEE = `path-a-invitee-${randomUUID()}@e2e.local`;
 const CONFIRMER = { email: `path-b-confirmer-${randomUUID()}@e2e.local`, name: "Synthetic Confirmer" };
@@ -98,7 +100,9 @@ test.beforeAll(async () => {
     });
   });
   await new Promise<void>(resolve => resendMock.listen(8124, "127.0.0.1", resolve));
-  await createConfirmedUser(UPLOADER.email, UPLOADER.password);
+  const uploaderId = await createConfirmedUser(UPLOADER.email, UPLOADER.password);
+  const name = await adminClient().from("profiles").update({ display_name: UPLOADER_NAME }).eq("id", uploaderId);
+  expect(name.error).toBeNull();
 });
 
 test.afterAll(async () => {
@@ -354,12 +358,16 @@ test("another adult's file under Path B: signed without an account, held unreada
   const noticeMail = await drainMailUntil(request, mailTo(CONFIRMER.email, "A DNA file was added for you on Inherit"),
     `the upload-time notice to ${CONFIRMER.email}`);
   expect(noticeMail.html).toContain("If you do nothing, it is deleted on");
+  expect(toPlainText(noticeMail.html!)).toContain(`Who added it: ${UPLOADER_NAME}.`);
+  expect(noticeMail.html).toContain("write to privacy@inherit.bio.");
   await signOut(page);
   await openRightsLink(page, noticeMail.html);
   const screen = page.locator('[data-slot="adult-upload-revision"]');
   await expect(screen.getByRole("heading", { name: REVISION.heading })).toBeVisible();
   await expect(screen.getByText(REVISION.see(CONFIRMER.name), { exact: true })).toBeVisible();
   await expect(screen.getByText(REVISION.nothingYet, { exact: true })).toBeVisible();
+  await expect(screen.getByText(REVISION.uploader(UPLOADER_NAME), { exact: true })).toBeVisible();
+  await expect(screen.getByText(REVISION.contact, { exact: true })).toBeVisible();
   await screen.getByRole("button", { name: REVISION.confirmButton, exact: true }).click();
   await expect(page.getByRole("heading", { name: REVISION.receipts.confirm.title })).toBeVisible();
 

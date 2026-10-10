@@ -102,6 +102,10 @@ export const ADULT_UPLOAD_REVISION_COPY = {
   heading: "A DNA file was added for you",
   added: (date: string, kind: "array" | "vcf") =>
     `It was added on ${date}. It is ${kind === "array" ? "a raw data file" : "a VCF file"}.`,
+  uploader: (name: string | null) => name
+    ? `Who added it: ${name}. This is the name on their account.`
+    : "Who added it: Someone with an Inherit account.",
+  contact: "If the link does not work, or you did not expect this, write to privacy@inherit.bio.",
   seeHeading: "What they can see",
   see: (label: string) =>
     `The name they wrote for you (${label}), the day the file was added, and whether you said yes. They see no result.`,

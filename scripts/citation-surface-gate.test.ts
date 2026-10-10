@@ -267,6 +267,9 @@ describe("the gate scans the real non-template surfaces", () => {
   it("wires the runnable gate into CI beside the claims gate", () => {
     const scripts = JSON.parse(readFileSync(path.join(ROOT, "package.json"), "utf8")).scripts;
     expect(scripts["gate:citations"]).toBe("tsx scripts/citation-surface-gate.ts");
+    for (const file of ["scripts/citation-surface-gate.test.ts", "scripts/figures-census.test.ts"])
+      expect(scripts["test:source-inventories"].split(" ").filter((argument: string) => argument === file)).toHaveLength(1);
+    expect(scripts["test:source-inventories"]).toMatch(/ --maxWorkers=1 --testTimeout=5000$/);
     expect(readFileSync(path.join(ROOT, ".github/workflows/ci.yml"), "utf8"))
       .toMatch(/name: Claims and provenance gate\s+run: pnpm gate:claims\s+- name: Non-template citation surface gate\s+run: pnpm gate:citations/);
   });
@@ -277,7 +280,7 @@ describe("the 2 October release integration preserves measured debt", () => {
   it("reads the current source without assigning a human review", () => {
     const result = runRepositoryGate(ROOT, "2026-10-02");
     expect(result.failures).toEqual([]);
-    expect(result.fileCount).toBe(115);
+    expect(result.fileCount).toBe(117);
     expect(result.candidates).toHaveLength(59);
     expect(result).toMatchObject({ sourced: 0, open: 59, classified: 0 });
     const inputs = readRepositoryInputs(ROOT);

@@ -20,6 +20,8 @@ import {
 } from "@/copy/embryos/index";
 import { cohortScopeSegment, copilotGroupScopes } from "@/lib/copilot/group-scopes";
 import { EMBRYO_ANALYSIS, cohortCapability, permits } from "@/lib/embryos/access";
+import { EmbryoReadError } from "@/lib/embryos/cohorts";
+import { loadSavedCarrierLibraryCoverage, type CarrierLibraryCoverageRow } from "@/lib/embryos/carrier-library-read";
 import { route } from "@/lib/primary-routes";
 import { cn } from "@/lib/utils";
 import { loadCohorts, loadViewer } from "./context";
@@ -60,6 +62,19 @@ export default async function EmbryosPage() {
     tier2 && cohort.status === "active" && permits(cohortDecisions.get(cohort.id)!)
       ? await loadSavedEmbryoStatisticalCoverage(user.id, cohort.id, cohort.embryos.map(embryo => embryo.id)) : null,
   ] as const)));
+  // The reader independently requires current analysis and the same session's
+  // Tier-2 acknowledgement; the hub cannot reveal derived coverage early.
+  const coverage = new Map<string, { rows: CarrierLibraryCoverageRow[] | null; failed: boolean }>(
+    await Promise.all(cohorts.map(async cohort => {
+    try {
+      const rows = permits(cohortDecisions.get(cohort.id)!)
+        ? await loadSavedCarrierLibraryCoverage(user.id, cohort) : null;
+      return [cohort.id, { rows, failed: false }] as const;
+    } catch (error) {
+      if (!(error instanceof EmbryoReadError)) throw error;
+      return [cohort.id, { rows: null, failed: true }] as const;
+    }
+  })));
 
   const tileHref: Record<(typeof HUB_TILES)[number]["id"], string | null> = {
     upload: allowed ? route("embryos.upload") : null,
@@ -110,6 +125,8 @@ export default async function EmbryosPage() {
                   cohort={cohort}
                   jurisdictionCopy={permits(cohortDecision) ? null : cohortDecision.userFacingCopy}
                   statisticalCoverage={statisticalCoverage.get(cohort.id)}
+                  coverage={coverage.get(cohort.id)?.rows}
+                  coverageReadFailed={coverage.get(cohort.id)?.failed}
                 />
               );
             })}
