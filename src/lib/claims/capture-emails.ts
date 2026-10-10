@@ -84,9 +84,12 @@ function assertLocalEdgeRuntimeOutput(root: string): void {
     }
     directory = dirname(directory);
   }
-  const options = { encoding: "utf8", flag: constants.O_RDONLY | constants.O_NOFOLLOW } as const;
-  const config = readFileSync(join(root, "supabase/config.toml"), options);
-  const lock = readFileSync(join(root, "pnpm-lock.yaml"), options);
+  const publicText = (name: string): string => {
+    const fd = openSync(join(root, name), constants.O_RDONLY | constants.O_NOFOLLOW);
+    try { return readFileSync(fd, "utf8"); } finally { closeSync(fd); }
+  };
+  const config = publicText("supabase/config.toml");
+  const lock = publicText("pnpm-lock.yaml");
   if ((config.match(/^project_id\s*=\s*"sequence"\s*$/gmu)?.length ?? 0) !== 1
     || !/^      supabase:\n        specifier: \^2\.116\.0\n        version: 2\.116\.0\n/mu.test(lock)) {
     throw new Error("email-capture:unsafe-local-runtime-output");
