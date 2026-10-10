@@ -3,7 +3,7 @@
 import assert from "node:assert/strict";
 import { spawn, type ChildProcess } from "node:child_process";
 import { createPrivateKey, createPublicKey } from "node:crypto";
-import { closeSync, createReadStream, readFileSync } from "node:fs";
+import { createReadStream, readFileSync } from "node:fs";
 import { receiveOwnedLinuxChildProof, type OwnedLinuxCapability } from "../owned-linux-runtime";
 import http from "node:http";
 import net from "node:net";
@@ -12,6 +12,7 @@ import { checkedCiLauncherEnvironment, checkedAppEnvironment, CI_RUNTIME_CONTAIN
 import { startCiArtifactGateway } from "./artifact-gateway-start";
 import { forwardMailRelayDiagnostics, forwardProfileDiagnostics } from "./profile-diagnostic-filter";
 import { appLauncherDiagnosticLine, type AppLauncherStage } from "./app-launcher-diagnostic";
+import { settleOwnedControlClose } from "./owned-control-close";
 const mode = process.argv[2];
 const port = Number(process.argv[3]);
 const children = new Set<ChildProcess>();
@@ -68,7 +69,7 @@ try {
       try {
         for await (const chunk of source) { size += chunk.length; assert(size < 8192, "Bounded public operator-control proof required"); chunks.push(chunk); }
         operator = receiveOwnedLinuxChildProof(Buffer.concat(chunks).toString("utf8").trim(), 3);
-      } finally { clearTimeout(timer); source.destroy(); closeSync(3); }
+      } finally { clearTimeout(timer); await settleOwnedControlClose(source); }
     }
     diagnostic("ready"); stage = "environment";
     const env = checkedCiLauncherEnvironment(process.env, port, process.platform, operator);

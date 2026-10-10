@@ -1,3 +1,11 @@
+## 2026-10-10 — Give the anonymous control stream sole descriptor ownership
+
+The pinned Node 22 public-only FD3 control establishes that explicit ReadStream destruction closes its descriptor even with autoClose disabled. The old destroy-then-closeSync sequence produced a second EBADF in all eight stock controls; a bounded scheduling control also demonstrates closure of a newly reused descriptor. This establishes a source ownership defect, not the cause of the earlier native app exit.
+
+The launcher now gives its control stream sole closure authority and awaits actual close within the existing five-second settlement envelope before any child starts. A close error or missing settlement refuses. Fixed FD3, the original ten-second input deadline, less-than-8192-byte limit, EOF and proof receive while the descriptor remains open are unchanged. A genuine public-only anonymous subprocess control checks one settled close and safe subsequent reuse; error, nonsettlement, listener and ordering controls retain the fail-closed contract. No app environment, provider, private proof or native execution is involved.
+
+The new helper controls remain unrun until the single composed source qualification. The earlier public ownership controls establish the defect without qualifying this patch or native startup.
+
 ## 2026-10-10 — Retain closed mail-child startup facts
 
 The exact `cdc539e2` key-free owned native attempt stopped before app readiness. The original safe result identifies a main-app child exit with code 1 and no HTTP status; the retained launcher steps end at host mail-relay starting. This does not establish the child failure's cause. Source review found that the host discarded relay stderr, including the existing canonical diagnostic frames.
