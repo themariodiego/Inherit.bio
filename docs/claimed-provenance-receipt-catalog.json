@@ -1,0 +1,183 @@
+[
+  {
+    "relation": "private.claimed_embryo_ingest_receipts",
+    "constraints": [
+      {
+        "deferrable": false,
+        "deferred": false,
+        "definition": "CHECK ((ingest_revision > 0))",
+        "name": "claimed_embryo_ingest_receipts_ingest_revision_check",
+        "validated": true
+      },
+      {
+        "deferrable": false,
+        "deferred": false,
+        "definition": "CHECK (((manifest_chunk_count >= 1) AND (manifest_chunk_count <= 50)))",
+        "name": "claimed_embryo_ingest_receipts_manifest_chunk_count_check",
+        "validated": true
+      },
+      {
+        "deferrable": false,
+        "deferred": false,
+        "definition": "CHECK ((manifest_sha256 ~ '^[0-9a-f]{64}$'::text))",
+        "name": "claimed_embryo_ingest_receipts_manifest_sha256_check",
+        "validated": true
+      },
+      {
+        "deferrable": false,
+        "deferred": false,
+        "definition": "PRIMARY KEY (id)",
+        "name": "claimed_embryo_ingest_receipts_pkey",
+        "validated": true
+      },
+      {
+        "deferrable": false,
+        "deferred": false,
+        "definition": "CHECK ((publication_revision > 0))",
+        "name": "claimed_embryo_ingest_receipts_publication_revision_check",
+        "validated": true
+      },
+      {
+        "deferrable": false,
+        "deferred": false,
+        "definition": "CHECK ((reference_build = ANY (ARRAY['GRCh37'::text, 'GRCh38'::text])))",
+        "name": "claimed_embryo_ingest_receipts_reference_build_check",
+        "validated": true
+      },
+      {
+        "deferrable": false,
+        "deferred": false,
+        "definition": "CHECK ((source_binding_fingerprint ~ '^[0-9a-f]{64}$'::text))",
+        "name": "claimed_embryo_ingest_receipts_source_binding_fingerprint_check",
+        "validated": true
+      },
+      {
+        "deferrable": false,
+        "deferred": false,
+        "definition": "UNIQUE (worker_job_id)",
+        "name": "claimed_embryo_ingest_receipts_worker_job_id_key",
+        "validated": true
+      },
+      {
+        "deferrable": true,
+        "deferred": true,
+        "definition": "TRIGGER DEFERRABLE INITIALLY DEFERRED",
+        "name": "embryo_part_provenance",
+        "validated": true
+      }
+    ],
+    "indexes": [
+      {
+        "definition": "CREATE UNIQUE INDEX claimed_embryo_ingest_receipts_pkey ON private.claimed_embryo_ingest_receipts USING btree (id)",
+        "ready": true,
+        "unique": true,
+        "valid": true
+      },
+      {
+        "definition": "CREATE UNIQUE INDEX claimed_embryo_ingest_receipts_worker_job_id_key ON private.claimed_embryo_ingest_receipts USING btree (worker_job_id)",
+        "ready": true,
+        "unique": true,
+        "valid": true
+      }
+    ],
+    "triggers": [
+      {
+        "definition": "CREATE TRIGGER claimed_embryo_session_immutable BEFORE UPDATE ON private.claimed_embryo_ingest_receipts FOR EACH ROW EXECUTE FUNCTION private.freeze_claimed_embryo_receipt_v1()",
+        "enabled": "O",
+        "name": "claimed_embryo_session_immutable"
+      },
+      {
+        "definition": "CREATE CONSTRAINT TRIGGER embryo_part_provenance AFTER INSERT OR DELETE OR UPDATE ON private.claimed_embryo_ingest_receipts DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION private.guard_embryo_part_provenance_v1()",
+        "enabled": "O",
+        "name": "embryo_part_provenance"
+      }
+    ]
+  },
+  {
+    "relation": "private.claimed_embryo_job_receipts",
+    "constraints": [
+      {
+        "deferrable": false,
+        "deferred": false,
+        "definition": "CHECK (((attempt >= 1) AND (attempt <= 20)))",
+        "name": "claimed_embryo_job_receipts_attempt_check",
+        "validated": true
+      },
+      {
+        "deferrable": false,
+        "deferred": false,
+        "definition": "CHECK ((file_sha256 ~ '^[0-9a-f]{64}$'::text))",
+        "name": "claimed_embryo_job_receipts_file_sha256_check",
+        "validated": true
+      },
+      {
+        "deferrable": false,
+        "deferred": false,
+        "definition": "CHECK ((idempotency_key ~ '^[0-9a-f]{64}$'::text))",
+        "name": "claimed_embryo_job_receipts_idempotency_key_check",
+        "validated": true
+      },
+      {
+        "deferrable": false,
+        "deferred": false,
+        "definition": "PRIMARY KEY (id)",
+        "name": "claimed_embryo_job_receipts_pkey",
+        "validated": true
+      },
+      {
+        "deferrable": false,
+        "deferred": false,
+        "definition": "FOREIGN KEY (session_id) REFERENCES private.claimed_embryo_ingest_receipts(id) ON DELETE RESTRICT",
+        "name": "claimed_embryo_job_receipts_session_id_fkey",
+        "validated": true
+      },
+      {
+        "deferrable": false,
+        "deferred": false,
+        "definition": "UNIQUE (session_id)",
+        "name": "claimed_embryo_job_receipts_session_id_key",
+        "validated": true
+      },
+      {
+        "deferrable": false,
+        "deferred": false,
+        "definition": "CHECK ((source_binding_revision > 0))",
+        "name": "claimed_embryo_job_receipts_source_binding_revision_check",
+        "validated": true
+      },
+      {
+        "deferrable": true,
+        "deferred": true,
+        "definition": "TRIGGER DEFERRABLE INITIALLY DEFERRED",
+        "name": "embryo_part_provenance",
+        "validated": true
+      }
+    ],
+    "indexes": [
+      {
+        "definition": "CREATE UNIQUE INDEX claimed_embryo_job_receipts_pkey ON private.claimed_embryo_job_receipts USING btree (id)",
+        "ready": true,
+        "unique": true,
+        "valid": true
+      },
+      {
+        "definition": "CREATE UNIQUE INDEX claimed_embryo_job_receipts_session_id_key ON private.claimed_embryo_job_receipts USING btree (session_id)",
+        "ready": true,
+        "unique": true,
+        "valid": true
+      }
+    ],
+    "triggers": [
+      {
+        "definition": "CREATE TRIGGER claimed_embryo_job_immutable BEFORE UPDATE ON private.claimed_embryo_job_receipts FOR EACH ROW EXECUTE FUNCTION private.freeze_claimed_embryo_receipt_v1()",
+        "enabled": "O",
+        "name": "claimed_embryo_job_immutable"
+      },
+      {
+        "definition": "CREATE CONSTRAINT TRIGGER embryo_part_provenance AFTER INSERT OR DELETE OR UPDATE ON private.claimed_embryo_job_receipts DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION private.guard_embryo_part_provenance_v1()",
+        "enabled": "O",
+        "name": "embryo_part_provenance"
+      }
+    ]
+  }
+]

@@ -152,7 +152,7 @@ export async function runInstrument(input: { mode: "instrument-dry-run"; manifes
 /** The live harness. The environment must be the live one, the manifest must
  * still match the pinned inputs, and a run's qualifying status is the
  * manifest's own: it is true only when no blocker remains, which today it
- * cannot be (T6 and T7 are skipped until embryo ingest lands). A partial run
+ * cannot be inferred from a callable fixture or a partial hosted smoke. A partial run
  * (calibration or smoke) is recorded and never assessed against G3.3. */
 export async function runLive(input: { manifest: LiveManifest; inputs: ConductorInputs; environment: LiveEnvironment;
   journal: JournalPort; modelIdentity: string; onSession?: (outcome: SessionOutcome) => Promise<void> }) {

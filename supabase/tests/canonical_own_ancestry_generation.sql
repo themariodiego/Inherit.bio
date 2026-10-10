@@ -337,7 +337,30 @@ create temporary table array_output as select jsonb_set(payload,'{ancestry,sourc
  jsonb_build_object('fileId','78700000-0000-4000-8000-000000000041','subjectId',(select id from ancestry_subject),
  'normalizedBuild','GRCh38','callEncoding','array-genotype','sourceRevision',1,'sourceSha256',repeat('c',64),
  'normalizedAt',(select receipt#>'{authorization,normalizedAt}' from array_claim))) payload from ancestry_output;
-select is(pg_temp.array_generate('complete',(select payload from array_output))->>'status','complete','second exact array source completes independently');
+-- New revision receipts originate in the real computation fixture. Bind it to
+-- the independently prepared array source; old file 040 retains revision 1.
+create temporary table classified_content(c jsonb);
+\ir fixtures/own_ancestry_classified_empty_content.inc
+create temporary table classified_output as select jsonb_build_object('ancestry',
+ jsonb_set(c,'{source}',(select payload#>'{ancestry,source}' from array_output))) payload from classified_content;
+select throws_ok($$select pg_temp.array_generate('complete',jsonb_set((select payload from classified_output),
+ '{ancestry,figureBasis,shares,basis}','"observed"'))$$,'22023','invalid_ancestry_content','modelled shares cannot be published as observed');
+select throws_ok($$select pg_temp.array_generate('complete',(select payload from classified_output)#-'{ancestry,figureBasis}')$$,
+ '22023','invalid_ancestry_content','missing receipts are not reconstructed at publication');
+select throws_ok($$select pg_temp.array_generate('complete',jsonb_set((select payload from classified_output),
+ '{ancestry,figureBasis,coverage,version}','2'))$$,'22023','invalid_ancestry_content','unknown classification version cannot publish');
+select is(pg_temp.array_generate('complete',(select payload from classified_output))->>'status','complete','second exact array source publishes classified revision 4');
+select is((select result#>'{ancestry,figureBasis}' from private.own_analysis_runs
+ where file_id='78700000-0000-4000-8000-000000000041' and purpose='ancestry'),
+ '{"shares":{"version":1,"basis":"modelled"},"coverage":{"version":1,"basis":"observed"}}'::jsonb,
+ 'the real journal retains both producer receipts without changing their meaning');
+select is(public.own_ancestry_content_v1('78700000-0000-4000-8000-000000000001',
+ '78700000-0000-4000-8000-000000000010','78700000-0000-4000-8000-000000000041')->'content',
+ (select payload->'ancestry' from classified_output),'the authorized reader returns byte-identical classified content');
+select is((select result#>'{ancestry,schemaVersion}' from private.own_analysis_runs
+ where file_id='78700000-0000-4000-8000-000000000040' and purpose='ancestry'),'1'::jsonb,
+ 'publishing a new revision does not backfill the historical result');
+
 create temporary table deletion_receipt as select public.prepare_genome_file_deletion_v1(
  '78700000-0000-4000-8000-000000000001','78700000-0000-4000-8000-000000000010','78700000-0000-4000-8000-000000000040') receipt;
 select is(pg_temp.readable(),'{}'::uuid[],'pending source deletion immediately removes ancestry read authority');
@@ -354,7 +377,7 @@ select is((select count(*) from private.own_analysis_runs where file_id='7870000
 select is((select count(*) from public.genome_files where id='78700000-0000-4000-8000-000000000041' and sha256=repeat('c',64)),1::bigint,
  'selected deletion preserves unrelated source metadata');
 select is(public.own_ancestry_content_v1('78700000-0000-4000-8000-000000000001',
- '78700000-0000-4000-8000-000000000010','78700000-0000-4000-8000-000000000041')->'content',(select payload->'ancestry' from array_output),
+ '78700000-0000-4000-8000-000000000010','78700000-0000-4000-8000-000000000041')->'content',(select payload->'ancestry' from classified_output),
  'selected source deletion preserves exact independent completed ancestry');
 select is((select count(*) from storage.objects where id='78700000-0000-4000-8000-000000000021'),1::bigint,
  'selected deletion preserves unrelated Storage object');

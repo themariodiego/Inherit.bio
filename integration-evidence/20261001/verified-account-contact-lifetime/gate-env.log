@@ -1,0 +1,5 @@
+
+> inherit@0.1.0 gate:env /Users/mariodiego/Documents/ChatGPT/Inherit Bio/verified-own-account-contact-lifetime
+> tsx scripts/env-gate.ts
+
+env gate passed: 38 environment variables read across 48 of 1241 modules under src/ (21 read directly, 17 through 9 process.env bindings, 1 recorded dynamic read site), 31 declared in .env.example, all 31 of them named among the 41 variables docs/self-hosting.md names, 7 recorded as runtime-injected

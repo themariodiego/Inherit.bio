@@ -23,6 +23,7 @@ import {
   OTHER_ADULT_UPLOAD_STATEMENT_KEYS,
   SUBJECT_ESIGNATURE_STATEMENT_KEYS,
   adultUploadRevisionBody,
+  adultUploadRevisionView,
   artifactStatements,
   artifactWarning,
   heldFinalizationReceipt,
@@ -520,5 +521,21 @@ describe("Path B's account branch: confirming a request with the signed-in accou
     mocks.rpc.mockClear();
     expect((await withdrawSession(request(revisionForm))).status).toBe(404);
     expect(mocks.rpc).not.toHaveBeenCalled();
+  });
+});
+
+
+describe("the accountless held revision's safe notice label", () => {
+  const view = { state: "pending", label: "Synthetic Relative", uploaderName: "Alex Synthetic", fileKind: "vcf",
+    addedOn: "2026-10-10T00:00:00Z", deleteBy: "2026-11-09T00:00:00Z", confirmedOn: null };
+  it.each([null, "Alex Synthetic", "Élodie O'Neil", "A".repeat(60)])("accepts only a plain captured label or honest null: %s", uploaderName => {
+    expect(adultUploadRevisionView.safeParse({ ...view, uploaderName }).success).toBe(true);
+  });
+  it.each([undefined, "", "A".repeat(61), "other@example.test", "https://example.test", "Alex\nSynthetic", "<script>x</script>", 3])(
+    "refuses malformed native display data rather than serializing it: %s", uploaderName => {
+      expect(adultUploadRevisionView.safeParse({ ...view, uploaderName }).success).toBe(false);
+    });
+  it.each(["uploaderAccountId", "contact", "objectName", "rawSha256", "genotypes"])("retains closed projection against %s", key => {
+    expect(adultUploadRevisionView.safeParse({ ...view, [key]: "private-sentinel" }).success).toBe(false);
   });
 });

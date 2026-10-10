@@ -5,6 +5,29 @@ public HG001 benchmark is retained with its provenance but is not an active
 browser input. Never substitute private customer, patient, or personal genome
 data. Public benchmark genotypes are also excluded from current test inputs.
 
+## Path B confirmed consumer-array fixtures
+
+- Classification: hand-written synthetic GRCh38 files in the four supported
+  consumer-array formats. No genotype came from a person, customer file or
+  public benchmark sample. The vendor-style headers identify the parser format;
+  these files are not exports from a person's vendor account.
+- The two public positions match the committed report catalog and the separate
+  `path-b-reports-grch38.vcf`: rs762551 at chr15:74749576 and rs9923231 at
+  chr16:31096368. The invented literal calls are A/C and C/T in every file.
+  Array bytes supply no reference/alternate alleles, depth or quality values.
+- The four added cases in `e2e/other-adult-upload.spec.ts` upload each complete
+  file through the real chooser and transport, confirm its current source,
+  and invoke the registered normalization and report operators. Authored cases
+  do not establish runtime, scientific accuracy or clinical validation.
+- Repository SHA-256 values:
+
+| Fixture | Repository SHA-256 |
+| --- | --- |
+| `path-b-reports-grch38-23andme.txt` | `b7bbda6136bf4076f16fcfed648628a45a1ffa3d6db795685a4902c56caedf2b` |
+| `path-b-reports-grch38-ancestry.txt` | `c6c4c3135c21807084e24904fbacbace7bd1a9cbfed1e3dff5d698b0ae4ae3ac` |
+| `path-b-reports-grch38-myheritage.csv` | `51219053ef8ace8b20558f4379f1feb622b8818beda5ddf9a24345483e1741c9` |
+| `path-b-reports-grch38-ftdna.csv` | `344ca41eaa96977968fdb5ef559b07c06c30a458b4ba3a535505ef71bd549e48` |
+
 ## synthetic-browser-grch38.vcf.gz
 
 - Classification: independently invented single-sample VCF. No genotype,
@@ -301,6 +324,27 @@ data. Public benchmark genotypes are also excluded from current test inputs.
   position against the reference, and both call rates.
 - Repository SHA-256:
   `111d6a009a686a5847c3c0645e6727ab634e6970bfabd32ecca95224add15cbb`.
+
+## embryo-pair-qc-b-grch38.vcf
+
+- Classification: independently invented second two-sample QC seed, describing
+  no real person. It retains every non-sample column and registered GRCh38
+  locus of `embryo-pair-grch38.vcf`; no genotype is taken from a person,
+  benchmark or reference sequence. Its REF letters remain parser inputs.
+- Deterministic derivation: enumerate the original 1,200 data rows from zero.
+  SAMPLE1 is `./.` when index modulo 100 is zero, otherwise `0/1` at even
+  indices and `0/0` at odd indices. SAMPLE2 is `./.` when index modulo 75 is
+  zero, otherwise `0/1` when index modulo 4 is zero and `1/1` elsewhere.
+  Only GT fields and the explanatory `##source` header change.
+- `scripts/ci-browser/embryo-qc-two-seed.test.ts` checks exact derived bytes
+  and non-sample columns, then runs the actual transport sanitiser and split
+  parser. It measures 1,188 / 1,184 called positions, both passing policy,
+  changed call rates and heterozygosity, and no depth or laboratory estimate.
+- The native second publication uses the actual signed-parent upload and
+  worker. Its fixed fixture hash must match the committed file in the final
+  same-run two-publication aggregate. Source authoring is not browser proof.
+- Repository SHA-256:
+  `892b7c6280b9558513fd73270a309d9539824c65de02f717653441c14ec303ab`.
 
 ## carrier-pair-grch38.vcf
 

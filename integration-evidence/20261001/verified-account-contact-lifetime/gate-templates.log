@@ -1,0 +1,23 @@
+
+> inherit@0.1.0 gate:templates /Users/mariodiego/Documents/ChatGPT/Inherit Bio/verified-own-account-contact-lifetime
+> tsx scripts/validate-templates.ts
+
+templates: 162 across 16 categories
+  addiction: 10
+  aesthetic-cosmetic: 10
+  autoimmune: 10
+  basic-traits: 10
+  brain-health: 10
+  cancer-risk: 10
+  environmental-sensitivity: 11
+  gastrointestinal: 10
+  heart-cardiovascular: 10
+  lifestyle-wellness: 10
+  longevity: 10
+  mental-health: 10
+  metabolic-obesity: 10
+  neurodegenerative: 10
+  pharmacogenomics: 11
+  reproductive-family: 10
+citations without an access date: 0 of 227
+all template seeds valid

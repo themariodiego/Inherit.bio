@@ -153,10 +153,15 @@ const recordKeyShape = /[0-9A-HJKMNP-TV-Z]{20}/;
 const fragment = `${"a".repeat(21)}-${"b".repeat(21)}`;
 const invitationUrl = `https://example.test/withdraw/request#${fragment}`;
 
-function expectSafeBody(html: string) {
+function expectSafeBody(html: string, privacyContact = false) {
   expect(html).toContain(ATTRIBUTION);
   expect(html).toContain(DISCLAIMER);
-  expect(html).not.toContain("@");
+  if (privacyContact) {
+    expect(html.match(/privacy@inherit\.bio/g)).toHaveLength(1);
+    expect(html.replace("privacy@inherit.bio", "")).not.toContain("@");
+  } else {
+    expect(html).not.toContain("@");
+  }
   expect(html).not.toMatch(recordKeyShape);
 }
 
@@ -182,26 +187,47 @@ describe("co-parent invitation email", () => {
 });
 
 describe("embryo upload notice email", () => {
-  it("states what was stored and what was not, with a withdraw link when given", async () => {
+  const notice = { uploaderName: "Alex Synthetic", uploadedBy: "genetic-parent" as const,
+    uploadDateIso: "2026-09-06", uploadDateWords: "6 September 2026", retentionDays: 730 };
+
+  it("states who, when, what was stored and not, what may be derived, how long, and where to write", async () => {
     const html = await renderHtml(
-      createElement(EmbryoUploadNoticeEmail, { embryoCount: 3, withdrawUrl: invitationUrl }),
+      createElement(EmbryoUploadNoticeEmail, { ...notice, embryoCount: 3, withdrawUrl: invitationUrl }),
     );
     expect(html).toContain("Embryos were added to Inherit");
-    expect(html).toContain("3 embryo records were added on Inherit");
-    expect(html).toContain("What was stored: 3 embryo records, added today.");
+    expect(html).toContain("On 6 September 2026 (2026-09-06), 3 embryo records were added on Inherit");
+    expect(html).toContain("Who added them: Alex Synthetic, as a genetic parent.");
+    expect(html).toContain("What was stored: 3 embryo records, added on 6 September 2026 (2026-09-06).");
     expect(html).toContain("What was not stored: no results, and no laboratory labels.");
+    expect(html).toContain("What Inherit may work out from them: a quality check of each embryo");
+    expect(html).toContain("Nothing else is worked out today.");
+    expect(html).toContain("Inherit deletes them at most 730 days after they were added, unless they are renewed.");
+    expect(html).toContain("shows you what the person who added them can see, and nothing more");
     expect(html).toContain(`href="${invitationUrl}"`);
     expect(html).toContain("Review your options");
-    expectSafeBody(html);
+    expect(html).toContain("If the link does not work, or you did not expect this, write to privacy@inherit.bio.");
+    expectSafeBody(html, true);
   });
 
-  it("renders one record in the singular and no link without a withdraw URL", async () => {
-    const html = await renderHtml(createElement(EmbryoUploadNoticeEmail, { embryoCount: 1 }));
+  it("permits only the exact required privacy contact and still detects every additional address", async () => {
+    const html = await renderHtml(createElement(EmbryoUploadNoticeEmail,
+      { ...notice, embryoCount: 1, uploaderName: null, uploadedBy: "someone-else" }));
+    expectSafeBody(html, true);
+    for (const addition of ["participant@e2e.local", "privacy@inherit.bio", "privacy@inherit.bio.attacker@example.test"]) {
+      expect(() => expectSafeBody(html + addition, true)).toThrow();
+    }
+  });
+
+  it("renders one record in the singular, a neutral uploader and no link without a withdraw URL", async () => {
+    const html = await renderHtml(createElement(EmbryoUploadNoticeEmail,
+      { ...notice, embryoCount: 1, uploaderName: null, uploadedBy: "someone-else" }));
     expect(html).toContain("1 embryo record was added on Inherit");
-    expect(html).toContain("What was stored: 1 embryo record, added today.");
+    expect(html).toContain("Who added them: Someone with an Inherit account, without being a genetic parent, under the agreement on record.");
+    expect(html).toContain("What was stored: 1 embryo record, added on 6 September 2026 (2026-09-06).");
+    expect(html).toContain("If you did not expect this, write to privacy@inherit.bio.");
     expect(html).not.toContain("Review your options");
     expect(html).not.toContain("href=");
-    expectSafeBody(html);
+    expectSafeBody(html, true);
   });
 });
 
@@ -222,13 +248,15 @@ describe("record key addendum email", () => {
     expectSafeBody(html);
   });
 
-  it("no-source says no genetic file was kept for the embryo", async () => {
+  it("no-source says no genetic file was kept for the embryo, and when its record goes", async () => {
     const html = await renderHtml(
-      createElement(RecordKeyAddendumEmail, { kind: "no-source", displayLabel: "Embryo 4" }),
+      createElement(RecordKeyAddendumEmail, { kind: "no-source", displayLabel: "Embryo 4",
+        closingDateIso: "2028-09-05", closingDateWords: "5 September 2028" }),
     );
     expect(html).toContain("One embryo has no genetic file");
     expect(html).toContain("No genetic file was kept for Embryo 4.");
     expect(html).toContain("cannot be used to claim anything");
+    expect(html).toContain("Inherit keeps the record of its quality check until 5 September 2028 (2028-09-05), and then deletes it.");
     expect(html).not.toContain("href=");
     expectSafeBody(html);
   });
@@ -333,7 +361,8 @@ const embryoMails: ReadonlyArray<{ mail: MailTemplate; subject: string; heading:
     heading: "You were named as a genetic parent",
   },
   {
-    mail: { id: "embryo-upload-notice", payload: { embryoCount: 2 } },
+    mail: { id: "embryo-upload-notice", payload: { embryoCount: 2, uploaderName: null, uploadedBy: "genetic-parent",
+      uploadDateIso: "2026-09-06", uploadDateWords: "6 September 2026", retentionDays: 730 } },
     subject: "Embryo records were added on Inherit",
     heading: "Embryos were added to Inherit",
   },
@@ -351,7 +380,8 @@ const embryoMails: ReadonlyArray<{ mail: MailTemplate; subject: string; heading:
     heading: "The claim period on your Record Key changed",
   },
   {
-    mail: { id: "record-key-addendum", payload: { kind: "no-source", displayLabel: "Embryo 1" } },
+    mail: { id: "record-key-addendum", payload: { kind: "no-source", displayLabel: "Embryo 1",
+      closingDateIso: "2028-09-05", closingDateWords: "5 September 2028" } },
     subject: "No genetic file was kept for one embryo",
     heading: "One embryo has no genetic file",
   },
@@ -394,7 +424,7 @@ describe("embryo mail subjects and render map", () => {
   it.each(embryoMails)("$mail.id renders through the template map", async ({ mail, heading }) => {
     const html = stripMarkers(await renderMail(mail));
     expect(html).toContain(heading);
-    expectSafeBody(html);
+    expectSafeBody(html, mail.id === "embryo-upload-notice");
   });
 
   it("keeps the existing subjects unchanged", () => {
@@ -402,6 +432,32 @@ describe("embryo mail subjects and render map", () => {
       .toBe("Your Inherit reports are ready");
     expect(mailSubject({ id: "adult-subject-invitation", payload: { invitationUrl } }))
       .toBe("You were invited to Inherit");
+  });
+});
+
+it("the claimant release email contains only a private one-use fragment link and the registered seven-day window",async()=>{
+  const html=await renderMail({id:"future-person-release",payload:{releaseUrl:"https://example.test/withdraw/request#synthetic-token"}});
+  expect(html).toContain("https://example.test/withdraw/request#synthetic-token");
+  expect(html).toContain("expires in seven days");expect(html).toContain("do not need an account");
+  expect(html).not.toMatch(/claimantId|subjectId|parent|genotype|rs[0-9]|photo|birth record/u);
+});
+
+
+describe("affected account deletion mail", () => {
+  it("renders only its fixed event deadline without holder actions or genetic context", async () => {
+    const html = await renderMail({ id: "account-deletion-affected", payload: { noticeEndsAt: "2026-10-07T12:00:00Z" } });
+    expect(html).toContain("7 October 2026");
+    expect(html).toContain("UTC");
+    expect(html).toContain("Copies already held in your own account stay separate");
+    expect(html).toContain("This notice gives no new access to records");
+    expect(html).not.toMatch(/cancel the request|Review or cancel|Export your data|settings\/data|api\/export|href=|genotype|rs[0-9]/);
+  });
+  it("cancellation preserves separately ended resources and offers no holder action", async () => {
+    const html = await renderMail({ id: "account-deletion-affected-cancelled", payload: { cancelledAt: "2026-10-01T12:00:00Z" } });
+    expect(html).toContain("1 October 2026");
+    expect(html).toContain("Records or consent already withdrawn, deleted, moved, restricted");
+    expect(html).toContain("or expired stay that way");
+    expect(html).not.toMatch(/Open data settings|settings\/data|api\/export|href=/);
   });
 });
 
@@ -421,19 +477,41 @@ describe("Path B mails", () => {
   });
 
   it.each([["array", "a raw data file"], ["vcf", "a VCF file"]] as const)(
-    "notices a held %s file with its dates, the fixed deletion and one link, and nothing else", async (fileKind, kind) => {
-      const mail = { id: "adult-upload-notice", payload: { fileKind, uploadedOn: "2026-09-28", deleteBy: "2026-10-28",
+    "notices a held %s file with its safe uploader, fixed deletion, contact and one link", async (fileKind, kind) => {
+      const mail = { id: "adult-upload-notice", payload: { fileKind, uploaderName: fileKind === "array" ? "Alex Synthetic" : null, uploadedOn: "2026-09-28", deleteBy: "2026-10-28",
         reviewUrl: invitationUrl } } as const;
       expect(mailSubject(mail)).toBe("A DNA file was added for you on Inherit");
       const html = stripMarkers(await renderMail(mail));
       expect(html).toContain("A DNA file was added for you");
       expect(html).toContain("On 28 September 2026, the person you gave permission to added a DNA file for you on Inherit.");
       expect(html).toContain(`It is ${kind}.`);
+      expect(html).toContain(`Who added it: ${fileKind === "array" ? "Alex Synthetic" : "Someone with an Inherit account"}.`);
+      expect(html).toContain("If the link does not work, or you did not expect this, write to privacy@inherit.bio.");
+      expect(html).not.toContain("verified identity");
       expect(html).toContain("Nothing is made from it unless you say yes");
       expect(html).toContain("If you do nothing, it is deleted on 28 October 2026, 30 days after it was added.");
       expect(html).toContain("You do not need an account.");
       expect(html.match(/href="/g)).toHaveLength(1);
       expect(html).toContain(invitationUrl);
-      expectSafeBody(html);
+      expectSafeBody(html, true);
+      for (const addition of ["participant@e2e.local", "privacy@inherit.bio", "privacy@inherit.bio.attacker@example.test"]) {
+        expect(() => expectSafeBody(html + addition, true)).toThrow();
+      }
     });
+});
+
+
+describe("anonymous appeal evidence mail", () => {
+  it("renders the fixed generic fragment link without account, case or genetic authority", async () => {
+    const mail = { id: "appeal-evidence", payload: { continueUrl: invitationUrl } } as const;
+    const html = stripMarkers(await renderMail(mail));
+    expect(mailSubject(mail)).toBe("Continue your Inherit request");
+    expect(html).toContain("Continue your request");
+    expect(html).toContain("Opening the link does not confirm an account or access to any record.");
+    expect(html).toContain("If you did not make this request, you can ignore this message.");
+    expect(html).toContain(`href="${invitationUrl}"`);
+    expect(html.match(/href="/g)).toHaveLength(1);
+    expect(html).not.toMatch(/caseId|reviewer|statement|subjectId|genotype|genome|rs[0-9]/u);
+    expectSafeBody(html);
+  });
 });

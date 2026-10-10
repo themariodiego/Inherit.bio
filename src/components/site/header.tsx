@@ -67,7 +67,7 @@ export async function SiteHeader() {
           ) : (
             <>
               <Button asChild variant="ghost" size="sm" className="hidden md:inline-flex">
-                <Link href="/auth/sign-in">Sign in</Link>
+                <Link href={route("auth.sign-in")}>Sign in</Link>
               </Button>
               <Button asChild size="sm">
                 <Link href="/auth/sign-up">Get started</Link>
@@ -99,7 +99,7 @@ export async function SiteHeader() {
         </nav>
         {user ? null : (
           <Link
-            href="/auth/sign-in"
+            href={route("auth.sign-in")}
             className="site-nav-link flex min-h-11 min-w-11 shrink-0 items-center justify-center whitespace-nowrap text-sm font-medium text-ink"
           >
             Sign in

@@ -1,24 +1,27 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { createHash, randomUUID } from "node:crypto";
-import { existsSync, readFileSync, readdirSync, realpathSync, unlinkSync, writeFileSync } from "node:fs";
+import { existsSync, lstatSync, readFileSync, readdirSync, realpathSync, unlinkSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { assertCiRuntime, checkedGateway, checkedPolicyCounters, CI_CONTROL_URL, CI_RUNTIME_CONTAINER, CI_RUNTIME_IMAGE, CI_RUNTIME_LABEL, APP_PORTS } from "./ci-browser-config";
+import { assertOwnedLinuxSource, type OwnedLinuxCapability } from "./owned-linux-runtime";
+import { ciRuntimeCleanupFailure, ciRuntimeDockerFailure, ciRuntimeNamespaceStep, ciRuntimeSetupFailure, ciRuntimeStep } from "./ci-browser-runtime-failure";
 
 function ownerFile() {
   const directory = process.env.RUNNER_TEMP;
   assert(typeof directory === "string" && path.isAbsolute(directory), "GitHub runner scratch directory required");
   return path.join(directory, "inherit-ci-browser-owner.json");
 }
-const docker = (args: string[]) => {
-  try { return execFileSync("docker", args, { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], timeout: 60_000, maxBuffer: 1_048_576 }).trim(); }
-  catch { throw new Error("Isolated CI Docker operation failed; credential-bearing diagnostics suppressed"); }
+const docker = (args: string[], environment?: Record<string, string>) => {
+  try { return execFileSync("docker", args, { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], timeout: 60_000, maxBuffer: 1_048_576, env: environment as NodeJS.ProcessEnv | undefined }).trim(); }
+  catch (error) { throw ciRuntimeDockerFailure(error); }
 };
-function buildIdentity() {
-  assertCiRuntime(process.env);
-  const head = execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim();
+function buildIdentity(environment?: Record<string, string>, operator?: OwnedLinuxCapability) {
+  assertCiRuntime(process.env, process.platform, operator);
+  const head = execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8", env: environment as NodeJS.ProcessEnv | undefined }).trim();
   assert(/^[0-9a-f]{40}$/.test(head), "Exact source revision required");
-  assert(execFileSync("git", ["status", "--porcelain", "--untracked-files=no"], { encoding: "utf8" }).trim() === "",
+  if (operator) assertOwnedLinuxSource(operator, environment);
+  else assert(execFileSync("git", ["status", "--porcelain", "--untracked-files=no"], { encoding: "utf8", env: environment as NodeJS.ProcessEnv | undefined }).trim() === "",
     "CI build must use unchanged tracked source");
   const publicConfiguration = [process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
     process.env.NEXT_PUBLIC_SITE_URL, process.env.NEXT_PUBLIC_APP_URL];
@@ -27,27 +30,47 @@ function buildIdentity() {
     buildId: readFileSync(".next/BUILD_ID", "utf8").trim(), nodeMajor: process.versions.node.split(".")[0] };
 }
 /** Called immediately after the successful workflow build; contains no keys. */
-export function recordCiBuild() {
-  writeFileSync(".next/inherit-ci-build.json", JSON.stringify(buildIdentity()) + "\n", { mode: 0o600 });
+export function recordCiBuild(environment?: Record<string, string>, operator?: OwnedLinuxCapability) {
+  writeFileSync(".next/inherit-ci-build.json", JSON.stringify(buildIdentity(environment, operator)) + "\n", { mode: 0o600 });
 }
-export async function startCiBrowserRuntime(): Promise<{ env: Record<string, string>; stop: () => void }> {
-  assertCiRuntime(process.env);
-  assert.deepEqual(JSON.parse(readFileSync(".next/inherit-ci-build.json", "utf8")), buildIdentity(), "CI build receipt must match source and public configuration");
-  const root = realpathSync(process.cwd());
-  assert(root === process.cwd() && !root.includes(",") && !root.includes("\n"), "Exact checkout mount required");
-  assert(!readdirSync(root).some(name => /^\.env(?:\.|$)/.test(name) && !name.endsWith(".example")), "Do not expose local environment files to the CI runtime");
+export async function startCiBrowserRuntime(environment?: Record<string, string>, disposableBuildCache = false, operator?: OwnedLinuxCapability): Promise<{ env: Record<string, string>; stop: () => void }> {
+  ciRuntimeStep("runtime-policy", () => assertCiRuntime(process.env, process.platform, operator));
+  const runDocker = (args: string[]) => docker(args, environment);
+  ciRuntimeStep("build-receipt", () => assert.deepEqual(JSON.parse(readFileSync(".next/inherit-ci-build.json", "utf8")),
+    ciRuntimeStep("build-identity", () => buildIdentity(environment, operator)), "CI build receipt must match source and public configuration"));
+  const root = ciRuntimeStep("checkout-location", () => {
+    const value = realpathSync(process.cwd());
+    assert(value === process.cwd() && !value.includes(",") && !value.includes("\n"), "Exact checkout mount required");
+    return value;
+  });
+  ciRuntimeStep("checkout-environment", () => assert(!readdirSync(root).some(name => /^\.env(?:\.|$)/.test(name) && !name.endsWith(".example")), "Do not expose local environment files to the CI runtime"));
+  if (disposableBuildCache) {
+    ciRuntimeStep("build-cache", () => {
+      const cache = path.join(root, ".next/cache");
+      const cacheIdentity = existsSync(cache) ? lstatSync(cache) : undefined;
+      assert(cacheIdentity?.isDirectory() && !cacheIdentity.isSymbolicLink(),
+        "Disposable build cache requires the genuine build cache directory");
+    });
+  }
   // checkout must not persist its GitHub credential in the mounted repository.
-  const gitConfig = execFileSync("git", ["config", "--local", "--name-only", "--list"], { encoding: "utf8" });
-  assert(!/extraheader|credential\./i.test(gitConfig), "CI checkout credentials must not be persisted");
-  const gateway = checkedGateway(JSON.parse(docker(["inspect", "--format", '{"name":{{json .Name}},"project":{{json (index .Config.Labels "com.supabase.cli.project")}},"running":{{json .State.Running}},"networks":{{json .NetworkSettings.Networks}}}', "supabase_kong_sequence"])));
-  assert(docker(["network", "inspect", "--format", '{{index .Labels "com.supabase.cli.project"}}', gateway.network]) === "sequence", "Exact owned Supabase network required");
-  assert(docker(["ps", "-aq", "--filter", `name=^/${CI_RUNTIME_CONTAINER}$`]) === "", "Never reuse or delete a preexisting runtime");
-  const image = docker(["image", "inspect", "--format", '{{.Id}}', CI_RUNTIME_IMAGE]);
-  assert(/^sha256:[0-9a-f]{64}$/.test(image), "Prepared runtime image required");
-  assert(!existsSync(ownerFile()), "Never overwrite a prior runtime ownership receipt");
-  const owner = randomUUID();
-  const uid = process.getuid!(), gid = process.getgid!();
-  assert(uid > 0 && gid > 0, "Host CI runner must be unprivileged");
+  ciRuntimeStep("git-credentials", () => {
+    const gitConfig = execFileSync("git", ["config", "--local", "--name-only", "--list"], { encoding: "utf8", env: environment as NodeJS.ProcessEnv | undefined });
+    assert(!/extraheader|credential\./i.test(gitConfig), "CI checkout credentials must not be persisted");
+  });
+  const gateway = ciRuntimeStep("gateway-inspection", () => checkedGateway(JSON.parse(runDocker(["inspect", "--format", '{"name":{{json .Name}},"project":{{json (index .Config.Labels "com.supabase.cli.project")}},"running":{{json .State.Running}},"networks":{{json .NetworkSettings.Networks}}}', "supabase_kong_sequence"]))));
+  ciRuntimeStep("network-ownership", () => assert(runDocker(["network", "inspect", "--format", '{{index .Labels "com.supabase.cli.project"}}', gateway.network]) === "sequence", "Exact owned Supabase network required"));
+  ciRuntimeStep("runtime-absence", () => assert(runDocker(["ps", "-aq", "--filter", `name=^/${CI_RUNTIME_CONTAINER}$`]) === "", "Never reuse or delete a preexisting runtime"));
+  const image = ciRuntimeStep("runtime-image", () => {
+    const value = runDocker(["image", "inspect", "--format", '{{.Id}}', CI_RUNTIME_IMAGE]);
+    assert(/^sha256:[0-9a-f]{64}$/.test(value), "Prepared runtime image required");
+    return value;
+  });
+  ciRuntimeStep("owner-receipt", () => assert(!existsSync(ownerFile()), "Never overwrite a prior runtime ownership receipt"));
+  const { owner, uid, gid } = ciRuntimeStep("runner-identity", () => {
+    const owner = randomUUID(), uid = process.getuid!(), gid = process.getgid!();
+    assert(uid > 0 && gid > 0, "Host CI runner must be unprivileged");
+    return { owner, uid, gid };
+  });
   let stopped = false, receiptWritten = false;
   const stop = () => {
     if (stopped) return;
@@ -55,11 +78,13 @@ export async function startCiBrowserRuntime(): Promise<{ env: Record<string, str
     // Both name and unpredictable ownership label must match. No project stop,
     // image prune, volume prune, Docker reset, or unrelated process cleanup.
     try {
-      const actual = docker(["inspect", "--format", `{{index .Config.Labels "${CI_RUNTIME_LABEL}"}}`, CI_RUNTIME_CONTAINER]);
-      assert(actual === owner, "Refusing unrelated runtime cleanup");
-      docker(["rm", "-f", CI_RUNTIME_CONTAINER]);
-      if (receiptWritten) unlinkSync(ownerFile());
-    } catch { throw new Error("Owned CI runtime cleanup failed; no unrelated container was removed"); }
+      ciRuntimeStep("cleanup-ownership", () => {
+        const actual = runDocker(["inspect", "--format", `{{index .Config.Labels "${CI_RUNTIME_LABEL}"}}`, CI_RUNTIME_CONTAINER]);
+        assert(actual === owner, "Refusing unrelated runtime cleanup");
+      });
+      ciRuntimeStep("cleanup-remove", () => runDocker(["rm", "-f", CI_RUNTIME_CONTAINER]));
+      if (receiptWritten) ciRuntimeStep("cleanup-receipt", () => unlinkSync(ownerFile()));
+    } catch (error) { throw ciRuntimeSetupFailure("cleanup-ownership", error); }
   };
   let created = false;
   try {
@@ -69,47 +94,57 @@ export async function startCiBrowserRuntime(): Promise<{ env: Record<string, str
       "--network", gateway.network,
       "--add-host", "model.copilot.test:203.0.114.10",
       "--add-host", "prepared.artifacts.test:203.0.114.11",
+      "--add-host", "embryo.fragments.test:203.0.114.12",
       "--dns", "127.0.0.1", "--dns-option", "attempts:1", "--dns-option", "timeout:1", "--dns-search", ".",
       "--read-only", "--cap-drop=ALL", "--cap-add=NET_ADMIN", "--security-opt=no-new-privileges",
       "--tmpfs", "/tmp:rw,nosuid,nodev,size=128m,mode=1777",
       "--tmpfs", `/tls:rw,nosuid,nodev,noexec,size=4m,mode=0700,uid=${uid},gid=${gid}`,
       "--mount", `type=bind,src=${root},dst=/app,readonly`,
-      "--mount", `type=bind,src=${path.join(root, ".next")},dst=/app/.next`,
+      "--mount", `type=bind,src=${path.join(root, ".next")},dst=/app/.next${disposableBuildCache ? ",readonly" : ""}`,
+      // This container alone owns the mutable cache; container removal discards
+      // it. The exclusive launcher reuses built executable bytes readonly.
+      ...(disposableBuildCache ? ["--tmpfs", `/app/.next/cache:rw,nosuid,nodev,noexec,size=128m,mode=0700,uid=${uid},gid=${gid}`] : []),
       ...[...APP_PORTS, 8130].flatMap(port => ["--publish", `127.0.0.1:${port}:${port}`]),
       image, "sh", "/app/scripts/ci-browser/namespace.sh", gateway.address];
-    docker(args); created = true;
-    writeFileSync(ownerFile(), JSON.stringify({ owner }), { mode: 0o600, flag: "wx" });
+    ciRuntimeStep("container-create", () => runDocker(args)); created = true;
+    ciRuntimeStep("owner-write", () => writeFileSync(ownerFile(), JSON.stringify({ owner }), { mode: 0o600, flag: "wx" }));
     receiptWritten = true;
-    docker(["start", CI_RUNTIME_CONTAINER]);
+    ciRuntimeStep("container-start", () => runDocker(["start", CI_RUNTIME_CONTAINER]));
     const deadline = Date.now() + 10_000;
     while (true) {
       // Only the credential-free namespace process has run at this point. Its
       // fixed-command stderr is redirected into this bounded setup log. Never
       // collect container logs here after TLS/probe/application execution.
-      const logs = docker(["logs", "--tail", "80", CI_RUNTIME_CONTAINER]);
-      const status = JSON.parse(docker(["inspect", "--format",
-        '{"running":{{json .State.Running}},"exitCode":{{json .State.ExitCode}}}', CI_RUNTIME_CONTAINER]));
-      assert(typeof status.running === "boolean" && Number.isInteger(status.exitCode), "Invalid namespace process state");
-      const diagnostics = logs.slice(-8192);
-      assert(status.running, `Runtime policy exited before readiness (exit ${status.exitCode}). Namespace diagnostics:\n${diagnostics}`);
+      const logs = ciRuntimeStep("namespace-logs", () => runDocker(["logs", "--tail", "80", CI_RUNTIME_CONTAINER]));
+      const status = ciRuntimeStep("namespace-state", () => {
+        const value = JSON.parse(runDocker(["inspect", "--format",
+          '{"running":{{json .State.Running}},"exitCode":{{json .State.ExitCode}}}', CI_RUNTIME_CONTAINER]));
+        assert(typeof value.running === "boolean" && Number.isInteger(value.exitCode), "Invalid namespace process state");
+        return value;
+      });
+      ciRuntimeNamespaceStep(() => assert(status.running, "Runtime policy exited before readiness"), logs, status.exitCode);
       if (logs.split(/\r?\n/).includes("ISOLATED_RUNTIME_READY")) break;
-      assert(Date.now() < deadline, `Runtime policy did not become ready. Namespace diagnostics:\n${diagnostics}`);
+      ciRuntimeStep("namespace-ready", () => assert(Date.now() < deadline, "Runtime policy did not become ready"));
       await new Promise(resolve => setTimeout(resolve, 100));
     }
     const asUser = ["exec", "--user", `${uid}:${gid}`, CI_RUNTIME_CONTAINER];
-    docker([...asUser, "sh", "/app/scripts/ci-browser/tls.sh"]);
-    const proof = docker([...asUser, "env", "NODE_EXTRA_CA_CERTS=/tls/fixture/ca.crt", "node", "--import", "tsx",
-      "/app/scripts/ci-browser/probe.mts", gateway.address]);
-    assert(proof.includes("PASS isolated actual model policy, TLS, permission recheck and egress boundary"), "Mandatory runtime probe missing");
-    checkedPolicyCounters(docker(["exec", CI_RUNTIME_CONTAINER, "iptables", "-L", "OUTPUT", "-v", "-n", "-x"]),
-      docker(["exec", CI_RUNTIME_CONTAINER, "ip6tables", "-L", "OUTPUT", "-v", "-n", "-x"]));
+    ciRuntimeStep("tls-bootstrap", () => runDocker([...asUser, "sh", "/app/scripts/ci-browser/tls.sh"]));
+    const proof = ciRuntimeStep("isolated-probe-command", () => runDocker([...asUser, "env", "NODE_EXTRA_CA_CERTS=/tls/fixture/ca.crt", "node", "--import", "tsx",
+      "/app/scripts/ci-browser/probe.mts", gateway.address]));
+    ciRuntimeStep("isolated-probe-proof", () => assert(proof.includes("PASS isolated actual model policy, TLS, permission recheck and egress boundary"), "Mandatory runtime probe missing"));
+    const ipv4 = ciRuntimeStep("policy-ipv4-read", () => runDocker(["exec", CI_RUNTIME_CONTAINER, "iptables", "-L", "OUTPUT", "-v", "-n", "-x"]));
+    const ipv6 = ciRuntimeStep("policy-ipv6-read", () => runDocker(["exec", CI_RUNTIME_CONTAINER, "ip6tables", "-L", "OUTPUT", "-v", "-n", "-x"]));
+    ciRuntimeStep("policy-counters", () => checkedPolicyCounters(ipv4, ipv6));
     console.log(proof);
-    console.log(`PASS disposable CI runtime image ${image}; source ${buildIdentity().head}; TLS keys stay in tmpfs.`);
+    console.log(`PASS disposable ${operator ? "owned Linux" : "CI"} runtime image ${image}; source ${ciRuntimeStep("final-source-identity", () => buildIdentity(environment, operator)).head}; TLS keys stay in tmpfs.`);
     return { env: { INHERIT_CI_BROWSER_RUNTIME: "ready", CANONICAL_COPILOT_CONTROL_URL: CI_CONTROL_URL,
       INHERIT_CI_RUNTIME_UID: String(uid), INHERIT_CI_RUNTIME_GID: String(gid), INHERIT_CI_GATEWAY: gateway.address }, stop };
   } catch (error) {
-    if (created) stop();
-    throw error;
+    const failure = ciRuntimeSetupFailure("runtime-setup", error);
+    if (created) {
+      try { stop(); } catch (cleanup) { throw ciRuntimeCleanupFailure(failure, cleanup); }
+    }
+    throw failure;
   }
 }
 /** Workflow fallback when the owning Node process is killed. Fresh job only. */

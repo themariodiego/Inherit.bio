@@ -26,6 +26,11 @@ export type BrowserDurationProfile = { value: Profile; sha256: string };
 export type SelectedBrowserDurationProfile = BrowserDurationProfile | MultiRunDurationProfile;
 export type BrowserDurationPlan = { allocation: CiBrowserAllocation;
   parts: { index: number; files: Group[]; estimatedMs: number }[] };
+/** Public scheduling policy, not a fabricated timing measurement. The existing
+ * profile digest field binds this policy when mode is queue-v1. */
+export const DEFAULT_BROWSER_ALLOCATION_SHA256 = createHash("sha256")
+  .update("queue-v1:one-unit-per-current-case:whole-files:accessibility-placement:exclusive-publication-queues")
+  .digest("hex");
 const key = (group: { file: string; project: string }) => `${group.project}:${group.file}`;
 const compare = (a: string, b: string) => a < b ? -1 : a > b ? 1 : 0;
 
@@ -43,7 +48,7 @@ export function parseBrowserDurationProfile(raw: string): BrowserDurationProfile
   return { value, sha256: createHash("sha256").update(raw).digest("hex") };
 }
 
-/** Only a missing optional profile selects the unchanged native fallback. */
+/** Only a missing optional profile selects public default scheduling weights. */
 export function optionalBrowserDurationProfile(read: () => string): BrowserDurationProfile | null {
   let raw: string;
   try { raw = read(); }
@@ -101,10 +106,11 @@ function groups(value: unknown): Group[] {
 /** Longest whole file first, with deterministic ties, intact accessibility sweeps and isolated publication queues.
  * Known groups scale by CURRENT case count; new groups get at least the largest
  * saved file cost and the largest saved mean per-case cost. Removed groups add no cases. */
-export function browserDurationPlan(full: unknown, profile: SelectedBrowserDurationProfile): BrowserDurationPlan {
+export function browserDurationPlan(full: unknown, profile: SelectedBrowserDurationProfile | null): BrowserDurationPlan {
   const currentCases = browserReportCases(full, null, false);
   // Revalidate callers' input; a mutable object cannot bypass the closed schema.
-  const estimate = browserDurationEstimator(profile);
+  const estimate = profile ? browserDurationEstimator(profile)
+    : (group: { count: number }) => group.count;
   const currentGroups = groups(full); assertBrowserQueueGroups(currentGroups);
   const weighted = currentGroups.map(group => {
     const estimatedMs = estimate({ ...group, count: group.cases.length });
@@ -129,8 +135,9 @@ export function browserDurationPlan(full: unknown, profile: SelectedBrowserDurat
   const assigned = allocationParts.flatMap(part => part.cases);
   assert(new Set(assigned).size === assigned.length, "Duration plan duplicates current cases");
   assert.deepEqual([...assigned].sort(), currentCases, "Duration plan omits current cases");
-  return { parts, allocation: { mode: "duration-v1", profileSha256: profile.sha256,
-    planSha256: browserAllocationHash(profile.sha256, allocationParts), parts: allocationParts } };
+  const profileSha256 = profile?.sha256 ?? DEFAULT_BROWSER_ALLOCATION_SHA256;
+  return { parts, allocation: { mode: profile ? "duration-v1" : "queue-v1", profileSha256,
+    planSha256: browserAllocationHash(profileSha256, allocationParts), parts: allocationParts } };
 }
 
 /** Official Playwright test-list grammar: project + file, no title/line selector.

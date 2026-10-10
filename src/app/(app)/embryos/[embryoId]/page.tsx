@@ -5,6 +5,7 @@ import { cache } from "react";
 import { QcTable } from "@/components/embryo/compare/qc-table";
 import { StandingStatement } from "@/components/embryo/compare/standing-statement";
 import { FindingsSection } from "@/components/embryo/detail/findings-section";
+import { CarrierLibraryCoverage } from "@/components/embryo/carrier-library-coverage";
 import { QcBlock } from "@/components/embryo/detail/qc-block";
 import { formatDate } from "@/components/embryo/format";
 import { EmbryoResultGate } from "@/components/embryo/result-gate";
@@ -12,7 +13,7 @@ import { BlockingState, EmbryoErrorState, EmbryoUnavailable } from "@/components
 import { ReportSkeleton } from "@/components/reports/report-skeleton";
 import { Breadcrumbs } from "@/components/site/breadcrumbs";
 import { SubjectBar } from "@/components/subjects/subject-bar";
-import { READ_FAILED_HEADING, READ_FAILED_SENTENCE, REGISTRY_EMPTY_SENTENCE, SHAPE_BLOCKED_HEADING, SHAPE_BLOCKED_SENTENCE } from "@/copy/embryos/compare";
+import { READ_FAILED_HEADING, READ_FAILED_SENTENCE, REGISTRY_EMPTY_SENTENCE, SAVED_SCIENTIFIC_REVIEW_SENTENCE, SHAPE_BLOCKED_HEADING, SHAPE_BLOCKED_SENTENCE } from "@/copy/embryos/compare";
 import {
   DETAIL_SECTION_LABEL,
   FILE_NOT_ADDED_SENTENCE,
@@ -35,6 +36,9 @@ import { allowedConditions } from "@/lib/embryos/allowed-conditions";
 import { EmbryoReadError, rowsOrThrow, selectEmbryo } from "@/lib/embryos/cohorts";
 import { EmbryoShapeError, type RscEmbryoDetail } from "@/lib/embryos/policy";
 import { projectDetail, type EmbryoQcRow, type EmbryoScoreRow } from "@/lib/embryos/projection";
+import { readEmbryoQcRows } from "@/lib/embryos/qc-reader";
+import { loadSavedEmbryoCarrierHold } from "@/lib/embryos/carrier-hold";
+import { loadSavedCarrierLibraryCoverage } from "@/lib/embryos/carrier-library-read";
 import { acknowledged } from "@/lib/embryos/tier2";
 import { route } from "@/lib/primary-routes";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -73,18 +77,20 @@ async function loadDetail(input: {
   const admin = createAdminClient();
   const registered = new Set(allowedConditions().map((entry) => entry.condition_id));
   const [qcResult, scoreResult] = await Promise.all([
-    admin.from("embryo_qc").select("*").eq("embryo_id", input.embryo.id).maybeSingle(),
+    readEmbryoQcRows(admin, input.embryo.cohortId, [input.embryo.id]),
     registered.size > 0
       ? admin
           .from("embryo_scores")
           .select("embryo_id, condition_id, condition_name, finding, evidence_label, coverage_state, citation_ids, not_covered_reason")
+          // Private carrier observations have a saved publication hold.
+          .is("computation_receipt", null)
           .eq("embryo_id", input.embryo.id)
           .in("condition_id", [...registered])
       : { data: [] as never[], error: null },
   ]);
   // A failed read is the error state, never "Still checking the files" (R11).
   if (qcResult.error) throw new EmbryoReadError("embryo_qc", qcResult.error.message);
-  const qc = qcResult.data;
+  const qc = qcResult.data?.[0];
   const scoreRows = rowsOrThrow("embryo_scores", scoreResult);
   if (!qc) return null;
   return projectDetail({
@@ -169,7 +175,12 @@ export default async function EmbryoDetailPage(props: PageProps<"/embryos/[embry
       body = <EmbryoResultGate action={acknowledgeEmbryoGate} />;
       break;
     case "complete": {
+      let savedHold: Awaited<ReturnType<typeof loadSavedEmbryoCarrierHold>>;
+      let savedCoverage: Awaited<ReturnType<typeof loadSavedCarrierLibraryCoverage>>;
       try {
+        savedCoverage = await loadSavedCarrierLibraryCoverage(user.id, cohort);
+        if (savedCoverage) savedHold = { status: "held", reason: "scientific_disclosures_pending" };
+        else savedHold = await loadSavedEmbryoCarrierHold(user.id, cohort.id);
         detail = await loadDetail({
           embryo: {
             id: embryo.id,
@@ -203,6 +214,7 @@ export default async function EmbryoDetailPage(props: PageProps<"/embryos/[embry
         body = <BlockingState state="processing">{STILL_CHECKING_STATUS}</BlockingState>;
         break;
       }
+      const hasRiskRanges = detail.findings.some((finding) => finding.finding?.kind === "absolute_risk");
       const notCovered = detail.findings.some((finding) => finding.coverage_state === "not_covered");
       const column = { id: detail.id, sample_ordinal: detail.sample_ordinal, display_label: detail.display_label, status: detail.status, qc: detail.qc };
       body = (
@@ -215,7 +227,15 @@ export default async function EmbryoDetailPage(props: PageProps<"/embryos/[embry
                 <p className="max-w-measure text-sm leading-relaxed text-ink">{PROVENANCE_LINE_EMBRYO}</p>
               </>
             }
-            yourResult={<FindingsSection findings={detail.findings} subjectId={embryo.subjectId} />}
+            yourResult={<>
+              {savedHold ? <p data-slot="saved-analysis-held" className="max-w-prose text-sm leading-relaxed text-ink">
+                {SAVED_SCIENTIFIC_REVIEW_SENTENCE}
+              </p> : null}
+              {savedCoverage ? <CarrierLibraryCoverage rows={savedCoverage.filter(row => row.embryoId === embryo.id)}
+                subjectId={embryo.subjectId}
+                conditionNames={new Map(allowedConditions().map(entry => [entry.condition_id, entry.condition_name]))} /> : null}
+              <FindingsSection findings={detail.findings} subjectId={embryo.subjectId} />
+            </>}
             whatThisDoesntMean={
               <ul className="max-w-measure list-disc space-y-1 pl-5 text-base leading-relaxed text-ink">
                 <li>{NOT_ABOUT_ANY_CHILD}</li>
@@ -224,11 +244,11 @@ export default async function EmbryoDetailPage(props: PageProps<"/embryos/[embry
             }
             howSureWeAre={
               <>
-                <QcBlock qc={detail.qc} embryoId={detail.id} subjectId={embryo.subjectId} />
+                <QcBlock qc={detail.qc} embryoId={detail.id} subjectId={embryo.subjectId} hasRiskRanges={hasRiskRanges} />
                 <details data-slot="qc-detail" className="fam-disclosure text-sm">
                   <summary>{FULL_QC_TABLE_SUMMARY}</summary>
                   <div className="mt-3">
-                    <QcTable embryos={[column]} subjectIds={new Map([[detail.id, embryo.subjectId]])} />
+                    <QcTable embryos={[column]} subjectIds={new Map([[detail.id, embryo.subjectId]])} riskRangeEmbryoIds={new Set(hasRiskRanges ? [detail.id] : [])} />
                   </div>
                 </details>
               </>

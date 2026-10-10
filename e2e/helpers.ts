@@ -1,6 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import assert from "node:assert/strict";
 import { localE2eProject } from "../scripts/local-e2e-project";
+import { LOCAL_BROWSER_ORIGINS } from "../scripts/local-storage-browser-config";
 import { paymentOrigin } from "../scripts/payment-origins";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { expect, type Page } from "@playwright/test";
@@ -103,13 +104,15 @@ export async function drainMailUntil<T>(
   request: { post: (url: string, options: { headers: Record<string, string> }) => Promise<JobResponse> },
   found: () => T | undefined,
   what = "the mail this journey requested",
+  jobsSecret = JOBS_SECRET,
 ): Promise<T> {
+  assert(typeof jobsSecret === "string" && jobsSecret.length > 0, "Explicit mail-job secret required");
   let value = found();
   const admin = adminClient();
   const outcomes: string[] = [];
   for (let attempt = 0; attempt < 40 && value === undefined; attempt++) {
     const response = await request.post("/api/jobs/mail", {
-      headers: { authorization: `Bearer ${JOBS_SECRET}` },
+      headers: { authorization: `Bearer ${jobsSecret}` },
     });
     outcomes.push(await jobRan(response, `mail drain ${attempt + 1}`));
     value = found();
@@ -338,6 +341,13 @@ export async function clearMailbox() {
  */
 export async function completeOwnUploadConsent(page: Page, at = "/files/upload"): Promise<void> {
   await page.goto(at);
+  const presentedPath = new URL(page.url()).pathname;
+  const refreshedPresentation = () => page.waitForResponse(response => {
+    const request = response.request();
+    const headers = request.headers();
+    return new URL(response.url()).pathname === presentedPath && request.method() === "GET"
+      && headers.rsc === "1" && !headers["next-router-prefetch"];
+  });
   const account = page.getByRole("heading", { name: OWN_UPLOAD_COPY.accountHeading, exact: true });
   const insurance = page.getByRole("heading", { name: OWN_UPLOAD_COPY.insuranceHeading, exact: true });
   const own = page.getByRole("heading", { name: OWN_UPLOAD_COPY.ownHeading, exact: true });
@@ -347,24 +357,33 @@ export async function completeOwnUploadConsent(page: Page, at = "/files/upload")
     await page.getByLabel(OWN_UPLOAD_COPY.birthDateLabel).fill("1990-01-01");
     const saved = page.waitForResponse(response => response.url().endsWith("/api/account/completion")
       && response.request().method() === "POST");
+    const refreshed = refreshedPresentation();
+    void refreshed.catch(() => {});
     await page.getByRole("button", { name: OWN_UPLOAD_COPY.accountContinue, exact: true }).click();
     expect((await saved).status()).toBe(200);
+    expect((await refreshed).status(), "authoritative account-completion presentation").toBe(200);
     await expect(insurance).toBeVisible();
   }
   if (await insurance.isVisible()) {
     await page.getByRole("checkbox", { name: OWN_UPLOAD_COPY.insuranceCheckbox, exact: true }).check();
     const signed = page.waitForResponse(response => response.url().endsWith("/api/consents")
       && response.request().method() === "POST");
+    const refreshed = refreshedPresentation();
+    void refreshed.catch(() => {});
     await page.getByRole("button", { name: OWN_UPLOAD_COPY.insuranceContinue, exact: true }).click();
     expect((await signed).status()).toBe(201);
+    expect((await refreshed).status(), "authoritative insurance presentation").toBe(200);
     await expect(own).toBeVisible();
   }
   const affirmation = page.getByRole("checkbox", { name: OWN_UPLOAD_COPY.ownCheckbox, exact: true });
   if (await affirmation.isVisible()) {
     const signed = page.waitForResponse(response => response.url().endsWith("/api/consents")
       && response.request().method() === "POST");
+    const refreshed = refreshedPresentation();
+    void refreshed.catch(() => {});
     await affirmation.check();
     expect((await signed).status()).toBe(201);
+    expect((await refreshed).status(), "authoritative own-upload presentation").toBe(200);
   }
   await expect(choose).toBeEnabled();
 }
@@ -516,8 +535,18 @@ export async function assertNoThirdParty(
   page: Page,
   observed: ObservedRequests,
   label: string,
+  declaredAppOrigin?: string,
 ): Promise<void> {
-  const offenders = [...observed.origins].filter(origin => !ALLOWED_ORIGINS.has(origin));
+  let allowedOrigins = ALLOWED_ORIGINS;
+  if (declaredAppOrigin !== undefined) {
+    // Variant journeys declare their fixed fixture origin. Never derive an
+    // allowlist from the page or observed traffic, or allow every local port.
+    assert(LOCAL_BROWSER_ORIGINS.slice(1).some(origin => origin === declaredAppOrigin),
+      "An exact registered local app origin must be declared");
+    expect(new URL(page.url()).origin, `${label}: page must match its declared app origin`).toBe(declaredAppOrigin);
+    allowedOrigins = new Set([declaredAppOrigin, SUPABASE_URL]);
+  }
+  const offenders = [...observed.origins].filter(origin => !allowedOrigins.has(origin));
   expect(offenders, `${label}: unexpected third-party origins: ${offenders.join(", ")}\nURLs: `
     + observed.urls.filter(url => offenders.some(origin => url.startsWith(origin))).slice(0, 10).join("\n"))
     .toHaveLength(0);
@@ -609,13 +638,15 @@ export async function axeViolations(page: Page, theme: AxeTheme): Promise<AxeFin
  * Axe in both themes, each on a fresh load in that theme: the theme provider
  * flips the class on the live page and the chrome animates its colours, so an
  * audit taken on a page loaded in the other theme samples mid-transition
- * colours. Leaves the page in light, as it found it.
+ * colours. Callers with ephemeral rendered evidence may restore it after each
+ * fresh load, before the unchanged full audit. Leaves the page in light, as it found it.
  */
-export async function expectAxeClean(page: Page) {
+export async function expectAxeClean(page: Page, afterReload?: () => Promise<void>) {
   for (const theme of ["light", "dark"] as const) {
     await page.emulateMedia({ colorScheme: theme });
     await page.reload();
     await page.waitForLoadState("networkidle");
+    await afterReload?.();
     expect(await axeViolations(page, theme), `${new URL(page.url()).pathname} (${theme})`).toEqual([]);
   }
   await page.emulateMedia({ colorScheme: "light" });

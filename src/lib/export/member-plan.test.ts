@@ -73,6 +73,33 @@ describe("the export member plan", () => {
     expect(() => planBlock(json.replace("export-member-plan-v1", "$plan$"))).toThrow();
   });
 
+  it("classifies every newly declared requester and appeal table before native catalog qualification", () => {
+    const declarations = readdirSync(path.join(ROOT, "supabase/migrations"))
+      .filter(file => file.endsWith(".sql") && file >= "20261009000000")
+      .flatMap(file => [...read(`supabase/migrations/${file}`).matchAll(
+        /^create\s+table\s+((?:public|private)\.[a-z_][a-z_0-9]*)\s*\(/gim)].map(match => match[1]));
+    expect(declarations.length).toBeGreaterThan(0);
+    expect(declarations.filter(name => !Object.hasOwn(exportMemberPlan.tables, name)),
+      "new native tables need an explicit export disposition").toEqual([]);
+  });
+
+  it("keeps raw requester envelopes, evidence and delivery authority out of archive rows", () => {
+    const dispositions = {
+      "excluded-protected": ["account_requester_statement_capsules", "new_correction_intakes", "new_public_appeal_intakes",
+        "appeal_document_fragments", "appeal_documents", "public_appeal_provisional_targets", "public_appeal_document_decisions"],
+      "excluded-credential": ["account_archive_r2_allocations", "new_public_appeal_nonces", "appeal_document_sessions",
+        "public_appeal_review_downloads", "public_appeal_review_chunks", "public_appeal_decision_notices"],
+      "excluded-internal": ["new_public_appeal_evidence_state"],
+      "out-of-scope": ["new_correction_reviewers", "new_public_appeal_reviewers", "public_appeal_pending_reviews"],
+      "reference": ["account_archive_r2_configuration", "new_correction_intake_config", "new_public_appeal_config"],
+    };
+    for (const [disposition, names] of Object.entries(dispositions)) for (const name of names) {
+      const table = `private.${name}`;
+      expect(exportMemberPlan.tables[table]?.disposition, table).toBe(disposition);
+      expect(exportedTable(table), table).toBeUndefined();
+    }
+  });
+
   it("keeps every credential the brief names out of the export", () => {
     for (const name of ["public.llm_keys", "public.llm_settings", "public.copilot_context_tokens"]) {
       expect(exportMemberPlan.tables[name]?.disposition, name).toBe("excluded-credential");
@@ -90,9 +117,27 @@ describe("the export member plan", () => {
       .toEqual(expect.arrayContaining(["canonical_projection", "authorization_fingerprint", "contributor_ids"]));
   });
 
+  it("keeps final appeal reviewer reasons, case credentials and other case records out of member exports", () => {
+    const entry = exportMemberPlan.tables["private.public_appeal_case_decisions"];
+    expect(entry?.disposition).toBe("excluded-protected");
+    expect(exportedTable("private.public_appeal_case_decisions")).toBeUndefined();
+    expect(entry?.reason).toContain("separately authorized original-statement reader");
+    expect(entry && "members" in entry).toBe(false);
+  });
+
+  it("keeps information-request reviewer, credential and case bindings out of member exports", () => {
+    const entry = exportMemberPlan.tables["private.public_appeal_information_requests"];
+    expect(entry?.disposition).toBe("excluded-protected");
+    expect(exportedTable("private.public_appeal_information_requests")).toBeUndefined();
+    expect(entry && "members" in entry).toBe(false);
+  });
+
   it("exports the legal audit ledger's own events, never the pseudonym or the chain hashes", () => {
     const ledger = exportedTable("public.legal_audit_log")!;
-    expect(ledger.members).toEqual(["archive:legal-audit.json", "reader:history.legal-audit"]);
+    expect(ledger.members).toEqual(["archive:legal-audit.json", "reader:history.legal-audit",
+      "archive:subjects/{subject_id}/audit-log.json", "archive:subjects/{subject_id}/reports.txt", "reader:claimant.legal-audit"]);
+    expect(ledger.scope).toContain("private.future_person_audit_selector_v1");
+    expect(ledger.scope).toContain("Existing NULL or unlinked actors remain unassigned");
     expect(ledger.withheld).toEqual(["audit_principal_id", "previous_hash", "row_hash"]);
     expect(ledger.reason).toContain("docs/export-legal-audit-resolver.md");
     // The account-to-pseudonym link selects the slice and never leaves.

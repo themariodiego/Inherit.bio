@@ -12,6 +12,7 @@ gateway="$1"
 phase=loopback-address
 ip address add 203.0.114.10/32 dev lo
 ip address add 203.0.114.11/32 dev lo
+ip address add 203.0.114.12/32 dev lo
 # Docker supplies the fixed hostname and loopback-only DNS configuration at
 # create time; its managed /etc files remain read-only. On custom networks it
 # may still install its embedded resolver and rewrite its port in NAT OUTPUT,
@@ -36,6 +37,7 @@ ip6tables -A OUTPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
 phase=policy-verification
 ip route get 203.0.114.10 | grep -q 'dev lo'
 ip route get 203.0.114.11 | grep -q 'dev lo'
+ip route get 203.0.114.12 | grep -q 'dev lo'
 iptables -C OUTPUT -d "$gateway" -p tcp --dport 8000 -j ACCEPT
 iptables -S OUTPUT
 ip6tables -S OUTPUT

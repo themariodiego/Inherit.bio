@@ -168,6 +168,9 @@ export function Uploader({ disabled = false, subjectId = "me", limits = null, fr
           We check the complete file before saving it. You choose separately which results to make.
         </p>
         <p className="text-sm text-ink-muted">
+          {OWN_UPLOAD_COPY.sequenceReadsUnavailable}
+        </p>
+        <p className="text-sm text-ink-muted">
           {OWN_UPLOAD_COPY.zipStatement(megabytesOf(MAXIMUM_LOCAL_ZIP_BYTES))}
         </p>
         {limits ? <p className="text-sm text-ink-muted">
