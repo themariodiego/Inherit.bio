@@ -41,16 +41,35 @@ select ok((select p.prosecdef and pg_get_userbyid(p.proowner)='postgres' and md5
  ('private.future_person_export_snapshot_v1(text)','7ae505cb92d301a41a2a263be1702547',false),
  ('private.future_person_bound_export_snapshot_v1(jsonb,uuid)','6f202bda0cc049ed12306e4ef5916352',false),
  ('public.future_person_export_members_v1(text,uuid,uuid,text,text)','8510090f140b1680cca24da74fdc48c5',true),
- ('public.export_archive_account_members_pre_requester_v1(text,uuid,uuid,text,uuid,text)','1e04b020763456c3c95ca362e3cae7d2',false)
+ ('public.export_archive_account_members_pre_requester_v1(text,uuid,uuid,text,uuid,text)','61796b5fc5f91b3e9a65a2697a5bbe31',false)
  )x(signature,body_md5,service_execute);
 select ok((select prosecdef and pg_get_userbyid(proowner)='postgres'
- and md5(prosrc)='b88c74c6a3fa64fff3fac75858996ad0'
+ and md5(prosrc)='1b91b51e8e66201104f0e43d34bf02da'
  and proconfig=array['search_path=""','lock_timeout=250ms']::text[]
  and has_function_privilege('service_role',oid,'execute')
  and not exists(select 1 from unnest(array['anon','authenticated','inherit_upload_only'])r
   where has_function_privilege(r,p.oid,'execute'))
  from pg_proc p where oid='public.export_archive_account_members_v1(text,uuid,uuid,text,uuid,text)'::regprocedure),
  'the exact current requester wrapper is service-only and delegates scientific JSON to the preserved precision serializer');
+
+-- The current complete migration changed only the reviewed file-count,
+-- two thirteen-key emitted score projections and requester partition guard.
+-- Exact native inverse/occurrence checks recover each entire old body.
+select ok((select
+ (length(prosrc)-length(replace(prosrc,$current_file_count$'fileCount',case when capture ? 'completeCapture' then (select to_jsonb(coalesce(sum((x->>'fileCount')::bigint),0)) from jsonb_array_elements(capture#>'{completeCapture,scopePartitions}')x where x->>'class'<>'consent-covered') else capture#>'{authority,fileCount}' end$current_file_count$,'')))/length($current_file_count$'fileCount',case when capture ? 'completeCapture' then (select to_jsonb(coalesce(sum((x->>'fileCount')::bigint),0)) from jsonb_array_elements(capture#>'{completeCapture,scopePartitions}')x where x->>'class'<>'consent-covered') else capture#>'{authority,fileCount}' end$current_file_count$)=1
+ and (length(prosrc)-length(replace(prosrc,$current_score$jsonb_build_object('id',score.id,'condition_id',score.condition_id,'condition_name',score.condition_name,'finding',score.finding,'evidence_label',score.evidence_label,'coverage_state',score.coverage_state,'citation_ids',score.citation_ids,'not_covered_reason',score.not_covered_reason,'model_id',score.model_id,'model_version',score.model_version,'source_binding_fingerprint',score.source_binding_fingerprint,'computation_revision',score.computation_revision,'computed_at',score.computed_at)$current_score$,'')))/length($current_score$jsonb_build_object('id',score.id,'condition_id',score.condition_id,'condition_name',score.condition_name,'finding',score.finding,'evidence_label',score.evidence_label,'coverage_state',score.coverage_state,'citation_ids',score.citation_ids,'not_covered_reason',score.not_covered_reason,'model_id',score.model_id,'model_version',score.model_version,'source_binding_fingerprint',score.source_binding_fingerprint,'computation_revision',score.computation_revision,'computed_at',score.computed_at)$current_score$)=2
+ and md5(replace(replace(prosrc,$current_file_count$'fileCount',case when capture ? 'completeCapture' then (select to_jsonb(coalesce(sum((x->>'fileCount')::bigint),0)) from jsonb_array_elements(capture#>'{completeCapture,scopePartitions}')x where x->>'class'<>'consent-covered') else capture#>'{authority,fileCount}' end$current_file_count$,$prior_file_count$'fileCount',capture#>'{authority,fileCount}'$prior_file_count$),
+ $current_score$jsonb_build_object('id',score.id,'condition_id',score.condition_id,'condition_name',score.condition_name,'finding',score.finding,'evidence_label',score.evidence_label,'coverage_state',score.coverage_state,'citation_ids',score.citation_ids,'not_covered_reason',score.not_covered_reason,'model_id',score.model_id,'model_version',score.model_version,'source_binding_fingerprint',score.source_binding_fingerprint,'computation_revision',score.computation_revision,'computed_at',score.computed_at)$current_score$,$prior_score$to_jsonb(score)-'embryo_id'$prior_score$))='1e04b020763456c3c95ca362e3cae7d2'
+ from pg_proc where oid='public.export_archive_account_members_pre_requester_v1(text,uuid,uuid,text,uuid,text)'::regprocedure),
+ 'the exact complete legacy score/file-count corrections invert to the whole original precision body');
+select ok((select
+ (length(prosrc)-length(replace(prosrc,$current_requester$capture:=private.export_account_owned_capture_v1(permit->'origin','account',account);
+ if not exists(select 1 from jsonb_array_elements(capture->'partitions')x where x->>'subjectId'=p_subject_id::text) then raise exception using errcode='42501',message='not_found';end if;$current_requester$,'')))/length($current_requester$capture:=private.export_account_owned_capture_v1(permit->'origin','account',account);
+ if not exists(select 1 from jsonb_array_elements(capture->'partitions')x where x->>'subjectId'=p_subject_id::text) then raise exception using errcode='42501',message='not_found';end if;$current_requester$)=1
+ and md5(replace(prosrc,$current_requester$capture:=private.export_account_owned_capture_v1(permit->'origin','account',account);
+ if not exists(select 1 from jsonb_array_elements(capture->'partitions')x where x->>'subjectId'=p_subject_id::text) then raise exception using errcode='42501',message='not_found';end if;$current_requester$,$prior_requester$capture:=private.export_account_owned_capture_v1(permit->'origin','account',account);$prior_requester$))='b88c74c6a3fa64fff3fac75858996ad0'
+ from pg_proc where oid='public.export_archive_account_members_v1(text,uuid,uuid,text,uuid,text)'::regprocedure),
+ 'the exact added partition guard inverts to the whole original requester wrapper');
 
 set local role anon;
 select throws_ok($$select public.read_embryo_qc_rows_v1('ad340000-0000-4000-8000-000000000001',array['ad340000-0000-4000-8000-000000000002']::uuid[])$$,

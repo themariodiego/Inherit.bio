@@ -1534,7 +1534,8 @@ begin
  select * into config from private.account_archive_r2_configuration where singleton for share;
  if config.enabled is distinct from true or config.bucket is null or config.binding_sha256 is null then return false;end if;
  select * into profile from public.profiles where id=(p_origin->>'accountId')::uuid for share;
- return profile.id is not null and profile.jurisdiction_code='TEST' and profile.jurisdiction_declared_at is not null
+ return profile.id is not null and profile.jurisdiction_code~'^[A-Z]{2}$' and profile.jurisdiction_code<>'XX'
+  and profile.jurisdiction_declared_at is not null
   and profile.deletion_requested_at is null;
 end $$;
 revoke all on function private.account_archive_complete_enabled_v1(jsonb)

@@ -13,6 +13,10 @@ insert into auth.sessions(id,user_id,created_at,updated_at,aal) values
 create temporary table completion_fixture(origin jsonb,capture jsonb,created jsonb,frame jsonb,ready jsonb);
 insert into completion_fixture(origin) values(jsonb_build_object('kind','account','accountId','79800000-0000-4000-8000-000000000001',
  'sessionId','79800000-0000-4000-8000-000000000010'));
+-- A complete TEST request still needs the person's genuine country declaration.
+select is(public.declare_jurisdiction_v2('79800000-0000-4000-8000-000000000001','79800000-0000-4000-8000-000000000010','GB',null,(select version from public.consent_artifacts where artifact_key='attestation.jurisdiction' and superseded_at is null),
+ (select body_sha256 from public.consent_artifacts where artifact_key='attestation.jurisdiction' and superseded_at is null),true)->>'jurisdiction','GB',
+ 'the completion fixture declares through the actual current signed country writer before capture');
 -- Native TEST configuration precedes the durable complete capture; a later
 -- enablement must never adopt a prior legacy request or its authority receipt.
 update private.account_archive_r2_configuration set enabled=true,bucket='inherit-export-test',binding_sha256=repeat('2',64);
@@ -108,8 +112,17 @@ select is(private.account_archive_test_ready_v1((select origin from completion_f
 select throws_ok($$select private.account_archive_test_ready_v1((select origin from completion_fixture),
  (select(created->>'exportId')::uuid from completion_fixture),repeat('7',64))$$,
  '42501','account_archive_test_unavailable','new READY independently refuses the wrong export cookie');
+savepoint new_ready_missing_declaration;
+update public.profiles set jurisdiction_code=null,jurisdiction_subdivision=null,jurisdiction_declared_at=null,
+ jurisdiction_attestation_version=null,jurisdiction_attestation_sha256=null
+ where id='79800000-0000-4000-8000-000000000001';
+select throws_ok($$select private.account_archive_test_ready_v1((select origin from completion_fixture),
+ (select(created->>'exportId')::uuid from completion_fixture),repeat('9',64))$$,
+ '42501','account_archive_test_unavailable','a genuine ready account still needs its current personal declaration');
+rollback to new_ready_missing_declaration;
 savepoint new_ready_non_test;
-update public.profiles set jurisdiction_code='XX' where id='79800000-0000-4000-8000-000000000001';
+select public.declare_jurisdiction_v2('79800000-0000-4000-8000-000000000001','79800000-0000-4000-8000-000000000010','XX',null,(select version from public.consent_artifacts where artifact_key='attestation.jurisdiction' and superseded_at is null),
+ (select body_sha256 from public.consent_artifacts where artifact_key='attestation.jurisdiction' and superseded_at is null),true);
 select throws_ok($$select private.account_archive_test_ready_v1((select origin from completion_fixture),
  (select(created->>'exportId')::uuid from completion_fixture),repeat('9',64))$$,
  '42501','account_archive_test_unavailable','a real ready account cannot use the new native TEST door outside TEST');

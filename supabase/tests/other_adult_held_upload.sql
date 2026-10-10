@@ -445,10 +445,28 @@ select is((select count(*) from public.purpose_grants where target_id=pg_temp.si
 select is((select string_agg(n.nspname||'.'||p.proname,', ' order by n.nspname,p.proname)
  from pg_proc p join pg_namespace n on n.oid=p.pronamespace
  where n.nspname in ('public','private') and p.prosrc like '%other_adult_held_uploads%'),
+ case when to_regprocedure('private.account_archive_complete_class_census_v1(jsonb,jsonb,jsonb)') is null then ''
+  else 'private.account_archive_complete_class_census_v1, private.account_archive_complete_class_kinds_v1, private.account_archive_complete_source_rows_v1, private.account_archive_legacy_classes_v1, ' end ||
  'private.adult_upload_mail_current_v1, private.adult_upload_revision_session_v1, ' || case when to_regprocedure('private.assert_account_path_b_deletion_supported_v1(uuid)') is null
    then '' else 'private.assert_account_path_b_deletion_supported_v1, ' end || 'private.begin_own_upload_finalization_v2, private.complete_own_upload_finalization_v1, private.delete_path_b_subject_v1, private.end_other_adult_held_upload_v1, private.enqueue_path_b_normalization_v1, ' || case when to_regprocedure('private.export_account_class_inventory_v1(uuid,jsonb)') is null
    then '' else 'private.export_account_class_inventory_v1, ' end || case when to_regprocedure('private.export_account_path_b_snapshot_v1(jsonb,uuid)') is null then '' else 'private.export_account_path_b_snapshot_v1, ' end || 'private.issue_other_adult_held_upload_v1, private.other_adult_upload_targets_v1, private.own_upload_finalization_v1, private.path_b_normalization_authority_v1, private.path_b_normalization_v1, private.path_b_result_read_v1, private.subject_held_files_v1, ' || case when to_regprocedure('public.activate_rights_session_before_keyless_objection_v1(text,text,text)') is null
    then 'public.activate_rights_session_v1' else 'public.activate_rights_session_before_keyless_objection_v1' end || ', public.expire_due_other_adult_held_uploads_v1, public.read_adult_upload_revision_v1, public.respond_adult_upload_revision_v1','the held table is named only by the exact reviewed lifecycle functions');
+-- Four reviewed complete-account helpers inspect the held source only for
+-- internal whole-source comparison/excluded census. No API may execute them.
+select ok(to_regprocedure(x.signature) is null or (select md5(p.prosrc)=x.body_md5
+ and p.proowner='postgres'::regrole and p.prosecdef=x.definer and p.proconfig=x.config and p.provolatile=x.volatility
+ and not exists(select 1 from unnest(array['anon','authenticated','service_role','inherit_upload_only'])r
+  where has_function_privilege(r,p.oid,'execute'))
+ and not exists(select 1 from aclexplode(coalesce(p.proacl,acldefault('f',p.proowner)))a
+  where a.grantee<>'postgres'::regrole or a.grantor<>p.proowner or a.privilege_type<>'EXECUTE')
+ from pg_proc p where p.oid=to_regprocedure(x.signature)),
+ x.signature||' is an exact owner-only whole-source census with no API execution')
+ from(values
+  ('private.account_archive_complete_class_census_v1(jsonb,jsonb,jsonb)','3f1296be460ccf20ce7bb3acad9f1e96',true,array['search_path=""','lock_timeout=250ms']::text[],'v'::"char"),
+  ('private.account_archive_complete_class_kinds_v1()','4ce21c54bdec0a36c2cbedf504846457',false,array['search_path=""']::text[],'i'::"char"),
+  ('private.account_archive_complete_source_rows_v1(uuid,uuid[],text,uuid[])','a6bb5dec4473a49ccbf3436ed8b17da8',true,array['search_path=""','lock_timeout=250ms']::text[],'v'::"char"),
+  ('private.account_archive_legacy_classes_v1(uuid,jsonb)','1e03211436045e794a6e1c4002373854',true,array['search_path=""','lock_timeout=250ms']::text[],'v'::"char")
+ )x(signature,body_md5,definer,config,volatility);
 select ok((select md5(prosrc)='7c176e100123ecbdf9aedd8ee41b0539' from pg_proc
  where oid=coalesce(to_regprocedure('public.activate_rights_session_before_keyless_objection_v1(text,text,text)'),
    to_regprocedure('public.activate_rights_session_v1(text,text,text)')))

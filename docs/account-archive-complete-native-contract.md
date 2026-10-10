@@ -4,6 +4,21 @@
 not run. The account R2 configuration stays disabled. No production, clinical,
 accountless-origin or legal approval is established by this document.
 
+## 11 October 2026 source correction after the first complete hosted database run
+
+The actual country writer accepts alpha-2 country codes, not a stored `TEST`
+pseudo-country. Under the existing TEST runtime flag a declared account resolves
+to TEST-LOCAL; the blocked `XX` fixture remains denied. The native complete door
+therefore requires the existing owner-enabled, default-OFF R2 configuration and
+a current declared alpha-2, non-`XX` profile. It still delegates actual actor,
+session, source, consent and full-capture currentness to the original native
+chain. The configuration and app/provider gates remain closed by default. This
+source proposal does not enable them or grant a production jurisdiction review.
+Both native fixtures declare through the current signed v2 writer before their
+fresh complete capture; no grant, signature, TEST profile or prior job is seeded
+or adopted. The first hosted database refusal remains preserved. Corrected
+native assertions and the complete provider/browser flow remain UNRUN.
+
 ## Scope comes before membership
 
 The account archive must enumerate every applicable portable-data class, with

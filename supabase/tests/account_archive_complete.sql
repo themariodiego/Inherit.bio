@@ -29,14 +29,39 @@ select is(private.export_account_owned_capture_v1(pg_temp.archive_origin('owner'
  '77900000-0000-4000-8000-000000000001'),private.export_account_owned_capture_pre_complete_v1(
  pg_temp.archive_origin('owner'),'account','77900000-0000-4000-8000-000000000001'),
  'default-OFF account capture is the exact preserved original delegate');
+-- TEST-LOCAL is a runtime/store capability, never a stored pseudo-country.
+-- Use the actual current attestation writer; no signature/grant row is seeded.
+select throws_ok($$select public.declare_jurisdiction_v2('77900000-0000-4000-8000-000000000001',
+ '77900000-0000-4000-8000-000000000010','TEST',null,(select version from public.consent_artifacts where artifact_key='attestation.jurisdiction' and superseded_at is null),
+ (select body_sha256 from public.consent_artifacts where artifact_key='attestation.jurisdiction' and superseded_at is null),true)$$,
+ '22023','invalid_request','the genuine declaration writer cannot persist the impossible four-letter TEST value');
+select is(public.declare_jurisdiction_v2('77900000-0000-4000-8000-000000000001','77900000-0000-4000-8000-000000000010','GB',null,(select version from public.consent_artifacts where artifact_key='attestation.jurisdiction' and superseded_at is null),
+ (select body_sha256 from public.consent_artifacts where artifact_key='attestation.jurisdiction' and superseded_at is null),true)->>'jurisdiction','GB',
+ 'the ordinary actor uses an actual current alpha-2 declaration before complete capture');
+select is(public.declare_jurisdiction_v2('7b100000-0000-4000-8000-000000000001','7b100000-0000-4000-8000-000000000002','GB',null,(select version from public.consent_artifacts where artifact_key='attestation.jurisdiction' and superseded_at is null),
+ (select body_sha256 from public.consent_artifacts where artifact_key='attestation.jurisdiction' and superseded_at is null),true)->>'jurisdiction','GB',
+ 'the claimant actor separately uses an actual current alpha-2 declaration before complete capture');
 update private.account_archive_r2_configuration set enabled=true,bucket='inherit-export-test',binding_sha256=repeat('2',64);
 select ok(private.account_archive_complete_enabled_v1(pg_temp.archive_origin('owner')),
  'native TEST configuration and real TEST actor select the complete capture');
 select is(private.export_account_owned_capture_v1(pg_temp.archive_origin('owner'),'subject',(select id from normalization_subject)),
  private.export_account_owned_capture_pre_complete_v1(pg_temp.archive_origin('owner'),'subject',(select id from normalization_subject)),
  'subject export keeps the byte-exact legacy body even when TEST account config is enabled');
+savepoint missing_declaration;
+update public.profiles set jurisdiction_code=null,jurisdiction_subdivision=null,jurisdiction_declared_at=null,
+ jurisdiction_attestation_version=null,jurisdiction_attestation_sha256=null
+ where id='77900000-0000-4000-8000-000000000001';
+select ok(not private.account_archive_complete_enabled_v1(pg_temp.archive_origin('owner')),
+ 'enabled native TEST store does not supply a missing personal declaration');
+select throws_ok($$select private.account_archive_complete_capture_v1(pg_temp.archive_origin('owner'))$$,
+ '42501','not_found','undeclared actor independently refuses the complete capture');
+select throws_ok($$select private.account_archive_test_ready_v1(pg_temp.archive_origin('owner'),
+ '77900000-0000-4000-8000-000000000070',repeat('9',64))$$,
+ '42501','account_archive_test_unavailable','undeclared actor independently refuses native READY before record lookup');
+rollback to missing_declaration;
 savepoint non_test;
-update public.profiles set jurisdiction_code='XX' where id='77900000-0000-4000-8000-000000000001';
+select public.declare_jurisdiction_v2('77900000-0000-4000-8000-000000000001','77900000-0000-4000-8000-000000000010','XX',null,(select version from public.consent_artifacts where artifact_key='attestation.jurisdiction' and superseded_at is null),
+ (select body_sha256 from public.consent_artifacts where artifact_key='attestation.jurisdiction' and superseded_at is null),true);
 select ok(not private.account_archive_complete_enabled_v1(pg_temp.archive_origin('owner')),
  'non-TEST actor cannot select the complete TEST capture');
 select throws_ok($$select private.account_archive_complete_capture_v1(pg_temp.archive_origin('owner'))$$,

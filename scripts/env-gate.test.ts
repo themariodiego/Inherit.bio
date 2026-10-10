@@ -136,14 +136,18 @@ describe("the env gate holds .env.example to what the code reads", () => {
     // Four source modules add a distinct process.env binding each: requester
     // statement policy, R2 native adapter, gateway adapter, private transport.
     // Source-authored expected ledger; not a recorded gate execution.
-    expect(result.boundReadKeyCount).toBe(24);
+    // Complete TEST archives add two current process.env bindings: chunk HTTP
+    // and the capability factory. They share one already-declared flag, so the
+    // bound-key census gains one while the complete union stays unchanged.
+    expect(result.boundReadKeyCount).toBe(25);
     // Future Person adds the TEST-LOCAL flag binding in futurePersonClaimsOpen.
     // The scanner selector adds INHERIT_CLAMD_ADDRESS as its ninth binding.
     // Exact scanner census: base 9 + NEW captures 5 across four modules = 14.
     // The conservative typed-parameter heuristic also captures `expected`
     // and `gateway`; this number is scanner bindings, not distinct env keys.
     // Keep that detector and every other assertion unchanged.
-    expect(result.boundBindingCount).toBe(14);
+    // The complete archive selectors add two more bindings to that earlier 14.
+    expect(result.boundBindingCount).toBe(16);
     expect(result.dynamicReadSiteCount).toBe(1);
     expect(result.readKeyCount).toBe(48);
     expect(result.templateKeyCount).toBe(40);
@@ -155,6 +159,41 @@ describe("the env gate holds .env.example to what the code reads", () => {
     expect(result.guideNamedCount).toBe(51);
     expect(result.guideNamedCount).toBe(result.templateKeyCount + GUIDE_FOREIGN_NAMES.length);
     expect(result.runtimeInjectedKeyCount).toBe(8);
+  });
+
+  it.each(["src/lib/exports/account-archive-chunk-http.ts", "src/lib/exports/account-archive-test-capabilities.ts"])(
+    "counts the current TEST archive binding in %s without replacing its direct-reader authority", (file) => {
+      const source = readFileSync(path.join(REPOSITORY_ROOT, file), "utf8");
+      const reads = moduleEnvReads(source);
+      expect(reads.bindings).toEqual(["env"]);
+      expect(reads.bound).toEqual(["INHERIT_TEST_ACCOUNT_ARCHIVE_R2"]);
+      expect(reads.direct).toEqual([]);
+      expect(source.split("=process.env")).toHaveLength(2);
+      const root = plant({ modules: { [file]: source.replace("=process.env", "={}") } });
+      const result = runEnvGate(root);
+      expect(result.failures).toEqual([]);
+      expect(result.directReadKeyCount).toBe(26);
+      // The other current archive reader still contributes the same bound key.
+      expect(result.boundReadKeyCount).toBe(25);
+      expect(result.boundBindingCount).toBe(15);
+      expect(result.readKeyCount).toBe(48);
+    },
+  );
+
+  it("restores the prior bound census only when both real archive bindings are removed", () => {
+    const modules: Record<string, string> = {};
+    for (const file of ["src/lib/exports/account-archive-chunk-http.ts", "src/lib/exports/account-archive-test-capabilities.ts"]) {
+      const source = readFileSync(path.join(REPOSITORY_ROOT, file), "utf8");
+      expect(source.split("=process.env")).toHaveLength(2);
+      modules[file] = source.replace("=process.env", "={}");
+    }
+    const result = runEnvGate(plant({ modules }));
+    expect(result.failures).toEqual([]);
+    expect(result.directReadKeyCount).toBe(26);
+    expect(result.boundReadKeyCount).toBe(24);
+    expect(result.boundBindingCount).toBe(14);
+    // The original direct R2 reader and declaration remain: this is not a lost key.
+    expect(result.readKeyCount).toBe(48);
   });
 
   it.each(["INHERIT_TEST_ACCOUNT_ARCHIVE_R2", "INHERIT_TEST_ACCOUNT_ARCHIVE_R2_DATABASE", "INHERIT_TEST_ACCOUNT_ARCHIVE_R2_DATABASE_CA_CERT"])(
