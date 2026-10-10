@@ -147,7 +147,7 @@ test("auth forms without JavaScript exclude credentials from native submission",
     for (const path of ["/auth/sign-up", "/auth/forgot-password", "/auth/reset-password"]) {
       await page.goto(path);
       const form = page.locator("form");
-      await expect(form.locator("fieldset")).toBeDisabled();
+      await expect(form.locator("fieldset")).toHaveAttribute("disabled", "");
       await expect(form.getByRole("button")).toBeDisabled();
       for (const input of await form.locator("input").all()) await expect(input).toBeDisabled();
       await expect(form.getByText("Turn on JavaScript in your browser to use this form.", { exact: true })).toBeVisible();
@@ -196,7 +196,7 @@ test("/auth/forgot-password keeps credentials closed until hydration and then us
     await page.goto("/auth/forgot-password", { waitUntil: "commit" });
     const form = page.locator("form");
     const submit = form.getByRole("button", { name: "Send reset link", exact: true });
-    await expect(form.locator("fieldset")).toBeDisabled();
+    await expect(form.locator("fieldset")).toHaveAttribute("disabled", "");
     await expect(form.getByLabel("Email")).toBeDisabled();
     await expect(submit).toBeDisabled();
     expect(await form.evaluate((node) => [...new FormData(node as HTMLFormElement).keys()])).toEqual([]);

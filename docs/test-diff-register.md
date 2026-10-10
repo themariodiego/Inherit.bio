@@ -1,3 +1,7 @@
+## 2026-10-10 — Auth fieldset native attribute assertion
+
+PR313 run `38048230468/a1` passed the four original processing cases, but its two new hydration controls failed because Playwright 1.62.1's disabled matcher excludes `FIELDSET`. Assert its exact native `disabled` attribute; retain every input/button disability, empty native FormData, credential-free submission, held-script/request control and existing limit. This corrects the matcher without a product change or a browser acceptance claim.
+
 ## 2026-10-10 — Keep account credentials closed until hydration
 
 The shared auth form relied on its client submit handler to cancel the browser’s default current-page GET. Before hydration, or with JavaScript disabled, the three server-rendered forms exposed enabled named credential fields to that native request. The existing sign-in search-parameter/Suspense subtree has no initial credential form; its client rendering remains unchanged. Server markup and the first hydration pass now disable the complete credential fieldset and submit control. Hydration enables the same fields only after React attaches the existing handler; the handler still cancels native submission first. Without JavaScript, the form explains how to enable it. Provider calls, destinations, validation, pending/error controls and account authority are unchanged.
