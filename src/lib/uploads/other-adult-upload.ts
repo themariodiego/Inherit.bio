@@ -254,6 +254,7 @@ export type AdultUploadRevisionRequest = z.infer<typeof adultUploadRevisionBody>
 /** What the person's read-only view shows: exactly what the uploader can see. */
 export const adultUploadRevisionView = z.object({
   state: z.enum(["pending", "confirmed"]),
+  uploaderName: z.string().regex(/^\p{L}[\p{L} .'-]{0,59}$/u).nullable(),
   label: z.string().min(1).max(200),
   fileKind: z.enum(["array", "vcf"]),
   addedOn: z.string(),

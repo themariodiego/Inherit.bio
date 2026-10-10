@@ -307,15 +307,33 @@ describe("independent mail queues", () => {
     });
   }
 
-  it("sends the upload-time notice with its dates, its kind and its one fragment link", async () => {
+  it("sends the upload-time notice with its captured safe uploader, dates, kind and one fragment link", async () => {
     claimRow({ ...row, template_id: "adult-upload-notice",
-      template_payload: { fileKind: "vcf", uploadedOn: "2026-09-28", deleteBy: "2026-10-28" } });
+      template_payload: { fileKind: "vcf", uploaderName: "Alex Synthetic", uploadedOn: "2026-09-28", deleteBy: "2026-10-28" } });
     expect(await (await POST(workerRequest())).json()).toEqual({ status: "complete", outcome: "completed" });
     expect(mocks.submit).toHaveBeenCalledWith("synthetic@example.test", {
-      id: "adult-upload-notice", payload: { fileKind: "vcf", uploadedOn: "2026-09-28", deleteBy: "2026-10-28",
+      id: "adult-upload-notice", payload: { fileKind: "vcf", uploaderName: "Alex Synthetic", uploadedOn: "2026-09-28", deleteBy: "2026-10-28",
         reviewUrl: expect.stringContaining(`/withdraw/request#${row.delivery_token}`) },
     }, row.idempotency_key);
   });
+
+  it("keeps older queued notices usable without inventing an uploader label", async () => {
+    claimRow({ ...row, template_id: "adult-upload-notice",
+      template_payload: { fileKind: "array", uploadedOn: "2026-09-28", deleteBy: "2026-10-28" } });
+    expect(await (await POST(workerRequest())).json()).toEqual({ status: "complete", outcome: "completed" });
+    expect(mocks.submit).toHaveBeenCalledWith("synthetic@example.test", {
+      id: "adult-upload-notice", payload: { fileKind: "array", uploadedOn: "2026-09-28", deleteBy: "2026-10-28",
+        reviewUrl: expect.stringContaining(`/withdraw/request#${row.delivery_token}`) },
+    }, row.idempotency_key);
+  });
+
+  it.each(["other@example.test", "https://example.test", "<script>bad</script>", "A".repeat(61), "Alex\nSynthetic", 5])(
+    "refuses an unsafe native uploader label before submission: %s", async uploaderName => {
+      claimRow({ ...row, template_id: "adult-upload-notice",
+        template_payload: { fileKind: "vcf", uploaderName, uploadedOn: "2026-09-28", deleteBy: "2026-10-28" } });
+      expect(await (await POST(workerRequest())).json()).toEqual({ status: "complete", outcome: "completed_with_failures" });
+      expect(mocks.submit).not.toHaveBeenCalled();
+    });
 
   it.each([
     { template_payload: { fileKind: "vcf", uploadedOn: "2026-09-28", deleteBy: "2026-10-28" }, delivery_token: null },
