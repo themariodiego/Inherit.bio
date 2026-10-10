@@ -3,9 +3,9 @@
   "status": "unbound-source-only",
   "active": {
     "file": "docs/export-member-plan.json",
-    "bytes": 65375,
-    "sha256": "886205f491a3c2fd94689bc52949f21654926e89ca7486e259ff235c50ee9d99",
-    "sourceCommit": "cc64f99b41065426bc0176d046374d3c146d5caf"
+    "bytes": 66248,
+    "sha256": "fd28554176fb6d26e52a491a5cd4ec6db9aef3e8d1e7849e77de6340ecc187f5",
+    "sourceCommit": "966c6049a88b725d2c4ac4f49f806d32ac6f83fd"
   },
   "proposal": {
     "file": "docs/proposals/requester-statement-export-member-plan.json",

@@ -161,12 +161,12 @@ create function private.new_public_appeal_mail_current_v1(p_outbox uuid,p_attemp
 language plpgsql security definer set search_path='' as $$
 declare request private.public_appeal_information_requests;intake private.new_public_appeal_intakes;
 begin
+ perform private.lock_invitation_transitions_v1();
  select source.* into request from private.public_appeal_information_requests source where source.outbox_id=p_outbox for share;
  if request.case_id is null then
   return private.new_public_appeal_mail_before_information_v1(p_outbox,p_attempt) and not exists(
    select 1 from private.new_public_appeal_intakes intake join private.public_appeal_information_requests information on information.case_id=intake.id
     where intake.outbox_id=p_outbox);end if;
- perform private.lock_invitation_transitions_v1();
  select source.* into intake from private.new_public_appeal_intakes source where source.id=request.case_id for share;
  perform 1 from public.appeal_intakes where id=intake.id for share;
  perform 1 from private.new_public_appeal_config where singleton for share;

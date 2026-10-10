@@ -78,3 +78,31 @@ review. Target-changing approvals, prior-decision reversal, requests for more
 information and contradiction dispositions remain unavailable until their
 registered native human evidence/target and delivery producers exist. Focused
 source checks do not establish native, browser or physical provider proof.
+
+
+## Correction of an earlier documentary choice in TEST
+
+A separate access/review appeal can now reverse only an actual source-control
+or genetic-parent documentary rejection. The original verified recipient and
+current source outcome must bind that new case. A different reviewer principal
+and a different own-MFA account must receive and acknowledge every complete
+current file before approving the photo, source proof and decision notice.
+The form binds the original decision revision and this case's evidence revision;
+it accepts no target or recipient selector.
+
+The native operation appends a coded correction and next source revisions while
+preserving the entire original decision. Its exact receipt is
+`prior_decision_reversed`. The original reference then stops admitting another
+appeal. Both supported rejection producers already destroyed the rejected file
+key, so correction cannot reopen that file or restore any authority. The reviewer
+and requester surfaces explicitly require a new request with new originating
+files. Lawful prior object removal does not erase the immutable source decision.
+
+This operation closes only the new appeal, erases its private working material,
+keys and rights, and leaves every unrelated target unchanged. It never grants
+access, approves a prior file, renews the original thirty-day clock or reverses
+a valid later refusal. Other prior-decision kinds, target-changing approvals and
+contradiction dispositions still lack their separate lawful producers. The
+native rollback probes are authored and unrun; synthetic scanner/deletion
+callbacks do not establish physical provider or browser qualification. All
+production activation settings remain disabled.

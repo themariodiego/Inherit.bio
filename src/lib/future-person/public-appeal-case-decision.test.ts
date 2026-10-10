@@ -119,3 +119,38 @@ describe("native-admitted information request", () => {
    expect(appealCaseContext.safeParse({ ...raw, allowedDecisions }).success).toBe(false);
  });
 });
+
+
+describe("registered append-only prior correction body", () => {
+ const body = { decision: "reverse-prior-decision", priorDecisionRevision: 3, evidenceRevision: 4, reviewRevision: 5,
+  reason: "The complete current files support correcting the earlier file review without granting access.", nonce: "synthetic-correction-form" };
+ it("requires both exact registered source/evidence revisions without accepting target IDs", () => {
+  expect(appealCaseDecisionBody.safeParse(body).success).toBe(true);
+  for (const extra of [{ priorDecisionRevision: 0 }, { evidenceRevision: 0 }, { priorDecisionId: id(11) },
+   { targetId: id(12) }, { recipient: "foreign@example.test" }, { decision: "uphold" }])
+   expect(appealCaseDecisionBody.safeParse({ ...body, ...extra }).success).toBe(false);
+  const { priorDecisionRevision, ...noPrior } = body; void priorDecisionRevision;
+  const { evidenceRevision, ...noEvidence } = body; void evidenceRevision;
+  expect(appealCaseDecisionBody.safeParse(noPrior).success).toBe(false);
+  expect(appealCaseDecisionBody.safeParse(noEvidence).success).toBe(false);
+ });
+});
+
+it.each(["appeal-subject-source-control", "appeal-genetic-parent-authority"] as const)("offers source correction only for the complete approved %s native context", kind => {
+ const nextScope = { ...scope, intakeKind: "access-or-review-appeal" };
+ const { format, ...encrypted } = sealNewAppeal(nextScope, { kind: "access-or-review-appeal", claimantName: "Synthetic Claimant",
+  contactEmail: "synthetic@example.test", decisionReference: "synthetic genuine prior reference",
+  statement: "This complete original appeal asks to correct an earlier documentary rejection.", affirmed: true }); void format;
+ const row = { ...current(), scope: nextScope, caseKind: "access-or-review-appeal", ...encrypted, documentDecisionsAvailable: true,
+  allowedDecisions: ["reject", "uphold", "reverse-prior-decision", "needs-more-information"],
+  priorDecision: { decisionId: id(11), sourceCaseId: id(12), decisionRevision: 3, evidenceRevision: 1,
+   sourceReviewerPrincipalId: id(13), decisionReferenceHash: "c".repeat(64), requiredAuthorityKind: kind,
+   decisionKind: kind === "appeal-subject-source-control" ? "subject-source-control-review-rejection" : "genetic-parent-authority-review-rejection",
+   sourceDeadline: scope.originalDeadline },
+  documents: ["appeal-photo-identity", "appeal-decision-notice", kind].map((documentKind, index) => ({
+   documentId: id(20 + index), documentKind, sha256: "a".repeat(64), decision: "approved" })) };
+ expect(appealCaseContext.safeParse(row).success).toBe(true);
+ expect(appealCaseContext.safeParse({ ...row, documents: row.documents.map((doc, i) => i === 1 ? { ...doc, decision: null } : doc) }).success).toBe(false);
+ expect(appealCaseContext.safeParse({ ...row, priorDecision: { ...row.priorDecision, sourceCaseId: row.caseId } }).success).toBe(false);
+ expect(appealCaseContext.safeParse({ ...row, priorDecision: { ...row.priorDecision, decisionKind: "adult-signed-permission-review-rejection" } }).success).toBe(false);
+});

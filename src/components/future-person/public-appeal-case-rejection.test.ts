@@ -30,3 +30,15 @@ it("offers a nonfinal request only when the native header admits it, with no cli
  expect(html).toContain("keeps the same deadline and gives no access");
  expect(html).not.toMatch(/name="(?:recipient|email|deadline|targetId)"/u);
 });
+
+
+it("offers exact native-admitted correction only with a fresh evidence requirement and no target input", () => {
+ const props = { caseId: "87000000-0000-4000-8000-000000000001", reviewRevision: 4, csrf: "a".repeat(64),
+  nonce: "synthetic-correction-form", disabled: false, onResolved: vi.fn() };
+ expect(renderToStaticMarkup(createElement(PublicAppealCaseRejection, props))).not.toContain("Change this choice");
+ const html = renderToStaticMarkup(createElement(PublicAppealCaseRejection, { ...props, reversal: { priorDecisionRevision: 3, evidenceRevision: 4 } }));
+ expect(html).toMatch(/disabled=""[^>]*>Change this choice/u);
+ expect(html).toContain("The old files cannot be opened. A new request with new files is needed.");
+ expect(html).toContain("This gives no access.");
+ expect(html).not.toMatch(/name="(?:targetId|priorDecisionId|recipient|deadline)"/u);
+});

@@ -500,7 +500,7 @@ begin
     and not exists(select 1 from private.public_appeal_case_decisions));
    raise exception using errcode='PZ002',message='restore same-account synthetic case';
   end if;
-  flags:=flags||jsonb_build_object('wholeApprovedNativeSet',context->'allowedDecisions'='["reject","uphold","needs-more-information"]'::jsonb
+  flags:=flags||jsonb_build_object('wholeApprovedNativeSet',context->'allowedDecisions'='["reject","uphold","reverse-prior-decision","needs-more-information"]'::jsonb
    and jsonb_array_length(context->'documents')=3 and not exists(select 1 from jsonb_array_elements(context->'documents') doc
     where doc->>'decision'<>'approved'));
   begin
@@ -564,11 +564,305 @@ begin
  end;
  return flags;
 end $test$;
+
+-- Create the other actual rejection kind through its genuine producer, never
+-- by relabeling a subject-source outcome. Storage callbacks remain synthetic.
+create function pg_temp.reversal_genetic_source() returns uuid language plpgsql as $test$
+declare prepared jsonb;v_case uuid;claim record;activated record;kind text;ordinal integer:=0;opened jsonb;plan jsonb;scan jsonb;
+ cookie text;nonce text;documents jsonb:='{}';doc private.appeal_documents;receipt jsonb;proof text;revision bigint;decision text;
+ sha text:=encode(extensions.digest(convert_to('%PDF-1.7 synthetic','UTF8'),'sha256'),'hex');
+begin
+ perform set_config('request.jwt.claims','{"role":"service_role"}',true);
+ prepared:=public.prepare_new_public_appeal_v1('genetic-parent-objection',pg_temp.h('genetic-source-payload'),pg_temp.h('genetic-source-form'),
+  jsonb_build_object('1',repeat('9',64)),jsonb_build_object('1',pg_temp.h('genetic-source-identifier')),
+  jsonb_build_object('1',pg_temp.h('genetic-source-network')));
+ if prepared is null then raise exception 'genetic source preparation unavailable';end if;
+ v_case:=(prepared#>>'{frame,scope,caseId}')::uuid;
+ if prepared#>>'{frame,reviewer,principalId}'<>'86000000-0000-4000-8000-000000000001' then
+  raise exception 'genetic source reviewer not original';end if;
+ perform public.commit_new_public_appeal_v1(prepared,pg_temp.h('genetic-source-payload'),pg_temp.h('genetic-source-form'),
+  decode(repeat('ab',72),'hex'),decode(repeat('bc',48),'hex'),decode(repeat('cd',48),'hex'),decode(repeat('de',48),'hex'),
+  jsonb_build_object('1',jsonb_build_object('normalized-identifier',pg_temp.h('genetic-source-identifier'),
+   'source-network',pg_temp.h('genetic-source-network'),'global-capacity',encode(extensions.digest(convert_to('api.subject-access-request|global-capacity','UTF8'),'sha256'),'hex'))));
+ for ordinal in 1..8 loop
+  select * into claim from public.claim_mail_outbox();
+  exit when claim.outbox_id=(select source.outbox_id from private.new_public_appeal_intakes source where source.id=v_case);
+ end loop;
+ if claim.outbox_id is distinct from (select source.outbox_id from private.new_public_appeal_intakes source where source.id=v_case)
+  or not public.authorize_mail_submission_v1(claim.outbox_id,claim.attempt_ordinal) then raise exception 'genetic source candidate unavailable';end if;
+ select * into activated from public.activate_rights_session_v1(
+  encode(extensions.digest(convert_to(claim.delivery_token,'UTF8'),'sha256'),'hex'),pg_temp.h('genetic-source-rights'),repeat('G',32));
+ if activated.target_id is distinct from v_case or activated.purpose is distinct from 'appeal-evidence' then
+  raise exception 'wrong genetic source authority';end if;
+ ordinal:=0;
+ for kind in select unnest(array['appeal-photo-identity','appeal-genetic-parent-authority']) loop
+  ordinal:=ordinal+1;cookie:=pg_temp.h('genetic-source-upload:'||kind);nonce:=pg_temp.h('genetic-source-compose:'||kind);
+  opened:=public.open_public_appeal_document_v1(pg_temp.h('genetic-source-rights'),repeat(chr(71+ordinal),32),kind,
+   'application/pdf',octet_length('%PDF-1.7 synthetic'),sha,cookie,decode(repeat('12',72),'hex'));
+  perform public.reserve_claim_document_chunk_v1((opened->>'session')::uuid,cookie,0,octet_length('%PDF-1.7 synthetic'),sha);
+  perform public.settle_claim_document_chunk_v1((opened->>'session')::uuid,cookie,0,true);
+  plan:=public.begin_claim_document_completion_v1((opened->>'session')::uuid,cookie,nonce,1);
+  perform public.finish_claim_document_completion_v1((opened->>'session')::uuid,cookie,nonce,'composed',plan->>'objectKey');
+  scan:=public.claim_next_appeal_document_scan_v1(pg_temp.h('genetic-source-scan:'||kind));
+  if scan->>'documentId' is distinct from plan->>'documentId' then raise exception 'foreign genetic source scan';end if;
+  perform public.record_appeal_document_scan_v1((scan->>'documentId')::uuid,pg_temp.h('genetic-source-scan:'||kind),'OK',sha,
+   'synthetic native test',1,clock_timestamp());
+  documents:=documents||jsonb_build_object(case kind when 'appeal-photo-identity' then 'photoIdentityDocumentId'
+   else 'geneticParentAuthorityDocumentId' end,plan->>'documentId');
+ end loop;
+ perform public.complete_new_public_appeal_evidence_v1(pg_temp.h('genetic-source-rights'),repeat('J',32),documents,true);
+ -- Photo approval precedes the real genetic-parent documentary rejection.
+ for doc in select source.* from private.appeal_documents source where source.intake_id=v_case
+  order by case source.document_kind when 'appeal-photo-identity' then 0 else 1 end loop
+  perform pg_temp.appeal_reviewer_jwt();
+  select pending.review_revision into strict revision from private.public_appeal_pending_reviews pending where pending.case_id=v_case;
+  cookie:=pg_temp.h('genetic-source-read:'||doc.document_kind);nonce:=pg_temp.h('genetic-source-review:'||doc.document_kind);
+  decision:=case doc.document_kind when 'appeal-photo-identity' then 'approved' else 'rejected' end;
+  opened:=public.open_claim_review_download_v1(doc.id,cookie);
+  receipt:=public.open_claim_review_receipt_v1((opened->>'session')::uuid,cookie,nonce);
+  perform public.authorize_claim_review_chunk_v1((opened->>'session')::uuid,cookie,0);
+  begin
+   perform public.decide_public_appeal_document_v1(doc.id,doc.sha256,revision,decision,nonce,
+    decode(repeat('ab',48),'hex'),repeat('f',64),decode(repeat('cd',76),'hex'));
+   raise exception 'genetic source decision accepted without whole ACK';
+  exception when insufficient_privilege then null;end;
+  proof:=encode(extensions.digest(decode(receipt#>>'{chunks,0,challenge}','hex')||convert_to('%PDF-1.7 synthetic','UTF8'),'sha256'),'hex');
+  perform set_config('request.jwt.claims','{"role":"service_role"}',true);
+  perform public.prepare_claim_review_chunk_receipt_v1((opened->>'session')::uuid,cookie,0,proof);
+  perform pg_temp.appeal_reviewer_jwt();
+  perform public.acknowledge_claim_review_chunk_v1((opened->>'session')::uuid,cookie,0,proof,nonce);
+  perform public.decide_public_appeal_document_v1(doc.id,doc.sha256,revision,decision,nonce,
+   decode(repeat('ab',48),'hex'),encode(extensions.digest(convert_to(nonce,'UTF8'),'sha256'),'hex'),decode(repeat('cd',76),'hex'));
+ end loop;
+ return v_case;
+end $test$;
+
+-- Exact native source correction; callbacks remain synthetic and UNRUN.
+create function pg_temp.prior_appeal_reverse_probe(p_same_account boolean default false,p_deleted boolean default false,p_genetic boolean default false) returns jsonb language plpgsql as $test$
+declare prepared jsonb;v_case uuid;source_case uuid;source_before jsonb;target_before jsonb;
+ claim record;activated record;kind text;ordinal integer:=0;opened jsonb;plan jsonb;scan jsonb;cookie text;nonce text;
+ sha text:=encode(extensions.digest(convert_to('%PDF-1.7 synthetic','UTF8'),'sha256'),'hex');
+ documents jsonb:='{}';v_document uuid;context jsonb;result jsonb;flags jsonb:='{}';receipt jsonb;source_outcome uuid;prior_revision bigint;erased_keys text[];
+ authority_kind text:=case when p_genetic then 'appeal-genetic-parent-authority' else 'appeal-subject-source-control' end;
+ contact_digest text:=case when p_genetic then repeat('9',64) else repeat('c',64) end;reference_hash text;
+begin
+ begin
+  if p_genetic then source_case:=pg_temp.reversal_genetic_source();
+  else select (value#>>'{frame,scope,caseId}')::uuid into source_case from public_appeal_prepared;end if;
+  select source.decision_reference_hash into strict reference_hash from private.public_appeal_document_decisions source
+   where source.case_id=source_case and source.document_kind=authority_kind and source.decision='rejected';
+  perform set_config('request.jwt.claims','{"role":"service_role"}',true);
+  perform private.grant_claim_reviewer_v1('7a000000-0000-0000-0000-000000000002');
+  insert into public.subject_principals(id,account_id,principal_kind) values
+   ('86000000-0000-4000-8000-000000000002',case when p_same_account then '7a000000-0000-0000-0000-000000000001'::uuid else '7a000000-0000-0000-0000-000000000002'::uuid end,'reviewer');
+  insert into private.new_public_appeal_reviewers(principal_id,principal_revision,purpose_revision)
+   values('86000000-0000-4000-8000-000000000002',1,1);
+  prepared:=public.prepare_new_public_appeal_v1('access-or-review-appeal',pg_temp.h('reversal-payload'),pg_temp.h('reversal-form'),
+   jsonb_build_object('1',contact_digest),jsonb_build_object('1',pg_temp.h('reversal-identifier')),
+   jsonb_build_object('1',pg_temp.h('reversal-network')),reference_hash);
+  if prepared is null then raise exception 'real same-recipient access preparation unavailable';end if;
+  v_case:=(prepared#>>'{frame,scope,caseId}')::uuid;
+  flags:=flags||jsonb_build_object('distinctPrincipalNativeBinding',prepared#>>'{frame,reviewer,principalId}'='86000000-0000-4000-8000-000000000002'
+   and prepared#>>'{frame,underlyingDecision,sourceCaseId}'=source_case::text
+   and prepared#>>'{frame,underlyingDecision,requiredAuthorityKind}'=authority_kind);
+  perform public.commit_new_public_appeal_v1(prepared,pg_temp.h('reversal-payload'),pg_temp.h('reversal-form'),
+   decode(repeat('ab',72),'hex'),decode(repeat('bc',48),'hex'),decode(repeat('cd',48),'hex'),decode(repeat('de',48),'hex'),
+   jsonb_build_object('1',jsonb_build_object('normalized-identifier',pg_temp.h('reversal-identifier'),
+    'source-network',pg_temp.h('reversal-network'),'global-capacity',encode(extensions.digest(convert_to('api.subject-access-request|global-capacity','UTF8'),'sha256'),'hex'))));
+  -- The actual public queue may first issue the older documentary notice.
+  -- Every token is native; only this exact candidate may activate this case.
+  for ordinal in 1..4 loop
+   select * into claim from public.claim_mail_outbox();
+   exit when claim.outbox_id=(select source.outbox_id from private.new_public_appeal_intakes source where source.id=v_case);
+  end loop;
+  if claim.outbox_id is distinct from (select source.outbox_id from private.new_public_appeal_intakes source where source.id=v_case)
+   or not public.authorize_mail_submission_v1(claim.outbox_id,claim.attempt_ordinal) then raise exception 'access candidate not owned';end if;
+  select * into activated from public.activate_rights_session_v1(
+   encode(extensions.digest(convert_to(claim.delivery_token,'UTF8'),'sha256'),'hex'),pg_temp.h('reversal-rights'),repeat('U',32));
+  if activated.target_id<>v_case or activated.purpose<>'appeal-evidence' then raise exception 'wrong access session';end if;
+  perform pg_temp.prior_appeal_reviewer_jwt(p_same_account);
+  context:=public.read_public_appeal_case_context_v1(v_case);
+  flags:=flags||jsonb_build_object('incompleteClosed',context->'allowedDecisions'='["reject","needs-more-information"]'::jsonb);
+  begin
+   perform public.reverse_public_appeal_prior_decision_v1(v_case,(prepared#>>'{frame,underlyingDecision,decisionRevision}')::bigint,(context->>'reviewRevision')::bigint,
+    (context->>'evidenceRevision')::bigint,pg_temp.h('reversal-outcome'),decode(repeat('ab',48),'hex'));
+   raise exception 'incomplete evidence admitted reversal';
+  exception when insufficient_privilege then null;end;
+  perform set_config('request.jwt.claims','{"role":"service_role"}',true);
+  ordinal:=0;
+  for kind in select unnest(array['appeal-photo-identity',authority_kind,'appeal-decision-notice']) loop
+   ordinal:=ordinal+1;cookie:=pg_temp.h('reversal-upload:'||kind);nonce:=pg_temp.h('reversal-compose:'||kind);
+   opened:=public.open_public_appeal_document_v1(pg_temp.h('reversal-rights'),repeat(chr(85+ordinal),32),kind,
+    'application/pdf',octet_length('%PDF-1.7 synthetic'),sha,cookie,decode(repeat('12',72),'hex'));
+   perform public.reserve_claim_document_chunk_v1((opened->>'session')::uuid,cookie,0,octet_length('%PDF-1.7 synthetic'),sha);
+   perform public.settle_claim_document_chunk_v1((opened->>'session')::uuid,cookie,0,true);
+   plan:=public.begin_claim_document_completion_v1((opened->>'session')::uuid,cookie,nonce,1);
+   perform public.finish_claim_document_completion_v1((opened->>'session')::uuid,cookie,nonce,'composed',plan->>'objectKey');
+   scan:=public.claim_next_appeal_document_scan_v1(pg_temp.h('reversal-scan:'||kind));
+   if scan->>'documentId' is distinct from plan->>'documentId' then raise exception 'foreign access scan';end if;
+   perform public.record_appeal_document_scan_v1((scan->>'documentId')::uuid,pg_temp.h('reversal-scan:'||kind),'OK',sha,
+    'synthetic native test',1,clock_timestamp());
+   documents:=documents||jsonb_build_object(case kind when 'appeal-photo-identity' then 'photoIdentityDocumentId'
+    when 'appeal-subject-source-control' then 'subjectSourceControlDocumentId'
+    when 'appeal-genetic-parent-authority' then 'geneticParentAuthorityDocumentId' else 'decisionNoticeDocumentId' end,plan->>'documentId');
+  end loop;
+  perform public.complete_new_public_appeal_evidence_v1(pg_temp.h('reversal-rights'),repeat('Z',32),documents,true);
+  perform pg_temp.prior_appeal_reviewer_jwt(p_same_account);
+  context:=public.read_public_appeal_case_context_v1(v_case);
+  flags:=flags||jsonb_build_object('pendingClosed',context->'allowedDecisions'='["reject","needs-more-information"]'::jsonb);
+  begin
+   perform public.reverse_public_appeal_prior_decision_v1(v_case,(prepared#>>'{frame,underlyingDecision,decisionRevision}')::bigint,(context->>'reviewRevision')::bigint,
+    (context->>'evidenceRevision')::bigint,pg_temp.h('reversal-outcome'),decode(repeat('ab',48),'hex'));
+   raise exception 'unread pending evidence admitted reversal';
+  exception when insufficient_privilege then null;end;
+  for kind,v_document in select doc.document_kind,doc.id from private.appeal_documents doc where doc.intake_id=v_case order by doc.document_kind loop
+   perform pg_temp.prior_appeal_read_and_approve(v_document,pg_temp.h('reversal-read:'||kind),pg_temp.h('reversal-review:'||kind),p_same_account);
+  end loop;
+  context:=public.read_public_appeal_case_context_v1(v_case);
+  if p_same_account then
+   if context->'allowedDecisions' is distinct from '["reject","needs-more-information"]'::jsonb then
+    raise exception 'two principals disguised the original reviewer account';end if;
+   begin
+    perform public.reverse_public_appeal_prior_decision_v1(v_case,(prepared#>>'{frame,underlyingDecision,decisionRevision}')::bigint,(context->>'reviewRevision')::bigint,
+     (context->>'evidenceRevision')::bigint,pg_temp.h('reversal-outcome'),decode(repeat('ab',48),'hex'));
+    raise exception 'same original reviewer account admitted reversal';
+   exception when insufficient_privilege then null;end;
+   flags:=flags||jsonb_build_object('sameAccountRefused',
+    context->'allowedDecisions'='["reject","needs-more-information"]'::jsonb and jsonb_array_length(context->'documents')=3
+    and not exists(select 1 from jsonb_array_elements(context->'documents') doc where doc->>'decision'<>'approved')
+    and not exists(select 1 from private.public_appeal_case_decisions));
+   raise exception using errcode='PZ002',message='restore same-account synthetic case';
+  end if;
+  flags:=flags||jsonb_build_object('wholeApprovedNativeSet',context->'allowedDecisions'='["reject","uphold","reverse-prior-decision","needs-more-information"]'::jsonb
+   and jsonb_array_length(context->'documents')=3 and not exists(select 1 from jsonb_array_elements(context->'documents') doc
+    where doc->>'decision'<>'approved'));
+  begin
+   perform public.reverse_public_appeal_prior_decision_v1(v_case,(prepared#>>'{frame,underlyingDecision,decisionRevision}')::bigint,(context->>'reviewRevision')::bigint+1,
+    (context->>'evidenceRevision')::bigint,pg_temp.h('reversal-outcome'),decode(repeat('ab',48),'hex'));
+   raise exception 'stale review admitted reversal';
+  exception when insufficient_privilege then null;end;
+  begin
+   perform public.reverse_public_appeal_prior_decision_v1(v_case,(prepared#>>'{frame,underlyingDecision,decisionRevision}')::bigint,(context->>'reviewRevision')::bigint,
+    (context->>'evidenceRevision')::bigint+1,pg_temp.h('reversal-outcome'),decode(repeat('ab',48),'hex'));
+   raise exception 'stale evidence admitted reversal';
+  exception when insufficient_privilege then null;end;
+  perform pg_temp.appeal_reviewer_jwt();
+  begin
+   perform public.reverse_public_appeal_prior_decision_v1(v_case,(prepared#>>'{frame,underlyingDecision,decisionRevision}')::bigint,(context->>'reviewRevision')::bigint,
+    (context->>'evidenceRevision')::bigint,pg_temp.h('reversal-outcome'),decode(repeat('ab',48),'hex'));
+   raise exception 'original source reviewer replaced independent review';
+  exception when insufficient_privilege then null;end;
+  perform pg_temp.prior_appeal_reviewer_jwt(p_same_account);
+  begin
+   update public.encrypted_contact_references set status='rotated' where id=(select source.case_contact_id from private.new_public_appeal_intakes source where source.id=source_case);
+   perform public.reverse_public_appeal_prior_decision_v1(v_case,(prepared#>>'{frame,underlyingDecision,decisionRevision}')::bigint,(context->>'reviewRevision')::bigint,
+    (context->>'evidenceRevision')::bigint,pg_temp.h('reversal-outcome'),decode(repeat('ab',48),'hex'));
+   raise exception 'stale source recipient admitted reversal';
+  exception when insufficient_privilege then null;end;
+  flags:=flags||jsonb_build_object('refusalsAtomic',not exists(select 1 from private.public_appeal_case_decisions));
+  source_outcome:=(prepared#>>'{frame,underlyingDecision,decisionId}')::uuid;
+  prior_revision:=(prepared#>>'{frame,underlyingDecision,decisionRevision}')::bigint;
+  begin
+   perform public.reverse_public_appeal_prior_decision_v1(v_case,prior_revision+1,(context->>'reviewRevision')::bigint,
+    (context->>'evidenceRevision')::bigint,pg_temp.h('reversal-outcome'),decode(repeat('ab',48),'hex'));
+   raise exception 'stale prior revision admitted reversal';
+  exception when insufficient_privilege then null;end;
+  if p_deleted then
+   -- Native ACK only; this does not prove physical Storage/provider removal.
+   select array_agg(doc.object_key) into erased_keys from private.appeal_documents doc
+    join private.public_appeal_document_decisions outcome on outcome.document_id=doc.id
+    where outcome.id=source_outcome and doc.object_key=any(array(select source.object_key from public.appeal_document_objects_due_v1(100) source));
+   if cardinality(erased_keys) is distinct from 1 then raise exception 'rejected object not native-due';end if;
+   perform public.confirm_appeal_document_objects_deleted_v1(erased_keys,'jobs.retention');
+   if exists(select 1 from private.public_appeal_document_decisions outcome where outcome.id=source_outcome and outcome.document_id is not null) then
+    raise exception 'lawfully removed source document remains linked';end if;
+  end if;
+  select jsonb_build_object('intake',to_jsonb(source),'appeal',(select to_jsonb(appeal) from public.appeal_intakes appeal where appeal.id=source_case),
+   'decisions',(select jsonb_agg(to_jsonb(outcome) order by outcome.id) from private.public_appeal_document_decisions outcome where outcome.case_id=source_case),
+   'documents',(select jsonb_agg(to_jsonb(doc) order by doc.id) from private.appeal_documents doc where doc.intake_id=source_case))
+   into source_before from private.new_public_appeal_intakes source where source.id=source_case;
+  select jsonb_build_object('profiles',(select coalesce(jsonb_agg(to_jsonb(profile) order by profile.id),'[]') from public.profiles profile),
+   'files',(select coalesce(jsonb_agg(to_jsonb(file) order by file.id),'[]') from public.genome_files file),'subjects',(select coalesce(jsonb_agg(to_jsonb(subject) order by subject.id),'[]') from public.subjects subject),
+   'cohorts',(select coalesce(jsonb_agg(to_jsonb(cohort) order by cohort.id),'[]') from public.embryo_cohorts cohort)) into target_before;
+  receipt:=public.reverse_public_appeal_prior_decision_v1(v_case,(prepared#>>'{frame,underlyingDecision,decisionRevision}')::bigint,(context->>'reviewRevision')::bigint,
+   (context->>'evidenceRevision')::bigint,pg_temp.h('reversal-outcome'),decode(repeat('ab',48),'hex'));
+  flags:=flags||jsonb_build_object('nativeUpheld',receipt=jsonb_build_object('caseId',v_case,'state','resolved','outcome','prior_decision_reversed',
+    'reviewRevision',(context->>'reviewRevision')::bigint+1)
+   and exists(select 1 from private.public_appeal_case_decisions outcome where outcome.case_id=v_case and outcome.decision='reverse-prior-decision'
+    and outcome.prior_decision_id=(context#>>'{priorDecision,decisionId}')::uuid
+    and outcome.prior_decision_revision=(context#>>'{priorDecision,decisionRevision}')::bigint
+    and outcome.prior_evidence_revision=(context#>>'{priorDecision,evidenceRevision}')::bigint and outcome.reason_ciphertext is null
+    and outcome.corrected_prior_decision_revision=outcome.prior_decision_revision+1
+    and outcome.corrected_prior_evidence_revision=outcome.prior_evidence_revision+1
+    and outcome.reviewer_account_id='7a000000-0000-0000-0000-000000000002'),
+   'terminalDisposal',exists(select 1 from private.new_public_appeal_intakes source where source.id=v_case and source.state='closed'
+    and source.wrapped_case_key is null and source.working_ciphertext is null and source.case_contact_id is null)
+    and not exists(select 1 from public.rights_sessions rights where rights.target_kind='appeal-case' and rights.target_id=v_case)
+    and not exists(select 1 from private.public_appeal_provisional_targets hold where hold.case_id=v_case)
+    and not exists(select 1 from private.appeal_document_sessions session where session.intake_id=v_case and session.wrapped_document_key is not null));
+  select jsonb_build_object('intake',to_jsonb(source),'appeal',(select to_jsonb(appeal) from public.appeal_intakes appeal where appeal.id=source_case),
+   'decisions',(select jsonb_agg(to_jsonb(outcome) order by outcome.id) from private.public_appeal_document_decisions outcome where outcome.case_id=source_case),
+   'documents',(select jsonb_agg(to_jsonb(doc) order by doc.id) from private.appeal_documents doc where doc.intake_id=source_case))
+   into result from private.new_public_appeal_intakes source where source.id=source_case;
+  flags:=flags||jsonb_build_object('sourceUnchanged',result=source_before,'targetsUnchanged',target_before=jsonb_build_object(
+   'profiles',(select coalesce(jsonb_agg(to_jsonb(profile) order by profile.id),'[]') from public.profiles profile),
+   'files',(select coalesce(jsonb_agg(to_jsonb(file) order by file.id),'[]') from public.genome_files file),'subjects',(select coalesce(jsonb_agg(to_jsonb(subject) order by subject.id),'[]') from public.subjects subject),
+   'cohorts',(select coalesce(jsonb_agg(to_jsonb(cohort) order by cohort.id),'[]') from public.embryo_cohorts cohort)));
+  flags:=flags||jsonb_build_object('referenceRetired',private.public_appeal_underlying_binding_v1(
+   prepared#>>'{frame,underlyingDecision,decisionReferenceHash}',jsonb_build_object('1',contact_digest)) is null,
+   'discardedSourceKeyNotRevived',not exists(select 1 from private.appeal_document_sessions session
+    join private.public_appeal_document_decisions outcome on outcome.original_document_id=session.document_id
+    where outcome.id=source_outcome and session.wrapped_document_key is not null));
+  perform set_config('request.jwt.claims','{"role":"service_role"}',true);
+  result:=public.prepare_new_public_appeal_v1('access-or-review-appeal',pg_temp.h('reversed-source-payload'),pg_temp.h('reversed-source-form'),
+   jsonb_build_object('1',contact_digest),jsonb_build_object('1',pg_temp.h('reversed-source-identifier')),
+   jsonb_build_object('1',pg_temp.h('reversed-source-network')),reference_hash);
+  flags:=flags||jsonb_build_object('retiredIntakeRefused',result is null);
+  perform pg_temp.prior_appeal_reviewer_jwt(p_same_account);
+  begin
+   update private.public_appeal_case_decisions set corrected_prior_decision_revision=corrected_prior_decision_revision+1 where case_id=v_case;
+   raise exception 'append-only correction was rewritten';
+  exception when insufficient_privilege then null;end;
+  begin
+   perform public.reverse_public_appeal_prior_decision_v1(v_case,(prepared#>>'{frame,underlyingDecision,decisionRevision}')::bigint,(context->>'reviewRevision')::bigint,
+    (context->>'evidenceRevision')::bigint,pg_temp.h('reversal-outcome'),decode(repeat('ab',48),'hex'));
+   raise exception 'closed reversal replay admitted';
+  exception when insufficient_privilege then null;end;
+  raise exception using errcode='PZ002',message='restore synthetic upheld case';
+ exception when sqlstate 'PZ002' then null;
+ end;
+ return flags;
+end $test$;
+create temporary table prior_appeal_reversal_result as select pg_temp.prior_appeal_reverse_probe() value;
+select ok((value->>'distinctPrincipalNativeBinding')::boolean and (value->>'wholeApprovedNativeSet')::boolean,
+ 'same-recipient independent own-MFA and all three whole-read approved documents bind reversal') from prior_appeal_reversal_result;
+select ok((value->>'incompleteClosed')::boolean and (value->>'pendingClosed')::boolean and (value->>'refusalsAtomic')::boolean,
+ 'missing ACKs, foreign reviewer/recipient and stale prior/review/evidence revisions create no correction') from prior_appeal_reversal_result;
+select ok((value->>'nativeUpheld')::boolean and (value->>'terminalDisposal')::boolean,
+ 'exact prior_decision_reversed receipt appends successor revisions and closes only this appeal') from prior_appeal_reversal_result;
+select ok((value->>'sourceUnchanged')::boolean and (value->>'targetsUnchanged')::boolean and (value->>'discardedSourceKeyNotRevived')::boolean,
+ 'whole immutable source and every profile/file/subject/cohort bag stay unchanged with no key revival') from prior_appeal_reversal_result;
+select ok((value->>'referenceRetired')::boolean and (value->>'retiredIntakeRefused')::boolean,
+ 'the reversed reference cannot bind another genuine intake or be reversed again') from prior_appeal_reversal_result;
+select ok((pg_temp.prior_appeal_reverse_probe(true)->>'sameAccountRefused')::boolean,
+ 'a different principal of the original reviewer account cannot reverse its own decision');
+select ok((pg_temp.prior_appeal_reverse_probe(false,true)->>'nativeUpheld')::boolean,
+ 'lawfully removed source evidence permits only coded correction, not recreated bytes or authority');
+create temporary table prior_genetic_reversal_result as select pg_temp.prior_appeal_reverse_probe(false,false,true) value;
+select ok((value->>'distinctPrincipalNativeBinding')::boolean and (value->>'wholeApprovedNativeSet')::boolean
+ and (value->>'nativeUpheld')::boolean and (value->>'sourceUnchanged')::boolean and (value->>'targetsUnchanged')::boolean,
+ 'real genetic-parent rejection, approved photo and new complete three-file ACK set permit only its append-only correction') from prior_genetic_reversal_result;
+select is((select count(*) from private.public_appeal_case_decisions),0::bigint,'rollback restores every correction and nonce');
+select is((select count(*) from unnest(array['anon','authenticated','service_role','inherit_upload_only']) role_name
+ where has_function_privilege(role_name,'private.public_appeal_reversal_binding_v1(uuid)','execute')
+ or has_function_privilege(role_name,'private.public_appeal_underlying_before_reversal_v1(text,jsonb)','execute')),0::bigint,
+ 'API roles cannot bypass the correction/source authority');
+
 create temporary table prior_appeal_uphold_result as select pg_temp.prior_appeal_uphold_probe() value;
 select ok((value->>'distinctPrincipalNativeBinding')::boolean,'real prior source and same recipient select a genuinely different current named reviewer') from prior_appeal_uphold_result;
 select ok((value->>'incompleteClosed')::boolean and (value->>'pendingClosed')::boolean,
  'incomplete, pending and not-yet-delivered evidence cannot enable uphold') from prior_appeal_uphold_result;
-select ok((value->>'wholeApprovedNativeSet')::boolean,'all three real native full-read ACK and documentary approval doors enable only registered uphold') from prior_appeal_uphold_result;
+select ok((value->>'wholeApprovedNativeSet')::boolean,'all three real native full-read ACK and documentary approval doors enable the exact registered prior actions') from prior_appeal_uphold_result;
 select ok((value->>'refusalsAtomic')::boolean,'foreign reviewer, stale source recipient and either stale revision record no outcome or nonce') from prior_appeal_uphold_result;
 select ok((value->>'nativeUpheld')::boolean,'same-recipient independent MFA uphold records only exact prior outcome provenance') from prior_appeal_uphold_result;
 select ok((value->>'terminalDisposal')::boolean,'uphold closes this case and shreds its keys, contacts, sessions and provisional hold') from prior_appeal_uphold_result;
@@ -783,6 +1077,32 @@ begin
  return passed;
 end $clock_probe$;
 select ok(pg_temp.appeal_information_deadline_probe(),'same-shaped live control admits review while an initially past immutable case refuses rotation with no new candidate');
+
+create function pg_temp.appeal_reversal_deadline_probe() returns boolean language plpgsql as $clock_probe$
+declare expired_id uuid;before_outcomes jsonb;before_targets jsonb;passed boolean:=false;
+begin
+ begin
+  -- The clock is past at INSERT, never renewed or rewritten by the test.
+  expired_id:=pg_temp.appeal_information_clock_fixture(true);
+  select coalesce(jsonb_agg(to_jsonb(source) order by source.case_id),'[]') into before_outcomes from private.public_appeal_case_decisions source;
+  select jsonb_build_object('profiles',(select coalesce(jsonb_agg(to_jsonb(source) order by source.id),'[]') from public.profiles source),
+   'files',(select coalesce(jsonb_agg(to_jsonb(source) order by source.id),'[]') from public.genome_files source),
+   'subjects',(select coalesce(jsonb_agg(to_jsonb(source) order by source.id),'[]') from public.subjects source),
+   'cohorts',(select coalesce(jsonb_agg(to_jsonb(source) order by source.id),'[]') from public.embryo_cohorts source)) into before_targets;
+  perform pg_temp.final_case_reviewer_jwt();
+  begin
+   perform public.reverse_public_appeal_prior_decision_v1(expired_id,1,1,1,repeat('7',64),decode(repeat('ab',48),'hex'));
+   raise exception 'expired original case admitted correction';exception when insufficient_privilege then null;end;
+  passed:=before_outcomes=(select coalesce(jsonb_agg(to_jsonb(source) order by source.case_id),'[]') from private.public_appeal_case_decisions source)
+   and before_targets=jsonb_build_object('profiles',(select coalesce(jsonb_agg(to_jsonb(source) order by source.id),'[]') from public.profiles source),
+    'files',(select coalesce(jsonb_agg(to_jsonb(source) order by source.id),'[]') from public.genome_files source),
+    'subjects',(select coalesce(jsonb_agg(to_jsonb(source) order by source.id),'[]') from public.subjects source),
+    'cohorts',(select coalesce(jsonb_agg(to_jsonb(source) order by source.id),'[]') from public.embryo_cohorts source));
+  raise exception using errcode='PZ004',message='restore initially expired reversal clock fixture';
+ exception when sqlstate 'PZ004' then null;end;
+ return passed;
+end $clock_probe$;
+select ok(pg_temp.appeal_reversal_deadline_probe(),'initially expired original case refuses reversal with complete outcome/nonce and target preservation');
 
 select is((select count(*) from unnest(array['anon','authenticated','service_role','inherit_upload_only']) role_name
  where has_table_privilege(role_name,'private.public_appeal_information_requests','select,insert,update,delete')

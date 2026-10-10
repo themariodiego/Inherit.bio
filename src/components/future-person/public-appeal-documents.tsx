@@ -95,7 +95,7 @@ export function PublicAppealDocuments({ view, documentNonce, completeNonce, docu
   {notices.map((notice, index) => <div key={index} className="mt-4"><p>{LABELS[notice.documentKind as Kind]}: {notice.decision === "approved" ? "approved" : "refused"}.</p>
    {notice.decisionReference && <><p>Keep this reference if you ask for a review of this decision:</p><code>{notice.decisionReference}</code></>}
   </div>)}
-  {failure && <p role="status">This private session is not available. No new link or access has been created.</p>}
+  {failure && <p role="status">This link is not available. No new link or access has been created.</p>}
  </section>;
  return <section className="mx-auto max-w-3xl px-6 py-section"><h1 className="display display-lg">Files for your request</h1>
   {view.informationRequested && <p className="mt-4">You were asked for more files for this same request. Its original deadline has not changed.</p>}

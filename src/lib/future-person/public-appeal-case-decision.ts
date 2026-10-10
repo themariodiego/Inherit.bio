@@ -18,7 +18,8 @@ const priorDecision = z.object({ decisionId: z.uuid(), sourceCaseId: z.uuid(), d
 }).strict();
 export const appealCaseAllowedDecisions = z.union([z.tuple([z.literal("reject")]), z.tuple([z.literal("reject"), z.literal("uphold")]),
  z.tuple([z.literal("reject"), z.literal("needs-more-information")]),
- z.tuple([z.literal("reject"), z.literal("uphold"), z.literal("needs-more-information")])]);
+ z.tuple([z.literal("reject"), z.literal("uphold"), z.literal("needs-more-information")]),
+ z.tuple([z.literal("reject"), z.literal("uphold"), z.literal("reverse-prior-decision"), z.literal("needs-more-information")])]);
 /** This distinct native context admits incomplete evidence for rejection or a nonfinal information request. It does not relax the existing complete documentary decoder. */
 export const appealCaseContext = z.object({ contextVersion: z.literal("appeal-case-final-context-v1"), caseId: z.uuid(),
   caseKind: z.enum(["subject-objection", "genetic-parent-objection", "access-or-review-appeal"]),
@@ -40,7 +41,7 @@ export const appealCaseContext = z.object({ contextVersion: z.literal("appeal-ca
     || row.documentDecisionsAvailable && (row.documents.length !== (row.caseKind === "access-or-review-appeal" ? 3 : 2))) {
     context.addIssue({ code: "custom", message: "Appeal unavailable" });
   }
-  if (row.allowedDecisions.some(decision => decision === "uphold") && (row.caseKind !== "access-or-review-appeal" || !row.priorDecision
+  if (row.allowedDecisions.some(decision => decision === "uphold" || decision === "reverse-prior-decision") && (row.caseKind !== "access-or-review-appeal" || !row.priorDecision
     || row.priorDecision.sourceCaseId === row.caseId || !row.documentDecisionsAvailable || row.documents.length !== 3
     || row.documents.some(doc => doc.decision !== "approved")
     || !kinds.includes(row.priorDecision.requiredAuthorityKind)
@@ -78,11 +79,16 @@ export function currentPublicAppealCaseReviewBody(raw: unknown, caseId: string, 
   return body && body.caseId === caseId && Date.parse(body.deadline) > now ? body : null;
 }
 
-export const appealCaseDecisionBody = z.object({ decision: z.enum(["reject", "uphold", "needs-more-information"]), reviewRevision: z.number().int().positive().safe(),
+const decisionFields = { reviewRevision: z.number().int().positive().safe(),
   reason: z.string().max(8000).transform(value => value.normalize("NFC").trim()).refine(value => [...value].length >= 20
     && [...value].length <= 2000 && !/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f-\u009f]/u.test(value)),
   nonce: z.string().min(1).max(2048),
-}).strict();
+};
+export const appealCaseDecisionBody = z.union([
+ z.object({ decision: z.enum(["reject", "uphold", "needs-more-information"]), ...decisionFields }).strict(),
+ z.object({ decision: z.literal("reverse-prior-decision"), ...decisionFields,
+  priorDecisionRevision: z.number().int().positive().safe(), evidenceRevision: z.number().int().positive().safe() }).strict(),
+]);
 
 type Binding = { caseId: string; accountId: string; sessionId: string; reviewRevision: number; evidenceRevision: number };
 const bindingHash = (value: Binding) => sha256Hex(JSON.stringify(["public-appeal-final-review-v1", value.caseId,
