@@ -129,3 +129,95 @@ test("/auth/reset-password processing: the submit control says Working and refus
     await target.getByLabel("New password").fill("synthetic-a-different-password");
   }, "Update password");
 });
+
+test("auth forms without JavaScript exclude credentials from native submission", async ({ browser, baseURL }) => {
+  const context = await browser.newContext({ baseURL, javaScriptEnabled: false });
+  const page = await context.newPage();
+  let authRequests = 0;
+  context.on("request", (request) => {
+    if (new URL(request.url()).pathname.startsWith("/auth/v1/")) authRequests += 1;
+  });
+  try {
+    // The existing sign-in useSearchParams/Suspense subtree is client-only
+    // on the built route. It has no initial credential form to submit.
+    await page.goto("/auth/sign-in");
+    await expect(page.locator("main form")).toHaveCount(0);
+    await expect(page.locator("main input[name]")).toHaveCount(0);
+    expect(new URL(page.url()).search).toBe("");
+    for (const path of ["/auth/sign-up", "/auth/forgot-password", "/auth/reset-password"]) {
+      await page.goto(path);
+      const form = page.locator("form");
+      await expect(form.locator("fieldset")).toBeDisabled();
+      await expect(form.getByRole("button")).toBeDisabled();
+      for (const input of await form.locator("input").all()) await expect(input).toBeDisabled();
+      await expect(form.getByText("Turn on JavaScript in your browser to use this form.", { exact: true })).toBeVisible();
+      // Populate the DOM as autofill could, then exercise the browser's real
+      // native entry-list/submission algorithm, with application JS disabled.
+      await form.evaluate((node) => {
+        for (const input of node.querySelectorAll("input")) {
+          input.value = input.type === "email" ? "no-js-synthetic@e2e.local" : "synthetic-no-js-password";
+        }
+      });
+      expect(await form.evaluate((node) => [...new FormData(node as HTMLFormElement).keys()])).toEqual([]);
+      const submitted = page.waitForRequest((request) => request.isNavigationRequest());
+      await form.evaluate((node) => (node as HTMLFormElement).requestSubmit());
+      const request = await submitted;
+      expect(request.method()).toBe("GET");
+      expect(new URL(request.url()).pathname).toBe(path);
+      expect(new URL(request.url()).search).toBe("");
+      expect(request.postData()).toBeNull();
+    }
+    expect(authRequests).toBe(0);
+  } finally {
+    await context.close();
+  }
+});
+
+test("/auth/forgot-password keeps credentials closed until hydration and then uses the original pending auth request", async ({ page }) => {
+  let releaseScripts!: () => void;
+  let releaseAuth!: () => void;
+  const scriptsHeld = new Promise<void>((resolve) => { releaseScripts = resolve; });
+  const authHeld = new Promise<void>((resolve) => { releaseAuth = resolve; });
+  let scriptRequests = 0;
+  let authRequests = 0;
+  await page.route(/\/_next\/static\/.*\.js(?:\?.*)?$/u, async (route) => {
+    scriptRequests += 1;
+    await scriptsHeld;
+    await route.continue();
+  });
+  await page.route("**/auth/v1/**", async (route) => {
+    authRequests += 1;
+    await authHeld;
+    await route.continue();
+  });
+  try {
+    // Waiting for commit permits the server-rendered form to be inspected
+    // while deferred client scripts are genuinely held at the network edge.
+    await page.goto("/auth/forgot-password", { waitUntil: "commit" });
+    const form = page.locator("form");
+    const submit = form.getByRole("button", { name: "Send reset link", exact: true });
+    await expect(form.locator("fieldset")).toBeDisabled();
+    await expect(form.getByLabel("Email")).toBeDisabled();
+    await expect(submit).toBeDisabled();
+    expect(await form.evaluate((node) => [...new FormData(node as HTMLFormElement).keys()])).toEqual([]);
+    await expect.poll(() => scriptRequests).toBeGreaterThan(0);
+    expect(authRequests).toBe(0);
+    expect(new URL(page.url()).search).toBe("");
+
+    releaseScripts();
+    await expect(submit).toBeEnabled();
+    await expect(form.getByLabel("Email")).toBeEnabled();
+    await form.getByLabel("Email").fill(`hydration-${randomUUID()}@e2e.local`);
+    await submit.click();
+    const working = form.getByRole("button", { name: "Working…", exact: true });
+    await expect(working).toBeVisible();
+    await expect(working).toBeDisabled();
+    await expect(form.getByRole("alert")).toHaveCount(0);
+    await expect.poll(() => authRequests).toBeGreaterThan(0);
+    expect(new URL(page.url()).pathname).toBe("/auth/forgot-password");
+    expect(new URL(page.url()).search).toBe("");
+  } finally {
+    releaseScripts();
+    releaseAuth();
+  }
+});
