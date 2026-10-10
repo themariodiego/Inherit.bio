@@ -125,13 +125,15 @@ async function acquireSimulation(input: ParticipantCInput, signal: AbortSignal, 
     stage = "upload-capacity";
     const capacity = "insert into private.upload_authorization_config(singleton,auth_issuer,maximum_array_bytes,maximum_vcf_bytes,maximum_account_bytes,maximum_active_uploads) values(true,'http://127.0.0.1:54321/auth/v1',52428800,52428800,1073741824,32) on conflict(singleton) do nothing;";
     await io.command("docker", ["exec", "supabase_db_sequence", "psql", "-XAtq", "-U", "postgres", "-d", "postgres", "-v", "ON_ERROR_STOP=1", "-c", capacity], { signal });
-    stage = "runtime-preflight";
-    runtime = await startCiBrowserRuntime(environment(), true, operator);
     const pair = generateKeyPairSync("ec", { namedCurve: "prime256v1" });
     const signer = JSON.stringify({ ...pair.privateKey.export({ format: "jwk" }), kid: randomUUID() });
     const publicJwk = { ...pair.publicKey.export({ format: "jwk" }), kid: JSON.parse(signer).kid, alg: "ES256", use: "sig" };
     stage = "storage-proxy";
     storageProxy = await startLocalStorageProxy("sequence", publicJwk, environment());
+    // The unchanged transport probe temporarily owns the main app port. It
+    // must settle before the isolated runtime publishes that same port.
+    stage = "runtime-preflight";
+    runtime = await startCiBrowserRuntime(environment(), true, operator);
     stage = "app-configuration";
     const appEnvironments = freshT6AppEnvironments(process.env, signer);
     stage = "mail-capture";

@@ -7,7 +7,7 @@ import assert from "node:assert/strict";
 import http from "node:http";
 import { chromium, request as playwrightRequest } from "@playwright/test";
 import { chromiumStorageProxyArgs } from "./local-storage-browser-config";
-import { ciRuntimeSetupFailure, CI_RUNTIME_SETUP_STAGES } from "./ci-browser-runtime-failure";
+import { ciRuntimeCleanupFailure, ciRuntimeSetupFailure, CI_RUNTIME_SETUP_STAGES } from "./ci-browser-runtime-failure";
 
 export async function verifyBrowserTransport(proxy: string, forwarded: () => number, environment?: Record<string, string>): Promise<void> {
   const origin = "http://localhost:3100";
@@ -27,11 +27,13 @@ export async function verifyBrowserTransport(proxy: string, forwarded: () => num
       cookieUnchanged: request.headers.cookie === "inherit_transport=synthetic",
       bodyUnchanged: Buffer.concat(chunks).toString() === "synthetic transport body" }));
   });
-  await new Promise<void>((resolve, reject) => { server.once("error", reject); server.listen(3100, resolve); });
   let browser: Awaited<ReturnType<typeof chromium.launch>> | undefined;
   let standalone: Awaited<ReturnType<typeof playwrightRequest.newContext>> | undefined;
-  let stage: typeof CI_RUNTIME_SETUP_STAGES[number] = "transport-browser-launch";
+  let failure: Error | undefined;
+  let stage: typeof CI_RUNTIME_SETUP_STAGES[number] = "transport-listen";
   try {
+    await new Promise<void>((resolve, reject) => { server.once("error", reject); server.listen(3100, resolve); });
+    stage = "transport-browser-launch";
     browser = await chromium.launch({ args: chromiumStorageProxyArgs(proxy), env: environment });
     for (const name of ["regular", "manual-context"]) {
       stage = "transport-browser-page";
@@ -89,11 +91,17 @@ export async function verifyBrowserTransport(proxy: string, forwarded: () => num
       cookieUnchanged: false, bodyUnchanged: true }, "Standalone APIRequest preserves its own independent identity");
     assert.equal(forwarded(), beforeStandalone, "Standalone APIRequest must remain direct HTTP");
   } catch (error) {
-    throw ciRuntimeSetupFailure(stage, error);
+    failure = ciRuntimeSetupFailure(stage, error);
+    throw failure;
   } finally {
-    await standalone?.dispose();
-    await browser?.close();
-    server.closeAllConnections();
-    await new Promise<void>(resolve => server.close(() => resolve()));
+    try {
+      await standalone?.dispose();
+      await browser?.close();
+      server.closeAllConnections();
+      await new Promise<void>(resolve => server.close(() => resolve()));
+    } catch (error) {
+      const cleanup = ciRuntimeSetupFailure("transport-cleanup", error);
+      throw failure ? ciRuntimeCleanupFailure(failure, cleanup) : cleanup;
+    }
   }
 }
