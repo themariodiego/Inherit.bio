@@ -55,3 +55,13 @@ export function forwardProfileDiagnostics(streams:readonly (Readable|null|undefi
   }
   return ()=>{for(const close of closers)close();};
 }
+/** The relay's stdout carries synthetic message bodies. Only its stderr may
+ * supply canonical, closed mail startup facts through the existing filter. */
+export function forwardMailRelayDiagnostics(stderr:Readable|null|undefined,emit:(line:string)=>void){
+  return forwardProfileDiagnostics([stderr],line=>{
+    if(!line.startsWith(APP_LAUNCHER_DIAGNOSTIC_PREFIX))return;
+    const value=JSON.parse(line.slice(APP_LAUNCHER_DIAGNOSTIC_PREFIX.length));
+    if(value.mode==="mail"&&value.port===null
+      &&(value.stage==="runtime-proof"||value.stage==="mail-relay"))emit(line);
+  });
+}
