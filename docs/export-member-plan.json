@@ -212,6 +212,10 @@
       "disposition": "excluded-internal",
       "reason": "Attempt-owned pending embryo variants, removed at terminal publication or failure. Published embryo variants have their own deferred export class."
     },
+    "private.embryo_test_statistical_admission": {
+      "disposition": "excluded-protected",
+      "reason": "Immutable disposable TEST reference admission, including complete native cluster, source and runtime ownership bindings. This protected test authority is never a person's archive content."
+    },
     "private.embryo_withdrawal_credentials": {
       "disposition": "excluded-credential",
       "reason": "The binding of each upload-time notice's withdrawal credential. Exporting it would be a security defect, not completeness."

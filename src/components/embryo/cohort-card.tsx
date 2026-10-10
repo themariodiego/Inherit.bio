@@ -29,11 +29,14 @@ import type { CarrierLibraryCoverageRow } from "@/lib/embryos/carrier-library-re
 import { allowedConditions } from "@/lib/embryos/allowed-conditions";
 import { CARRIER_LIBRARY_READ_FAILED } from "@/copy/embryos/carrier-library";
 import { route } from "@/lib/primary-routes";
+import type { StatisticalCoverageRead } from "@/lib/embryos/statistical-read";
+import { StatisticalCoverage } from "./statistical-coverage";
 
 export interface CohortCardProps {
   cohort: EmbryoCohortView;
   /** The register's copy when this cohort's contributors refuse the capability; null when permitted. */
   jurisdictionCopy: string | null;
+  statisticalCoverage?: StatisticalCoverageRead | null;
   coverage?: readonly CarrierLibraryCoverageRow[] | null;
   coverageReadFailed?: boolean;
 }
@@ -43,7 +46,7 @@ export function analysisRole(cohort: EmbryoCohortView): string | null {
   return waitingRole(analysisConsent(cohort));
 }
 
-export function CohortCard({ cohort, jurisdictionCopy, coverage = null, coverageReadFailed = false }: CohortCardProps) {
+export function CohortCard({ cohort, jurisdictionCopy, coverage = null, coverageReadFailed = false, statisticalCoverage }: CohortCardProps) {
   const role = analysisRole(cohort);
   const dispositions = new Set(cohort.embryos.map((embryo) => embryo.status));
   const conditionNames = new Map(allowedConditions().map(entry => [entry.condition_id, entry.condition_name]));
@@ -98,6 +101,8 @@ export function CohortCard({ cohort, jurisdictionCopy, coverage = null, coverage
           {waitingForResultsStatus(role)}
         </p>
       ) : null}
+      {statisticalCoverage ? <StatisticalCoverage value={statisticalCoverage}
+        subjectIds={new Map(cohort.embryos.map(embryo => [embryo.id, embryo.subjectId]))} /> : null}
       <p className="text-sm">
         <Link
           href={route("embryos.compare", { query: { cohort: cohort.id } })}

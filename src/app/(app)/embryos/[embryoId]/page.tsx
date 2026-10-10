@@ -38,6 +38,8 @@ import { EmbryoShapeError, type RscEmbryoDetail } from "@/lib/embryos/policy";
 import { projectDetail, type EmbryoQcRow, type EmbryoScoreRow } from "@/lib/embryos/projection";
 import { readEmbryoQcRows } from "@/lib/embryos/qc-reader";
 import { loadSavedEmbryoCarrierHold } from "@/lib/embryos/carrier-hold";
+import { loadSavedEmbryoStatisticalCoverage } from "@/lib/embryos/statistical-read";
+import { StatisticalCoverage } from "@/components/embryo/statistical-coverage";
 import { loadSavedCarrierLibraryCoverage } from "@/lib/embryos/carrier-library-read";
 import { acknowledged } from "@/lib/embryos/tier2";
 import { route } from "@/lib/primary-routes";
@@ -176,11 +178,13 @@ export default async function EmbryoDetailPage(props: PageProps<"/embryos/[embry
       break;
     case "complete": {
       let savedHold: Awaited<ReturnType<typeof loadSavedEmbryoCarrierHold>>;
+      let statisticalCoverage: Awaited<ReturnType<typeof loadSavedEmbryoStatisticalCoverage>>;
       let savedCoverage: Awaited<ReturnType<typeof loadSavedCarrierLibraryCoverage>>;
       try {
         savedCoverage = await loadSavedCarrierLibraryCoverage(user.id, cohort);
         if (savedCoverage) savedHold = { status: "held", reason: "scientific_disclosures_pending" };
         else savedHold = await loadSavedEmbryoCarrierHold(user.id, cohort.id);
+        statisticalCoverage = await loadSavedEmbryoStatisticalCoverage(user.id, cohort.id, cohort.embryos.map(embryo => embryo.id));
         detail = await loadDetail({
           embryo: {
             id: embryo.id,
@@ -235,6 +239,8 @@ export default async function EmbryoDetailPage(props: PageProps<"/embryos/[embry
                 subjectId={embryo.subjectId}
                 conditionNames={new Map(allowedConditions().map(entry => [entry.condition_id, entry.condition_name]))} /> : null}
               <FindingsSection findings={detail.findings} subjectId={embryo.subjectId} />
+              {statisticalCoverage ? <StatisticalCoverage value={statisticalCoverage} embryoId={embryo.id}
+                subjectIds={new Map(cohort.embryos.map(embryo => [embryo.id, embryo.subjectId]))} /> : null}
             </>}
             whatThisDoesntMean={
               <ul className="max-w-measure list-disc space-y-1 pl-5 text-base leading-relaxed text-ink">

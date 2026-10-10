@@ -1,7 +1,14 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const state = vi.hoisted(() => ({ files: new Map<string, string>(), commands: [] as string[][],
   cacheKind: "directory", owner: "", probeFails: false, wrongOwner: false, running: true, exitCode: 0, logs: "ISOLATED_RUNTIME_READY",
-  failCommand: "", failError: undefined as unknown, gateway: "", namespaceState: "", removeFails: false }));
+  failCommand: "", failError: undefined as unknown, gateway: "", namespaceState: "", removeFails: false,
+  statisticalCalls: 0, statisticalFails: false }));
+vi.mock("./embryo-test-statistical-admission", () => ({ installEmbryoTestStatisticalAdmission: () => {
+  state.statisticalCalls++;
+  expect(state.commands.some(command => command.includes("iptables"))).toBe(true);
+  expect(state.commands.some(command => command.includes("ip6tables"))).toBe(true);
+  if (state.statisticalFails) throw new Error("synthetic-private-admission-canary");
+} }));
 vi.mock("./ci-browser-config", async importOriginal => ({
   ...await importOriginal<typeof import("./ci-browser-config")>(),
   // Pure environment/platform refusal is tested separately. These lifecycle
@@ -49,6 +56,7 @@ import { ciRuntimeFailureDiagnostic } from "./ci-browser-runtime-failure";
 beforeEach(() => {
   state.files.clear(); state.commands.length = 0; state.cacheKind = "directory"; state.owner = ""; state.probeFails = false; state.wrongOwner = false; state.running = true; state.exitCode = 0; state.logs = "ISOLATED_RUNTIME_READY";
   state.failCommand = ""; state.failError = undefined; state.gateway = ""; state.namespaceState = ""; state.removeFails = false;
+  state.statisticalCalls = 0; state.statisticalFails = false;
   state.files.set(".next/BUILD_ID", "synthetic-build");
   state.files.set(`${process.cwd()}/.next/cache`, "synthetic-cache-directory");
   vi.stubEnv("RUNNER_TEMP", "/synthetic-ci-tmp");
@@ -61,6 +69,19 @@ beforeEach(() => {
 });
 afterEach(() => { vi.restoreAllMocks(); vi.unstubAllEnvs(); });
 describe("owned isolated CI runtime lifecycle", () => {
+  it("admits the fixed reference only for the actual browser phase after policy proof", async () => {
+    vi.stubEnv("GITHUB_JOB", "browser");
+    const runtime = await startCiBrowserRuntime();
+    expect(state.statisticalCalls).toBe(1);expect(runtime.env.INHERIT_CI_BROWSER_RUNTIME).toBe("ready");runtime.stop();
+  });
+  it("never returns readiness after reference failure and keeps raw diagnostics suppressed", async () => {
+    vi.stubEnv("GITHUB_JOB", "browser");state.statisticalFails = true;
+    let failure: unknown;try { await startCiBrowserRuntime(); } catch (error) { failure = error; }
+    expect(state.statisticalCalls).toBe(1);
+    expect(ciRuntimeFailureDiagnostic(failure)).toMatchObject({ runtimeStage: "statistical-reference-admission" });
+    expect(JSON.stringify(ciRuntimeFailureDiagnostic(failure))).not.toContain("synthetic-private-admission-canary");
+    expect(state.commands.filter(command => command[1] === "rm")).toHaveLength(1);
+  });
   it("starts only after build/policy/TLS proof and removes only its own container once", async () => {
     const runtime = await startCiBrowserRuntime();
     const creation = state.commands.find(command => command[1] === "create")!;

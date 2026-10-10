@@ -81,11 +81,12 @@ describe("the complete account and Future source union", () => {
     expect(read("supabase/tests/v2_contracts.sql")).toContain("174::bigint");
   });
 
-  it("preserves protected/withheld Future classifications and the account provenance exclusions in the 250-table plan", () => {
+  it("preserves protected/withheld Future classifications and the account provenance exclusions in the 251-table plan", () => {
     const plan = JSON.parse(read("docs/export-member-plan.json")) as {
       tables: Record<string, { disposition: string; withheld?: string[]; scope?: string }>;
     };
-    expect(Object.keys(plan.tables)).toHaveLength(250);
+    expect(Object.keys(plan.tables)).toHaveLength(251);
+    expect(plan.tables["private.embryo_test_statistical_admission"]?.disposition).toBe("excluded-protected");
     for (const name of ["private.public_appeal_case_decisions", "private.public_appeal_information_requests"])
       expect(plan.tables[name]?.disposition).toBe("excluded-protected");
     for (const name of ["private.claimed_embryo_ingest_receipts", "private.claimed_embryo_job_receipts"])
