@@ -374,3 +374,19 @@ describe("another adult's held upload under Path B (TEST-LOCAL)", () => {
     expect(mocks.rpc.mock.calls[0][0]).toBe("issue_own_storage_upload_v1");
   });
 });
+
+
+it("mints the unchanged restricted bearer for the exact account/subject/upload staging key", async () => {
+  const key = `${accountId}/${jti}/${uploadId}/${stagingKey}.part`;
+  mocks.rpc.mockResolvedValueOnce({ data: { ...authorization, stagingKey: key }, error: null });
+  const response = await issueSubjectUpload(request());
+  expect(response.status).toBe(201);
+  const receipt = directUploadReceipt.parse(await response.json());
+  expect(receipt.stagingKey).toBe(key);
+  const claims = JSON.parse(Buffer.from(receipt.uploadToken.split(".")[1], "base64url").toString());
+  expect(claims.staging_key).toBe(key);
+  expect(claims.sub).toBe(accountId);
+  expect(claims.upload_session_id).toBe(uploadId);
+  expect(claims.role).toBe("inherit_upload_only");
+  expect(claims).not.toHaveProperty("refresh_token");
+});

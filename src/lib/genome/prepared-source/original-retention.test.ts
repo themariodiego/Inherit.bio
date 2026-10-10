@@ -62,3 +62,16 @@ describe("original retirement executor", () => {
   });
 
 });
+
+
+it("keeps exact namespaced original identity through current recheck, provider ACK and retirement", async () => {
+  const key = `${fileId}/${objectId}/${storageVersion}/${objectKey}.vcf`;
+  const claim = { ...makeClaim(), objectKey: key };
+  const f = fixture({ claim_own_original_retirement_v1: claim, check_own_original_retirement_v1: claim });
+  vi.mocked(fetch).mockResolvedValue(Response.json([{ ...object, name: key }]));
+  expect(await drainOwnOriginalRetirement(f.admin, new AbortController().signal)).toEqual({ processed: 1, failed: 0 });
+  expect(fetch).toHaveBeenCalledExactlyOnceWith("http://127.0.0.1:55321/storage/v1/object/genomes",
+    expect.objectContaining({ method: "DELETE", body: JSON.stringify({ prefixes: [key] }) }));
+  expect(f.rpc).toHaveBeenCalledWith("finish_own_original_retirement_v1", expect.objectContaining({
+    p_expected: claim, p_evidence: expect.objectContaining({ objectKey: key, objectId, storageVersion }) }));
+});

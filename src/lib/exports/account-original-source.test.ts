@@ -136,3 +136,14 @@ describe("actual consumed ordinary original member",()=>{
   expect(vi.getTimerCount()).toBe(0);expect(f.readRange).not.toHaveBeenCalled();
  });
 });
+
+
+it("includes a namespaced original only through its exact current receipt and complete raw-byte archive",async()=>{
+ const f=fixture(false,false,4096),key=`${f.context.actor.accountId}/${f.snapshot.file.subject_id}/${randomUUID()}/${randomUUID()}.vcf`;
+ f.source.objectKey=key;f.snapshot.file.bucket_path=key;
+ const result=await prepareAccountOriginalSource(f.options);
+ expect(await collect(await result.member!.open(f.abort.signal))).toEqual(f.raw);
+ expect(JSON.stringify(result.provenance)).not.toContain(key);
+ f.source.objectKey=key.replace(/\.vcf$/,".txt");
+ await expect(result.check(f.abort.signal)).rejects.toThrow();
+});

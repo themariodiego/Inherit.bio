@@ -27,8 +27,8 @@
         "webhooks.resend"
       ],
       "why": "POST /api/webhooks/resend declares auth \"resend-standard-webhook-signature\" and the register defines no such scheme anywhere: contractDefaults has no \"endpoint:resend-standard-webhook-signature\" key, authContracts holds twelve contracts and none of them is a provider webhook signature, and machineAuthBindings names the seven jobs.* endpoints and not this one. So the one endpoint in the register that a third party calls directly is the one whose authentication is a name with nothing behind it. The route is built (src/app/api/webhooks/resend/route.ts) and its handler is the only description of the check that exists.",
-      "closing": "An authContracts entry for the Standard Webhooks signature scheme \u2014 the header set, the tolerated clock skew, the secret's rotation and the replay window \u2014 plus the contractDefaults line that binds the mode to it.",
-      "blocker": "none known \u2014 this is a transcription gap, not an authority one; the scheme is implemented and undescribed rather than undecided.",
+      "closing": "An authContracts entry for the Standard Webhooks signature scheme — the header set, the tolerated clock skew, the secret's rotation and the replay window — plus the contractDefaults line that binds the mode to it.",
+      "blocker": "none known — this is a transcription gap, not an authority one; the scheme is implemented and undescribed rather than undecided.",
       "notATranscriptionGap": "Re-read 2026-09-10: docs/inherit-v2-brief.md mentions resend only as a dependency (line 63) and its API key in the secret allowlist (line 2579). It describes no webhook endpoint and no contract for one. Filling these entries from the handler would document an endpoint the brief never authorised, making the register agree with the code by abandoning what gives the register its authority. The handler is sound - svix signature verification via Resend.webhooks.verify, 503 when RESEND_WEBHOOK_SECRET is unset, and that key is declared in .env.example. Closing this needs the brief to describe the endpoint (an author's decision) or the register entry reconsidered; it is not closable by transcription, and anyone who transcribes it has quietly changed what the register is."
     }
   ],
@@ -36,7 +36,7 @@
     {
       "routeId": "webhooks.resend",
       "contract": "empty-provider-acknowledgement",
-      "why": "contractDefaults.bindingValidation requires that every response-contract reference \"resolve to an exact registered key\". responseContracts holds 93 entries and \"empty-provider-acknowledgement\" is not one of them. It is the only unresolvable success-contract reference among the 88 endpoints; the other 87 resolve. The name reads like an intent \u2014 acknowledge the provider with an empty body \u2014 and no status, body or header set is written down anywhere.",
+      "why": "contractDefaults.bindingValidation requires that every response-contract reference \"resolve to an exact registered key\". responseContracts holds 93 entries and \"empty-provider-acknowledgement\" is not one of them. It is the only unresolvable success-contract reference among the 88 endpoints; the other 87 resolve. The name reads like an intent — acknowledge the provider with an empty body — and no status, body or header set is written down anywhere.",
       "closing": "A responseContracts entry naming the acknowledgement status and the empty body, or a rebinding of this route to an existing contract. Either way the same name must then appear in responseContractBindings.routes[\"webhooks.resend\"], which is the entry below.",
       "notATranscriptionGap": "Re-read 2026-09-10: docs/inherit-v2-brief.md mentions resend only as a dependency (line 63) and its API key in the secret allowlist (line 2579). It describes no webhook endpoint and no contract for one. Filling these entries from the handler would document an endpoint the brief never authorised, making the register agree with the code by abandoning what gives the register its authority. The handler is sound - svix signature verification via Resend.webhooks.verify, 503 when RESEND_WEBHOOK_SECRET is unset, and that key is declared in .env.example. Closing this needs the brief to describe the endpoint (an author's decision) or the register entry reconsidered; it is not closable by transcription, and anyone who transcribes it has quietly changed what the register is."
     }
@@ -47,8 +47,8 @@
     {
       "routeId": "webhooks.resend",
       "contract": "empty-provider-acknowledgement",
-      "why": "contractDefaults.bindingValidation also requires that \"every endpoint success contract must also appear in responseContractBindings.routes for that route\". responseContractBindings.routes holds 95 keys, all of them real route ids, and webhooks.resend is not among them \u2014 it is the only endpoint of the 88 with no binding entry at all. So this route's failure responses are undeclared as well as its success one: the bindings list is where a route's full response set is written.",
-      "closing": "The binding entry, once the contract above exists. Its failure branches \u2014 signature rejected, replay, unknown message id \u2014 belong in it too.",
+      "why": "contractDefaults.bindingValidation also requires that \"every endpoint success contract must also appear in responseContractBindings.routes for that route\". responseContractBindings.routes holds 95 keys, all of them real route ids, and webhooks.resend is not among them — it is the only endpoint of the 88 with no binding entry at all. So this route's failure responses are undeclared as well as its success one: the bindings list is where a route's full response set is written.",
+      "closing": "The binding entry, once the contract above exists. Its failure branches — signature rejected, replay, unknown message id — belong in it too.",
       "notATranscriptionGap": "Re-read 2026-09-10: docs/inherit-v2-brief.md mentions resend only as a dependency (line 63) and its API key in the secret allowlist (line 2579). It describes no webhook endpoint and no contract for one. Filling these entries from the handler would document an endpoint the brief never authorised, making the register agree with the code by abandoning what gives the register its authority. The handler is sound - svix signature verification via Resend.webhooks.verify, 503 when RESEND_WEBHOOK_SECRET is unset, and that key is declared in .env.example. Closing this needs the brief to describe the endpoint (an author's decision) or the register entry reconsidered; it is not closable by transcription, and anyone who transcribes it has quietly changed what the register is."
     }
   ],
@@ -176,6 +176,63 @@
   ],
   "objectKeyShapeNotDescribedByAnyPrefix": [
     {
+      "id": "prepared-artifact-object",
+      "bucket": "genomes",
+      "segments": 2,
+      "shape": "prepared/<uuid>",
+      "declaredPrefixIds": [
+        "storage.subject-v2",
+        "storage.cohort-v2",
+        "storage.raw-legacy",
+        "storage.raw-flat-legacy"
+      ],
+      "declaredSegments": [
+        4,
+        4,
+        3,
+        1
+      ],
+      "evidence": [
+        {
+          "file": "src/lib/genome/prepared-source/storage-common.ts",
+          "literal": "/^prepared\\/[0-9a-f]{8}-"
+        },
+        {
+          "file": "src/lib/genome/prepared-source/storage-writer.ts",
+          "literal": "`/storage/v1/object/genomes/${receipt.objectKey}`"
+        }
+      ],
+      "why": "Prepared canonical artifacts are written into the same genomes bucket under a two-segment key whose first segment is the literal \"prepared\" — outside every declared prefix, and outside the account partition all three of them describe. preparedObjectKeySchema pins the shape and createPreparedArtifactWriter POSTs to /storage/v1/object/genomes/<that key>, so these are real objects holding derived genome data. The register knows the artifacts exist — policyContracts.own-prepared-object-v1 governs their lifecycle and preparation.scratch-2h their retention — and storagePrefixes, the file that says where bytes live and under what filename and retention contract, does not mention them. The same artifacts have a second home the register describes even less: the v2 receipt path writes them to Cloudflare R2 under a bucket matching ^inherit-prepared-[a-z0-9-]{1,40}$ (src/lib/genome/prepared-source/r2-transport.ts, served by workers/prepared-artifacts/worker.mjs through an env-bound R2 binding), and no storagePrefixes entry names any R2 bucket at all — the register's six prefixes cover four Supabase buckets and no second provider.",
+      "closing": "A storagePrefixes entry for prepared/{artifact_id} in genomes with its filename contract and the preparation.scratch-2h and publication retention ids, and a second entry — or a declared provider field on the first — for the R2 bucket family, so the two homes of the same artifact are both written down. The R2 half is the larger gap: a whole storage provider holding derived genome data is absent from the file that is supposed to enumerate them.",
+      "blocker": "none known — the lifecycle is decided and described in policyContracts; only the storage location is undeclared."
+    }
+  ],
+  "allowlistedBucketNotCreatedNote": "A bucket a database CHECK constraint still admits, which no migration leaves in place. The two database-selected call sites choose their bucket from rows those constraints govern, so an admitted bucket is one a manifest could still name. scripts/route-register-correspondence.test.ts compares this list in both directions with the admitted, undeclared buckets that are not in the route ledger, and fails if a row's bucket is created again.",
+  "allowlistedBucketNotCreated": [
+    {
+      "bucket": "genomes-staging",
+      "droppedBy": "supabase/migrations/20260930140000_drop_genomes_staging_bucket.sql",
+      "constraints": [
+        "public.account_deletion_storage_entries",
+        "public.embryo_ingest_delete_objects"
+      ],
+      "why": "The bucket is dropped: nothing had written it since 20260906133807_cutover_subject_upload_transport.sql, and the drop refuses to run while it holds anything. Two manifest builders still carry the literal (D-130), public.claim_due_account_deletion_v1 and public.prepare_embryo_ingest_unwind_v1, so the CHECK constraints on the two tables they fill still admit it. The account-deletion leg joins storage.objects on the bucket and so matches nothing. The embryo-ingest leg does not join; ingest is unbuilt (G2.6), so nothing runs it.",
+      "closing": "Fix D-130 in both builders (read upload_sessions.storage_bucket instead of the literal), then drop 'genomes-staging' from both CHECK constraints and remove this row. The embryo half belongs to the embryo-ingest work."
+    },
+    {
+      "bucket": "generated-artifacts",
+      "droppedBy": "supabase/migrations/20260930140100_drop_generated_artifacts_bucket.sql",
+      "constraints": [
+        "public.genome_storage_objects",
+        "public.account_deletion_storage_entries",
+        "public.embryo_ingest_delete_objects"
+      ],
+      "why": "Owner decision 2026-09-28 (evening): the bucket is dropped and the single-object export archive form it was made for is retired. Nothing in src ever wrote it, and the drop refuses to run while it holds anything or any row still records an object in it. The three column CHECKs written on 2026-08-31 and 2026-09-05 still list the literal, and this list is read from them. None can be reached: the migration adds genome_storage_objects_genomes_only, so a recorded object is a genome source in genomes and never an export archive, and account-deletion manifests copy their bucket from those rows. No function carries the literal as a bucket; the two own-report purge functions carry it as the retention target id over database rows, which is a different name and stays.",
+      "closing": "Drop 'generated-artifacts' from the three column CHECKs, which also removes this row. It needs no other change; the embryo table's CHECK belongs to the embryo-ingest work, so the three go together when that work next touches it."
+    }
+  ],
+  "sourceResolvedObjectKeyShapes": [
+    {
       "id": "genomes-bare-uuid-object",
       "bucket": "genomes",
       "segments": 1,
@@ -208,62 +265,15 @@
           "literal": "bucket: z.literal(\"genomes\"), stagingKey: uuid, finalKey: uuid,"
         }
       ],
-      "why": "The register declares three prefixes for the genomes bucket and every one of them partitions the bucket by account first: {account_id}/{subject_id}/{upload_id}/{filename}, {account_id}/{cohort_id}/{upload_id}/{filename}, and the legacy {user_id}/{uuid}/{name}. The live own-upload path uses none of them. private.issue_own_storage_upload_v1 sets staging_object_name to gen_random_uuid()::text and storage_bucket to 'genomes', and private finalization sets final_object_name to another bare gen_random_uuid(); both are single-segment keys at the root of the bucket. So the persistent object holding a person's genome sits at /<uuid>, and storage.subject-v2 describes a four-segment path that nothing writes. The filename half of the contract is honoured \u2014 the name is server-generated, opaque and single-segment, and no original filename reaches it \u2014 and the access half does not depend on the folder, because the upload RLS policy binds the exact server-generated key and the upload session's jti rather than a path prefix. What is not honoured is the declared shape itself, and with it the account and subject partition that the prefix, not the policy, is the record of.",
-      "closing": "Decide which document moves. Either the two prefixes are rewritten to the flat server-generated key the database actually issues \u2014 in which case the account and subject binding has to be stated as what it is, a database join rather than a path \u2014 or issuance and finalization are changed to build the declared path. The first is the smaller change and the more honest one; the second is what the register currently claims.",
-      "blocker": "authority \u2014 both halves are binding documents, and which one is wrong is an owner decision, not an implementation one."
-    },
-    {
-      "id": "prepared-artifact-object",
-      "bucket": "genomes",
-      "segments": 2,
-      "shape": "prepared/<uuid>",
-      "declaredPrefixIds": [
-        "storage.subject-v2",
-        "storage.cohort-v2",
-        "storage.raw-legacy"
-      ],
-      "declaredSegments": [
-        4,
-        4,
-        3
-      ],
-      "evidence": [
-        {
-          "file": "src/lib/genome/prepared-source/storage-common.ts",
-          "literal": "/^prepared\\/[0-9a-f]{8}-"
-        },
-        {
-          "file": "src/lib/genome/prepared-source/storage-writer.ts",
-          "literal": "`/storage/v1/object/genomes/${receipt.objectKey}`"
-        }
-      ],
-      "why": "Prepared canonical artifacts are written into the same genomes bucket under a two-segment key whose first segment is the literal \"prepared\" \u2014 outside every declared prefix, and outside the account partition all three of them describe. preparedObjectKeySchema pins the shape and createPreparedArtifactWriter POSTs to /storage/v1/object/genomes/<that key>, so these are real objects holding derived genome data. The register knows the artifacts exist \u2014 policyContracts.own-prepared-object-v1 governs their lifecycle and preparation.scratch-2h their retention \u2014 and storagePrefixes, the file that says where bytes live and under what filename and retention contract, does not mention them. The same artifacts have a second home the register describes even less: the v2 receipt path writes them to Cloudflare R2 under a bucket matching ^inherit-prepared-[a-z0-9-]{1,40}$ (src/lib/genome/prepared-source/r2-transport.ts, served by workers/prepared-artifacts/worker.mjs through an env-bound R2 binding), and no storagePrefixes entry names any R2 bucket at all \u2014 the register's six prefixes cover four Supabase buckets and no second provider.",
-      "closing": "A storagePrefixes entry for prepared/{artifact_id} in genomes with its filename contract and the preparation.scratch-2h and publication retention ids, and a second entry \u2014 or a declared provider field on the first \u2014 for the R2 bucket family, so the two homes of the same artifact are both written down. The R2 half is the larger gap: a whole storage provider holding derived genome data is absent from the file that is supposed to enumerate them.",
-      "blocker": "none known \u2014 the lifecycle is decided and described in policyContracts; only the storage location is undeclared."
-    }
-  ],
-  "allowlistedBucketNotCreatedNote": "A bucket a database CHECK constraint still admits, which no migration leaves in place. The two database-selected call sites choose their bucket from rows those constraints govern, so an admitted bucket is one a manifest could still name. scripts/route-register-correspondence.test.ts compares this list in both directions with the admitted, undeclared buckets that are not in the route ledger, and fails if a row's bucket is created again.",
-  "allowlistedBucketNotCreated": [
-    {
-      "bucket": "genomes-staging",
-      "droppedBy": "supabase/migrations/20260930140000_drop_genomes_staging_bucket.sql",
-      "constraints": [
-        "public.account_deletion_storage_entries",
-        "public.embryo_ingest_delete_objects"
-      ],
-      "why": "The bucket is dropped: nothing had written it since 20260906133807_cutover_subject_upload_transport.sql, and the drop refuses to run while it holds anything. Two manifest builders still carry the literal (D-130), public.claim_due_account_deletion_v1 and public.prepare_embryo_ingest_unwind_v1, so the CHECK constraints on the two tables they fill still admit it. The account-deletion leg joins storage.objects on the bucket and so matches nothing. The embryo-ingest leg does not join; ingest is unbuilt (G2.6), so nothing runs it.",
-      "closing": "Fix D-130 in both builders (read upload_sessions.storage_bucket instead of the literal), then drop 'genomes-staging' from both CHECK constraints and remove this row. The embryo half belongs to the embryo-ingest work."
-    },
-    {
-      "bucket": "generated-artifacts",
-      "droppedBy": "supabase/migrations/20260930140100_drop_generated_artifacts_bucket.sql",
-      "constraints": [
-        "public.genome_storage_objects",
-        "public.account_deletion_storage_entries",
-        "public.embryo_ingest_delete_objects"
-      ],
-      "why": "Owner decision 2026-09-28 (evening): the bucket is dropped and the single-object export archive form it was made for is retired. Nothing in src ever wrote it, and the drop refuses to run while it holds anything or any row still records an object in it. The three column CHECKs written on 2026-08-31 and 2026-09-05 still list the literal, and this list is read from them. None can be reached: the migration adds genome_storage_objects_genomes_only, so a recorded object is a genome source in genomes and never an export archive, and account-deletion manifests copy their bucket from those rows. No function carries the literal as a bucket; the two own-report purge functions carry it as the retention target id over database rows, which is a different name and stays.",
-      "closing": "Drop 'generated-artifacts' from the three column CHECKs, which also removes this row. It needs no other change; the embryo table's CHECK belongs to the embryo-ingest work, so the three go together when that work next touches it."
+      "why": "The register declares three prefixes for the genomes bucket and every one of them partitions the bucket by account first: {account_id}/{subject_id}/{upload_id}/{filename}, {account_id}/{cohort_id}/{upload_id}/{filename}, and the legacy {user_id}/{uuid}/{name}. The live own-upload path uses none of them. private.issue_own_storage_upload_v1 sets staging_object_name to gen_random_uuid()::text and storage_bucket to 'genomes', and private finalization sets final_object_name to another bare gen_random_uuid(); both are single-segment keys at the root of the bucket. So the persistent object holding a person's genome sits at /<uuid>, and storage.subject-v2 describes a four-segment path that nothing writes. The filename half of the contract is honoured — the name is server-generated, opaque and single-segment, and no original filename reaches it — and the access half does not depend on the folder, because the upload RLS policy binds the exact server-generated key and the upload session's jti rather than a path prefix. What is not honoured is the declared shape itself, and with it the account and subject partition that the prefix, not the policy, is the record of.",
+      "closing": "Decide which document moves. Either the two prefixes are rewritten to the flat server-generated key the database actually issues — in which case the account and subject binding has to be stated as what it is, a database join rather than a path — or issuance and finalization are changed to build the declared path. The first is the smaller change and the more honest one; the second is what the register currently claims.",
+      "blocker": "authority — both halves are binding documents, and which one is wrong is an owner decision, not an implementation one.",
+      "sourceResolution": {
+        "date": "2026-10-10",
+        "migration": "supabase/migrations/20261010125904_genome_storage_namespace.sql",
+        "currentProducer": "New own and held-adult staging/final objects use account/subject/upload/server-filename. Existing flat UUIDs remain unchanged under storage.raw-flat-legacy; pure source checks do not establish native/browser/provider acceptance.",
+        "G8.5": "NO: other endpoint/provider/key correspondence gaps remain."
+      }
     }
   ]
 }

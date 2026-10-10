@@ -1,4 +1,5 @@
 import "server-only";
+import { genomeOriginalKeySchema } from "./genome-object-key";
 import { createHash } from "node:crypto";
 import { z } from "zod";
 import { preparedStorageConfig } from "../genome/prepared-source/storage-common";
@@ -7,7 +8,7 @@ const uuid = z.uuid(), positive = z.number().int().positive().safe();
 export const preparedOriginalDownloadSourceSchema = z.object({
   version: z.literal("prepared-original-download-v1"), fileId: uuid, manifestId: uuid,
   sourceRevision: positive, rawSha256: z.string().regex(/^[0-9a-f]{64}$/), bucket: z.literal("genomes"),
-  objectId: uuid, objectKey: uuid, storageVersion: uuid, sizeBytes: positive,
+  objectId: uuid, objectKey: genomeOriginalKeySchema, storageVersion: uuid, sizeBytes: positive,
   expiresAt: z.iso.datetime({ offset: true }),
 }).strict();
 export type PreparedOriginalDownloadSource = z.infer<typeof preparedOriginalDownloadSourceSchema>;

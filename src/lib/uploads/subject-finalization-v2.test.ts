@@ -295,3 +295,29 @@ it("does not trust an existing destination whose full hash differs", async () =>
   expect((await send()).status).toBe(422);
   expect(mocks.rpc.mock.calls.some(([name]) => name === "complete_own_upload_finalization_v1")).toBe(false);
 });
+
+
+it("promotes and cleans the exact current account/subject/upload namespace through the full original pipeline", async () => {
+  const prefix = `${accountId}/${sessionId}/${uploadId}/`;
+  manifest.stagingKey = `${prefix}${stagingKey}.part`;
+  manifest.finalKey = `${prefix}${finalKey}.vcf`;
+  const response = await send();
+  expect(response.status).toBe(200);
+  expect(await response.json()).toEqual(receipt);
+  expect(mocks.copy).toHaveBeenCalledExactlyOnceWith(manifest.stagingKey, manifest.finalKey);
+  expect(mocks.remove).toHaveBeenCalledExactlyOnceWith([manifest.stagingKey]);
+  expect(mocks.rpc).toHaveBeenCalledWith("complete_own_upload_finalization_v1", expect.objectContaining({
+    p_storage_object_id: objectId, p_raw_sha256: hash(source), p_decoded_sha256: hash(source),
+  }));
+});
+
+it("refuses a current namespace for another account before any byte or provider operation", async () => {
+  const prefix = `${sessionId}/${accountId}/${uploadId}/`;
+  manifest.stagingKey = `${prefix}${stagingKey}.part`;
+  manifest.finalKey = `${prefix}${finalKey}.vcf`;
+  expect((await send()).status).toBe(503);
+  expect(mocks.fetch).not.toHaveBeenCalled();
+  expect(mocks.copy).not.toHaveBeenCalled();
+  expect(mocks.remove).not.toHaveBeenCalled();
+  expect(mocks.rpc.mock.calls.some(([name]) => name === "complete_own_upload_finalization_v1")).toBe(false);
+});

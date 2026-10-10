@@ -140,5 +140,10 @@ select is(public.ack_own_upload_finalization_cleanup_v1('76300000-0000-4000-8000
  (select (receipt->>'claim')::uuid from finalization_manifest)),true,'cleanup acknowledgement clears only a fully removed staging pair');
 select is((select count(*) from public.genome_files where user_id='76300000-0000-4000-8000-000000000001'),1::bigint,
  'a rejected upload neither creates a second file nor removes the previously committed file');
+select ok((select split_part(bucket_path,'/',1)=user_id::text
+ and split_part(bucket_path,'/',2)=subject_id::text
+ and split_part(bucket_path,'/',3)=(select id::text from public.upload_sessions where finalized_file_id=(select (receipt->>'fileId')::uuid from finalized_receipt))
+ from public.genome_files where id=(select (receipt->>'fileId')::uuid from finalized_receipt)),
+ 'the immutable final original remains in its exact account/subject/upload namespace');
 select * from finish();
 rollback;

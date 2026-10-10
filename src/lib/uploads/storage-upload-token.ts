@@ -1,4 +1,5 @@
 import "server-only";
+import { genomeStagingKeySchema, genomeKeyMatchesUpload } from "./genome-object-key";
 
 import crypto from "node:crypto";
 import { z } from "zod";
@@ -22,10 +23,11 @@ export const storageUploadAuthorizationSchema = z.object({
   accountAuthSessionRevision: positiveInteger,
   uploadId: uuid,
   jti: uuid,
-  stagingKey: uuid,
+  stagingKey: genomeStagingKeySchema,
   maximumBytes: positiveInteger,
   expiresAt: z.iso.datetime({ offset: true }),
-}).strict().refine(value => value.jti !== value.sessionId);
+}).strict().refine(value => value.jti !== value.sessionId
+  && genomeKeyMatchesUpload(value.stagingKey, value.uploadId, value.accountId));
 export type StorageUploadAuthorization = z.infer<typeof storageUploadAuthorizationSchema>;
 
 export class UploadTokenUnavailable extends Error {

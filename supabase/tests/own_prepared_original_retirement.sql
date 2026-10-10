@@ -109,6 +109,8 @@ select is(public.authorize_own_prepared_original_v1('89800000-0000-4000-8000-000
  (select value from pub_receipts where label='download'),'live chunk authorization returns same captured source/deadline');
 select is(public.claim_own_original_retirement_v1(repeat('c',64)),null::jsonb,'original cannot retire before its immutable deadline');
 reset role;
+select is((select object_key from private.own_original_retirements where file_id=pg_temp.file_id()),
+ (select bucket_path from public.genome_files where id=pg_temp.file_id()),'retirement preserves the exact complete original locator without UUID truncation');
 select is((select expires_at from private.own_original_retirements where file_id=pg_temp.file_id()),
  (select created_at+interval '1 month' from public.genome_files where id=pg_temp.file_id()),'fixed calendar month anchored in actual source timestamp');
 select throws_ok($$update private.own_original_retirements set expires_at=expires_at+interval '1 day' where file_id=pg_temp.file_id()$$,
@@ -173,5 +175,6 @@ select is((select count(*) from public.genome_storage_objects where genome_file_
 select is((select count(*) from private.own_prepared_manifest_members where manifest_id=(select (value->>'manifestId')::uuid from pub_receipts where label='published')),2::bigint,'no prepared payload member removed');
 select ok(not has_function_privilege('authenticated','public.finish_own_original_retirement_v1(uuid,text,jsonb,jsonb)','execute'),'browser cannot attest provider deletion');
 select ok(not has_table_privilege('service_role','private.own_original_retirements','update'),'service cannot bypass exact retirement RPC');
+select is((select data_type from information_schema.columns where table_schema='private' and table_name='own_original_retirements' and column_name='object_key'),'text','native retirement can retain a complete namespaced locator');
 select * from finish();
 rollback;

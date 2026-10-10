@@ -55,3 +55,19 @@ describe("database-selected upload retention drain", () => {
     expect(new Set(tokens).size).toBe(5);
   });
 });
+
+
+it("retires the exact current namespace without broad prefix deletion or key rewriting", async () => {
+  const prefix = `${manifestId}/${key}/${finalKey}/`;
+  const objects = work.objects.map((object, i) => ({ ...object,
+    objectName: `${prefix}${object.objectName}.${i === 0 ? "part" : "vcf"}` }));
+  let issued = false;
+  rpc.mockImplementation(async name => {
+    if (name !== "claim_own_upload_purge_v1") return { data: true, error: null };
+    const data = issued ? null : { ...work, objects }; issued = true; return { data, error: null };
+  });
+  expect(await drainOwnUploadCleanup(admin)).toEqual({ processed: 1, failed: 0 });
+  expect(remove).toHaveBeenCalledExactlyOnceWith(objects.map(object => object.objectName));
+  expect(rpc).toHaveBeenCalledWith("authorize_own_upload_purge_v1", expect.any(Object));
+  expect(rpc).toHaveBeenCalledWith("finish_own_upload_purge_v1", expect.any(Object));
+});

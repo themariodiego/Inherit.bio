@@ -36,7 +36,7 @@ test("/files/upload reaches complete: exact source bytes stored and prepared, wi
   page.on("pageerror", error => errors.push(error.message));
   const issued = page.waitForResponse(response => response.url().endsWith("/api/files/upload-session")
     && response.request().method() === "POST");
-  const stored = page.waitForResponse(response => /\/storage\/v1\/object\/genomes\/[0-9a-f-]{36}$/.test(response.url())
+  const stored = page.waitForResponse(response => /\/storage\/v1\/object\/genomes\/(?:[0-9a-f-]{36}\/){3}[0-9a-f-]{36}\.part$/.test(response.url())
     && response.request().method() === "POST");
   const prepared = page.waitForResponse(response => /\/api\/files\/[0-9a-f-]{36}\/process$/.test(response.url())
     && response.request().method() === "POST");
@@ -75,6 +75,16 @@ test("/files/upload reaches complete: exact source bytes stored and prepared, wi
     .eq("id", fileId).single();
   expect(file.error).toBeNull();
   expect(file.data!.user_id).toBe(accountId);
+  const stagingParts = lease.stagingKey.split("/");
+  const finalParts = file.data!.bucket_path.split("/");
+  expect(stagingParts.slice(0, 3)).toEqual([accountId, file.data!.subject_id, lease.uploadId]);
+  expect(finalParts.slice(0, 3)).toEqual(stagingParts.slice(0, 3));
+  expect(stagingParts[3]).toMatch(/^[0-9a-f-]{36}\.part$/);
+  expect(finalParts[3]).toMatch(/^[0-9a-f-]{36}\.vcf$/);
+  expect(finalParts[3]).not.toBe(path.basename(fixture));
+  const retiredStaging = await admin.storage.from("genomes").download(lease.stagingKey);
+  expect(retiredStaging.error).not.toBeNull();
+  expect(retiredStaging.data).toBeNull();
   expect(file.data!.sha256).toBe(declaration.sha256);
   expect(file.data!.single_logical_sample_verified_at).not.toBeNull();
   expect(file.data!.normalization_completed_at).not.toBeNull();
