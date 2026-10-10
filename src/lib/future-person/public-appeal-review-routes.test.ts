@@ -105,6 +105,128 @@ describe("registered own-JWT final case rejection",()=>{
   vi.stubEnv("INHERIT_TEST_REQUESTER_STATEMENTS","0");expect((await casePOST(request(),{params:Promise.resolve({id:id(1)})})).status).toBe(404);expect(calls.own).not.toHaveBeenCalled();
  });
 });
+
+describe("native current prior decision uphold", () => {
+ function currentPrior() {
+  const nextScope = { ...scope, intakeKind: "access-or-review-appeal" };
+  const encrypted = sealNewAppeal(nextScope, { kind: "access-or-review-appeal", claimantName: "Synthetic Claimant",
+   contactEmail: "synthetic@example.test", decisionReference: "synthetic genuine prior reference",
+   statement: "This original request asks for review of an actual earlier documentary choice.", affirmed: true });
+  const { format, ...sealed } = encrypted; void format;
+  return { ...caseRow(), caseKind: "access-or-review-appeal", scope: nextScope, ...sealed,
+   priorDecision: { decisionId: id(11), sourceCaseId: id(12), decisionRevision: 3, evidenceRevision: 1,
+    sourceReviewerPrincipalId: id(13), decisionReferenceHash: "c".repeat(64), requiredAuthorityKind: "appeal-subject-source-control",
+    decisionKind: "subject-source-control-review-rejection", sourceDeadline: scope.originalDeadline },
+   allowedDecisions: ["reject", "uphold"], documents: [...row().documents.map(doc => ({ ...doc, decision: "approved" })),
+    { documentId: id(5), documentKind: "appeal-decision-notice", sha256: "c".repeat(64), decision: "approved" }] };
+ }
+ function request(extra: Record<string, unknown> = {}) {
+  return new Request(`https://inherit.bio/api/reviews/appeals/${id(1)}`, { method: "POST", headers: {
+   origin: "https://inherit.bio", "sec-fetch-site": "same-origin", "content-type": "application/json",
+   "x-inherit-csrf": reviewCsrf(id(1), id(8), id(9)) }, body: JSON.stringify({ decision: "uphold", reviewRevision: 1,
+   reason: "The full current record supports keeping the earlier documentary choice.", nonce: mintAppealCaseReviewNonce({
+    caseId: id(1), accountId: id(8), sessionId: id(9), reviewRevision: 1, evidenceRevision: 1 }), ...extra }) });
+ }
+ it("returns the closed upheld receipt through own JWT with no client prior/target selector", async () => {
+  calls.own.mockResolvedValueOnce({ data: currentPrior(), error: null }).mockResolvedValueOnce({ data: {
+   caseId: id(1), state: "resolved", outcome: "upheld", reviewRevision: 2 }, error: null });
+  const response = await casePOST(request(), { params: Promise.resolve({ id: id(1) }) });
+  expect(response.status).toBe(200); expect(await response.json()).toEqual({ caseId: id(1), state: "resolved", outcome: "upheld", reviewRevision: 2 });
+  expect(calls.own.mock.calls[1]![0]).toBe("decide_public_appeal_case_v1");
+  const args = calls.own.mock.calls[1]![1]; expect(args.p_decision).toBe("uphold");
+  expect(Object.keys(args).sort()).toEqual(["p_case", "p_decision", "p_evidence_revision", "p_nonce_hash", "p_reason_ciphertext", "p_review_revision"]);
+  expect(JSON.stringify(args)).not.toContain("full current record"); expect(calls.admin).not.toHaveBeenCalled();
+ });
+ it("offers uphold only after a second equal native current-context read without exposing source details", async () => {
+  calls.own.mockResolvedValue({ data: currentPrior(), error: null });
+  const response = await GET(read(), { params: Promise.resolve({ id: id(1) }) });
+  expect(response.status).toBe(200); expect(response.headers.get("x-inherit-case-decisions")).toBe('["reject","uphold"]');
+  expect(JSON.stringify(await response.json())).not.toContain(id(11)); expect(calls.own).toHaveBeenCalledTimes(2);
+ });
+ it.each(["not-offered", "pending", "missing-prior", "foreign-source"])("refuses %s before any disposition", async state => {
+  const raw = currentPrior(); calls.own.mockResolvedValue({ data: state === "not-offered" ? { ...raw, allowedDecisions: ["reject"] }
+   : state === "pending" ? { ...raw, documents: [{ ...raw.documents[0], decision: null }, ...raw.documents.slice(1)] }
+    : state === "missing-prior" ? { ...raw, priorDecision: null } : { ...raw, priorDecision: { ...raw.priorDecision, sourceCaseId: id(1) } }, error: null });
+  expect((await casePOST(request(), { params: Promise.resolve({ id: id(1) }) })).status).toBe(404);
+  expect(calls.own.mock.calls.some(call => call[0] === "decide_public_appeal_case_v1")).toBe(false);
+ });
+ it.each(["42501", "23505"])("keeps native stale/replay %s opaque without another call", async code => {
+  calls.own.mockResolvedValueOnce({ data: currentPrior(), error: null }).mockResolvedValueOnce({ data: null, error: { code } });
+  expect((await casePOST(request(), { params: Promise.resolve({ id: id(1) }) })).status).toBe(404);
+  expect(calls.own).toHaveBeenCalledTimes(2); expect(calls.admin).not.toHaveBeenCalled();
+ });
+ it.each([{ priorDecisionId: id(11) }, { targetId: id(12) }, { decision: "reverse-prior-decision" }, { decision: "approve-access" }])(
+  "refuses client retargeting or an unimplemented disposition %j", async extra => {
+   calls.own.mockResolvedValue({ data: currentPrior(), error: null });
+   expect((await casePOST(request(extra), { params: Promise.resolve({ id: id(1) }) })).status).toBe(404); expect(calls.own).not.toHaveBeenCalled();
+  });
+});
+describe("native append-only prior correction", () => {
+ function currentReversal() {
+  const nextScope = { ...scope, intakeKind: "access-or-review-appeal" };
+  const encrypted = sealNewAppeal(nextScope, { kind: "access-or-review-appeal", claimantName: "Synthetic Claimant",
+   contactEmail: "synthetic@example.test", decisionReference: "synthetic genuine prior reference",
+   statement: "This original request asks for review of an actual earlier documentary choice.", affirmed: true });
+  const { format, ...sealed } = encrypted; void format;
+  return { ...caseRow(), caseKind: "access-or-review-appeal", scope: nextScope, ...sealed,
+   priorDecision: { decisionId: id(11), sourceCaseId: id(12), decisionRevision: 3, evidenceRevision: 1,
+    sourceReviewerPrincipalId: id(13), decisionReferenceHash: "c".repeat(64), requiredAuthorityKind: "appeal-subject-source-control",
+    decisionKind: "subject-source-control-review-rejection", sourceDeadline: scope.originalDeadline },
+   allowedDecisions: ["reject", "uphold", "reverse-prior-decision", "needs-more-information"], documents: [...row().documents.map(doc => ({ ...doc, decision: "approved" })),
+    { documentId: id(5), documentKind: "appeal-decision-notice", sha256: "c".repeat(64), decision: "approved" }] };
+ }
+ function request(extra: Record<string, unknown> = {}) {
+  return new Request(`https://inherit.bio/api/reviews/appeals/${id(1)}`, { method: "POST", headers: {
+   origin: "https://inherit.bio", "sec-fetch-site": "same-origin", "content-type": "application/json",
+   "x-inherit-csrf": reviewCsrf(id(1), id(8), id(9)) }, body: JSON.stringify({ decision: "reverse-prior-decision", priorDecisionRevision: 3, evidenceRevision: 1, reviewRevision: 1,
+   reason: "The full current record supports changing only the earlier documentary choice.", nonce: mintAppealCaseReviewNonce({
+    caseId: id(1), accountId: id(8), sessionId: id(9), reviewRevision: 1, evidenceRevision: 1 }), ...extra }) });
+ }
+ it("returns the exact correction receipt through own JWT with only registered revision fields", async () => {
+  calls.own.mockResolvedValueOnce({ data: currentReversal(), error: null }).mockResolvedValueOnce({ data: {
+   caseId: id(1), state: "resolved", outcome: "prior_decision_reversed", reviewRevision: 2 }, error: null });
+  const response = await casePOST(request(), { params: Promise.resolve({ id: id(1) }) });
+  expect(response.status).toBe(200); expect(await response.json()).toEqual({ caseId: id(1), state: "resolved", outcome: "prior_decision_reversed", reviewRevision: 2 });
+  expect(calls.own.mock.calls[1]![0]).toBe("reverse_public_appeal_prior_decision_v1");
+  const args = calls.own.mock.calls[1]![1]; expect(args.p_decision).toBeUndefined();
+  expect(Object.keys(args).sort()).toEqual(["p_case", "p_evidence_revision", "p_nonce_hash", "p_prior_decision_revision", "p_reason_ciphertext", "p_review_revision"]);
+  expect(JSON.stringify(args)).not.toContain("full current record"); expect(calls.admin).not.toHaveBeenCalled();
+ });
+ it("offers correction only after a second equal native current-context read without exposing source details", async () => {
+  calls.own.mockResolvedValue({ data: currentReversal(), error: null });
+  const response = await GET(read(), { params: Promise.resolve({ id: id(1) }) });
+  expect(response.status).toBe(200); expect(response.headers.get("x-inherit-case-reversal")).toBe('{"priorDecisionRevision":3,"evidenceRevision":1}'); expect(response.headers.get("x-inherit-case-decisions")).toBe('["reject","uphold","reverse-prior-decision","needs-more-information"]');
+  expect(JSON.stringify(await response.json())).not.toContain(id(11)); expect(calls.own).toHaveBeenCalledTimes(2);
+ });
+ it.each(["not-offered", "pending", "missing-prior", "foreign-source"])("refuses %s before any disposition", async state => {
+  const raw = currentReversal(); calls.own.mockResolvedValue({ data: state === "not-offered" ? { ...raw, allowedDecisions: ["reject"] }
+   : state === "pending" ? { ...raw, documents: [{ ...raw.documents[0], decision: null }, ...raw.documents.slice(1)] }
+    : state === "missing-prior" ? { ...raw, priorDecision: null } : { ...raw, priorDecision: { ...raw.priorDecision, sourceCaseId: id(1) } }, error: null });
+  expect((await casePOST(request(), { params: Promise.resolve({ id: id(1) }) })).status).toBe(404);
+  expect(calls.own.mock.calls.some(call => call[0] === "reverse_public_appeal_prior_decision_v1")).toBe(false);
+ });
+ it.each(["42501", "23505"])("keeps native stale/replay %s opaque without another call", async code => {
+  calls.own.mockResolvedValueOnce({ data: currentReversal(), error: null }).mockResolvedValueOnce({ data: null, error: { code } });
+  expect((await casePOST(request(), { params: Promise.resolve({ id: id(1) }) })).status).toBe(404);
+  expect(calls.own).toHaveBeenCalledTimes(2); expect(calls.admin).not.toHaveBeenCalled();
+ });
+ it.each([{ priorDecisionId: id(11) }, { targetId: id(12) }, { recipient: "foreign@example.test" }, { decision: "approve-access" }])(
+  "refuses client retargeting or an unimplemented disposition %j", async extra => {
+   calls.own.mockResolvedValue({ data: currentReversal(), error: null });
+   expect((await casePOST(request(extra), { params: Promise.resolve({ id: id(1) }) })).status).toBe(404); expect(calls.own).not.toHaveBeenCalled();
+  });
+ it.each([{ priorDecisionRevision: 4 }, { evidenceRevision: 2 }, { priorDecisionRevision: undefined }, { evidenceRevision: undefined }])(
+  "refuses a stale or missing registered source/evidence revision %j", async extra => {
+   calls.own.mockResolvedValue({ data: currentReversal(), error: null });
+   expect((await casePOST(request(extra), { params: Promise.resolve({ id: id(1) }) })).status).toBe(404);
+   expect(calls.own.mock.calls.some(call => call[0] === "reverse_public_appeal_prior_decision_v1")).toBe(false);
+  });
+ it("does not adopt an expanded or target-authorizing native correction receipt", async () => {
+  calls.own.mockResolvedValueOnce({ data: currentReversal(), error: null }).mockResolvedValueOnce({ data: {
+   caseId: id(1), state: "resolved", outcome: "prior_decision_reversed", reviewRevision: 2, revivedKey: "forbidden" }, error: null });
+  expect((await casePOST(request(), { params: Promise.resolve({ id: id(1) }) })).status).toBe(503);
+ });
+});
 describe("verified case notice route",()=>{
  const request=()=>new Request("https://inherit.bio/api/appeals/session/decision",{headers:{"sec-fetch-site":"same-origin",cookie:`${RIGHTS_COOKIE_NAME}=${"A".repeat(43)}`}});
  it("opens only the exact native case-bound encrypted reference and excludes notes",async()=>{
@@ -118,5 +240,46 @@ describe("verified case notice route",()=>{
  calls.admin.mockResolvedValueOnce({data:null,error:null});expect((await noticeGET(request())).status).toBe(404);
  calls.admin.mockResolvedValueOnce({data:{scope,wrappedCaseKeyHex:row().wrappedCaseKeyHex,decisions:[],reviewerNotes:"private"},error:null});
  expect((await noticeGET(request())).status).toBe(503);
+ });
+});
+
+describe("nonfinal information request through own current review authority", () => {
+ function request(extra: Record<string, unknown> = {}) {
+  return new Request(`https://inherit.bio/api/reviews/appeals/${id(1)}`, { method: "POST", headers: {
+   origin: "https://inherit.bio", "sec-fetch-site": "same-origin", "content-type": "application/json",
+   "x-inherit-csrf": reviewCsrf(id(1), id(8), id(9)), }, body: JSON.stringify({ decision: "needs-more-information", reviewRevision: 1,
+    reason: "The available files do not yet show the required original source control.", nonce: mintAppealCaseReviewNonce({ caseId: id(1),
+     accountId: id(8), sessionId: id(9), reviewRevision: 1, evidenceRevision: 1 }), ...extra }) });
+ }
+ const current = () => ({ ...caseRow(), documents: [], documentDecisionsAvailable: false, allowedDecisions: ["reject", "needs-more-information"] });
+ const receipt = () => ({ caseId: id(1), state: "more_information_required", outcome: "more_information_required", reviewRevision: 2 });
+ it("uses the same native case/revisions and seals the reason without sending recipient/target/deadline selectors", async () => {
+  calls.own.mockResolvedValueOnce({ data: current(), error: null }).mockResolvedValueOnce({ data: receipt(), error: null });
+  const response = await casePOST(request(), { params: Promise.resolve({ id: id(1) }) });expect(response.status).toBe(200);
+  expect(await response.json()).toEqual(receipt());expect(calls.admin).not.toHaveBeenCalled();
+  const [name, args] = calls.own.mock.calls[1]!;expect(name).toBe("decide_public_appeal_case_v1");
+  expect(Object.keys(args).sort()).toEqual(["p_case", "p_decision", "p_evidence_revision", "p_nonce_hash", "p_reason_ciphertext", "p_review_revision"]);
+  expect(args.p_decision).toBe("needs-more-information");expect(args.p_reason_ciphertext).toMatch(/^\\x[0-9a-f]+$/u);
+  expect(JSON.stringify(args)).not.toContain("available files");
+ });
+ it.each([{ reviewRevision: 2 }, { nonce: "foreign-current-form" }, { recipient: "foreign@example.test" }, { deadline: scope.originalDeadline }, { targetId: id(5) }])(
+  "refuses stale or client-selected authority %j before native mutation", async extra => {
+   calls.own.mockResolvedValue({ data: current(), error: null });
+   expect((await casePOST(request(extra), { params: Promise.resolve({ id: id(1) }) })).status).toBe(404);
+   expect(calls.own.mock.calls.some(call => call[0] === "decide_public_appeal_case_v1")).toBe(false);
+  });
+ it("refuses an expired original case even when a request form was just rendered", async () => {
+  const expired = new Date(Date.now() - 1000).toISOString();
+  calls.own.mockResolvedValue({ data: { ...current(), deadline: expired, scope: { ...scope, originalDeadline: expired } }, error: null });
+  expect((await casePOST(request(), { params: Promise.resolve({ id: id(1) }) })).status).toBe(404);
+  expect(calls.own.mock.calls.some(call => call[0] === "decide_public_appeal_case_v1")).toBe(false);
+ });
+ it.each(["42501", "23505"])("retains native %s failure with no retry or issued receipt", async code => {
+  calls.own.mockResolvedValueOnce({ data: current(), error: null }).mockResolvedValueOnce({ data: null, error: { code } });
+  expect((await casePOST(request(), { params: Promise.resolve({ id: id(1) }) })).status).toBe(404);expect(calls.own).toHaveBeenCalledTimes(2);
+ });
+ it("does not adopt a final/expanded or wrong-state receipt for this nonfinal branch", async () => {
+  calls.own.mockResolvedValueOnce({ data: current(), error: null }).mockResolvedValueOnce({ data: { ...receipt(), state: "resolved" }, error: null });
+  expect((await casePOST(request(), { params: Promise.resolve({ id: id(1) }) })).status).toBe(503);
  });
 });

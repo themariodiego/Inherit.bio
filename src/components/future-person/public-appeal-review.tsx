@@ -22,7 +22,7 @@ type View = { documentId: string; url: string; media: string; sha256: string; re
 /** The assigned reviewer reads a whole hash-verified document and explicitly
  * judges that document. This UI has no automatic target or access approval. */
 export function PublicAppealReview({ caseId }: { caseId: string }) {
- const [loaded, setLoaded] = useState<{ value: z.infer<typeof row>; csrf: string; controls: z.infer<typeof controls>; caseNonce: string } | null>(null);
+ const [loaded, setLoaded] = useState<{ value: z.infer<typeof row>; csrf: string; controls: z.infer<typeof controls>; caseNonce: string; allowUphold: boolean; allowMoreInformation: boolean; reversal?: { priorDecisionRevision: number; evidenceRevision: number } } | null>(null);
  const [view, setView] = useState<View | null>(null); const [checked, setChecked] = useState(false);
  const [decision, setDecision] = useState<"approved" | "rejected">("rejected"); const [reason, setReason] = useState("");
  const [busy, setBusy] = useState(false); const [message, setMessage] = useState(""); const [revision, setRevision] = useState(0);
@@ -38,11 +38,21 @@ export function PublicAppealReview({ caseId }: { caseId: string }) {
    const value = row.safeParse(await response.json()); const csrf = response.headers.get("x-inherit-csrf");
    const tokens = controls.safeParse(JSON.parse(response.headers.get("x-inherit-document-nonces") ?? "null"));
    const caseNonce = response.headers.get("x-inherit-case-review-nonce");
-   const decisions = z.tuple([z.literal("reject")]).safeParse(JSON.parse(response.headers.get("x-inherit-case-decisions") ?? "null"));
+   const decisions = z.union([z.tuple([z.literal("reject")]), z.tuple([z.literal("reject"), z.literal("uphold")]),
+    z.tuple([z.literal("reject"), z.literal("needs-more-information")]),
+    z.tuple([z.literal("reject"), z.literal("uphold"), z.literal("needs-more-information")]),
+    z.tuple([z.literal("reject"), z.literal("uphold"), z.literal("reverse-prior-decision"), z.literal("needs-more-information")])])
+    .safeParse(JSON.parse(response.headers.get("x-inherit-case-decisions") ?? "null"));
+   const reversal = z.object({ priorDecisionRevision: z.number().int().positive().safe(), evidenceRevision: z.number().int().positive().safe() })
+    .strict().nullable().safeParse(JSON.parse(response.headers.get("x-inherit-case-reversal") ?? "null"));
+   const mayReverse = decisions.success && decisions.data.some(decision => decision === "reverse-prior-decision");
    if (response.status !== 200 || !value.success || value.data.caseId !== caseId || !csrf || !/^[0-9a-f]{64}$/u.test(csrf)
+    || !reversal.success || mayReverse !== (reversal.success && reversal.data !== null)
     || !tokens.success || !caseNonce || caseNonce.length > 2048 || !decisions.success
     || Object.keys(tokens.data).some(id => !value.data.evidence.some(doc => doc.documentId === id && doc.reviewState === "pending"))) throw new Error("unavailable");
-   if (!abort.signal.aborted) { setLoaded({ value: value.data, csrf, controls: tokens.data, caseNonce }); setMessage(""); }
+   if (!abort.signal.aborted) { setLoaded({ value: value.data, csrf, controls: tokens.data, caseNonce, allowUphold: decisions.data.some(decision => decision === "uphold"),
+    allowMoreInformation: decisions.data.some(decision => decision === "needs-more-information"),
+    ...(reversal.data ? { reversal: reversal.data } : {}) }); setMessage(""); }
   } catch { if (!abort.signal.aborted) { setLoaded(null); setMessage("This request is not available. Sign in again and open the case assigned to you."); } } })();
   return () => { abort.abort(); operation.current?.abort(); if (objectUrl.current) URL.revokeObjectURL(objectUrl.current); objectUrl.current = null; };
  }, [caseId, revision]);
@@ -90,7 +100,9 @@ export function PublicAppealReview({ caseId }: { caseId: string }) {
     <button type="button" onClick={() => void save()} disabled={busy || !view.rendered || !checked || reason.trim().length < 20}>Save choice</button>
    </section>}
    <PublicAppealCaseRejection key={loaded.value.reviewRevision} caseId={caseId} reviewRevision={loaded.value.reviewRevision}
-    csrf={loaded.csrf} nonce={loaded.caseNonce} disabled={busy} onResolved={() => { operation.current?.abort(); clear(); setReason(""); setLoaded(null); setMessage("This request was closed."); }} />
+    csrf={loaded.csrf} nonce={loaded.caseNonce} disabled={busy} allowUphold={loaded.allowUphold} allowMoreInformation={loaded.allowMoreInformation} reversal={loaded.reversal}
+    onMoreInformation={() => { operation.current?.abort(); clear(); setReason(""); setLoaded(null); setRevision(old => old + 1);
+     setMessage("A new link was queued. The original deadline stays the same."); }} onResolved={outcome => { operation.current?.abort(); clear(); setReason(""); setLoaded(null); setMessage(outcome === "prior_decision_reversed" ? "The earlier file choice was changed. No access was given. A new request with new files is needed." : "This request was closed."); }} />
   </>}
  </section>;
 }

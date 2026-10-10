@@ -125,6 +125,13 @@ describe("the export member plan", () => {
     expect(entry && "members" in entry).toBe(false);
   });
 
+  it("keeps information-request reviewer, credential and case bindings out of member exports", () => {
+    const entry = exportMemberPlan.tables["private.public_appeal_information_requests"];
+    expect(entry?.disposition).toBe("excluded-protected");
+    expect(exportedTable("private.public_appeal_information_requests")).toBeUndefined();
+    expect(entry && "members" in entry).toBe(false);
+  });
+
   it("exports the legal audit ledger's own events, never the pseudonym or the chain hashes", () => {
     const ledger = exportedTable("public.legal_audit_log")!;
     expect(ledger.members).toEqual(["archive:legal-audit.json", "reader:history.legal-audit",

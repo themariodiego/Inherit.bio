@@ -1,5 +1,7 @@
 # Public appeal evidence in TEST
 
+The current integrated source includes no-match review, exact typed potential-match holds, final rejection, and the two genuinely source-bound documentary prior-choice outcomes. A named reviewer can also request a new evidence round for the same verified recipient. The underlying account and target authority stays closed; all TEST and private native configuration remains disabled. The sections below retain the earlier producer scopes and their limits. Current native, browser, Storage, malware and mail provider qualification remains separate from source checks.
+
 The existing public intake and mail producer are in draft PR306. This follow-on
 source connects a subject-objection or genetic-parent-objection credential to
 `/withdraw/session`, where the native purpose selects its own evidence form.
@@ -7,11 +9,7 @@ An account, subject, cohort, reviewer or storage path cannot be chosen by the
 request. The random case principal never acquires account authority.
 
 Both existing TEST flags and the private native intake configuration remain
-closed by default. This version completes only a **no-match** evidence set. A
-same-key-revision contact HMAC potential match is refused until the separate
-typed adult-confirmation/genetic-parent resolver and reversible target hold
-are qualified. Access/review cannot activate because the current public intake
-has no server-bound underlying decision. It is not offered a guessed proof set.
+closed by default. The initial producer completed only a **no-match** evidence set. The later native resolver keeps an unbound, ambiguous or stale potential match unresolved, and creates a provisional hold only from an exact current typed adult-confirmation or genetic-parent binding. A contact match never adopts an account. Access/review admits only a genuine same-recipient underlying documentary rejection; a missing source is never replaced with a guessed proof set.
 
 The form opens independent-key evidence sessions, writes create-only sealed
 chunks into private `legal-evidence`, and uses the existing whole-EOF/hash/type
@@ -73,8 +71,39 @@ physical deletion acknowledgment. No target access, principal rotation,
 restriction or purge is inferred from a rejection. Production configuration
 stays disabled.
 
-The UI offers only this final rejection alongside the separate full-document
-review. Target-changing approvals, prior-decision reversal, requests for more
-information and contradiction dispositions remain unavailable until their
-registered native human evidence/target and delivery producers exist. Focused
-source checks do not establish native, browser or physical provider proof.
+The initial UI offered only this final rejection alongside separate full-document review. The integrated UI adds uphold/reversal only for the two source-bound documentary rejection kinds described below, and the nonfinal information round described next. Target-changing approvals, other underlying-decision kinds and contradiction dispositions remain unavailable until their genuine producers exist. Focused source checks do not establish native, browser or physical provider proof.
+
+
+## Correction of an earlier documentary choice in TEST
+
+A separate access/review appeal can now reverse only an actual source-control
+or genetic-parent documentary rejection. The original verified recipient and
+current source outcome must bind that new case. A different reviewer principal
+and a different own-MFA account must receive and acknowledge every complete
+current file before approving the photo, source proof and decision notice.
+The form binds the original decision revision and this case's evidence revision;
+it accepts no target or recipient selector.
+
+The native operation appends a coded correction and next source revisions while
+preserving the entire original decision. Its exact receipt is
+`prior_decision_reversed`. The original reference then stops admitting another
+appeal. Both supported rejection producers already destroyed the rejected file
+key, so correction cannot reopen that file or restore any authority. The reviewer
+and requester surfaces explicitly require a new request with new originating
+files. Lawful prior object removal does not erase the immutable source decision.
+
+This operation closes only the new appeal, erases its private working material,
+keys and rights, and leaves every unrelated target unchanged. It never grants
+access, approves a prior file, renews the original thirty-day clock or reverses
+a valid later refusal. Other prior-decision kinds, target-changing approvals and
+contradiction dispositions still lack their separate lawful producers. The
+native rollback probes are authored and unrun; synthetic scanner/deletion
+callbacks do not establish physical provider or browser qualification. All
+production activation settings remain disabled.
+
+
+## More files for the same request in TEST
+
+The named reviewer's own current MFA session may request a new evidence round. The native operation binds the exact current case and review/evidence revisions, consumes its one-use operation nonce, revokes the old requester session and independent keys, and creates one fresh credential for the original verified recipient. Its seven-day ceiling is clamped to the immutable original thirty-day case deadline. No recipient, account, target or source decision can be selected by the request.
+
+The requester returns to the existing purpose-specific page, supplies a new isolated complete file set, and submits only after genuine positive scan records. The reviewer must receive and acknowledge those whole current files again. The previous document decisions and physical cleanup evidence stay bound to their own round; none is silently carried into the new evidence approval. Native/provider/browser proof of this new round remains unrun in this source checkpoint.

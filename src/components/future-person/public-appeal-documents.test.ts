@@ -29,3 +29,11 @@ describe("purpose-bound public appeal evidence page", () => {
   expect(html).toContain("Evidence of your genetic parent role");expect(html).not.toContain("Evidence that the source is yours");
  });
 });
+
+it("continues the same requested evidence round without replacing kinds, identity or the original case deadline", () => {
+ const html = render({ informationRequested: true });
+ expect(html).toContain("You were asked for more files for this same request.");
+ expect(html).toContain("Its original deadline has not changed.");
+ expect(html.match(/type="file"/gu)).toHaveLength(2);
+ expect(html).not.toMatch(/name="(?:recipient|email|deadline|targetId)"/u);
+});

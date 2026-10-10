@@ -15,7 +15,7 @@ export const publicAppealView = z.object({
   caseKind: z.enum(["subject-objection", "genetic-parent-objection", "access-or-review-appeal"]),
   deadline: z.iso.datetime({ offset: true }),
   documentKinds: z.array(appealDocumentKind).min(2).max(3),
-  evidenceState: z.literal("collecting"), completionAvailable: z.boolean(),
+  evidenceState: z.literal("collecting"), completionAvailable: z.boolean(), informationRequested: z.boolean().optional(),
   documents: z.array(z.object({ documentId: z.uuid(), documentKind: appealDocumentKind }).strict()).max(6),
 }).strict();
 export type PublicAppealView = z.infer<typeof publicAppealView>;

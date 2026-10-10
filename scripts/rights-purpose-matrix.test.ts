@@ -154,7 +154,21 @@ describe("the rights-purpose matrix seed matches the register", () => {
   });
 });
 
+/** SQL whitespace does not change the required literal purpose/target pair. */
+function literalSessionPairs(text: string): RegExpMatchArray[] {
+  return [...text.matchAll(/insert\s+into\s+public\.rights_sessions\s*\(\s*token_hash_id\s*,\s*principal_id\s*,\s*purpose\s*,\s*target_kind\s*,[^)]*\)\s*values\s*\(\s*[^,]+,\s*[^,]+,\s*'([a-z-]+)',\s*'([a-z_-]+)'/gu)];
+}
+
 describe("the stored session purposes", () => {
+  it("recognizes equivalent SQL spacing without admitting dynamic or reordered authority", () => {
+    const compact = "insert into public.rights_sessions(token_hash_id,principal_id,purpose,target_kind,target_id)values(token.id,intake.author_principal_id,'appeal-evidence','appeal-case',intake.id)";
+    const spaced = compact.replaceAll(",", ", ").replace("rights_sessions(", "rights_sessions (").replace(")values(", ") values (");
+    const multiline = spaced.replace(" values ", "\n values\n ");
+    for (const source of [compact, spaced, multiline])
+      expect(literalSessionPairs(source).map(match => `${match[1]}|${match[2]}`)).toEqual(["appeal-evidence|appeal-case"]);
+    for (const source of [compact.replace("'appeal-evidence'", "request.purpose"), compact.replace("'appeal-case'", "request.target_kind"),
+      compact.replace("purpose,target_kind", "target_kind,purpose")]) expect(literalSessionPairs(source)).toHaveLength(0);
+  });
   it("name only matrix purposes and kinds", () => {
     for (const stored of sessionPurposes) {
       expect(
@@ -168,7 +182,7 @@ describe("the stored session purposes", () => {
     const issued = new Set<string>();
     let inserts = 0;
     for (const file of readMigrations()) {
-      for (const match of file.matchAll(/insert into public\.rights_sessions \(\s*token_hash_id, principal_id, purpose, target_kind,[^)]*\) values \(\s*[^,]+,\s*[^,]+,\s*'([a-z-]+)',\s*'([a-z_-]+)'/gu)) {
+      for (const match of literalSessionPairs(file)) {
         inserts += 1;
         issued.add(`${match[1]}|${match[2]}`);
       }
@@ -180,7 +194,7 @@ describe("the stored session purposes", () => {
   it("every insert into rights_sessions writes literal, checkable values", () => {
     for (const file of readMigrations()) {
       const all = file.match(/insert into public\.rights_sessions\b/gu)?.length ?? 0;
-      const literal = file.match(/insert into public\.rights_sessions \(\s*token_hash_id, principal_id, purpose, target_kind,[^)]*\) values \(\s*[^,]+,\s*[^,]+,\s*'[a-z-]+',\s*'[a-z_-]+'/gu)?.length ?? 0;
+      const literal = literalSessionPairs(file).length;
       expect(literal).toBe(all);
     }
   });

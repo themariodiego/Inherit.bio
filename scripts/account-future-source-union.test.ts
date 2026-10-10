@@ -59,22 +59,35 @@ describe("the complete account and Future source union", () => {
     }
   });
 
+  it("retains all 173 current pairs and adds only the protected information-request store", () => {
+    const predecessor = inventory(read("supabase/tests/fixtures/purge_store_census_173.inc"));
+    const current = inventory(read("supabase/tests/fixtures/purge_store_census_174.inc"));
+    expect(current).toHaveLength(174);
+    expect(new Set(current).size).toBe(174);
+    expect(current.sort()).toEqual([...predecessor, "appeal-and-correction-working-packages|private.public_appeal_information_requests"].sort());
+    const migration = read("supabase/migrations/20261010003000_public_appeal_more_information.sql").replace(/\s+/gu, "");
+    expect(migration).toContain("createtableprivate.public_appeal_information_requests(");
+    expect(migration).toContain("'appeal-and-correction-working-packages','private.public_appeal_information_requests',20");
+  });
+
   it("uses the current exact literal inventory in all four complete-census consumers", () => {
     for (const name of ["claimed_provenance_last_consumer", "future_person_claimant_erasure", "future_person_export_members", "future_person_export_source"]) {
       const sql = read(`supabase/tests/${name}.sql`);
-      expect(sql).toContain("173::bigint");
-      expect(sql).toContain("\\ir fixtures/purge_store_census_173.inc");
+      expect(sql).toContain("174::bigint");
+      expect(sql).toContain("\\ir fixtures/purge_store_census_174.inc");
       expect(sql).not.toContain("\\ir fixtures/purge_store_census_158.inc");
       expect(sql).not.toContain("\\ir fixtures/purge_store_census_155.inc");
     }
-    expect(read("supabase/tests/v2_contracts.sql")).toContain("173::bigint");
+    expect(read("supabase/tests/v2_contracts.sql")).toContain("174::bigint");
   });
 
-  it("preserves protected/withheld Future classifications and the account provenance exclusions in the 249-table plan", () => {
+  it("preserves protected/withheld Future classifications and the account provenance exclusions in the 250-table plan", () => {
     const plan = JSON.parse(read("docs/export-member-plan.json")) as {
       tables: Record<string, { disposition: string; withheld?: string[]; scope?: string }>;
     };
-    expect(Object.keys(plan.tables)).toHaveLength(249);
+    expect(Object.keys(plan.tables)).toHaveLength(250);
+    for (const name of ["private.public_appeal_case_decisions", "private.public_appeal_information_requests"])
+      expect(plan.tables[name]?.disposition).toBe("excluded-protected");
     for (const name of ["private.claimed_embryo_ingest_receipts", "private.claimed_embryo_job_receipts"])
       expect(plan.tables[name]?.disposition).toBe("deferred");
     expect(plan.tables["private.account_owned_cohort_purges"]?.disposition).toBe("excluded-internal");

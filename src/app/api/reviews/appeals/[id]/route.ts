@@ -24,13 +24,16 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
   receipt: mintReceiptOpenNonce(doc.documentId, account.user.id, account.sessionId),
   decision: mintReviewNonce(doc.documentId, account.user.id, account.sessionId),
  }]));
+ const reversal = row.data.allowedDecisions.some(decision => decision === "reverse-prior-decision") && row.data.priorDecision
+  ? { priorDecisionRevision: row.data.priorDecision.decisionRevision, evidenceRevision: row.data.evidenceRevision } : null;
  return sensitiveJson(body, 200, { "Referrer-Policy": "no-referrer", "x-inherit-csrf": reviewCsrf(id, account.user.id, account.sessionId),
   "x-inherit-document-nonces": JSON.stringify(tokens), "x-inherit-case-review-nonce": mintAppealCaseReviewNonce({ caseId: id,
     accountId: account.user.id, sessionId: account.sessionId, reviewRevision: row.data.reviewRevision, evidenceRevision: row.data.evidenceRevision }),
-  "x-inherit-case-decisions": JSON.stringify(row.data.allowedDecisions) });
+  "x-inherit-case-decisions": JSON.stringify(row.data.allowedDecisions),
+  ...(reversal ? { "x-inherit-case-reversal": JSON.stringify(reversal) } : {}) });
 }
 
-/** The registered final-rejection branch has no target effects. Other final
+/** Registered rejection, prior correction/uphold and nonfinal information requests have no target effects. Other final
  * branches remain opaque until their native authority producers exist. */
 export async function POST(request: Request, context: { params: Promise<{ id: string }> }) {
  const { id } = await context.params; const url = new URL(request.url);
@@ -42,22 +45,29 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
  const own = await createClient(); const current = await own.rpc("read_public_appeal_case_context_v1", { p_case: id }).retry(false).abortSignal(request.signal);
  if (current.error) return current.error.code === "42501" ? notFound() : unavailable();
  const row = appealCaseContext.safeParse(current.data);
- if (!row.success || row.data.caseId !== id || Date.parse(row.data.deadline) <= Date.now()
+ if (!row.success || row.data.caseId !== id || !row.data.allowedDecisions.some(decision => decision === parsed.data.decision) || Date.parse(row.data.deadline) <= Date.now()
   || parsed.data.reviewRevision !== row.data.reviewRevision || !reviewCsrfMatches(request.headers.get("x-inherit-csrf"), id, account.user.id, account.sessionId)) return notFound();
  const nonce = readAppealCaseReviewNonce(parsed.data.nonce, { caseId: id, accountId: account.user.id, sessionId: account.sessionId,
   reviewRevision: row.data.reviewRevision, evidenceRevision: row.data.evidenceRevision });
- if (!nonce) return notFound();
+ if (!nonce || parsed.data.decision === "reverse-prior-decision" && (!row.data.priorDecision
+  || parsed.data.priorDecisionRevision !== row.data.priorDecision.decisionRevision
+  || parsed.data.evidenceRevision !== row.data.evidenceRevision)) return notFound();
  const nonceHash = sha256Hex(nonce);
  let reasonCiphertext: string;
  try { reasonCiphertext = sealAppealCaseReason(parsed.data.reason, row.data.wrappedCaseKeyHex, id, nonceHash); }
  catch { return unavailable(); }
- const result = await own.rpc("decide_public_appeal_case_v1", { p_case: id, p_decision: parsed.data.decision,
+ const result = parsed.data.decision === "reverse-prior-decision"
+  ? await own.rpc("reverse_public_appeal_prior_decision_v1", { p_case: id, p_prior_decision_revision: parsed.data.priorDecisionRevision,
+   p_review_revision: row.data.reviewRevision, p_evidence_revision: row.data.evidenceRevision, p_nonce_hash: nonceHash,
+   p_reason_ciphertext: reasonCiphertext }).retry(false).abortSignal(request.signal)
+  : await own.rpc("decide_public_appeal_case_v1", { p_case: id, p_decision: parsed.data.decision,
   p_review_revision: row.data.reviewRevision, p_evidence_revision: row.data.evidenceRevision, p_nonce_hash: nonceHash,
   p_reason_ciphertext: reasonCiphertext,
  }).retry(false).abortSignal(request.signal);
  if (result.error) return ["42501", "23505", "22023"].includes(result.error.code ?? "") ? notFound() : unavailable();
  const value = result.data as Record<string, unknown> | null;
- if (!value || value.caseId !== id || value.state !== "resolved" || value.outcome !== "rejected"
+ if (!value || value.caseId !== id || value.state !== (parsed.data.decision === "needs-more-information" ? "more_information_required" : "resolved")
+  || value.outcome !== (parsed.data.decision === "needs-more-information" ? "more_information_required" : parsed.data.decision === "uphold" ? "upheld" : parsed.data.decision === "reverse-prior-decision" ? "prior_decision_reversed" : "rejected")
   || value.reviewRevision !== row.data.reviewRevision + 1 || Object.keys(value).sort().join("|") !== "caseId|outcome|reviewRevision|state") return unavailable();
  const response = await closedResponse("api.appeal-review", ["caseId", "state", "outcome", "reviewRevision"], value, 200);
  response.headers.set("Referrer-Policy", "no-referrer"); return response;
