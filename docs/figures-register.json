@@ -282,6 +282,17 @@
         ]
       },
       {
+        "route": "/embryos",
+        "status": "two-publication-proof-required",
+        "reason": "The hub can now render checked positions from the complete current reviewed library while clinical interpretation remains held. Its source contract and native/pure tests bind the whole current projection, but two independent fresh native publications and paired browser figure collection are still required. This entry is not hosted execution or acceptance credit. The compiled registry remains empty; QC seed receipts do not prove this library figure.",
+        "specs": [
+          "supabase/tests/embryo_carrier_worker.sql",
+          "src/lib/embryos/carrier-library-read.test.ts",
+          "src/components/embryo/carrier-library-coverage.test.ts"
+        ],
+        "proofContract": "src/lib/embryos/carrier-library-read.ts"
+      },
+      {
         "route": "/embryos/compare",
         "status": "two-publication-proof-required",
         "reason": "Actual signed-parent upload/worker publication now makes observed QC figures reachable. The old whole-route zero-figure reason is invalid. Two independent fresh native jobs must upload the two exact committed synthetic call sets, retain current source receipts, collect the full figure census and prove every corresponding QC value changes. This authored contract is not hosted execution or acceptance credit.",

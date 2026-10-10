@@ -6,6 +6,7 @@ import fs from "node:fs";
 import http from "node:http";
 import path from "node:path";
 import type { Page, APIRequestContext } from "@playwright/test";
+import { toPlainText } from "@react-email/components";
 import {
   adminClient,
   adultInvitationToken,
@@ -357,7 +358,7 @@ test("another adult's file under Path B: signed without an account, held unreada
   const noticeMail = await drainMailUntil(request, mailTo(CONFIRMER.email, "A DNA file was added for you on Inherit"),
     `the upload-time notice to ${CONFIRMER.email}`);
   expect(noticeMail.html).toContain("If you do nothing, it is deleted on");
-  expect(noticeMail.html).toContain(`Who added it: ${UPLOADER_NAME}.`);
+  expect(toPlainText(noticeMail.html!)).toContain(`Who added it: ${UPLOADER_NAME}.`);
   expect(noticeMail.html).toContain("write to privacy@inherit.bio.");
   await signOut(page);
   await openRightsLink(page, noticeMail.html);
