@@ -1,7 +1,7 @@
 import {createHash,randomBytes,randomUUID} from "node:crypto";
 import type {Browser,Page} from "@playwright/test";
 import {expect} from "../audited-test";
-import {adminClient,assertNoThirdParty,expectAxeClean,watchRequests} from "../helpers";
+import {adminClient,assertNoThirdParty,axeViolations,expectAxeClean,watchRequests} from "../helpers";
 import {reviewFixtureSql,signInReviewer} from "./claim-review-fixture";
 
 // This existing paused TEST app already opts into requester statements. No
@@ -16,7 +16,8 @@ const targetHashSql=`select md5(jsonb_build_object(
 /** Real public form/crypto/commit, native one-use issuance and activation,
  * then the assigned reviewer's genuine Auth/MFA page. This proves the actual
  * zero-document page, not mail-provider delivery or evidence scan/storage. */
-export async function auditAssignedAppeal(page:Page,browser:Browser,reviewer:string){
+export async function auditAssignedAppeal(page:Page,browser:Browser,reviewer:string,
+ processing:(assertions:()=>Promise<void>)=>Promise<void>){
  if(!UUID.test(reviewer))throw new Error("Synthetic reviewer identity unavailable");
  const principal=randomUUID(),contact=`appeal-audit-${randomBytes(8).toString("hex")}@e2e.local`;
  expect(await reviewFixtureSql("select enabled::text from private.new_public_appeal_config where singleton"),
@@ -79,6 +80,7 @@ export async function auditAssignedAppeal(page:Page,browser:Browser,reviewer:str
   await expectAxeClean(page,async()=>{
    await expect(page.getByText("Claimant: Synthetic appeal requester.",{exact:true})).toBeVisible();
    await expect(page.getByRole("button",{name:"Refuse request",exact:true})).toBeDisabled();
+   await assertNoThirdParty(page,observed,"the assigned complete appeal theme",ORIGIN);
   });
   await assertNoThirdParty(page,observed,"the genuinely assigned incomplete appeal in both themes",ORIGIN);
   const foreign=await browser.newContext();
@@ -90,13 +92,64 @@ export async function auditAssignedAppeal(page:Page,browser:Browser,reviewer:str
    await expect(denied.getByText("Synthetic appeal requester",{exact:false})).toHaveCount(0);
   }finally{await foreign.close();}
   const before=await reviewFixtureSql(targetHashSql);
+  const caseBefore=await reviewFixtureSql(`select jsonb_build_object(
+   'intake',to_jsonb(intake),'appeal',to_jsonb(appeal),
+   'decisions',(select coalesce(jsonb_agg(to_jsonb(decision) order by decision.case_id),'[]')
+    from private.public_appeal_case_decisions decision where decision.case_id=intake.id))::text
+   from private.new_public_appeal_intakes intake join public.appeal_intakes appeal on appeal.id=intake.id where intake.id='${caseId}'::uuid`);
   const refusal=page.getByRole("heading",{name:"Refuse this request",exact:true}).locator("..");
   await refusal.getByLabel("Reason",{exact:true}).fill("The synthetic request has no evidence and is refused without changing any record.");
   await refusal.getByRole("checkbox").check();
   const decided=page.waitForResponse(response=>response.url()===`${ORIGIN}/api/reviews/appeals/${caseId}`&&response.request().method()==="POST");
   void decided.catch(()=>{});
-  await refusal.getByRole("button",{name:"Refuse request",exact:true}).click();
+  let release!:()=>void;
+  const barrier=new Promise<void>(resolve=>{release=resolve;});
+  let postCount=0;
+  const endpoint=`${ORIGIN}/api/reviews/appeals/${caseId}`;
+  const hold=async(route:import("@playwright/test").Route)=>{
+   if(route.request().method()==="POST") {postCount++;await barrier;}
+   await route.continue();
+  };
+  await page.route(endpoint,hold);
+  try{
+   await refusal.getByRole("button",{name:"Refuse request",exact:true}).click();
+   await expect.poll(()=>postCount).toBe(1);
+   await processing(async()=>{
+    expect(postCount,"only the original native POST is held").toBe(1);
+    await expect(refusal).toHaveAttribute("aria-busy","true");
+    await expect(refusal.getByRole("status")).toHaveText("Saving this choice.");
+    await expect(refusal.getByLabel("Reason",{exact:true})).toBeDisabled();
+    await expect(refusal.getByRole("checkbox")).toBeDisabled();
+    await expect(refusal.getByRole("button",{name:"Refuse request",exact:true})).toBeDisabled();
+    await expect(page.getByText("This request was closed.",{exact:true})).toHaveCount(0);
+    // Reload would abort the real pending POST; audit both themes in place.
+    for(const theme of ["light","dark"] as const){
+     await page.emulateMedia({colorScheme:theme});
+     await expect(page.locator("html")).toHaveClass(new RegExp(`(?:^|\\s)${theme}(?:\\s|$)`,"u"));
+     // Let the actual theme styles create their transitions, then await their
+     // completion under the unchanged assertion limit; do not disable them.
+     await page.evaluate(()=>new Promise<void>(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve()))));
+     await expect.poll(()=>page.evaluate(()=>document.getAnimations().filter(animation=>
+      animation instanceof CSSTransition&&(animation.pending||animation.playState==="running")).length)).toBe(0);
+     await expect(refusal).toHaveAttribute("aria-busy","true");
+     await expect(refusal.getByRole("status")).toHaveText("Saving this choice.");
+     await expect(refusal.getByRole("button",{name:"Refuse request",exact:true})).toBeDisabled();
+     expect(await axeViolations(page,theme),`held appeal POST (${theme})`).toEqual([]);
+     await assertNoThirdParty(page,observed,`the genuinely held appeal POST (${theme})`,ORIGIN);
+    }
+    await page.emulateMedia({colorScheme:"light"});
+    expect(await reviewFixtureSql(`select jsonb_build_object(
+     'intake',to_jsonb(intake),'appeal',to_jsonb(appeal),
+     'decisions',(select coalesce(jsonb_agg(to_jsonb(decision) order by decision.case_id),'[]')
+      from private.public_appeal_case_decisions decision where decision.case_id=intake.id))::text
+     from private.new_public_appeal_intakes intake join public.appeal_intakes appeal on appeal.id=intake.id where intake.id='${caseId}'::uuid`),
+     "no case, outcome or native revision changes before the original request is released").toBe(caseBefore);
+    expect(await reviewFixtureSql(targetHashSql)).toBe(before);
+    await expect(refusal).toHaveAttribute("aria-busy","true");
+   });
+  }finally{release();try{await decided;}finally{await page.unroute(endpoint,hold);}}
   expect((await decided).status()).toBe(200);
+  expect(postCount,"no second decision request or retry").toBe(1);
   await expect(page.getByRole("status")).toHaveText("This request was closed.");
   expect(await reviewFixtureSql(`select (intake.state='closed' and intake.wrapped_case_key is null and intake.working_ciphertext is null
    and intake.case_contact_id is null and appeal.appellant_account_id is null and appeal.state='rejected'

@@ -35,6 +35,7 @@ export function PublicAppealCaseRejection({ caseId, reviewRevision, csrf, nonce,
  }
  return <section className="space-y-3 rounded-xl border p-4" aria-busy={busy}>
   <h2>Refuse this request</h2>
+  {busy && <p role="status">Saving this choice.</p>}
   <p>This closes only this request. It does not give access or change anyone&apos;s data.</p>
   <label className="block">Reason<textarea value={reason} maxLength={2000} disabled={disabled || busy || unconfirmed}
    onChange={event => setReason(event.target.value)} /></label>

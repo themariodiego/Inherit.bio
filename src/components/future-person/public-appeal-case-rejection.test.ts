@@ -11,6 +11,8 @@ describe("separate final-case rejection control", () => {
   expect(html).toMatch(/disabled=""[^>]*>Refuse request/u); expect(html).toContain('maxLength="2000"');
   expect(html).not.toContain("approve-access"); expect(html).not.toContain('name="targetId"');
   expect(html).not.toContain("Keep the same choice");
+  expect(html).toContain('aria-busy="false"');
+  expect(html).not.toContain("Saving this choice.");
  });
  it("offers only native-admitted prior uphold with the same reason/read confirmation and no access or reversal control", () => {
   const html = renderToStaticMarkup(createElement(PublicAppealCaseRejection, { caseId: "87000000-0000-4000-8000-000000000001",

@@ -160,11 +160,11 @@ describe("the route gate holds the register to the code", () => {
     // 160 -> 161: the actual /legal/appeals TEST form adds only its processing pair.
     // Source census is exact; the controlled browser cases are UI-only and unrun here.
     // 161 -> 163: the appeal reviewer adds complete and processing obligations;
-    // neither has an authored browser proof, and no previous proof is removed.
+    // their original native journey now authors both without removing any previous proof.
     expect(result.requiredStateCount).toBe(163);
-    // Three native complete steps are authored, not a hosted-result claim;
+    // Three native complete steps passed on 2def; two appeal steps are authored here;
     // all six scientific partial/not-covered gaps remain required.
-    expect(result.provenStateCount).toBe(155);
+    expect(result.provenStateCount).toBe(157);
     expect(result.browserTestTitleCount).toBeGreaterThan(100);
     // The 34 routes src/app served at the baseline commit, measured by git
     // ls-tree and recorded in docs/route-dispositions.json: 27 kept, 7
@@ -1166,7 +1166,7 @@ describe("native embryo completion leaves scientific coverage obligations intact
     for (const entry of register.routes) for (const state of register.stateProfiles[entry.stateProfile]?.supported ?? []) {
       if (!(state in (entry.notApplicableStates ?? {})) && !authored.has(`${entry.path} ${state}`)) pending.push(`${entry.path} ${state}`);
     }
-    expect(pending.sort()).toEqual(["/embryos not-covered", "/embryos partial-coverage", "/embryos/[embryoId] not-covered", "/embryos/[embryoId] partial-coverage", "/embryos/compare not-covered", "/embryos/compare partial-coverage", "/reviews/appeals/[id] complete", "/reviews/appeals/[id] processing"]);
+    expect(pending.sort()).toEqual(["/embryos not-covered", "/embryos partial-coverage", "/embryos/[embryoId] not-covered", "/embryos/[embryoId] partial-coverage", "/embryos/compare not-covered", "/embryos/compare partial-coverage"]);
     for (const state of ["not-covered", "partial-coverage"]) expect(titleProves(step, "/embryos/compare", state)).toBe(false);
   });
 });

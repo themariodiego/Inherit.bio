@@ -127,7 +127,9 @@ test("/reviews/future-person/claims/[id] complete: full bytes, separate human re
     (select bool_and(s.wrapped_document_key is null and s.document_key_shredded_at is not null)
      from private.claim_document_sessions s where s.intake_id=r.id)
     from private.claim_reviews r join private.future_person_claim_intakes i on i.id=r.id where r.id='${claim}'::uuid`)).toBe("refused/true/true");
-  await auditAssignedAppeal(page,browser,reviewer);
+  await test.step("/reviews/appeals/[id] complete: assigned native case, verified headers and final refusal without target changes",async()=>
+   await auditAssignedAppeal(page,browser,reviewer,async assertions=>
+    await test.step("/reviews/appeals/[id] processing: original POST held with disabled controls and no premature native outcome",assertions)));
 });
 
 test("/reviews/future-person/claims/[id] processing: a canceled second chunk cannot become a read",async({page,context,baseURL})=>{

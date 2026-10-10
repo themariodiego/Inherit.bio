@@ -617,12 +617,13 @@ const TASK_BINDINGS = "scripts/comprehension/bindings.json";
  * comparison separate, so a drop is always attributable to a named cause
  * rather than assumed to be progress.
  */
-// Three genuine native complete proofs are prepared in the all-pass journey.
+// Three genuine native complete proofs passed in the saved 2def all-pass journey.
 // The six scientific partial/not-covered pairs remain unconstructible while
 // no eligible finding producer is approved; file QC is not their substitute.
-// The newly built appeal reviewer adds two required presentation states.
-// Neither is claimed as browser-proven; all six old scientific gaps remain.
-const UNPROVEN_ROUTE_STATE_PAIRS = 6 + 2;
+// Two appeal states now have substantive authored native journey steps; their
+// actual qualification still requires the complete new-head hosted run.
+// This source ratchet counts authored assertions, not successful executions.
+const UNPROVEN_ROUTE_STATE_PAIRS = 6;
 
 /**
  * The register's task-depth ceilings, unmeasured. This is a ratchet in the

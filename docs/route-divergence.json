@@ -28,7 +28,7 @@
       "closing": "Created with the declared policies and the document-specific data key when evidence ingest is built."
     }
   ],
-  "provenRouteStatesNote": "The executable (route, state) pairs named in current audited browser test titles, out of the 163 the register requires. The newly built appeal reviewer adds two unproved presentation states; all 155 existing source proofs and six scientific gaps remain unchanged. This is a static source contract, not a record of a successful run. scripts/route-gate.ts recomputes this list from e2e/**/*.spec.ts titles and fails if it differs in either direction; UNPROVEN_ROUTE_STATE_PAIRS holds the remaining source gaps. A title names the registered route path and state id as separate non-overlapping whole tokens. The three native embryo complete steps added on 2026-10-09 are prepared and still require full hosted execution on this exact source before acceptance. No partial/not-covered embryo pair is added: the empty approved registry cannot produce the required scientific finding states.",
+  "provenRouteStatesNote": "The executable (route, state) pairs named in current audited browser test titles, out of the 163 the register requires. This static source contract is separate from successful execution: saved exact-2def hosted run 38024298438 passed the three native embryo complete audits, leaving six scientific embryo pairs and two appeal pairs unqualified on that head. The new complete/processing appeal steps are authored through the same assigned native case and original held-then-released POST; their actual acceptance requires a complete new-head hosted run. scripts/route-gate.ts recomputes this list from e2e/**/*.spec.ts titles and fails if it differs in either direction; UNPROVEN_ROUTE_STATE_PAIRS holds only the remaining source gaps. A title names the registered route path and state id as separate non-overlapping whole tokens. No partial/not-covered embryo pair is added: the empty approved registry cannot produce the required scientific finding states.",
   "provenRouteStates": [
     "/ complete",
     "/about complete",
@@ -168,6 +168,8 @@
     "/overview processing",
     "/privacy complete",
     "/providers complete",
+    "/reviews/appeals/[id] complete",
+    "/reviews/appeals/[id] processing",
     "/reviews/future-person/claims/[id] complete",
     "/reviews/future-person/claims/[id] processing",
     "/science complete",
