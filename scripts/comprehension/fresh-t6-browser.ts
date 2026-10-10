@@ -21,6 +21,9 @@ import { startLocalStorageProxy } from "../local-storage-browser-proxy";
 import { chromiumStorageProxyArgs } from "../local-storage-browser-config";
 import { openParticipantCReadSession } from "../../e2e/participant-c-harness";
 import { seedParticipantC, participantCPassword } from "../../e2e/participant-c-journey";
+import { APP_LAUNCHER_DIAGNOSTIC_PREFIX, type AppLauncherDiagnostic } from "../ci-browser/app-launcher-diagnostic";
+import { forwardProfileDiagnostics } from "../ci-browser/profile-diagnostic-filter";
+import { OwnedAppReadinessFailure, waitForOwnedApp } from "./app-readiness";
 
 const setupStages = ["stack-acquisition", "bootstrap-keys", "reference-seed", "upload-capacity", "runtime-preflight",
   "storage-proxy", "app-configuration", "mail-capture", "main-app-ready", "embryo-app-ready", "chromium-launch",
@@ -28,7 +31,8 @@ const setupStages = ["stack-acquisition", "bootstrap-keys", "reference-seed", "u
 type SetupStage = typeof setupStages[number];
 function setupDiagnostic(stage: SetupStage, error: unknown, cleanup: "complete" | "uncertain" | "unreturned") {
   assert(setupStages.includes(stage), "Unregistered setup stage");
-  return JSON.stringify({ kind: "fresh-native-setup-failure", stage, ...freshRuntimeFailureClassification(error), cleanup });
+  return JSON.stringify({ kind: "fresh-native-setup-failure", stage, ...freshRuntimeFailureClassification(error), cleanup,
+    ...(error instanceof OwnedAppReadinessFailure ? { appReadiness: error.observation } : {}) });
 }
 /** Closed diagnostics supplement the original refusal. Cleanup uncertainty
  * still throws and retains ownership; a completed cleanup is not success. */
@@ -48,8 +52,14 @@ function startApp(port: 3100 | 3105, runtime: Record<string, string>, app: Recor
   if (operator) {
     const pipe = child.stdio[3] as Writable; pipe.on("error", () => {}); pipe.end(ownedLinuxChildProof(operator) + "\n");
   }
-  child.stdout!.resume(); child.stderr!.resume(); // No credential-bearing app diagnostics.
-  return child;
+  const diagnostics: AppLauncherDiagnostic[] = [];
+  const stopDiagnostics = forwardProfileDiagnostics([child.stdout, child.stderr], line => {
+    if (line.startsWith(APP_LAUNCHER_DIAGNOSTIC_PREFIX) && diagnostics.length < 32) {
+      diagnostics.push(JSON.parse(line.slice(APP_LAUNCHER_DIAGNOSTIC_PREFIX.length)) as AppLauncherDiagnostic);
+    }
+  });
+  child.once("close", stopDiagnostics);
+  return { child, diagnostics };
 }
 async function stopApp(child: ChildProcess) {
   if (child.exitCode !== null || child.signalCode !== null) return;
@@ -59,18 +69,6 @@ async function stopApp(child: ChildProcess) {
     child.once("exit", () => { clearTimeout(timer); resolve(); });
     child.kill("SIGTERM");
   });
-}
-async function ready(child: ChildProcess, port: number, signal: AbortSignal) {
-  const deadline = Date.now() + 60_000;
-  while (Date.now() < deadline) {
-    signal.throwIfAborted();
-    assert(child.exitCode === null && child.signalCode === null, "Owned app exited before readiness");
-    try { const result = await fetch(`http://localhost:${port}/`, { signal: AbortSignal.any([signal, AbortSignal.timeout(2_000)]), redirect: "manual" });
-      if (result.status === 200) return;
-    } catch { signal.throwIfAborted(); }
-    await new Promise(resolve => setTimeout(resolve, 100));
-  }
-  throw new Error("Owned app did not become ready");
 }
 async function mailCapture() {
   const messages: ComprehensionMail[] = [];
@@ -139,7 +137,8 @@ async function acquireSimulation(input: ParticipantCInput, signal: AbortSignal, 
     stage = "mail-capture";
     mail = await mailCapture();
     for (const port of [3100, 3105] as const) { stage = port === 3100 ? "main-app-ready" : "embryo-app-ready";
-      const app = startApp(port, runtime.env, appEnvironments[port], operator); apps.push(app); await ready(app, port, signal); }
+      const app = startApp(port, runtime.env, appEnvironments[port], operator); apps.push(app.child);
+      await waitForOwnedApp(app.child, port, signal, app.diagnostics); }
     stage = "chromium-launch";
     browser = await chromium.launch({ args: chromiumStorageProxyArgs(storageProxy.url), env: environment() });
     // This build receipt was checked against source and public configuration

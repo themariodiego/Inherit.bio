@@ -3,6 +3,7 @@ import {PROFILE_DIAGNOSTIC_LINE_BYTES,PROFILE_DIAGNOSTIC_PREFIX,profileDiagnosti
   from "../../src/lib/future-person/identity-profile-diagnostic-contract";
 
 import {REVIEW_DIAGNOSTIC_PREFIX,reviewDiagnosticLine} from "../../src/lib/future-person/review-diagnostic-contract";
+import {APP_LAUNCHER_DIAGNOSTIC_PREFIX,appLauncherDiagnosticLine} from "./app-launcher-diagnostic";
 
 export const PROFILE_DIAGNOSTIC_RECORD_LIMIT=64;
 /** A complete ASCII line is required. Oversize lines are discarded through
@@ -25,11 +26,13 @@ export function profileDiagnosticFilter(emit:(line:string)=>void){
         if(newline<0)break;
         const line=pending.toString("ascii");
         const prefix=line.startsWith(PROFILE_DIAGNOSTIC_PREFIX)?PROFILE_DIAGNOSTIC_PREFIX:
-          line.startsWith(REVIEW_DIAGNOSTIC_PREFIX)?REVIEW_DIAGNOSTIC_PREFIX:null;
+          line.startsWith(REVIEW_DIAGNOSTIC_PREFIX)?REVIEW_DIAGNOSTIC_PREFIX:
+          line.startsWith(APP_LAUNCHER_DIAGNOSTIC_PREFIX)?APP_LAUNCHER_DIAGNOSTIC_PREFIX:null;
         if(!discard&&prefix!==null){
           try{
             const value=JSON.parse(line.slice(prefix.length));
-            const safe=prefix===PROFILE_DIAGNOSTIC_PREFIX?profileDiagnosticLine(value):reviewDiagnosticLine(value);if(safe!==null&&line===safe)emit(safe);
+            const safe=prefix===PROFILE_DIAGNOSTIC_PREFIX?profileDiagnosticLine(value):
+              prefix===REVIEW_DIAGNOSTIC_PREFIX?reviewDiagnosticLine(value):appLauncherDiagnosticLine(value);if(safe!==null&&line===safe)emit(safe);
           }catch{/* Unknown logs and failed sinks have no diagnostic authority. */}
         }
         pending=Buffer.alloc(0);discard=false;start=newline+1;

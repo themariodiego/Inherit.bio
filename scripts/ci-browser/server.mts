@@ -11,11 +11,18 @@ import { createInterface } from "node:readline";
 import { checkedCiLauncherEnvironment, checkedAppEnvironment, CI_RUNTIME_CONTAINER } from "../ci-browser-config";
 import { startCiArtifactGateway } from "./artifact-gateway-start";
 import { forwardProfileDiagnostics } from "./profile-diagnostic-filter";
+import { appLauncherDiagnosticLine, type AppLauncherStage } from "./app-launcher-diagnostic";
 const mode = process.argv[2];
 const port = Number(process.argv[3]);
 const children = new Set<ChildProcess>();
 const sockets = new Set<net.Socket>();
 let stopping = false;
+let stage: AppLauncherStage = "runtime-proof";
+function diagnostic(outcome: "starting" | "ready" | "refused" | "child-error" | "child-exit", at = stage,
+  exitCode: number | null = null, signal: string | null = null) {
+  const line = appLauncherDiagnosticLine({ mode, port: mode === "mail" ? null : port, stage: at, outcome, exitCode, signal });
+  if (line) process.stderr.write(line + "\n");
+}
 const closers: Array<() => void> = [];
 function stop(failed = false) {
   if (stopping) return;
@@ -36,10 +43,10 @@ function stop(failed = false) {
   }, 5000).unref();
 }
 for (const signal of ["SIGINT", "SIGTERM"] as const) process.once(signal, () => stop());
-function own(child: ChildProcess) {
+function own(child: ChildProcess, childStage: AppLauncherStage) {
   children.add(child); child.stdin?.on("error", () => {});
-  child.once("error", () => stop(true));
-  child.once("exit", () => { children.delete(child); if (!stopping) stop(true); });
+  child.once("error", () => { if (!stopping) diagnostic("child-error", childStage); stop(true); });
+  child.once("exit", (code, signal) => { children.delete(child); if (!stopping) { diagnostic("child-exit", childStage, code, signal); stop(true); } });
   return child;
 }
 function track(...items: net.Socket[]) {
@@ -63,13 +70,16 @@ try {
         operator = receiveOwnedLinuxChildProof(Buffer.concat(chunks).toString("utf8").trim(), 3);
       } finally { clearTimeout(timer); source.destroy(); closeSync(3); }
     }
+    diagnostic("ready"); stage = "environment";
     const env = checkedCiLauncherEnvironment(process.env, port, process.platform, operator);
     const user = `${process.env.INHERIT_CI_RUNTIME_UID}:${process.env.INHERIT_CI_RUNTIME_GID}`;
     assert(/^[1-9][0-9]*:[1-9][0-9]*$/.test(user), "Unprivileged runtime identity required");
-    const exec = (args: string[]) => own(spawn("docker", ["exec", "-i", "--user", user, CI_RUNTIME_CONTAINER, "node", "--import", "tsx", "/app/scripts/ci-browser/server.mts", ...args],
-      { ...(operator ? { env: { ...cleanEnv, DOCKER_HOST: process.env.DOCKER_HOST } } : {}), stdio: ["pipe", "pipe", "pipe"] }));
+    diagnostic("ready");
+    const exec = (args: string[], childStage: AppLauncherStage) => own(spawn("docker", ["exec", "-i", "--user", user, CI_RUNTIME_CONTAINER, "node", "--import", "tsx", "/app/scripts/ci-browser/server.mts", ...args],
+      { ...(operator ? { env: { ...cleanEnv, DOCKER_HOST: process.env.DOCKER_HOST } } : {}), stdio: ["pipe", "pipe", "pipe"] }), childStage);
     if (port === 3100) {
-      const relay = exec(["mail"]);
+      stage = "mail-relay"; diagnostic("starting");
+      const relay = exec(["mail"], "mail-relay");
       relay.stderr?.resume();
       await new Promise<void>((resolve, reject) => {
         const timer = setTimeout(() => reject(new Error("Mail relay readiness failed")), 10_000);
@@ -98,8 +108,10 @@ try {
           } catch { clearTimeout(timer); reject(new Error("Mail relay protocol refused")); stop(true); }
         });
       });
+      diagnostic("ready");
     }
-    const child = exec(["inside", String(port), process.env.INHERIT_CI_GATEWAY ?? ""]);
+    stage = "inside-launcher"; diagnostic("starting");
+    const child = exec(["inside", String(port), process.env.INHERIT_CI_GATEWAY ?? ""], "inside-launcher");
     closers.push(forwardProfileDiagnostics([child.stdout,child.stderr],line=>process.stderr.write(line+"\n")));
     child.stdin!.write(JSON.stringify(env) + "\n");
   } else {
@@ -139,8 +151,10 @@ try {
       assert(mode === "inside"); let initialized = false;
       input.on("line", line => { void (async () => {
         assert(!initialized && line.length < 65_536, "Single bounded app configuration required"); initialized = true;
-        const env = checkedAppEnvironment(JSON.parse(line), port);
+        stage = "app-configuration";
+        const env = checkedAppEnvironment(JSON.parse(line), port); diagnostic("ready");
         if (port === 3104 || port === 3105) {
+          stage = "artifact-gateway"; diagnostic("starting");
           const signingKey = JSON.parse(env.INHERIT_UPLOAD_SIGNING_JWK);
           assert(signingKey.kty === "EC" && signingKey.crv === "P-256" && typeof signingKey.kid === "string",
             "Synthetic upload signer required");
@@ -150,8 +164,10 @@ try {
             key: readFileSync("/tls/fixture/model.key"), cert: readFileSync("/tls/fixture/model.crt"),
           });
           closers.push(() => { void artifacts.close(); });
+          diagnostic("ready");
         }
         if (port === 3100) {
+          stage = "database-proxy"; diagnostic("starting");
           const gateway = process.argv[4]; assert(net.isIP(gateway) === 4);
           const proxy = net.createServer(downstream => {
             const upstream = net.connect({ host: gateway, port: 8000 }); track(downstream, upstream);
@@ -159,8 +175,9 @@ try {
           });
           closers.push(() => proxy.close());
           await new Promise<void>((resolve, reject) => { proxy.once("error", reject); proxy.listen(54321, "127.0.0.1", resolve); });
+          diagnostic("ready"); stage = "fixture"; diagnostic("starting");
           const daemon = own(spawn("node", ["--import", "tsx", "/app/e2e/fixtures/canonical-copilot-daemon.run.mts"],
-            { cwd: "/app", env: cleanEnv, detached: true, stdio: ["ignore", "pipe", "pipe"] }));
+            { cwd: "/app", env: cleanEnv, detached: true, stdio: ["ignore", "pipe", "pipe"] }), "fixture");
           daemon.stderr?.resume();
           await new Promise<void>((resolve, reject) => {
             const timer = setTimeout(() => reject(new Error("Synthetic fixture readiness failed")), 10_000);
@@ -168,6 +185,7 @@ try {
             const lines = createInterface({ input: daemon.stdout! }); closers.push(() => lines.close());
             lines.on("line", value => { if (value === "Synthetic Copilot fixture control is ready on port 8130.") { clearTimeout(timer); resolve(); } });
           });
+          diagnostic("ready");
         }
         if (stopping) return;
         // Playwright's request client pools keep-alive sockets with no idle
@@ -176,16 +194,17 @@ try {
         // request dispatched as that close arrives dies as "socket hang up"
         // (three integration runs, G1.5). 65 s keeps the same server above
         // every gap this suite leaves between two requests.
+        stage = "next-app"; diagnostic("starting");
         const app = own(spawn("node", ["/app/node_modules/next/dist/bin/next", "start", "--port", String(port), "--keepAliveTimeout", "65000"], {
           cwd: "/app", env: { ...cleanEnv, ...env, NODE_ENV: "production", NODE_EXTRA_CA_CERTS: "/tls/fixture/ca.crt" },
           detached: true, stdio: ["ignore", "pipe", "pipe"],
-        }));
+        }), "next-app");
         // Only complete, bounded, enum-only profile diagnostics cross either
         // launcher hop. Playwright retains web-server stderr; stdout is ignored.
         // Every other app log stays discarded.
         closers.push(forwardProfileDiagnostics([app.stdout,app.stderr],line=>process.stderr.write(line+"\n")));
         console.log(`Started isolated production app variant ${port}`);
-      })().catch(() => { console.error("Isolated app initialization failed; no request or environment details retained"); stop(true); }); });
+      })().catch(() => { diagnostic("refused"); console.error("Isolated app initialization failed; no request or environment details retained"); stop(true); }); });
     }
   }
-} catch { console.error("Isolated browser launcher failed; no request or environment details retained"); stop(true); }
+} catch { diagnostic("refused"); console.error("Isolated browser launcher failed; no request or environment details retained"); stop(true); }
