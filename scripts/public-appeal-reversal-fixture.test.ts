@@ -4,10 +4,10 @@ import { describe, expect, it } from "vitest";
 const fixture = readFileSync("supabase/tests/public_appeal_evidence_session.sql", "utf8");
 
 describe("independent native appeal fixture document keys", () => {
-  it("gives every source, uphold and reversal document its own 72-byte wrapped-key fixture", () => {
+  it("gives every source, uphold, reversal and information document its own 72-byte wrapped-key fixture", () => {
     const keys = [Buffer.alloc(72, 1).toString("hex"), Buffer.alloc(72, 2).toString("hex")];
     for (const [name, documents] of [["prior_appeal_uphold_probe", 3], ["reversal_genetic_source", 2],
-      ["prior_appeal_reverse_probe", 3]] as const) {
+      ["prior_appeal_reverse_probe", 3], ["appeal_information_probe", 2]] as const) {
       const start = fixture.indexOf(`create function pg_temp.${name}(`);
       expect(start).toBeGreaterThan(0);
       const body = fixture.slice(start, fixture.indexOf("end $test$;", start));
@@ -24,7 +24,7 @@ describe("independent native appeal fixture document keys", () => {
         keys.push(key.toString("hex"));
       }
     }
-    expect(keys).toHaveLength(10);
+    expect(keys).toHaveLength(12);
     expect(new Set(keys).size).toBe(keys.length);
     const schema = readFileSync("supabase/migrations/20261009204626_public_appeal_evidence_session.sql", "utf8");
     expect(schema).toContain("create unique index appeal_document_independent_wrapped_key on private.appeal_document_sessions(wrapped_document_key)");

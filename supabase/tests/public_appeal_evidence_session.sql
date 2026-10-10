@@ -904,7 +904,7 @@ begin
   select to_jsonb(source) into before_intake from private.new_public_appeal_intakes source where source.id=v_case;
   select coalesce(jsonb_agg(to_jsonb(source) order by source.case_id),'[]') into before_holds from private.public_appeal_provisional_targets source;
   before_targets:=jsonb_build_object('subjects',(select coalesce(jsonb_agg(to_jsonb(source) order by source.id),'[]') from public.subjects source),
-   'cohorts',(select coalesce(jsonb_agg(to_jsonb(source) order by source.id),'[]') from public.cohorts source));
+   'cohorts',(select coalesce(jsonb_agg(to_jsonb(source) order by source.id),'[]') from public.embryo_cohorts source));
   context:=public.read_public_appeal_case_context_v1(v_case);
   if not(context->'allowedDecisions' ? 'needs-more-information') then raise exception 'information option absent';end if;
   begin
@@ -971,7 +971,7 @@ begin
   for kind in select unnest(array['appeal-photo-identity','appeal-subject-source-control']) loop
    ordinal:=ordinal+1;cookie:=pg_temp.h('information-upload:'||kind);compose_nonce:=pg_temp.h('information-compose:'||kind);
    opened:=public.open_public_appeal_document_v1(fresh_hash,repeat(chr(105+ordinal),32),kind,
-    'application/pdf',octet_length('%PDF-1.7 information fixture'),sha,cookie,decode(repeat('13',72),'hex'));
+    'application/pdf',octet_length('%PDF-1.7 information fixture'),sha,cookie,decode(repeat(lpad((50+ordinal)::text,2,'0'),72),'hex'));
    perform public.reserve_claim_document_chunk_v1((opened->>'session')::uuid,cookie,0,octet_length('%PDF-1.7 information fixture'),sha);
    perform public.settle_claim_document_chunk_v1((opened->>'session')::uuid,cookie,0,true);
    plan:=public.begin_claim_document_completion_v1((opened->>'session')::uuid,cookie,compose_nonce,1);
@@ -1010,7 +1010,7 @@ begin
  if (select to_jsonb(source) from private.new_public_appeal_intakes source where source.id=v_case) is distinct from before_intake
   or (select coalesce(jsonb_agg(to_jsonb(source) order by source.case_id),'[]') from private.public_appeal_provisional_targets source) is distinct from before_holds
   or jsonb_build_object('subjects',(select coalesce(jsonb_agg(to_jsonb(source) order by source.id),'[]') from public.subjects source),
-   'cohorts',(select coalesce(jsonb_agg(to_jsonb(source) order by source.id),'[]') from public.cohorts source)) is distinct from before_targets
+   'cohorts',(select coalesce(jsonb_agg(to_jsonb(source) order by source.id),'[]') from public.embryo_cohorts source)) is distinct from before_targets
   then raise exception 'request changed original intake, holds or target rows';end if;
  flags:=flags||jsonb_build_object('originalAndTargetsRestored',true);
  return flags;
