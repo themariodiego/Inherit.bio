@@ -16,6 +16,7 @@ import {
   MAP_CAPTION,
   MAP_LABEL,
   MARKER_GLOSS,
+  NEANDERTHAL_BODY,
   NEANDERTHAL_HEADING,
   NOISE,
   NOTHING_READ,
@@ -493,6 +494,10 @@ describe("NeanderthalCard", () => {
     expect(html).toContain('id="neanderthal"');
     expect(html).toMatch(new RegExp(`<h2[^>]*>${NEANDERTHAL_HEADING}</h2>`));
     expect(html).toContain(DENISOVAN);
+    expect(html).toContain(NEANDERTHAL_BODY);
+    expect(NEANDERTHAL_BODY.trim().split(/\s+/).length).toBeLessThanOrEqual(40);
+    expect(html).not.toContain("data-figure-kind");
+    expect(html).not.toContain("%");
     expect(html).not.toContain("archaic-hominin");
     expect(openingTags(html).filter((tag) => /^h[1-6]$/.test(tag.tag))).toHaveLength(1);
   });
