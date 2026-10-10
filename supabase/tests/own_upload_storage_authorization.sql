@@ -42,7 +42,7 @@ grant select on role_upload to service_role;
 select ok((select split_part(receipt->>'stagingKey','/',1)=receipt->>'accountId'
  and split_part(receipt->>'stagingKey','/',2)=(select id::text from upload_role_subject)
  and split_part(receipt->>'stagingKey','/',3)=receipt->>'uploadId'
- and split_part(receipt->>'stagingKey','/',4) ~ '^[0-9a-f-]{36}\.part$' from role_upload),
+ and split_part(receipt->>'stagingKey','/',4) ~ '^original-[0-9a-f-]{36}\.part$' from role_upload),
  'native issuance uses exact account/subject/upload/opaque-part namespace');
 select throws_ok($$update public.upload_sessions set staging_object_name=gen_random_uuid()::text
  where id=(select (receipt->>'uploadId')::uuid from role_upload)$$,'22023','upload_key_unavailable',
@@ -52,7 +52,7 @@ select throws_ok($$insert into public.upload_sessions select (jsonb_populate_rec
  from public.upload_sessions u where id=(select (receipt->>'uploadId')::uuid from role_upload)$$,
  '22023','upload_key_unavailable','new token-bound native rows cannot mint a legacy flat locator');
 
-select throws_ok($$update public.upload_sessions set final_object_name=account_id::text || '/' || subject_id::text || '/' || id::text || '/' || gen_random_uuid()::text || '.g.vcf'
+select throws_ok($$update public.upload_sessions set final_object_name=account_id::text || '/' || subject_id::text || '/' || id::text || '/original-' || gen_random_uuid()::text || '.g.vcf'
  where id=(select (receipt->>'uploadId')::uuid from role_upload)$$,'22023','upload_key_unavailable',
  'declared VCF cannot admit a gVCF locator through a partial suffix match');
 select throws_ok($$update public.upload_sessions set declared_format=null

@@ -42,11 +42,12 @@ describe("namespace changes preserve complete native authority bodies", () => {
     expect(retirement).toBe(body(root + "20260909001117_own_prepared_original_retirement.sql", "track_own_original_retirement_v1"));
   });
   it("preserves old locator bytes and never renames, moves or scans Storage", () => {
+    expect(migration).toContain("p_upload::text || '/original-' ||");
     expect(migration).toContain("alter column final_object_name type text using final_object_name::text");
     expect(migration).toContain("alter column object_key type text using object_key::text");
     expect(migration).not.toMatch(/(?:update|delete from|insert into) storage\.objects|create policy|grant (?:select|insert|update|delete)/i);
     expect(migration).toContain("old.final_object_name is not null and new.final_object_name is distinct from old.final_object_name");
-    expect(migration).toContain("substring(new.final_object_name from length(prefix)+37) is distinct from expected_extension");
+    expect(migration).toContain("substring(new.final_object_name from length(prefix)+46) is distinct from expected_extension");
     for (const signature of ["genome_original_key_shape_v1(text)", "subject_upload_object_key_v1(uuid,uuid,uuid,text,boolean)", "guard_subject_upload_namespace_v1()"]) {
       expect(migration).toContain(`revoke all on function private.${signature}\n from public,anon,authenticated,inherit_upload_only,service_role;`);
     }

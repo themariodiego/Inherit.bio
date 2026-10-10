@@ -5,14 +5,14 @@
 
 create function private.genome_original_key_shape_v1(p_key text)
 returns boolean language sql immutable set search_path = '' as $$
- select coalesce(p_key ~ '^([0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}|([0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}/){3}[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\.(part|vcf|vcf\.gz|g\.vcf|txt|tsv))$',false);
+ select coalesce(p_key ~ '^([0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}|([0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}/){3}original-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\.(part|vcf|vcf\.gz|g\.vcf|txt|tsv))$',false);
 $$;
 revoke all on function private.genome_original_key_shape_v1(text)
  from public,anon,authenticated,inherit_upload_only,service_role;
 
 create function private.subject_upload_object_key_v1(p_account uuid,p_subject uuid,p_upload uuid,p_format text,p_staging boolean)
 returns text language sql volatile set search_path = '' as $$
- select p_account::text || '/' || p_subject::text || '/' || p_upload::text || '/' ||
+ select p_account::text || '/' || p_subject::text || '/' || p_upload::text || '/original-' ||
  pg_catalog.gen_random_uuid()::text || case when p_staging then '.part'
   when p_format='VCF' then '.vcf' when p_format='VCF.GZ' then '.vcf.gz'
   when p_format='gVCF' then '.g.vcf' when p_format like 'consumer-array-text-v%' then '.txt' end;
@@ -25,15 +25,15 @@ alter table public.upload_sessions alter column final_object_name type text usin
 alter table private.own_original_retirements alter column object_key type text using object_key::text;
 alter table public.upload_sessions drop constraint upload_sessions_staging_object_name_check;
 alter table public.upload_sessions add constraint upload_sessions_staging_object_name_check
- check(staging_object_name ~ '^([0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}|([0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}/){3}[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\.(part|vcf|vcf\.gz|g\.vcf|txt|tsv))$');
+ check(staging_object_name ~ '^([0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}|([0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}/){3}original-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\.(part|vcf|vcf\.gz|g\.vcf|txt|tsv))$');
 alter table public.genome_storage_objects drop constraint genome_storage_objects_object_name_check;
 alter table public.genome_storage_objects add constraint genome_storage_objects_object_name_check
- check(object_name ~ '^([0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}|([0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}/){3}[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\.(part|vcf|vcf\.gz|g\.vcf|txt|tsv))$');
+ check(object_name ~ '^([0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}|([0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}/){3}original-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\.(part|vcf|vcf\.gz|g\.vcf|txt|tsv))$');
 alter table public.other_adult_held_uploads drop constraint other_adult_held_uploads_object_name_check;
 alter table public.other_adult_held_uploads add constraint other_adult_held_uploads_object_name_check
- check(object_name ~ '^([0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}|([0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}/){3}[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\.(part|vcf|vcf\.gz|g\.vcf|txt|tsv))$');
+ check(object_name ~ '^([0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}|([0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}/){3}original-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\.(part|vcf|vcf\.gz|g\.vcf|txt|tsv))$');
 alter table private.own_original_retirements add constraint own_original_retirements_object_key_shape
- check(object_key ~ '^([0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}|([0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}/){3}[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\.(part|vcf|vcf\.gz|g\.vcf|txt|tsv))$');
+ check(object_key ~ '^([0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}|([0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}/){3}original-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\.(part|vcf|vcf\.gz|g\.vcf|txt|tsv))$');
 
 -- A legacy row may keep its exact flat staging/final locators. New rows cannot
 -- mint them; new final names on an old upload still use its existing row IDs.
@@ -57,7 +57,7 @@ begin
   not private.genome_original_key_shape_v1(new.final_object_name)
   or (position('/' in new.final_object_name)>0 and (expected_extension is null
    or left(new.final_object_name,length(prefix)) is distinct from prefix
-   or substring(new.final_object_name from length(prefix)+37) is distinct from expected_extension))
+   or substring(new.final_object_name from length(prefix)+46) is distinct from expected_extension))
   or (position('/' in new.final_object_name)=0 and (tg_op='INSERT'
    or new.final_object_name is distinct from old.final_object_name))) then
   raise exception using errcode='22023',message='upload_key_unavailable'; end if;

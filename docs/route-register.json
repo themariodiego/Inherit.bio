@@ -21845,7 +21845,7 @@
       "bucket": "genomes",
       "prefix": "{account_id}/{subject_id}/{upload_id}/{filename}",
       "disposition": "kept",
-      "filenameContract": "the-filename-placeholder-is-one-server-generated-opaque-single-segment-name-with-an-allowlisted-normalized-extension; slash-backslash-dot-segments-control-characters-and-original-filenames-are-forbidden; staging-is-opaque-v4-uuid.part-and-final-extension-is-vcf-vcf.gz-g.vcf-or-txt-selected-from-the-declared-format-and-kept-only-after-existing-server-format-structure-and-hash-verification",
+      "filenameContract": "the-filename-placeholder-is-one-server-generated-opaque-single-segment-name-with-an-allowlisted-normalized-extension; slash-backslash-dot-segments-control-characters-and-original-filenames-are-forbidden; staging-is-original-opaque-v4-uuid.part-and-final-has-the-same-fixed-original-stem-with-extension-is-vcf-vcf.gz-g.vcf-or-txt-selected-from-the-declared-format-and-kept-only-after-existing-server-format-structure-and-hash-verification",
       "authority": "Database-owned upload session; clients never supply an arbitrary object path or object-name segment."
     },
     {

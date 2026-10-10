@@ -377,7 +377,7 @@ describe("another adult's held upload under Path B (TEST-LOCAL)", () => {
 
 
 it("mints the unchanged restricted bearer for the exact account/subject/upload staging key", async () => {
-  const key = `${accountId}/${jti}/${uploadId}/${stagingKey}.part`;
+  const key = `${accountId}/${jti}/${uploadId}/original-${stagingKey}.part`;
   mocks.rpc.mockResolvedValueOnce({ data: { ...authorization, stagingKey: key }, error: null });
   const response = await issueSubjectUpload(request());
   expect(response.status).toBe(201);

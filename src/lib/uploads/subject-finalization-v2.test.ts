@@ -299,8 +299,8 @@ it("does not trust an existing destination whose full hash differs", async () =>
 
 it("promotes and cleans the exact current account/subject/upload namespace through the full original pipeline", async () => {
   const prefix = `${accountId}/${sessionId}/${uploadId}/`;
-  manifest.stagingKey = `${prefix}${stagingKey}.part`;
-  manifest.finalKey = `${prefix}${finalKey}.vcf`;
+  manifest.stagingKey = `${prefix}original-${stagingKey}.part`;
+  manifest.finalKey = `${prefix}original-${finalKey}.vcf`;
   const response = await send();
   expect(response.status).toBe(200);
   expect(await response.json()).toEqual(receipt);
@@ -313,8 +313,8 @@ it("promotes and cleans the exact current account/subject/upload namespace throu
 
 it("refuses a current namespace for another account before any byte or provider operation", async () => {
   const prefix = `${sessionId}/${accountId}/${uploadId}/`;
-  manifest.stagingKey = `${prefix}${stagingKey}.part`;
-  manifest.finalKey = `${prefix}${finalKey}.vcf`;
+  manifest.stagingKey = `${prefix}original-${stagingKey}.part`;
+  manifest.finalKey = `${prefix}original-${finalKey}.vcf`;
   expect((await send()).status).toBe(503);
   expect(mocks.fetch).not.toHaveBeenCalled();
   expect(mocks.copy).not.toHaveBeenCalled();

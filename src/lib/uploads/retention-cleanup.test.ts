@@ -60,7 +60,7 @@ describe("database-selected upload retention drain", () => {
 it("retires the exact current namespace without broad prefix deletion or key rewriting", async () => {
   const prefix = `${manifestId}/${key}/${finalKey}/`;
   const objects = work.objects.map((object, i) => ({ ...object,
-    objectName: `${prefix}${object.objectName}.${i === 0 ? "part" : "vcf"}` }));
+    objectName: `${prefix}original-${object.objectName}.${i === 0 ? "part" : "vcf"}` }));
   let issued = false;
   rpc.mockImplementation(async name => {
     if (name !== "claim_own_upload_purge_v1") return { data: true, error: null };

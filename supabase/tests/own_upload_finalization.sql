@@ -143,7 +143,17 @@ select is((select count(*) from public.genome_files where user_id='76300000-0000
 select ok((select split_part(bucket_path,'/',1)=user_id::text
  and split_part(bucket_path,'/',2)=subject_id::text
  and split_part(bucket_path,'/',3)=(select id::text from public.upload_sessions where finalized_file_id=(select (receipt->>'fileId')::uuid from finalized_receipt))
+ and split_part(bucket_path,'/',4) ~ '^original-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\.vcf$'
  from public.genome_files where id=(select (receipt->>'fileId')::uuid from finalized_receipt)),
  'the immutable final original remains in its exact account/subject/upload namespace');
+select ok(not private.embryo_ingest_object_name_v1('genomes',
+ (select bucket_path from public.genome_files where id=(select (receipt->>'fileId')::uuid from finalized_receipt))),
+ 'the actual ordinary original is lexically outside the unchanged embryo intent namespace');
+select ok(private.embryo_ingest_object_name_v1('genomes',
+ '76300000-0000-4000-8000-000000000001/76300000-0000-4000-8000-000000000002/76300000-0000-4000-8000-000000000003/76300000-0000-4000-8000-000000000004.vcf'),
+ 'the original four-UUID embryo classifier remains active');
+select throws_ok($$insert into storage.objects(bucket_id,name,metadata) values('genomes',
+ '76300000-0000-4000-8000-000000000001/76300000-0000-4000-8000-000000000002/76300000-0000-4000-8000-000000000003/76300000-0000-4000-8000-000000000004.vcf','{"size":8}')$$,
+ '42501','embryo_object_unavailable','a genuine embryo-shaped locator still requires its exact current write intent');
 select * from finish();
 rollback;
