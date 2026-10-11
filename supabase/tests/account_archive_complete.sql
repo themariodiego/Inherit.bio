@@ -192,8 +192,13 @@ select is((select count(*) from public.account_operation_nonces where nonce_hash
  'both genuine signing POSTs record exactly their own consumed nonce');
 select throws_ok($$select pg_temp.sign_adult('consent.upload-self',array['own-adult-dna'])$$,
  '42501','not_found','the genuine v2 adult signer refuses its already consumed nonce');
-insert into storage.objects(id,bucket_id,name,metadata) values('77900000-0000-4000-8000-000000000082',
- 'genomes','77900000-0000-4000-8000-000000000081','{"size":8}');
+-- SQL-only physical identity metadata exists before the new full capture;
+-- this fixed stored UUID is not provider-byte or provider-version evidence.
+insert into storage.objects(id,bucket_id,name,metadata,version) values('77900000-0000-4000-8000-000000000082',
+ 'genomes','77900000-0000-4000-8000-000000000081','{"size":8}','77900000-0000-4000-8000-000000000084');
+select is((select version from storage.objects where id='77900000-0000-4000-8000-000000000082'),
+ '77900000-0000-4000-8000-000000000084',
+ 'the genuine foreign Storage metadata version exists before authority capture');
 -- The included binding lifecycle flushes all deferred constraints and leaves
 -- them immediate. Defer only this original circular file/object FK while both
 -- unchanged synthetic metadata rows are inserted, then validate the full pair.
@@ -475,6 +480,18 @@ select is(jsonb_array_length(pg_temp.complete_read('claimant','member-rows','rep
 create temporary table complete_original as select pg_temp.complete_read('claimant','original',null,jsonb_build_object(
  'fileId','77900000-0000-4000-8000-000000000083','expected',null)) value;
 select is((select value->>'version' from complete_original),'account-complete-original-v1','foreign original has its distinct authority envelope');
+select is((select value#>>'{source,storageVersion}' from complete_original),
+ (select version from storage.objects where id='77900000-0000-4000-8000-000000000082'),
+ 'the actual foreign original descriptor preserves the whole captured Storage version');
+savepoint missing_foreign_original_version;
+update storage.objects set version=null where id='77900000-0000-4000-8000-000000000082';
+select throws_ok($$select pg_temp.complete_read('claimant','original',null,jsonb_build_object(
+ 'fileId','77900000-0000-4000-8000-000000000083','expected',(select value from complete_original)))$$,
+ '42501','not_found','missing physical version cannot reuse the actual foreign original authority');
+rollback to missing_foreign_original_version;
+select is(pg_temp.complete_read('claimant','original',null,jsonb_build_object(
+ 'fileId','77900000-0000-4000-8000-000000000083','expected',(select value from complete_original))),
+ (select value from complete_original),'rollback restores the exact foreign original descriptor and authority');
 select is((select value->>'rawAuthoritySha256' from complete_original),
  (select f->>'rawAuthoritySha256' from complete_contexts,jsonb_array_elements(value#>'{completeReceipt,files}')f
   where name='claimant' and f->>'fileId'='77900000-0000-4000-8000-000000000083'),
