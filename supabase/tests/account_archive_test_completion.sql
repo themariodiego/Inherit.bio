@@ -67,9 +67,47 @@ select throws_ok($$select pg_temp.complete(pg_temp.producer()||'{"unproved":true
 select throws_ok($$select pg_temp.complete(pg_temp.producer()||'{"memberCount":0}')$$,'42501','account_archive_test_unavailable','incomplete producer refused');
 select throws_ok($$select pg_temp.complete(pg_temp.producer()||jsonb_build_object('memberSha256',repeat('1',64)::numeric))$$,
  '42501','account_archive_test_unavailable','hash-looking numeric JSON cannot substitute for the exact string proof');
+-- Completion rechecks the complete captured source before its later provider
+-- configuration predicate. Closing the store invalidates that captured
+-- authority, so the original currentness delegate refuses first with not_found.
+-- Snapshot every actual publication/allocation/delivery row around the refusal.
+create function pg_temp.closed_provider_state() returns jsonb language sql as $$
+ select jsonb_build_object(
+ 'generatedExport',(select to_jsonb(e) from public.generated_exports e
+  where e.id=(select(created->>'exportId')::uuid from completion_fixture)),
+ 'job',(select to_jsonb(j) from private.export_archive_jobs j
+  where j.export_id=(select(created->>'exportId')::uuid from completion_fixture)),
+ 'attempts',(select coalesce(jsonb_agg(to_jsonb(a) order by a.id),'[]') from private.export_archive_attempts a
+  where a.export_id=(select(created->>'exportId')::uuid from completion_fixture)),
+ 'segments',(select coalesce(jsonb_agg(to_jsonb(s) order by s.ordinal),'[]') from private.export_archive_segments s
+  where s.attempt_id='79800000-0000-4000-8000-000000000030'),
+ 'manifestPages',(select coalesce(jsonb_agg(to_jsonb(p) order by p.page),'[]') from private.export_archive_manifest_pages p
+  where p.attempt_id='79800000-0000-4000-8000-000000000030'),
+ 'allocations',(select coalesce(jsonb_agg(to_jsonb(r) order by r.ordinal),'[]') from private.account_archive_r2_allocations r
+  where r.attempt_id='79800000-0000-4000-8000-000000000030'),
+ 'downloads',(select coalesce(jsonb_agg(to_jsonb(d) order by d.id),'[]') from private.export_archive_downloads d
+  where d.export_id=(select(created->>'exportId')::uuid from completion_fixture)),
+ 'nonceUses',(select coalesce(jsonb_agg(to_jsonb(n) order by n.nonce_hash),'[]') from private.export_archive_nonce_uses n
+  where n.export_id=(select(created->>'exportId')::uuid from completion_fixture)),
+ 'configuration',(select to_jsonb(c) from private.account_archive_r2_configuration c where c.singleton));
+$$;
 savepoint closed;
 update private.account_archive_r2_configuration set enabled=false;
-select throws_ok($$select pg_temp.complete()$$,'42501','account_archive_test_unavailable','closed provider refuses READY');
+create temporary table closed_provider_before as select pg_temp.closed_provider_state() value;
+select throws_ok($$select private.export_archive_current_v1(
+ (select(created->>'exportId')::uuid from completion_fixture),
+ (select capture->>'authorityReceipt' from completion_fixture))$$,
+ '42501','not_found','closed provider invalidates the genuine complete request at its currentness delegate');
+select throws_ok($$select pg_temp.complete()$$,'42501','not_found','closed provider refuses READY');
+select is(pg_temp.closed_provider_state(),(select value from closed_provider_before),
+ 'closed-provider currentness and READY refusals preserve all actual export/job/attempt/manifest/allocation/download/nonce/configuration fields');
+select ok((select e.status='building' and e.completed_at is null and e.expires_at is null
+ and e.archive_sha256 is null and e.manifest_sha256 is null and e.byte_count is null
+ and a.account_r2_completion is null
+ from public.generated_exports e join private.export_archive_attempts a on a.export_id=e.id
+ where e.id=(select(created->>'exportId')::uuid from completion_fixture)
+ and a.id='79800000-0000-4000-8000-000000000030'),
+ 'closed provider publishes no READY or completion proof and cannot adopt the existing allocation');
 rollback to closed;
 savepoint expired_origin;
 update auth.sessions set not_after=clock_timestamp()-interval '1 second' where id='79800000-0000-4000-8000-000000000010';

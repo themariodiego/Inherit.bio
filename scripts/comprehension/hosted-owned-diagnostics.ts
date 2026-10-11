@@ -8,7 +8,8 @@ const stages = ["host-admission", "source-attestation", "source-copy", "migratio
   "production-build", "bootstrap-cleanup", "session-stack-acquisition", "session-bootstrap-keys",
   "session-reference-seed", "session-upload-capacity", "session-runtime-preflight", "session-storage-proxy",
   "session-app-configuration", "session-mail-capture", "session-main-app-ready", "session-embryo-app-ready",
-  "session-chromium-launch", "session-build-jurisdiction", "session-native-embryo-publication"] as const;
+  "session-chromium-launch", "session-build-jurisdiction", "session-native-embryo-publication",
+  "bridge-ready", "bridge-input", "bridge-forward", "bridge-wait", "bridge-whole", "bridge-inner-terminal", "bridge-setup"] as const;
 const schema = z.object({ stage: z.enum(stages),
   classification: z.enum(["spawn-refused", "exit-nonzero", "signal", "timeout", "output-limit", "setup-refused"]),
   exitCode: z.number().int().min(0).max(255).nullable(),

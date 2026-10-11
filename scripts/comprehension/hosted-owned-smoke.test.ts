@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import { expect, it } from "vitest";
 import { createLiveManifest, loadConductorInputs } from "./conductor-inputs";
 import { assertOperatorHostEnvironment, assertOwnedLinuxInitialMemory } from "../owned-linux-runtime";
+import { createHostedBootstrapDiagnostics } from "./hosted-owned-diagnostics";
 import { assertHostedSmokeReady, canonicalHostedSmokeFrame, hostedOwnedEnvironment, hostedSmokeFrame,
   HOSTED_OWNED_CORE_PINS, HOSTED_OWNED_SMOKE_LIMITS, selectHostedSmokeArtifacts, verifyHostedSmokeArtifact } from "./hosted-owned-smoke";
 const directory = "/public/owned-smoke", head = "a".repeat(40), tree = "b".repeat(40);
@@ -145,6 +146,56 @@ sys.exit(1)`;
   const result = spawnSync("python3", ["-B", "-c", script], { input: mode === "oversize" ? "x".repeat(65537) + "\n" : '{"public":true}\n',
     timeout: 15000, encoding: "utf8", maxBuffer: 8192, env: { PATH: process.env.PATH, LANG: "C.UTF-8", NODE_ENV: "test" } });
   expect(result.error).toBeUndefined(); expect(result.status).toBeNull(); expect(result.signal).toBe("SIGKILL"); expect(result.stdout).toBe("");
+  const capture = createHostedBootstrapDiagnostics(); capture.push(Buffer.from(result.stderr));
+  expect(capture.finish()).toEqual([{ stage: mode === "wrong-ready" ? "bridge-ready" : "bridge-input",
+    classification: "setup-refused", exitCode: null, signal: null, cleanup: "uncertain" }]);
+});
+
+it.each(["nonzero", "signal", "unterminated"])("records the original inner %s before the real unchanged group cleanup", async mode => {
+  const { spawnSync } = await import("node:child_process");
+  const childCode = `import os,signal,sys
+sys.stderr.write(${JSON.stringify(`OWNED_LINUX_READY:${nonce}\n`)})
+sys.stderr.flush()
+assert sys.stdin.buffer.read().decode()==${JSON.stringify('{"public":true}\n')}
+sys.stderr.write(${JSON.stringify("synthetic-private-inner-canary" + (mode === "unterminated" ? "" : "\n"))});sys.stderr.flush()
+${mode === "signal" ? "os.kill(os.getpid(),signal.SIGTERM)" : "sys.exit(23)"}`;
+  const script = `import importlib.util,os,sys
+os.setsid()
+spec=importlib.util.spec_from_file_location('public_handoff','scripts/comprehension/hosted-owned-pipe.py')
+module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
+sys.exit(module.handoff([sys.executable,'-c',${JSON.stringify(childCode)}],'${nonce}'))`;
+  const result = spawnSync("python3", ["-B", "-c", script], { input: '{"public":true}\n', timeout: 15000,
+    encoding: "utf8", env: { PATH: process.env.PATH, LANG: "C.UTF-8", NODE_ENV: "test" }, maxBuffer: 8192 });
+  expect(result.error).toBeUndefined(); expect(result.status).toBeNull(); expect(result.signal).toBe("SIGKILL");
+  expect(result.stdout).toBe(""); expect(result.stderr).toContain(`OWNED_LINUX_READY:${nonce}\n`);
+  const capture = createHostedBootstrapDiagnostics();
+  for (const byte of Buffer.from(result.stderr)) capture.push(Uint8Array.of(byte));
+  const expected = { stage: "bridge-inner-terminal", classification: mode === "signal" ? "signal" : "exit-nonzero",
+    exitCode: mode === "signal" ? null : 23, signal: mode === "signal" ? "SIGTERM" : null, cleanup: "uncertain" };
+  expect(capture.finish()).toEqual([expected]);
+  expect(JSON.stringify(capture.finish())).not.toContain("synthetic-private-inner-canary");
+});
+
+it("refuses private or unsupported Python diagnostic values and never lets diagnostic I/O replace refusal", async () => {
+  const { spawnSync } = await import("node:child_process");
+  const script = `import importlib.util,sys
+spec=importlib.util.spec_from_file_location('public_handoff','scripts/comprehension/hosted-owned-pipe.py')
+module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
+for stage,result in [('synthetic-private-inner-canary',23),('bridge-inner-terminal',0),('bridge-inner-terminal',256),('bridge-inner-terminal',-65),('bridge-inner-terminal',True)]:
+ module.emit_closed_failure(stage,result)
+class RefusedOutput:
+ def write(self,value): raise RuntimeError('synthetic-private-inner-canary')
+class RefusedStderr:
+ buffer=RefusedOutput()
+original=sys.stderr
+sys.stderr=RefusedStderr()
+module.emit_closed_failure('bridge-ready')
+sys.stderr=original
+print('original-refusal-preserved')`;
+  const result = spawnSync("python3", ["-B", "-c", script], { timeout: 15000, encoding: "utf8", maxBuffer: 8192,
+    env: { PATH: process.env.PATH, LANG: "C.UTF-8", NODE_ENV: "test" } });
+  expect(result.error).toBeUndefined(); expect(result.status).toBe(0); expect(result.signal).toBeNull();
+  expect(result.stdout).toBe("original-refusal-preserved\n"); expect(result.stderr).toBe("");
 });
 
 it.each(["closed", "foreign-run", "foreign-open", "foreign-ended", "clean", "stack-session", "build-id", "request-spend", "foreign-spend", "record-response"])("refuses real-shape %s cross-binding drift", mode => {

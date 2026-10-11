@@ -13,6 +13,49 @@ import sys
 import time
 
 
+def emit_closed_failure(stage, result=None):
+    """Public terminal metadata before group cleanup; never private output.
+
+    This diagnostic cannot qualify a run or describe cleanup as complete.
+    A failed diagnostic write must preserve the original failure and cleanup.
+    """
+    stages = {"bridge-ready", "bridge-input", "bridge-forward", "bridge-wait",
+              "bridge-whole", "bridge-inner-terminal", "bridge-setup"}
+    try:
+        if stage not in stages:
+            return
+        if result is not None and type(result) is not int:
+            return
+        code, name = None, None
+        classification = "setup-refused"
+        if type(result) is int:
+            if 1 <= result <= 255:
+                code, classification = result, "exit-nonzero"
+            elif -64 <= result < 0:
+                allowed = {"SIGABRT", "SIGALRM", "SIGBUS", "SIGHUP", "SIGINT",
+                           "SIGKILL", "SIGPIPE", "SIGQUIT", "SIGSEGV", "SIGTERM",
+                           "SIGXCPU", "SIGXFSZ"}
+                name = signal.Signals(-result).name
+                if name not in allowed:
+                    return
+                classification = "signal"
+            else:
+                return
+        # The inner stderr may end mid-line. End that discarded private frame
+        # before starting this independent, bounded public physical frame.
+        line = "\nOWNED_BOOTSTRAP_FAILURE_V1|" + json.dumps({
+            "stage": stage, "classification": classification,
+            "exitCode": code, "signal": name, "cleanup": "uncertain"},
+            separators=(",", ":")) + "\n"
+        data = line.encode("ascii")
+        if len(data) > 512:
+            return
+        sys.stderr.buffer.write(data)
+        sys.stderr.buffer.flush()
+    except Exception:
+        pass
+
+
 def handoff(command, nonce):
     if os.getpgrp() != os.getpid():
         raise ValueError("group-refused")
@@ -20,6 +63,7 @@ def handoff(command, nonce):
                              stderr=subprocess.PIPE, close_fds=True)
     completed = False
     whole_deadline = time.monotonic() + 2700
+    stage = "bridge-ready"
     try:
         selector = selectors.DefaultSelector()
         selector.register(child.stderr, selectors.EVENT_READ)
@@ -39,6 +83,7 @@ def handoff(command, nonce):
         sys.stderr.buffer.flush()
         selector.unregister(child.stderr)
         selector.register(sys.stdin.buffer, selectors.EVENT_READ)
+        stage = "bridge-input"
         deadline = time.monotonic() + 10
         frame = bytearray()
         while True:
@@ -57,9 +102,11 @@ def handoff(command, nonce):
         child.stdin.close()
         selector.unregister(sys.stdin.buffer)
         selector.register(child.stderr, selectors.EVENT_READ)
+        stage = "bridge-forward"
         while True:
             remaining = whole_deadline - time.monotonic()
             if remaining <= 0:
+                stage = "bridge-whole"
                 raise ValueError("whole-refused")
             if not selector.select(min(1, remaining)):
                 continue
@@ -69,9 +116,15 @@ def handoff(command, nonce):
             sys.stderr.buffer.write(chunk)
             sys.stderr.buffer.flush()
         selector.close()
+        stage = "bridge-wait"
         result = child.wait(timeout=max(0.001, whole_deadline - time.monotonic()))
+        if result != 0:
+            emit_closed_failure("bridge-inner-terminal", result)
         completed = result == 0
         return result
+    except BaseException:
+        emit_closed_failure(stage)
+        raise
     finally:
         if not completed:
             # Foreground timeout leaves every descendant in this owned PGID.
@@ -101,5 +154,6 @@ if __name__ == "__main__":
     try:
         sys.exit(main())
     except Exception:
+        emit_closed_failure("bridge-setup")
         print("Hosted owned public pipe refused", file=sys.stderr)
         sys.exit(1)
