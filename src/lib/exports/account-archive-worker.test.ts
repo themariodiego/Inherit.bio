@@ -170,7 +170,13 @@ describe("complete consumed-account unpublished archive executor",()=>{
      [{identity,key:[f.self,identity],subjectId:f.self,scope:"subject",rowText,rowSource:null}]:[],nextAfterKey:null},error:null};
    throw new Error("unexpected-complete-unit-operation");
   });
-  const result=await buildAccountArchive({...f.options,completeRpc}),zip=new AdmZip(Buffer.concat(f.historical.writes));
+  // Keep the full archive positive on the same controlled metadata-only spool
+  // as its writer-refusal controls. Real file I/O stays in the ZIP64 tests.
+  const runtime=createRequesterStatementRuntime(),buffers:Uint8Array[]=[];
+  const observedRuntime={...runtime,own<T extends Uint8Array>(bytes:T):T{buffers.push(bytes);return runtime.own(bytes);}};
+  const memory=createRequesterStatementMemorySpool(observedRuntime),dispose=vi.fn(()=>memory.dispose());
+  const spool=vi.spyOn(zip64,"createZip64FileSpool").mockResolvedValue({...memory,dispose});
+  const result=await buildAccountArchive({...f.options,completeRpc,statementRuntime:observedRuntime}),zip=new AdmZip(Buffer.concat(f.historical.writes));
   const manifest=JSON.parse(zip.readAsText("manifest.json"));
   expect(result.summary.state).toBe("bytes-complete");expect(manifest.completeReceipt).toEqual(context.completeReceipt);
   expect(manifest.dispositions).toEqual(context.dispositions);expect(manifest.subjectPartitions).toEqual(f.context.partitions.map(p=>p.subjectId));
@@ -185,6 +191,9 @@ describe("complete consumed-account unpublished archive executor",()=>{
   for(const member of manifest.members){const raw=zip.readFile(member.name)!;expect(raw.byteLength).toBe(member.sizeBytes);expect(hash(raw)).toBe(member.sha256);}
   expect(hash(Buffer.from(JSON.stringify(manifest.members)))).toBe(result.completionProof.memberSha256);
   expect(completeRpc.mock.calls.filter(([,args])=>args.p_operation==="rows"&&args.p_kind==="ancestry_regions").length).toBeGreaterThan(1);
+  expect(spool).toHaveBeenCalledTimes(1);expect(dispose).toHaveBeenCalledTimes(2);
+  expect(buffers.length).toBeGreaterThan(0);expect(buffers.every(bytes=>bytes.every(byte=>byte===0))).toBe(true);
+  runtime.assertSettled();
  });
  it("uses the supplied account writer for own statements and settles their shared buffers",async()=>{
   vi.stubEnv("INHERIT_TEST_JURISDICTION","1");vi.stubEnv("INHERIT_TEST_REQUESTER_STATEMENTS","1");

@@ -2,6 +2,7 @@
  * cleanup retains the lock; it never adopts or deletes another resource. */
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
+import { observeOwnedLifecycleProcess, type OwnedLifecycleObserver } from "./owned-lifecycle";
 import { createHash, randomUUID } from "node:crypto";
 import { cp, lstat, mkdir, readFile, readdir, realpath, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
@@ -68,18 +69,26 @@ export function infrastructureChildEnvironment(parent: Readonly<Record<string, s
   return { NODE_ENV: "production", ...Object.fromEntries(names.flatMap(name => parent[name] ? [[name, parent[name]!]] : [])),
     ...(operator ? ownedLinuxEnvironment(operator) : {}) };
 }
-export function createResourceIO(operator?: OwnedLinuxCapability): ResourceIO {
+export function createResourceIO(operator?: OwnedLinuxCapability, lifecycle?: OwnedLifecycleObserver): ResourceIO {
  const io: ResourceIO = {
   async command(file, args, options = {}) {
     return new Promise((resolve, reject) => {
+      observeOwnedLifecycleProcess(lifecycle, "requested");
       const child = spawn(file, args, { cwd: repositoryRoot, env: { ...(options.env ?? infrastructureChildEnvironment(process.env, operator)), NODE_ENV: "production" },
         stdio: ["ignore", "pipe", "pipe"], signal: options.signal });
+      child.once("spawn", () => observeOwnedLifecycleProcess(lifecycle, "spawned"));
       let output = "", failed: CommandFailure | undefined;
-      const timer = setTimeout(() => { failed ??= "timeout"; child.kill("SIGKILL"); }, options.timeout ?? 60_000);
-      child.stdout.on("data", chunk => { output += chunk; if (output.length > 1_048_576) { failed ??= "output-limit"; child.kill("SIGKILL"); } });
+      const timer = setTimeout(() => { failed ??= "timeout";
+        observeOwnedLifecycleProcess(lifecycle, "kill-requested", null, "SIGKILL", "command-deadline");
+        child.kill("SIGKILL"); }, options.timeout ?? 60_000);
+      child.stdout.on("data", chunk => { output += chunk; if (output.length > 1_048_576) { failed ??= "output-limit";
+        observeOwnedLifecycleProcess(lifecycle, "kill-requested", null, "SIGKILL", "command-output-limit");
+        child.kill("SIGKILL"); } });
       child.stderr.resume();
-      child.once("error", () => { clearTimeout(timer); reject(freshRuntimeCommandFailure("spawn-refused")); });
+      child.once("error", () => { clearTimeout(timer); observeOwnedLifecycleProcess(lifecycle, "error");
+        reject(freshRuntimeCommandFailure("spawn-refused")); });
       child.once("exit", (code, signal) => { clearTimeout(timer);
+        observeOwnedLifecycleProcess(lifecycle, "terminal", code, signal);
         if (code !== 0 || failed) reject(freshRuntimeCommandFailure(failed ?? (signal ? "signal" : "exit-nonzero"), code, signal));
         else resolve(output.trim()); });
     });

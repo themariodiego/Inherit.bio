@@ -1160,10 +1160,10 @@ begin
  elsif p_kind in('attestation_contradictions','directional_grants','family_sharing_pauses','family_sharing_stops',
   'future_person_claim_objections','future_person_claimant_principals','future_person_claims',
   'subject_control_refusal_authorities','subject_relationships','suppressions') then
-  return query select r.projected_id::text,r.projected_subject,r.projected_row::text
-   from private.export_account_class_projection_v1(a,subjects,p_kind) r
+  return query select selected_row.projected_id::text,selected_row.projected_subject,selected_row.projected_row::text
+   from private.export_account_class_projection_v1(a,subjects,p_kind) selected_row
    where not exists(select 1 from private.export_account_class_projection_v1(a,legacy_subjects,p_kind) old
-    where old.projected_id=r.projected_id);
+    where old.projected_id=selected_row.projected_id);
  end if;
 end $$;
 revoke all on function private.account_archive_complete_subject_authority_v1(jsonb,uuid,jsonb),
@@ -1343,11 +1343,11 @@ begin
    where t.target_kind='subject' and t.target_id=p_subject and exists(select 1 from public.purpose_grants g
     join public.directional_grants d using(grant_id) where g.signature_id=sig.id and d.recipient_account_id=a) order by t.id;
  elsif p_member in('reports.json','reports.txt','prs.json','ancestry.json') then
-  return query select r.identity,p_subject,r.row_text
-   from private.account_archive_related_science_rows_v1(p_origin,p_subject,p_member)r;
+  return query select selected_row.identity,p_subject,selected_row.row_text
+   from private.account_archive_related_science_rows_v1(p_origin,p_subject,p_member)selected_row;
  elsif p_member='portrait.json' then
-  return query select r.identity,r.subject_id,r.row_text
-   from private.account_archive_complete_class_rows_v1(p_origin,p_legacy,p_permissions,'portrait_results')r where r.subject_id=p_subject;
+  return query select selected_row.identity,selected_row.subject_id,selected_row.row_text
+   from private.account_archive_complete_class_rows_v1(p_origin,p_legacy,p_permissions,'portrait_results')selected_row where selected_row.subject_id=p_subject;
  elsif p_member='chats.json' then
   -- Only the requester's own conversation, never the other subject's chats.
   -- The existing full contributor projection is independently revalidated.
@@ -1687,13 +1687,13 @@ create function private.account_archive_complete_page_v1(p_origin jsonb,p_captur
 language plpgsql security definer set search_path='' set lock_timeout='250ms' as $$
 declare r record;key jsonb;last_key jsonb;rows jsonb:='[]';value jsonb;candidate jsonb;more boolean:=false;n integer:=0;
 begin
- if exists(select 1 from private.account_archive_complete_selected_rows_v1(p_origin,p_capture,p_family,p_kind,p_subject,p_file)r
-  group by coalesce(p_file,r.subject_id),r.identity having count(*)<>1) then
+ if exists(select 1 from private.account_archive_complete_selected_rows_v1(p_origin,p_capture,p_family,p_kind,p_subject,p_file)selected_row
+  group by coalesce(p_file,selected_row.subject_id),selected_row.identity having count(*)<>1) then
   raise exception using errcode='55000',message='export_source_unavailable';end if;
  if p_after is not null then
   perform private.account_archive_complete_key_v1(p_after);
-  if not exists(select 1 from private.account_archive_complete_selected_rows_v1(p_origin,p_capture,p_family,p_kind,p_subject,p_file)r
-   where jsonb_build_array(coalesce(p_file,r.subject_id),r.identity)=p_after) then
+  if not exists(select 1 from private.account_archive_complete_selected_rows_v1(p_origin,p_capture,p_family,p_kind,p_subject,p_file)selected_row
+   where jsonb_build_array(coalesce(p_file,selected_row.subject_id),selected_row.identity)=p_after) then
    raise exception using errcode='22023',message='invalid_request';end if;
  end if;
  for r in select * from private.account_archive_complete_selected_rows_v1(p_origin,p_capture,p_family,p_kind,p_subject,p_file)row

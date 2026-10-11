@@ -2,6 +2,7 @@
  * never sets CI ownership variables, never borrows an existing cohort. */
 import assert from "node:assert/strict";
 import { emitHostedBootstrapFailure } from "./hosted-owned-diagnostics";
+import { openOwnedLifecycle, observeOwnedLifecyclePhase, observeOwnedLifecycleFailure, type OwnedLifecycleObserver } from "./owned-lifecycle";
 import { assertSqlFixtureIncludes } from "../sql-fixture-includes";
 import { randomUUID } from "node:crypto";
 import { readFileSync } from "node:fs";
@@ -39,53 +40,83 @@ export async function prepareFreshInvocation(options: {
   environment: Record<string, string | undefined>; bindObservedKeys: boolean; buildRequired: boolean;
   acquire: () => Promise<Pick<Awaited<ReturnType<typeof acquireFreshStack>>, "keys" | "close">>;
   build: () => Promise<void>;
+  lifecycle?: OwnedLifecycleObserver;
 }) {
   let stack: Awaited<ReturnType<typeof options.acquire>>;
-  try { stack = await options.acquire(); }
+  observeOwnedLifecyclePhase(options.lifecycle, "bootstrap-acquisition", "entered");
+  try { stack = await options.acquire(); observeOwnedLifecyclePhase(options.lifecycle, "bootstrap-acquisition", "returned"); }
   catch (error) {
+    observeOwnedLifecyclePhase(options.lifecycle, "bootstrap-acquisition", "refused", freshRuntimeFailureClassification(error));
     emitHostedBootstrapFailure("bootstrap-stack-acquisition", freshRuntimeFailureClassification(error), "unreturned");
     throw error;
   }
   let diagnosticStage: "bootstrap-keys" | "production-build" = "bootstrap-keys";
   try {
+    observeOwnedLifecyclePhase(options.lifecycle, "bootstrap-keys", "entered");
     if (options.bindObservedKeys) Object.assign(options.environment, stack.keys);
     assert(Object.entries(stack.keys).every(([name, value]) => options.environment[name] === value),
       "Fresh keys must match the configured build inputs");
-    if (options.buildRequired) { diagnosticStage = "production-build"; await options.build(); }
+    observeOwnedLifecyclePhase(options.lifecycle, "bootstrap-keys", "returned");
+    if (options.buildRequired) { diagnosticStage = "production-build";
+      observeOwnedLifecyclePhase(options.lifecycle, "production-build", "entered");
+      await options.build(); observeOwnedLifecyclePhase(options.lifecycle, "production-build", "returned"); }
   } catch (error) {
+    observeOwnedLifecyclePhase(options.lifecycle, diagnosticStage, "refused", freshRuntimeFailureClassification(error));
     emitHostedBootstrapFailure(diagnosticStage, freshRuntimeFailureClassification(error), "unreturned");
     throw error;
   } finally {
-    try { await stack.close(); } catch (error) {
+    observeOwnedLifecyclePhase(options.lifecycle, "bootstrap-cleanup", "entered");
+    try { await stack.close(); observeOwnedLifecyclePhase(options.lifecycle, "bootstrap-cleanup", "returned"); } catch (error) {
+      observeOwnedLifecyclePhase(options.lifecycle, "bootstrap-cleanup", "refused", freshRuntimeFailureClassification(error));
       emitHostedBootstrapFailure("bootstrap-cleanup", freshRuntimeFailureClassification(error), "uncertain");
       throw error;
     }
   }
 }
 
-export async function runFreshComprehension(configuration: unknown, options: { plan?: boolean; prepare?: boolean;
-  operator?: OwnedLinuxCapability; inferenceEnvironment?: Environment } = {}) {
+export async function runFreshComprehension(configuration: unknown,
+  options: Parameters<typeof runFreshComprehensionObserved>[1] = {}) {
+  const journal = openOwnedLifecycle(options?.operator);
+  try { return await runFreshComprehensionObserved(configuration, options, journal?.observer); }
+  catch (error) { observeOwnedLifecycleFailure(journal?.observer, freshRuntimeFailureClassification(error)); throw error; }
+  finally { journal?.close(); }
+}
+
+async function runFreshComprehensionObserved(configuration: unknown, options: { plan?: boolean; prepare?: boolean;
+  operator?: OwnedLinuxCapability; inferenceEnvironment?: Environment } = {}, lifecycle?: OwnedLifecycleObserver) {
+  observeOwnedLifecyclePhase(lifecycle, "source-guard", "entered");
   assertSqlFixtureIncludes();
+  observeOwnedLifecyclePhase(lifecycle, "source-guard", "returned");
+  observeOwnedLifecyclePhase(lifecycle, "configuration", "entered");
   const config = freshT6ConfigSchema.parse(configuration);
+  observeOwnedLifecyclePhase(lifecycle, "configuration", "returned");
   const run = config.run;
   const tasks = run.tasks ?? [...taskIds], personas = run.personas ?? 30;
   const operator = options.operator;
-  const io = operator ? createResourceIO(operator) : actualResourceIO;
+  const io = operator ? createResourceIO(operator, lifecycle) : actualResourceIO;
   const environment = () => infrastructureChildEnvironment(process.env, operator);
   if (options.plan) {
     console.log(JSON.stringify({ tasks, personas, sessions: personas * tasks.length, freshStacks: personas * tasks.length + 1, productionBuilds: 1,
       infrastructureReservationMicroDollars: infrastructureReservation(run.personas ?? 30, config.maximumInfrastructureCostPerStackMicroDollars, run.limitMicroDollars - run.otherCostsMicroDollars, tasks.length),
       qualifyingEvidence: false, hostedOwnershipRequired: !operator, nativeLifecycle: "unverified until the exact owned native smoke completes" })); return;
   }
+  observeOwnedLifecyclePhase(lifecycle, "runtime-guard", "entered");
   assertCiRuntime(process.env, process.platform, operator);
   if (!operator) assert(process.env.GITHUB_JOB === "fresh-t6", "Separate fresh-t6 hosted job required; standard CI cannot launch inference");
+  observeOwnedLifecyclePhase(lifecycle, "runtime-guard", "returned");
+  observeOwnedLifecyclePhase(lifecycle, "journal-open", "entered");
   const journal = await InstrumentJournal.open(run.effortDirectory, run.limitMicroDollars, run.otherCostsMicroDollars,
     run.provider.kind === "local-deterministic-stub" ? "dry" : "live");
+  observeOwnedLifecyclePhase(lifecycle, "journal-open", "returned");
   try {
+    observeOwnedLifecyclePhase(lifecycle, "reservation", "entered");
     infrastructureReservation(run.personas ?? 30, config.maximumInfrastructureCostPerStackMicroDollars, journal.budget.remaining, tasks.length);
+    observeOwnedLifecyclePhase(lifecycle, "reservation", "returned");
     if (options.prepare || operator) {
+      observeOwnedLifecyclePhase(lifecycle, "reservation", "entered");
       await journal.budget.reserve(`fresh-build-${randomUUID()}`, config.maximumInfrastructureCostPerStackMicroDollars);
-      await prepareFreshInvocation({ environment: process.env, bindObservedKeys: Boolean(operator), buildRequired: Boolean(options.prepare),
+      observeOwnedLifecyclePhase(lifecycle, "reservation", "returned");
+      await prepareFreshInvocation({ lifecycle, environment: process.env, bindObservedKeys: Boolean(operator), buildRequired: Boolean(options.prepare),
         acquire: () => acquireFreshStack(new AbortController().signal, io, operator),
         build: async () => {
           const env = freshComprehensionBuildEnvironment(environment(), process.env, Boolean(operator));
@@ -93,13 +124,17 @@ export async function runFreshComprehension(configuration: unknown, options: { p
           recordCiBuild(environment(), operator);
         } });
     }
+    observeOwnedLifecyclePhase(lifecycle, "post-build-source", "entered");
     const inputs = loadConductorInputs();
     const revision = await io.command("git", ["rev-parse", "HEAD"]);
     if (operator) assertOwnedLinuxSource(operator, environment());
     else assert(!(await io.command("git", ["status", "--porcelain", "--untracked-files=no"])), "Exact clean source required");
     const buildId = readFileSync(path.join(repositoryRoot, ".next/BUILD_ID"), "utf8").trim();
     assert(buildId && buildId !== "development", "Production build required");
+    observeOwnedLifecyclePhase(lifecycle, "post-build-source", "returned");
+    observeOwnedLifecyclePhase(lifecycle, "isolation", "entered");
     const isolation = await probeIsolation(workerProvider(run), options.inferenceEnvironment);
+    observeOwnedLifecyclePhase(lifecycle, "isolation", "returned");
     const skipped = bindingSkips(JSON.parse(readFileSync(path.join(repositoryRoot, "scripts/comprehension/bindings.json"), "utf8")))
       .filter(skip => tasks.includes(skip.taskId));
     const blockers: string[] = [];
@@ -124,6 +159,7 @@ export async function runFreshComprehension(configuration: unknown, options: { p
         "Calibrated model cost plus every fresh stack must fit the remaining approved budget");
       calibration = { runId: measured.manifest.runId, perSimulationMaxMicroDollars: measured.spend!.perSimulationMaxMicroDollars };
     } else if (run.provider.kind !== "local-deterministic-stub") blockers.push("provider-token-and-cost-bounds-unverified");
+    observeOwnedLifecyclePhase(lifecycle, "record-create", "entered");
     const manifest = draft();
     const record = await RunRecord.create({ root: run.provider.kind === "local-deterministic-stub" ? run.stubRecordRoot! : path.join(repositoryRoot, RECORD_ROOT),
       date: new Date().toISOString().slice(0, 10), manifest, inputs, modelIdentifier: modelIdentifierOf(run),
@@ -133,6 +169,7 @@ export async function runFreshComprehension(configuration: unknown, options: { p
         build: { mode: "next start (production build)", buildIdVerified: false, testJurisdictionVerified: false },
         budget: { limitMicroDollars: run.limitMicroDollars, otherCostsMicroDollars: run.otherCostsMicroDollars,
           remainingAtStartMicroDollars: journal.budget.remaining }, calibration } });
+    observeOwnedLifecyclePhase(lifecycle, "record-create", "returned");
     if (operator && run.provider.kind !== "local-deterministic-stub") bindOwnedRunRecord(operator, record.directory);
     const sessions = new Map<string, LiveSession>();
     const openFreshComprehensionBrowser = createFreshComprehensionBrowser(operator);
@@ -142,9 +179,13 @@ export async function runFreshComprehension(configuration: unknown, options: { p
         // No invoice/hosting receipt is invented: retain the whole reservation
         // permanently, including failed or uncertain setup. A repeated run
         // charges new reservations in the same effort journal.
-        const session = await openFreshComprehensionBrowser(input, signal) as LiveSession;
-        sessions.set(input.id, session);
-        return session;
+        observeOwnedLifecyclePhase(lifecycle, "session-setup", "entered");
+        try {
+          const session = await openFreshComprehensionBrowser(input, signal) as LiveSession;
+          observeOwnedLifecyclePhase(lifecycle, "session-setup", "returned");
+          sessions.set(input.id, session);
+          return session;
+        } catch (error) { observeOwnedLifecyclePhase(lifecycle, "session-setup", "refused", freshRuntimeFailureClassification(error)); throw error; }
       }, openProcess: isolatedProcesses(workerProvider(run), options.inferenceEnvironment) },
       onSession: async outcome => {
         const session = sessions.get(outcome.sessionId); sessions.delete(outcome.sessionId);
@@ -152,11 +193,19 @@ export async function runFreshComprehension(configuration: unknown, options: { p
         await record.append(outcome, diagnostics && { entryChannels: diagnostics.entryChannels,
           failedActions: diagnostics.failedActions, refusedValues: diagnostics.refusedValues });
       } });
+    observeOwnedLifecyclePhase(lifecycle, "run-completion", "entered");
     const spend = await record.finish({ status: result.status, failure: "failure" in result ? result.failure : undefined,
       assessment: result.assessment, qualifyingEvidence: manifest.qualifyingEvidence, blockers: manifest.blockers });
+    observeOwnedLifecyclePhase(lifecycle, "run-completion", "returned");
     console.log(JSON.stringify(runSummary({ directory: record.directory, status: result.status, manifest, spend }), null, 2));
     if (result.status !== "completed") process.exitCode = 1;
-  } finally { await journal.close(); }
+  } catch (error) {
+    observeOwnedLifecycleFailure(lifecycle, freshRuntimeFailureClassification(error)); throw error;
+  } finally {
+    observeOwnedLifecyclePhase(lifecycle, "journal-close", "entered");
+    try { await journal.close(); observeOwnedLifecyclePhase(lifecycle, "journal-close", "returned"); }
+    catch (error) { observeOwnedLifecyclePhase(lifecycle, "journal-close", "refused", freshRuntimeFailureClassification(error)); throw error; }
+  }
 }
 
 async function main() {

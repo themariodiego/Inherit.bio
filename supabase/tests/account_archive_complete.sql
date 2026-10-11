@@ -481,5 +481,66 @@ select is(private.account_archive_complete_capture_v1(pg_temp.archive_origin('cl
  (select full_capture from archive_claimed_full_capture_before),
  'both real scientific reads preserve the whole source/capture/census hash and all current authority');
 
+-- Account539: each formerly colliding static branch is evaluated before any
+-- loop can assign its record variable. These are the existing genuine capture,
+-- permissions, source projections and consumed request, without extra grants.
+create temporary table complete_alias_captures as
+ select name,origin,private.account_archive_complete_capture_v1(origin) value from complete_jobs;
+select is(
+ (select coalesce(jsonb_agg(jsonb_build_object('identity',actual.identity,'subjectId',actual.subject_id,'rowText',actual.row_text)
+  order by actual.identity,actual.subject_id,actual.row_text),'[]')
+  from private.account_archive_complete_class_rows_v1(c.origin,c.value->'legacy',c.value->'permissions',kind) actual),
+ (select coalesce(jsonb_agg(jsonb_build_object('identity',projected.projected_id::text,'subjectId',projected.projected_subject,
+   'rowText',projected.projected_row::text) order by projected.projected_id::text,projected.projected_subject,projected.projected_row::text),'[]')
+  from private.export_account_class_projection_v1((c.origin->>'accountId')::uuid,
+   array(select(x->>'subjectId')::uuid from jsonb_array_elements(c.value->'permissions')x),kind) projected
+  where not exists(select 1 from private.export_account_class_projection_v1((c.origin->>'accountId')::uuid,
+   array(select(x->>'subjectId')::uuid from jsonb_array_elements(c.value#>'{legacy,partitions}')x),kind) old
+   where old.projected_id=projected.projected_id)),
+ 'unassigned-record class branch preserves the complete scoped projection: '||kind)
+ from complete_alias_captures c cross join unnest(array['attestation_contradictions','directional_grants',
+  'family_sharing_pauses','family_sharing_stops','future_person_claim_objections','future_person_claimant_principals',
+  'future_person_claims','subject_control_refusal_authorities','subject_relationships','suppressions'])kind where c.name='claimant';
+select is(
+ (select coalesce(jsonb_agg(jsonb_build_object('identity',actual.identity,'subjectId',actual.subject_id,'rowText',actual.row_text)
+  order by actual.identity,actual.row_text),'[]')
+  from private.account_archive_complete_member_rows_v1(c.origin,c.value->'legacy',c.value->'permissions',
+   (select id from normalization_subject),member) actual),
+ (select coalesce(jsonb_agg(jsonb_build_object('identity',science.identity,'subjectId',(select id from normalization_subject),
+   'rowText',science.row_text) order by science.identity,science.row_text),'[]')
+  from private.account_archive_related_science_rows_v1(c.origin,(select id from normalization_subject),member) science),
+ 'unassigned-record science member retains actual recipient-authorized content: '||member)
+ from complete_alias_captures c cross join unnest(array['reports.json','reports.txt','prs.json','ancestry.json'])member
+ where c.name='claimant';
+select is(
+ (select coalesce(jsonb_agg(to_jsonb(actual) order by actual.identity,actual.row_text),'[]')
+  from private.account_archive_complete_member_rows_v1(c.origin,c.value->'legacy',c.value->'permissions',
+   (select id from normalization_subject),'portrait.json') actual),
+ (select coalesce(jsonb_agg(to_jsonb(portrait) order by portrait.identity,portrait.row_text),'[]')
+  from private.account_archive_complete_class_rows_v1(c.origin,c.value->'legacy',c.value->'permissions','portrait_results') portrait
+  where portrait.subject_id=(select id from normalization_subject)),
+ 'unassigned-record portrait member preserves the existing actual nonempty-source permission exclusion')
+ from complete_alias_captures c where c.name='claimant';
+create temporary table complete_alias_variant_page as select pg_temp.complete_read('claimant','file-rows','variants',
+ jsonb_build_object('fileId','77900000-0000-4000-8000-000000000083','afterKey',null)) value;
+select is((select value from complete_alias_variant_page),
+ (select jsonb_build_object('version','account-complete-page-v1','kind','variants','rows',jsonb_build_array(jsonb_build_object(
+  'identity',variant.id::text,'key',jsonb_build_array(variant.file_id,variant.id::text),'subjectId',variant.subject_id,'scope','subject',
+  'rowText','{"rsid":456,"chrom":1,"pos":100001,"ref":"C","alt":"T","genotype":"C/T"}'::jsonb::text,'rowSource',null)),
+  'nextAfterKey',null) from public.user_variants variant where variant.file_id='77900000-0000-4000-8000-000000000083'),
+ 'unassigned-record duplicate guard retains the exact genuine normalized row, closed page, key and EOF');
+select is(pg_temp.complete_read('claimant','file-rows','variants',jsonb_build_object(
+ 'fileId','77900000-0000-4000-8000-000000000083','afterKey',(select value#>'{rows,0,key}' from complete_alias_variant_page))),
+ '{"version":"account-complete-page-v1","kind":"variants","rows":[],"nextAfterKey":null}'::jsonb,
+ 'unassigned-record cursor guard accepts the actual last returned key and proves empty EOF');
+select throws_ok($$select pg_temp.complete_read('claimant','file-rows','variants',jsonb_build_object(
+ 'fileId','77900000-0000-4000-8000-000000000083',
+ 'afterKey',jsonb_build_array('77900000-0000-4000-8000-000000000083','unknown')))$$,
+ '22023','invalid_request','unassigned-record cursor guard refuses a syntactically valid absent row without weakening current authority');
+select is((select jsonb_agg(jsonb_build_object('name',name,'capture',private.account_archive_complete_capture_v1(origin)) order by name)
+ from complete_alias_captures),
+ (select jsonb_agg(jsonb_build_object('name',name,'capture',value) order by name) from complete_alias_captures),
+ 'all repaired branches preserve both complete native source/census/configuration/authority captures byte for byte');
+
 select * from finish();
 rollback;

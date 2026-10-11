@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { EventEmitter } from "node:events";
 import { PassThrough } from "node:stream";
 import type { ChildProcess } from "node:child_process";
@@ -143,7 +144,7 @@ function fittedHarness() {
     if (args.includes("psql") && (input!.startsWith("-- embryo-first-completed-history")
       || input!.startsWith("-- embryo-fitted-") || input!.startsWith("select public.enqueue_embryo_test_statistical")
       || input!.startsWith("select (exists(select 1 from private.embryo_test_statistical_admission)")
-      || input!.startsWith("with capture as materialized"))) {
+      || input!.startsWith("with fitted_proof_compact_value(proof) as materialized"))) {
       base.commands.push({ args, input, timeout });base.statements.push(input!);
       if (input!.startsWith("-- embryo-first-completed-history")) {
         historyReads++;
@@ -155,7 +156,7 @@ function fittedHarness() {
       if (input!.startsWith("-- embryo-fitted-current-publication")) return String(publication);
       if (input!.startsWith("select public.enqueue_embryo_test_statistical"))
         return JSON.stringify({ status: "queued", jobId: statisticalJob });
-      if (input!.startsWith("with capture as materialized")) return '{"bindingsCurrent":true}';
+      if (input!.startsWith("with fitted_proof_compact_value(proof) as materialized")) return '{"bindingsCurrent":true}';
       return "true";
     }
     if (args.includes("/app/scripts/ci-browser/embryo-statistical-worker.mts")) {
@@ -199,7 +200,7 @@ describe("additive fitted journey after the unchanged original publication", () 
     expect(queueSql).toContain("private.embryo_split_ordinals");expect(queueSql).toContain("private.embryo_split_variants");
     expect(queueSql).toContain("private.embryo_ingest_write_intents where state<>'landed'");
     expect(queueSql).toContain("private.embryo_canonical_parts where state<>'landed'");
-    const proof = h.statements.find(row => row.startsWith("with capture as materialized"))!;
+    const proof = h.statements.find(row => row.startsWith("with fitted_proof_compact_value(proof) as materialized"))!;
     expect(proof).toContain("private.capture_embryo_test_statistical_fit_v1");
     expect(proof).toContain("(s).computation_receipt=private.embryo_test_fit_receipt_v1(j,e,c,m)");
     expect(proof).toContain("convert_to(to_jsonb(j)::text,'UTF8')");
@@ -410,7 +411,7 @@ async function fittedProofCommand() {
   const retained = { bindingsCurrent: true, wholeRowHashes: { jobs: [], scores: [] }, exactOutput: "synthetic-proof-output" };
   h.io.execute = async (args, input, timeout, context) => {
     observed.push({ args, input, timeout, context });
-    if (input?.startsWith("with capture as materialized")) return JSON.stringify(retained);
+    if (input?.startsWith("with fitted_proof_compact_value(proof) as materialized")) return JSON.stringify(retained);
     return native(args, input, timeout, context);
   };
   await originalThenFitted(h, async fitted => {
@@ -526,7 +527,10 @@ describe("supplemental exact fitted proof buffer and size observations", () => {
   it("materializes the complete original proof and changes only finite final emission", async () => {
     const { command } = await fittedProofCommand(), diagnostic = fittedNativeProofSizeSql(command.args, command.input, 10_000, command.context)!;
     const prefix = "with fitted_proof_size_value(proof) as materialized(\n", boundary = "\n)\n    select jsonb_build_object";
-    expect(diagnostic.slice(prefix.length, diagnostic.indexOf(boundary))).toBe(command.input!.slice(0, -1));
+    const compactPrefix = "with fitted_proof_compact_value(proof) as materialized(\n";
+    const compactBoundary = "\n), fitted_proof_compact_text as materialized(";
+    const originalValue = command.input!.slice(compactPrefix.length, command.input!.indexOf(compactBoundary));
+    expect(diagnostic.slice(prefix.length, diagnostic.indexOf(boundary))).toBe(originalValue);
     expect(diagnostic.startsWith(prefix)).toBe(true);expect(diagnostic).toContain("'backendPid',pg_backend_pid()");
     expect(diagnostic).toContain("octet_length(convert_to(proof::text,'UTF8'))");
     expect(diagnostic).toContain("extensions.digest(convert_to(proof::text,'UTF8'),'sha256')");
@@ -616,5 +620,44 @@ describe("supplemental exact fitted proof buffer and size observations", () => {
     const supplement = selected.filter(row => row.input?.startsWith("with fitted_proof_size_value"));
     expect(supplement).toHaveLength(1);expect(supplement[0]).toMatchObject({ timeout: 10_000, context: undefined });
     expect(h.current()).toEqual(original);expect(h.statements.filter(sql => sql.startsWith("-- embryo-first-completed-history")).length).toBeGreaterThan(0);
+  });
+});
+
+describe("lossless fitted proof emission retains the whole native value", () => {
+  it("materializes the complete original source body exactly once with native round-trip equality", async () => {
+    const { command } = await fittedProofCommand();
+    const code = readFileSync(new URL("./ci-embryo-journey.ts", import.meta.url), "utf8");
+    const originalBody = /function fittedStatisticalProofValue\(cohort: string\): string \{\n  return `([\s\S]*?)`;\n\}/.exec(code)?.[1];
+    expect(originalBody).toBeDefined();expect(originalBody!.endsWith(";")).toBe(true);
+    const completeValue = originalBody!.replaceAll("${cohort}", `'${fittedCohort}'::uuid`).slice(0, -1);
+    const prefix = "with fitted_proof_compact_value(proof) as materialized(\n";
+    const boundary = "\n), fitted_proof_compact_text as materialized(";
+    expect(command.input!.slice(prefix.length, command.input!.indexOf(boundary))).toBe(completeValue);
+    expect(command.input!.split(completeValue)).toHaveLength(2);
+    expect(command.input!.match(/regexp_replace/g)).toHaveLength(1);
+    expect(command.input).toContain("proof is not null and compact_text::jsonb is not distinct from proof");
+    expect(command.input).toContain("then compact_text else null end from fitted_proof_compact_text;");
+    expect(command.args).toEqual(["exec", "-i", "supabase_db_sequence", "psql", "-U", "postgres", "-d", "postgres", "-XAtq", "--set=ON_ERROR_STOP=1"]);
+    expect(command.timeout).toBe(10_000);
+  });
+  it("refuses the old emitter and altered materialization, regex, round-trip or final emission", async () => {
+    const { command } = await fittedProofCommand();
+    const prefix = "with fitted_proof_compact_value(proof) as materialized(\n";
+    const boundary = "\n), fitted_proof_compact_text as materialized(";
+    const originalValue = command.input!.slice(prefix.length, command.input!.indexOf(boundary));
+    const changed = [originalValue + ";", command.input!.replace("as materialized(", "as ("),
+      command.input!.replace("regexp_replace", "replace"), command.input!.replace("compact_text::jsonb is not distinct from proof", "true"),
+      command.input!.replace("then compact_text else null", "then proof::text else null"), command.input! + "select true;"];
+    for (const input of changed) expect(isFittedNativeProofCommand(command.args, input, 10_000, command.context)).toBe(false);
+  });
+  it("keeps later size observation on the entire original JSONB instead of compact text", async () => {
+    const { command } = await fittedProofCommand();
+    const diagnostic = fittedNativeProofSizeSql(command.args, command.input, 10_000, command.context)!;
+    expect(diagnostic).not.toContain("regexp_replace");expect(diagnostic).not.toContain("compact_text");
+    expect(diagnostic).not.toContain("fitted_proof_compact_value");
+    expect(diagnostic).toContain("octet_length(convert_to(proof::text,'UTF8'))");
+    expect(diagnostic).toContain("extensions.digest(convert_to(proof::text,'UTF8'),'sha256')");
+    expect(diagnostic.match(/private\.capture_embryo_test_statistical_fit_v1/g)).toHaveLength(1);
+    for (const key of proofSizeFields) expect(diagnostic).toContain(`'${key}',octet_length(convert_to((proof->'${key}')::text,'UTF8'))`);
   });
 });

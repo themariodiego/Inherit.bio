@@ -1,6 +1,7 @@
 /** GitHub's fresh Linux job invokes the unchanged native owned supervisor. */
 import assert from "node:assert/strict";
 import { createHostedBootstrapDiagnostics } from "./hosted-owned-diagnostics";
+import { readOwnedLifecycleSnapshot } from "./owned-lifecycle";
 import { spawn, execFileSync } from "node:child_process";
 import { createHash, randomUUID } from "node:crypto";
 import { closeSync, fstatSync, lstatSync, mkdirSync, openSync, readFileSync, realpathSync, renameSync, writeFileSync } from "node:fs";
@@ -34,6 +35,7 @@ async function main() {
   // empty daemon, source and one-use owner lease before returning READY.
   const frame = canonicalHostedSmokeFrame(hostedSmokeFrame(directory), directory);
   const fds = ["stdout.raw", "stderr.raw"].map(name => openSync(path.join(directory, name), "wx", 0o600));
+  const lifecycleStartedAt = Date.now();
   let child: ReturnType<typeof spawn> | undefined, exitCode: number | null = null, signal: string | null = null;
   let timedOut = false, closed = false, ready = false, refusal = false, groupAbsent = false;
   let line = "", inputTimer: ReturnType<typeof setTimeout> | undefined, readyTimer: ReturnType<typeof setTimeout> | undefined;
@@ -96,7 +98,10 @@ async function main() {
       head, tree, uid: process.getuid!(), gid: process.getgid!(), bootId: owner.bootId, nonce: owner.nonce,
       corePins: HOSTED_OWNED_CORE_PINS, ready, exitCode, signal, timedOut, closed, groupAbsent, refusal,
       qualifyingEvidence: false, paidInference: false };
-    writeFileSync(path.join(directory, "public-artifact", "owned-keyfree-smoke.json"), JSON.stringify({ terminal, records: null, history: null, spend: null, bootstrapDiagnostics: bootstrapDiagnostics.finish() }) + "\n", { flag: "wx", mode: 0o600 });
+    writeFileSync(path.join(directory, "public-artifact", "owned-keyfree-smoke.json"), JSON.stringify({ terminal, records: null, history: null, spend: null, bootstrapDiagnostics: bootstrapDiagnostics.finish(),
+      lifecycle: closed && groupAbsent ? readOwnedLifecycleSnapshot({ scratch: owner.scratch, nonce: owner.nonce, bootId: owner.bootId, head,
+        uid: process.getuid!(), gid: process.getgid!(), startedAt: lifecycleStartedAt, endedAt: Date.now() })
+        : { status: "unsettled" } }) + "\n", { flag: "wx", mode: 0o600 });
   }
   assert(ready && closed && exitCode === 0 && signal === null && !timedOut && !refusal && groupAbsent,
     "Owned smoke failed; native journals and original private output retained without automatic recovery");

@@ -206,7 +206,7 @@ export function isFittedNativeProofCommand(args: readonly string[], input: strin
   if (context !== "fitted-native-proof" || timeout !== 10_000
     || args.length !== expected.length || args.some((value, index) => value !== expected[index])
     || typeof input !== "string") return false;
-  const cohort = /^with capture as materialized\(select private\.capture_embryo_test_statistical_fit_v1\('([0-9a-f-]{36})'::uuid,true\) a\),/.exec(input)?.[1];
+  const cohort = /^with fitted_proof_compact_value\(proof\) as materialized\(\nwith capture as materialized\(select private\.capture_embryo_test_statistical_fit_v1\('([0-9a-f-]{36})'::uuid,true\) a\),/.exec(input)?.[1];
   return cohort !== undefined && UUID.test(cohort) && input === fittedStatisticalProof(`'${cohort}'::uuid`);
 }
 /** Supplemental observation only. The entire original proof is materialized,
@@ -215,10 +215,15 @@ export function isFittedNativeProofCommand(args: readonly string[], input: strin
 export function fittedNativeProofSizeSql(args: readonly string[], input: string | undefined,
   timeout: number, context: unknown): string | null {
   if (typeof input !== "string" || !isFittedNativeProofCommand(args, input, timeout, context)) return null;
+  const compactPrefix = "with fitted_proof_compact_value(proof) as materialized(\n";
+  const compactBoundary = "\n), fitted_proof_compact_text as materialized(";
+  // Whole-command equality above fixes both boundaries and the complete value.
+  // This later observation always measures original JSONB, never compact text.
+  const originalValue = input.slice(compactPrefix.length, input.indexOf(compactBoundary));
   const fields = PROOF_SIZE_FIELDS.map(name =>
     `'${name}',octet_length(convert_to((proof->'${name}')::text,'UTF8'))`).join(",");
   return `with fitted_proof_size_value(proof) as materialized(
-${input.slice(0, -1)}
+${originalValue}
 )
     select jsonb_build_object('version','embryo-fitted-proof-size-v1','backendPid',pg_backend_pid(),
       'byteCount',octet_length(convert_to(proof::text,'UTF8')),
@@ -582,7 +587,7 @@ export type FittedEmbryoJourney = {
  * checked invented artifact/package literals. The full package travels once;
  * all authority, source, result, runtime and receipt metadata stays visible.
  * The original proof and its transport bound are unchanged. */
-function fittedStatisticalProof(cohort: string): string {
+function fittedStatisticalProofValue(cohort: string): string {
   return `with capture as materialized(select private.capture_embryo_test_statistical_fit_v1(${cohort},true) a),
     admission as materialized(select private.current_embryo_test_fit_admission_v1() a),
     jobs as materialized(select j from public.worker_jobs j where j.cohort_id=${cohort}
@@ -644,6 +649,21 @@ function fittedStatisticalProof(cohort: string): string {
         'calls',private.embryo_test_statistical_calls_v1(e)) order by (e->>'sampleOrdinal')::integer)
         from capture cross join lateral jsonb_array_elements(a->'embryos') embryos(e)));`;
 }
+
+function fittedStatisticalProof(cohort: string): string {
+  // String.raw preserves the exact native JSON-string regex and backreference.
+  // The original JSONB value is materialized once; only its final whitespace
+  // outside strings changes, after native complete-value round-trip equality.
+  return String.raw`with fitted_proof_compact_value(proof) as materialized(
+${fittedStatisticalProofValue(cohort).slice(0, -1)}
+), fitted_proof_compact_text as materialized(
+ select proof, regexp_replace(proof::text, $fitted_json_string$("(?:[^"\\]|\\.)*")|[[:space:]]+$fitted_json_string$, $fitted_json_keep$\1$fitted_json_keep$, 'g') as compact_text
+ from fitted_proof_compact_value
+)
+ select case when proof is not null and compact_text::jsonb is not distinct from proof
+ then compact_text else null end from fitted_proof_compact_text;`;
+}
+
 
 /** Complete existing first-cohort values, hashed natively rather than exposed.
  * No table is reset or adopted; the first terminal graph must stay exact for
