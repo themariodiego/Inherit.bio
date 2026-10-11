@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { densityEarlyCaptureStep, densityEarlyCaptureAsyncStep, type DensityEarlyCaptureObserver } from "../../scripts/density-early-capture";
 import { createHash } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
@@ -43,6 +44,8 @@ export interface CurrentDensityCaptureOptions {
   readOwnedBrowser?: () => Browser;
   /** One exact capture, after the unchanged complete census/provider preflight. */
   segment?: DensityCaptureSegmentSelection;
+  /** Optional owned caller only; closed metadata never becomes capture proof. */
+  observeEarlyCaptureFailure?: DensityEarlyCaptureObserver;
   observeSource: () => Promise<DensitySource>;
   fontManifestPath: string;
   /** Separate genuine Root originals; no metadata is added to the font identity. */
@@ -72,19 +75,20 @@ export async function captureCurrentDensity(options: CurrentDensityCaptureOption
   const root = fs.realpathSync(options.root), output = path.resolve(options.output);
   assert(path.isAbsolute(options.output) && output !== root && !output.startsWith(`${root}${path.sep}`),
     "Fresh out-of-checkout density output required");
-  fs.mkdirSync(output, { mode: 0o700 }); // EXCL: an existing directory is not adopted.
-  const registerPath = path.join(root, "docs/route-register.json"), registerBytes = publicBytes(registerPath);
-  const register = JSON.parse(registerBytes.toString("utf8")) as DensityRegister;
-  const contractPath = path.join(root, "docs/density-baseline.json"), contractBytes = publicBytes(contractPath);
-  const contract = JSON.parse(contractBytes.toString("utf8")) as DensityContract & { measurementSelectors: Record<string, string> };
-  const source = densitySourceSchema.parse(await options.observeSource());
-  assert(source.registerSha256 === sha256(registerBytes), "Current full register source required");
+  densityEarlyCaptureStep("density-capture-output-create", () => fs.mkdirSync(output, { mode: 0o700 }), options.observeEarlyCaptureFailure); // EXCL: an existing directory is not adopted.
+  const registerPath = path.join(root, "docs/route-register.json"), registerBytes = densityEarlyCaptureStep("density-capture-register-source", () => publicBytes(registerPath), options.observeEarlyCaptureFailure);
+  const register = densityEarlyCaptureStep("density-capture-register-parse", () => JSON.parse(registerBytes.toString("utf8")) as DensityRegister, options.observeEarlyCaptureFailure);
+  const contractPath = path.join(root, "docs/density-baseline.json"), contractBytes = densityEarlyCaptureStep("density-capture-contract-source", () => publicBytes(contractPath), options.observeEarlyCaptureFailure);
+  const contract = densityEarlyCaptureStep("density-capture-contract-parse", () => JSON.parse(contractBytes.toString("utf8")) as DensityContract & { measurementSelectors: Record<string, string> }, options.observeEarlyCaptureFailure);
+  const observedSource = await densityEarlyCaptureAsyncStep("density-capture-current-source", () => options.observeSource(), options.observeEarlyCaptureFailure);
+  const source = densityEarlyCaptureStep("density-capture-source-parse", () => densitySourceSchema.parse(observedSource), options.observeEarlyCaptureFailure);
+  densityEarlyCaptureStep("density-capture-register-match", () => assert(source.registerSha256 === sha256(registerBytes), "Current full register source required"), options.observeEarlyCaptureFailure);
   const fixtures = new Map(options.fixtures.map(f => [densityStateKey(f.routeId, f.state), f]));
-  const plan = densityCapturePlan(register, options.fixtures.map(f => densityStateKey(f.routeId, f.state)));
-  writeOriginal(path.join(output, "current-census.json"), JSON.stringify({ version: 1, source,
+  const plan = densityEarlyCaptureStep("density-capture-census-plan", () => densityCapturePlan(register, options.fixtures.map(f => densityStateKey(f.routeId, f.state))), options.observeEarlyCaptureFailure);
+  densityEarlyCaptureStep("density-capture-census-write", () => writeOriginal(path.join(output, "current-census.json"), JSON.stringify({ version: 1, source,
     registerSha256: sha256(registerBytes), pageRoutes: plan.pages.map(p => p.id),
     states: plan.states.map(s => ({ routeId: s.route.id, state: s.state })),
-    viewports: DENSITY_VIEWPORTS, requiredCaptureCount: plan.requiredCaptureCount, holds: plan.holds }, null, 2));
+    viewports: DENSITY_VIEWPORTS, requiredCaptureCount: plan.requiredCaptureCount, holds: plan.holds }, null, 2)), options.observeEarlyCaptureFailure);
   if (plan.holds.length) {
     const hold = { status: plan.status, g2_5Acceptance: false, captures: 0,
       pageRoutes: plan.pages.length, requiredCaptureCount: plan.requiredCaptureCount, holds: plan.holds };

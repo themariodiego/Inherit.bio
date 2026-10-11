@@ -195,3 +195,34 @@ it("separates the real default writer from unterminated private stderr before th
     expect(JSON.stringify(selected)).not.toContain("PRIVATE_UNTERMINATED_STDERR_CANARY");
   } finally { output.mockRestore(); }
 });
+
+
+import {readFileSync} from "node:fs";
+import {emitOwnedEmbryoReadFailures} from "./hosted-owned-diagnostics";
+it("emits only actual observed fixed tables at the original page read refusal through the fragmented collector",()=>{
+ const capture=createHostedBootstrapDiagnostics(),observed=[{route:"embryos.compare",table:"embryo_qc"},
+  {route:"embryos.compare",table:"embryo_qc"},{route:"embryos.compare",table:"embryo_statistical_coverage"}],original=new Error("PRIVATE_ORIGINAL");
+ expect(()=>{emitOwnedEmbryoReadFailures("read-no-model-page-read-error",observed,"unreturned",line=>{
+  expect(Buffer.byteLength(line+"\n")).toBeLessThanOrEqual(512);for(const byte of Buffer.from(line+"\n"))capture.push(Uint8Array.of(byte));});throw original;}).toThrow(original);
+ expect(capture.finish()).toEqual(["read-no-model-server-qc","read-no-model-server-statistical"].map(stage=>({stage,classification:"setup-refused",exitCode:null,signal:null,cleanup:"unreturned"})));
+});
+it("keeps missing server observations and other failures noninvented, and rejects private or forged fields",()=>{
+ const emit=vi.fn(),getter=vi.fn(()=>"embryo_qc");
+ emitOwnedEmbryoReadFailures("read-no-model-page-read-error",[],"unreturned",emit);
+ emitOwnedEmbryoReadFailures("read-no-model-visible",[{route:"embryos.compare",table:"embryo_qc"}],"unreturned",emit);
+ emitOwnedEmbryoReadFailures("read-no-model-page-read-error",[{route:"embryos.compare",table:"private"},
+  {route:"embryos.compare",table:"embryo_qc",message:"PRIVATE"},Object.defineProperty({route:"embryos.compare"},"table",{get:getter})],"unreturned",emit);
+ emitOwnedEmbryoReadFailures("read-no-model-page-read-error",Array.from({length:17},()=>({route:"embryos.compare",table:"embryo_qc"})),"unreturned",emit);
+ expect(getter).not.toHaveBeenCalled();expect(emit).not.toHaveBeenCalled();
+});
+it("never replaces original page rejection or cleanup when table diagnostic output refuses",()=>{
+ const original=new Error("PRIVATE_ORIGINAL");expect(()=>{emitOwnedEmbryoReadFailures("read-no-model-page-read-error",
+  [{route:"embryos.compare",table:"embryo_qc"}],"unreturned",()=>{throw new Error("PRIVATE_SINK");});throw original;}).toThrow(original);
+});
+it("wires only the already owned 3105 service observation into the existing original page failure callback",()=>{
+ const source=readFileSync(new URL("./fresh-t6-browser.ts",import.meta.url),"utf8");
+ expect(source).toContain('port === 3105 && operator && line.startsWith(EMBRYO_READ_DIAGNOSTIC_PREFIX)');
+ expect(source).toContain('emitHostedBootstrapFailure(stage, freshRuntimeFailureClassification(error), cleanup);');
+ expect(source).toContain('emitOwnedEmbryoReadFailures(stage, observedEmbryoReads, cleanup);');
+ expect(source).toContain('if (port === 3105) observedEmbryoReads = app.readDiagnostics;');
+});

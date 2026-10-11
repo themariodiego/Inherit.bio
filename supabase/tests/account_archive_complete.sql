@@ -415,6 +415,57 @@ select ok((select bool_and((c->>'rows')::bigint=(case when old->>'mode'='exclude
 select ok((select exists(select 1 from jsonb_array_elements(value->'dispositions')d where d->>'kind'='portrait_results'
  and(d->>'sourceRows')::bigint>0 and(d->>'exportRows')::bigint=0 and d->>'status'='excluded')
  from complete_contexts where name='owner'),'nonempty portrait without mutual/current permission is an explicit exclusion');
+-- Account66f: the actual first foreign page reached the native key validator
+-- and its counted ASCII regular expression refused before any row was emitted.
+-- Retain the exact complete key, printable ASCII and 2048-character contract.
+select is(private.account_archive_complete_key_v1(jsonb_build_array(
+ '77900000-0000-4000-8000-000000000083','x')),
+ jsonb_build_array('77900000-0000-4000-8000-000000000083','x'),
+ 'complete key preserves the exact one-character printable identity');
+select is(private.account_archive_complete_key_v1(jsonb_build_array(
+ '77900000-0000-4000-8000-000000000083',' ')),
+ jsonb_build_array('77900000-0000-4000-8000-000000000083',' '),
+ 'complete key preserves a literal space rather than trimming identity');
+select is(private.account_archive_complete_key_v1(jsonb_build_array(
+ '77900000-0000-4000-8000-000000000083',(select string_agg(chr(n),'' order by n) from generate_series(32,126)n))),
+ jsonb_build_array('77900000-0000-4000-8000-000000000083',
+  (select string_agg(chr(n),'' order by n) from generate_series(32,126)n)),
+ 'complete key preserves every printable ASCII byte including quote and backslash');
+select is(private.account_archive_complete_key_v1(jsonb_build_array(
+ '77900000-0000-4000-8000-000000000083',repeat('~',2048))),
+ jsonb_build_array('77900000-0000-4000-8000-000000000083',repeat('~',2048)),
+ 'complete key accepts and preserves the original full 2048-character boundary');
+select is((select private.account_archive_complete_key_v1(jsonb_build_array(variant.file_id,variant.id::text))
+ from public.user_variants variant where variant.file_id='77900000-0000-4000-8000-000000000083'),
+ (select jsonb_build_array(variant.file_id,variant.id::text) from public.user_variants variant
+ where variant.file_id='77900000-0000-4000-8000-000000000083'),
+ 'complete key accepts the genuine foreign normalized variant identity without changing it');
+select throws_ok($$select private.account_archive_complete_key_v1(jsonb_build_array(
+ '77900000-0000-4000-8000-000000000083',repeat('~',2049)))$$,
+ '22023','invalid_request','complete key refuses the original 2049-character over-boundary identity');
+select throws_ok($$select private.account_archive_complete_key_v1(jsonb_build_array(
+ '77900000-0000-4000-8000-000000000083',''))$$,
+ '22023','invalid_request','complete key refuses an empty identity');
+select throws_ok($$select private.account_archive_complete_key_v1(jsonb_build_array(
+ '77900000-0000-4000-8000-000000000083','é'))$$,
+ '22023','invalid_request','complete key refuses non-ASCII identity rather than normalizing it');
+select throws_ok($$select private.account_archive_complete_key_v1(jsonb_build_array(
+ '77900000-0000-4000-8000-000000000083','x'||chr(10)))$$,
+ '22023','invalid_request','complete key refuses a newline suffix');
+select throws_ok($$select private.account_archive_complete_key_v1(jsonb_build_array(
+ '77900000-0000-4000-8000-000000000083',chr(127)))$$,
+ '22023','invalid_request','complete key refuses DEL outside printable ASCII');
+select throws_ok($$select private.account_archive_complete_key_v1(jsonb_build_array(
+ '77900000-0000-4000-8000-000000000083',chr(9)))$$,
+ '22023','invalid_request','complete key refuses a tab outside printable ASCII');
+select throws_ok($$select private.account_archive_complete_key_v1(null::jsonb)$$,
+ '22023','invalid_request','complete key retains SQL NULL refusal');
+select throws_ok($$select private.account_archive_complete_key_v1(jsonb_build_array('not-a-uuid','x'))$$,
+ '22023','invalid_request','complete key retains the original exact UUID refusal');
+select throws_ok($$select private.account_archive_complete_key_v1(jsonb_build_array(
+ '77900000-0000-4000-8000-000000000083',1))$$,
+ '22023','invalid_request','complete key retains strict identity string type refusal');
+
 select is(jsonb_array_length(pg_temp.complete_read('claimant','file-rows','variants',jsonb_build_object(
  'fileId','77900000-0000-4000-8000-000000000083','afterKey',null))->'rows'),1,
  'new actual complete RPC reads exactly the foreign normalized variant');

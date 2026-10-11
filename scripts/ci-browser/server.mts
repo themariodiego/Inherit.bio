@@ -211,7 +211,7 @@ try {
         // Only complete, bounded, enum-only profile diagnostics cross either
         // launcher hop. Playwright retains web-server stderr; stdout is ignored.
         // Every other app log stays discarded.
-        closers.push(forwardProfileDiagnostics([app.stdout,app.stderr],line=>process.stderr.write(line+"\n")));
+        closers.push(forwardProfileDiagnostics([app.stdout,app.stderr],line=>process.stderr.write(line+"\n"),port===3105));
         if (observeService) app.once("spawn", () => {
           try {
             assert(app.pid && !stopping, "Actual app child required");

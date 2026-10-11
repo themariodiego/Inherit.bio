@@ -1678,7 +1678,8 @@ begin
  if jsonb_typeof(p_key) is distinct from 'array' or jsonb_array_length(p_key)<>2
   or jsonb_typeof(p_key->0) is distinct from 'string' or jsonb_typeof(p_key->1) is distinct from 'string'
   or (p_key->>0)!~'^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$'
-  or (p_key->>1)!~'^[ -~]{1,2048}$' then raise exception using errcode='22023',message='invalid_request';end if;
+  or char_length(p_key->>1) not between 1 and 2048
+  or (p_key->>1)!~'^[ -~]+$' then raise exception using errcode='22023',message='invalid_request';end if;
  return p_key;
 end $$;
 

@@ -5,10 +5,33 @@ import {PROFILE_DIAGNOSTIC_LINE_BYTES,PROFILE_DIAGNOSTIC_PREFIX,profileDiagnosti
 import {REVIEW_DIAGNOSTIC_PREFIX,reviewDiagnosticLine} from "../../src/lib/future-person/review-diagnostic-contract";
 import {APP_LAUNCHER_DIAGNOSTIC_PREFIX,appLauncherDiagnosticLine} from "./app-launcher-diagnostic";
 
+export const EMBRYO_READ_DIAGNOSTIC_PREFIX="INHERIT_EMBRYO_READ_DIAGNOSTIC:";
+const embryoReadTables=["embryo_carrier_library","embryo_carrier_hold","embryo_statistical_coverage","embryo_qc","embryo_scores"] as const;
+export type EmbryoReadDiagnostic={route:"embryos.compare";table:typeof embryoReadTables[number]};
+/** Exact original server catch metadata only; never inspect a raw exception. */
+export function closedEmbryoReadDiagnostic(input:unknown):EmbryoReadDiagnostic|null{
+ try{
+  if(!input||typeof input!=="object"||Array.isArray(input))return null;
+  const fields=Object.getOwnPropertyDescriptors(input);
+  if(Reflect.ownKeys(fields).length!==2||!["route","table"].every(key=>fields[key]&&Object.hasOwn(fields[key],"value")))return null;
+  const route=fields.route.value,table=fields.table.value;
+  return route==="embryos.compare"&&embryoReadTables.includes(table)?{route,table}:null;
+ }catch{return null;}
+}
+export function embryoReadDiagnosticLine(input:unknown):string|null{
+ const value=closedEmbryoReadDiagnostic(input);
+ return value?EMBRYO_READ_DIAGNOSTIC_PREFIX+JSON.stringify(value):null;
+}
+/** This exact Console line is recognized only at the real Next app pipe. */
+function originalEmbryoReadLine(line:string):string|null{
+ const match=/^embryo\.read-failed \{ route: 'embryos\.compare', table: '(embryo_carrier_library|embryo_carrier_hold|embryo_statistical_coverage|embryo_qc|embryo_scores)' \}$/.exec(line);
+ return match?embryoReadDiagnosticLine({route:"embryos.compare",table:match[1]}):null;
+}
+
 export const PROFILE_DIAGNOSTIC_RECORD_LIMIT=64;
 /** A complete ASCII line is required. Oversize lines are discarded through
  * their newline; their suffix cannot masquerade as a fresh diagnostic. */
-export function profileDiagnosticFilter(emit:(line:string)=>void){
+export function profileDiagnosticFilter(emit:(line:string)=>void,observeEmbryoReadFailures=false){
   let pending:Buffer=Buffer.alloc(0),discard=false,closed=false;
   return {
     write(chunk:Buffer|string){
@@ -27,13 +50,18 @@ export function profileDiagnosticFilter(emit:(line:string)=>void){
         const line=pending.toString("ascii");
         const prefix=line.startsWith(PROFILE_DIAGNOSTIC_PREFIX)?PROFILE_DIAGNOSTIC_PREFIX:
           line.startsWith(REVIEW_DIAGNOSTIC_PREFIX)?REVIEW_DIAGNOSTIC_PREFIX:
-          line.startsWith(APP_LAUNCHER_DIAGNOSTIC_PREFIX)?APP_LAUNCHER_DIAGNOSTIC_PREFIX:null;
+          line.startsWith(APP_LAUNCHER_DIAGNOSTIC_PREFIX)?APP_LAUNCHER_DIAGNOSTIC_PREFIX:
+          line.startsWith(EMBRYO_READ_DIAGNOSTIC_PREFIX)?EMBRYO_READ_DIAGNOSTIC_PREFIX:null;
         if(!discard&&prefix!==null){
           try{
             const value=JSON.parse(line.slice(prefix.length));
             const safe=prefix===PROFILE_DIAGNOSTIC_PREFIX?profileDiagnosticLine(value):
-              prefix===REVIEW_DIAGNOSTIC_PREFIX?reviewDiagnosticLine(value):appLauncherDiagnosticLine(value);if(safe!==null&&line===safe)emit(safe);
+              prefix===REVIEW_DIAGNOSTIC_PREFIX?reviewDiagnosticLine(value):
+               prefix===APP_LAUNCHER_DIAGNOSTIC_PREFIX?appLauncherDiagnosticLine(value):embryoReadDiagnosticLine(value);if(safe!==null&&line===safe)emit(safe);
           }catch{/* Unknown logs and failed sinks have no diagnostic authority. */}
+        }
+        if(!discard&&prefix===null&&observeEmbryoReadFailures){
+          const safe=originalEmbryoReadLine(line);if(safe!==null)try{emit(safe);}catch{/* Original app refusal remains. */}
         }
         pending=Buffer.alloc(0);discard=false;start=newline+1;
       }
@@ -43,12 +71,12 @@ export function profileDiagnosticFilter(emit:(line:string)=>void){
 }
 /** Both app pipes share one output budget. Raw output is always drained and
  * never forwarded or persisted. End/close drops a truncated partial line. */
-export function forwardProfileDiagnostics(streams:readonly (Readable|null|undefined)[],emit:(line:string)=>void){
+export function forwardProfileDiagnostics(streams:readonly (Readable|null|undefined)[],emit:(line:string)=>void,observeEmbryoReadFailures=false){
   let records=0;
   const closers: Array<()=>void>=[];
   for(const stream of streams){
     if(!stream)continue;
-    const filter=profileDiagnosticFilter(line=>{if(records<PROFILE_DIAGNOSTIC_RECORD_LIMIT){records++;emit(line);}});
+    const filter=profileDiagnosticFilter(line=>{if(records<PROFILE_DIAGNOSTIC_RECORD_LIMIT){records++;emit(line);}},observeEmbryoReadFailures);
     const write=(chunk:Buffer|string)=>filter.write(chunk),end=()=>filter.end();
     stream.on("data",write);stream.once("end",end);stream.once("close",end);
     closers.push(()=>{filter.end();stream.off("data",write);stream.off("end",end);stream.off("close",end);stream.resume();});

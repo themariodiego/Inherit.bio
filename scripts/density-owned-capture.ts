@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { emitHostedBootstrapFailure } from "./comprehension/hosted-owned-diagnostics";
 import fs from "node:fs";
 import path from "node:path";
 import type { Browser } from "@playwright/test";
@@ -127,6 +128,7 @@ export async function runOwnedDensityCapture(input: {
     } } satisfies DensityStateFixture));
     return await captureCurrentDensity({ root, output: input.output, fontManifestPath: input.fontManifestPath,
       browser: first.browser, fixtures, observeSource: input.observeSource,
+      ...(input.operator ? { observeEarlyCaptureFailure: ((stage, metadata) => emitHostedBootstrapFailure(stage, metadata, "unreturned")) satisfies NonNullable<CurrentDensityCaptureOptions["observeEarlyCaptureFailure"]> } : {}),
       ...(input.baselineOriginals === undefined ? {} : { baselineOriginals: input.baselineOriginals }),
       ...(input.segment === undefined ? {} : { segment: input.segment }),
       readOwnedBrowser: () => { assert(live && selectedFixture, "Actual live owned fixture browser required"); return live.browser; },
