@@ -5,7 +5,9 @@ import { openLiveSession, type LiveSessionSetupStage } from "./live-browser";
 import { createHostedBootstrapDiagnostics, emitHostedBootstrapFailure, HOSTED_BOOTSTRAP_PREFIX } from "./hosted-owned-diagnostics";
 import { freshRuntimeFailureClassification } from "./fresh-t6-resources";
 import { participantCNoModelSurface, type ParticipantCReadDiagnostic, type ParticipantCReadStage } from "./participant-c-seed";
-import { NO_ROWS_SENTENCE } from "../../src/copy/embryos/compare";
+import { NO_ROWS_SENTENCE, READ_FAILED_SENTENCE, SHAPE_BLOCKED_SENTENCE } from "../../src/copy/embryos/compare";
+import { ERROR_HEADING } from "../../src/copy/error-state";
+import { NOT_FOUND_HEADING } from "../../src/copy/not-found";
 
 // Real production wrappers with injected public browser interfaces only.
 // No browser, native API, provider, account or participant evidence is created.
@@ -293,5 +295,125 @@ describe("actual nested no-model operations keep strict failure and public five-
     const diagnostic = vi.fn();
     expect(participantCNoModelSurface(value, diagnostic)).toEqual(value);
     expect(diagnostic).not.toHaveBeenCalled();
+  });
+});
+
+
+// Closed page predicates use the actual harness/collector above. These are
+// injected public browser controls, never an observed native/browser outcome.
+function pageStateBrowser(visible: readonly string[], observationThrows = false) {
+  const actual = injectedBrowser(), open = actual.browser.newContext.bind(actual.browser);
+  const inspected: string[] = [];
+  actual.browser.newContext = async (...args: Parameters<Browser["newContext"]>) => {
+    const context = await open(...args), create = context.newPage.bind(context);
+    context.newPage = async () => {
+      const page = await create(), locate = page.locator.bind(page);
+      const isVisible = async (key: string) => {
+        inspected.push(key);
+        if (observationThrows) throw control.cleanup;
+        return visible.includes(key);
+      };
+      Object.assign(page, {
+        getByRole: (_role: string, options: { name: string; exact: boolean; level: number }) => ({
+          isVisible: () => isVisible(`heading:${options.level}:${options.name}:${options.exact}`),
+        }),
+        locator: (selector: string) => Object.assign(locate(selector), {
+          isVisible: () => isVisible(selector),
+          getByText: (text: string, options: { exact: boolean }) => ({
+            isVisible: () => isVisible(`${selector}:text:${text}:${options.exact}`),
+          }),
+        }),
+      });
+      return page;
+    };
+    return context;
+  };
+  return { ...actual, inspected };
+}
+const fixedPagePredicates = [
+  ["read-no-model-page-auth", ["heading:1:Welcome back:true", 'form input#email[type="email"]', 'form input#password[type="password"]']],
+  ["read-no-model-page-jurisdiction", ['[data-slot="jurisdiction-unavailable"]']],
+  ["read-no-model-page-empty", ['[data-slot="blocking-state"][data-state="empty"]']],
+  ["read-no-model-page-processing", ['[data-slot="blocking-state"][data-state="processing"]']],
+  ["read-no-model-page-consent", ['[data-slot="blocking-state"][data-state="consent-required"]']],
+  ["read-no-model-page-gated", ['[data-slot="result-gate"]']],
+  ["read-no-model-page-read-error", [`[data-slot="error-state"]:text:${READ_FAILED_SENTENCE}:true`]],
+  ["read-no-model-page-shape-error", [`[data-slot="error-state"]:text:${SHAPE_BLOCKED_SENTENCE}:true`]],
+  ["read-no-model-page-error", [`heading:1:${ERROR_HEADING}:true`]],
+  ["read-no-model-page-not-found", [`heading:1:${NOT_FOUND_HEADING}:true`]],
+] as const;
+
+describe("actual no-model visibility refusal retains only a fixed rendered page predicate", () => {
+  it.each(fixedPagePredicates)("records only %s and keeps the original visibility error and context cleanup", async (stage, visible) => {
+    control.fault = "no-model-visible";
+    const actual = pageStateBrowser(visible), recorded = capture();
+    await expect(openParticipantCReadSession(readOptions(actual.browser, recorded.diagnostic))).rejects.toBe(control.operation);
+    expect(recorded.finish()).toEqual(["read-no-model-visible", stage, "read-no-model-surface", "read-browser-prepare"].map(value => ({
+      stage: value, classification: "setup-refused", exitCode: null, signal: null, cleanup: "unreturned",
+    })));
+    expect(control.events.indexOf(`report:${stage}`)).toBeLessThan(control.events.indexOf("context-close"));
+    expect(control.events.filter(value => value === "context-close")).toHaveLength(1);
+    expect(control.events).not.toContain("surface:conditions");
+    expect(control.events).not.toContain("surface:figures");
+    expect(recorded.lines.join()).not.toContain("synthetic-private");
+    expect(recorded.lines.every(line => Buffer.byteLength(line) <= 512)).toBe(true);
+  });
+  it("unknown or arbitrary DOM content cannot select a page cause or change the original refusal", async () => {
+    control.fault = "no-model-visible";
+    const actual = pageStateBrowser(["synthetic-private-url-row-uuid-message"]), recorded = capture();
+    await expect(openParticipantCReadSession(readOptions(actual.browser, recorded.diagnostic))).rejects.toBe(control.operation);
+    expect(recorded.finish().map(value => value.stage)).toEqual(["read-no-model-visible", "read-no-model-surface", "read-browser-prepare"]);
+    expect(recorded.lines.join()).not.toContain("synthetic-private");
+  });
+  it("two visible known predicates remain ambiguous without a guessed cause", async () => {
+    control.fault = "no-model-visible";
+    const actual = pageStateBrowser([...fixedPagePredicates[1][1], ...fixedPagePredicates[3][1]]), recorded = capture();
+    await expect(openParticipantCReadSession(readOptions(actual.browser, recorded.diagnostic))).rejects.toBe(control.operation);
+    expect(recorded.finish().map(value => value.stage)).toEqual(["read-no-model-visible", "read-no-model-surface", "read-browser-prepare"]);
+  });
+  it("a heading without the actual email and password fields cannot be classified as an auth form", async () => {
+    control.fault = "no-model-visible";
+    const actual = pageStateBrowser(["heading:1:Welcome back:true"]), recorded = capture();
+    await expect(openParticipantCReadSession(readOptions(actual.browser, recorded.diagnostic))).rejects.toBe(control.operation);
+    expect(recorded.finish().map(value => value.stage)).toEqual(["read-no-model-visible", "read-no-model-surface", "read-browser-prepare"]);
+  });
+  it("failed supplemental observation cannot replace the actual visibility error", async () => {
+    control.fault = "no-model-visible";
+    const actual = pageStateBrowser([], true), recorded = capture();
+    await expect(openParticipantCReadSession(readOptions(actual.browser, recorded.diagnostic))).rejects.toBe(control.operation);
+    expect(recorded.finish().map(value => value.stage)).toEqual(["read-no-model-visible", "read-no-model-surface", "read-browser-prepare"]);
+    expect(control.events.filter(value => value === "context-close")).toHaveLength(1);
+  });
+  it("a throwing page-predicate diagnostic keeps the original visibility error and cleanup", async () => {
+    control.fault = "no-model-visible";
+    const actual = pageStateBrowser(fixedPagePredicates[3][1]), recorded = capture();
+    await expect(openParticipantCReadSession(readOptions(actual.browser, (stage, error, cleanup) => {
+      recorded.diagnostic(stage, error, cleanup);
+      if (stage === "read-no-model-page-processing") throw control.cleanup;
+    }))).rejects.toBe(control.operation);
+    expect(recorded.finish().map(value => value.stage)).toEqual(["read-no-model-visible", "read-no-model-page-processing", "read-no-model-surface", "read-browser-prepare"]);
+    expect(control.events.filter(value => value === "context-close")).toHaveLength(1);
+  });
+  it("successful original no-model preparation never probes or emits a refused page state", async () => {
+    const actual = pageStateBrowser(fixedPagePredicates[3][1]), recorded = capture();
+    const session = await openParticipantCReadSession(readOptions(actual.browser, recorded.diagnostic));
+    expect(actual.inspected).toEqual([]); expect(recorded.finish()).toEqual([]); await session.close();
+  });
+  it("new page stages keep strict fields, unknown-stage suppression and the original sixteen-frame ceiling", () => {
+    const collector = createHostedBootstrapDiagnostics();
+    for (const [stage] of fixedPagePredicates) {
+      const recorded = capture();recorded.diagnostic(stage, control.operation, "unreturned");
+      for (const byte of Buffer.from(recorded.lines[0] + "\n")) collector.push(Uint8Array.of(byte));
+    }
+    for (const extra of [{ stage: "read-no-model-page-private" }, { message: "synthetic-private-actual-DOM" }, { count: 2 }, { url: "synthetic-private-url" }])
+      collector.push(Buffer.from(HOSTED_BOOTSTRAP_PREFIX + JSON.stringify({ stage: "read-no-model-page-error", classification: "setup-refused", exitCode: null, signal: null, cleanup: "unreturned", ...extra }) + "\n"));
+    for (let index = 0; index < 7; index++) {
+      const recorded = capture();recorded.diagnostic("read-no-model-page-error", control.operation, "unreturned");
+      collector.push(Buffer.from(recorded.lines[0] + "\n"));
+    }
+    const frames = collector.finish();expect(frames).toHaveLength(16);
+    expect(frames.slice(0, 10).map(frame => frame.stage)).toEqual(fixedPagePredicates.map(([stage]) => stage));
+    expect(frames.every(frame => Object.keys(frame).length === 5)).toBe(true);
+    expect(JSON.stringify(frames)).not.toContain("synthetic-private");
   });
 });
