@@ -1,6 +1,7 @@
 /** Closed bootstrap metadata only. No command, key, identifier or output is
  * admitted. These records supplement failure; they cannot authorize recovery. */
 import { z } from "zod";
+import { CI_RUNTIME_SETUP_STAGES } from "../ci-browser-runtime-failure";
 
 export const HOSTED_BOOTSTRAP_PREFIX = "OWNED_BOOTSTRAP_FAILURE_V1|";
 const stages = ["host-admission", "source-attestation", "source-copy", "migration-copy",
@@ -13,8 +14,12 @@ const stages = ["host-admission", "source-attestation", "source-copy", "migratio
   "stack-runtime-guard", "stack-owner-binding", "stack-scratch-identity", "stack-lock-acquisition",
   "session-binding", "session-exclusivity", "session-cancellation", "session-acquisition",
   "session-publication-binding", "session-read-open", "session-read-identity", "session-cleanup",
-  "read-browser-context", "read-browser-route", "read-browser-prepare", "read-browser-prepare-close", "read-browser-init-script", "read-browser-page-open", "read-browser-start-page", "read-browser-context-cleanup", "read-cohort-query", "read-embryos-query", "read-cohort-result", "read-embryos-result", "read-files-query", "read-worker-proof", "read-native-publication", "read-publication-contract", "read-sign-in", "read-comparison-navigation", "read-permission", "read-result-gate", "read-no-model-surface", "read-no-model-visible", "read-no-model-text", "read-no-model-dom", "read-no-model-notices", "read-no-model-condition-rows", "read-no-model-figures", "read-no-model-shape"] as const;
-const schema = z.object({ stage: z.enum(stages),
+  "read-browser-context", "read-browser-route", "read-browser-prepare", "read-browser-prepare-close", "read-browser-init-script", "read-browser-page-open", "read-browser-start-page", "read-browser-context-cleanup", "read-cohort-query", "read-embryos-query", "read-cohort-result", "read-embryos-result", "read-files-query", "read-worker-proof", "read-native-publication", "read-publication-contract", "read-sign-in", "read-comparison-navigation", "read-permission", "read-result-gate", "read-no-model-surface", "read-no-model-visible", "read-no-model-text", "read-no-model-dom", "read-no-model-notices", "read-no-model-condition-rows", "read-no-model-figures", "read-no-model-shape", "read-no-model-page-auth", "read-no-model-page-jurisdiction", "read-no-model-page-empty", "read-no-model-page-processing", "read-no-model-page-consent", "read-no-model-page-gated", "read-no-model-page-read-error", "read-no-model-page-shape-error", "read-no-model-page-error", "read-no-model-page-not-found"] as const;
+const densityStages = ["density-bootstrap-keys", "density-reference-seed", "density-upload-capacity",
+  "density-storage-proxy", "density-runtime-preflight", "density-runtime-environment", "density-mail-capture",
+  "density-app-launch", "density-service-observers", "density-app-readiness", "density-chromium-launch",
+  "density-acquisition-cleanup", ...CI_RUNTIME_SETUP_STAGES.map(stage => `density-runtime-${stage}` as const)] as const;
+const schema = z.object({ stage: z.enum([...stages, ...densityStages] as const),
   classification: z.enum(["spawn-refused", "exit-nonzero", "signal", "timeout", "output-limit", "setup-refused"]),
   exitCode: z.number().int().min(0).max(255).nullable(),
   signal: z.enum(["SIGABRT", "SIGALRM", "SIGBUS", "SIGHUP", "SIGINT", "SIGKILL", "SIGPIPE",

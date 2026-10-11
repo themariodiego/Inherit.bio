@@ -7,7 +7,10 @@ export type ParticipantCReadStage = LiveSessionSetupStage | "read-cohort-query" 
   | "read-cohort-result" | "read-embryos-result" | "read-files-query" | "read-worker-proof"
   | "read-native-publication" | "read-publication-contract"
   | "read-sign-in" | "read-comparison-navigation" | "read-permission" | "read-result-gate" | "read-no-model-surface"
-  | "read-no-model-visible" | "read-no-model-text" | "read-no-model-dom" | ParticipantCNoModelSchemaStage;
+  | "read-no-model-visible" | "read-no-model-text" | "read-no-model-dom" | ParticipantCNoModelSchemaStage
+  | "read-no-model-page-auth" | "read-no-model-page-jurisdiction" | "read-no-model-page-empty"
+  | "read-no-model-page-processing" | "read-no-model-page-consent" | "read-no-model-page-gated"
+  | "read-no-model-page-read-error" | "read-no-model-page-shape-error" | "read-no-model-page-error" | "read-no-model-page-not-found";
 export type ParticipantCNoModelSchemaStage = "read-no-model-notices" | "read-no-model-condition-rows"
   | "read-no-model-figures" | "read-no-model-shape";
 export type ParticipantCReadDiagnostic = (stage: ParticipantCReadStage, error: unknown,

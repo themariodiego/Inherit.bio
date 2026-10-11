@@ -10,7 +10,9 @@ import { APP_PORTS, EMBRYO_APP_ENV, checkedAppEnvironment } from "./ci-browser-c
 import { appServerEnvironment } from "./ci-browser-app-environment";
 import { APP_SERVICE_OBSERVATION_OPTION } from "./ci-browser/service-observation";
 import { ownedDensityServiceObservers } from "./density-owned-service-observer";
-import { acquireFreshStack, createResourceIO, infrastructureChildEnvironment } from "./comprehension/fresh-t6-resources";
+import { acquireFreshStack, createResourceIO, freshRuntimeFailureClassification, infrastructureChildEnvironment } from "./comprehension/fresh-t6-resources";
+import { emitHostedBootstrapFailure, type HostedBootstrapDiagnostic } from "./comprehension/hosted-owned-diagnostics";
+import { ciRuntimeFailureDiagnostic } from "./ci-browser-runtime-failure";
 import { repositoryRoot } from "./comprehension/conductor-inputs";
 import { ownedLinuxChildProof, type OwnedLinuxCapability } from "./owned-linux-runtime";
 import { startLocalStorageProxy } from "./local-storage-browser-proxy";
@@ -35,6 +37,35 @@ export interface FreshDensityRuntime {
 export function sequentialDensityCleanup(closers: readonly (() => Promise<void>)[]) {
   let closing: Promise<void> | undefined;
   return () => closing ??= (async () => { for (const close of closers) await close(); })();
+}
+
+
+/** Fixed acquisition observations only. A branded runtime error may name its
+ * actual registered inner boundary; a shaped exception cannot supply one. */
+export type DensityAcquisitionStage = "density-bootstrap-keys" | "density-reference-seed" | "density-upload-capacity"
+  | "density-storage-proxy" | "density-runtime-preflight" | "density-runtime-environment" | "density-mail-capture"
+  | "density-app-launch" | "density-service-observers" | "density-app-readiness" | "density-chromium-launch"
+  | "density-acquisition-cleanup";
+export function emitDensityAcquisitionFailure(stage: DensityAcquisitionStage, error: unknown,
+  cleanup: HostedBootstrapDiagnostic["cleanup"], emit?: (line: string) => void) {
+  const inner = ciRuntimeFailureDiagnostic(error);
+  const observed: HostedBootstrapDiagnostic["stage"] = stage === "density-runtime-preflight" && inner
+    ? `density-runtime-${inner.runtimeStage}` : stage;
+  emitHostedBootstrapFailure(observed, freshRuntimeFailureClassification(error), cleanup, emit);
+  if (stage === "density-runtime-preflight" && inner?.cleanupFailure)
+    emitHostedBootstrapFailure(`density-runtime-${inner.cleanupFailure.runtimeStage}`, inner.cleanupFailure, "uncertain", emit);
+}
+/** The pre-existing catch still awaits the same close and returns the same
+ * generic refusal. A failed close still propagates that exact cleanup error. */
+export async function refuseFreshDensityAcquisition(stage: DensityAcquisitionStage, error: unknown,
+  close: () => Promise<void>, owned: boolean, emit?: (line: string) => void): Promise<never> {
+  if (owned) emitDensityAcquisitionFailure(stage, error, "unreturned", emit);
+  try { await close(); }
+  catch (cleanup) {
+    if (owned) emitDensityAcquisitionFailure("density-acquisition-cleanup", cleanup, "uncertain", emit);
+    throw cleanup;
+  }
+  throw new Error("Fresh density resource acquisition refused; no capture was accepted");
 }
 
 async function stopApp(child: ChildProcess) {
@@ -109,21 +140,29 @@ export async function acquireFreshDensityRuntime(signal: AbortSignal, operator?:
     async () => { runtime?.stop(); }, async () => { await stack.close(); },
     async () => { for (const [name, value] of previous) { if (value === undefined) delete process.env[name]; else process.env[name] = value; } },
   ]);
+  let diagnosticStage: DensityAcquisitionStage = "density-bootstrap-keys";
   try {
     assert(Object.entries(stack.keys).every(([name, value]) => process.env[name] === value), "Actual fresh bootstrap must match the built public configuration");
+    diagnosticStage = "density-reference-seed";
     await io.command(process.execPath, ["--import", "tsx", "scripts/seed.ts"], { env: { ...infrastructure, ...stack.keys }, signal, timeout: 120_000 });
+    diagnosticStage = "density-upload-capacity";
     await io.command("docker", ["exec", "supabase_db_sequence", "psql", "-XAtq", "-U", "postgres", "-d", "postgres", "-v", "ON_ERROR_STOP=1", "-c",
       "insert into private.upload_authorization_config(singleton,auth_issuer,maximum_array_bytes,maximum_vcf_bytes,maximum_account_bytes,maximum_active_uploads) values(true,'http://127.0.0.1:54321/auth/v1',52428800,52428800,1073741824,32) on conflict(singleton) do nothing;"], { signal, env: infrastructure });
+    diagnosticStage = "density-storage-proxy";
     const signer = JSON.parse(process.env.INHERIT_UPLOAD_SIGNING_JWK ?? "null");
     assert(signer?.kty === "EC" && signer.crv === "P-256" && typeof signer.kid === "string", "Root's actual ephemeral upload signer required");
     const publicJwk = { ...createPublicKey(createPrivateKey({ key: signer, format: "jwk" })).export({ format: "jwk" }), kid: signer.kid, alg: "ES256", use: "sig" };
     proxy = await startLocalStorageProxy("sequence", publicJwk, infrastructure);
+    diagnosticStage = "density-runtime-preflight";
     runtime = await startCiBrowserRuntime(infrastructure, true, operator);
     // Original native journey helpers deliberately recheck these actual live
     // values against their invoking process. Restore them only after full close.
+    diagnosticStage = "density-runtime-environment";
     assign({ ...runtime.env, INHERIT_LOCAL_BROWSER_STORAGE_PROXY: proxy.url });
     const environment = { ...process.env };
+    diagnosticStage = "density-mail-capture";
     mail = await captureMail();
+    diagnosticStage = "density-app-launch";
     for (const port of APP_PORTS) {
       signal.throwIfAborted();
       const appEnvironment = checkedAppEnvironment({ ...appServerEnvironment(environment, port),
@@ -139,6 +178,7 @@ export async function acquireFreshDensityRuntime(signal: AbortSignal, operator?:
     // Observers must attach before startup emits an acknowledgment. Retain
     // one collector per real child; fixture-specific observers reuse that
     // collector's current ack through the exact source path below.
+    diagnosticStage = "density-service-observers";
     const serviceObservers = new Map<AppPort, ReturnType<typeof ownedDensityServiceObservers>>();
     let fixturePath: string | undefined;
     for (const [port, app] of apps) {
@@ -150,7 +190,9 @@ export async function acquireFreshDensityRuntime(signal: AbortSignal, operator?:
         fixtureSourcePath: "scripts/density-fresh-runtime.ts", launchConfiguration: app.appEnvironment, runtime: observingRuntime });
       serviceObservers.set(port, observer); detach.push(observer.close);
     }
+    diagnosticStage = "density-app-readiness";
     for (const [port, app] of apps) await ready(app.child, port, signal);
+    diagnosticStage = "density-chromium-launch";
     browser = await chromium.launch({ headless: true, args: chromiumStorageProxyArgs(proxy.url), env: infrastructure });
     const observers = (origin: string, sourcePath: string) => {
       const port = APP_PORTS.find(port => origin === `http://localhost:${port}`);
@@ -160,8 +202,7 @@ export async function acquireFreshDensityRuntime(signal: AbortSignal, operator?:
       return serviceObservers.get(port)!;
     };
     return { browser, runtime, apps, messages: mail.messages, environment, operator, observers, close };
-  } catch {
-    await close();
-    throw new Error("Fresh density resource acquisition refused; no capture was accepted");
+  } catch (error) {
+    return refuseFreshDensityAcquisition(diagnosticStage, error, close, operator !== undefined);
   }
 }

@@ -6,7 +6,9 @@ import { openLiveSession } from "../scripts/comprehension/live-browser";
 import { participantCPublication, participantCNoModelSurface, type ParticipantCReadDiagnostic, type ParticipantCReadStage } from "../scripts/comprehension/participant-c-seed";
 import { EMBRYO_APP_PORT } from "../scripts/ci-browser-config";
 import { GATE_BUTTON } from "@/copy/embryos/gate";
-import { NO_ROWS_SENTENCE } from "@/copy/embryos/compare";
+import { NO_ROWS_SENTENCE, READ_FAILED_SENTENCE, SHAPE_BLOCKED_SENTENCE } from "@/copy/embryos/compare";
+import { ERROR_HEADING } from "@/copy/error-state";
+import { NOT_FOUND_HEADING } from "@/copy/not-found";
 
 /** One native rehearsal consumes the just-completed journey's credentials.
  * It never seeds or reuses a cohort across persona simulations. Its caller
@@ -27,7 +29,39 @@ export async function openParticipantCReadSession(options: {
     return diagnose("read-publication-contract", async () => participantCPublication(value, options.ownerId, options.cohortId));
   };
   const noModelSurface = async (page: Page) => diagnose("read-no-model-surface", async () => {
-    await diagnose("read-no-model-visible", () => expect(page.locator('[data-slot="no-rows"]').first()).toBeVisible());
+    try {
+      await diagnose("read-no-model-visible", () => expect(page.locator('[data-slot="no-rows"]').first()).toBeVisible());
+    } catch (error) {
+      // Only fixed product predicates are observed. No DOM value, text, URL,
+      // count or error metadata crosses the existing five-field channel.
+      // isVisible does not poll or add an assertion timeout. A missing,
+      // ambiguous or failed observation cannot select a cause or pass setup.
+      try {
+        const predicates: readonly [ParticipantCReadStage, () => Promise<boolean>][] = [
+          ["read-no-model-page-auth", async () => await page.getByRole("heading", { level: 1, name: "Welcome back", exact: true }).isVisible()
+            && await page.locator('form input#email[type="email"]').isVisible()
+            && await page.locator('form input#password[type="password"]').isVisible()],
+          ["read-no-model-page-jurisdiction", () => page.locator('[data-slot="jurisdiction-unavailable"]').isVisible()],
+          ["read-no-model-page-empty", () => page.locator('[data-slot="blocking-state"][data-state="empty"]').isVisible()],
+          ["read-no-model-page-processing", () => page.locator('[data-slot="blocking-state"][data-state="processing"]').isVisible()],
+          ["read-no-model-page-consent", () => page.locator('[data-slot="blocking-state"][data-state="consent-required"]').isVisible()],
+          ["read-no-model-page-gated", () => page.locator('[data-slot="result-gate"]').isVisible()],
+          ["read-no-model-page-read-error", () => page.locator('[data-slot="error-state"]').getByText(READ_FAILED_SENTENCE, { exact: true }).isVisible()],
+          ["read-no-model-page-shape-error", () => page.locator('[data-slot="error-state"]').getByText(SHAPE_BLOCKED_SENTENCE, { exact: true }).isVisible()],
+          ["read-no-model-page-error", () => page.getByRole("heading", { level: 1, name: ERROR_HEADING, exact: true }).isVisible()],
+          ["read-no-model-page-not-found", () => page.getByRole("heading", { level: 1, name: NOT_FOUND_HEADING, exact: true }).isVisible()],
+        ];
+        let observed: ParticipantCReadStage | undefined, ambiguous = false;
+        for (const [stage, visible] of predicates) {
+          if (await visible()) {
+            if (observed !== undefined) { ambiguous = true; break; }
+            observed = stage;
+          }
+        }
+        if (observed !== undefined && !ambiguous) options.diagnostic?.(observed, error, "unreturned");
+      } catch { /* Supplemental observation cannot replace the original assertion. */ }
+      throw error;
+    }
     await diagnose("read-no-model-text", () => expect(page.locator('[data-slot="no-rows"]').first()).toHaveText(NO_ROWS_SENTENCE));
     const surface = await diagnose("read-no-model-dom", async () => ({
       notices: await page.locator('[data-slot="no-rows"]').allTextContents(),

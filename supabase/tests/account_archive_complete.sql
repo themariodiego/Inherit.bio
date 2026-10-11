@@ -409,8 +409,8 @@ select ok((select bool_and((c->>'rows')::bigint>0) from complete_contexts,jsonb_
  where name='claimant' and c->>'kind' in('embryos','embryo_qc','embryo_scores','embryo_figures','embryo_variants','report_artifacts')),
  'genuine claim/release/relocation plus recorded nonempty science is retained across all six classes');
 select ok((select bool_and((c->>'rows')::bigint=(case when old->>'mode'='excluded' then 0 else(c#>>'{legacy,rows}')::bigint end)+(c#>>'{routed,rows}')::bigint)
- from complete_contexts,jsonb_array_elements(value#>'{completeReceipt,classes}')c,
- jsonb_array_elements(value#>'{legacyCapture,classes,classes}')old where name='claimant' and old->>'kind'=c->>'kind'),
+ from complete_contexts context,jsonb_array_elements(context.value#>'{completeReceipt,classes}')c,
+ jsonb_array_elements(context.value#>'{legacyCapture,classes,classes}')old where context.name='claimant' and old->>'kind'=c->>'kind'),
  'whole emitted class rows include exact legacy source census semantics and routed counts');
 select ok((select exists(select 1 from jsonb_array_elements(value->'dispositions')d where d->>'kind'='portrait_results'
  and(d->>'sourceRows')::bigint>0 and(d->>'exportRows')::bigint=0 and d->>'status'='excluded')
@@ -437,7 +437,7 @@ select throws_ok($$select pg_temp.complete_read('claimant','original',null,jsonb
 
 create temporary table large_page as select pg_temp.complete_read('owner','rows','report_artifacts') value;
 select ok((select row->'rowText'='null'::jsonb and (row#>>'{rowSource,byteCount}')::bigint>4000000
- and octet_length(value::text)<4000000 from large_page,jsonb_array_elements(value->'rows')row),
+ and octet_length(page.value::text)<4000000 from large_page page,jsonb_array_elements(page.value->'rows')row),
  'supported greater-than4MB scientific row becomes a byte source without omission or raised metadata cap');
 create temporary table assembled_large_row(content bytea);
 do $$declare b jsonb;data bytea:='';off bigint:=0;k jsonb;begin

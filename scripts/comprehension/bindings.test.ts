@@ -216,7 +216,16 @@ describe("every comprehension task is bound to something that exists", () => {
     expect(NO_ROWS_SENTENCE).toContain("no calibrated model registered");
     expect(readFileSync(path.join(ROOT, task.unavailableState!.copySource), "utf8")).toContain(`export const ${task.unavailableState!.copyExport}`);
     const adapter = readFileSync(path.join(ROOT, "e2e/participant-c-harness.ts"), "utf8");
-    expect(adapter).toContain("participantCNoModelSurface({");
+    expect(adapter).toContain(`    const surface = await diagnose("read-no-model-dom", async () => ({
+      notices: await page.locator('[data-slot="no-rows"]').allTextContents(),
+      conditionRows: await page.locator('[data-condition-id]').count(),
+      figures: await page.locator('[data-figure-kind]').evaluateAll(nodes => nodes.map(node => ({
+        kind: node.getAttribute("data-figure-kind"), class: node.getAttribute("data-figure-class"),
+      }))),
+    }));
+    return participantCNoModelSurface(surface, (stage, error) => {
+      try { options.diagnostic?.(stage, error, "unreturned"); } catch { /* Original schema refusal remains. */ }
+    });`);
     expect(adapter).toContain("await current();");
   });
   it("keeps an honest unavailable answer outside the relative-only class and gives blind graders the risk-invention refusals", () => {
