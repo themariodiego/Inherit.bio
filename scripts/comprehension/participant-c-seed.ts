@@ -1,5 +1,14 @@
 import { z } from "zod";
 import { NO_ROWS_SENTENCE } from "../../src/copy/embryos/compare";
+import type { LiveSessionSetupStage } from "./live-browser";
+
+/** A closed operation label, never a native value or refusal authority. */
+export type ParticipantCReadStage = LiveSessionSetupStage | "read-cohort-query" | "read-embryos-query"
+  | "read-cohort-result" | "read-embryos-result" | "read-files-query" | "read-worker-proof"
+  | "read-native-publication" | "read-publication-contract"
+  | "read-sign-in" | "read-comparison-navigation" | "read-permission" | "read-result-gate" | "read-no-model-surface";
+export type ParticipantCReadDiagnostic = (stage: ParticipantCReadStage, error: unknown,
+  cleanup: "unreturned" | "uncertain") => void;
 
 const seed = z.object({
   email: z.literal("participant-c@e2e.local"),

@@ -1257,35 +1257,35 @@ language sql immutable set search_path='' as $$ select array['subject.json','con
 create function private.account_archive_related_science_rows_v1(p_origin jsonb,p_subject uuid,p_member text)
 returns table(identity text,row_text text)
 language plpgsql security definer set search_path='' set lock_timeout='250ms' set extra_float_digits=3 as $$
-declare a uuid;sess uuid;purpose text;direction jsonb;authority jsonb;r private.own_analysis_runs;
+declare a uuid;sess uuid;requested_purpose text;direction jsonb;authority jsonb;r private.own_analysis_runs;
  f public.genome_files;item record;value jsonb;
 begin
  if p_member not in('reports.json','reports.txt','prs.json','ancestry.json') or p_member is null then
   raise exception using errcode='22023',message='invalid_request';end if;
  a:=(p_origin->>'accountId')::uuid;sess:=(p_origin->>'sessionId')::uuid;
  perform private.account_archive_export_recipient_v1(p_origin,p_subject);
- foreach purpose in array case when p_member='ancestry.json' then array['ancestry']
+ foreach requested_purpose in array case when p_member='ancestry.json' then array['ancestry']
   when p_member='prs.json' then array['reports.polygenic'] else array['reports.monogenic','reports.polygenic'] end loop
   if not exists(select 1 from public.purpose_grants g join public.directional_grants d using(grant_id)
-   where g.target_kind='subject' and g.target_id=p_subject and g.purpose=purpose and d.recipient_account_id=a
+   where g.target_kind='subject' and g.target_id=p_subject and g.purpose=requested_purpose and d.recipient_account_id=a
     and d.status='current' and g.revoked_at is null and(g.expires_at is null or g.expires_at>clock_timestamp())) then continue;end if;
-  direction:=case when purpose='ancestry' then private.family_ancestry_recipient_v1(a,sess,p_subject,purpose)
-   else private.family_report_recipient_v1(a,sess,p_subject,purpose) end;
+  direction:=case when requested_purpose='ancestry' then private.family_ancestry_recipient_v1(a,sess,p_subject,requested_purpose)
+   else private.family_report_recipient_v1(a,sess,p_subject,requested_purpose) end;
   if direction is null or direction->>'legacyOnly' is distinct from 'false' then
    raise exception using errcode='42501',message='not_found';end if;
   for r in select run.* from private.own_analysis_runs run where run.subject_id=p_subject
-   and run.account_id=(direction#>>'{endpoints,owner,accountId}')::uuid and run.purpose=purpose
+   and run.account_id=(direction#>>'{endpoints,owner,accountId}')::uuid and run.purpose=requested_purpose
    and run.state='complete' order by run.id for share loop
    select * into f from public.genome_files where id=r.file_id and subject_id=p_subject for share;
-   authority:=case when purpose='ancestry' then private.family_source_ancestry_authority_v1(f.user_id,f.id)
-    else private.family_source_report_authority_v1(f.user_id,f.id,purpose) end;
-   if f.id is null or private.own_analysis_completion_matches_v1(f.id,purpose,authority) is not true then
+   authority:=case when requested_purpose='ancestry' then private.family_source_ancestry_authority_v1(f.user_id,f.id)
+    else private.family_source_report_authority_v1(f.user_id,f.id,requested_purpose) end;
+   if f.id is null or private.own_analysis_completion_matches_v1(f.id,requested_purpose,authority) is not true then
     raise exception using errcode='42501',message='not_found';end if;
    if p_member in('reports.json','reports.txt') then
     if jsonb_typeof(r.result->'reports') is distinct from 'array' then raise exception using errcode='55000',message='export_source_unavailable';end if;
     for item in select x.value,x.ordinality from jsonb_array_elements(r.result->'reports') with ordinality x loop
      identity:=r.id::text||':'||item.ordinality::text;
-     row_text:=jsonb_build_object('fileId',f.id,'purpose',purpose,'completed_at',r.completed_at,'report',item.value)::text;
+     row_text:=jsonb_build_object('fileId',f.id,'purpose',requested_purpose,'completed_at',r.completed_at,'report',item.value)::text;
      return next;
     end loop;
    elsif p_member='prs.json' then
@@ -1298,13 +1298,13 @@ begin
     perform private.validate_own_ancestry_content_v1(r.result->'ancestry',f.id,p_subject,authority,r.ancestry_source->>'callEncoding');
     identity:=r.id::text;row_text:=jsonb_build_object('fileId',f.id,'completed_at',r.completed_at,'ancestry',r.result->'ancestry')::text;return next;
    end if;
-   if (case when purpose='ancestry' then private.family_source_ancestry_authority_v1(f.user_id,f.id)
-    else private.family_source_report_authority_v1(f.user_id,f.id,purpose) end) is distinct from authority
-    or private.own_analysis_completion_matches_v1(f.id,purpose,authority) is not true then
+   if (case when requested_purpose='ancestry' then private.family_source_ancestry_authority_v1(f.user_id,f.id)
+    else private.family_source_report_authority_v1(f.user_id,f.id,requested_purpose) end) is distinct from authority
+    or private.own_analysis_completion_matches_v1(f.id,requested_purpose,authority) is not true then
     raise exception using errcode='42501',message='not_found';end if;
   end loop;
-  if (case when purpose='ancestry' then private.family_ancestry_recipient_v1(a,sess,p_subject,purpose)
-   else private.family_report_recipient_v1(a,sess,p_subject,purpose) end) is distinct from direction then
+  if (case when requested_purpose='ancestry' then private.family_ancestry_recipient_v1(a,sess,p_subject,requested_purpose)
+   else private.family_report_recipient_v1(a,sess,p_subject,requested_purpose) end) is distinct from direction then
    raise exception using errcode='42501',message='not_found';end if;
  end loop;
 end $$;

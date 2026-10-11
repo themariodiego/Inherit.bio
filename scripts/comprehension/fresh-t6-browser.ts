@@ -26,6 +26,7 @@ import { forwardProfileDiagnostics } from "../ci-browser/profile-diagnostic-filt
 import { OwnedAppReadinessFailure, waitForOwnedApp } from "./app-readiness";
 import { emitHostedBootstrapFailure } from "./hosted-owned-diagnostics";
 import type { OwnedLifecycleObserver } from "./owned-lifecycle";
+import type { ParticipantCReadDiagnostic } from "./participant-c-seed";
 
 const setupStages = ["stack-acquisition", "bootstrap-keys", "reference-seed", "upload-capacity", "runtime-preflight",
   "storage-proxy", "app-configuration", "mail-capture", "main-app-ready", "embryo-app-ready", "chromium-launch",
@@ -118,6 +119,9 @@ async function acquireSimulation(input: ParticipantCInput, signal: AbortSignal, 
   // Only this already-owned caller selects supplemental public setup fields.
   // The callback supplies diagnostics, never resource admission or recovery.
   const ownedEmit = operator ? (line: string) => { process.stderr.write(line + "\n"); } : undefined;
+  const readDiagnostic: ParticipantCReadDiagnostic | undefined = operator
+    ? (stage, error, cleanup) => emitHostedBootstrapFailure(stage, freshRuntimeFailureClassification(error), cleanup)
+    : undefined;
   const stack = await acquireFreshStack(signal, io, operator).catch(error => {
     process.stderr.write(setupDiagnostic(stage, error, "unreturned") + "\n");
     if (ownedEmit) emitOwnedFreshSetupFailure(stage, error, "unreturned", ownedEmit);
@@ -203,7 +207,7 @@ async function acquireSimulation(input: ParticipantCInput, signal: AbortSignal, 
         const seeded = await seedParticipantC({
           page,
           browser: browser!, ownerEmail: `cmp-t6-${input.id}@e2e.local`, parentEmail: `cmp-t6-${input.id}-parent@e2e.local`,
-          password: participantCPassword, messages: mail!.messages, jobsSecret: appEnvironments[3105].JOBS_SECRET,
+          password: participantCPassword, messages: mail!.messages, jobsSecret: appEnvironments[3105].JOBS_SECRET, readDiagnostic,
           runtime: { proof: fixture.proof, runWorker: async id => { signal.throwIfAborted(); await fixture.runWorker(id); } } });
         await seeded.closeCoParent();
         return seeded;
@@ -213,7 +217,7 @@ async function acquireSimulation(input: ParticipantCInput, signal: AbortSignal, 
         openReadSession: async (sessionInput, sessionSignal) => {
           sessionSignal.throwIfAborted();
           return openParticipantCReadSession({ browser: browser!, sessionId: sessionInput.id, ownerId: seeded.owner,
-            cohortId: seeded.cohortId, email: `cmp-t6-${input.id}@e2e.local`, password: participantCPassword, read: seeded.readPublication });
+            cohortId: seeded.cohortId, email: `cmp-t6-${input.id}@e2e.local`, password: participantCPassword, read: seeded.readPublication, diagnostic: readDiagnostic });
         } };
     } finally { await context.close(); }
   } catch (error) {

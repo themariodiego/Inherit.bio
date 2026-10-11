@@ -117,12 +117,13 @@ export default async function EmbryosPage() {
         <section data-density-top-level-section className="space-y-6">
           <h2 className="display">{YOUR_EMBRYOS_HEADING}</h2>
           <ul data-slot="cohort-list" className="space-y-4">
-            {cohorts.map((cohort) => {
+            {cohorts.map((cohort, cohortIndex) => {
               const cohortDecision = cohortDecisions.get(cohort.id)!;
               return (
                 <CohortCard
                   key={cohort.id}
                   cohort={cohort}
+                  cohortNumber={cohortIndex + 1}
                   jurisdictionCopy={permits(cohortDecision) ? null : cohortDecision.userFacingCopy}
                   statisticalCoverage={statisticalCoverage.get(cohort.id)}
                   coverage={coverage.get(cohort.id)?.rows}

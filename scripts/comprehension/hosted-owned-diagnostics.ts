@@ -12,7 +12,8 @@ const stages = ["host-admission", "source-attestation", "source-copy", "migratio
   "bridge-ready", "bridge-input", "bridge-forward", "bridge-wait", "bridge-whole", "bridge-inner-terminal", "bridge-setup",
   "stack-runtime-guard", "stack-owner-binding", "stack-scratch-identity", "stack-lock-acquisition",
   "session-binding", "session-exclusivity", "session-cancellation", "session-acquisition",
-  "session-publication-binding", "session-read-open", "session-read-identity", "session-cleanup"] as const;
+  "session-publication-binding", "session-read-open", "session-read-identity", "session-cleanup",
+  "read-browser-context", "read-browser-route", "read-browser-prepare", "read-browser-prepare-close", "read-browser-init-script", "read-browser-page-open", "read-browser-start-page", "read-browser-context-cleanup", "read-cohort-query", "read-embryos-query", "read-cohort-result", "read-embryos-result", "read-files-query", "read-worker-proof", "read-native-publication", "read-publication-contract", "read-sign-in", "read-comparison-navigation", "read-permission", "read-result-gate", "read-no-model-surface"] as const;
 const schema = z.object({ stage: z.enum(stages),
   classification: z.enum(["spawn-refused", "exit-nonzero", "signal", "timeout", "output-limit", "setup-refused"]),
   exitCode: z.number().int().min(0).max(255).nullable(),

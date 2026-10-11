@@ -183,3 +183,65 @@ describe("separate native-current fitted TEST display", () => {
       .toThrow("Own embryo attribution required");
   });
 });
+
+
+// Source-only SSR controls; these schema fixtures are not native admission evidence.
+function fittedLandmarkPair(cohortId = id(1)) {
+  const value = fittedFixture();
+  const second = structuredClone(value.rows[0]);
+  second.embryoId = id(11);second.sampleOrdinal = 1;
+  value.rows.push(second);value.cohortId = cohortId;
+  for (const row of value.rows) {
+    const source = { ...row.receipt.source!, cohort_id: cohortId, embryo_id: row.embryoId,
+      subject_id: id(20 + row.sampleOrdinal), file_id: id(30 + row.sampleOrdinal) };
+    row.receipt.source = source;
+    row.receipt.measurement.embryoId = row.embryoId;
+    row.receipt.measurement.measurement!.source = source;
+  }
+  return statisticalFittedReadSchema.parse(value);
+}
+const fittedLandmarkSubjects = new Map([[id(10), id(20)], [id(11), id(21)]]);
+function fittedLandmarkNames(html: string) {
+  return [...html.matchAll(/<section data-slot="claim-block"[^>]*aria-label="([^"]+)"/g)].map(match => match[1]);
+}
+describe("fitted TEST regions keep their group, original embryo and evidence context", () => {
+  it("keeps four distinct named regions for a complete pair without dropping either observed or MODELLED block", () => {
+    const html = renderToStaticMarkup(createElement(StatisticalCoverage, {
+      value: fittedLandmarkPair(), subjectIds: fittedLandmarkSubjects }));
+    expect(fittedLandmarkNames(html)).toEqual([
+      "Embryo 1: Observed own-file coverage", "Embryo 1: TEST model: low and high from data we made",
+      "Embryo 2: Observed own-file coverage", "Embryo 2: TEST model: low and high from data we made",
+    ]);
+    expect(html.match(/data-figure-kind="coverage"/g)).toHaveLength(2);
+    expect(html.match(/data-figure-kind="interval"/g)).toHaveLength(2);
+    expect(html.match(/data-figure-basis="observed"/g)).toHaveLength(2);
+    expect(html.match(/data-figure-basis="modelled"/g)).toHaveLength(2);
+  });
+  it("distinguishes both current hub groups even when their original embryo ordinals are identical", () => {
+    const html = renderToStaticMarkup(createElement("div", null,
+      createElement(StatisticalCoverage, { value: fittedLandmarkPair(id(1)), subjectIds: fittedLandmarkSubjects, cohortNumber: 1 }),
+      createElement(StatisticalCoverage, { value: fittedLandmarkPair(id(50)), subjectIds: fittedLandmarkSubjects, cohortNumber: 2 })));
+    const names = fittedLandmarkNames(html);
+    expect(names).toEqual([1, 2].flatMap(group => [1, 2].flatMap(embryo => [
+      `Embryo group ${group}, Embryo ${embryo}: Observed own-file coverage`,
+      `Embryo group ${group}, Embryo ${embryo}: TEST model: low and high from data we made`,
+    ])));
+    expect(new Set(names).size).toBe(8);
+    expect(html.match(/data-slot="claim-block"/g)).toHaveLength(8);
+  });
+  it("retains the second embryo's native ordinal when an individual view filters the full receipt", () => {
+    const html = renderToStaticMarkup(createElement(StatisticalCoverage, {
+      value: fittedLandmarkPair(), subjectIds: fittedLandmarkSubjects, embryoId: id(11), cohortNumber: 2 }));
+    expect(fittedLandmarkNames(html)).toEqual([
+      "Embryo group 2, Embryo 2: Observed own-file coverage",
+      "Embryo group 2, Embryo 2: TEST model: low and high from data we made",
+    ]);
+    expect(html).toContain(`data-subject-id="${id(21)}"`);
+    expect(html).not.toContain(`data-subject-id="${id(20)}"`);
+  });
+  it.each([0, -1, 1.5, Number.NaN, Number.MAX_SAFE_INTEGER + 1])("refuses invalid group attribution %s before named output", cohortNumber => {
+    expect(() => renderToStaticMarkup(createElement(StatisticalCoverage, {
+      value: fittedLandmarkPair(), subjectIds: fittedLandmarkSubjects, cohortNumber })))
+      .toThrow("Embryo group attribution required");
+  });
+});
