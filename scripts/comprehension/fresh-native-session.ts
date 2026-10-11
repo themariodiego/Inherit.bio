@@ -14,15 +14,28 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{1
 /** One exclusive stack per task/persona, never a shared seed.
  * The production acquire callback owns the signed hosted stack and real UI
  * producers; injected callbacks in unit controls are not participant evidence. */
-export function freshComprehensionSessions(acquire: (input: ParticipantCInput, signal: AbortSignal) => Promise<FreshComprehensionSimulation>): LiveEnvironment["openBrowser"] {
+export type FreshSessionSetupStage = "session-binding" | "session-exclusivity" | "session-cancellation" | "session-acquisition"
+  | "session-publication-binding" | "session-read-open" | "session-read-identity" | "session-cleanup";
+export type FreshSessionSetupDiagnostic = (stage: FreshSessionSetupStage, error: unknown,
+  cleanup: "not-started" | "unreturned" | "uncertain") => void;
+export function freshComprehensionSessions(acquire: (input: ParticipantCInput, signal: AbortSignal) => Promise<FreshComprehensionSimulation>,
+  diagnostic?: FreshSessionSetupDiagnostic): LiveEnvironment["openBrowser"] {
   const used = { sessions: new Set<string>(), owners: new Set<string>(), cohorts: new Set<string>() };
   let active = false;
+  const report: FreshSessionSetupDiagnostic = (stage, error, cleanup) => {
+    try { diagnostic?.(stage, error, cleanup); } catch { /* Telemetry cannot replace a refusal or authorize cleanup. */ }
+  };
   return async (input, signal) => {
-    const task = bindings.tasks.find(task => task.id === input.taskId);
-    assert(task && input.account === task.account && UUID.test(input.id)
-      && JSON.stringify(input.fixtures) === JSON.stringify(task.fixtures), "Exact bound task/session required");
-    assert(!active && !used.sessions.has(input.id), "Fresh comprehension session overlaps or reuses an identity");
-    signal.throwIfAborted();
+    let stage: FreshSessionSetupStage = "session-binding";
+    try {
+      const task = bindings.tasks.find(task => task.id === input.taskId);
+      assert(task && input.account === task.account && UUID.test(input.id)
+        && JSON.stringify(input.fixtures) === JSON.stringify(task.fixtures), "Exact bound task/session required");
+      stage = "session-exclusivity";
+      assert(!active && !used.sessions.has(input.id), "Fresh comprehension session overlaps or reuses an identity");
+      stage = "session-cancellation";
+      signal.throwIfAborted();
+    } catch (error) { report(stage, error, "not-started"); throw error; }
     active = true; used.sessions.add(input.id);
     let publication: FreshComprehensionSimulation | undefined, session: LiveSession | undefined, closing: Promise<void> | undefined;
     const close = () => closing ??= (async () => {
@@ -32,7 +45,9 @@ export function freshComprehensionSessions(acquire: (input: ParticipantCInput, s
       active = false;
     })();
     try {
+      stage = "session-acquisition";
       publication = await acquire(input, signal);
+      stage = "session-publication-binding";
       if (input.account === "participant-c") {
         const native = publication.publication;
         assert(native && UUID.test(native.ownerId) && UUID.test(native.cohortId)
@@ -40,13 +55,22 @@ export function freshComprehensionSessions(acquire: (input: ParticipantCInput, s
         "Fresh persona publication/account identity reused");
         used.owners.add(native.ownerId); used.cohorts.add(native.cohortId);
       } else assert(!publication.publication, "An ordinary task cannot adopt an embryo publication");
+      stage = "session-cancellation";
       signal.throwIfAborted();
+      stage = "session-read-open";
       session = await publication.openReadSession(input, signal);
+      stage = "session-read-identity";
       assert(session.id === input.id, "Fresh read/action session identity differs");
+      stage = "session-cancellation";
       signal.throwIfAborted();
       return { ...session, close };
     } catch (error) {
-      if (publication) await close();
+      // Record the actual operation before cleanup can throw a different error.
+      report(stage, error, "unreturned");
+      if (publication) {
+        try { await close(); }
+        catch (cleanupError) { report("session-cleanup", cleanupError, "uncertain"); throw cleanupError; }
+      }
       // An acquisition that never returned an owner remains unresolved. Its
       // production callback retains the lock for any uncertain started stack.
       throw error;

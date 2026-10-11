@@ -291,6 +291,36 @@ select throws_ok($$select private.account_archive_raw_authority_v1(jsonb_build_o
  (select subject_id from accepted_adult))$$,'42501','not_found','the owner account cannot substitute for the named recipient raw tuple');
 rollback to path_a_wrong_recipient;
 
+-- The actual claimant Auth fixture has a current self/session but no DOB.
+-- Complete that account through the current rendered-nonce API before the
+-- separate adult report endpoint is presented; no profile or grant is seeded.
+create temporary table complete_claimant_account_context as
+ select public.own_upload_context_v1('7b100000-0000-4000-8000-000000000001',
+  '7b100000-0000-4000-8000-000000000002',(select id from claimant_account_self)) value;
+select is((select value->>'birthDateState' from complete_claimant_account_context),'missing',
+ 'the real claimant account independently requires adult completion before a report endpoint');
+select is(public.complete_own_upload_account_v2('7b100000-0000-4000-8000-000000000001',
+ '7b100000-0000-4000-8000-000000000002',(select id from claimant_account_self),
+ (select (value->>'accountRevision')::bigint from complete_claimant_account_context),
+ (select (value->>'authSessionRevision')::bigint from complete_claimant_account_context),
+ (select (value->>'jurisdictionRevision')::bigint from complete_claimant_account_context),
+ (select (value->>'subjectBindingRevision')::bigint from complete_claimant_account_context),
+ (select (value->>'accountBindingRevision')::bigint from complete_claimant_account_context),
+ date '1990-01-01',encode(digest(convert_to('complete-archive-claimant-account-completion-v2','UTF8'),'sha256'),'hex'),
+ clock_timestamp()+interval '9 minutes'),'{"status":"completed"}'::jsonb,
+ 'the actual claimant self/session and all five live revisions complete through the current v2 API');
+select ok(coalesce((select p.date_of_birth=date '1990-01-01'
+ and public.own_upload_context_v1('7b100000-0000-4000-8000-000000000001',
+  '7b100000-0000-4000-8000-000000000002',(select id from claimant_account_self))=
+  c.value||jsonb_build_object('accountRevision',(c.value->>'accountRevision')::bigint+1,'birthDateState','adult')
+ and exists(select 1 from public.account_operation_nonces n
+  where n.nonce_hash=encode(digest(convert_to('complete-archive-claimant-account-completion-v2','UTF8'),'sha256'),'hex')
+   and n.account_id=p.id and n.session_id='7b100000-0000-4000-8000-000000000002'
+   and n.operation='own_account_completion' and n.consumed_at is not null)
+ from complete_claimant_account_context c join public.profiles p
+  on p.id='7b100000-0000-4000-8000-000000000001'),false),
+ 'completion persists the exact adult DOB, advances only the account revision and consumes its genuine nonce');
+
 -- Current report export uses its own exact signed endpoint confirmation as
 -- well as export.share-link. Raw permission does not authorize interpretation.
 set constraints public.purpose_grants_pair_check, public.directional_grants_pair_check deferred;

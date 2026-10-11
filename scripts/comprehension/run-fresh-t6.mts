@@ -172,7 +172,7 @@ async function runFreshComprehensionObserved(configuration: unknown, options: { 
     observeOwnedLifecyclePhase(lifecycle, "record-create", "returned");
     if (operator && run.provider.kind !== "local-deterministic-stub") bindOwnedRunRecord(operator, record.directory);
     const sessions = new Map<string, LiveSession>();
-    const openFreshComprehensionBrowser = createFreshComprehensionBrowser(operator);
+    const openFreshComprehensionBrowser = createFreshComprehensionBrowser(operator, lifecycle);
     const result = await runLive({ inputs, manifest, journal, modelIdentity: modelIdentityOf(run),
       environment: { kind: "live-local-build", openBrowser: async (input, signal) => {
         await journal.budget.reserve(`fresh-stack-${input.id}`, config.maximumInfrastructureCostPerStackMicroDollars);
