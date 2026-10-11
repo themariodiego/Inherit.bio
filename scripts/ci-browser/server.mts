@@ -205,7 +205,7 @@ try {
         // Only complete, bounded, enum-only profile diagnostics cross either
         // launcher hop. Playwright retains web-server stderr; stdout is ignored.
         // Every other app log stays discarded.
-        closers.push(forwardProfileDiagnostics([app.stdout,app.stderr],line=>process.stderr.write(line+"\n")));
+        closers.push(forwardProfileDiagnostics([app.stdout,app.stderr],line=>process.stderr.write(line+"\n"),port===3105));
         console.log(`Started isolated production app variant ${port}`);
       })().catch(() => { diagnostic("refused"); console.error("Isolated app initialization failed; no request or environment details retained"); stop(true); }); });
     }

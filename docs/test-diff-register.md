@@ -1,3 +1,14 @@
+## 11 October 2026 — carry the actual server read refusal table into the owned diagnostic
+
+Account PR 322 run 38112955833 attempt 1 reached the real embryo comparison read-error surface. Its complete once-saved owned log and artifact do not contain the server's existing fixed `embryo.read-failed` table metadata, so the exact failed native read remains unknown. This source-only change recognizes only that original five-table catch output at the actual Next app pipe, relays a strict enum-only frame through the existing filters, and emits it only after the original observed page-read-error refusal in the already owned 3105 caller. Missing observations stay missing. No error body, row, account, URL, environment, command or credential is retained; no authority, response, assertion, acceptance, cap or cleanup rule changes. All original controls remain whole prefixes; new real Console/fragmented filter and refusal/privacy/output controls are UNRUN. The original 66f failure is preserved; this diagnostic is not a functional correction or a native pass.
+
+# 2026-10-11 — actual Account66f complete-page key rejection; source-only correction
+
+- Preserved the complete Account66f CI38112955833 attempt1 database job114392133431 metadata and 175,818-byte original log. The database suite naturally failed: account_archive_complete.sql:420 raised `invalid regular expression: invalid repetition count(s)` in `private.account_archive_complete_key_v1`, after 204 passing assertions. The full report recorded 200 files / 13,393 outcomes; it did not complete the account file or establish a native PASS.
+- Replaced only the unsupported counted printable-ASCII expression in the existing native key helper with explicit 1..2048 character length and an uncounted printable-ASCII expression. The complete two-string key, UUID, exact identity, refusal code/message and immutable/private authority remain. TypeScript's strict 1..2048 printable-ASCII key schema is unchanged. No native row, projection, hash, consent, capture/currentness, lock, page/byte/metadata bound or deadline changed.
+- Added fourteen native controls before the original first foreign page assertion: exact one-character/space/all-printable-ASCII/2048 keys and the genuine normalized source key, plus 2049/empty/Unicode/newline/DEL/tab/SQLNULL/UUID/type refusals. Every original setup/assertion and the genuine complete RPC, original bytes, byte-source EOF, current authority and rollback vector remain byte-exact. These controls are authored UNRUN; final exact-head hosted native qualification remains required.
+- This packet is saved source only. The qualified Account66f and Density414 checkouts and Root's active guest414 remain untouched. Original failed receipts/logs remain immutable; no repeated native run, timeout change, clinical activation or completion credit.
+
 
 ## 2026-10-11 — T7 source binding follows the actual DOM snapshot consumer
 

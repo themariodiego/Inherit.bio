@@ -86,3 +86,47 @@ it("wires both actual launcher boundaries to the closed filter without forwardin
   expect(source).toContain("forwardProfileDiagnostics([app.stdout,app.stderr]");
   expect(source).not.toMatch(/child\.stdout\?\.pipe\(process\.stdout\)|app\.stdout\?\.resume\(\); app\.stderr\?\.resume\(\)/u);
 });
+
+
+import {Console} from "node:console";
+import {Writable} from "node:stream";
+import {EMBRYO_READ_DIAGNOSTIC_PREFIX,embryoReadDiagnosticLine,closedEmbryoReadDiagnostic} from "./profile-diagnostic-filter";
+const readTables=["embryo_carrier_library","embryo_carrier_hold","embryo_statistical_coverage","embryo_qc","embryo_scores"] as const;
+function realReadConsole(table:string){let output="";const sink=new Writable({write(chunk,_encoding,done){output+=chunk.toString();done();}});
+ new Console({stdout:sink,stderr:sink}).error("embryo.read-failed",{route:"embryos.compare",table});return output;}
+it.each(readTables)("carries the real %s Console catch through both existing launcher filters",table=>{
+ const raw=realReadConsole(table),expected=embryoReadDiagnosticLine({route:"embryos.compare",table})!;
+ for(let split=0;split<=Buffer.byteLength(raw);split++){
+  const output:string[]=[],inside=profileDiagnosticFilter(line=>{const host=profileDiagnosticFilter(value=>output.push(value));
+   for(const byte of Buffer.from(line+"\n"))host.write(Buffer.from([byte]));host.end();},true);
+  inside.write(Buffer.from(raw).subarray(0,split));inside.write(Buffer.from(raw).subarray(split));inside.end();expect(output).toEqual([expected]);
+ }
+ expect(Buffer.byteLength(expected+"\n")).toBeLessThanOrEqual(512);
+});
+it("recognizes the original catch only at the real app hop and never treats unrelated private text as a frame",()=>{
+ const emit=vi.fn(),outside=profileDiagnosticFilter(emit);outside.write(realReadConsole("embryo_qc"));outside.end();expect(emit).not.toHaveBeenCalled();
+ const inside=profileDiagnosticFilter(emit,true);
+ for(const raw of [realReadConsole("private-table"),realReadConsole("embryo_qc").replace("embryos.compare","other.route"),
+  "private "+realReadConsole("embryo_qc"),realReadConsole("embryo_qc").replace(" }"," , message: 'PRIVATE' }"),
+  "x".repeat(PROFILE_DIAGNOSTIC_LINE_BYTES)+realReadConsole("embryo_qc"),realReadConsole("embryo_qc").trimEnd()])inside.write(raw);
+ inside.end();expect(emit).not.toHaveBeenCalled();
+});
+it("refuses forged, extra, accessor, missing and noncanonical embryo read records",()=>{
+ const getter=vi.fn(()=>"embryo_qc"),emit=vi.fn();
+ for(const value of [null,{}, {route:"embryos.compare"},{route:"private",table:"embryo_qc"},
+  {route:"embryos.compare",table:"private"},{route:"embryos.compare",table:"embryo_qc",message:"PRIVATE"},
+  Object.defineProperty({route:"embryos.compare"},"table",{get:getter}),new Proxy({},{ownKeys(){throw new Error("PRIVATE");}})])
+  expect(closedEmbryoReadDiagnostic(value)).toBeNull();
+ expect(getter).not.toHaveBeenCalled();
+ const filter=profileDiagnosticFilter(emit);
+ for(const wire of [EMBRYO_READ_DIAGNOSTIC_PREFIX+'{"route":"embryos.compare","table":"private","table":"embryo_qc"}',
+  EMBRYO_READ_DIAGNOSTIC_PREFIX+'{ "route":"embryos.compare","table":"embryo_qc"}',
+  EMBRYO_READ_DIAGNOSTIC_PREFIX+'{"route":"embryos.compare","table":"embryo_\\u0071c"}',
+  EMBRYO_READ_DIAGNOSTIC_PREFIX+'{"route":"embryos.compare","table":"embryo_qc","message":"PRIVATE"}'])filter.write(wire+"\n");
+ filter.end();expect(emit).not.toHaveBeenCalled();
+});
+it("suppresses output failure and close-truncated read metadata without changing the app refusal",()=>{
+ const raw=realReadConsole("embryo_qc"),filter=profileDiagnosticFilter(()=>{throw new Error("PRIVATE");},true);
+ expect(()=>filter.write(raw)).not.toThrow();filter.end();
+ const emit=vi.fn(),partial=profileDiagnosticFilter(emit,true);partial.write(raw.trimEnd());partial.end();partial.write("\n");expect(emit).not.toHaveBeenCalled();
+});

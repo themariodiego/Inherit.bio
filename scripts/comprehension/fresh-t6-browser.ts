@@ -22,9 +22,9 @@ import { chromiumStorageProxyArgs } from "../local-storage-browser-config";
 import { openParticipantCReadSession } from "../../e2e/participant-c-harness";
 import { seedParticipantC, participantCPassword } from "../../e2e/participant-c-journey";
 import { APP_LAUNCHER_DIAGNOSTIC_PREFIX, type AppLauncherDiagnostic } from "../ci-browser/app-launcher-diagnostic";
-import { forwardProfileDiagnostics } from "../ci-browser/profile-diagnostic-filter";
+import { forwardProfileDiagnostics, EMBRYO_READ_DIAGNOSTIC_PREFIX, closedEmbryoReadDiagnostic, type EmbryoReadDiagnostic } from "../ci-browser/profile-diagnostic-filter";
 import { OwnedAppReadinessFailure, waitForOwnedApp } from "./app-readiness";
-import { emitHostedBootstrapFailure } from "./hosted-owned-diagnostics";
+import { emitHostedBootstrapFailure, emitOwnedEmbryoReadFailures } from "./hosted-owned-diagnostics";
 import type { OwnedLifecycleObserver } from "./owned-lifecycle";
 import type { ParticipantCReadDiagnostic } from "./participant-c-seed";
 
@@ -70,13 +70,18 @@ function startApp(port: 3100 | 3105, runtime: Record<string, string>, app: Recor
     const pipe = child.stdio[3] as Writable; pipe.on("error", () => {}); pipe.end(ownedLinuxChildProof(operator) + "\n");
   }
   const diagnostics: AppLauncherDiagnostic[] = [];
+  const readDiagnostics: EmbryoReadDiagnostic[] = [];
   const stopDiagnostics = forwardProfileDiagnostics([child.stdout, child.stderr], line => {
     if (line.startsWith(APP_LAUNCHER_DIAGNOSTIC_PREFIX) && diagnostics.length < 32) {
       diagnostics.push(JSON.parse(line.slice(APP_LAUNCHER_DIAGNOSTIC_PREFIX.length)) as AppLauncherDiagnostic);
     }
+    if (port === 3105 && operator && line.startsWith(EMBRYO_READ_DIAGNOSTIC_PREFIX) && readDiagnostics.length < 16) {
+      const value = closedEmbryoReadDiagnostic(JSON.parse(line.slice(EMBRYO_READ_DIAGNOSTIC_PREFIX.length)));
+      if (value) readDiagnostics.push(value);
+    }
   });
   child.once("close", stopDiagnostics);
-  return { child, diagnostics };
+  return { child, diagnostics, readDiagnostics };
 }
 async function stopApp(child: ChildProcess) {
   if (child.exitCode !== null || child.signalCode !== null) return;
@@ -119,8 +124,12 @@ async function acquireSimulation(input: ParticipantCInput, signal: AbortSignal, 
   // Only this already-owned caller selects supplemental public setup fields.
   // The callback supplies diagnostics, never resource admission or recovery.
   const ownedEmit = operator ? (line: string) => { process.stderr.write(line + "\n"); } : undefined;
+  let observedEmbryoReads: readonly EmbryoReadDiagnostic[] = [];
   const readDiagnostic: ParticipantCReadDiagnostic | undefined = operator
-    ? (stage, error, cleanup) => emitHostedBootstrapFailure(stage, freshRuntimeFailureClassification(error), cleanup)
+    ? (stage, error, cleanup) => {
+      emitHostedBootstrapFailure(stage, freshRuntimeFailureClassification(error), cleanup);
+      emitOwnedEmbryoReadFailures(stage, observedEmbryoReads, cleanup);
+    }
     : undefined;
   const stack = await acquireFreshStack(signal, io, operator).catch(error => {
     process.stderr.write(setupDiagnostic(stage, error, "unreturned") + "\n");
@@ -164,6 +173,7 @@ async function acquireSimulation(input: ParticipantCInput, signal: AbortSignal, 
     mail = await mailCapture();
     for (const port of [3100, 3105] as const) { stage = port === 3100 ? "main-app-ready" : "embryo-app-ready";
       const app = startApp(port, runtime.env, appEnvironments[port], operator); apps.push(app.child);
+      if (port === 3105) observedEmbryoReads = app.readDiagnostics;
       await waitForOwnedApp(app.child, port, signal, app.diagnostics); }
     stage = "chromium-launch";
     browser = await chromium.launch({ args: chromiumStorageProxyArgs(storageProxy.url), env: environment() });
