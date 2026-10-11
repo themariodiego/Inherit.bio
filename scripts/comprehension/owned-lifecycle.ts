@@ -130,35 +130,37 @@ export function observeOwnedLifecycleFailure(observer: OwnedLifecycleObserver | 
 const filename = (nonce: string) => `owned-lifecycle-${z.string().uuid().parse(nonce)}.jsonl`;
 const identity = (stat: Stats) =>
   [stat.dev, stat.ino, stat.uid, stat.gid, stat.mode, stat.nlink] as const;
+// A genuine owned child directory changes its parent link count. That is
+// not directory replacement; exact file identities still retain nlink below.
+const directoryIdentity = (stat: Stats) =>
+  [stat.dev, stat.ino, stat.uid, stat.gid, stat.mode] as const;
 function scratch(directory: string, uid: number, gid: number) {
   assert(path.isAbsolute(directory) && path.resolve(directory) === directory && realpathSync(directory) === directory);
   const stat = lstatSync(directory);
   assert(stat.isDirectory() && !stat.isSymbolicLink() && stat.uid === uid && stat.gid === gid
     && (stat.mode & 0o7777) === 0o700);
-  return identity(stat);
+  return directoryIdentity(stat);
 }
 
-/** Only the genuine existing capability opens the single public owned file.
- * An unavailable diagnostic cannot create a substitute runtime authority. */
-export function openOwnedLifecycle(capability: OwnedLinuxCapability | undefined):
+/** One strictly owned public metadata file, shared by the runtime and pure
+ * local file controls. This opens no native capability, stack or journal.
+ * Only openOwnedLifecycle binds it to the genuine admitted operator below. */
+export function openOwnedLifecyclePublicFile(directory: string, input: unknown):
   { observer: OwnedLifecycleObserver; close(): void } | undefined {
-  if (!capability) return;
   let fd: number | undefined;
   try {
-    assertOwnedLinuxCapability(capability);
-    const proof = capability.proof, directory = proof.scratch, parent = scratch(directory, proof.uid, proof.gid);
-    const file = path.join(directory, filename(proof.nonce));
+    const header = headerSchema.parse(plain(input, ["version", "nonce", "bootId", "head", "uid", "gid", "createdAt"]));
+    const parent = scratch(directory, header.uid, header.gid);
+    const file = path.join(directory, filename(header.nonce));
     fd = openSync(file, constants.O_RDWR | constants.O_CREAT | constants.O_EXCL | constants.O_NOFOLLOW, 0o600);
     const opened = fstatSync(fd), original = identity(opened);
-    assert(opened.isFile() && opened.nlink === 1 && opened.uid === proof.uid && opened.gid === proof.gid
+    assert(opened.isFile() && opened.nlink === 1 && opened.uid === header.uid && opened.gid === header.gid
       && (opened.mode & 0o7777) === 0o600);
     const descriptor = fd;
-    const header: Header = { version: 1, nonce: proof.nonce, bootId: proof.bootId, head: proof.head,
-      uid: proof.uid, gid: proof.gid, createdAt: Date.now() };
     let closed = false, uncertain = false;
     const check = () => {
       assert(!closed && !uncertain);
-      assert.deepEqual(scratch(directory, proof.uid, proof.gid), parent);
+      assert.deepEqual(scratch(directory, header.uid, header.gid), parent);
       const named = lstatSync(file), held = fstatSync(descriptor);
       assert(named.isFile() && !named.isSymbolicLink());
       assert.deepEqual(identity(named), original); assert.deepEqual(identity(held), original);
@@ -175,6 +177,20 @@ export function openOwnedLifecycle(capability: OwnedLinuxCapability | undefined)
     if (fd !== undefined) try { closeSync(fd); } catch { /* No original authority change. */ }
     return undefined;
   }
+}
+
+
+/** Only the genuine existing capability opens the single public owned file.
+ * An unavailable diagnostic cannot create a substitute runtime authority. */
+export function openOwnedLifecycle(capability: OwnedLinuxCapability | undefined):
+  { observer: OwnedLifecycleObserver; close(): void } | undefined {
+  if (!capability) return;
+  try {
+    assertOwnedLinuxCapability(capability);
+    const proof = capability.proof;
+    return openOwnedLifecyclePublicFile(proof.scratch, { version: 1, nonce: proof.nonce,
+      bootId: proof.bootId, head: proof.head, uid: proof.uid, gid: proof.gid, createdAt: Date.now() });
+  } catch { return undefined; }
 }
 
 export function parseOwnedLifecycleSnapshot(raw: Uint8Array, expected: Omit<Header, "version" | "createdAt">,

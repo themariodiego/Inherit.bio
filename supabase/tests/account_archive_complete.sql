@@ -194,6 +194,10 @@ select throws_ok($$select pg_temp.sign_adult('consent.upload-self',array['own-ad
  '42501','not_found','the genuine v2 adult signer refuses its already consumed nonce');
 insert into storage.objects(id,bucket_id,name,metadata) values('77900000-0000-4000-8000-000000000082',
  'genomes','77900000-0000-4000-8000-000000000081','{"size":8}');
+-- The included binding lifecycle flushes all deferred constraints and leaves
+-- them immediate. Defer only this original circular file/object FK while both
+-- unchanged synthetic metadata rows are inserted, then validate the full pair.
+set constraints public.genome_files_storage_object_fk deferred;
 insert into public.genome_files(id,user_id,subject_id,bucket_path,original_name,file_type,tier,size_bytes,sha256,status,
  upload_revision,structural_validator_version,single_logical_sample_verified_at,source_sha256,storage_object_id)
  values('77900000-0000-4000-8000-000000000083','77900000-0000-4000-8000-000000000001',(select subject_id from accepted_adult),
@@ -202,6 +206,8 @@ insert into public.genome_files(id,user_id,subject_id,bucket_path,original_name,
 insert into public.genome_storage_objects(object_id,object_name,bucket_id,genome_file_id,sha256,byte_count,object_revision,state)
  values('77900000-0000-4000-8000-000000000082','77900000-0000-4000-8000-000000000081','genomes',
  '77900000-0000-4000-8000-000000000083',repeat('d',64),8,1,'current');
+select lives_ok('set constraints public.genome_files_storage_object_fk immediate',
+ 'the complete adult file/storage pair satisfies its original deferred FK before normalization');
 create temporary table adult_normalization(receipt jsonb);
 create function pg_temp.normalize_adult(op text,payload jsonb default null) returns jsonb language sql as $$
  select public.own_upload_normalization_v1(op,'77900000-0000-4000-8000-000000000001',

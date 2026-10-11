@@ -1,3 +1,17 @@
+## 11 October 2026 — owned lifecycle directory identity preserves real acquisition observations (UNRUN)
+
+Account draft 322 run 38104691559 attempt 1 retained a closed bridge-inner-terminal exit 1, with cleanup uncertain and no session/history/spend records. Its latest public lifecycle snapshot was sequence 14, bootstrap-acquisition entered, process ordinal zero. The complete saved original does not establish the native exit cause, OOM, a lock refusal or a deadline failure; the Python bridge deliberately kills its failed owned group after the inner exit, so terminal SIGKILL supplies no such cause.
+
+Source review found a narrower telemetry defect: the public writer compared scratch-directory nlink across genuine creation of inherit-fresh-t6.lock. Creating an owned child changes that directory link count, permanently refusing subsequent observation writes. Separate directory identity from file identity: retain canonical path, exact dev/ino/uid/gid/mode and 0700, while every regular file keeps exact nlink-one, complete descriptor/named identity, bounded whole bytes and lifetime checks. The actual capability gate remains before its unchanged public metadata sink; no file observation mints runtime authority.
+
+Add real local filesystem controls for continued exact counters across owned child creation, public write and removal, and refusal after directory replacement, symlink, mode change, file hardlink or false owner/group. Every original 26 lifecycle case, assertion, bounded fixture child and cap remains. These seven added controls and current source qualification are UNRUN. Preserve the original hosted failure; native cause and full current hosted acceptance remain held. Only this raw dated prefix may be appended to current history.
+
+## 2026-10-11 — Complete account adult storage-pair fixture constraint boundary
+
+The exact Account8b database job reached all 166 preceding subtests and then stopped at the synthetic adult genome file insert because the included future-person binding fixture had set every deferrable constraint immediate. The existing genome file points to its storage-object row before the following unchanged insert creates that row. Its original foreign key is DEFERRABLE INITIALLY DEFERRED.
+
+The complete account fixture now defers only `public.genome_files_storage_object_fk` across those two unchanged synthetic metadata inserts, then adds an immediate-validation assertion before the genuine normalization door. All original insert values, signing/normalization/recipient authority, negative controls, default-OFF configuration, rollback and time limits remain exact. No migration, production constraint, trigger, grant or consent text changes. This source correction and its one additive native assertion are UNRUN; the failed hosted original remains preserved.
+
 ## 2026-10-11 — Complete account archive uses the current stateless adult signer
 
 Complete hosted CI 38102962632 and 38103518217 each reached 162 passing account_archive_complete.sql assertions, then the original positive adult fixture failed naturally at the retired public.issue_own_upload_nonce_v1 call. Full original logs remain in inherit-current-terminal-suite-failures-20261011-v1. The current retire migration deliberately removes that render-time issuer. The existing v2 POST records and consumes its nonce atomically through the unchanged live signing body.
