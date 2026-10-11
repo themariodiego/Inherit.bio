@@ -304,3 +304,155 @@ it("projects a genuine closed readiness refusal without forwarding its nested ob
   expect(capture.finish()).toEqual([{ stage: "session-main-app-ready", classification: "setup-refused",
     exitCode: null, signal: null, cleanup: "complete" }]);
 });
+
+// Pure real-wrapper controls: no native/browser/provider/model execution.
+import { emitHostedBootstrapFailure } from "./hosted-owned-diagnostics";
+import { freshRuntimeFailureClassification } from "./fresh-t6-resources";
+import type { FreshSessionSetupDiagnostic } from "./fresh-native-session";
+const boundaryStages = ["session-binding", "session-exclusivity", "session-cancellation", "session-acquisition",
+  "session-publication-binding", "session-read-open", "session-read-identity", "session-cleanup"] as const;
+function boundaryCapture(events: string[] = []) {
+  const capture = createHostedBootstrapDiagnostics();
+  const report: FreshSessionSetupDiagnostic = (stage, error, cleanup) => {
+    events.push(`report:${stage}`);
+    emitHostedBootstrapFailure(stage, freshRuntimeFailureClassification(error), cleanup, line => {
+      expect(Buffer.byteLength(line)).toBeLessThanOrEqual(512);
+      expect(line).not.toContain("synthetic-private-boundary-canary");
+      for (const byte of Buffer.from("\n" + line + "\n")) capture.push(Uint8Array.of(byte));
+    });
+  };
+  return { report, finish: () => capture.finish() };
+}
+describe("closed actual session wrapper refusal boundaries", () => {
+  it.each(boundaryStages)("accepts only the fixed %s metadata in fragmented physical frames", stage => {
+    const recorded = boundaryCapture();
+    recorded.report(stage, freshRuntimeCommandFailure("exit-nonzero", 7), "unreturned");
+    expect(recorded.finish()).toEqual([{ stage, classification: "exit-nonzero", exitCode: 7, signal: null, cleanup: "unreturned" }]);
+  });
+  it.each(["account", "fixtures", "identity"] as const)("retains genuine %s refusal before any acquisition", async mode => {
+    const recorded = boundaryCapture(), acquire = vi.fn(async (value: ParticipantCInput) => simulation(value));
+    const original = input();
+    const value = { ...original, ...(mode === "account" ? { account: "participant-a" } : {}),
+      ...(mode === "fixtures" ? { fixtures: [] } : {}), ...(mode === "identity" ? { id: "unbound" } : {}) };
+    await expect(freshComprehensionSessions(acquire, recorded.report)(value, signal())).rejects.toThrow("Exact bound");
+    expect(acquire).not.toHaveBeenCalled();
+    expect(recorded.finish()).toEqual([{ stage: "session-binding", classification: "setup-refused", exitCode: null, signal: null, cleanup: "not-started" }]);
+  });
+  it("retains actual overlapping-session refusal without closing or reacquiring the first owner", async () => {
+    const value = input(), prepared = simulation(value), recorded = boundaryCapture();
+    const acquire = vi.fn(async () => prepared), open = freshComprehensionSessions(acquire, recorded.report);
+    const actual = await open(value, signal());
+    await expect(open(input("T7"), signal())).rejects.toThrow("overlaps");
+    expect(acquire).toHaveBeenCalledTimes(1); expect(prepared.close).not.toHaveBeenCalled();
+    expect(recorded.finish()).toEqual([{ stage: "session-exclusivity", classification: "setup-refused", exitCode: null, signal: null, cleanup: "not-started" }]);
+    await actual.close(); expect(prepared.close).toHaveBeenCalledTimes(1);
+  });
+  it("records an initially cancelled signal without acquiring any resource", async () => {
+    const controller = new AbortController(), original = new Error("synthetic-private-boundary-canary");
+    controller.abort(original);
+    const recorded = boundaryCapture(), acquire = vi.fn(async (value: ParticipantCInput) => simulation(value));
+    await expect(freshComprehensionSessions(acquire, recorded.report)(input(), controller.signal)).rejects.toBe(original);
+    expect(acquire).not.toHaveBeenCalled();
+    expect(recorded.finish()).toEqual([{ stage: "session-cancellation", classification: "setup-refused", exitCode: null, signal: null, cleanup: "not-started" }]);
+  });
+  it("retains an unreturned acquisition and its exact command classification without adopting or retrying it", async () => {
+    const original = freshRuntimeCommandFailure("exit-nonzero", 11), recorded = boundaryCapture();
+    const acquire = vi.fn(async () => { throw original; }), open = freshComprehensionSessions(acquire, recorded.report);
+    await expect(open(input(), signal())).rejects.toBe(original);
+    await expect(open(input("T7"), signal())).rejects.toThrow("overlaps");
+    expect(acquire).toHaveBeenCalledTimes(1);
+    expect(recorded.finish()).toEqual([
+      { stage: "session-acquisition", classification: "exit-nonzero", exitCode: 11, signal: null, cleanup: "unreturned" },
+      { stage: "session-exclusivity", classification: "setup-refused", exitCode: null, signal: null, cleanup: "not-started" },
+    ]);
+  });
+  it("retains the exact publication authority refusal before a read session can open", async () => {
+    const value = input(), prepared = simulation(value), recorded = boundaryCapture();
+    prepared.publication = undefined;
+    await expect(freshComprehensionSessions(async () => prepared, recorded.report)(value, signal())).rejects.toThrow("identity reused");
+    expect(prepared.openReadSession).not.toHaveBeenCalled(); expect(prepared.close).toHaveBeenCalledTimes(1);
+    expect(recorded.finish()).toEqual([{ stage: "session-publication-binding", classification: "setup-refused", exitCode: null, signal: null, cleanup: "unreturned" }]);
+  });
+  it("records the actual read-open refusal before cleanup and preserves its original rejection", async () => {
+    const value = input(), events: string[] = [], prepared = simulation(value, events), recorded = boundaryCapture(events);
+    const original = new Error("synthetic-private-boundary-canary");
+    prepared.openReadSession = vi.fn(async () => { throw original; });
+    await expect(freshComprehensionSessions(async () => prepared, recorded.report)(value, signal())).rejects.toBe(original);
+    expect(events).toEqual(["report:session-read-open", "stack-close"]);
+    expect(prepared.openReadSession).toHaveBeenCalledTimes(1); expect(prepared.close).toHaveBeenCalledTimes(1);
+    expect(recorded.finish()).toEqual([{ stage: "session-read-open", classification: "setup-refused", exitCode: null, signal: null, cleanup: "unreturned" }]);
+  });
+  it("keeps original operation metadata separate when cleanup replaces the existing rejection", async () => {
+    const value = input(), events: string[] = [], prepared = simulation(value), recorded = boundaryCapture(events);
+    const operation = freshRuntimeCommandFailure("exit-nonzero", 7), cleanup = freshRuntimeCommandFailure("exit-nonzero", 9);
+    prepared.openReadSession = vi.fn(async () => { throw operation; });
+    prepared.close = vi.fn(async () => { events.push("stack-close"); throw cleanup; });
+    const acquire = vi.fn(async () => prepared), open = freshComprehensionSessions(acquire, recorded.report);
+    await expect(open(value, signal())).rejects.toBe(cleanup);
+    expect(events).toEqual(["report:session-read-open", "stack-close", "report:session-cleanup"]);
+    expect(prepared.close).toHaveBeenCalledTimes(1);
+    await expect(open(input("T7"), signal())).rejects.toThrow("overlaps"); expect(acquire).toHaveBeenCalledTimes(1);
+    expect(recorded.finish()).toEqual([
+      { stage: "session-read-open", classification: "exit-nonzero", exitCode: 7, signal: null, cleanup: "unreturned" },
+      { stage: "session-cleanup", classification: "exit-nonzero", exitCode: 9, signal: null, cleanup: "uncertain" },
+      { stage: "session-exclusivity", classification: "setup-refused", exitCode: null, signal: null, cleanup: "not-started" },
+    ]);
+  });
+  it("retains exact returned read identity and closes context before stack on mismatch", async () => {
+    const value = input(), events: string[] = [], prepared = simulation(value, events), recorded = boundaryCapture(events);
+    const reader = session(randomUUID(), events); prepared.openReadSession = vi.fn(async () => reader);
+    await expect(freshComprehensionSessions(async () => prepared, recorded.report)(value, signal())).rejects.toThrow("identity differs");
+    expect(events).toEqual(["report:session-read-identity", "session-close", "stack-close"]);
+    expect(reader.close).toHaveBeenCalledTimes(1); expect(prepared.close).toHaveBeenCalledTimes(1);
+    expect(recorded.finish()).toEqual([{ stage: "session-read-identity", classification: "setup-refused", exitCode: null, signal: null, cleanup: "unreturned" }]);
+  });
+  it("records cancellation after owner return before opening the read context", async () => {
+    const value = input(), prepared = simulation(value), controller = new AbortController(), recorded = boundaryCapture();
+    const original = new Error("synthetic-private-boundary-canary");
+    const open = freshComprehensionSessions(async () => { controller.abort(original); return prepared; }, recorded.report);
+    await expect(open(value, controller.signal)).rejects.toBe(original);
+    expect(prepared.openReadSession).not.toHaveBeenCalled(); expect(prepared.close).toHaveBeenCalledTimes(1);
+    expect(recorded.finish()).toEqual([{ stage: "session-cancellation", classification: "setup-refused", exitCode: null, signal: null, cleanup: "unreturned" }]);
+  });
+  it.each([false, true])("a failed diagnostic cannot replace operation or cleanup rejection %s", async uncertain => {
+    const value = input(), prepared = simulation(value), original = new Error("original public control"), cleanup = new Error("cleanup public control");
+    prepared.openReadSession = vi.fn(async () => { throw original; });
+    prepared.close = vi.fn(async () => { if (uncertain) throw cleanup; });
+    const diagnostic = vi.fn(() => { throw new Error("synthetic-private-boundary-canary"); });
+    await expect(freshComprehensionSessions(async () => prepared, diagnostic)(value, signal())).rejects.toBe(uncertain ? cleanup : original);
+    expect(prepared.close).toHaveBeenCalledTimes(1); expect(diagnostic).toHaveBeenCalledTimes(uncertain ? 2 : 1);
+  });
+  it("keeps unknown stages, expanded/private fields and trailing bytes outside the strict closed parser", () => {
+    const capture = createHostedBootstrapDiagnostics();
+    const valid = { stage: "session-read-open", classification: "setup-refused", exitCode: null, signal: null, cleanup: "unreturned" };
+    for (const value of [{ ...valid, stage: "synthetic-private-boundary-canary" }, { ...valid, message: "synthetic-private-boundary-canary" }])
+      capture.push(Buffer.from(HOSTED_BOOTSTRAP_PREFIX + JSON.stringify(value) + "\n"));
+    expect(capture.finish()).toEqual([]);
+    capture.push(Buffer.from(HOSTED_BOOTSTRAP_PREFIX + JSON.stringify(valid) + "\n")); expect(capture.finish()).toEqual([]);
+  });
+});
+
+import { createResourceIO } from "./fresh-t6-resources";
+import { createOwnedLifecycleObserver, parseOwnedLifecycleSnapshot } from "./owned-lifecycle";
+it("records a real bounded public child refusal through the existing ResourceIO observer without command or output values", async () => {
+  const createdAt = Date.now(), nonce = "00000000-0000-4000-8000-000000000001", head = "a".repeat(40);
+  let raw: Uint8Array = new Uint8Array();
+  const observer = createOwnedLifecycleObserver({ version: 1, nonce, bootId: nonce, head, uid: 1001, gid: 1001, createdAt },
+    bytes => { raw = Uint8Array.from(bytes); });
+  const firstIO = createResourceIO(undefined, observer);
+  expect(await firstIO.command(process.execPath, ["-e", "process.exit(0)"], { timeout: 2000 })).toBe("");
+  const first = parseOwnedLifecycleSnapshot(raw, { nonce, bootId: nonce, head, uid: 1001, gid: 1001 },
+    { startedAt: createdAt, endedAt: Date.now() });
+  expect(first.latest.process).toMatchObject({ ordinal: 1, event: "terminal", exitCode: 0, signal: null, sender: null });
+  const secondIO = createResourceIO(undefined, observer);
+  await expect(secondIO.command(process.execPath, ["-e", "process.exit(7)"], { timeout: 2000 }))
+    .rejects.toThrow("Fresh runtime command failed; diagnostics suppressed");
+  const actual = parseOwnedLifecycleSnapshot(raw, { nonce, bootId: nonce, head, uid: 1001, gid: 1001 },
+    { startedAt: createdAt, endedAt: Date.now() });
+  expect(actual.latest.process).toMatchObject({ ordinal: 2, event: "terminal", exitCode: 7, signal: null, sender: null });
+  expect(actual.latest.sequence).toBeGreaterThan(first.latest.sequence);
+  expect(actual.latest.elapsedMs).toBeGreaterThanOrEqual(first.latest.elapsedMs);
+  expect(actual.latest.process.durationMs).toBeGreaterThanOrEqual(0);
+  expect(actual.completeHistory).toBe(false); expect(actual.qualifyingEvidence).toBe(false);
+  expect(Buffer.from(raw).toString()).not.toMatch(/process\.exit|argv|stdout|stderr/);
+});

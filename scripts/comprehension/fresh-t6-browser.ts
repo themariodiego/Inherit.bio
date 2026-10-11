@@ -25,6 +25,7 @@ import { APP_LAUNCHER_DIAGNOSTIC_PREFIX, type AppLauncherDiagnostic } from "../c
 import { forwardProfileDiagnostics } from "../ci-browser/profile-diagnostic-filter";
 import { OwnedAppReadinessFailure, waitForOwnedApp } from "./app-readiness";
 import { emitHostedBootstrapFailure } from "./hosted-owned-diagnostics";
+import type { OwnedLifecycleObserver } from "./owned-lifecycle";
 
 const setupStages = ["stack-acquisition", "bootstrap-keys", "reference-seed", "upload-capacity", "runtime-preflight",
   "storage-proxy", "app-configuration", "mail-capture", "main-app-ready", "embryo-app-ready", "chromium-launch",
@@ -109,8 +110,9 @@ async function mailCapture() {
 /** No optional inference process is started here. The existing conductor opens
  * it only after this genuine publication is ready. Each call owns a full fresh
  * stack; its returned close disposes it before the next persona can begin. */
-async function acquireSimulation(input: ParticipantCInput, signal: AbortSignal, operator?: OwnedLinuxCapability): Promise<FreshComprehensionSimulation> {
-  const io = operator ? createResourceIO(operator) : actualResourceIO;
+async function acquireSimulation(input: ParticipantCInput, signal: AbortSignal, operator?: OwnedLinuxCapability,
+  lifecycle?: OwnedLifecycleObserver): Promise<FreshComprehensionSimulation> {
+  const io = operator ? createResourceIO(operator, lifecycle) : actualResourceIO;
   const environment = () => infrastructureChildEnvironment(process.env, operator);
   let stage: SetupStage = "stack-acquisition";
   // Only this already-owned caller selects supplemental public setup fields.
@@ -218,8 +220,10 @@ async function acquireSimulation(input: ParticipantCInput, signal: AbortSignal, 
     return refuseFreshSetup(stage, error, close, undefined, ownedEmit);
   }
 }
-export function createFreshComprehensionBrowser(operator?: OwnedLinuxCapability): LiveEnvironment["openBrowser"] {
-  return freshComprehensionSessions((input, signal) => acquireSimulation(input, signal, operator));
+export function createFreshComprehensionBrowser(operator?: OwnedLinuxCapability, lifecycle?: OwnedLifecycleObserver): LiveEnvironment["openBrowser"] {
+  return freshComprehensionSessions((input, signal) => acquireSimulation(input, signal, operator, lifecycle), operator
+    ? (stage, error, cleanup) => emitHostedBootstrapFailure(stage, freshRuntimeFailureClassification(error), cleanup)
+    : undefined);
 }
 export const openFreshComprehensionBrowser = createFreshComprehensionBrowser();
 /** Kept for the original native instrument caller, never ordinary-stack adoption. */
