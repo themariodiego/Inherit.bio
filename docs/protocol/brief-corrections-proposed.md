@@ -1251,7 +1251,7 @@ a new state and proved it in the same change.
 | Closed by a proof, 2026-09-19 | 2 | `/family/health-picture processing` and `/family/portrait/[pairId] processing` (`e2e/family-processing-states.spec.ts`: the sentence decided on 2026-09-18, evening, built on both pages and read through the real journey with the other adult's preparation request held open) |
 | Closed by a proof, 2026-09-28 | 2 | `/family/portrait/[pairId] complete` and `/family/portrait/[pairId] partial-coverage` (`e2e/portrait-reviewed-carrier.spec.ts`: the reviewed carrier rule, migration `20260929130000_carrier_assertions.sql`, gives a synthetic release a classified position to land on; the spec needs that migration, so its first run is CI's) |
 | Waived by owner decision, 2026-09-18 (evening) | 4 | `/genome/[subject]/ancestry partial-coverage`, `/genome/[subject]/data not-covered`, `/family not-covered`, `/family partial-coverage` — the three findings below, put to the owner as a choice between a waiver and a new sentence; the owner chose the waivers, each with its reason in `notApplicableStates` |
-| **Genuinely open** | **6** | six scientific embryo coverage pairs await approved finding producers; the two appeal assertions are authored, with actual hosted acceptance still pending |
+| **Genuinely open** | **6** | the six scientific embryo coverage pairs remain required; five additional initial-form/not-built pairs now have genuine audited browser assertions authored, with current full hosted execution still pending |
 | **Total unproven** | **6** | |
 
 **Nothing in this number is a register correction any more.** (The four

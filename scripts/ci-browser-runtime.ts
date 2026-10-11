@@ -1,12 +1,14 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { createHash, randomUUID } from "node:crypto";
-import { existsSync, lstatSync, readFileSync, readdirSync, realpathSync, unlinkSync, writeFileSync } from "node:fs";
+import { closeSync, constants, existsSync, fstatSync, lstatSync, openSync, readFileSync, readdirSync, realpathSync, unlinkSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { assertCiRuntime, checkedGateway, checkedPolicyCounters, CI_CONTROL_URL, CI_RUNTIME_CONTAINER, CI_RUNTIME_IMAGE, CI_RUNTIME_LABEL, APP_PORTS } from "./ci-browser-config";
-import { assertOwnedLinuxSource, type OwnedLinuxCapability } from "./owned-linux-runtime";
+import { assertOwnedLinuxSource, ownedLinuxSourceIdentity, type OwnedLinuxCapability } from "./owned-linux-runtime";
 import { ciRuntimeCleanupFailure, ciRuntimeDockerFailure, ciRuntimeNamespaceStep, ciRuntimeSetupFailure, ciRuntimeStep } from "./ci-browser-runtime-failure";
 import { installEmbryoTestStatisticalAdmission } from "./embryo-test-statistical-admission";
+import { ACTIVE_APP_PROCESS_OBSERVATION, ACTIVE_NATIVE_DATABASE_OBSERVATION } from "./ci-browser/active-service-probe";
+import { checkedAppServiceObservation } from "./ci-browser/service-observation";
 
 function ownerFile() {
   const directory = process.env.RUNNER_TEMP;
@@ -34,7 +36,7 @@ function buildIdentity(environment?: Record<string, string>, operator?: OwnedLin
 export function recordCiBuild(environment?: Record<string, string>, operator?: OwnedLinuxCapability) {
   writeFileSync(".next/inherit-ci-build.json", JSON.stringify(buildIdentity(environment, operator)) + "\n", { mode: 0o600 });
 }
-export async function startCiBrowserRuntime(environment?: Record<string, string>, disposableBuildCache = false, operator?: OwnedLinuxCapability): Promise<{ env: Record<string, string>; stop: () => void }> {
+export async function startCiBrowserRuntime(environment?: Record<string, string>, disposableBuildCache = false, operator?: OwnedLinuxCapability): Promise<{ env: Record<string, string>; stop: () => void; observeActiveService: (acknowledgment: unknown, fixtureSourcePath: string) => import("./density-capture-plan").DensityRuntime }> {
   ciRuntimeStep("runtime-policy", () => assertCiRuntime(process.env, process.platform, operator));
   const runDocker = (args: string[]) => docker(args, environment);
   ciRuntimeStep("build-receipt", () => assert.deepEqual(JSON.parse(readFileSync(".next/inherit-ci-build.json", "utf8")),
@@ -87,7 +89,7 @@ export async function startCiBrowserRuntime(environment?: Record<string, string>
       if (receiptWritten) ciRuntimeStep("cleanup-receipt", () => unlinkSync(ownerFile()));
     } catch (error) { throw ciRuntimeSetupFailure("cleanup-ownership", error); }
   };
-  let created = false;
+  let created = false, createdId = "";
   try {
     // No app environment, credential-bearing argv, Docker socket, host PID or
     // host network. TLS and writable scratch disappear with this container.
@@ -107,7 +109,7 @@ export async function startCiBrowserRuntime(environment?: Record<string, string>
       ...(disposableBuildCache ? ["--tmpfs", `/app/.next/cache:rw,nosuid,nodev,noexec,size=128m,mode=0700,uid=${uid},gid=${gid}`] : []),
       ...[...APP_PORTS, 8130].flatMap(port => ["--publish", `127.0.0.1:${port}:${port}`]),
       image, "sh", "/app/scripts/ci-browser/namespace.sh", gateway.address];
-    ciRuntimeStep("container-create", () => runDocker(args)); created = true;
+    createdId = ciRuntimeStep("container-create", () => runDocker(args)); created = true;
     ciRuntimeStep("owner-write", () => writeFileSync(ownerFile(), JSON.stringify({ owner }), { mode: 0o600, flag: "wx" }));
     receiptWritten = true;
     ciRuntimeStep("container-start", () => runDocker(["start", CI_RUNTIME_CONTAINER]));
@@ -140,8 +142,92 @@ export async function startCiBrowserRuntime(environment?: Record<string, string>
       installEmbryoTestStatisticalAdmission(owner, gateway.network, environment, operator));
     console.log(proof);
     console.log(`PASS disposable ${operator ? "owned Linux" : "CI"} runtime image ${image}; source ${ciRuntimeStep("final-source-identity", () => buildIdentity(environment, operator)).head}; TLS keys stay in tmpfs.`);
+
+    // Opt-in observers never read Config.Env, /proc/*/environ, logs, credentials
+    // or completed fixture state. They recheck the actual active owner each time.
+    let observationAnchor: string | undefined;
+    const observeActiveService = (input: unknown, fixtureSourcePath: string) => {
+      try {
+        assert(!stopped && created && receiptWritten, "Active owned runtime required");
+        assertCiRuntime(process.env, process.platform, operator);
+        const receipt = lstatSync(ownerFile());
+        assert(receipt.isFile() && !receipt.isSymbolicLink() && receipt.nlink === 1
+          && receipt.uid === uid && (receipt.mode & 0o077) === 0 && receipt.size < 1024);
+        assert.deepEqual(JSON.parse(readFileSync(ownerFile(), "utf8")), { owner });
+        const ack = checkedAppServiceObservation(input);
+        assert(ack.uid === uid && ack.gid === gid, "Actual unprivileged app identity required");
+        const bytes = (relative: string) => {
+          assert(/^(?:docs|e2e|scripts)\/[a-zA-Z0-9_./-]+\.(?:json|[cm]?ts|tsx)$/.test(relative)
+            && !relative.split("/").some(part => part === ".." || part === "."), "Public source path required");
+          const file = path.join(root, relative); assert(realpathSync(file) === file);
+          const fd = openSync(file, constants.O_RDONLY | constants.O_NOFOLLOW);
+          try {
+            const before = fstatSync(fd); assert(before.isFile() && before.nlink === 1 && before.size <= 16_777_216);
+            const value = readFileSync(fd), after = fstatSync(fd);
+            assert(value.length === before.size && before.dev === after.dev && before.ino === after.ino
+              && before.size === after.size && before.mtimeMs === after.mtimeMs && before.ctimeMs === after.ctimeMs);
+            return value;
+          } finally { closeSync(fd); }
+        };
+        const build = buildIdentity(environment, operator);
+        assert.deepEqual(JSON.parse(readFileSync(".next/inherit-ci-build.json", "utf8")), build);
+        assert(build.buildId === ack.buildId && process.versions.node.split(".")[0] === "22");
+        const tree = execFileSync("git", ["rev-parse", "HEAD^{tree}"], { encoding: "utf8", timeout: 10_000,
+          maxBuffer: 8192, stdio: ["ignore", "pipe", "pipe"], env: environment as NodeJS.ProcessEnv | undefined }).trim();
+        assert(/^[0-9a-f]{40}$/.test(tree));
+        const source = { head: build.head, tree, registerSha256: createHash("sha256").update(bytes("docs/route-register.json")).digest("hex") };
+        const fixtureSourceSha256 = createHash("sha256").update(bytes(fixtureSourcePath)).digest("hex");
+        const bootId = readFileSync("/proc/sys/kernel/random/boot_id", "utf8").trim();
+        assert(bootId === ack.bootId);
+        const format = '{"id":{{json .Id}},"name":{{json .Name}},"running":{{json .State.Running}},'
+          + '"project":{{json (index .Config.Labels "com.supabase.cli.project")}},'
+          + `"owner":{{json (index .Config.Labels "${CI_RUNTIME_LABEL}")}},`
+          + '"image":{{json .Image}},"network":{{json .HostConfig.NetworkMode}},"networks":{{json .NetworkSettings.Networks}},"mounts":{{json .Mounts}}}';
+        const inspect = (name: string) => JSON.parse(runDocker(["inspect", "--format", format, name]));
+        const runtime = inspect(CI_RUNTIME_CONTAINER), db = inspect("supabase_db_sequence"), storage = inspect("supabase_storage_sequence");
+        for (const [name, value] of [[CI_RUNTIME_CONTAINER, runtime], ["supabase_db_sequence", db], ["supabase_storage_sequence", storage]] as const) {
+          assert(value.name === `/${name}` && /^[0-9a-f]{64}$/.test(value.id) && value.running === true
+            && value.network === gateway.network && Object.keys(value.networks).length === 1 && Object.hasOwn(value.networks, gateway.network));
+          if (name === CI_RUNTIME_CONTAINER) assert(value.id === createdId && value.owner === owner && value.image === image
+            && value.mounts.some((mount: { Source: string; Destination: string; RW: boolean }) =>
+              mount.Source === root && mount.Destination === "/app" && mount.RW === false));
+          else assert(value.project === "sequence");
+        }
+        assert.deepEqual(checkedGateway(JSON.parse(runDocker(["inspect", "--format", '{"name":{{json .Name}},"project":{{json (index .Config.Labels "com.supabase.cli.project")}},"running":{{json .State.Running}},"networks":{{json .NetworkSettings.Networks}}}', "supabase_kong_sequence"]))), gateway);
+        const network = JSON.parse(runDocker(["network", "inspect", "--format", '{"id":{{json .Id}},"project":{{json (index .Labels "com.supabase.cli.project")}}', gateway.network]));
+        assert(/^[0-9a-f]{64}$/.test(network.id) && network.project === "sequence");
+        const daemonId = runDocker(["info", "--format", "{{.ID}}"]); assert(daemonId.length > 0 && daemonId.length <= 256);
+        if (operator) assert(ownedLinuxSourceIdentity(operator).daemonId === daemonId);
+        const anchor = JSON.stringify({ source, build, owner, bootId, daemonId, runtimeId: runtime.id, dbId: db.id, storageId: storage.id, networkId: network.id, gateway });
+        assert(observationAnchor === undefined || observationAnchor === anchor, "Actual native/source owner changed");
+        const actual = JSON.parse(runDocker(["exec", "--user", `${uid}:${gid}`, CI_RUNTIME_CONTAINER, "node", "--input-type=module", "-e", ACTIVE_APP_PROCESS_OBSERVATION, String(ack.appPid), String(ack.port)]));
+        assert.deepEqual(actual, { appPid: ack.appPid, appStartTicks: ack.appStartTicks, bootId,
+          uid, gid, cwd: "/app", executable: "/usr/local/bin/node", listening: true });
+        const native = JSON.parse(runDocker(["exec", "supabase_db_sequence", "psql", "-XAtq", "-U", "postgres", "-d", "postgres", "--set=ON_ERROR_STOP=1", "-c", ACTIVE_NATIVE_DATABASE_OBSERVATION]));
+        assert(Object.keys(native).sort().join(",") === "databaseName,databaseOid,readOnly,systemIdentifier"
+          && native.databaseName === "postgres" && Number.isSafeInteger(native.databaseOid) && native.databaseOid > 0
+          && /^[1-9][0-9]{0,19}$/.test(native.systemIdentifier) && native.readOnly === true);
+        const result = { version: 1 as const, scope: "disposable-synthetic-native" as const, source,
+          appOrigin: ack.appOrigin, buildId: build.buildId, ownerNonce: owner, bootId,
+          systemIdentifier: native.systemIdentifier as string, databaseOid: native.databaseOid as number,
+          databaseName: "postgres" as const, daemonSha256: createHash("sha256").update(daemonId).digest("hex"), fixtureSourceSha256 };
+        // Reobserve immutable public namespace/source and actual PID after the
+        // one read-only metadata transaction, so a mid-read replacement refuses.
+        assert(JSON.stringify(inspect(CI_RUNTIME_CONTAINER)) === JSON.stringify(runtime)
+          && JSON.stringify(inspect("supabase_db_sequence")) === JSON.stringify(db)
+          && JSON.stringify(inspect("supabase_storage_sequence")) === JSON.stringify(storage)
+          && runDocker(["info", "--format", "{{.ID}}"] ) === daemonId);
+        assert.deepEqual(JSON.parse(runDocker(["exec", "--user", `${uid}:${gid}`, CI_RUNTIME_CONTAINER, "node", "--input-type=module", "-e", ACTIVE_APP_PROCESS_OBSERVATION, String(ack.appPid), String(ack.port)])), actual);
+        assert.deepEqual(buildIdentity(environment, operator), build);
+        assert(createHash("sha256").update(bytes("docs/route-register.json")).digest("hex") === source.registerSha256
+          && createHash("sha256").update(bytes(fixtureSourcePath)).digest("hex") === fixtureSourceSha256 && !stopped);
+        observationAnchor = anchor;
+        return result;
+      } catch { throw new Error("Active owned app/native observation refused"); }
+    };
+
     return { env: { INHERIT_CI_BROWSER_RUNTIME: "ready", CANONICAL_COPILOT_CONTROL_URL: CI_CONTROL_URL,
-      INHERIT_CI_RUNTIME_UID: String(uid), INHERIT_CI_RUNTIME_GID: String(gid), INHERIT_CI_GATEWAY: gateway.address }, stop };
+      INHERIT_CI_RUNTIME_UID: String(uid), INHERIT_CI_RUNTIME_GID: String(gid), INHERIT_CI_GATEWAY: gateway.address }, stop, observeActiveService };
   } catch (error) {
     const failure = ciRuntimeSetupFailure("runtime-setup", error);
     if (created) {

@@ -69,7 +69,7 @@ export function AuthForm({
             {error}
           </p>
         ) : null}
-        <Button type="submit" className="w-full" disabled={!ready || pending}>
+        <Button type="submit" className="w-fit" disabled={!ready || pending}>
           {pending ? "Working…" : submitLabel}
         </Button>
       </fieldset>

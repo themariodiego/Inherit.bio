@@ -14307,9 +14307,19 @@
     "not-covered",
     "error",
     "consent-required",
-    "jurisdiction-unavailable"
+    "jurisdiction-unavailable",
+    "not-built",
+    "initial-form"
   ],
   "stateDefinitions": {
+  "initial-form": {
+    "means": "The real initial authentication form is ready for input, before any submit request or receipt, with its original heading and fields.",
+    "note": "This measurable form is distinct from processing and a completed outcome. It corresponds only to the frozen authentication baseline empty form."
+  },
+  "not-built": {
+    "means": "The page truthfully says its capability is not built, without claiming a result or blaming the reader or their jurisdiction.",
+    "note": "The rendered unavailable page is measurable. This state does not mean the underlying feature is shipped or complete."
+  },
     "_note": "What each state id means, one sentence each, recorded 2026-09-14 on corrections item 11. Eight ids had no definition anywhere and precedent had supplied several meanings per name, which is why the ratchet's columns counted different achievements under one heading. These definitions were READ OUT OF the proofs rather than chosen: each existing test states in its header which reading it used, and no definition here contradicts a recorded proof. Where an id genuinely carries more than one reading, the readings are named rather than one being declared correct and the other retired — owner decision 2026-09-13, taken because both readings are already proven and a split would put every one of those proofs up for re-reading.",
     "empty": {
       "means": "The page has nothing to show, and there is no step this reader can take to change that.",
@@ -14391,6 +14401,38 @@
     }
   },
   "stateProfiles": {
+  "auth-density-flow": {
+    "supported": [
+      "processing",
+      "complete",
+      "initial-form"
+    ],
+    "notApplicable": {
+      "awaiting-choice": "Signing in, signing up or resetting a password knows of no prepared file and offers no analysis, so there is nothing for this reader to choose here.",
+      "empty": "All four pages read 2026-09-12. Zero data-driven branches between them; each renders AuthForm with a fixed field list, and createClient() appears only for the auth action, never to fetch page content. There is no content whose absence could empty the page. Sign-up's one branch renders “Check your email”, which is a complete shape. Corrections item 8, signed 2026-09-13.",
+      "partial-coverage": "Authentication does not render an uploaded-file result.",
+      "not-covered": "Authentication does not render an uploaded-file result.",
+      "consent-required": "Authentication structurally precedes genetic-data consent.",
+      "jurisdiction-unavailable": "Authentication remains available in every jurisdiction.",
+      "error": "A failed sign-in, sign-up or reset renders its message inside the form, so no request can drive it into a fault — bad input answers notFound() and the product carries no fault, injection or simulate seam (re-measured 2026-09-12) — and there is no browser proof to require. The four error boundaries and their unit coverage stand. Owner decision 2026-09-12."
+    }
+  },
+  "settings-unbuilt-render": {
+    "supported": [
+      "empty",
+      "processing",
+      "complete",
+      "not-built"
+    ],
+    "notApplicable": {
+      "awaiting-choice": "These pages manage the account itself — its settings, consents, Copilot model and own data — and none of them offers an analysis to choose. The choice is made on /genome/[subject]/reports and the invitation to make it renders on /overview.",
+      "partial-coverage": "Account management does not render an uploaded-file result.",
+      "not-covered": "Account management does not render an uploaded-file result.",
+      "error": "These settings pages parse no parameter and no request can drive it into a fault — bad input answers notFound() and the product carries no fault, injection or simulate seam (re-measured 2026-09-12) — and there is no browser proof to require. The four error boundaries and their unit coverage stand. Owner decision 2026-09-12.",
+      "consent-required": "These pages manage the account itself — its settings, its consents, its Copilot model and its own data — and render no result derived from an uploaded file, so there is no analysis for a consent to gate. Owner decision 2026-09-12, corrections item 6.",
+      "jurisdiction-unavailable": "No capability in data/jurisdictions.json governs these pages, and none of the five calls a capability resolver (measured 2026-09-12). Managing your own account, consents and data is not a reviewed capability. Owner decision 2026-09-12, corrections item 5."
+    }
+  },
     "static-document": {
       "supported": [
         "complete"
@@ -15119,7 +15161,7 @@
       "auth": "public",
       "surface": "flow",
       "width": "64rem",
-      "stateProfile": "auth-flow",
+      "stateProfile": "auth-density-flow",
       "notApplicableStates": {
         "complete": "Success calls router.push() to the next destination (sign-in/page.tsx:39) and the route renders no outcome of its own. What the reader sees next is /overview or the requested destination, whose own complete is proven separately. Titling complete here would certify a render that does not exist. Corrections item 10, signed 2026-09-13."
       },
@@ -15134,7 +15176,7 @@
       "auth": "public",
       "surface": "flow",
       "width": "64rem",
-      "stateProfile": "auth-flow",
+      "stateProfile": "auth-density-flow",
       "disposition": "kept",
       "expectedStatus": 200
     },
@@ -15146,7 +15188,7 @@
       "auth": "public",
       "surface": "flow",
       "width": "64rem",
-      "stateProfile": "auth-flow",
+      "stateProfile": "auth-density-flow",
       "disposition": "kept",
       "expectedStatus": 200
     },
@@ -15158,7 +15200,7 @@
       "auth": "public",
       "surface": "flow",
       "width": "64rem",
-      "stateProfile": "auth-flow",
+      "stateProfile": "auth-density-flow",
       "notApplicableStates": {
         "complete": "Success calls router.push() to /overview (reset-password/page.tsx:30) and the route renders no outcome of its own. Same shape as /auth/sign-in. Corrections item 10, signed 2026-09-13."
       },
@@ -16040,7 +16082,7 @@
       "auth": "authenticated",
       "surface": "standard",
       "width": "64rem",
-      "stateProfile": "account-management",
+      "stateProfile": "settings-unbuilt-render",
       "notApplicableStates": {
         "empty": "The route renders FeatureNotBuilt unconditionally. Corrections item 8, signed 2026-09-13.",
         "processing": "The route performs no request. Corrections item 8, signed 2026-09-13.",

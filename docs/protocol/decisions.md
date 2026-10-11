@@ -4697,3 +4697,27 @@ database policies to the complete unit suite.
   then needs the exact dry-run sentinel, guarded apply and read-only
   verification. Scientific, carrier, legal and human-study approvals remain
   separate. Draft pushes do not authorize a merge or production action.
+
+## 2026-10-10 — Commission density completion within the unchanged brief
+
+The owner's current direction is “44→65”. This commissions work on every
+remaining acceptance item, including G2.5. The refusal to commission another
+density redesign for the 18 September release remains in this ledger as the
+decision for that release; it does not prohibit the newly requested completion.
+
+The frozen 31 August baseline, its 22 routes and 44 captures, the 60% successor
+ink ceiling, the absolute budgets, the original measurement modules and the
+44px target minimum stay unchanged. No new baseline or pixel exclusion is
+authorised by this direction. Consent, safety, evidence and uncertainty text
+remain visible on the same page; shrinking hit targets, replacing populated
+results with empty states or adding blank space to move content off screen
+cannot supply a density pass.
+
+The first source slice removes decorative auth and landing terrain, gives the
+auth submit action content width at its original height, and uses one ordinary
+legal navigation disclosure while every legal section remains expanded. An
+additive portable verifier retains every original check, and a pure current
+measurement check requires every registered page and applicable state at both
+viewports. Its numerical verdict is not screenshot custody, fixture equivalence
+or G2.5 acceptance. Actual paired captures, full route/state coverage and every
+unchanged budget must still qualify before the matrix row changes.

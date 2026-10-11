@@ -42,6 +42,7 @@ import { loadSavedEmbryoStatisticalCoverage } from "@/lib/embryos/statistical-re
 import { StatisticalCoverage } from "@/components/embryo/statistical-coverage";
 import { loadSavedCarrierLibraryCoverage } from "@/lib/embryos/carrier-library-read";
 import { acknowledged } from "@/lib/embryos/tier2";
+import { readPendingEmbryoInput } from "@/lib/embryos/pending-input-read";
 import { route } from "@/lib/primary-routes";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { acknowledgeEmbryoGate } from "../acknowledge";
@@ -138,10 +139,27 @@ export default async function EmbryoDetailPage(props: PageProps<"/embryos/[embry
   const { cohort, embryo } = context.found;
 
   const cohortDecision = await cohortCapability(user.id, cohort, EMBRYO_ANALYSIS);
+  let pendingInput: Awaited<ReturnType<typeof readPendingEmbryoInput>> | undefined;
+  let pendingInputReadFailed = false;
+  if (permits(cohortDecision) && cohort.status === "upload_pending" && embryo.status === "pending") {
+    try {
+      pendingInput = await readPendingEmbryoInput(createAdminClient(), {
+        accountId: user.id, cohortId: cohort.id, embryoId: embryo.id, subjectId: embryo.subjectId,
+      });
+    } catch (error) {
+      if (!(error instanceof EmbryoReadError)) throw error;
+      console.error("embryo.read-failed", { route: "embryos.detail", table: error.table });
+      pendingInputReadFailed = true;
+    }
+  }
   const state = resolveResultSurfaceState({
     decision: cohortDecision,
     cohort,
     embryoStatus: embryo.status,
+    embryoId: embryo.id,
+    subjectId: embryo.subjectId,
+    accountId: user.id,
+    pendingInput,
     acknowledged: await acknowledged(user),
   });
 
@@ -156,7 +174,13 @@ export default async function EmbryoDetailPage(props: PageProps<"/embryos/[embry
 
   let body: React.ReactNode;
   let detail: RscEmbryoDetail | null = null;
-  switch (state) {
+  if (pendingInputReadFailed) {
+    body = (
+      <EmbryoErrorState heading={READ_FAILED_HEADING} action={{ label: BACK_TO_EMBRYOS_LINK, href: route("embryos.index") }}>
+        {READ_FAILED_SENTENCE}
+      </EmbryoErrorState>
+    );
+  } else switch (state) {
     case "jurisdiction-unavailable":
       body = <EmbryoUnavailable decision={cohortDecision} action={{ label: BACK_TO_EMBRYOS_LINK, href: route("embryos.index") }} />;
       break;

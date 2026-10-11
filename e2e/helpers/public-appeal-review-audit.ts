@@ -17,7 +17,9 @@ const targetHashSql=`select md5(jsonb_build_object(
  * then the assigned reviewer's genuine Auth/MFA page. This proves the actual
  * zero-document page, not mail-provider delivery or evidence scan/storage. */
 export async function auditAssignedAppeal(page:Page,browser:Browser,reviewer:string,
- processing:(assertions:()=>Promise<void>)=>Promise<void>){
+ processing:(assertions:()=>Promise<void>)=>Promise<void>,
+ complete?:(assertions:()=>Promise<void>)=>Promise<void>,
+ intakeProcessing?:{before:()=>Promise<void>;held:(assertions:()=>Promise<void>)=>Promise<void>}){
  if(!UUID.test(reviewer))throw new Error("Synthetic reviewer identity unavailable");
  const principal=randomUUID(),contact=`appeal-audit-${randomBytes(8).toString("hex")}@e2e.local`;
  expect(await reviewFixtureSql("select enabled::text from private.new_public_appeal_config where singleton"),
@@ -37,7 +39,40 @@ export async function auditAssignedAppeal(page:Page,browser:Browser,reviewer:str
   await form.getByRole("checkbox",{name:"These details match what I know.",exact:true}).check();
   const submitted=page.waitForResponse(response=>response.url()===`${ORIGIN}/api/appeals`&&response.request().method()==="POST");
   void submitted.catch(()=>{});
-  await form.getByRole("button",{name:"Send request",exact:true}).click();
+  if(intakeProcessing){
+   await intakeProcessing.before();
+   const beforeIntake=await reviewFixtureSql(targetHashSql);
+   let release!:()=>void,postCount=0;
+   const barrier=new Promise<void>(resolve=>{release=resolve;});
+   const endpoint=`${ORIGIN}/api/appeals`;
+   const hold=async(route:import("@playwright/test").Route)=>{
+    if(route.request().method()==="POST"){
+     expect(++postCount,"one original intake POST, never a retry").toBe(1);
+     expect(route.request().headers()["origin"]).toBe(ORIGIN);
+     expect(route.request().headers()["sec-fetch-site"]).toBe("same-origin");
+     expect(route.request().headers()["content-type"]).toBe("application/json");
+     expect(Boolean(route.request().headers()["x-inherit-csrf"])).toBe(true);
+     expect(route.request().postDataJSON()).toEqual({kind:"subject-objection",claimantName:"Synthetic appeal requester",
+      contactEmail:contact,statement:"This synthetic request has no uploaded evidence and must not grant access.",affirmed:true});
+     await barrier;
+    }
+    await route.continue();
+   };
+   await page.route(endpoint,hold);
+   try{
+    await form.getByRole("button",{name:"Send request",exact:true}).click();
+    await expect.poll(()=>postCount).toBe(1);
+    await intakeProcessing.held(async()=>{
+     expect(postCount,"the same original intake POST remains held").toBe(1);
+     await expect(form).toBeVisible();
+     await expect(form.getByRole("button",{name:"We send your request now",exact:true})).toBeDisabled();
+     await expect(page.locator("main").getByRole("status")).toHaveText("");
+     await expect(page.getByText("Request sent.",{exact:true})).toHaveCount(0);
+     expect(await reviewFixtureSql(targetHashSql),"no target changes before the real intake POST continues").toBe(beforeIntake);
+    });
+   }finally{release();try{await submitted;}finally{await page.unroute(endpoint,hold);}}
+   expect(postCount,"intake continuation occurs exactly once").toBe(1);
+  }else await form.getByRole("button",{name:"Send request",exact:true}).click();
   expect((await submitted).status()).toBe(202);
   await expect(page.locator("main").getByRole("status")).toHaveText("Request sent.");
   caseId=await reviewFixtureSql(`select id from private.new_public_appeal_intakes where reviewer_principal_id='${principal}'::uuid
@@ -97,6 +132,15 @@ export async function auditAssignedAppeal(page:Page,browser:Browser,reviewer:str
    'decisions',(select coalesce(jsonb_agg(to_jsonb(decision) order by decision.case_id),'[]')
     from private.public_appeal_case_decisions decision where decision.case_id=intake.id))::text
    from private.new_public_appeal_intakes intake join public.appeal_intakes appeal on appeal.id=intake.id where intake.id='${caseId}'::uuid`);
+  if(complete)await complete(async()=>{
+   await expect(page.getByRole("heading",{name:"Review request",exact:true})).toBeVisible();
+   await expect(page.getByText("Claimant: Synthetic appeal requester.",{exact:true})).toBeVisible();
+   await expect(page.getByRole("button",{name:"Open file",exact:true})).toHaveCount(0);
+   await expect(page.getByRole("button",{name:"Refuse request",exact:true})).toBeDisabled();
+   await expect(page.getByText("Saving this choice.",{exact:true})).toHaveCount(0);
+   await expect(page.getByText("This request was closed.",{exact:true})).toHaveCount(0);
+   expect(await reviewFixtureSql(targetHashSql)).toBe(before);
+  });
   const refusal=page.getByRole("heading",{name:"Refuse this request",exact:true}).locator("..");
   await refusal.getByLabel("Reason",{exact:true}).fill("The synthetic request has no evidence and is refused without changing any record.");
   await refusal.getByRole("checkbox").check();

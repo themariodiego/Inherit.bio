@@ -382,6 +382,7 @@ test("/settings/consents empty: a new account holds no grants, and the page says
  */
 test("the People settings page says it is not built, and blames no jurisdiction", async ({ page }) => {
   await signIn(page, USER.email, USER.password);
+  await test.step("/settings/people not-built: the real account page explains its absent capability", async () => {
   await page.goto("/settings/people");
 
   await expect(page.locator("main h1")).toHaveText("People and relationships");
@@ -395,6 +396,7 @@ test("the People settings page says it is not built, and blames no jurisdiction"
   // on a route that has no jurisdiction guard to justify it.
   await expect(page.getByText("Not available in this jurisdiction yet")).toHaveCount(0);
   await expect(notice.getByRole("link", { name: "Go back" })).toHaveAttribute("href", "/settings");
+  });
 });
 
 /**

@@ -12,9 +12,11 @@ import { checkedCiLauncherEnvironment, checkedAppEnvironment, CI_RUNTIME_CONTAIN
 import { startCiArtifactGateway } from "./artifact-gateway-start";
 import { forwardMailRelayDiagnostics, forwardProfileDiagnostics } from "./profile-diagnostic-filter";
 import { appLauncherDiagnosticLine, type AppLauncherStage } from "./app-launcher-diagnostic";
+import { APP_SERVICE_OBSERVATION_OPTION, appConfigurationSha256, appServiceObservationLine, collectAppServiceObservation } from "./service-observation";
 import { settleOwnedControlClose } from "./owned-control-close";
 const mode = process.argv[2];
 const port = Number(process.argv[3]);
+const observeService = (mode === "host" ? process.argv[4] : process.argv[5]) === APP_SERVICE_OBSERVATION_OPTION;
 const children = new Set<ChildProcess>();
 const sockets = new Set<net.Socket>();
 let stopping = false;
@@ -112,8 +114,12 @@ try {
       diagnostic("ready");
     }
     stage = "inside-launcher"; diagnostic("starting");
-    const child = exec(["inside", String(port), process.env.INHERIT_CI_GATEWAY ?? ""], "inside-launcher");
+    const child = exec(["inside", String(port), process.env.INHERIT_CI_GATEWAY ?? "",
+      ...(observeService ? [APP_SERVICE_OBSERVATION_OPTION] : [])], "inside-launcher");
     closers.push(forwardProfileDiagnostics([child.stdout,child.stderr],line=>process.stderr.write(line+"\n")));
+    if (observeService) closers.push(collectAppServiceObservation(child.stderr!,
+      value => process.stderr.write(appServiceObservationLine(value) + "\n"),
+      () => { diagnostic("refused"); stop(true); }));
     child.stdin!.write(JSON.stringify(env) + "\n");
   } else {
     assert(process.getuid!() > 0);
@@ -206,6 +212,20 @@ try {
         // launcher hop. Playwright retains web-server stderr; stdout is ignored.
         // Every other app log stays discarded.
         closers.push(forwardProfileDiagnostics([app.stdout,app.stderr],line=>process.stderr.write(line+"\n")));
+        if (observeService) app.once("spawn", () => {
+          try {
+            assert(app.pid && !stopping, "Actual app child required");
+            const stat = readFileSync(`/proc/${app.pid}/stat`, "utf8");
+            const fields = stat.slice(stat.lastIndexOf(") ") + 2).trim().split(/\s+/);
+            assert(fields.length >= 20, "Complete actual app lifetime required");
+            process.stderr.write(appServiceObservationLine({ version: 1, port,
+              appOrigin: env.NEXT_PUBLIC_APP_URL,
+              appConfigurationSha256: appConfigurationSha256(env, port),
+              buildId: readFileSync("/app/.next/BUILD_ID", "utf8").trim(), appPid: app.pid,
+              appStartTicks: fields[19], bootId: readFileSync("/proc/sys/kernel/random/boot_id", "utf8").trim(),
+              uid: process.getuid!(), gid: process.getgid!() }) + "\n");
+          } catch { diagnostic("refused"); stop(true); }
+        });
         console.log(`Started isolated production app variant ${port}`);
       })().catch(() => { diagnostic("refused"); console.error("Isolated app initialization failed; no request or environment details retained"); stop(true); }); });
     }

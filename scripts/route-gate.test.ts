@@ -167,10 +167,10 @@ describe("the route gate holds the register to the code", () => {
     // Source census is exact; the controlled browser cases are UI-only and unrun here.
     // 161 -> 163: the appeal reviewer adds complete and processing obligations;
     // their original native journey now authors both without removing any previous proof.
-    expect(result.requiredStateCount).toBe(163);
+    expect(result.requiredStateCount).toBe(168);
     // Three native complete steps passed on 2def; two appeal steps are authored here;
     // all six scientific partial/not-covered gaps remain required.
-    expect(result.provenStateCount).toBe(157);
+    expect(result.provenStateCount).toBe(162);
     expect(result.browserTestTitleCount).toBeGreaterThan(100);
     // The 34 routes src/app served at the baseline commit, measured by git
     // ls-tree and recorded in docs/route-dispositions.json: 27 kept, 7
@@ -207,7 +207,7 @@ describe("the route gate holds the register to the code", () => {
     const { failures } = await runRouteGate(root);
     expect(failures).toContain(
       "route state exemption: /settings/people waives jurisdiction-unavailable, which its " +
-        "account-management profile does not support. A waiver with nothing to waive is a " +
+        "settings-unbuilt-render profile does not support. A waiver with nothing to waive is a " +
         "stale exemption; remove it.",
     );
   });
@@ -1154,8 +1154,8 @@ describe("the current rights session processing contract", () => {
       };
     } });
     const result = await runRouteGate(root);
-    // Exact current163 minus only the deliberately waived /withdraw/[token] processing pair.
-    expect(result.requiredStateCount).toBe(162);
+    // Exact current168 minus only the deliberately waived /withdraw/[token] processing pair.
+    expect(result.requiredStateCount).toBe(167);
     expect(result.failures).toEqual([
       "proven route state: recorded in docs/route-divergence.json but no longer present: /withdraw/[token] processing",
     ]);

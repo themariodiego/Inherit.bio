@@ -8,6 +8,9 @@ import { SIGN_BUTTON } from "@/copy/embryos/signing";
 import { signStatements } from "./embryo-signing-helpers";
 import { EMBRYO_PUBLISHED_FILE_SELECT, participantCSeed, publishedEmbryoFiles } from "../scripts/comprehension/participant-c-seed";
 
+import { observeNativeResponses } from "./helpers/native-response-observer";
+import { readUploadReceipt } from "../src/lib/embryos/upload-receipt";
+
 export const participantCPassword = "synthetic-embryo-browser-password";
 const origin = "http://localhost:3105";
 const defaultFixture = participantCSeed(bindings.accounts.find(row => row.id === "participant-c")).files[0];
@@ -18,7 +21,10 @@ export type ParticipantCMail = { to: string | string[]; html?: string };
 export async function seedParticipantC(options: { page: Page; browser: Browser;
   ownerEmail: string; parentEmail: string; password: typeof participantCPassword; qcSeed?: "b"; fittedSeed?: "partial";
   messages: ParticipantCMail[]; jobsSecret?: string;
-  runtime: { runWorker(id: string): Promise<void>; proof(id: string): Promise<unknown> } }) {
+  runtime: { runWorker(id: string): Promise<void>; proof(id: string): Promise<unknown> };
+  beforeFile?: (scope: { owner: string; parentAccount: string; cohortId: string; nativeSessionId: string;
+    embryos: { id: string; subject_id: string; sample_ordinal: number; status: string }[];
+    ownerPage: Page; parentPage: Page }) => Promise<void> }) {
   const { page, browser, ownerEmail, parentEmail, password, messages, runtime } = options;
   if (options.qcSeed !== undefined && options.qcSeed !== "b") throw new Error("Unregistered QC seed");
   if (options.fittedSeed !== undefined && (options.fittedSeed !== "partial" || options.qcSeed !== undefined))
@@ -86,9 +92,38 @@ export async function seedParticipantC(options: { page: Page; browser: Browser;
     await signStatements(other, SIGN_BUTTON, parentAccount);
     await page.reload();
     await expect(page.locator('[data-stage="acknowledge"]')).toBeVisible();
-    await signStatements(page, FINALIZE_BUTTON, owner);
+    let actualFinalization: { cohortId: string; sessionId: string; embryoIds: string[] } | undefined;
+    const finalizeObservation = options.beforeFile
+      ? await observeNativeResponses(page, { finalize: "^/api/embryo-cohorts$" }) : undefined;
+    try {
+      await signStatements(page, FINALIZE_BUTTON, owner);
+      if (finalizeObservation) {
+        const response = await finalizeObservation.read("finalize");
+        expect(response.status).toBe(201);
+        const body = JSON.parse(response.text);
+        const parsed = readUploadReceipt(body);
+        actualFinalization = { cohortId: body.cohort_id, sessionId: parsed.session.session,
+          embryoIds: parsed.cards.map(card => card.embryo_id) };
+      }
+    } finally { await finalizeObservation?.dispose(); }
     await expect(page.locator('[data-stage="file"]')).toBeVisible();
     await expect(page.locator('[data-slot="record-key-card"]')).toHaveCount(2);
+    if (options.beforeFile) {
+      const finalizedCohort = await adminClient().from("embryo_cohorts").select("id,status,publication_revision")
+        .eq("owner_account_id", owner).single();
+      expect(finalizedCohort.error).toBeNull();
+      expect(finalizedCohort.data).toMatchObject({ status: "upload_pending", publication_revision: null });
+      if (!finalizedCohort.data) throw new Error("Genuine finalization not observed");
+      const reserved = await adminClient().from("embryos").select("id,subject_id,sample_ordinal,status")
+        .eq("cohort_id", finalizedCohort.data.id).order("sample_ordinal");
+      expect(reserved.error).toBeNull(); expect(reserved.data).toHaveLength(2);
+      expect(reserved.data!.map(row => row.status)).toEqual(["pending", "pending"]);
+      if (!actualFinalization) throw new Error("Actual finalization response unavailable");
+      expect(actualFinalization.cohortId).toBe(finalizedCohort.data.id);
+      expect([...actualFinalization.embryoIds].sort()).toEqual(reserved.data!.map(row => row.id).sort());
+      await options.beforeFile({ owner, parentAccount, cohortId: finalizedCohort.data.id, nativeSessionId: actualFinalization.sessionId,
+        embryos: reserved.data!, ownerPage: page, parentPage: other });
+    }
     await page.getByLabel(FILE_INPUT_LABEL, { exact: true }).setInputFiles(path.resolve(fixture));
     const completion = page.waitForResponse(response => /\/api\/embryo-ingest\/[^/]+\/complete$/.test(response.url()) && response.request().method() === "POST");
     await page.getByRole("button", { name: SEND_FILE_BUTTON }).click();

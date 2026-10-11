@@ -1,3 +1,320 @@
+## 2026-10-11 — Density whole-source drift refusal retained
+
+The corrected owned-runtime pure group passed 774/774 and canonical types settled naturally with exit 0. Its required after-type whole-source check then refused the concurrently authorized native-test setup change (9,064 to 10,159 bytes). The original output and refusal remain immutable; that run supplies no complete-source-stability acceptance. The final qualification binds the source-stable backend fixture and both exact dated native prefixes before starting. No native, service, provider or capture execution was performed by this lane.
+
+## 2026-10-11 - Pending-input reservation uses the existing TEST backend fixture
+
+The retained native v3 attempt passed 46 TAP outcomes, including real parent, co-parent and foreign/null metadata boundaries. It then refused the unchanged genuine reservation with `embryo_object_backend_unavailable`: the native object configuration defaults to no provider. The whole test now uses the exact existing `embryo_ingest_r2_fragments.sql` synthetic R2 setup inside its original BEGIN/ROLLBACK before configure/reserve. No provider request, landing ACK, real bytes, production activation, table grant or skipped branch is added. All original 62 outcomes and writers/fragments assertions remain byte-exact; two additive whole-configuration boolean controls require 64 numbered outcomes. Full protected-row comparison includes the configuration row and requires exact rollback restoration. The controller keeps SQL45/client60/lock250ms/output32768/retry0/settlement5. All changed native execution, browser/density/G2.5 and release proof remain UNRUN until Root allocation.
+
+## 2026-10-11 — current owned Density type correspondence
+
+The first complete 41-file pure group passed 774/774. Canonical type checking then refused two new annotations: configured ChildProcess output streams were nullable in the Node type, and a viewport refusal fixture used width 391 outside the fixed viewport union. Added an explicit assertion of the actual configured stdout/stderr pipes and changed that negative to the other genuine fixed viewport (1280x800). Original type failure, pure results and whole pre-repair source are retained. No production predicate, native assertion, timeout, route-state obligation or fixture authority changed. Actual resource/capture execution remains UNRUN.
+
+## 2026-10-11 — real per-factory Density runtime ownership
+
+The independently reviewed 105-path source had actual service observers but no caller supplied their retained runtime, host child and launch configuration to the real state factories. Added a density-only once-owned controller using the existing exclusive fresh stack, runtime policy, real separate service launchers and installed Storage transport. Each state/viewport delegates to its original factory with a new actual browser and native stack; complete native/source/session observers remain required Root inputs, never fabricated from state labels. The fixed-browser driver default and every original native/UI/currentness/measurement assertion remain. Added whole pure controls for exact selection/source correspondence, no retry, caught native failures, revoked ownership and physical cleanup ordering/refusal. Native, service, provider, browser and capture execution remain UNRUN; no G2.5 or release credit.
+
+## 2026-10-11 — Pending-input metadata uses a scoped private read
+
+The retained native v2 attempt passed the first 40 TAP assertions, then refused with `permission denied for table genome_files`. Its complete canonical completion prerequisite succeeded. This is a reader privilege defect; granting the service role table access would widen authority. The public reader remains STABLE SECURITY INVOKER and keeps its exact service-role/JWT/null guards. Its complete unchanged authorized metadata query moves into a private STABLE SECURITY DEFINER helper with a fixed empty search path, actual invoking-role/JWT checks and service-only EXECUTE. No table grant, writer, cohort scope, source/currentness or original assertion changes. Twelve additive native privilege, real-role, scope and exact-result controls remain UNRUN until Root allocates the preserved-bound successor. All original 50 assertions, full catalog/whole-row rollback and backend/temp closure stay required; no browser/density/G2.5 or release credit is claimed.
+
+### 11 October 2026 — label two actual observer-unit dummy mutations after the secret gate refusal
+
+The exact V33 service-observer composition passed all 758 assertions across forty whole files, canonical types, lint and nine gates. The full secret scan rejected two newly authored static JOBS_SECRET dummy mutations. Those two values now carry an explicit EXAMPLE marker under the unchanged detector's existing placeholder convention; both still differ from the original launch dictionary and exercise the same copy/digest/currentness controls. Every case name, assertion, runtime producer, authority/currentness check, default launcher behavior, cap, detector rule and allowlist entry is unchanged. The original failed full scan is retained. This source correction grants no native, service, browser, capture or acceptance credit.
+
+### 11 October 2026 — observe each actual owned app and its parsed scoped configuration
+
+Current public producer source at Account539/current e77 returns only the runtime environment and stop callback, while the inside launcher validates its actual single stdin configuration without a configuration-bound acknowledgment. The saved density service driver therefore cannot supply genuine active source/build/native-owner and scoped configuration observations by reading ambient values. This unapplied proposal adds an observer to the existing owned runtime handle and an explicit opt-in --observe-service launcher channel. The inside launcher emits one strict digest-only frame after the unchanged configuration parse and actual Next child spawn; the host forwards only that canonical frame on the same owned pipe. A reader retains the exact launch dictionary in memory, compares its whole admitted-order digest to that frame, and invalidates it on unknown/malformed/duplicate frames, child error/exit/close or cleanup. Credentials never enter the public frame or any saved observation.
+
+Each runtime observation rechecks the current clean source/build/register and full fixture source bytes, actual fresh owner receipt/container/image/network/daemon and native database system identity. A fixed public process probe checks the acknowledged actual PID/start/boot/UID/GID/cwd/executable and listening socket. One bounded read-only metadata transaction reads only pg_control_system/database identity with SQL45s/lock250ms within the existing Docker60s command cap; it never reads personal rows or changes state. Namespace/source/PID observations repeat afterwards. The existing runtime environment's five fields, namespace/TLS/probe, genuine reference admission, original app requests, readiness, keepalive and all cleanup/caps remain unchanged. Default launch without the opt-in emits no new frame. The V32 snapshot-before-await successor remains a separate frozen packet.
+
+These are source hooks and authored pure controls, not a Root launch, native/provider/state proof or density capture. Root must attach the reader before each actual fresh factory launches its own selected service with the opt-in, retain the exact dictionary used in that same launch, keep all original private proof FD3/resource/namespace/readiness/mail/native-state and cleanup contracts, and supply the original whole authority/current-data/session observer. Missing complete factories, wrong origins, absent acknowledgments, closed owners or unqualified composition remain HOLD. No baseline, registered pair, floor, historical waiver, clinical authority or acceptance flag changes.
+
+
+## 2026-10-11 — Label disposable density fixture values as examples after the actual secret gate refusal
+
+The current Account-based density integration's full secret gate rejected three newly authored static test values: a credential-bearing localhost refusal URL, an invalid webhook marker, and a changed jobs marker. The original complete failed output is retained in the current-account integration evidence. Each is now explicitly labelled EXAMPLE/PLACEHOLDER under the unchanged gate's existing dummy-value convention. The credential URL remains credential-bearing, the malformed webhook remains invalid, and the changed jobs value still differs from the original configuration. Every test name, positive/refusal assertion, runtime/source binding, detector rule and allowlist entry is unchanged. Local changed-input qualification follows; no browser/native/provider or density acceptance is inferred.
+
+## 2026-10-11 — Preserve Density test content with the installed lint contract
+
+Final-source focused qualification passed all 638 assertions across 32 whole files, followed by canonical worker/Next/app types. Full lint then reported only a React children-prop fixture and an unused pending-input type import. Supply the same consent paragraph as the third `createElement` argument and remove only the unused type import. Retain all original assertion names, visible paragraph text, safety/landmark checks and pending-input refusal vectors. Preserve the complete lint failure and whole inverses. No browser/native/density-capture acceptance follows from these local controls.
+
+## 2026-10-11 — Retain the original browser EOF assertion during API type repair
+
+Source self-review found that removing the two invalid Copilot APIResponse `.finished()` calls also removed the valid original browser Response completion assertion after the real `/api/chat` response. Restore that exact assertion; only the two APIRequestContext reads use awaited complete `.body()` bytes. Preserve the prospective failed source and exact inverse. The actual focused report contains 638 passed assertions across 32 whole files; the earlier 33-file progress estimate was wrong. Fresh disk admission refused before launching the final changed-input run, so no unchanged retry or final-source execution is credited.
+
+## 2026-10-11 — Qualify the composed Density provider types
+
+The integrated changed-input whole group passed 638/638 assertions. Canonical worker/Next type generation then passed, while app TypeScript rejected four APIRequestContext response `.finished()` calls and one incomplete inferred fixture spread. Await the actual APIResponse `.body()` bytes and retain every exact parsed JSON/native currentness assertion; this is the installed API's complete-response reader. Browser Response `.finished()` controls stay unchanged. Spell out every original 17 jurisdiction bag in the typed pure fixture, retaining the actual full census and every refusal. Preserve the whole failed type output. No browser/provider/native/capture proof is claimed.
+
+## 2026-10-11 — Compose current Account and complete prepared Density source
+
+The first genuine integrated focused run passed 625 and failed 13 assertions. The failures exposed dependent route readers still bound to the old census and AuthForm bytes: four explicit initial-form pairs and People not-built make 168 required pairs, with 11 authored source gaps. Keep the unchanged six-pair ratchet and all scientific embryo obligations. Add five meaningful titled steps inside the original audited auth/settings cases: actual headings, empty enabled inputs, exact initial submit controls, no auth submit requests, and the complete original signed-in People not-built assertions. Update only exact required/proven source counts (168/162), source correspondence and AuthForm whole-source pin. Their actual hosted execution remains pending. No browser, native, density capture or matrix acceptance follows from this source composition. Preserve the complete failed report and its natural exit.
+
+The actual Supabase CLI created `20261011010251_embryo_pending_input_read.sql`; its reviewed 4,168 SQL bytes are unchanged. Only the two exact migration-basename consumers follow that generated path. Full current Account source/history and #186 UI remain composed; historical saved document deletions are rejected.
+
+### 11 October 2026 — copy active density runtime before configuration observation
+
+Scanner's ordinary V31 source read found that the first runtime callback result was retained across the configuration await. A shared ordinary object could change its build and owner during that await, allowing both later bindings to see the changed values. V31 remains frozen and unrun. This saved successor descriptor-copies and strict-parses the complete first runtime immediately, before the configuration callback. One additive control mutates the actual returned shared object's build and owner during that callback and requires refusal after both observations. Every original V31 assertion and fixed service/configuration/native schema is retained. Source only: no unit, browser, native fixture, capture, current census or G2.5 acceptance.
+
+## 2026-10-11 — Genuine finalized/no-file embryo density fixture adapter (source only)
+
+The reviewed V30 product helper already finalized an actual owner cohort and stopped before its first file. It was not a DensityStateFixture factory, so V31 correctly retained the embryo-detail empty provider HOLD. This additive adapter connects only that registered empty pair to the original localhost:3105 service. Each fixed viewport requires fresh original runtime/source admission, the actual mail/jobs caller and genuine owner session. The original helper re-reads the exact issued native session, all untouched metadata/counters and complete cohort/source/work/authority row bag around every observation. Its actual snapshot clock remains a liveness check; the unchanged complete stored bag supplies current-data identity.
+
+The adapter returns the existing live page/observe interface and delegates the strict native DensityStateProof to the real admitted observer. It creates no proof from labels, screenshots, fake pending counts or normalized origins. The optional assembly input leaves the complete-census HOLD intact when absent. The original upload, worker, complete publication and co-parent/runtime cleanup must still finish after the single capture callback. The helper changes only typed selection/read exposure and optional owned operator forwarding; all original native/UI assertions and default calls remain.
+
+New pure controls are authored, UNRUN: exact route/scope/issued session/full-bag identity, stale/reserved/nonzero metadata refusal, strict unknown/missing input and original producer/source correspondence. They are parser/source controls, not native or browser proof. No old expectation, baseline, waiver, deadline, output bound, retry, authority or acceptance numerator changes. Apply only this raw prefix to Root's complete current history; preserve V30, V31 and their prior receipts. Current composed source, generated migration basename, actual service/observer admission and full union qualification remain Root prerequisites.
+
+## 11 October 2026 — bind each density capture to its actual disposable service (source only, UNRUN)
+
+The saved aggregate driver previously read one app origin and one native runtime before any genuine provider opened. Reviewed real providers use separate original services: main 3100, jurisdiction OFF 3101, paused/reviewer 3102, local-attested 3103, and embryo 3105. Their fresh native owner may also differ between individual state/viewport journeys. A single global origin/owner therefore cannot describe that complete capture. No runtime or capture was run to discover this source contradiction.
+
+The proposed driver observes the selected runtime and actual scoped launch configuration inside the live provider callback. It requires the exact service origin, current source/tree/register, build, native identity and fixture source. It pins all admitted configuration values by an ordered digest in memory; raw configuration, credentials, bearer URLs and form text are never written. Owner/build/configuration and native state proofs must stay exact before and after each screenshot. Each provider retains its own real requests, mail, whole native bags, authority, currentness and cleanup. The assembly labels the actual service used without rewriting provider origins, inputs or routes. Overview's real main-to-OFF flow stays 3101 at capture; Copilot's jurisdiction flow stays on the original attested 3103 service.
+
+The prior native state-proof ABI, two viewports, all original DOM/pixel measurements, all nine frozen artifacts, eight actual initial-auth predecessor comparisons, historical waivers, 60% density floors and 44px target checks remain unchanged. Missing state factories, exact service mapping, actual runtime observer or actual AppEnv producer still HOLD before capture; invalid or changed live observations refuse. New pure controls cover service/configuration correspondence, complete currentness, per-capture stability, descriptor/proxy refusal and private-error suppression. They are authored only, UNRUN. This source packet supplies no screenshot, browser/provider proof, current census acceptance, G2.5 completion or release credit. Append only this raw paragraph to the future complete current history; do not replace Root's current register with a historical document.
+
+## 11 October 2026 — Proposed genuine finalized/no-file embryo detail state (source only)
+
+Account539/tree8573e11 creates pending embryos and one open ingest session at real finalization, before any file is selected. The current detail resolver sees pending first and announces processing. The historical empty browser fixture uses passing QC to get past that branch; it stays unchanged and is not treated as a genuine pending reservation.
+
+This unapplied proposal adds a service-only stable/invoker metadata read from one native snapshot. Empty requires the exact current open, unexpired zero-counter session, matching cohort/embryo/subject/account and revisions, quarantined pending subject, no publication, and no files/QC/chunks/fragments/bound work in the whole cohort. Real reserved/stored chunks, queued/running work and a real file awaiting QC stay processing; query/null/malformed/foreign failures render the existing read-error state. Actor/co-parent jurisdiction, authorized selection/404, consent, Tier-2 and all derived readers retain their order. No producer or authority is weakened.
+
+The optional pre-file callback preserves the entire original default Participant C journey. A new provider captures the genuine finalized pending embryo in a separate page of the same actual owner session before file selection, with complete native row-bag equality before/after; the original upload, worker/publication proof and cleanup still follow. Existing empty/processing/unknown/foreign assertions remain byte-exact. New pure/native/browser controls are authored and UNRUN. No G2.5/G8.5/capture/provider/clinical/production acceptance or count changes are claimed. Both fixed viewports, baseline floors and actual Root-owned fresh runtime/appOrigin/mail/jobs/source bindings remain required.
+
+## 2026-10-11 — V29 pending-input guard follows the genuine V30 empty exception (source only)
+
+The frozen V29 v4 source guard required every native pending embryo to precede every upload-pending empty branch. The independently reviewed V30 product proposal adds one precise detail-only exception: a strict, current native snapshot of the same actual account/cohort/embryo/subject, one open unexpired untouched reservation, and no file, QC, fragment, chunk, counters, publication or work. This changes only that authored source-order assertion and its now-obsolete test title. The original passing-QC browser fixture assertion and original native pending-reservation assertion remain exact; every other historical assertion remains.
+
+Additive pure controls distinguish that full native-format snapshot from absent/null/unknown/malformed/foreign inputs, all file/QC/reservation/work counts, stale/expired/completed attempts, and jurisdiction/active/ingesting boundaries. They also require the actual before-file callback, selected native session, complete current row bags and unchanged upload→worker→publication/cleanup path. These fixtures are unit inputs, never actual native captures or a seeded empty provider. The separate two-exact-SHA256 no-write guard correction is preserved in an explicitly composed candidate; neither existing freeze is overwritten.
+
+V29's four-provider recipe, held embryo mapping, original main/OFF/local model origins and actualAppEnv/aggregate correspondence holds remain unchanged. The V30 real embryo provider retains its original 3105 origin. All candidates are saved-only, unapplied and UNRUN: no native/provider/browser/density capture, acceptance numerator, clinical or release credit. Integrators must append only this raw prefix to complete current history, preserving both earlier prefixes; the historical full documentation candidates are correspondence artifacts.
+
+### 2026-10-11 — Four remaining genuine density doors; native embryo empty remains held
+
+Source-only V29 adds Overview's actual carrier-refusal State D and Copilot's complete, not-covered and jurisdiction-unavailable providers. Overview reuses the full real selected own-report, accepted invitation, bidirectional grant and Tier-2 journey, then the original same-session control/refusal audit on literal localhost:3101. Its original four Health Picture providers keep their old projection. Copilot complete preserves the original canonical upload, named model permission, isolated HTTPS TEST fixture, complete captured report/citations and native saved-history audit. Transport refusal uses the original Family scope on the main server; jurisdiction refusal uses the genuinely attested localhost:3103 variant and current native attestation/declaration.
+
+Every viewport requires a fresh native runtime. Actual full server-environment observations, current native bags, original response/current history and captured report provenance remain mandatory. No answer rows, passing QC, completed jobs, screenshots or runtime evidence are inserted. Root must still bind the distinct origins to the aggregate observer; no origin is normalized into its one appOrigin. Missing actual fixture/runtime/provider admission remains HOLD.
+
+The remaining embryo detail empty pair has a concrete source conflict: real finalization reserves an upload_pending cohort with pending embryos; pending resolves to processing before upload_pending can resolve to empty. The original passed browser empty test deliberately seeds a qc_pass embryo with a passing QC row and no file. Its complete original checks remain required and unchanged, but this is not native finalization proof. No product resolver, native producer, original fixture, register waiver or acceptance flag changes here. A distinct diagnosis pins the four actual passed original08 browser assertions and the real producer/resolver source.
+
+New pure controls are authored and UNRUN. This packet is unapplied; all V26/V27/V28 original source, results and frozen numeric/pixel baselines remain intact. This dated prefix alone is for future append-only live history integration; do not overwrite Root's complete newer history with the historical candidate.
+The source-only self-read found and corrected an authored ABI mismatch before any execution: the unchanged readonly `ownRunCompletions` helper emits exactly `{ purpose, complete, completed_at }`. Its native predicate already checks the current source hash/revision and live purpose/grant revision. The new provider now validates that exact returned record, retains the full completion records in its before/after observations, and adds one positive plus seven refusal controls. The erroneous frozen V29 V2 source remains preserved; there is no failed test or runtime claim. All 39 current authored controls remain unrun.
+
+## 2026-10-11 — Health Picture source-write guard preserves exact source hashing
+
+The genuine V28 source-snapshot run retained at inherit-density-health-picture-state-source-20261011-v8/actual-unit-v1 exited naturally with 244/245 passing cases across all21 whole files. Its only failure was the new source-write guard: the original broad `.insert/update/upsert` matcher treated seven complete SHA256 source-byte hashing `.update` calls as database writes. Whole helper review confirms sourcePath once, name once, source.name once, TINY_FIXTURE three times and FIXTURE once; every expression ends in the exact hexadecimal digest and reads the existing source/fixture bytes. The provider helper, actual request/native authority, original report/processing/partial/not-covered audit bodies and all source hashes remain byte-exact.
+
+This saved source correction exempts only those five full byte-exact expressions at their exact 1/1/1/3/1 multiplicities, then applies the original complete write matcher to the entire remaining source. Unknown, altered, missing or extra expressions refuse. All245 original names/assertions and the original matcher remain; ten additive planted outcomes cover database insert/update/upsert, changed algorithm/argument/digest/chaining, extra unrelated update, duplicate allowed expression and missing expression. No broad createHash waiver, mock provider, clinical label or capture acceptance is added. The first 244/245 failure, raw report and all original outputs remain intact. The corrected pure controls, actual density/native/provider/browser captures and release acceptance are UNRUN;255/21 is planning only. Root must preserve current history and compose only this raw prefix with the current register rather than replacing it with a historical snapshot.
+
+## 2026-10-11 — Health Picture provider source sessions and exact source-string controls (V28 v2; UNRUN)
+
+Ordinary source read found and corrected proposal-only quote escaping in two
+new source-contract anchors, explicit native sign-out between independent
+original audit sessions, and the invitation token URL's exact disposable app
+origin. The old V28 source manifest/candidates remain retained and unrun.
+Original audit bodies and every substantive assertion remain byte-exact;
+the new controls also bind actual session transitions and the mailed origin.
+The preparation fixture is explicitly typed as the same full runtime facts
+contract for deliberate malformed-state tests; no runtime schema or guard is
+loosened. Unused copied empty-state prose is omitted; the Tier-2 checkbox copy
+is checked against its actual shared source. No tests, compiler, provider,
+browser, native database, capture or acceptance has run for this source.
+
+## 2026-10-11 — additional real Health Picture density-provider source (V28; UNRUN)
+
+This source-only proposal adds four distinct providers for the existing
+`family.health-picture` processing, partial-coverage, complete and not-covered
+states. Each provider requires a newly admitted actual disposable browser/native
+runtime for its viewport. Actual upload finalization/preparation, selected own
+report generation, invitation mail/acceptance, both independent adult sessions,
+three signed directional purposes and the session-bound Tier-2 acknowledgement
+create the state. Partial coverage withdraws only B's current estimates grant;
+processing holds exactly A's original preparation POST in a separate uploader
+and qualifies that same response and real normalization before closing it.
+
+The full original Health Picture attribution, saved-source link, both-layer,
+privacy/no-ranking/footer and partial/unavailable audits are retained. The
+processing audit retains its actual prepared-sample premise and all absence/no
+result assertions. Whole protected account/subject/consent/directional/source
+rows, complete private normalization/report/joint-snapshot hash bags and current
+native completion flags are checked around capture. A strict one-layer native
+withdrawal checker and genuine preparation-state controls are authored only.
+
+The old spec's deliberately unbound legacy reference upserts/declassification are
+not used: the actual canonical Health Picture reader admits no legacy files for
+these prepared own sources and the clinical panel remains honestly unavailable.
+This adds no clinical activation, guessed genotype, completed capture, DOM
+replacement, new baseline or register waiver. Original Family/Portrait fixtures
+and specifications, V26's 208-case result, V27's unapplied assembly, all history
+and frozen density artifacts remain unchanged. The proposed files are not applied;
+units/types/gates and actual provider/browser/native/capture execution are UNRUN.
+Only source-provider availability is described; G2.5 stays unaccepted. Root must
+review current composition, runtime/observer/origin admission and separately wire
+these four providers into an immutable assembly before any execution. The raw new
+dated prefix alone may be appended to Root's complete current history later;
+this historical whole-document candidate must never replace current history.
+
+## 2026-10-11 — Five additional genuine Family Portrait density states (source only)
+
+A separate provider prepares processing, partial-coverage, complete, not-covered and jurisdiction-unavailable through the existing served Family Portrait route. Complete and partial coverage reuse the original reviewed-carrier audit bodies, fixture parsers, complete native runs measures, exact inheritance/count/attribution and harm assertions. Only the original fixed synthetic release is imported through its native import door and activated/withdrawn through the named synthetic test reviewer door. The original browser spec, empty/consent provider and all old tests remain byte-exact. These Portrait uploads do not choose independent reports: the new observer requires absent unselected report grants and journals while retaining the full canonical-normalization and measured-ROH proof, rather than inheriting the different Family report fixture’s positive journal premise.
+
+Processing holds the one original file-preparation POST in the uploader context, captures from an independent signed-in viewer, proves its actual uploaded/un-normalized native row, then continues the same request and requires real success/EOF before context closure. Not-covered keeps both real prepared sources but the synthetic release inactive and requires the exact unavailable/no-reviewed-position branch, never a negative result. Jurisdiction uses the actual current signed declaration; both Portrait directions are revoked and the existing pair becomes pending. The whole source/authority bags remain exact except the explicitly proven native declaration fields, and the route must return its real denial without reading result payloads.
+
+The new source controls include every original whole audit body, genuine provider setup and cleanup correspondence, five strict route selectors and ten planted full-row transition refusals. They are UNRUN. Actual provider/browser/native/density measurement, all existing full-flow assertions, original request/test limits, Root runtime admission and physical cleanup remain mandatory. No density or G2.5 acceptance, condition/clinical activation or human review is granted by this source proposal. Root must prepend only this dated entry to current history, not replace it with the saved historical cumulative register.
+
+## 2026-10-11 — Prepare the genuine public subject-access pending request for density capture
+
+The unchanged V24 saved public unit qualification passed all 177 cases. This source-only successor adds the exact public rights.subject-access/processing provider through the original actual intake helper. A fresh owned native runtime and independent real reviewer/MFA session are required for each state and viewport. Before the real POST, complete native target, source, intake, outcome, authority, mail and audit bags are captured. While only that original POST is held, every whole bag and the served pending form must remain exact. The request then continues once through the unchanged 202, native commit, one-use activation, assigned review, final refusal and cleanup. Existing callers retain their original path; no synthetic response or native result is inserted. All original tests, census, historical waivers, baseline artifacts and numeric/44px floors remain unchanged. This prepares one source pair, bringing prepared providers to 154 of 168; the remaining 14 still hold. No new tests, native/browser/provider or density measurements have run.
+
+The overview jurisdiction pair remains held separately: the actual country-change route revokes restricted sharing before the current overview denial branch can run. The saved proposal adds only a viewer-jurisdiction refusal under the existing State D and Tier-2 gate, without reading another adult's data. Its genuine current-source provider and execution are still required; it is not counted as prepared or accepted.
+
+## 2026-10-10 — preserve the reviewer source draft and correct two authored control encodings
+
+The first reviewer-completion draft is retained unchanged. Ordinary source reading found two new control-source encodings: a quoted string had lost its inner quote escape, and a regular-expression word boundary had become a backspace. The successor corrects only those source encodings and retains every substantive assertion, original journey and refusal. This was a source-read finding, not a test or native failure; no execution or acceptance is claimed. The saved V21 170/170 result and both earlier actual failed runs stay unchanged. Reviewer providers remain source-only, with 153 prepared of 168 required pairs and 15 genuine missing providers.
+
+## 2026-10-10 — saved reviewer density provider completion (source only)
+
+The saved V21 unit result remains 170/170, with its two earlier failed originals retained. Three current source-provider gaps now reuse the original reviewer journeys: the loaded assigned appeal page, the real claim document read while its second chunk is held, and the complete claim page after every native acknowledgement and both human-read checks. Original MFA, named assignment, foreign refusal, complete native bags, unchanged targets, real responses, final refusal and cleanup remain. Optional callbacks add capture boundaries without a completed-case seed, paper bypass, positive release or change to numeric or runtime limits. The exact current census stays 168 pairs / 336 captures; 153 pairs have prepared source providers and 15 remain held. These source additions and their pure controls are UNRUN. Only new dated density entries may be appended to current Root history during future composition; this historical full document must never replace it.
+
+## 2026-10-10 — Auth initial forms and independent predecessor environments
+
+The changed-input saved 18-file run finished naturally with 165 passes and two failures out of 167 cases. The complete originals and the earlier 137/26 result remain retained. The first refusal exposed missing initial-form states for sign-in and reset, whose completed outcomes are correctly waived. The second exposed an invented unit fixture sharing the same environment object with all predecessors, so its negative mutation altered both sides.
+
+The saved correction adds a distinct real `initial-form` state to all four auth pages and preserves every historical waiver, genuine held processing request and on-page completed outcome. Only that exact initial form may correspond to each frozen empty auth baseline. All eight viewport comparisons, the 60% ceiling, the original refusal expectations and all nine baseline artifacts remain mandatory. Sign-up and forgot-password complete now use their original POST, natural response settlement, actual mail and actual Check-your-email page; none is relabelled as an initial form. Unit predecessor/current environments are independent copies. The full current census is 168 pairs / 336 captures, with 150 source providers prepared and 18 remaining. All changed source and native/provider/browser execution are unqualified until their own actual results; G2.5 stays NO.
+
+## 2026-10-10 — People render census after the first complete density unit run
+
+The single saved 18-file unit run finished with 137 passes and 26 failures out of 163 cases. All 26 failures came from the same fixture constructor: the current People register entry waived every supported state. The original full outputs, exact source, baseline and refusal remain saved. The verifier still refuses that original zero-state entry.
+
+This saved source correction registers the existing page as `not-built`, keeps every old empty/processing/complete waiver, and adds its real authenticated provider. The provider uses a fresh actual account/session, checks the original page and unchanged complete account rows around capture, and requires the existing native source/runtime/session proof. This adds one genuinely required pair and two captures: 164 pairs / 328 captures. The original 26 numeric/source/refusal controls, nine frozen baseline artifacts, 60% ceiling and 44px target floor are unchanged. All new controls and provider/browser execution remain unrun; this does not build People or close G2.5.
+
+## 2026-10-10 — current density: original assigned appeal processing (UNRUN)
+
+One new reviewer provider captures only inside the original native appeal audit's held-POST callback, after all original assertions. Genuine Auth password/TOTP, native account grant, real public intake, one-use activation, assigned scope and foreign-reviewer refusal remain mandatory. Exact complete protected, case, outcome, session, mail and audit row bags and the same live MFA session remain unchanged around capture. The busy status, disabled controls, complete review limitations, and absence of premature outcome or personal figures stay visible. The existing helper must still settle the original request, prove the native refusal and shredding, preserve every target row and restore its closed configuration before successful return.
+
+Six pure controls cover closed current scope, strict complete bags and invalid authority, exact original native source/caller/Auth admission, the original pending callback and final settlement, complete native equality, and all controls/copy. No alternate barrier, native case insert, forged session, response, retry or completed outcome is supplied. Every original test and whole note suffix is unchanged. All new controls, types, gates, native/browser/PNG and numeric measurements remain UNRUN. Current 1bae register remains 163 pairs / 326 captures: 145 prepared source pairs, 18 remaining plus People; isolated Main retains 126 available until exact native composition. No baseline, metric, limit, authority, waiver or G2.5 promotion.
+
+## 2026-10-10 — current density: original native statistical states (UNRUN)
+
+Six new providers use the genuine two-parent upload, full QC/current publication and original statistical worker for the cohort hub, comparison and detail. Partial coverage additionally requires the existing separate fitted continuation and its actual second native worker, with the entire first completed owned history unchanged. Complete original native receipts and whole-row/count bags bind the actual page around capture. Only job and score bags may advance during the original producer; parent, consent, source, QC, fragment, variant and cohort rows stay exact. No completed cohort, score, result or permission is inserted by the adapter.
+
+Eight added pure controls cover current census and closed route scope, strict complete bags, every immutable publication bag, actual source/caller admission, both original signed-parent producers, complete current receipts and histories, and OBSERVED/MODELLED separation. The genuine no-coverage control is nonnumeric; the eight-of-ten partial control remains invented TEST only, with no clinical finding, interpretation held, unmeasured sibling evidence and unchanged medical/equal-standing/no-ranking words. Every prior test and full note suffix is unchanged. All new controls, types, gates, native/browser/PNG and numeric measurements are UNRUN. Current clean T7 1bae8cd6/tree2da93966 has 163 pairs / 326 captures: 144 prepared source pairs, 19 remaining and the People omission. Isolated Main still has 126 available pairs until exact native composition. No baseline, limit, waiver, clinical approval or G2.5 promotion.
+
+## 2026-10-10 — current density: genuine claim-start processing (UNRUN)
+
+The added public claim provider holds the one original served-form POST before native work, captures the actual disabled Working control and complete refusal/no-guess/retention copy, then continues and awaits the same request. Native complete whole-row/count bags keep every protected subject, permission, source, document, reviewer, identity and release unchanged; the real reply must create exactly one live sealed intake and one exact coded audit append over the complete prior prefix. The actual HttpOnly session binds that intake. No account, candidate lookup, papers, review decision, matched record, reply, quota reset or completed state is seeded.
+
+Seven new pure controls cover closed current scope, strict complete bags, malformed or advanced intake/audit refusal, original Core/native caller admission, original one-request settlement, full protected equality and copy ordering. Every existing test and complete history suffix is unchanged. All controls, types, gates and native/browser/PNG measurements are UNRUN. The actual c7ad census remains 163 pairs / 326 captures: 138 prepared source pairs and 25 missing plus People; isolated Main still has 126 available because its old profile and claim implementation cannot supply this processing state. No baseline, metric, waiver, authority, clinical approval or G2.5 promotion.
+
+## 2026-10-10 — current density: actual signed-out invitation refusal (UNRUN)
+
+Two registered Withdrawal providers reuse the original independent invitation, delivered fragment, explicit Continue activation and signed-out refusal. The pending state holds exactly one original purpose-bound POST; its release must finish the actual response and native consumed-session/purged-subject transaction. Full current invitation/credential/session/nonce/subject/principal/draft/refusal and source/grant/output bags stay exact around capture. The inviter's own record and genetic absence remain unchanged, and cleanup settles every started original request. No recipient account, accepted permission, result, token or native status is fabricated.
+
+Six new pure scope/mail/activation/request/native-state/copy controls are authored; every previous control is unchanged. Current pending live-region markup absent from isolated Main keeps that provider held until Root composes the exact T7 form. All controls, types, gates and native/browser/PNG measurements are UNRUN. Actual current c7ad remains 163 pairs / 326 captures: 137 prepared source pairs and 26 missing, plus the People omission; isolated Main has 126 available pairs with eleven composition holds. No baseline, budget, state waiver, authority, clinical approval or G2.5 promotion.
+
+## 2026-10-10 — current density: public embryo refusal and unselected own report permissions (UNRUN)
+
+Two further registered providers reuse actual product entry and canonical upload preparation. The public embryo page keeps its complete availability, scientific-limit and Future Person rights paragraphs and both genuine links, with no reader data. Own Reports requires a real stored/current source with canonical calls, no selected report grant or completed derived journal, and no personalized output. All three original unchecked choices and disabled actions remain visible; both complete library layers must be awaiting, not uncovered. A native mutation counter and whole-source/grant/output equality reject accidental choice or generation during capture. No state, result, country or permission is seeded.
+
+The four existing capture source controls and seven report controls remain, with the report provider census changing eighteen to nineteen and four added closed-scope/full-copy/native-state controls. All fifteen affected controls, types, gates and native/browser/PNG measurements are UNRUN. The complete actual c7ad census remains 163 pairs / 326 captures: 135 prepared source pairs, 28 missing, plus the People omission; isolated Main has 125 available pairs while ten Core providers hold. No baseline, numeric budget, consent authority, state waiver, clinical approval or G2.5 promotion.
+
+## 2026-10-10 — current density: joint Family permission and genuine no-file Portrait boundaries (UNRUN)
+
+Three additional paired Family providers use the existing real invitation and independent account flow. Health Picture pauses only after both adults sign the joint purpose from their own sessions. Portrait's missing-choice render keeps the actual viewer's grant and both personal acknowledgements absent. Its no-file render instead requires both live grants, each adult's own acknowledgement and the original session gate, while every file and scientific output remains absent. Complete native signatures, pair, source, grant, direction, profile and output rows are frozen around capture; failed or uncertain authority cannot be shown as an empty result. Every request and response comes from the original product UI.
+
+The existing Family unit file's eighteen-provider census becomes twenty-one because these genuine providers have been authored. Its eight prior controls remain, including held scientific-result states, with three added scope and complete authority/source contracts. All eleven controls, types, gates and native/browser/PNG measurements are UNRUN. The complete current c7ad census remains 163 pairs / 326 captures: 133 prepared source pairs, 30 missing, plus the People omission. No fixture inserts, scientific approval, baseline, numeric budget, state waiver or G2.5 promotion.
+
+## 2026-10-10 — current density: genuine cohort processing and unsigned analysis boundaries (UNRUN)
+
+Six further density providers capture the original participant journey at its existing worker callback: four views before the real one-shot worker, and two after its complete publication but before either parent grants analysis. The queued boundary requires actual uploaded input, pending subjects, signed parent history, exact source/job linkage and no published source, quality, score or analysis grant. The published boundary additionally passes the original whole publication reader and actual native proof, retaining both missing analysis grants. Complete native row bags remain unchanged around capture. The same journey then finishes every original worker, parent-choice and session-gate assertion without retry or status substitution.
+
+The existing full cohort-bag SQL helper gains only an export so the new provider can reuse its complete unchanged body. Eight new pure controls cover the exact six-pair map, strict native phases, current owner/source/job/revision bindings, malformed or advanced rows, complete publication with missing grants, original callback order, full-row hashes and complete refusal copy. All controls, types, gates and native/browser/PNG measurements remain UNRUN. The actual c7ad census remains 163 pairs / 326 captures: 130 prepared source pairs, 33 missing, plus the People omission. The isolated checkout still holds all ten Core-dependent cohort providers. Original tests, baseline artifacts, limits and G2.5 NO stay unchanged.
+
+## 2026-10-10 — current density: real shared-subject jurisdiction providers (UNRUN)
+
+The paired Family density source now covers eight additional registered refusal states. It first creates the real invitation, delivered mail, accepted relationship, canonical file, both chosen reports, directional sharing and session gate. The original country-declaration request then records TEST-DENY XX with the current native attestation and revokes the exact shared grants. Whole native source and own-result rows must remain unchanged; the actual accepted subject is refused before any derived read. Mixed permissions keep Pause and Stop sharing while removing grant controls. Whole current native facts and attestation are checked around capture, and no browser or variant request may start after denial.
+
+The existing Family unit file now expects eighteen distinct applicable providers instead of ten; its prior jurisdiction hold is replaced by the still-waived awaiting-choice negative because a genuine jurisdiction provider has been authored. Its other six original controls remain, with two additional checks for the real declaration, full revoked-grant and source preservation, all eight route bindings, private-result absence and retained rights. These controls, types, gates, native flows, screenshots and numeric measurements are UNRUN. Current composed c7ad remains 163 pairs / 326 captures: 124 prepared source pairs, 39 missing, plus the zero-state People omission. No baseline, budget, clinical authority or G2.5 status changes.
+
+## 2026-10-10: native jurisdiction refusals and one-person Health Picture density states (source only)
+
+Nine further registered pairs use a fresh signed-in account and complete native rows. Eight blocked Family and Embryo views declare the existing TEST-DENY XX country through the original settings route with its current attestation. An unavailable TEST admission refuses before capture; the provider changes no environment flag. Every source, grant, invitation, pair and cohort remains absent, the exact whole native vector stays unchanged around capture, and no analysis or consent request is issued. The original unknown-embryo segment is used only behind the route's pre-read jurisdiction refusal. Own Genome stays permitted under XX, so its jurisdiction states remain held for a genuine paired-subject fixture. The separate Health Picture empty state requires exactly one self subject and no sharing; its two-person explanation and absence of result panels remain. Eight authored pure controls cover the exact nine-pair census, complete malformed/stale/foreign row refusal, current declaration and unchanged full state. All controls, types, native/browser journeys and PNG measurements are UNRUN. The current c7ad Core register has 64 page routes and 163 applicable pairs: source-prepared coverage is 116/163 after its exact helper composition (232/326 captures), leaving 47 pairs and the People zero-state hold. Its nine newly applicable pairs remain required. Isolated Main has 112/154 source pairs until composition. The complete census, nine frozen baseline artifacts, numeric limits, 44 px rule and G2.5 NO are unchanged.
+
+## 2026-10-10: real partial report library and ancestry revocation density states (source only)
+
+Two more registered pairs reuse canonical preparation and explicit analysis choices. Partial Reports requires a positive covered and uncovered part in both whole generated layers. Ancestry consent-required first proves the real result readable and its native current-source journal complete, then uses the original Turn off Ancestry request and awaits its response. The native journal must be purged, the same grant retained as revoked, and source files, canonical calls and unrelated outputs preserved. All three ancestry panels retain the missing-choice sentence and genuine report-control link; the complete revoked state stays exact around capture. No result, grant or revoked status is seeded. The five existing source controls are retained, the authored provider count changes from sixteen to eighteen, and two scoped controls are added. All seven affected cases and all native/browser/PNG measurements remain UNRUN. Source-prepared coverage is 107/154 after exact Core composition (214/308 captures); isolated Main has 103 source pairs. Forty-seven pairs and the People zero-state hold remain. Baseline, thresholds, complete census and G2.5 NO are unchanged.
+
+## 2026-10-10: populated Family and original unanswered Copilot density states (source only)
+
+Four further registered pairs use real native contracts: the populated Family hub from the independent invitation and report grants, plus Copilot empty, processing and consent-required. The hub retains all three tile descriptions, the actual report-ready person link, blocked ungranted Portrait and no-diagnosis line. Copilot saves the original key-free synthetic provider, checks complete native actor/principal/current provider-revision rows and holds exactly one original chat POST. Its real 403 consent refusal must settle before context disposal; no answer, consent, source, key or model request is supplied. Complete rows remain exact around capture. All five prior Family controls remain, with the existing provider count updated for its one authored hub state; one hub control and six new pure Copilot controls are added. All twelve affected cases, native/browser journeys and PNG metrics remain UNRUN. Source-prepared coverage becomes 105/154 pairs after exact Core composition (210/308 captures), with 49 remaining pairs and the unchanged People zero-state hold. Isolated Main still lacks the four original Core publication providers and has 101 available source pairs. Baseline, current census, every metric and 44 px target remain unchanged; G2.5 stays NO.
+
+## 2026-10-10: original two-parent cohort density adapter (source only)
+
+Four additional complete views use the exact current Core participant journey, actual parent mail and signatures, canonical upload, original isolated worker, complete publication and QC readers. All native parent/source/job/subject rows are hashed in full before transport and stay exact around capture; clinical score and FuturePerson profile rows remain absent. The adapter refuses missing composed helpers and a mismatched process-wide Auth/SQL/jobs/daemon caller. Each provider and viewport needs fresh native admission; completed cohorts, queue resets and fabricated state are forbidden. The complete census/runtime bookend is unchanged and still needs Root's reviewed fresh-runtime aggregate orchestration. Eight additive controls and all browser/native/PNG measurements remain UNRUN. Source-prepared coverage after exact Core composition is 101 of 154 pairs (202 of 308 captures), with 53 missing pairs and the People zero-state hold. Isolated Main still supplies only the preceding 97 pairs. All frozen baseline artifacts, numeric thresholds, 60% predecessor comparison, 44 px targets, scientific holds and G2.5 NO remain unchanged.
+## 2026-10-10: original upload-transfer density providers (source only)
+
+Three additional applicable pairs capture the same genuine uploader while its original preparation POST is held, or after that exact request completes and its server refresh lands. Pending files must be uploaded, unnormalized and without canonical variants; prepared files must have the exact current normalization revision and real canonical variants, while report result rows remain absent. The constant stored filename, live progress, disabled picker, download and report-choice links remain asserted. The original request continues and finishes before context disposal; no response or status is manufactured. Four additive controls and all native/browser/PNG measurements remain UNRUN. Source-prepared coverage is 97 of 154 pairs (194 of 308 captures), with 57 missing pairs and the People zero-state hold. All nine baseline artifacts, numeric thresholds, 60% predecessor comparison, 44 px targets and G2.5 NO remain unchanged.
+
+## 2026-10-10: genuine cohort-entry density states (source only)
+
+Three additional current pairs use fresh native accounts and unchanged page entry: the empty cohort hub, empty comparison and complete request letter. Complete account, owned-cohort, draft, participant and consent bags must establish absence and stay unchanged around capture; no cohort, quality, job or result is inserted. The full letter, no-record disclosure and no-result assertions remain. A drafted unsigned-attestation mapping was removed before freeze because the current upload consent-required state is waived; no waiver is retired or counted. Five additive controls and every actual browser/native/PNG measurement remain UNRUN. Prepared coverage is 94 of 154 pairs (188 of 308 captures), with sixty missing pairs and the People zero-state hold. Root must supply the composed native journey for completed, processing and quality-specific cohorts. All baseline bytes, thresholds, 60% comparison, 44 px targets and G2.5 NO remain unchanged.
+
+## 2026-10-10: canonical own-report density providers (source only)
+
+Sixteen additional current pairs reuse genuine upload preparation, explicitly chosen report generation and exact native current-source completion readers. Full native row bags retain count and revision checks. Both library layers must actually be generated and uncovered; complete refusal text and disclaimers remain visible. A partial gene search requires a real missing reference position or holds. Existing report, genome and ancestry browser assertions, baseline artifacts, 60% comparison and 44 px rule remain unchanged. Source-prepared coverage is now 91 of 154 pairs (182 of 308 viewport captures); 63 pairs and the People zero-state hold remain. Five new controls and all native/browser/PNG measurements remain UNRUN. G2.5 stays NO.
+
+## 2026-10-10: paired Family density providers (source only)
+
+Nine further providers use actual invitation mail delivery, independent account acceptance, own-file generation, separately signed layer grants and the native pause operation. Tier-2 remains a genuine session gate. Pending preparation keeps uploader and viewer in independent browser contexts; the pending permission continues its original request and is then withdrawn. Complete native row bags, exact source/grant completions and no-coverage causes are required around capture. Existing Family tests, original requests and all numeric limits remain unchanged. Source-prepared coverage is now 75 of 154 pairs (150 of 308 captures), with 79 missing pairs and the People zero-state hold. The owned isolated mail capture is a Root prerequisite. New controls and all actual browser/native/PNG measurements remain UNRUN; G2.5 stays NO.
+
+## 2026-10-10: actual owned-state density providers (source only)
+
+The current capture now prepares thirty additional route/state providers through genuine fresh accounts, upload preparation, consent, account and Family entry flows. Pending states hold and later settle the original request. Complete native actor rows and exact counts distinguish missing files, absent grants and unconsumed deletion requests; the Overview timing branch follows the real sample. Existing public/auth providers and every original browser assertion remain. This prepares 66 of the isolated register's 154 applicable pairs; 88 pairs and settings.people's zero-state omission still HOLD. All new controls, screenshots, runtime observations and numeric budgets remain UNRUN. No baseline, target size, 60% comparison, consent text or G2.5 status changes.
+
+## 2026-10-10 — Complete current density capture source, unqualified
+
+The predecessor eleven-path density source manifest stays frozen. A separate
+current capture driver now derives every page and applicable state from the
+actual composed register, at both original viewports. It uses the unchanged
+rest/DOM module and an exact whole-body copy of the frozen pixel computation,
+checks real native/source/runtime/font/PNG bookends, and retains the 44 px rule.
+Real public-document and Auth providers reuse existing native/session helpers;
+processing holds, continues and awaits the original request. Missing real
+providers and a route with no registered measurable state are explicit HOLDs
+before any image, rather than invented or selected screenshots. The source
+controls cover dynamic additions, incomplete/duplicate inventories, native
+proof mismatches, wrong navigation and the whole pixel-body equality. No
+original test or nine-artifact baseline changes; no metric exclusions, status
+promotion or new authority. Root must supply the remaining authentic current
+state providers and observer wiring after composition. New controls, types,
+measurement, pixel, native and browser checks are UNRUN; G2.5 remains NO.
+
+## 2026-10-10 — First density completion slice; measurements remain pending
+
+The current owner direction commissions G2.5 within the unchanged brief. Auth
+submit buttons use content width with the same 44px height; auth and landing
+terrain decoration is removed; the shared legal layout offers one native
+“On this page” disclosure. Every legal body, safety paragraph, consent link,
+auth handler and hydration refusal stays. The original auth unit file is an
+exact prefix, with four content-width/height controls appended. New presentation
+controls check landmarks, unchanged landing safety/actions and legal content
+outside the navigation disclosure.
+
+The frozen density verifier is untouched. Its additive portable copy changes
+only the fixture temporary directory to the operating system's temporary
+directory. The current measurement checker derives page/state/viewports from
+the route register and refuses omissions, duplicates, wrong routes, stale
+source, changed measurement modules, invalid geometry and over-budget values.
+It retains all four initial-form predecessor comparisons, refuses a smaller
+post-submit receipt as their replacement, and preserves the existing three
+invented-predecessor exclusions with absolute budgets still required. Authored
+positive unit data is synthetic arithmetic, not pixel evidence.
+
+These source controls are UNRUN at handoff. Neither the existing 22-route
+capture nor this first layout slice supplies current route-wide density proof.
+G2.5 remains NO; the baseline, 60% ceiling, selectors, pixel exclusions,
+thresholds, 44px controls and historical evidence have not been repinned.
+
 ## 2026-10-11: explicit example keys in lifecycle unit fixture
 
 The public synthetic resource-key fixture now uses explicit EXAMPLE values, as required by the existing secret gate. Both sides of each equality use the same complete fixture. The wrong-origin refusal, original exception identities, cleanup, all assertions and all process limits remain unchanged. The actual secret-gate failure is retained; no detector or allowlist change is made.
