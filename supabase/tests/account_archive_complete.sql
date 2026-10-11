@@ -167,17 +167,31 @@ begin
  c:=public.own_upload_context_v1('77900000-0000-4000-8000-000000000001','77900000-0000-4000-8000-000000000010',
   (select subject_id from accepted_adult));
  nonce:=encode(digest(convert_to('complete-adult-sign:'||artifact,'UTF8'),'sha256'),'hex');
- perform public.issue_own_upload_nonce_v1('77900000-0000-4000-8000-000000000001','77900000-0000-4000-8000-000000000010',
-  (select subject_id from accepted_adult),(c->>'accountRevision')::bigint,(c->>'authSessionRevision')::bigint,
-  (c->>'jurisdictionRevision')::bigint,(c->>'subjectBindingRevision')::bigint,(c->>'accountBindingRevision')::bigint,
-  'own_upload_artifact_sign',nonce,clock_timestamp()+interval '9 minutes');
- return public.sign_own_upload_artifact_v1('77900000-0000-4000-8000-000000000001','77900000-0000-4000-8000-000000000010',
+ -- The current v2 POST records and consumes this rendered nonce in the same
+ -- genuine signing transaction. The retired render-time issuer stays absent.
+ return public.sign_own_upload_artifact_v2('77900000-0000-4000-8000-000000000001','77900000-0000-4000-8000-000000000010',
   (select subject_id from accepted_adult),artifact,1,(select body_sha256 from public.consent_artifacts
    where artifact_key=artifact and version=1),keys,(c->>'accountRevision')::bigint,(c->>'authSessionRevision')::bigint,
-  (c->>'jurisdictionRevision')::bigint,(c->>'subjectBindingRevision')::bigint,(c->>'accountBindingRevision')::bigint,nonce);
+  (c->>'jurisdictionRevision')::bigint,(c->>'subjectBindingRevision')::bigint,(c->>'accountBindingRevision')::bigint,nonce,
+  clock_timestamp()+interval '9 minutes');
 end $$;
+select is(to_regprocedure('public.issue_own_upload_nonce_v1(uuid,uuid,uuid,bigint,bigint,bigint,bigint,bigint,text,text,timestamptz)'),null,
+ 'complete adult signing never revives the retired render-time nonce issuer');
+select is((select count(*) from public.account_operation_nonces where nonce_hash in (
+ encode(digest(convert_to('complete-adult-sign:disclosure.insurance-and-discrimination','UTF8'),'sha256'),'hex'),
+ encode(digest(convert_to('complete-adult-sign:consent.upload-self','UTF8'),'sha256'),'hex'))),0::bigint,
+ 'rendered adult-signing nonce hashes have no stored row before either POST');
 select pg_temp.sign_adult('disclosure.insurance-and-discrimination',array['understood']);
 select pg_temp.sign_adult('consent.upload-self',array['own-adult-dna']);
+select is((select count(*) from public.account_operation_nonces where nonce_hash in (
+ encode(digest(convert_to('complete-adult-sign:disclosure.insurance-and-discrimination','UTF8'),'sha256'),'hex'),
+ encode(digest(convert_to('complete-adult-sign:consent.upload-self','UTF8'),'sha256'),'hex'))
+ and account_id='77900000-0000-4000-8000-000000000001'
+ and session_id='77900000-0000-4000-8000-000000000010'
+ and operation='own_upload_artifact_sign' and consumed_at is not null),2::bigint,
+ 'both genuine signing POSTs record exactly their own consumed nonce');
+select throws_ok($$select pg_temp.sign_adult('consent.upload-self',array['own-adult-dna'])$$,
+ '42501','not_found','the genuine v2 adult signer refuses its already consumed nonce');
 insert into storage.objects(id,bucket_id,name,metadata) values('77900000-0000-4000-8000-000000000082',
  'genomes','77900000-0000-4000-8000-000000000081','{"size":8}');
 insert into public.genome_files(id,user_id,subject_id,bucket_path,original_name,file_type,tier,size_bytes,sha256,status,

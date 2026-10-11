@@ -9,7 +9,8 @@ const stages = ["host-admission", "source-attestation", "source-copy", "migratio
   "session-reference-seed", "session-upload-capacity", "session-runtime-preflight", "session-storage-proxy",
   "session-app-configuration", "session-mail-capture", "session-main-app-ready", "session-embryo-app-ready",
   "session-chromium-launch", "session-build-jurisdiction", "session-native-embryo-publication",
-  "bridge-ready", "bridge-input", "bridge-forward", "bridge-wait", "bridge-whole", "bridge-inner-terminal", "bridge-setup"] as const;
+  "bridge-ready", "bridge-input", "bridge-forward", "bridge-wait", "bridge-whole", "bridge-inner-terminal", "bridge-setup",
+  "stack-runtime-guard", "stack-owner-binding", "stack-scratch-identity", "stack-lock-acquisition"] as const;
 const schema = z.object({ stage: z.enum(stages),
   classification: z.enum(["spawn-refused", "exit-nonzero", "signal", "timeout", "output-limit", "setup-refused"]),
   exitCode: z.number().int().min(0).max(255).nullable(),
@@ -26,7 +27,7 @@ export function hostedBootstrapDiagnosticLine(value: unknown): string | null {
 }
 export function emitHostedBootstrapFailure(stage: HostedBootstrapDiagnostic["stage"],
   metadata: { classification: string; exitCode: number | null; signal: string | null },
-  cleanup: HostedBootstrapDiagnostic["cleanup"], emit = (line: string) => { process.stderr.write(line + "\n"); }) {
+  cleanup: HostedBootstrapDiagnostic["cleanup"], emit = (line: string) => { process.stderr.write("\n" + line + "\n"); }) {
   // A diagnostic I/O failure must never replace the original refusal or its
   // independently required cleanup result.
   try {

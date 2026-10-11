@@ -128,16 +128,28 @@ export async function disposeOwnedStack(expected: Resource[], io: ResourceIO, st
 }
 
 export async function acquireFreshStack(signal: AbortSignal, io: ResourceIO = actualResourceIO, operator?: OwnedLinuxCapability) {
-  assertCiRuntime(process.env, process.platform, operator);
-  if (operator) assert(operator.proof.root === repositoryRoot && operator.proof.scratch === process.env.RUNNER_TEMP,
-    "Exact owning operator checkout and scratch required");
-  else assert(process.env.GITHUB_WORKSPACE && await realpath(process.env.GITHUB_WORKSPACE) === repositoryRoot
-    && process.env.GITHUB_JOB && process.env.GITHUB_RUN_ID && process.env.GITHUB_RUN_ATTEMPT,
-  "Actual owning checkout and job identity required");
-  const scratch = process.env.RUNNER_TEMP!;
-  assert(await realpath(scratch) === scratch, "Runner scratch must be exact");
-  const lock = path.join(scratch, "inherit-fresh-t6.lock");
-  await mkdir(lock, { mode: 0o700 }); // Exclusive across bootstrap and personas.
+  let admissionStage: HostedBootstrapDiagnostic["stage"] = "stack-runtime-guard";
+  let scratch: string, lock: string;
+  try {
+    assertCiRuntime(process.env, process.platform, operator);
+    admissionStage = "stack-owner-binding";
+    if (operator) assert(operator.proof.root === repositoryRoot && operator.proof.scratch === process.env.RUNNER_TEMP,
+      "Exact owning operator checkout and scratch required");
+    else assert(process.env.GITHUB_WORKSPACE && await realpath(process.env.GITHUB_WORKSPACE) === repositoryRoot
+      && process.env.GITHUB_JOB && process.env.GITHUB_RUN_ID && process.env.GITHUB_RUN_ATTEMPT,
+    "Actual owning checkout and job identity required");
+    scratch = process.env.RUNNER_TEMP!;
+    admissionStage = "stack-scratch-identity";
+    assert(await realpath(scratch) === scratch, "Runner scratch must be exact");
+    lock = path.join(scratch, "inherit-fresh-t6.lock");
+    admissionStage = "stack-lock-acquisition";
+    await mkdir(lock, { mode: 0o700 }); // Exclusive across bootstrap and personas.
+  } catch (error) {
+    // These gates precede this caller's ownership of a stack lock. Never remove
+    // an existing lock or replace the original refusal with diagnostic failure.
+    emitHostedBootstrapFailure(admissionStage, freshRuntimeFailureClassification(error), "not-started");
+    throw error;
+  }
   let lease: Resource[] | undefined;
   let started = false;
   let diagnosticStage: HostedBootstrapDiagnostic["stage"] = "host-admission";

@@ -115,7 +115,7 @@ it("reports a closed build failure while retaining the original exception and ac
     await expect(prepareFreshInvocation({ environment: {}, bindObservedKeys: true, buildRequired: true,
       acquire: async () => ({ keys: { NEXT_PUBLIC_SUPABASE_URL: "http://127.0.0.1:54321", NEXT_PUBLIC_SUPABASE_ANON_KEY: "EXAMPLE_NO_REAL_ANON_CREDENTIAL", SUPABASE_SERVICE_ROLE_KEY: "EXAMPLE_NO_REAL_SERVICE_CREDENTIAL" }, close }), build: async () => { throw failure; } })).rejects.toBe(failure);
     expect(close).toHaveBeenCalledTimes(1);
-    expect(lines).toEqual(['OWNED_BOOTSTRAP_FAILURE_V1|{"stage":"production-build","classification":"setup-refused","exitCode":null,"signal":null,"cleanup":"unreturned"}\n']);
+    expect(lines).toEqual(['\nOWNED_BOOTSTRAP_FAILURE_V1|{"stage":"production-build","classification":"setup-refused","exitCode":null,"signal":null,"cleanup":"unreturned"}\n']);
     expect(lines.join("")).not.toContain("synthetic-private-build-canary");
   } finally { stderr.mockRestore(); }
 });
@@ -125,7 +125,7 @@ it("retains an uncertain cleanup error instead of treating its bootstrap as succ
   try {
     await expect(prepareFreshInvocation({ environment: {}, bindObservedKeys: true, buildRequired: false,
       acquire: async () => ({ keys: { NEXT_PUBLIC_SUPABASE_URL: "http://127.0.0.1:54321", NEXT_PUBLIC_SUPABASE_ANON_KEY: "EXAMPLE_NO_REAL_ANON_CREDENTIAL", SUPABASE_SERVICE_ROLE_KEY: "EXAMPLE_NO_REAL_SERVICE_CREDENTIAL" }, close: async () => { throw failure; } }), build: async () => {} })).rejects.toBe(failure);
-    expect(lines).toEqual(['OWNED_BOOTSTRAP_FAILURE_V1|{"stage":"bootstrap-cleanup","classification":"setup-refused","exitCode":null,"signal":null,"cleanup":"uncertain"}\n']);
+    expect(lines).toEqual(['\nOWNED_BOOTSTRAP_FAILURE_V1|{"stage":"bootstrap-cleanup","classification":"setup-refused","exitCode":null,"signal":null,"cleanup":"uncertain"}\n']);
     expect(lines.join("")).not.toContain("synthetic-private-cleanup-canary");
   } finally { stderr.mockRestore(); }
 });
@@ -184,7 +184,7 @@ it("retains a synchronously thrown acquisition guard and does not enter build or
     await expect(prepareFreshInvocation({ environment, acquire: () => { throw failure; }, build,
       bindObservedKeys: true, buildRequired: true })).rejects.toBe(failure);
     expect(build).not.toHaveBeenCalled(); expect(environment).toEqual({ SYNTHETIC_SCOPE: "unchanged" });
-    expect(lines).toEqual(['OWNED_BOOTSTRAP_FAILURE_V1|{"stage":"bootstrap-stack-acquisition","classification":"setup-refused","exitCode":null,"signal":null,"cleanup":"unreturned"}\n']);
+    expect(lines).toEqual(['\nOWNED_BOOTSTRAP_FAILURE_V1|{"stage":"bootstrap-stack-acquisition","classification":"setup-refused","exitCode":null,"signal":null,"cleanup":"unreturned"}\n']);
     expect(lines.join("")).not.toContain("synthetic-private-lock-guard");
   } finally { stderr.mockRestore(); }
 });
