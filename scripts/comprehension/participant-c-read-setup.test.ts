@@ -4,7 +4,7 @@ import { openParticipantCReadSession } from "../../e2e/participant-c-harness";
 import { openLiveSession, type LiveSessionSetupStage } from "./live-browser";
 import { createHostedBootstrapDiagnostics, emitHostedBootstrapFailure, HOSTED_BOOTSTRAP_PREFIX } from "./hosted-owned-diagnostics";
 import { freshRuntimeFailureClassification } from "./fresh-t6-resources";
-import type { ParticipantCReadDiagnostic, ParticipantCReadStage } from "./participant-c-seed";
+import { participantCNoModelSurface, type ParticipantCReadDiagnostic, type ParticipantCReadStage } from "./participant-c-seed";
 import { NO_ROWS_SENTENCE } from "../../src/copy/embryos/compare";
 
 // Real production wrappers with injected public browser interfaces only.
@@ -14,7 +14,7 @@ const control = vi.hoisted(() => ({ fault: "", gate: true, events: [] as string[
 vi.mock("../../e2e/helpers", () => ({ SUPABASE_URL: "http://127.0.0.1:54321",
   signIn: async () => { control.events.push("sign-in"); if (control.fault === "read-sign-in") throw control.operation; } }));
 vi.mock("../../e2e/audited-test", () => ({ expect: (value: { count(): Promise<number>; allTextContents(): Promise<string[]> }) => ({
-  toBeVisible: async () => { if (control.fault === "read-no-model-surface") throw control.operation; },
+  toBeVisible: async () => { if (["read-no-model-surface", "no-model-visible"].includes(control.fault)) throw control.operation; },
   toHaveText: async (text: string) => { if ((await value.allTextContents())[0] !== text) throw control.operation; },
   toHaveCount: async (count: number) => { if (await value.count() !== count) throw control.operation; },
 }) }));
@@ -38,12 +38,21 @@ function injectedBrowser() {
   const locator = (selector: string) => ({
     first() { return this; },
     count: async () => selector.includes("result-gate") ? Number(control.gate)
-      : selector.includes("cohort-permission") ? Number(control.fault === "read-permission") : 0,
-    allTextContents: async () => [NO_ROWS_SENTENCE],
-    evaluateAll: async (read: (nodes: { getAttribute(name: string): string | null }[]) => unknown) => read([
-      { getAttribute: name => name === "data-figure-kind" ? control.fault === "no-model-contract" ? "absolute" : "coverage"
-        : name === "data-figure-class" ? "quality" : null },
-    ]),
+      : selector.includes("cohort-permission") ? Number(control.fault === "read-permission")
+        : selector === "[data-condition-id]" ? (control.events.push("surface:conditions"), Number(control.fault === "no-model-condition-rows")) : 0,
+    allTextContents: async () => {
+      control.events.push("surface:notices");
+      return control.fault === "no-model-text" ? ["synthetic-private-wrong-notice"]
+        : control.fault === "no-model-notices" ? [NO_ROWS_SENTENCE, "synthetic-private-extra-notice"] : [NO_ROWS_SENTENCE];
+    },
+    evaluateAll: async (read: (nodes: { getAttribute(name: string): string | null }[]) => unknown) => {
+      control.events.push("surface:figures");
+      if (control.fault === "no-model-dom") throw control.operation;
+      return read(control.fault === "no-model-empty-figures" ? [] : [
+        { getAttribute: name => name === "data-figure-kind" ? control.fault === "no-model-contract" ? "absolute" : "coverage"
+          : name === "data-figure-class" ? "quality" : null },
+      ]);
+    },
     getByRole: () => ({ check: async () => { control.events.push("gate-check"); },
       click: async () => { control.events.push("gate-click"); if (control.fault !== "read-result-gate") control.gate = false; } }),
   });
@@ -106,7 +115,8 @@ describe("precise participant-c read setup keeps the original refusal", () => {
       control.fault = stage;
       const actual = injectedBrowser(), recorded = capture();
       await expect(openParticipantCReadSession(readOptions(actual.browser, recorded.diagnostic))).rejects.toBe(control.operation);
-      expect(recorded.finish().map(value => value.stage)).toEqual([stage, "read-browser-prepare"]);
+      expect(recorded.finish().map(value => value.stage)).toEqual(stage === "read-no-model-surface"
+        ? ["read-no-model-visible", stage, "read-browser-prepare"] : [stage, "read-browser-prepare"]);
       expect(control.events.indexOf(`report:${stage}`)).toBeLessThan(control.events.indexOf("context-close"));
       expect(control.events.filter(value => value === "context-close")).toHaveLength(1);
       expect(recorded.lines.join()).not.toContain("synthetic-private");
@@ -115,7 +125,7 @@ describe("precise participant-c read setup keeps the original refusal", () => {
     control.fault = "no-model-contract";
     const actual = injectedBrowser(), recorded = capture();
     await expect(openParticipantCReadSession(readOptions(actual.browser, recorded.diagnostic))).rejects.toThrow();
-    expect(recorded.finish().map(value => value.stage)).toEqual(["read-no-model-surface", "read-browser-prepare"]);
+    expect(recorded.finish().map(value => value.stage)).toEqual(["read-no-model-figures", "read-no-model-surface", "read-browser-prepare"]);
   });
   it("successful original preparation emits no failure or invented completion", async () => {
     const actual = injectedBrowser(), recorded = capture(), read = vi.fn(async () => publication());
@@ -173,5 +183,115 @@ describe("original browser setup and suppressed cleanup are independently diagno
     for (const changed of [{ ...value, stage: "synthetic-private-stage" }, { ...value, message: "synthetic-private-canary" }])
       collector.push(Buffer.from(HOSTED_BOOTSTRAP_PREFIX + JSON.stringify(changed) + "\n"));
     expect(collector.finish()).toEqual([]);
+  });
+});
+
+
+describe("actual nested no-model operations keep strict failure and public five-field frames", () => {
+  it.each([
+    ["no-model-visible", "read-no-model-visible"],
+    ["no-model-text", "read-no-model-text"],
+    ["no-model-dom", "read-no-model-dom"],
+    ["no-model-notices", "read-no-model-notices"],
+    ["no-model-condition-rows", "read-no-model-condition-rows"],
+    ["no-model-empty-figures", "read-no-model-figures"],
+    ["no-model-contract", "read-no-model-figures"],
+  ] as const)("refuses actual %s without removing the outer assertion or cleanup", async (fault, stage) => {
+    control.fault = fault;
+    const actual = injectedBrowser(), recorded = capture();
+    const operation = openParticipantCReadSession(readOptions(actual.browser, recorded.diagnostic));
+    if (["no-model-visible", "no-model-text", "no-model-dom"].includes(fault))
+      await expect(operation).rejects.toBe(control.operation);
+    else await expect(operation).rejects.toThrow();
+    expect(recorded.finish()).toEqual([stage, "read-no-model-surface", "read-browser-prepare"].map(value => ({
+      stage: value, classification: "setup-refused", exitCode: null, signal: null, cleanup: "unreturned",
+    })));
+    expect(control.events.indexOf(`report:${stage}`)).toBeLessThan(control.events.indexOf("context-close"));
+    expect(control.events.filter(value => value === "context-close")).toHaveLength(1);
+    expect(recorded.lines.join()).not.toContain("synthetic-private");
+    if (["no-model-notices", "no-model-condition-rows", "no-model-empty-figures", "no-model-contract"].includes(fault)) {
+      expect(control.events.filter(value => value.startsWith("surface:")).slice(-3))
+        .toEqual(["surface:notices", "surface:conditions", "surface:figures"]);
+      expect(control.events.indexOf("surface:figures")).toBeLessThan(control.events.indexOf(`report:${stage}`));
+    }
+  });
+  it("forwards neither schema paths nor values and preserves a throwing diagnostic's original rejection", () => {
+    const value = { notices: [NO_ROWS_SENTENCE], conditionRows: 0,
+      figures: [{ kind: "coverage", class: "quality", "synthetic-private-path": "synthetic-private-value" }] };
+    let original: unknown;
+    try { participantCNoModelSurface(value); } catch (error) { original = error; }
+    const recorded = capture();
+    let caught: unknown, supplied: unknown;
+    try { participantCNoModelSurface(value, (stage, error) => {
+      supplied = error; recorded.diagnostic(stage, error, "unreturned"); throw control.cleanup;
+    }); } catch (error) { caught = error; }
+    expect(caught).toBe(supplied); expect(caught).not.toBe(control.cleanup);
+    expect(caught).toBeInstanceOf((original as Error).constructor);
+    expect(recorded.finish()).toEqual([{ stage: "read-no-model-figures", classification: "setup-refused", exitCode: null, signal: null, cleanup: "unreturned" }]);
+    expect(recorded.lines.join()).not.toContain("synthetic-private");
+  });
+  it("strict unknown root metadata stays a refusal with only the fixed shape category", () => {
+    const recorded = capture();
+    expect(() => participantCNoModelSurface({ notices: [NO_ROWS_SENTENCE], conditionRows: 0,
+      figures: [{ kind: "coverage", class: "quality" }], secret: "synthetic-private-value" },
+    (stage, error) => recorded.diagnostic(stage, error, "unreturned"))).toThrow();
+    expect(recorded.finish()).toEqual([{ stage: "read-no-model-shape", classification: "setup-refused", exitCode: null, signal: null, cleanup: "unreturned" }]);
+    expect(recorded.lines.join()).not.toContain("synthetic-private");
+  });
+  it("an accessor refusal keeps its exact error without evaluating error metadata", () => {
+    let metadataReads = 0; Object.defineProperty(control.operation, "privateMetadata", { configurable: true, get() { metadataReads++; throw control.cleanup; } });
+    const recorded = capture();
+    const value = { get notices() { throw control.operation; }, conditionRows: 0, figures: [] };
+    expect(() => participantCNoModelSurface(value, (stage, error) => recorded.diagnostic(stage, error, "unreturned"))).toThrow(control.operation);
+    expect(metadataReads).toBe(0);
+    expect(recorded.finish()).toEqual([{ stage: "read-no-model-shape", classification: "setup-refused", exitCode: null, signal: null, cleanup: "unreturned" }]);
+    expect(recorded.lines.join()).not.toContain("synthetic-private");
+  });
+  it("new actual stages retain strict five fields, fragmented collection and the sixteen-frame limit", () => {
+    const stages: ParticipantCReadStage[] = ["read-no-model-visible", "read-no-model-text", "read-no-model-dom",
+      "read-no-model-notices", "read-no-model-condition-rows", "read-no-model-figures", "read-no-model-shape"];
+    const collector = createHostedBootstrapDiagnostics();
+    const value = { stage: stages[0], classification: "setup-refused", exitCode: null, signal: null, cleanup: "unreturned" };
+    for (const changed of [{ ...value, stage: "synthetic-private-stage" }, { ...value, detail: "synthetic-private-value" },
+      { ...value, classification: "synthetic-private-category" }])
+      collector.push(Buffer.from(HOSTED_BOOTSTRAP_PREFIX + JSON.stringify(changed) + "\n"));
+    collector.push(Buffer.from(HOSTED_BOOTSTRAP_PREFIX + "x".repeat(513) + "\n"));
+    for (let index = 0; index < 17; index++) {
+      const recorded = capture(); recorded.diagnostic(stages[index % stages.length], control.operation, "unreturned");
+      for (const byte of Buffer.from(recorded.lines[0] + "\n")) collector.push(Uint8Array.of(byte));
+    }
+    const frames = collector.finish(); expect(frames).toHaveLength(16);
+    expect(frames.map(frame => frame.stage)).toEqual(Array.from({ length: 16 }, (_, index) => stages[index % stages.length]));
+    expect(frames.every(frame => Object.keys(frame).length === 5)).toBe(true);
+    expect(JSON.stringify(frames)).not.toContain("synthetic-private");
+  });
+  it("a ZodError-shaped accessor is never evaluated or substituted for the original refusal", () => {
+    let schemaError: unknown;
+    try { participantCNoModelSurface(null); } catch (error) { schemaError = error; }
+    const operation = Object.create(Object.getPrototypeOf(schemaError as object)) as Error;
+    let reads = 0;
+    Object.defineProperty(operation, "issues", { get() { reads++; throw control.cleanup; } });
+    const recorded = capture(); let caught: unknown;
+    try { participantCNoModelSurface({ get notices() { throw operation; }, conditionRows: 0, figures: [] },
+      (stage, error) => recorded.diagnostic(stage, error, "unreturned")); } catch (error) { caught = error; }
+    expect(caught).toBe(operation); expect(reads).toBe(0);
+    expect(recorded.finish()).toEqual([{ stage: "read-no-model-shape", classification: "setup-refused", exitCode: null, signal: null, cleanup: "unreturned" }]);
+    expect(recorded.lines.join()).not.toContain("synthetic-private");
+  });
+  it("non-object roots refuse with the fixed shape label and no arbitrary root output", () => {
+    for (const value of [null, [], 1, "synthetic-private-root"]) {
+      const recorded = capture();
+      expect(() => participantCNoModelSurface(value,
+        (stage, error) => recorded.diagnostic(stage, error, "unreturned"))).toThrow();
+      expect(recorded.finish()).toEqual([{ stage: "read-no-model-shape", classification: "setup-refused", exitCode: null, signal: null, cleanup: "unreturned" }]);
+      expect(recorded.lines.join()).not.toContain("synthetic-private");
+    }
+  });
+  it("clean original no-model completion remains exact and produces no nested failure", () => {
+    const value = { notices: [NO_ROWS_SENTENCE], conditionRows: 0,
+      figures: [{ kind: "coverage", class: "quality" }, { kind: "measure", class: "quality" }] };
+    const diagnostic = vi.fn();
+    expect(participantCNoModelSurface(value, diagnostic)).toEqual(value);
+    expect(diagnostic).not.toHaveBeenCalled();
   });
 });

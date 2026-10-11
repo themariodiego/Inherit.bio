@@ -17,6 +17,7 @@ import { requiredDensityCaptures, type DensityRegister } from "./density-current
 import { checkedDensityCaptureSegment } from "./density-segments";
 import { densityRootNativeObserverFactory } from "./density-root-native-observer-binding";
 import { runOwnedDensityCapture } from "./density-owned-capture";
+import { densityBaselineOriginalsInputSchema, type DensityBaselineOriginalsInput } from "./density-baseline-originals";
 
 const sha256 = (bytes: Buffer) => createHash("sha256").update(bytes).digest("hex");
 const absolute = z.string().refine(value => path.isAbsolute(value) && path.resolve(value) === value);
@@ -35,7 +36,9 @@ function publicBytes(file: string) {
   } finally { fs.closeSync(fd); }
 }
 
-export async function runOwnedDensitySegment(owner: unknown) {
+export async function runOwnedDensitySegment(owner: unknown, rootInput: { baselineOriginals?: DensityBaselineOriginalsInput } = {}) {
+  // Optional public API input only; the original seven-field FIFO frame stays exact.
+  const supplied = z.object({ baselineOriginals: densityBaselineOriginalsInputSchema.optional() }).strict().parse(rootInput);
   const operator = establishOwnedLinuxRuntime(owner);
   process.stderr.write(`OWNED_LINUX_READY:${operator.proof.nonce}\n`);
   const frame = densityOwnedSegmentFrameSchema.parse(await readPrivateOperatorPipe());
@@ -71,7 +74,8 @@ export async function runOwnedDensitySegment(owner: unknown) {
       recordCiBuild(infrastructure(), operator);
     } });
   const result = await runOwnedDensityCapture({ root, output: frame.output, fontManifestPath: frame.fontManifestPath,
-    observeSource, nativeObservers, signal, operator, segment: frame.selection });
+    observeSource, nativeObservers, signal, operator, segment: frame.selection,
+    ...(supplied.baselineOriginals === undefined ? {} : { baselineOriginals: supplied.baselineOriginals }) });
   assert(result.status === "CAPTURED_SEGMENT_EXTERNAL_CLOSURE_PENDING" && result.captures === 1
     && "targetHolds" in result && result.targetHolds.length === 0, "Exact successful capture and target assertions required");
   assert.deepEqual(await observeSource(), source);

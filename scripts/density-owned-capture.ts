@@ -9,6 +9,7 @@ import type { DensityRegister } from "./density-current";
 import { acquireFreshDensityRuntime, type FreshDensityRuntime } from "./density-fresh-runtime";
 import type { OwnedLinuxCapability } from "./owned-linux-runtime";
 import type { DensityCaptureSegmentSelection } from "./density-segments";
+import type { DensityBaselineOriginalsInput } from "./density-baseline-originals";
 
 type Viewport = typeof DENSITY_VIEWPORTS[number];
 type Provider = keyof DensityRuntimeFixtureAssemblyInput;
@@ -86,6 +87,7 @@ function assemblyInput(root: string, register: DensityRegister, lease: FreshDens
  * A failed callback or physical close stops the attempt without retry. */
 export async function runOwnedDensityCapture(input: {
   root: string; output: string; fontManifestPath: string;
+  baselineOriginals?: DensityBaselineOriginalsInput;
   observeSource: CurrentDensityCaptureOptions["observeSource"];
   nativeObservers: (ownership: FreshDensityRuntime) => DensityNativeObservers;
   signal: AbortSignal; operator?: OwnedLinuxCapability; segment?: DensityCaptureSegmentSelection;
@@ -125,6 +127,7 @@ export async function runOwnedDensityCapture(input: {
     } } satisfies DensityStateFixture));
     return await captureCurrentDensity({ root, output: input.output, fontManifestPath: input.fontManifestPath,
       browser: first.browser, fixtures, observeSource: input.observeSource,
+      ...(input.baselineOriginals === undefined ? {} : { baselineOriginals: input.baselineOriginals }),
       ...(input.segment === undefined ? {} : { segment: input.segment }),
       readOwnedBrowser: () => { assert(live && selectedFixture, "Actual live owned fixture browser required"); return live.browser; },
       observeRuntime: (origin, digest) => {

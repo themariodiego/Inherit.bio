@@ -362,8 +362,23 @@ create function pg_temp.complete_envelope(name text) returns jsonb language sql 
  'issuedAt',floor(extract(epoch from statement_timestamp())*1000)::bigint,
  'expiresAt',floor(extract(epoch from statement_timestamp())*1000)::bigint+300000) from complete_jobs where complete_jobs.name=$1; $$;
 update complete_jobs set created=public.export_archive_request_v1('create',origin,'account',(origin->>'accountId')::uuid,
- jsonb_build_object('envelope',pg_temp.complete_envelope(name),'exportCookieHash',repeat('9',64)),repeat('c',64));
+ jsonb_build_object('envelope',pg_temp.complete_envelope(name),'exportCookieHash',
+  encode(digest(convert_to('complete-cookie:'||name,'UTF8'),'sha256'),'hex')),repeat('c',64));
 select lives_ok('set constraints all immediate','genuine complete request flushes all deferred creation invariants');
+-- Read the actual durable jobs created by the two unchanged signed requests.
+-- The fixture identities bind distinct cookies; native uniqueness stays intact.
+select is((select count(*) from complete_jobs fixture join private.export_archive_jobs job
+ on job.export_id=(fixture.created->>'exportId')::uuid where fixture.name in('owner','claimant')),2::bigint,
+ 'both genuine complete requests have their own actual durable archive job');
+select is((select count(distinct job.export_cookie_hash) from complete_jobs fixture join private.export_archive_jobs job
+ on job.export_id=(fixture.created->>'exportId')::uuid where fixture.name in('owner','claimant')),2::bigint,
+ 'the two actual durable complete jobs retain distinct export cookie hashes');
+select is((select count(*) from complete_jobs fixture join private.export_archive_jobs job
+ on job.export_id=(fixture.created->>'exportId')::uuid where fixture.name in('owner','claimant')
+ and job.export_cookie_hash=encode(digest(convert_to('complete-cookie:'||fixture.name,'UTF8'),'sha256'),'hex')
+ and job.origin=fixture.origin and job.route_id='api.export' and job.export_contract='account-export-v1'
+ and job.origin_binding=fixture.capture->>'originBinding' and job.authority_receipt=fixture.capture->>'authorityReceipt'),2::bigint,
+ 'both actual durable cookies are exactly bound to their own captured actor and archive request');
 set constraints all deferred;
 select public.export_archive_worker_v1('begin',(created->>'exportId')::uuid,attempt,capture->>'authorityReceipt') from complete_jobs;
 create function pg_temp.complete_read(name text,op text,kind text default null,selector jsonb default null) returns jsonb language sql as $$

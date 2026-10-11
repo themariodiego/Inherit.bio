@@ -10,6 +10,7 @@ import { checkedDensityStateProof, densityCapturePlan, densityRouteMatches,
 
 import { assertDensityServiceUnchanged, densityServicePort, observeDensityServiceBinding } from "../../scripts/density-service-binding";
 import { checkedDensityCaptureSegment, type DensityCaptureSegmentSelection } from "../../scripts/density-segments";
+import { connectDensityPredecessor, readPinnedDensityBaselineOriginals, type DensityBaselineOriginalsInput } from "../../scripts/density-baseline-originals";
 
 const sha256 = (bytes: string | Buffer) => createHash("sha256").update(bytes).digest("hex");
 type Predecessor = DensityCurrentPacket["captures"][number]["predecessor"];
@@ -44,6 +45,8 @@ export interface CurrentDensityCaptureOptions {
   segment?: DensityCaptureSegmentSelection;
   observeSource: () => Promise<DensitySource>;
   fontManifestPath: string;
+  /** Separate genuine Root originals; no metadata is added to the font identity. */
+  baselineOriginals?: DensityBaselineOriginalsInput;
   fixtures: readonly DensityStateFixture[];
 }
 
@@ -118,6 +121,8 @@ export async function captureCurrentDensity(options: CurrentDensityCaptureOption
   const { ready, measure } = await import("../../scripts/density-baseline/measure.mjs");
   const { imageMetrics, verifyFrozenDensityPixelBody } = await import("../../scripts/density-current-pixels.mjs");
   verifyFrozenDensityPixelBody(root, contract.capture.artifacts.measurementHarness.sha256);
+  const baselineOriginals = options.baselineOriginals === undefined ? undefined
+    : readPinnedDensityBaselineOriginals(options.baselineOriginals, { root, source, captureEnvironment: environment, contract });
   const captures: unknown[] = [];
   const originals: object[] = [];
   const targetHolds: object[] = [];
@@ -155,6 +160,7 @@ export async function captureCurrentDensity(options: CurrentDensityCaptureOption
         // within this live callback, never before startup or after teardown.
         const serviceBinding = await observeService();
         const { runtime, runtimeSha256 } = serviceBinding;
+        const predecessorSession = connectDensityPredecessor(session, row, runtime.buildId, baselineOriginals);
         const assertCaptureBookend = async () => {
           await assertBookend();
           assertDensityServiceUnchanged(serviceBinding, await observeService());
@@ -206,7 +212,7 @@ export async function captureCurrentDensity(options: CurrentDensityCaptureOption
           minimumAdjacentSectionGapPx: raw.minimumAdjacentSectionGapPx, primaryContentLeftPaddingPx: raw.primaryContentLeftPaddingPx,
           primaryClaimTextElementCount: raw.primaryClaimTextElementCount, primaryClaimFigureCount: raw.primaryClaimFigureCount,
           horizontalScroll: raw.horizontalScroll, horizontalOverflowPx: raw.horizontalOverflowPx };
-        const predecessor = session.predecessor ? await session.predecessor(viewport.id) : null;
+        const predecessor = predecessorSession.predecessor ? await predecessorSession.predecessor(viewport.id) : null;
         // Concrete paths are used only in memory by the numeric verifier.
         // Bearer URLs, queries, form text and credentials are never serialized.
         captures.push({ routeId: row.route.id, state: row.state, viewport: viewport.id,
