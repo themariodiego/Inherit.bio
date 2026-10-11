@@ -352,8 +352,20 @@ describe("complete consumed-account unpublished archive executor",()=>{
   if(fault==="missing-source")f.context.partitions[0].fileIds=[randomUUID()];
   if(fault==="wrong-original")f.original.objectId=randomUUID();if(fault==="truncated-original")f.readOriginalRange.mockResolvedValue(new Response(new Uint8Array([1]),{status:206,headers:{"content-range":"bytes 0-2/3","content-length":"3"}}));
   if(fault==="revoked")f.historical.revoke();
-  await expect(buildAccountArchive(f.options)).rejects.toThrow();expect(f.historical.write).not.toHaveBeenCalled();
+  // These cases prove source/authority refusal before ZIP creation. Use the
+  // existing controlled central-metadata spool rather than scheduling native
+  // file creation/removal inside this 5-second unit. Actual ZIP64 file-spool
+  // I/O and complete archive positives remain independently covered unchanged.
+  const runtime=createRequesterStatementRuntime(),buffers:Uint8Array[]=[];
+  const observedRuntime={...runtime,own<T extends Uint8Array>(bytes:T):T{buffers.push(bytes);return runtime.own(bytes);}};
+  const memory=createRequesterStatementMemorySpool(observedRuntime),append=vi.fn(memory.append),replay=vi.fn(memory.replay),dispose=vi.fn(memory.dispose);
+  const spool=vi.spyOn(zip64,"createZip64FileSpool").mockResolvedValue({...memory,append,replay,dispose});
+  await expect(buildAccountArchive({...f.options,statementRuntime:observedRuntime})).rejects.toThrow();expect(f.historical.write).not.toHaveBeenCalled();
   expect(f.historical.calls.some(c=>c.p_operation==="reserve"||c.p_operation==="bytes-complete")).toBe(false);
+  expect(append).not.toHaveBeenCalled();expect(replay).not.toHaveBeenCalled();
+  expect(dispose).toHaveBeenCalledTimes(spool.mock.calls.length);
+  if(fault==="unsupported-class"){expect(spool).toHaveBeenCalledTimes(1);expect(dispose).toHaveBeenCalledTimes(1);}
+  expect(buffers.every(bytes=>bytes.every(byte=>byte===0))).toBe(true);runtime.assertSettled();
  });
  it.each(["ancestry_regions","appeal_intakes","correction_requests","embryo_basis_bindings","embryo_cohorts",
   "embryo_disposition_confirmations","embryo_disposition_proposals","embryo_donor_attributions","embryo_participant_sets",

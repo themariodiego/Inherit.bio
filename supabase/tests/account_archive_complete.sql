@@ -107,17 +107,27 @@ select throws_ok($$select private.account_archive_raw_authority_v1(pg_temp.archi
 -- Separate genuine nonce-consuming purpose issuance does not turn storage
 -- consent into a signed variants scope. No purpose called variants is invented.
 create temporary table archive_grants(purpose text primary key,id uuid);
+-- The included binding fixture deliberately flushes every deferred invariant
+-- and leaves them immediate. These two initially-deferred pair checks must
+-- cover the whole genuine two-insert issuance RPC, never its first insert.
+-- Immediately validate each completed statement before reading its authority.
+set constraints public.purpose_grants_pair_check, public.directional_grants_pair_check deferred;
 insert into archive_grants select 'reports.share-link',public.grant_directional_purpose_v1(
  '77900000-0000-4000-8000-000000000001',(select id from normalization_subject),
  (select principal_id from claimant_account_self),'export.share-link','consent.share-with-adult',1,
  'complete-archive-share-link-0001') from(values('export.share-link'))x(purpose);
+select lives_ok('set constraints public.purpose_grants_pair_check, public.directional_grants_pair_check immediate',
+ 'the complete share-link RPC flushes both paired-grant invariants');
 select throws_ok($$select private.account_archive_raw_authority_v1(pg_temp.archive_origin('claimant'),
  (select id from normalization_subject))$$,'42501','not_found','share-link alone cannot export any raw source');
 savepoint self_raw_refusal;
+set constraints public.purpose_grants_pair_check, public.directional_grants_pair_check deferred;
 select public.grant_directional_purpose_v1(
  '77900000-0000-4000-8000-000000000001',(select id from normalization_subject),
  (select principal_id from claimant_account_self),'raw.export','consent.share-with-adult',1,
  'complete-archive-self-raw-refused-0001');
+select lives_ok('set constraints public.purpose_grants_pair_check, public.directional_grants_pair_check immediate',
+ 'the complete self-raw RPC flushes both paired-grant invariants before the signed-scope refusal');
 select throws_ok($$select private.account_archive_raw_authority_v1(pg_temp.archive_origin('claimant'),
  (select id from normalization_subject))$$,'42501','not_found',
  'two real directional grants still cannot invent the absent signed self variants scope');
@@ -187,10 +197,13 @@ insert into adult_normalization select pg_temp.normalize_adult('begin');
 select pg_temp.normalize_adult('stage','{"kind":"variants","sequence":0,"rows":[{"rsid":456,"chrom":1,"pos":100001,"ref":"C","alt":"T","genotype":"C/T"}]}');
 select pg_temp.normalize_adult('complete',jsonb_build_object('sourceBuild','GRCh38','rawSha256',repeat('d',64),
  'decodedSha256',repeat('e',64),'variantCount',1,'observedCallCount',0,'provenance','{}'::jsonb));
+set constraints public.purpose_grants_pair_check, public.directional_grants_pair_check deferred;
 insert into archive_grants select purpose,public.grant_directional_purpose_v1(
  '77900000-0000-4000-8000-000000000001',(select subject_id from accepted_adult),
  (select principal_id from claimant_account_self),purpose,'consent.share-with-adult',1,
  'complete-adult-grant-'||purpose||'-0001') from unnest(array['export.share-link','raw.export']) purpose;
+select lives_ok('set constraints public.purpose_grants_pair_check, public.directional_grants_pair_check immediate',
+ 'each completed adult raw/share-link RPC leaves both grant rows paired');
 select is(private.account_archive_other_adult_export_gate_v1((select subject_id from accepted_adult),
  '7b100000-0000-4000-8000-000000000001')->>'path','path-a',
  'exact accepted invitation, current adult_claim and signed scope form the distinct Path A gate');
@@ -260,6 +273,7 @@ rollback to path_a_wrong_recipient;
 
 -- Current report export uses its own exact signed endpoint confirmation as
 -- well as export.share-link. Raw permission does not authorize interpretation.
+set constraints public.purpose_grants_pair_check, public.directional_grants_pair_check deferred;
 insert into archive_grants values('reports.polygenic',public.grant_family_report_purpose_v1(
  '77900000-0000-4000-8000-000000000001','77900000-0000-4000-8000-000000000010',
  (select id from normalization_subject),(select principal_id from claimant_account_self),
@@ -268,6 +282,8 @@ insert into archive_grants values('reports.polygenic',public.grant_family_report
  'complete-archive-report-export-0001',public.family_report_grant_presentation_v1(
  '77900000-0000-4000-8000-000000000001','77900000-0000-4000-8000-000000000010',
  (select id from normalization_subject),'7b100000-0000-4000-8000-000000000001')));
+select lives_ok('set constraints public.purpose_grants_pair_check, public.directional_grants_pair_check immediate',
+ 'the complete signed report RPC flushes both paired-grant invariants');
 select is((select count(*) from private.account_archive_related_science_rows_v1(pg_temp.archive_origin('claimant'),
  (select id from normalization_subject),'reports.json')),1::bigint,'real signed endpoint and completed generation export the saved report');
 select ok((select bool_and(not(row_text::jsonb ?| array['raw_score','zscore','risk','percentile']))

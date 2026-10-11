@@ -532,7 +532,7 @@ export async function withEmbryoJourney<T>(env: Environment, work: (fixture: {
             statisticalProof: async cohortId => {
               const cohort = cohortLiteral(cohortId);assert(cohort === second && fitAttempted, "Exact second fitted proof required");
               await checkFirst();
-              return JSON.parse(await sql(fittedStatisticalProof(cohort), "fitted-native-proof"));
+              return decodeFittedNativeProofTransport(await sql(fittedStatisticalProof(cohort), "fitted-native-proof"));
             },
           });
           assert(second !== undefined && splitCompleted && fitCompleted,
@@ -650,17 +650,82 @@ function fittedStatisticalProofValue(cohort: string): string {
         from capture cross join lateral jsonb_array_elements(a->'embryos') embryos(e)));`;
 }
 
+/** Lossless transport only. Native equality supplies proof authority; this
+ * decoder restores the exact original six-field value before existing audits.
+ * No raw malformed output is included in a refusal. */
+export function decodeFittedNativeProofTransport(output: unknown): Record<string, unknown> {
+  const refusal = "Fitted native proof transport refused";
+  assert(typeof output === "string" && Buffer.byteLength(output, "utf8") <= 32_768, refusal);
+  let parsed: unknown;
+  try { parsed = JSON.parse(output); } catch { throw new Error(refusal); }
+  const object = (value: unknown): Record<string, unknown> => {
+    assert(value !== null && typeof value === "object" && !Array.isArray(value), refusal);
+    return value as Record<string, unknown>;
+  };
+  const exact = (value: Record<string, unknown>, keys: readonly string[]) =>
+    assert(Object.keys(value).length === keys.length && Object.keys(value).every(key => keys.includes(key)), refusal);
+  const frame = object(parsed);exact(frame, ["version", "referenceReceipt", "proof"]);
+  assert(frame.version === "embryo-fitted-proof-reference-v1", refusal);
+  const reference = object(frame.referenceReceipt);
+  exact(reference, ["singleton", "version", "panel_sha256", "panel", "system_identifier", "database_name",
+    "database_oid", "server_version", "runtime_binding", "installed_at", "fit_artifact_sha256", "fit_package_digest"]);
+  const proof = object(frame.proof);exact(proof, PROOF_SIZE_FIELDS);
+  assert(typeof proof.bindingsCurrent === "boolean" && Array.isArray(proof.jobs) && proof.jobs.length === 1
+    && Array.isArray(proof.scores) && proof.scores.length === 2 && Array.isArray(proof.calls), refusal);
+  object(proof.fitPackage);object(proof.wholeRowHashes);
+  const job = object(proof.jobs[0]), payload = object(job.payload), capture = object(payload.capture);
+  assert(Array.isArray(capture.conditions) && capture.conditions.length === 1, refusal);
+  const condition = object(capture.conditions[0]);
+  assert(!Object.hasOwn(condition, "reference_receipt"), refusal);
+  const scores = proof.scores.map(value => {
+    const score = object(value), receipt = object(score.computation_receipt);
+    assert(!Object.hasOwn(receipt, "reference_receipt"), refusal);
+    return { ...score, computation_receipt: { ...receipt, reference_receipt: structuredClone(reference) } };
+  });
+  return { ...proof, jobs: [{ ...job, payload: { ...payload, capture: { ...capture,
+    conditions: [{ ...condition, reference_receipt: structuredClone(reference) }] } } }], scores };
+}
+
 function fittedStatisticalProof(cohort: string): string {
-  // String.raw preserves the exact native JSON-string regex and backreference.
-  // The original JSONB value is materialized once; only its final whitespace
-  // outside strings changes, after native complete-value round-trip equality.
   return String.raw`with fitted_proof_compact_value(proof) as materialized(
 ${fittedStatisticalProofValue(cohort).slice(0, -1)}
 ), fitted_proof_compact_text as materialized(
- select proof, regexp_replace(proof::text, $fitted_json_string$("(?:[^"\\]|\\.)*")|[[:space:]]+$fitted_json_string$, $fitted_json_keep$\1$fitted_json_keep$, 'g') as compact_text
- from fitted_proof_compact_value
+ select proof,transport,restored,regexp_replace(transport::text,
+ $fitted_json_string$("(?:[^"\\]|\\.)*")|[[:space:]]+$fitted_json_string$,
+ $fitted_json_keep$\1$fitted_json_keep$,'g') as compact_text
+ from (
+  select proof,transport,case when jsonb_typeof(transport->'proof')='object' then
+   jsonb_set(jsonb_set(jsonb_set(transport->'proof',
+   '{jobs,0,payload,capture,conditions,0,reference_receipt}',transport->'referenceReceipt',true),
+   '{scores,0,computation_receipt,reference_receipt}',transport->'referenceReceipt',true),
+   '{scores,1,computation_receipt,reference_receipt}',transport->'referenceReceipt',true)
+   else null::jsonb end as restored
+  from (
+   select proof,jsonb_build_object('version','embryo-fitted-proof-reference-v1',
+    'referenceReceipt',proof#>'{jobs,0,payload,capture,conditions,0,reference_receipt}',
+    'proof',case when jsonb_typeof(proof)='object' then
+     proof#-'{jobs,0,payload,capture,conditions,0,reference_receipt}'
+          #-'{scores,0,computation_receipt,reference_receipt}'
+          #-'{scores,1,computation_receipt,reference_receipt}'
+     else null::jsonb end) as transport
+   from fitted_proof_compact_value
+  ) encoded
+ ) reconstructed
 )
- select case when proof is not null and compact_text::jsonb is not distinct from proof
+ select case when proof is not null
+ and case when jsonb_typeof(proof)='object' then
+  (select count(*) from jsonb_object_keys(proof))=6
+  and proof ?& array['bindingsCurrent','fitPackage','wholeRowHashes','jobs','scores','calls'] else false end
+ and case when jsonb_typeof(proof->'jobs')='array' then jsonb_array_length(proof->'jobs')=1 else false end
+ and case when jsonb_typeof(proof->'scores')='array' then jsonb_array_length(proof->'scores')=2 else false end
+ and case when jsonb_typeof(proof#>'{jobs,0,payload,capture,conditions}')='array' then
+  jsonb_array_length(proof#>'{jobs,0,payload,capture,conditions}')=1 else false end
+ and case when jsonb_typeof(transport->'referenceReceipt')='object' then
+  (select count(*) from jsonb_object_keys(transport->'referenceReceipt'))=12
+  and (transport->'referenceReceipt') ?& array['singleton','version','panel_sha256','panel','system_identifier',
+   'database_name','database_oid','server_version','runtime_binding','installed_at','fit_artifact_sha256','fit_package_digest'] else false end
+ and restored is not distinct from proof
+ and compact_text::jsonb is not distinct from transport
  then compact_text else null end from fitted_proof_compact_text;`;
 }
 

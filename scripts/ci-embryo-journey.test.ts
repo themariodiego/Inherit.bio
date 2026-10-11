@@ -136,6 +136,41 @@ import { runEmbryoFittedStatisticalWorkerInside, type FittedEmbryoJourney } from
 
 const fittedCohort = "cccccccc-cccc-4ccc-8ccc-cccccccccccc";
 const statisticalJob = "dddddddd-dddd-4ddd-8ddd-dddddddddddd";
+// Public invented transport values, never runtime or publication evidence.
+function fittedProofFixture() {
+  const reference = { singleton: true, version: 1, panel_sha256: "a".repeat(64),
+    panel: { fixed: "public synthetic panel", quoted: 'space : [ kept ] \\" Å 漢字 🧬' },
+    system_identifier: "12345", database_name: "postgres", database_oid: 5, server_version: 170006,
+    runtime_binding: { kind: "github-browser", project: "sequence", publicSynthetic: "not actual authority" },
+    installed_at: "2026-10-11T00:00:00.000Z", fit_artifact_sha256: "b".repeat(64), fit_package_digest: "c".repeat(64) };
+  const scores = ["11111111-1111-4111-8111-111111111111", "22222222-2222-4222-8222-222222222222"].map((id, index) => ({
+    id, embryo_id: id, condition_id: "SYNTHETIC:9001", model_id: null, model_version: null, citations: {},
+    coverage_state: "not_covered", not_covered_reason: "sex_combined_model_unavailable", finding: null,
+    computation_receipt: { producer: "embryo-test-statistical-fit-v1", publication: "synthetic-fitted-test-only",
+      interpretation: "held", clinicalPublication: false, source: { embryo_id: id, own: true },
+      measurement: { result: { point: "0.500000000", interval: ["0.100000000", "0.900000000"],
+        withinFamily: { status: "not_measured", enabledByDefault: false, betaRatio: null } },
+        measurement: { matchedVariants: 8, requiredVariants: 10, scoreCoverage: 0.8 }, index },
+      reference_receipt: structuredClone(reference) },
+  }));
+  return { bindingsCurrent: true, fitPackage: { version: 1, completePublicValue: [1, null, 'quote " slash \\ tab\t Å 漢字 🧬'] },
+    wholeRowHashes: { jobs: [{ id: statisticalJob, sha256: "d".repeat(64) }],
+      scores: scores.map(row => ({ id: row.id, sha256: "e".repeat(64) })) },
+    jobs: [{ id: statisticalJob, status: "done", attempts: 1, output_kind: "embryo.statistical-estimate",
+      computation_revision: "embryo-test-statistical-fit-v1", claim_token_hash: null, claim_expires_at: null, claimed_by: null,
+      payload: { capture: { conditions: [{ conditionId: "SYNTHETIC:9001", reference_receipt: structuredClone(reference) }],
+        source: { complete: [null, false, "not discarded"] } } } }], scores,
+    calls: scores.map((row, index) => ({ embryoId: row.embryo_id, qc: { call_rate: index === 0 ? 1 : 1196 / 1208,
+      contamination_estimate: null, allelic_dropout_estimate: null }, calls: [{ own: true, genotype: "0/1" }] })) };
+}
+function fittedProofTransportFixture(proof = fittedProofFixture()) {
+  const stripped = structuredClone(proof);
+  const referenceReceipt = structuredClone(stripped.jobs[0].payload.capture.conditions[0].reference_receipt);
+  Reflect.deleteProperty(stripped.jobs[0].payload.capture.conditions[0], "reference_receipt");
+  for (const row of stripped.scores) Reflect.deleteProperty(row.computation_receipt, "reference_receipt");
+  return { version: "embryo-fitted-proof-reference-v1", referenceReceipt, proof: stripped };
+}
+
 function fittedHarness() {
   const base = harness(), native = base.io.execute;
   let complete = true, historyReads = 0, driftAt = Infinity;
@@ -156,7 +191,7 @@ function fittedHarness() {
       if (input!.startsWith("-- embryo-fitted-current-publication")) return String(publication);
       if (input!.startsWith("select public.enqueue_embryo_test_statistical"))
         return JSON.stringify({ status: "queued", jobId: statisticalJob });
-      if (input!.startsWith("with fitted_proof_compact_value(proof) as materialized")) return '{"bindingsCurrent":true}';
+      if (input!.startsWith("with fitted_proof_compact_value(proof) as materialized")) return JSON.stringify(fittedProofTransportFixture());
       return "true";
     }
     if (args.includes("/app/scripts/ci-browser/embryo-statistical-worker.mts")) {
@@ -181,7 +216,7 @@ describe("additive fitted journey after the unchanged original publication", () 
     const h = fittedHarness();
     await originalThenFitted(h, async fitted => {
       await fitted.runWorker(fittedCohort);await fitted.runStatisticalWorker(fittedCohort);
-      expect(await fitted.statisticalProof(fittedCohort)).toEqual({ bindingsCurrent: true });
+      expect(await fitted.statisticalProof(fittedCohort)).toEqual(fittedProofFixture());
       await expect(fitted.runWorker(fittedCohort)).rejects.toThrow("One distinct fresh");
       await expect(fitted.runStatisticalWorker(fittedCohort)).rejects.toThrow("One fitted worker attempt");
       await expect(fitted.proof(cohort)).rejects.toThrow("Exact second");
@@ -403,15 +438,15 @@ describe("fitted process safe refusal observations", () => {
 
 
 import { embryoJourneyCommandFailure, isFittedNativeProofCommand, fittedNativeProofSizeSql,
-  fittedNativeProofSizeFrame, observeFittedNativeProofSizeFailure } from "./ci-embryo-journey";
+  fittedNativeProofSizeFrame, observeFittedNativeProofSizeFailure, decodeFittedNativeProofTransport } from "./ci-embryo-journey";
 
 async function fittedProofCommand() {
   const h = fittedHarness(), native = h.io.execute;
   const observed: Array<{ args: string[]; input?: string; timeout?: number; context?: "fitted-native-proof" }> = [];
-  const retained = { bindingsCurrent: true, wholeRowHashes: { jobs: [], scores: [] }, exactOutput: "synthetic-proof-output" };
+  const retained = fittedProofFixture();
   h.io.execute = async (args, input, timeout, context) => {
     observed.push({ args, input, timeout, context });
-    if (input?.startsWith("with fitted_proof_compact_value(proof) as materialized")) return JSON.stringify(retained);
+    if (input?.startsWith("with fitted_proof_compact_value(proof) as materialized")) return JSON.stringify(fittedProofTransportFixture(retained));
     return native(args, input, timeout, context);
   };
   await originalThenFitted(h, async fitted => {
@@ -635,7 +670,7 @@ describe("lossless fitted proof emission retains the whole native value", () => 
     expect(command.input!.slice(prefix.length, command.input!.indexOf(boundary))).toBe(completeValue);
     expect(command.input!.split(completeValue)).toHaveLength(2);
     expect(command.input!.match(/regexp_replace/g)).toHaveLength(1);
-    expect(command.input).toContain("proof is not null and compact_text::jsonb is not distinct from proof");
+    expect(command.input).toContain("and compact_text::jsonb is not distinct from transport");
     expect(command.input).toContain("then compact_text else null end from fitted_proof_compact_text;");
     expect(command.args).toEqual(["exec", "-i", "supabase_db_sequence", "psql", "-U", "postgres", "-d", "postgres", "-XAtq", "--set=ON_ERROR_STOP=1"]);
     expect(command.timeout).toBe(10_000);
@@ -646,7 +681,7 @@ describe("lossless fitted proof emission retains the whole native value", () => 
     const boundary = "\n), fitted_proof_compact_text as materialized(";
     const originalValue = command.input!.slice(prefix.length, command.input!.indexOf(boundary));
     const changed = [originalValue + ";", command.input!.replace("as materialized(", "as ("),
-      command.input!.replace("regexp_replace", "replace"), command.input!.replace("compact_text::jsonb is not distinct from proof", "true"),
+      command.input!.replace("regexp_replace", "replace"), command.input!.replace("compact_text::jsonb is not distinct from transport", "true"),
       command.input!.replace("then compact_text else null", "then proof::text else null"), command.input! + "select true;"];
     for (const input of changed) expect(isFittedNativeProofCommand(command.args, input, 10_000, command.context)).toBe(false);
   });
@@ -659,5 +694,89 @@ describe("lossless fitted proof emission retains the whole native value", () => 
     expect(diagnostic).toContain("extensions.digest(convert_to(proof::text,'UTF8'),'sha256')");
     expect(diagnostic.match(/private\.capture_embryo_test_statistical_fit_v1/g)).toHaveLength(1);
     for (const key of proofSizeFields) expect(diagnostic).toContain(`'${key}',octet_length(convert_to((proof->'${key}')::text,'UTF8'))`);
+  });
+});
+
+
+describe("lossless fitted reference transport reconstructs the entire original proof", () => {
+  it("restores every complete original value, hash bag, order, metadata and independent reference object", () => {
+    const original = fittedProofFixture(), frame = fittedProofTransportFixture(original);
+    const restored = decodeFittedNativeProofTransport(JSON.stringify(frame)) as typeof original;
+    expect(restored).toEqual(original);expect(Object.keys(restored).sort()).toEqual([...proofSizeFields].sort());
+    expect(restored.wholeRowHashes).toEqual(original.wholeRowHashes);
+    expect(restored.calls).toEqual(original.calls);expect(restored.fitPackage).toEqual(original.fitPackage);
+    expect(restored.jobs[0].payload.capture.conditions[0].reference_receipt)
+      .not.toBe(restored.scores[0].computation_receipt.reference_receipt);
+    expect(restored.scores[0].computation_receipt.reference_receipt)
+      .not.toBe(restored.scores[1].computation_receipt.reference_receipt);
+    expect(Object.hasOwn(frame.proof.jobs[0].payload.capture.conditions[0], "reference_receipt")).toBe(false);
+    expect(frame.proof.scores.every(row => !Object.hasOwn(row.computation_receipt, "reference_receipt"))).toBe(true);
+  });
+  it("retains false native bindings and every failed/held field instead of promoting completion or clinical authority", () => {
+    const original = fittedProofFixture();original.bindingsCurrent = false;
+    original.jobs[0].status = "failed";original.scores[0].not_covered_reason = "held source";
+    const restored = decodeFittedNativeProofTransport(JSON.stringify(fittedProofTransportFixture(original)));
+    expect(restored).toEqual(original);expect(restored.bindingsCurrent).toBe(false);
+  });
+  it("carries repeated public synthetic reference metadata once while retaining the unchanged byte ceiling", () => {
+    const original = fittedProofFixture(), padding = "public-synthetic-boundary ".repeat(600);
+    for (const reference of [original.jobs[0].payload.capture.conditions[0].reference_receipt,
+      ...original.scores.map(row => row.computation_receipt.reference_receipt)]) reference.runtime_binding.publicSynthetic = padding;
+    const output = JSON.stringify(fittedProofTransportFixture(original));
+    expect(Buffer.byteLength(JSON.stringify(original), "utf8")).toBeGreaterThan(32_768);
+    expect(Buffer.byteLength(output, "utf8")).toBeLessThan(32_768);
+    expect(decodeFittedNativeProofTransport(output)).toEqual(original);
+    expect(() => decodeFittedNativeProofTransport(" ".repeat(32_769))).toThrow("transport refused");
+    expect(() => decodeFittedNativeProofTransport('"' + "é".repeat(16_384) + '"')).toThrow("transport refused");
+  });
+  it.each(["version", "extra-frame", "extra-proof", "missing-proof", "null-reference", "extra-reference",
+    "missing-reference", "duplicate-job-reference", "duplicate-score-reference", "missing-job", "extra-score", "missing-condition"])(
+    "refuses closed transport shape drift before any reconstructed success: %s", fault => {
+      const frame = fittedProofTransportFixture();
+      if (fault === "version") frame.version = "other";
+      if (fault === "extra-frame") Object.assign(frame, { extra: "private-string-never-forwarded" });
+      if (fault === "extra-proof") Object.assign(frame.proof, { extra: null });
+      if (fault === "missing-proof") Reflect.deleteProperty(frame.proof, "calls");
+      if (fault === "null-reference") Reflect.set(frame, "referenceReceipt", null);
+      if (fault === "extra-reference") Object.assign(frame.referenceReceipt, { extra: "private-string-never-forwarded" });
+      if (fault === "missing-reference") Reflect.deleteProperty(frame.referenceReceipt, "database_oid");
+      if (fault === "duplicate-job-reference") frame.proof.jobs[0].payload.capture.conditions[0].reference_receipt = frame.referenceReceipt;
+      if (fault === "duplicate-score-reference") frame.proof.scores[0].computation_receipt.reference_receipt = frame.referenceReceipt;
+      if (fault === "missing-job") frame.proof.jobs = [];
+      if (fault === "extra-score") frame.proof.scores.push(frame.proof.scores[0]);
+      if (fault === "missing-condition") frame.proof.jobs[0].payload.capture.conditions = [];
+      expect(() => decodeFittedNativeProofTransport(JSON.stringify(frame))).toThrow("Fitted native proof transport refused");
+    });
+  it("accepts only primitive JSON output and never invokes accessors or emits malformed private text", () => {
+    const getter = vi.fn(() => { throw new Error("private-string-never-forwarded"); });
+    const unknown = { get proof() { return getter(); } };
+    expect(() => decodeFittedNativeProofTransport(unknown)).toThrow("Fitted native proof transport refused");
+    expect(getter).not.toHaveBeenCalled();
+    for (const value of ["null", "[]", '{"private-string-never-forwarded":', "{}", JSON.stringify(fittedProofFixture())]) {
+      let refused: unknown = null;
+      try { decodeFittedNativeProofTransport(value); } catch (error) { refused = error; }
+      expect(refused).toBeInstanceOf(Error);expect((refused as Error).message).toBe("Fitted native proof transport refused");
+    }
+  });
+  it("fixes every native reconstruction path and refuses any changed equality/shape guard or original proof assertion", async () => {
+    const { command } = await fittedProofCommand();
+    for (const fragment of ["restored is not distinct from proof", "compact_text::jsonb is not distinct from transport",
+      "jsonb_array_length(proof->'jobs')=1", "jsonb_array_length(proof->'scores')=2", "'embryo-fitted-proof-reference-v1'",
+      "#-'{scores,1,computation_receipt,reference_receipt}'", "transport->'referenceReceipt',true)", "jsonb_object_keys(transport->'referenceReceipt')"])
+      expect(isFittedNativeProofCommand(command.args, command.input!.replace(fragment, "true"), 10_000, command.context)).toBe(false);
+    expect(command.input).toContain("restored is not distinct from proof");
+    expect(command.input!.match(/private\.capture_embryo_test_statistical_fit_v1/g)).toHaveLength(1);
+    expect(command.input!.match(/'referenceReceipt',proof#>/g)).toHaveLength(1);
+    expect(command.input).toContain("convert_to(to_jsonb(j)::text,'UTF8')");
+    expect(command.input).toContain("convert_to(to_jsonb(s)::text,'UTF8')");
+    expect(command.input).toContain("(s).computation_receipt=private.embryo_test_fit_receipt_v1(j,e,c,m)");
+  });
+  it("uses exactly the same native transport suffix in the rollback-only public controls", async () => {
+    const { command } = await fittedProofCommand(), native = readFileSync(new URL("../supabase/tests/fitted_proof_lossless_emission.sql", import.meta.url), "utf8");
+    const suffix = command.input!.slice(command.input!.indexOf("\n), fitted_proof_compact_text as materialized("));
+    const nativeBody = /create function pg_temp.fitted_proof_reference_v1\(p_value jsonb\) returns text[\s\S]*?as \$reference_body\$([\s\S]*?)\$reference_body\$;/.exec(native)?.[1];
+    expect(nativeBody).toBe("\nwith fitted_proof_compact_value(proof) as materialized(\nselect p_value" + suffix);
+    expect(native).toContain("complete reference reconstruction equals original six-field proof");
+    expect(native).toContain("reference copy drift refuses emission");
   });
 });
