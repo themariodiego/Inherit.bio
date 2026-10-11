@@ -1,5 +1,17 @@
 begin;
 select no_plan();
+-- aclexplode requires a nonempty one-dimensional ACL. Catalog NULL and
+-- zero-dimensional empty arrays both mean no explicit column grant; retain
+-- their raw catalog values separately and never invent a default column ACL.
+create function pg_temp.pending_expanded_acl_vector(p_acl aclitem[]) returns jsonb
+language sql immutable security invoker set search_path=pg_catalog as $expanded_acl$
+ select case when p_acl is null or cardinality(p_acl)=0 then '[]'::jsonb else
+  (select coalesce(jsonb_agg(jsonb_build_object('grantor',a.grantor::bigint,
+   'grantee',a.grantee::bigint,'privilege',a.privilege_type,'grantable',a.is_grantable)
+   order by a.grantee,a.grantor,a.privilege_type,a.is_grantable),'[]'::jsonb)
+   from aclexplode(p_acl) a) end;
+$expanded_acl$;
+
 -- Preserve the ACTUAL platform ACL before the included fixture/read.
 -- A fresh stock service grant is not a new permission of this metadata door.
 create function pg_temp.pending_genome_acl_vector() returns jsonb
@@ -11,10 +23,8 @@ language sql stable security invoker set search_path=pg_catalog as $acl$
    order by a.grantee,a.grantor,a.privilege_type,a.is_grantable),'[]'::jsonb)
    from aclexplode(coalesce(c.relacl,acldefault('r',c.relowner))) a),
   'columnAcls',(select coalesce(jsonb_agg(jsonb_build_object('ordinal',col.attnum,'name',col.attname,
-   'rawAcl',to_jsonb(col.attacl),'expandedAcl',(select coalesce(jsonb_agg(jsonb_build_object(
-    'grantor',a.grantor::bigint,'grantee',a.grantee::bigint,'privilege',a.privilege_type,'grantable',a.is_grantable)
-    order by a.grantee,a.grantor,a.privilege_type,a.is_grantable),'[]'::jsonb)
-    from aclexplode(coalesce(col.attacl,'{}'::aclitem[])) a)) order by col.attnum),'[]'::jsonb)
+   'rawAcl',to_jsonb(col.attacl),'expandedAcl',pg_temp.pending_expanded_acl_vector(col.attacl))
+   order by col.attnum),'[]'::jsonb)
    from pg_attribute col where col.attrelid=c.oid and col.attnum>0),
   'effectiveRoleAccess',(select jsonb_agg(jsonb_build_object('role',roles.name,
    'tablePrivileges',(select jsonb_object_agg(a.privilege_type,has_table_privilege(roles.name,c.oid,a.privilege_type))
@@ -24,6 +34,31 @@ language sql stable security invoker set search_path=pg_catalog as $acl$
  from pg_class c where c.oid='public.genome_files'::regclass;
 $acl$;
 create temporary table pending_genome_acl_before as select pg_temp.pending_genome_acl_vector() as body;
+
+select is(pg_temp.pending_expanded_acl_vector(null::aclitem[]),'[]'::jsonb,
+ 'a NULL catalog column ACL has exactly no explicit expanded grants');
+select is(pg_temp.pending_expanded_acl_vector('{}'::aclitem[]),'[]'::jsonb,
+ 'a genuine zero-dimensional empty ACL has no explicit grants and never reaches aclexplode');
+select is(pg_temp.pending_expanded_acl_vector(array['service_role=r/postgres'::aclitem]),
+ jsonb_build_array(jsonb_build_object('grantor',(select oid::bigint from pg_roles where rolname='postgres'),
+  'grantee',(select oid::bigint from pg_roles where rolname='service_role'),'privilege','SELECT','grantable',false)),
+ 'a real one-dimensional ACL retains the exact role identities, privilege and grant option');
+select is(pg_temp.pending_expanded_acl_vector(array['service_role=r*/postgres'::aclitem,'service_role=r*/postgres'::aclitem]),
+ jsonb_build_array(jsonb_build_object('grantor',(select oid::bigint from pg_roles where rolname='postgres'),
+  'grantee',(select oid::bigint from pg_roles where rolname='service_role'),'privilege','SELECT','grantable',true),
+  jsonb_build_object('grantor',(select oid::bigint from pg_roles where rolname='postgres'),
+  'grantee',(select oid::bigint from pg_roles where rolname='service_role'),'privilege','SELECT','grantable',true)),
+ 'nonempty ACL decoding preserves every duplicate grant and its exact grant option');
+select throws_ok($$select pg_temp.pending_expanded_acl_vector(
+ array[['service_role=r/postgres'::aclitem],['service_role=r/postgres'::aclitem]])$$,
+ null,'ACL arrays must be one-dimensional','nonempty multidimensional ACL input retains the native decoder refusal');
+select ok((select jsonb_array_length(body->'columnAcls')>0
+ and exists(select 1 from jsonb_array_elements(body->'columnAcls') col where col->'rawAcl'='null'::jsonb)
+ and not exists(select 1 from jsonb_array_elements(body->'columnAcls') col
+  where (col->'rawAcl'='null'::jsonb or col->'rawAcl'='[]'::jsonb)
+   and col->'expandedAcl' is distinct from '[]'::jsonb) from pending_genome_acl_before),
+ 'the actual complete starting column census keeps raw NULLs and exact empty expansions');
+
 
 \ir fixtures/embryo_cohort_pre_finalize.inc
 

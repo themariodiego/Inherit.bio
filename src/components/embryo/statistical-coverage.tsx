@@ -6,10 +6,10 @@ import { CompareCell } from "./compare/compare-cell";
 
 /** Original coverage-only output stays nonnumeric. A distinct complete fitted
  * TEST receipt may show its invented interval, with clinical finding held. */
-export function StatisticalCoverage({ value, subjectIds, embryoId }: { value: StatisticalCoverageRead;
-  subjectIds: ReadonlyMap<string, string>; embryoId?: string }) {
+export function StatisticalCoverage({ value, subjectIds, embryoId, cohortNumber }: { value: StatisticalCoverageRead;
+  subjectIds: ReadonlyMap<string, string>; embryoId?: string; cohortNumber?: number }) {
   if (value.producer === "embryo-test-statistical-fit-v1")
-    return <FittedTestCoverage value={value} subjectIds={subjectIds} embryoId={embryoId} />;
+    return <FittedTestCoverage value={value} subjectIds={subjectIds} embryoId={embryoId} cohortNumber={cohortNumber} />;
   const rows = embryoId ? value.rows.filter(row => row.embryoId === embryoId) : value.rows;
   if (rows.length === 0 || rows.some(row => !subjectIds.get(row.embryoId))) throw new Error("Own embryo attribution required");
   return <section data-slot="test-statistical-coverage" data-cohort-id={value.cohortId}
@@ -34,8 +34,8 @@ export function StatisticalCoverage({ value, subjectIds, embryoId }: { value: St
 
 /** A separate native-current TEST receipt. Its held clinical finding stays
  * absent; only this closed invented-control branch may render a toy interval. */
-function FittedTestCoverage({ value, subjectIds, embryoId }: { value: StatisticalFittedRead;
-  subjectIds: ReadonlyMap<string, string>; embryoId?: string }) {
+function FittedTestCoverage({ value, subjectIds, embryoId, cohortNumber }: { value: StatisticalFittedRead;
+  subjectIds: ReadonlyMap<string, string>; embryoId?: string; cohortNumber?: number }) {
   const parsed = statisticalFittedReadSchema.safeParse(value);
   if (!parsed.success) throw new Error("Current fitted TEST receipt required");
   const current = parsed.data;
@@ -43,6 +43,9 @@ function FittedTestCoverage({ value, subjectIds, embryoId }: { value: Statistica
   if (rows.length === 0 || rows.some(row => !subjectIds.get(row.embryoId)
     || (row.receipt.source !== null && row.receipt.source.subject_id !== subjectIds.get(row.embryoId))))
     throw new Error("Own embryo attribution required");
+  if (cohortNumber !== undefined && (!Number.isSafeInteger(cohortNumber) || cohortNumber < 1))
+    throw new Error("Embryo group attribution required");
+  const groupLabel = cohortNumber === undefined ? "Embryo" : `Embryo group ${cohortNumber}, Embryo`;
   return <section data-slot="test-statistical-coverage" data-cohort-id={current.cohortId}
     data-interpretation="held" data-publication="synthetic-fitted-test-only"
     className="space-y-3 text-sm leading-relaxed text-ink">
@@ -57,14 +60,14 @@ function FittedTestCoverage({ value, subjectIds, embryoId }: { value: Statistica
           finding: row.finding, evidence_label: "preliminary", coverage_state: row.coverageState,
           citation_ids: [], not_covered_reason: row.reason }} /> : null}
         {row.matchedVariants === null ? null : <ClaimBlock subject={{ subjectId: subjectIds.get(row.embryoId)! }}
-          aria-label="Observed own-file coverage" figures={[{ kind: "coverage", class: "estimate", basis: "observed",
+          aria-label={`${groupLabel} ${row.sampleOrdinal + 1}: Observed own-file coverage`} figures={[{ kind: "coverage", class: "estimate", basis: "observed",
             provenance: { kind: "computed", module: "embryos/statistical-coverage" },
             read: row.matchedVariants, needed: row.requiredVariants! }]}>
           <p data-slot="observed-test-coverage">OBSERVED own-file coverage. Missing positions remain in the full score denominator.</p>
           {row.finding ? <p data-slot="coverage-failure">{INSUFFICIENT_COVERAGE_INTRO}</p> : null}
         </ClaimBlock>}
         {row.result === null ? null : <ClaimBlock subject={{ subjectId: subjectIds.get(row.embryoId)! }}
-          aria-label="TEST model: low and high from data we made" figures={[{ kind: "interval", class: "estimate", basis: "modelled",
+          aria-label={`${groupLabel} ${row.sampleOrdinal + 1}: TEST model: low and high from data we made`} figures={[{ kind: "interval", class: "estimate", basis: "modelled",
             provenance: { kind: "computed", module: "embryos/synthetic-statistical-fit" },
             point: Number(row.result.point), low: Number(row.result.interval[0]), high: Number(row.result.interval[1]) }]}>
           <p data-slot="modelled-test-interval">MODELLED invented-control probability and range. This is not a clinical result.</p>

@@ -6,7 +6,7 @@ import { GATE_BUTTON } from "@/copy/embryos/gate";
 import { ANALYSIS_PERMISSION_BUTTON, FILE_INPUT_LABEL, FINALIZE_BUTTON, SAVE_DRAFT_BUTTON, SEND_FILE_BUTTON, SEND_INVITATION_BUTTON } from "@/copy/embryos/upload";
 import { SIGN_BUTTON } from "@/copy/embryos/signing";
 import { signStatements } from "./embryo-signing-helpers";
-import { EMBRYO_PUBLISHED_FILE_SELECT, participantCSeed, publishedEmbryoFiles } from "../scripts/comprehension/participant-c-seed";
+import { EMBRYO_PUBLISHED_FILE_SELECT, participantCSeed, publishedEmbryoFiles, type ParticipantCReadDiagnostic, type ParticipantCReadStage } from "../scripts/comprehension/participant-c-seed";
 
 import { observeNativeResponses } from "./helpers/native-response-observer";
 import { readUploadReceipt } from "../src/lib/embryos/upload-receipt";
@@ -20,7 +20,7 @@ export type ParticipantCMail = { to: string | string[]; html?: string };
  * signature, permission, job advancement or provider ACK is substituted. */
 export async function seedParticipantC(options: { page: Page; browser: Browser;
   ownerEmail: string; parentEmail: string; password: typeof participantCPassword; qcSeed?: "b"; fittedSeed?: "partial";
-  messages: ParticipantCMail[]; jobsSecret?: string;
+  messages: ParticipantCMail[]; jobsSecret?: string; readDiagnostic?: ParticipantCReadDiagnostic;
   runtime: { runWorker(id: string): Promise<void>; proof(id: string): Promise<unknown> };
   beforeFile?: (scope: { owner: string; parentAccount: string; cohortId: string; nativeSessionId: string;
     embryos: { id: string; subject_id: string; sample_ordinal: number; status: string }[];
@@ -158,13 +158,30 @@ export async function seedParticipantC(options: { page: Page; browser: Browser;
     await expect(page.locator('[data-slot="result-gate"]')).toHaveCount(0);
     await expect(page.locator('[data-slot="consent-required"]')).toHaveCount(0);
 
+    const nativeRead = async <T>(stage: ParticipantCReadStage, work: () => Promise<T>): Promise<T> => {
+      try { return await work(); }
+      catch (error) {
+        try { options.readDiagnostic?.(stage, error, "unreturned"); } catch { /* Original refusal remains. */ }
+        throw error;
+      }
+    };
     const readPublication = async () => {
-        const cohort = await adminClient().from("embryo_cohorts").select("id,owner_account_id,status,publication_revision,uploaded_at").eq("id", cohortId).single();
-        const embryos = await adminClient().from("embryos").select("id,subject_id,sample_ordinal,status").eq("cohort_id", cohortId).order("sample_ordinal");
-        expect(cohort.error).toBeNull(); expect(embryos.error).toBeNull();
-        const files = await adminClient().from("genome_files").select(EMBRYO_PUBLISHED_FILE_SELECT).in("subject_id", embryos.data!.map(row => row.subject_id));
-        expect(files.error).toBeNull();
-        return { cohort: cohort.data, embryos: embryos.data, files: files.data, proof: await runtime.proof(cohortId) };
+        const cohort = await nativeRead("read-cohort-query", async () => {
+          const cohort = await adminClient().from("embryo_cohorts").select("id,owner_account_id,status,publication_revision,uploaded_at").eq("id", cohortId).single();
+          return cohort;
+        });
+        const embryos = await nativeRead("read-embryos-query", async () => {
+          const embryos = await adminClient().from("embryos").select("id,subject_id,sample_ordinal,status").eq("cohort_id", cohortId).order("sample_ordinal");
+          return embryos;
+        });
+        await nativeRead("read-cohort-result", async () => { expect(cohort.error).toBeNull(); });
+        await nativeRead("read-embryos-result", async () => { expect(embryos.error).toBeNull(); });
+        const files = await nativeRead("read-files-query", async () => {
+          const files = await adminClient().from("genome_files").select(EMBRYO_PUBLISHED_FILE_SELECT).in("subject_id", embryos.data!.map(row => row.subject_id));
+          expect(files.error).toBeNull(); return files;
+        });
+        return { cohort: cohort.data, embryos: embryos.data, files: files.data,
+          proof: await nativeRead("read-worker-proof", () => runtime.proof(cohortId)) };
 
     };
     return { owner, cohortId, embryos: embryos.data!, readPublication, other,

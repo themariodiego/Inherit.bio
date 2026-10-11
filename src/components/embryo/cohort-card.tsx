@@ -37,6 +37,8 @@ export interface CohortCardProps {
   /** The register's copy when this cohort's contributors refuse the capability; null when permitted. */
   jurisdictionCopy: string | null;
   statisticalCoverage?: StatisticalCoverageRead | null;
+  /** Original hub list position distinguishes named TEST regions across groups. */
+  cohortNumber?: number;
   coverage?: readonly CarrierLibraryCoverageRow[] | null;
   coverageReadFailed?: boolean;
 }
@@ -46,7 +48,7 @@ export function analysisRole(cohort: EmbryoCohortView): string | null {
   return waitingRole(analysisConsent(cohort));
 }
 
-export function CohortCard({ cohort, jurisdictionCopy, coverage = null, coverageReadFailed = false, statisticalCoverage }: CohortCardProps) {
+export function CohortCard({ cohort, jurisdictionCopy, coverage = null, coverageReadFailed = false, statisticalCoverage, cohortNumber }: CohortCardProps) {
   const role = analysisRole(cohort);
   const dispositions = new Set(cohort.embryos.map((embryo) => embryo.status));
   const conditionNames = new Map(allowedConditions().map(entry => [entry.condition_id, entry.condition_name]));
@@ -102,7 +104,7 @@ export function CohortCard({ cohort, jurisdictionCopy, coverage = null, coverage
         </p>
       ) : null}
       {statisticalCoverage ? <StatisticalCoverage value={statisticalCoverage}
-        subjectIds={new Map(cohort.embryos.map(embryo => [embryo.id, embryo.subjectId]))} /> : null}
+        subjectIds={new Map(cohort.embryos.map(embryo => [embryo.id, embryo.subjectId]))} cohortNumber={cohortNumber} /> : null}
       <p className="text-sm">
         <Link
           href={route("embryos.compare", { query: { cohort: cohort.id } })}

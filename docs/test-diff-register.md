@@ -1,3 +1,33 @@
+## 2026-10-11 - Absent column ACL expansion in the complete native test collector (source only)
+
+The actual DB original aborts before any pending-input assertions because the test collector supplies zero-dimensional empty aclitem[] to aclexplode for catalog NULL column grants. A test-local CASE returns exactly [] for NULL/empty explicit ACLs, preserves raw ACL fields, and delegates every nonempty ACL to the same native decoder/full ordered vector. Six added native controls cover actual NULL catalog columns, NULL/empty arrays, role/privilege/grant-option values, duplicate multiplicity and multidimensional refusal. All prior 70 metadata/ACL/authority/savepoint/currentness controls and production reader/migration bytes remain intact.
+
+The prospective controls are UNRUN. All original caps, assertions and frozen density budgets remain unchanged. This raw prefix is additive to the entire current history and must never replace it. No native/provider/browser or acceptance credit is claimed.
+
+## 2026-10-11 — Exact fitted region labels and readability correspondence
+
+The current Account source passed all343 cases across eleven complete files with the newly admitted real Mac browser prerequisite. After the reviewed unique-region correction, all29 complete component cases, canonical types and full lint passed; the unchanged readability gate then rejected both labels because its template placeholder formed the nonexistent word factEmbryo. The complete failed report and source remain saved.
+
+Only three component expressions now move the same Embryo word into the optional group prefix and retain a literal space before the original ordinal. Every rendered region name remains exact for individual and multiple hub groups, as required by the unchanged complete SSR assertions. No readability algorithm, vocabulary, browser audit, numeric provenance, authority, clinical hold, limits or test assertions change. The complete SSR and readability test files plus final types, full lint and13 quality gates are required on this changed source; their execution is pending here. This source correction provides no native, hosted zero-axe or runtime acceptance.
+
+## 2026-10-11 - Distinct fitted TEST region names for each actual hub group and embryo (source only)
+
+The exact browser5 original rejects repeated observed/MODELLED region names on the fitted hub. The candidate retains all named ClaimBlock regions and changes only their accessible context: the current hub list position is forwarded without reordering, and the full receipt sampleOrdinal remains authoritative even in a filtered view. All existing visible text, figures, source/receipt validation, clinical holds and the original zero-violation browser audit are retained. Added SSR controls cover the pair, two distinct groups, filtered second embryo and five invalid group numbers. Server components remain server components; no hook, effect, new I/O or density-budget change is introduced.
+
+The prospective controls are UNRUN. All original caps, assertions and frozen density budgets remain unchanged. This raw prefix is additive to the entire current history and must never replace it. No native/provider/browser or acceptance credit is claimed.
+
+## 2026-10-11 — Account7ff exact scientific-purpose reader variable
+
+The complete terminal database original for run38107400338/a1 reached and passed all186 earlier controls, including the three genuine claimant adult-completion assertions and the completed paired report grant. The next existing report-reader assertion aborted at account_archive_complete.sql338: `g.purpose=purpose` was ambiguous between the local PL/pgSQL variable and a grant table column.
+
+The prospective correction renames only the seventeen unqualified local-variable occurrences inside private.account_archive_related_science_rows_v1 to requested_purpose. Both actual table purpose columns, the emitted purpose JSON key, every exact signed grant/recipient/source/currentness predicate, function ABI/owner/ACL, locks, projection and ordering stay byte-exact. No new grant, consent, migration timestamp, product configuration or authority is introduced. The two additive native controls use the existing genuine completed report and actual signed recipient tuple: they require its exact reports.polygenic value and zero ancestry rows without a separate ancestry grant. All previous fixture assertions and expected values remain unchanged. These new candidates and controls are UNRUN; the failed complete original is retained. Root alone composes and executes the correction.
+
+### 11 October 2026 — retain the exact owned participant-c read refusal
+
+Account head 7ff0d58ef25cdae78d2e7bbb510d4825ea1e6016, CI 38107400338 attempt 1, owned job 114375828362 failed. The original closed report identifies session-read-open/setup-refused, followed by inner exit 1; it does not identify the native read or browser assertion that refused. The parent SIGKILL is failed-group settlement and does not prove the native cause.
+
+The additive owned diagnostics label the unchanged deferred cohort, embryo and file queries, whole worker proof, strict publication contract, sign-in, comparison navigation, permission, result gate, no-model surface, and original browser setup/cleanup boundaries. Only the existing fixed five-field metadata is emitted; native rows, credentials, URLs, exception text and command output stay private. The original read requests, schemas, assertions, success channel, cleanup behavior and every limit remain required. The authored real-wrapper injected controls are UNRUN; they do not supply browser, native, provider, comprehension or release evidence. All failed originals are retained.
+
 ## 2026-10-11 - Complete account archive: genuine claimant adult completion fixture (source only)
 
 Account960 CI38106093681/a1 aborts the complete-account database fixture at its existing report grant: the native recipient endpoint independently requires an adult DOB, while the included genuine claimant Auth/self/session fixture never completed that account. The saved context identifies the recipient endpoint call; all 182 preceding assertions passed. This is a missing fixture prerequisite, not permission to weaken the adult report boundary.

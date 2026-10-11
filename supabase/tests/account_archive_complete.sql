@@ -340,6 +340,15 @@ select ok((select bool_and(not(row_text::jsonb ?| array['raw_score','zscore','ri
  from private.account_archive_related_science_rows_v1(pg_temp.archive_origin('claimant'),
  (select id from normalization_subject),'prs.json')),'shared PRS metadata preserves the original no-unvalidated-number projection');
 
+-- The same genuine report fixture proves that the renamed local value still
+-- selects its exact signed purpose; a separate absent purpose stays closed.
+select is((select row_text::jsonb->>'purpose' from private.account_archive_related_science_rows_v1(
+ pg_temp.archive_origin('claimant'),(select id from normalization_subject),'reports.json')),
+ 'reports.polygenic','the genuine completed report keeps its exact independently signed scientific purpose');
+select is((select count(*) from private.account_archive_related_science_rows_v1(
+ pg_temp.archive_origin('claimant'),(select id from normalization_subject),'ancestry.json')),0::bigint,
+ 'the genuine report and export tuple never substitutes for a missing ancestry grant');
+
 create temporary table complete_jobs(name text primary key,origin jsonb,capture jsonb,created jsonb,attempt uuid);
 insert into complete_jobs(name,origin,attempt) select name,origin,
  case name when 'owner' then '77900000-0000-4000-8000-000000000070'::uuid
