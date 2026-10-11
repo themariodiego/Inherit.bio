@@ -157,3 +157,41 @@ it.each(["unknown-acquisition-stage", "private-extra", "false-cleanup"])(
     capture.push(Buffer.from(HOSTED_BOOTSTRAP_PREFIX + JSON.stringify(frame) + "\n"));
     expect(capture.finish()).toEqual([]);
   });
+
+
+it.each(["stack-runtime-guard", "stack-owner-binding", "stack-scratch-identity", "stack-lock-acquisition"] as const)(
+  "collects the fixed %s frame across byte fragmentation without extending record or byte caps", stage => {
+    const capture = createHostedBootstrapDiagnostics();
+    emitHostedBootstrapFailure(stage, { classification: "setup-refused", exitCode: null, signal: null }, "not-started", line => {
+      expect(Buffer.byteLength(line + "\n")).toBeLessThanOrEqual(512);
+      for (const byte of Buffer.from(line + "\n")) capture.push(Uint8Array.of(byte));
+    });
+    expect(capture.finish()).toEqual([{ stage, classification: "setup-refused", exitCode: null, signal: null, cleanup: "not-started" }]);
+  });
+it("does not accept a gate-derived private suffix or extra pre-command exception fields", () => {
+  for (const input of [
+    { stage: "stack-owner-binding-PRIVATE_CANARY", classification: "setup-refused", exitCode: null, signal: null, cleanup: "not-started" },
+    { stage: "stack-owner-binding", classification: "setup-refused", exitCode: null, signal: null, cleanup: "not-started", message: "PRIVATE_CANARY" },
+  ]) expect(hostedBootstrapDiagnosticLine(input)).toBeNull();
+});
+
+
+it("separates the real default writer from unterminated private stderr before the fragmented collector", () => {
+  const capture = createHostedBootstrapDiagnostics(), written: string[] = [];
+  const output = vi.spyOn(process.stderr, "write").mockImplementation((chunk: string | Uint8Array) => {
+    const text = typeof chunk === "string" ? chunk : Buffer.from(chunk).toString("utf8");
+    written.push(text);
+    for (const byte of Buffer.from(text)) capture.push(Uint8Array.of(byte));
+    return true;
+  });
+  try {
+    process.stderr.write("PRIVATE_UNTERMINATED_STDERR_CANARY");
+    emitHostedBootstrapFailure("stack-runtime-guard", { classification: "setup-refused", exitCode: null, signal: null }, "not-started");
+    const expected = { stage: "stack-runtime-guard", classification: "setup-refused", exitCode: null, signal: null, cleanup: "not-started" } as const;
+    expect(written).toHaveLength(2);
+    expect(written[1]).toBe("\n" + hostedBootstrapDiagnosticLine(expected) + "\n");
+    expect(Buffer.byteLength(written[1].split("\n")[1] + "\n")).toBeLessThanOrEqual(512);
+    const selected = capture.finish();expect(selected).toEqual([expected]);
+    expect(JSON.stringify(selected)).not.toContain("PRIVATE_UNTERMINATED_STDERR_CANARY");
+  } finally { output.mockRestore(); }
+});

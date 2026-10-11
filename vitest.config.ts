@@ -3,6 +3,9 @@ import path from "node:path";
 
 export default defineConfig({
   test: {
+    // Give archive and filesystem cases a full worker without file contention.
+    // The complete suite and its existing per-case time limit still apply.
+    maxWorkers: 1,
     include: ["src/**/*.test.ts", "worker/**/*.test.ts", "workers/**/*.test.ts", "scripts/**/*.test.ts", "content/**/*.test.ts"],
     environment: "node",
   },

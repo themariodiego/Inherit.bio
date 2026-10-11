@@ -8,6 +8,7 @@ import { densityStateKey, type DensityStateCase, type DENSITY_VIEWPORTS } from "
 import type { DensityRegister } from "./density-current";
 import { acquireFreshDensityRuntime, type FreshDensityRuntime } from "./density-fresh-runtime";
 import type { OwnedLinuxCapability } from "./owned-linux-runtime";
+import type { DensityCaptureSegmentSelection } from "./density-segments";
 
 type Viewport = typeof DENSITY_VIEWPORTS[number];
 type Provider = keyof DensityRuntimeFixtureAssemblyInput;
@@ -87,7 +88,7 @@ export async function runOwnedDensityCapture(input: {
   root: string; output: string; fontManifestPath: string;
   observeSource: CurrentDensityCaptureOptions["observeSource"];
   nativeObservers: (ownership: FreshDensityRuntime) => DensityNativeObservers;
-  signal: AbortSignal; operator?: OwnedLinuxCapability;
+  signal: AbortSignal; operator?: OwnedLinuxCapability; segment?: DensityCaptureSegmentSelection;
 }) {
   const root = fs.realpathSync(input.root);
   assert(root === process.cwd(), "Exact clean owned source checkout required");
@@ -124,6 +125,7 @@ export async function runOwnedDensityCapture(input: {
     } } satisfies DensityStateFixture));
     return await captureCurrentDensity({ root, output: input.output, fontManifestPath: input.fontManifestPath,
       browser: first.browser, fixtures, observeSource: input.observeSource,
+      ...(input.segment === undefined ? {} : { segment: input.segment }),
       readOwnedBrowser: () => { assert(live && selectedFixture, "Actual live owned fixture browser required"); return live.browser; },
       observeRuntime: (origin, digest) => {
         assert(live && selectedFixture && digest === selectedFixture.sourceSha256, "Exact live source and resource callback required");

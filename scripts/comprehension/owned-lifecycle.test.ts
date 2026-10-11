@@ -1,12 +1,12 @@
 import { execFile, type ExecFileException } from "node:child_process";
 import { EventEmitter } from "node:events";
-import { chmodSync, chownSync, mkdtempSync, readFileSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { chmodSync, chownSync, linkSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, renameSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { PassThrough } from "node:stream";
 import { pathToFileURL } from "node:url";
 import { afterEach, expect, it, vi } from "vitest";
-import { createOwnedLifecycleObserver, openOwnedLifecycle, parseOwnedLifecycleSnapshot,
+import { createOwnedLifecycleObserver, openOwnedLifecycle, openOwnedLifecyclePublicFile, parseOwnedLifecycleSnapshot,
   readOwnedLifecycleSnapshot, type OwnedLifecycleObserver } from "./owned-lifecycle";
 import { prepareFreshInvocation } from "./run-fresh-t6.mjs";
 import { createResourceIO, freshRuntimeCommandFailure, freshRuntimeFailureClassification } from "./fresh-t6-resources";
@@ -193,4 +193,77 @@ it("retains actual synchronously written public observations after an intentiona
   const parsed = parseOwnedLifecycleSnapshot(readFileSync(file), expected, { startedAt: 0, endedAt: 100 });
   expect(parsed.latest.phase).toBe("production-build"); expect(parsed.latest.event).toBe("entered");
   expect(parsed.latest.firstRefusal).toBeNull(); expect(parsed.qualifyingEvidence).toBe(false);
+});
+
+// These controls exercise the same real public file sink as the admitted runtime.
+// The input is public synthetic metadata, never a native operator capability.
+it("continues exact public writer counters through genuine owned child directory creation and removal", () => {
+  const directory = realpathSync(mkdtempSync(path.join(tmpdir(), "inherit-lifecycle-directory-")));
+  directories.push(directory); chmodSync(directory, 0o700);
+  const uid = process.getuid!(), gid = process.getgid!(); chownSync(directory, uid, gid);
+  const local = { ...header, uid, gid, createdAt: Date.now() };
+  const record = openOwnedLifecyclePublicFile(directory, local);
+  expect(record).toBeDefined();
+  if (!record) throw new Error("Public local file fixture unavailable");
+  const read = () => readOwnedLifecycleSnapshot({ scratch: directory, nonce, bootId, head: header.head,
+    uid, gid, startedAt: local.createdAt - 1000, endedAt: Date.now() + 1000 });
+  try {
+    record.observer.phase("bootstrap-acquisition", "entered");
+    expect(read()).toMatchObject({ status: "observed", latest: { sequence: 2, phase: "bootstrap-acquisition",
+      event: "entered", process: { ordinal: 0, event: "none" } }, qualifyingEvidence: false });
+    const child = path.join(directory, "inherit-fresh-t6.lock"); mkdirSync(child, { mode: 0o700 });
+    writeFileSync(path.join(child, "owner.json"), '{"public":"synthetic-only"}', { mode: 0o600, flag: "wx" });
+    record.observer.process("requested");
+    expect(read()).toMatchObject({ status: "observed", latest: { sequence: 3,
+      process: { ordinal: 1, event: "requested" }, firstRefusal: null }, completeHistory: false });
+    record.observer.process("spawned");
+    expect(read()).toMatchObject({ status: "observed", latest: { sequence: 4,
+      process: { ordinal: 1, event: "spawned" } } });
+    rmSync(child, { recursive: true });
+    record.observer.process("terminal", 0, null);
+    expect(read()).toMatchObject({ status: "observed", latest: { sequence: 5,
+      process: { ordinal: 1, event: "terminal", exitCode: 0, signal: null } } });
+    record.observer.phase("bootstrap-acquisition", "returned");
+    expect(read()).toMatchObject({ status: "observed", latest: { sequence: 6, event: "returned", firstRefusal: null },
+      completeHistory: false, qualifyingEvidence: false });
+  } finally { record.close(); }
+});
+it.each(["directory-replacement", "directory-symlink", "directory-mode", "file-hardlink"] as const)(
+  "preserves real public writer refusal for %s rather than following a changed identity", kind => {
+    const directory = realpathSync(mkdtempSync(path.join(tmpdir(), "inherit-lifecycle-refusal-")));
+    directories.push(directory); chmodSync(directory, 0o700);
+    const uid = process.getuid!(), gid = process.getgid!(); chownSync(directory, uid, gid);
+    const local = { ...header, uid, gid, createdAt: Date.now() }, record = openOwnedLifecyclePublicFile(directory, local);
+    expect(record).toBeDefined();
+    if (!record) throw new Error("Public local file fixture unavailable");
+    const file = path.join(directory, `owned-lifecycle-${nonce}.jsonl`);
+    let retained = file;
+    try {
+      record.observer.phase("configuration", "entered"); const before = readFileSync(file);
+      if (kind === "directory-replacement" || kind === "directory-symlink") {
+        const moved = directory + "-original"; renameSync(directory, moved); directories.push(moved);
+        retained = path.join(moved, `owned-lifecycle-${nonce}.jsonl`);
+        if (kind === "directory-symlink") symlinkSync(moved, directory, "dir");
+        else { mkdirSync(directory, { mode: 0o700 }); chownSync(directory, uid, gid); }
+      } else if (kind === "directory-mode") chmodSync(directory, 0o750);
+      else linkSync(file, path.join(directory, "public-hardlink.jsonl"));
+      record.observer.phase("configuration", "returned");
+      expect(readFileSync(retained)).toEqual(before);
+      const input = { scratch: directory, nonce, bootId, head: header.head, uid, gid,
+        startedAt: local.createdAt - 1000, endedAt: Date.now() + 1000 };
+      expect(readOwnedLifecycleSnapshot(input).status).toBe(kind === "directory-replacement" ? "absent" : "refused");
+      if (kind === "directory-mode") {
+        chmodSync(directory, 0o700); record.observer.process("requested");
+        expect(readFileSync(retained)).toEqual(before); // Uncertain writer stays refused.
+      }
+    } finally { record.close(); }
+  });
+it.each(["uid", "gid"] as const)("refuses a public file opener whose %s does not match actual owned scratch", key => {
+  const directory = realpathSync(mkdtempSync(path.join(tmpdir(), "inherit-lifecycle-owner-")));
+  directories.push(directory); chmodSync(directory, 0o700);
+  const uid = process.getuid!(), gid = process.getgid!(); chownSync(directory, uid, gid);
+  const local = { ...header, uid, gid, createdAt: Date.now() };
+  expect(openOwnedLifecyclePublicFile(directory, { ...local, [key]: local[key] + 1 })).toBeUndefined();
+  expect(readOwnedLifecycleSnapshot({ scratch: directory, nonce, bootId, head: header.head, uid, gid,
+    startedAt: local.createdAt - 1000, endedAt: Date.now() + 1000 }).status).toBe("absent");
 });

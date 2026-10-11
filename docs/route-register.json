@@ -14414,7 +14414,8 @@
       "not-covered": "Authentication does not render an uploaded-file result.",
       "consent-required": "Authentication structurally precedes genetic-data consent.",
       "jurisdiction-unavailable": "Authentication remains available in every jurisdiction.",
-      "error": "A failed sign-in, sign-up or reset renders its message inside the form, so no request can drive it into a fault — bad input answers notFound() and the product carries no fault, injection or simulate seam (re-measured 2026-09-12) — and there is no browser proof to require. The four error boundaries and their unit coverage stand. Owner decision 2026-09-12."
+      "error": "A failed sign-in, sign-up or reset renders its message inside the form, so no request can drive it into a fault — bad input answers notFound() and the product carries no fault, injection or simulate seam (re-measured 2026-09-12) — and there is no browser proof to require. The four error boundaries and their unit coverage stand. Owner decision 2026-09-12.",
+      "not-built": "The four authentication pages render AuthForm and their existing request or outcome shapes. None renders the unbuilt-page shell; authentication is implemented. Source read 2026-10-11."
     }
   },
   "settings-unbuilt-render": {
@@ -14430,7 +14431,8 @@
       "not-covered": "Account management does not render an uploaded-file result.",
       "error": "These settings pages parse no parameter and no request can drive it into a fault — bad input answers notFound() and the product carries no fault, injection or simulate seam (re-measured 2026-09-12) — and there is no browser proof to require. The four error boundaries and their unit coverage stand. Owner decision 2026-09-12.",
       "consent-required": "These pages manage the account itself — its settings, its consents, its Copilot model and its own data — and render no result derived from an uploaded file, so there is no analysis for a consent to gate. Owner decision 2026-09-12, corrections item 6.",
-      "jurisdiction-unavailable": "No capability in data/jurisdictions.json governs these pages, and none of the five calls a capability resolver (measured 2026-09-12). Managing your own account, consents and data is not a reviewed capability. Owner decision 2026-09-12, corrections item 5."
+      "jurisdiction-unavailable": "No capability in data/jurisdictions.json governs these pages, and none of the five calls a capability resolver (measured 2026-09-12). Managing your own account, consents and data is not a reviewed capability. Owner decision 2026-09-12, corrections item 5.",
+      "initial-form": "People renders FeatureNotBuilt unconditionally and contains no authentication credential form. Its actual not-built state stays supported; it cannot enter the authentication initial-form state. Source read 2026-10-11."
     }
   },
     "static-document": {
@@ -14445,7 +14447,9 @@
         "not-covered": "A static public document renders no uploaded-file result.",
         "consent-required": "A public document is readable without a genetic-data consent.",
         "jurisdiction-unavailable": "Rights, legal and science documents are never jurisdiction-blocked.",
-        "error": "A committed public document fetches no user data and parses no parameter, so no request can drive it into a fault — bad input answers notFound() and the product carries no fault, injection or simulate seam (re-measured 2026-09-12) — and there is no browser proof to require. The four error boundaries and their unit coverage stand. Owner decision 2026-09-12."
+        "error": "A committed public document fetches no user data and parses no parameter, so no request can drive it into a fault — bad input answers notFound() and the product carries no fault, injection or simulate seam (re-measured 2026-09-12) — and there is no browser proof to require. The four error boundaries and their unit coverage stand. Owner decision 2026-09-12.",
+        "not-built": "These routes render committed public document or marketing content. None renders FeatureNotBuilt; an unavailable capability described in that content does not turn the document itself into an unbuilt page. Source read 2026-10-11.",
+        "initial-form": "initial-form denotes only the pre-submit authentication credential form on the four auth routes. These current consumers render their own non-authentication surface; any input or review form here is not that authentication state. Complete route and source census read 2026-10-11."
       }
     },
     "public-capability-marketing": {
@@ -14460,7 +14464,9 @@
         "partial-coverage": "The public branch renders no uploaded-file result.",
         "not-covered": "The public branch renders no uploaded-file result.",
         "consent-required": "The public restriction explanation is readable without genetic-data consent.",
-        "error": "The public capability page renders committed copy with no user-data fetch, so no request can drive it into a fault — bad input answers notFound() and the product carries no fault, injection or simulate seam (re-measured 2026-09-12) — and there is no browser proof to require. The four error boundaries and their unit coverage stand. Owner decision 2026-09-12."
+        "error": "The public capability page renders committed copy with no user-data fetch, so no request can drive it into a fault — bad input answers notFound() and the product carries no fault, injection or simulate seam (re-measured 2026-09-12) — and there is no browser proof to require. The four error boundaries and their unit coverage stand. Owner decision 2026-09-12.",
+        "not-built": "This public explanatory profile has no current route consumer. Its existing complete or jurisdiction-refusal projections describe capability availability, rather than the separate unbuilt-page shell. It has no current not-built producer. Complete route census read 2026-10-11; a future consumer must revisit this declaration.",
+        "initial-form": "This public explanatory profile has no current route consumer and no authentication credential-form producer. A future consumer must revisit this explicit exclusion. Complete source and route census read 2026-10-11."
       },
       "jurisdictionUnavailable": "return-200-render-the-exact-fail-closed-capability-copy-and-future-person-rights-link-with-zero-user-result-cookie-or-subject-fetch"
     },
@@ -14476,7 +14482,9 @@
         "complete": "The page's one render is already proven as jurisdiction-unavailable. Counting the same render twice would inflate the proven column without proving anything. Corrections item 10, signed 2026-09-13.",
         "not-covered": "No file, no viewer, no coverage: the page describes the catalog, not a person. Corrections item 10, signed 2026-09-13.",
         "partial-coverage": "The same. Corrections item 10, signed 2026-09-13.",
-        "error": "Every state here is a committed public projection with no user-data fetch, so no request can drive it into a fault — bad input answers notFound() and the product carries no fault, injection or simulate seam (re-measured 2026-09-12) — and there is no browser proof to require. The four error boundaries and their unit coverage stand. Owner decision 2026-09-12."
+        "error": "Every state here is a committed public projection with no user-data fetch, so no request can drive it into a fault — bad input answers notFound() and the product carries no fault, injection or simulate seam (re-measured 2026-09-12) — and there is no browser proof to require. The four error boundaries and their unit coverage stand. Owner decision 2026-09-12.",
+        "not-built": "The actual public Embryo Analysis page renders committed explanation of production restrictions and future-person rights. It does not render FeatureNotBuilt; its unavailable tools are the existing jurisdiction-unavailable projection, not an unbuilt public page. Source read 2026-10-11.",
+        "initial-form": "initial-form denotes only the pre-submit authentication credential form on the four auth routes. These current consumers render their own non-authentication surface; any input or review form here is not that authentication state. Complete route and source census read 2026-10-11."
       },
       "zeroUserDataRule": "every-state-is-a-public-educational-projection-selected-from-committed-copy-and-the-current-public-jurisdiction-catalog-with-zero-account-subject-file-result-cookie-or-genetic-data-fetch",
       "stateProjection": {
@@ -14501,7 +14509,9 @@
         "not-covered": "A versioned document renders no uploaded-file result.",
         "consent-required": "Public version history is readable without a genetic-data consent.",
         "jurisdiction-unavailable": "Public version history is never jurisdiction-blocked.",
-        "error": "An unknown artifact, key or version is answered with notFound(), so no request can drive it into a fault — bad input answers notFound() and the product carries no fault, injection or simulate seam (re-measured 2026-09-12) — and there is no browser proof to require. The four error boundaries and their unit coverage stand. Owner decision 2026-09-12."
+        "error": "An unknown artifact, key or version is answered with notFound(), so no request can drive it into a fault — bad input answers notFound() and the product carries no fault, injection or simulate seam (re-measured 2026-09-12) — and there is no browser proof to require. The four error boundaries and their unit coverage stand. Owner decision 2026-09-12.",
+        "not-built": "These routes render committed legal or consent versions and their comparisons, or refuse an unknown version with notFound(). None renders the unbuilt-page shell. Source read 2026-10-11.",
+        "initial-form": "initial-form denotes only the pre-submit authentication credential form on the four auth routes. These current consumers render their own non-authentication surface; any input or review form here is not that authentication state. Complete route and source census read 2026-10-11."
       }
     },
     "auth-flow": {
@@ -14516,7 +14526,9 @@
         "not-covered": "Authentication does not render an uploaded-file result.",
         "consent-required": "Authentication structurally precedes genetic-data consent.",
         "jurisdiction-unavailable": "Authentication remains available in every jurisdiction.",
-        "error": "A failed sign-in, sign-up or reset renders its message inside the form, so no request can drive it into a fault — bad input answers notFound() and the product carries no fault, injection or simulate seam (re-measured 2026-09-12) — and there is no browser proof to require. The four error boundaries and their unit coverage stand. Owner decision 2026-09-12."
+        "error": "A failed sign-in, sign-up or reset renders its message inside the form, so no request can drive it into a fault — bad input answers notFound() and the product carries no fault, injection or simulate seam (re-measured 2026-09-12) — and there is no browser proof to require. The four error boundaries and their unit coverage stand. Owner decision 2026-09-12.",
+        "not-built": "The current consumers are the two authenticated reviewer pages. Each requires its live case authority before rendering the implemented review controls, or answers notFound(); neither renders FeatureNotBuilt. Source read 2026-10-11.",
+        "initial-form": "The current consumers are authenticated reviewer case pages, not sign-in, sign-up or password-reset pages. Their review decision form is part of the existing complete case view; it is not the initial authentication credential form. Source read 2026-10-11."
       }
     },
     "product-result": {
@@ -14531,7 +14543,9 @@
         "jurisdiction-unavailable"
       ],
       "notApplicable": {
-        "error": "An unknown subject, person, pair, embryo or scope is answered with notFound(), so no request can drive it into a fault — bad input answers notFound() and the product carries no fault, injection or simulate seam (re-measured 2026-09-12) — and there is no browser proof to require. The four error boundaries and their unit coverage stand. Owner decision 2026-09-12."
+        "error": "An unknown subject, person, pair, embryo or scope is answered with notFound(), so no request can drive it into a fault — bad input answers notFound() and the product carries no fault, injection or simulate seam (re-measured 2026-09-12) — and there is no browser proof to require. The four error boundaries and their unit coverage stand. Owner decision 2026-09-12.",
+        "not-built": "Every current consumer renders its implemented subject, family, embryo, report or Copilot surface and the existing result or refusal shapes. None uses the unbuilt-page shell; a missing result or unavailable capability remains its already declared state. Source read 2026-10-11.",
+        "initial-form": "initial-form denotes only the pre-submit authentication credential form on the four auth routes. These current consumers render their own non-authentication surface; any input or review form here is not that authentication state. Complete route and source census read 2026-10-11."
       }
     },
     "own-product-result": {
@@ -14546,7 +14560,9 @@
       "notApplicable": {
         "awaiting-choice": "/files and /files/upload are about the file itself rather than what to make from it, and /copilot/[scope] answers questions about results that already exist. None of the three renders an invitation to choose an analysis.",
         "error": "An unknown subject, person, pair, embryo or scope is answered with notFound(), so no request can drive it into a fault — bad input answers notFound() and the product carries no fault, injection or simulate seam (re-measured 2026-09-12) — and there is no browser proof to require. The four error boundaries and their unit coverage stand. Owner decision 2026-09-12.",
-        "jurisdiction-unavailable": "No capability these routes surface appears in data/jurisdictions.json. Its twelve restricted capabilities are all Family or Embryo Analysis: /files and /files/upload handle the account's own files, and /copilot/[scope] resolves the viewer's own subjects only, so an s-{person} scope does not resolve there at all. G2.2 forbids this n/a only where the route's capability IS in that file, which is why these three may take it and /family/[person] may not. Corrections item 5, signed 2026-09-12; this is the profile split it names as the remaining step. NOT a standing exemption: scripts/jurisdiction-gate.ts pins that capability list, so a thirteenth capability fails the gate and returns these three declarations to the table. On 2026-09-28 /copilot/[scope] moved to the product-result profile: its Family scope surfaces third_party_adult_analysis and family_heritability, so this declaration now covers /files and /files/upload only."
+        "jurisdiction-unavailable": "No capability these routes surface appears in data/jurisdictions.json. Its twelve restricted capabilities are all Family or Embryo Analysis: /files and /files/upload handle the account's own files, and /copilot/[scope] resolves the viewer's own subjects only, so an s-{person} scope does not resolve there at all. G2.2 forbids this n/a only where the route's capability IS in that file, which is why these three may take it and /family/[person] may not. Corrections item 5, signed 2026-09-12; this is the profile split it names as the remaining step. NOT a standing exemption: scripts/jurisdiction-gate.ts pins that capability list, so a thirteenth capability fails the gate and returns these three declarations to the table. On 2026-09-28 /copilot/[scope] moved to the product-result profile: its Family scope surfaces third_party_adult_analysis and family_heritability, so this declaration now covers /files and /files/upload only.",
+        "not-built": "The current consumers are the implemented own-file list and uploader. Neither renders FeatureNotBuilt; their existing empty, processing, coverage and consent states remain separate. Source read 2026-10-11.",
+        "initial-form": "initial-form denotes only the pre-submit authentication credential form on the four auth routes. These current consumers render their own non-authentication surface; any input or review form here is not that authentication state. Complete route and source census read 2026-10-11."
       }
     },
     "restricted-flow": {
@@ -14561,7 +14577,9 @@
         "empty": "All four routes read 2026-09-12. /family/invite is a form. /family/[person]/permissions always renders both columns and all seven rows; its youSeeNothing branch gates a note beside the populated columns. /embryos/upload and /embryos/request-data always render. Corrections item 8, signed 2026-09-13.",
         "partial-coverage": "This single-purpose flow does not render a result derived from an uploaded file.",
         "not-covered": "This single-purpose flow does not render a result derived from an uploaded file.",
-        "error": "An unknown person, embryo or invitation is answered with notFound(), so no request can drive it into a fault — bad input answers notFound() and the product carries no fault, injection or simulate seam (re-measured 2026-09-12) — and there is no browser proof to require. The four error boundaries and their unit coverage stand. Owner decision 2026-09-12."
+        "error": "An unknown person, embryo or invitation is answered with notFound(), so no request can drive it into a fault — bad input answers notFound() and the product carries no fault, injection or simulate seam (re-measured 2026-09-12) — and there is no browser proof to require. The four error boundaries and their unit coverage stand. Owner decision 2026-09-12.",
+        "not-built": "The current invitation, permission, embryo-upload and request-letter routes render their implemented flows or existing authority and jurisdiction refusals. None renders the unbuilt-page shell. Source read 2026-10-11.",
+        "initial-form": "initial-form denotes only the pre-submit authentication credential form on the four auth routes. These current consumers render their own non-authentication surface; any input or review form here is not that authentication state. Complete route and source census read 2026-10-11."
       }
     },
     "account-management": {
@@ -14576,7 +14594,9 @@
         "not-covered": "Account management does not render an uploaded-file result.",
         "error": "These settings pages parse no parameter and no request can drive it into a fault — bad input answers notFound() and the product carries no fault, injection or simulate seam (re-measured 2026-09-12) — and there is no browser proof to require. The four error boundaries and their unit coverage stand. Owner decision 2026-09-12.",
         "consent-required": "These pages manage the account itself — its settings, its consents, its Copilot model and its own data — and render no result derived from an uploaded file, so there is no analysis for a consent to gate. Owner decision 2026-09-12, corrections item 6.",
-        "jurisdiction-unavailable": "No capability in data/jurisdictions.json governs these pages, and none of the five calls a capability resolver (measured 2026-09-12). Managing your own account, consents and data is not a reviewed capability. Owner decision 2026-09-12, corrections item 5."
+        "jurisdiction-unavailable": "No capability in data/jurisdictions.json governs these pages, and none of the five calls a capability resolver (measured 2026-09-12). Managing your own account, consents and data is not a reviewed capability. Owner decision 2026-09-12, corrections item 5.",
+        "not-built": "The current settings, own-data, Copilot settings and consent pages render their implemented management controls and existing outcomes. The separate People unbuilt page uses settings-unbuilt-render, not this profile. Source read 2026-10-11.",
+        "initial-form": "initial-form denotes only the pre-submit authentication credential form on the four auth routes. These current consumers render their own non-authentication surface; any input or review form here is not that authentication state. Complete route and source census read 2026-10-11."
       }
     },
     "public-rights-flow": {
@@ -14591,7 +14611,9 @@
         "not-covered": "The rights flow verifies identity and disposition, not file coverage.",
         "consent-required": "A data subject's withdrawal or claim right is never conditional on consent.",
         "jurisdiction-unavailable": "A data subject's withdrawal or claim right is never jurisdiction-blocked.",
-        "error": "An unrecognised token or claim is answered with notFound(), so no request can drive it into a fault — bad input answers notFound() and the product carries no fault, injection or simulate seam (re-measured 2026-09-12) — and there is no browser proof to require. The claim start added 2026-09-28 keeps to it: a stale or foreign form is notFound(), a malformed body marks its fields, and a start over a limit gets the one shared try-again answer; none of the three is a fault. The four error boundaries and their unit coverage stand. Owner decision 2026-09-12."
+        "error": "An unrecognised token or claim is answered with notFound(), so no request can drive it into a fault — bad input answers notFound() and the product carries no fault, injection or simulate seam (re-measured 2026-09-12) — and there is no browser proof to require. The claim start added 2026-09-28 keeps to it: a stale or foreign form is notFound(), a malformed body marks its fields, and a start over a limit gets the one shared try-again answer; none of the three is a fault. The four error boundaries and their unit coverage stand. Owner decision 2026-09-12.",
+        "not-built": "The public request, future-person claim and withdrawal routes render their implemented rights flow, current outcome or existing closed-intake explanation. None uses FeatureNotBuilt; a closed intake does not make the rights page an unbuilt shell. Source read 2026-10-11.",
+        "initial-form": "initial-form denotes only the pre-submit authentication credential form on the four auth routes. These current consumers render their own non-authentication surface; any input or review form here is not that authentication state. Complete route and source census read 2026-10-11."
       }
     },
     "redirect": {
@@ -14605,7 +14627,9 @@
         "not-covered": "A permanent redirect emits no product state.",
         "error": "A permanent redirect emits no product state.",
         "consent-required": "A permanent redirect emits no product state.",
-        "jurisdiction-unavailable": "A permanent redirect emits no product state."
+        "jurisdiction-unavailable": "A permanent redirect emits no product state.",
+        "not-built": "A permanent redirect emits no rendered page state, including no unbuilt-page shell. Existing redirect sources read 2026-10-11.",
+        "initial-form": "A permanent redirect emits no rendered page state, including no authentication initial form. Existing redirect sources read 2026-10-11."
       }
     },
     "endpoint": {
@@ -14619,7 +14643,9 @@
         "not-covered": "An endpoint returns a protocol response rather than a rendered page state.",
         "error": "HTTP errors are protocol outcomes rather than rendered page states.",
         "consent-required": "Endpoint consent failures are asserted by status/body contracts.",
-        "jurisdiction-unavailable": "Endpoint jurisdiction failures are asserted by status/body contracts."
+        "jurisdiction-unavailable": "Endpoint jurisdiction failures are asserted by status/body contracts.",
+        "not-built": "An endpoint emits a protocol response, not an unbuilt rendered page. Existing endpoint sources read 2026-10-11.",
+        "initial-form": "An endpoint emits a protocol response rather than an authentication credential form. Existing endpoint sources read 2026-10-11."
       }
     }
   },

@@ -9,6 +9,7 @@ import { checkedDensityStateProof, densityCapturePlan, densityRouteMatches,
   densitySourceSchema, densityStateKey, DENSITY_VIEWPORTS, type DensityStateCase, type DensitySource } from "../../scripts/density-capture-plan";
 
 import { assertDensityServiceUnchanged, densityServicePort, observeDensityServiceBinding } from "../../scripts/density-service-binding";
+import { checkedDensityCaptureSegment, type DensityCaptureSegmentSelection } from "../../scripts/density-segments";
 
 const sha256 = (bytes: string | Buffer) => createHash("sha256").update(bytes).digest("hex");
 type Predecessor = DensityCurrentPacket["captures"][number]["predecessor"];
@@ -39,6 +40,8 @@ export interface CurrentDensityCaptureOptions {
   readActualAppEnvironment?: (origin: string) => Promise<unknown>;
   /** Explicit per-fixture ownership; the existing fixed-browser path is unchanged. */
   readOwnedBrowser?: () => Browser;
+  /** One exact capture, after the unchanged complete census/provider preflight. */
+  segment?: DensityCaptureSegmentSelection;
   observeSource: () => Promise<DensitySource>;
   fontManifestPath: string;
   fixtures: readonly DensityStateFixture[];
@@ -99,6 +102,7 @@ export async function captureCurrentDensity(options: CurrentDensityCaptureOption
   }
   const readActualAppEnvironment = options.readActualAppEnvironment;
   assert(readActualAppEnvironment, "Actual selected service configuration observer required");
+  const selection = options.segment === undefined ? undefined : checkedDensityCaptureSegment(options.segment, plan);
   const fontBytes = publicBytes(options.fontManifestPath);
   const browserVersion = options.browser.version();
   assert(options.browser.browserType().name() === "chromium", "Fixed Chromium capture required");
@@ -132,6 +136,7 @@ export async function captureCurrentDensity(options: CurrentDensityCaptureOption
     assert(fixturePath.startsWith(`${root}${path.sep}`)
       && sha256(publicBytes(fixturePath)) === fixture.sourceSha256, "Reviewed real fixture source required");
     for (const viewport of DENSITY_VIEWPORTS) {
+      if (selection && (selection.routeId !== row.route.id || selection.state !== row.state || selection.viewport !== viewport.id)) continue;
       await assertBookend();
       let count = 0;
       await fixture.withState({ row, viewport }, async session => {
@@ -219,6 +224,21 @@ export async function captureCurrentDensity(options: CurrentDensityCaptureOption
       assert(count === 1 && sha256(publicBytes(fixturePath)) === fixture.sourceSha256, "Actual fixture must yield once and settle unchanged");
       await assertBookend();
     }
+  }
+  if (selection) {
+    assert(captures.length === 1 && originals.length === 1, "Exact selected capture must complete once");
+    await assertBookend();
+    const packet = { version: 1, source, captureEnvironment: environment,
+      measurementModuleSha256: sha256(measurementBytes), computationModuleSha256: sha256(computationBytes), captures };
+    const result = { version: 1, kind: "density-capture-segment-v1", status: "CAPTURED_SEGMENT_EXTERNAL_CLOSURE_PENDING",
+      selection, source, captureEnvironment: environment,
+      fixtureCatalog: options.fixtures.map(f => ({ routeId: f.routeId, state: f.state, serviceOrigin: f.serviceOrigin,
+        sourcePath: f.sourcePath, sourceSha256: f.sourceSha256 })), packet,
+      requiredCaptureCount: plan.requiredCaptureCount, remainingCaptureCount: plan.requiredCaptureCount - 1,
+      captures: originals.length, originalsSha256: sha256(JSON.stringify(originals)), targetHolds,
+      resumable: false, g2_5Acceptance: false };
+    writeOriginal(path.join(output, "actual-capture-result.json"), JSON.stringify(result, null, 2));
+    return result;
   }
   assert(captures.length === plan.requiredCaptureCount, "Complete current capture census required");
   const packet = { version: 1, source, captureEnvironment: environment,

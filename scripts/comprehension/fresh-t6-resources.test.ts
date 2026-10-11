@@ -145,3 +145,71 @@ it("retains each uncertain stack maximum across effort-journal reopen and repeat
     expect(journal.remaining).toBe(500);
   } finally { await journal.close(); await rm(directory, { recursive: true }); }
 });
+
+// These controls exercise the real acquisition function's pre-command gates.
+// Mocking its CI admission cannot mint an owned capability or start a stack.
+import * as ciBrowserConfiguration from "../ci-browser-config";
+import { acquireFreshStack } from "./fresh-t6-resources";
+import { repositoryRoot } from "./conductor-inputs";
+import { createHostedBootstrapDiagnostics } from "./hosted-owned-diagnostics";
+import { mkdir, readFile, realpath, symlink, writeFile } from "node:fs/promises";
+
+describe("closed pre-command stack admission diagnostics", () => {
+  const stages = ["stack-runtime-guard", "stack-owner-binding", "stack-scratch-identity", "stack-lock-acquisition"] as const;
+  it.each(stages)("retains the actual %s refusal before resource commands or cleanup", async stage => {
+    const directory = await realpath(await mkdtemp(path.join(tmpdir(), "inherit-precommand-")));
+    const scratch = path.join(directory, "scratch"), lock = path.join(scratch, "inherit-fresh-t6.lock");
+    await mkdir(scratch, { mode: 0o700 });
+    const guard = vi.spyOn(ciBrowserConfiguration, "assertCiRuntime").mockImplementation(() => {});
+    const emitted: string[] = [], capture = createHostedBootstrapDiagnostics();
+    const output = vi.spyOn(process.stderr, "write").mockImplementation((chunk: string | Uint8Array) => {
+      const line = typeof chunk === "string" ? chunk : Buffer.from(chunk).toString("utf8");
+      emitted.push(line);capture.push(Buffer.from(line));return true;
+    });
+    const original = new Error("PRIVATE_PRECOMMAND_CANARY");
+    Object.defineProperty(original, "code", { get() { throw new Error("PRIVATE_PRECOMMAND_CANARY"); } });
+    const io = fakeIO([]);
+    vi.stubEnv("RUNNER_TEMP", scratch);vi.stubEnv("GITHUB_WORKSPACE", repositoryRoot);
+    vi.stubEnv("GITHUB_JOB", "synthetic-admission-control");vi.stubEnv("GITHUB_RUN_ID", "1");vi.stubEnv("GITHUB_RUN_ATTEMPT", "1");
+    try {
+      if (stage === "stack-runtime-guard") guard.mockImplementation(() => { throw original; });
+      if (stage === "stack-owner-binding") vi.stubEnv("GITHUB_JOB", "");
+      if (stage === "stack-scratch-identity") {
+        const alias = path.join(directory, "scratch-alias");await symlink(scratch, alias);vi.stubEnv("RUNNER_TEMP", alias);
+      }
+      if (stage === "stack-lock-acquisition") {
+        await mkdir(lock, { mode: 0o700 });await writeFile(path.join(lock, "retained-owner"), "existing-owner", { flag: "wx", mode: 0o600 });
+      }
+      const failure = await acquireFreshStack(new AbortController().signal, io).catch(error => error);
+      expect(failure).toBeInstanceOf(Error);
+      if (stage === "stack-runtime-guard") expect(failure).toBe(original);
+      if (stage === "stack-owner-binding") expect(failure.message).toBe("Actual owning checkout and job identity required");
+      if (stage === "stack-scratch-identity") expect(failure.message).toBe("Runner scratch must be exact");
+      if (stage === "stack-lock-acquisition") {
+        expect(failure.code).toBe("EEXIST");expect(await readFile(path.join(lock, "retained-owner"), "utf8")).toBe("existing-owner");
+      }
+      expect(io.inventory).not.toHaveBeenCalled();expect(io.command).not.toHaveBeenCalled();
+      expect(capture.finish()).toEqual([{ stage, classification: "setup-refused", exitCode: null, signal: null, cleanup: "not-started" }]);
+      expect(emitted.join("")).not.toMatch(/PRIVATE_PRECOMMAND_CANARY|retained-owner|message|credential/);
+      expect(emitted).toHaveLength(1);expect(Buffer.byteLength(emitted[0])).toBeLessThanOrEqual(512);
+    } finally { output.mockRestore();guard.mockRestore();vi.unstubAllEnvs();await rm(directory, { recursive: true, force: true }); }
+  });
+  it("passes every pre-command gate once and preserves the original later inventory refusal and lock release", async () => {
+    const directory = await realpath(await mkdtemp(path.join(tmpdir(), "inherit-precommand-pass-"))), scratch = path.join(directory, "scratch");
+    await mkdir(scratch, { mode: 0o700 });
+    const guard = vi.spyOn(ciBrowserConfiguration, "assertCiRuntime").mockImplementation(() => {});
+    const capture = createHostedBootstrapDiagnostics();
+    const output = vi.spyOn(process.stderr, "write").mockImplementation((chunk: string | Uint8Array) => {
+      capture.push(typeof chunk === "string" ? Buffer.from(chunk) : chunk);return true;
+    });
+    const io = { inventory: vi.fn(async () => { throw new Error("PRIVATE_INVENTORY_CANARY"); }), command: vi.fn(async () => "") } satisfies ResourceIO;
+    vi.stubEnv("RUNNER_TEMP", scratch);vi.stubEnv("GITHUB_WORKSPACE", repositoryRoot);
+    vi.stubEnv("GITHUB_JOB", "synthetic-admission-control");vi.stubEnv("GITHUB_RUN_ID", "1");vi.stubEnv("GITHUB_RUN_ATTEMPT", "1");
+    try {
+      await expect(acquireFreshStack(new AbortController().signal, io)).rejects.toThrow("Fresh stack acquisition refused");
+      expect(guard).toHaveBeenCalledTimes(1);expect(io.inventory).toHaveBeenCalledTimes(1);expect(io.command).not.toHaveBeenCalled();
+      await expect(mkdir(path.join(scratch, "inherit-fresh-t6.lock"), { mode: 0o700 })).resolves.toBeUndefined();
+      expect(capture.finish()).toEqual([{ stage: "host-admission", classification: "setup-refused", exitCode: null, signal: null, cleanup: "not-started" }]);
+    } finally { output.mockRestore();guard.mockRestore();vi.unstubAllEnvs();await rm(directory, { recursive: true, force: true }); }
+  });
+});
