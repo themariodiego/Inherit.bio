@@ -27,14 +27,17 @@ export async function openParticipantCReadSession(options: {
     return diagnose("read-publication-contract", async () => participantCPublication(value, options.ownerId, options.cohortId));
   };
   const noModelSurface = async (page: Page) => diagnose("read-no-model-surface", async () => {
-    await expect(page.locator('[data-slot="no-rows"]').first()).toBeVisible();
-    await expect(page.locator('[data-slot="no-rows"]').first()).toHaveText(NO_ROWS_SENTENCE);
-    return participantCNoModelSurface({
+    await diagnose("read-no-model-visible", () => expect(page.locator('[data-slot="no-rows"]').first()).toBeVisible());
+    await diagnose("read-no-model-text", () => expect(page.locator('[data-slot="no-rows"]').first()).toHaveText(NO_ROWS_SENTENCE));
+    const surface = await diagnose("read-no-model-dom", async () => ({
       notices: await page.locator('[data-slot="no-rows"]').allTextContents(),
       conditionRows: await page.locator('[data-condition-id]').count(),
       figures: await page.locator('[data-figure-kind]').evaluateAll(nodes => nodes.map(node => ({
         kind: node.getAttribute("data-figure-kind"), class: node.getAttribute("data-figure-class"),
       }))),
+    }));
+    return participantCNoModelSurface(surface, (stage, error) => {
+      try { options.diagnostic?.(stage, error, "unreturned"); } catch { /* Original schema refusal remains. */ }
     });
   });
   await current();

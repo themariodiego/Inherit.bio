@@ -6,7 +6,10 @@ import type { LiveSessionSetupStage } from "./live-browser";
 export type ParticipantCReadStage = LiveSessionSetupStage | "read-cohort-query" | "read-embryos-query"
   | "read-cohort-result" | "read-embryos-result" | "read-files-query" | "read-worker-proof"
   | "read-native-publication" | "read-publication-contract"
-  | "read-sign-in" | "read-comparison-navigation" | "read-permission" | "read-result-gate" | "read-no-model-surface";
+  | "read-sign-in" | "read-comparison-navigation" | "read-permission" | "read-result-gate" | "read-no-model-surface"
+  | "read-no-model-visible" | "read-no-model-text" | "read-no-model-dom" | ParticipantCNoModelSchemaStage;
+export type ParticipantCNoModelSchemaStage = "read-no-model-notices" | "read-no-model-condition-rows"
+  | "read-no-model-figures" | "read-no-model-shape";
 export type ParticipantCReadDiagnostic = (stage: ParticipantCReadStage, error: unknown,
   cleanup: "unreturned" | "uncertain") => void;
 
@@ -89,13 +92,34 @@ export function participantCPublication(value: unknown, ownerId: string, cohortI
 
 /** Read from the real comparison after the same native publication check.
  * File-quality figures cannot supply or be relabelled as a personal risk. */
-export function participantCNoModelSurface(value: unknown) {
-  return z.object({
-    notices: z.array(z.literal(NO_ROWS_SENTENCE)).min(1),
-    conditionRows: z.literal(0),
-    figures: z.array(z.object({ kind: z.enum(["coverage", "natural-frequency", "measure"]),
-      class: z.literal("quality") }).strict()).min(1),
-  }).strict().parse(value);
+export function participantCNoModelSurface(value: unknown,
+  diagnostic?: (stage: ParticipantCNoModelSchemaStage, error: unknown) => void) {
+  try {
+    return z.object({
+      notices: z.array(z.literal(NO_ROWS_SENTENCE)).min(1),
+      conditionRows: z.literal(0),
+      figures: z.array(z.object({ kind: z.enum(["coverage", "natural-frequency", "measure"]),
+        class: z.literal("quality") }).strict()).min(1),
+    }).strict().parse(value);
+  } catch (error) {
+    // Only the fixed first schema category is selected. No issue message,
+    // input, value or path is forwarded, and the original exception is rethrown.
+    let field: unknown;
+    try {
+      if (error instanceof z.ZodError) {
+        const issues = Object.getOwnPropertyDescriptor(error, "issues")?.value;
+        const issue = Array.isArray(issues) ? Object.getOwnPropertyDescriptor(issues, "0")?.value : undefined;
+        const path = issue !== null && typeof issue === "object"
+          ? Object.getOwnPropertyDescriptor(issue, "path")?.value : undefined;
+        field = Array.isArray(path) ? Object.getOwnPropertyDescriptor(path, "0")?.value : undefined;
+      }
+    } catch { /* Unknown error metadata cannot replace the original refusal. */ }
+    const stage: ParticipantCNoModelSchemaStage = field === "notices" ? "read-no-model-notices"
+      : field === "conditionRows" ? "read-no-model-condition-rows"
+      : field === "figures" ? "read-no-model-figures" : "read-no-model-shape";
+    try { diagnostic?.(stage, error); } catch { /* Original refusal remains. */ }
+    throw error;
+  }
 }
 
 /** Missing storage, foreign paths or events cannot turn into a zero-action pass. */
