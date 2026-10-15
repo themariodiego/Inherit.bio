@@ -7,6 +7,7 @@ import { OwnerObjection } from "@/components/future-person/owner-objection";
 import {loadAccountBinding} from "@/lib/future-person/account-binding";
 import {ClaimantAccountBinding} from "@/components/future-person/account-binding";
 import {loadClaimantRights} from "@/lib/future-person/rights";
+import {presentClaimantDeletion} from "@/lib/future-person/claimant-deletion-presentation";
 import {ClaimantRights} from "@/components/future-person/claimant-rights";
 import {CorrectionRequestForm} from "@/components/future-person/correction-request";
 import { route } from "@/lib/primary-routes";
@@ -47,7 +48,7 @@ export default async function RightsSessionPage() {
   if (ownerNotice) return <OwnerObjection summary={ownerNotice.view.safeNoticeSummary} deadline={ownerNotice.view.noticeDeadline}
     explanation={ownerNotice.view.objectionArtifactBody} csrf={ownerNotice.csrf} nonce={ownerNotice.nonce} />;
   const claimant=await loadClaimantRights(request);
-  if(claimant)return <><ClaimantRights csrf={claimant.csrf} recoveryNonce={claimant.recoveryNonce} analysisNonce={claimant.analysisNonce}/>
+  if(claimant)return <><ClaimantRights csrf={claimant.csrf} recoveryNonce={claimant.recoveryNonce} analysisNonce={claimant.analysisNonce} deletion={await presentClaimantDeletion(request)}/>
     {claimant.correctionNonce&&<CorrectionRequestForm csrf={claimant.csrf} nonce={claimant.correctionNonce} ownStatementDownloadsEnabled/>}
     <div className="mx-auto max-w-3xl px-6 pb-16"><ClaimantAccountBinding csrf={claimant.csrf} nonce={await loadAccountBinding(request)}/></div></>;
 

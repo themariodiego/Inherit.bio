@@ -115,10 +115,14 @@ describe("separate fitted TEST native authority and saved read", () => {
   });
   it("returns null only for absent fit admission/no fit job and refuses every current stale or denied result", () => {
     const current = body(fit, "function public.current_embryo_test_statistical_fit_v1(", "current_hold");
-    expect(current.match(/return null;/g)).toHaveLength(2);
+    expect(current.match(/return null;/g)).toHaveLength(3);
     expect(current).toContain("if private.current_embryo_test_fit_admission_v1() is null then return null;end if;");
     expect(current).toContain("perform private.validate_sensitive_account_session_read_v1(p_account,p_session)");
     expect(current).toContain("private.cohort_copilot_authority_v1(p_account,p_cohort)");
+    const absentFit = current.indexOf("if not exists(select 1 from public.worker_jobs where cohort_id=p_cohort and kind='score_embryo'");
+    expect(absentFit).toBeGreaterThan(current.indexOf("private.cohort_copilot_authority_v1(p_account,p_cohort)"));
+    expect(absentFit).toBeLessThan(current.indexOf("begin a:=private.capture_embryo_test_statistical_fit_v1(p_cohort,true)"));
+    expect(current.slice(absentFit, current.indexOf("begin a:=", absentFit))).not.toMatch(/\b(?:status|payload|file_sha256|finished_at)\b/);
     expect(current).toContain("and computation_revision='embryo-test-statistical-fit-v1') then");
     expect(current).toContain("score.computation_receipt is distinct from private.embryo_test_fit_receipt_v1(j,e,c,expected)");
     expect(current).toContain("computation_receipt->>'job_id'=j.id::text)<>v_count then raise exception");

@@ -18,7 +18,11 @@ const claim = z.object({ status: z.literal("claimed"), manifestId: z.uuid(), obj
  * no retry or deadline renewal happens here. This does not claim full subject
  * deletion: canonical custody and provenance remain until the graph executor
  * has separately proved complete cleanup. */
-export async function drainClaimantSource(input: { rpc: EmbryoFragmentRpc; manifestId: string; signal: AbortSignal }) {
+export async function drainClaimantSource(input: { rpc: EmbryoFragmentRpc; manifestId: string; signal: AbortSignal;
+  /** Optional trusted continuation, never an HTTP/provider-supplied callback.
+   * The unchanged token must reach the existing full native graph finisher
+   * while this actual source claim is still live. Default behavior is exact. */
+  finish?: (manifestId: string, claimTokenHash: string, signal: AbortSignal) => Promise<void> }) {
   const signal = AbortSignal.any([input.signal, AbortSignal.timeout(25_000)]);
   const token = createHash("sha256").update(randomBytes(32)).digest("hex");
   const call = async (operation: "claim" | "acknowledge" | "proof", extra: Record<string, unknown> = {}) => {
@@ -48,5 +52,10 @@ export async function drainClaimantSource(input: { rpc: EmbryoFragmentRpc; manif
   }
   const result = z.object({ status: z.enum(["source_pending", "source_tombstoned"]) }).strict().parse(await call("proof"));
   if (failed && result.status === "source_tombstoned") throw new Error("claimant_cleanup_unavailable");
+  if (result.status === "source_tombstoned" && input.finish) {
+    signal.throwIfAborted();
+    await input.finish(input.manifestId, token, signal);
+    signal.throwIfAborted();
+  }
   return { status: result.status, disposed, failed };
 }

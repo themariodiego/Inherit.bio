@@ -5281,6 +5281,12 @@ begin
  perform 1 from public.subjects where cohort_id=p_cohort order by id for update;
  perform private.validate_sensitive_account_session_read_v1(p_account,p_session);
  if private.cohort_copilot_authority_v1(p_account,p_cohort) is null then raise exception using errcode='42501',message='embryo_test_statistical_fit_unavailable';end if;
+ -- Genuine absence is checked only after the unchanged current authority.
+ -- Every retained attempt counts, without status, receipt or freshness filters.
+ if not exists(select 1 from public.worker_jobs where cohort_id=p_cohort and kind='score_embryo'
+  and output_kind='embryo.statistical-estimate' and computation_revision='embryo-test-statistical-fit-v1') then
+  return null;
+ end if;
  begin a:=private.capture_embryo_test_statistical_fit_v1(p_cohort,true);
  exception when insufficient_privilege then raise exception using errcode='42501',message='embryo_test_statistical_fit_unavailable';end;
  if a is null then raise exception using errcode='42501',message='embryo_test_statistical_fit_unavailable';end if;

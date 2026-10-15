@@ -210,9 +210,10 @@ describe("the route register and the App Router describe the same surface", () =
   it("leaves the unbuilt half of the register alone, but still measures it", () => {
     const builtUrls = new Set(built.map(route => route.url));
     const unbuilt = entries.filter(entry => !concretePaths(entry).some(candidate => builtUrls.has(candidate)));
-    // The four native appeal/evidence endpoints reduce the remaining backlog.
+    // The four native appeal/evidence endpoints reduce the remaining backlog,
+    // and the reviewed claimant DELETE (api.future-person-delete) reduces it again.
     // Keep the exact census: new implementations require an explicit review.
-    expect(unbuilt.length).toBe(27);
+    expect(unbuilt.length).toBe(26);
     expect(unbuilt.length).toBeLessThan(entries.length);
   });
 });

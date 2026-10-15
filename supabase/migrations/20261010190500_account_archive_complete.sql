@@ -1808,6 +1808,12 @@ begin
   'history-rows','history-bytes','file-rows','file-bytes','prepared-member')
   or(p_after_key is not null and octet_length(p_after_key::text)>8192) then
   raise exception using errcode='22023',message='invalid_request';end if;
+ -- A consumed complete request must remain inside its actual native TEST
+ -- mode before generic currentness can select the preserved legacy delegate.
+ -- The origin comes only from this durable native job, never from the caller.
+ if private.account_archive_complete_enabled_v1(
+  (select stored_job.origin from private.export_archive_jobs stored_job where stored_job.export_id=p_export_id)) is not true then
+  raise exception using errcode='42501',message='not_found';end if;
  permit:=private.export_account_archive_attempt_v1(p_export_id,p_attempt_id,p_authority_receipt);
  if permit->>'targetKind' is distinct from 'account' then raise exception using errcode='42501',message='not_found';end if;
  capture:=private.account_archive_complete_capture_v1(permit->'origin');

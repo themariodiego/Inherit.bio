@@ -289,7 +289,8 @@ describe("configure with synthetic command adapters", () => {
 describe("closed TEST provider settings in the local template", () => {
   const external = ["INHERIT_TEST_STATEMENT_GATEWAY_URL", "INHERIT_TEST_STATEMENT_GATEWAY_KEY",
     "INHERIT_TEST_STATEMENT_R2_BUCKET", "INHERIT_TEST_STATEMENT_R2_BINDING_SHA256",
-    "INHERIT_TEST_REQUESTER_STATEMENT_R2_DATABASE", "INHERIT_TEST_ACCOUNT_ARCHIVE_R2", "INHERIT_TEST_ACCOUNT_ARCHIVE_R2_DATABASE"];
+    "INHERIT_TEST_REQUESTER_STATEMENT_R2_DATABASE", "INHERIT_TEST_ACCOUNT_ARCHIVE_R2", "INHERIT_TEST_ACCOUNT_ARCHIVE_R2_DATABASE",
+    "INHERIT_TEST_CLAIMANT_RIGHTS"];
   const template = "# Keep external TEST providers closed\n" + external.map(name => `${name}=placeholder`).join("\n")
     + "\nLOCAL_SETTING=placeholder\n";
   it("omits only the explicit external settings while retaining comments and reviewed local values", () => {
