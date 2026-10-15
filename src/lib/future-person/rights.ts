@@ -50,7 +50,7 @@ export async function loadClaimantRights(request:Request) {
   return {view:parsed.data,csrf:claimantCsrf(hash),recoveryNonce:mintPublicFormToken("future-person-recovery-key",Date.now(),hash),
     analysisNonce:mintPublicFormToken("future-person-analysis-stop",Date.now(),hash),correctionNonce:null};
 }
-export function claimantMutation(request:Request,token:string,operation:"future-person-recovery-key"|"future-person-analysis-stop") {
+export function claimantMutation(request:Request,token:string,operation:"future-person-recovery-key"|"future-person-analysis-stop"|"future-person-delete") {
   const url=new URL(request.url);const hash=claimantSessionHash(request);const csrf=request.headers.get("x-inherit-csrf");
   if(!hash||url.search!==""||request.headers.get("origin")!==url.origin||request.headers.get("sec-fetch-site")!=="same-origin"
     ||!csrf||!/^[0-9a-f]{64}$/u.test(csrf)||!crypto.timingSafeEqual(Buffer.from(csrf),Buffer.from(claimantCsrf(hash))))return null;

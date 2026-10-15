@@ -1,3 +1,5 @@
+import {configuredTestClaimantDeletion} from "@/lib/future-person/claimant-deletion-test";
+import {maintainClaimantDeletion} from "@/lib/future-person/claimant-deletion";
 import {requesterStatementsOpen} from "@/lib/future-person/requester-statement";
 import {configuredRequesterStatementGateway} from "@/lib/exports/requester-statement-private-transport";
 import {drainRequesterStatementCopies} from "@/lib/exports/requester-statement-copy-retention";
@@ -242,6 +244,14 @@ export async function POST(request: Request) {
     if(claimantContactPurgeError)failed++;
     else if(typeof purgedContacts==="number")processed+=purgedContacts;
   } catch { failed++; }
+
+  // Only already-sealed claimant cleanup, after genuine document disposal
+  // above. The exact native inline phase is excluded from generic claims.
+  // No new deletion request, rights nonce, acceptance or notice is issued.
+  try{
+    const execution=configuredTestClaimantDeletion(process.env,"maintenance");
+    if(execution){const result=await maintainClaimantDeletion({execution,signal:preparedCleanupSignal});processed+=result.completed;}
+  }catch{failed++;}
 
   // Refused drafts use storage-aware cleanup. An unrelated expiry queue must
   // not prevent this already-due work from making progress.

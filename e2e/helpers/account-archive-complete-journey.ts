@@ -168,10 +168,10 @@ export async function exerciseCompleteAccountArchiveDelivery(options:{page:Page;
   allocations:Object.freeze(allocations)});
 }
 
-/** A separate later checkpoint, after the real expiry workflow has stopped
- * this attempt and its native cleanup fence is genuinely due. Root invokes the
- * ordinary disposal worker to make that transition first; neither this probe
- * nor an ACK changes or backdates a deadline. It submits one natural operation,
+/** A separate later checkpoint, after the original job deadline and the
+ * allocation cleanup fence are genuinely due. The single ordinary disposal
+ * worker performs the original stop and deletion; neither this probe nor an
+ * ACK changes or backdates a deadline. It submits one natural operation,
  * then requires native absence ACKs for the entire unchanged allocation bag.
  * Provider history and platform copies remain separately qualified policy. */
 export async function exerciseCompleteAccountArchiveDisposal(options:{page:Page;accountId:string;jobSecret:string;
@@ -182,7 +182,9 @@ export async function exerciseCompleteAccountArchiveDisposal(options:{page:Page;
  const before=await allocationProof(uuid.parse(delivery.exportId),uuid.parse(delivery.attemptId),uuid.parse(options.accountId),signal);
  expect(before.identitySha256).toBe(expected.identitySha256);expect(before.count).toBe(expected.count);
  expect(before.written).toBe(expected.written);expect(before.disposed).toBe(0);expect(before.absent).toBe(0);expect(before.deleted).toBe(0);
- expect(before.deadlinePassed).toBe(true);expect(before.stopped).toBe(true);expect(before.cleanupDue).toBe(true);
+ // The same original job stops an actually due attempt, then disposes it.
+ // A separate earlier job call would already delete the allocation before this audit.
+ expect(before.deadlinePassed).toBe(true);
  const response=await options.page.request.post("/api/jobs/account-export",{headers:{authorization:`Bearer ${options.jobSecret}`,
   "X-Inherit-Account-Export-Operation":"disposal"}});
  expect(response.status()).toBe(204);expect(await response.body()).toHaveLength(0);

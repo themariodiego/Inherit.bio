@@ -533,12 +533,48 @@ savepoint changed_config;
 update private.account_archive_r2_configuration set binding_sha256=repeat('3',64);
 select throws_ok($$select pg_temp.complete_read('claimant','context')$$,'42501','not_found','changed native provider binding invalidates the full captured authority');
 rollback to changed_config;
+-- The actual durable jobs and configuration are observed in full. These
+-- reads grant nothing and record no source/provider completion; the genuine
+-- current requests and attempts were created by the original fixture above.
+create function pg_temp.complete_closed_config_bag() returns jsonb language sql as $$
+ select jsonb_build_object(
+  'configuration',(select to_jsonb(configuration) from private.account_archive_r2_configuration configuration where singleton),
+  'jobs',(select jsonb_agg(to_jsonb(job) order by job.export_id) from private.export_archive_jobs job
+   where job.export_id in(select (created->>'exportId')::uuid from complete_jobs)),
+  'exports',(select jsonb_agg(to_jsonb(generated) order by generated.id) from public.generated_exports generated
+   where generated.id in(select (created->>'exportId')::uuid from complete_jobs)),
+  'attempts',(select jsonb_agg(to_jsonb(attempt) order by attempt.id) from private.export_archive_attempts attempt
+   where attempt.id in(select complete_jobs.attempt from complete_jobs))); $$;
+create temporary table complete_closed_config_before as select pg_temp.complete_closed_config_bag() value;
 savepoint closed_config;
 update private.account_archive_r2_configuration set enabled=false;
 select throws_ok($$select pg_temp.complete_read('claimant','context')$$,'42501','not_found','config OFF cannot fall back to a prior legacy receipt');
 select throws_ok($$select private.account_archive_test_cleanup_due_v1()$$,
  '42501','account_archive_test_unavailable','config OFF cannot discover/stop cleanup through a JS flag');
+-- All selectors below use the genuine current frames/keys already proved
+-- above. Disabling the mode cannot select legacy data in any reader family.
+select throws_ok($$select pg_temp.complete_read('owner','context')$$,'42501','not_found',
+ 'config OFF closes the genuine ordinary complete context without adopting a legacy capture');
+select throws_ok($$select pg_temp.complete_read('owner','row-bytes','report_artifacts',jsonb_build_object(
+ 'key',(select value#>'{rows,0,key}' from large_page),'offset',0))$$,'42501','not_found',
+ 'config OFF closes the actual greater-than4MB class byte source');
+select throws_ok($$select pg_temp.complete_read('claimant','member-rows','reports.json',jsonb_build_object(
+ 'subjectId',(select id from normalization_subject),'afterKey',null))$$,'42501','not_found',
+ 'config OFF closes the genuine separately signed related report member');
+select throws_ok($$select pg_temp.complete_read('claimant','history-rows','subjects')$$,'42501','not_found',
+ 'config OFF closes the genuine routed requester history');
+select throws_ok($$select pg_temp.complete_read('claimant','file-rows','variants',jsonb_build_object(
+ 'fileId','77900000-0000-4000-8000-000000000083','afterKey',null))$$,'42501','not_found',
+ 'config OFF closes the genuinely separately authorized foreign raw file');
+select throws_ok($$select pg_temp.complete_read('claimant','original',null,jsonb_build_object(
+ 'fileId','77900000-0000-4000-8000-000000000083','expected',(select value from complete_original)))$$,'42501','not_found',
+ 'config OFF closes the actual physical-version-bound original descriptor');
+select is(pg_temp.complete_closed_config_bag(),
+ (select jsonb_set(value,'{configuration,enabled}','false'::jsonb,false) from complete_closed_config_before),
+ 'all disabled complete refusals preserve the whole actual durable jobs, exports, attempts and unchanged configuration fields');
 rollback to closed_config;
+select is(pg_temp.complete_closed_config_bag(),(select value from complete_closed_config_before),
+ 'rollback restores the complete original durable job/attempt/export/configuration bag after all disabled reader families');
 savepoint revoked_raw;
 select public.revoke_directional_purpose_v1('77900000-0000-4000-8000-000000000001',(select id from archive_grants where purpose='raw.export'));
 select throws_ok($$select pg_temp.complete_read('claimant','file-rows','variants',jsonb_build_object(

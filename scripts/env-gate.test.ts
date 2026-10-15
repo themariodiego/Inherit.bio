@@ -139,24 +139,29 @@ describe("the env gate holds .env.example to what the code reads", () => {
     // Complete TEST archives add two current process.env bindings: chunk HTTP
     // and the capability factory. They share one already-declared flag, so the
     // bound-key census gains one while the complete union stays unchanged.
-    expect(result.boundReadKeyCount).toBe(25);
+    // The claimant adapter adds one binding with four exact keys. The archive
+    // flag was already bound; the claimant flag and the already-declared DSN
+    // and CA become three additional bound keys. Only the claimant flag adds
+    // a key to the complete direct/bound union.
+    expect(result.boundReadKeyCount).toBe(28);
     // Future Person adds the TEST-LOCAL flag binding in futurePersonClaimsOpen.
     // The scanner selector adds INHERIT_CLAMD_ADDRESS as its ninth binding.
     // Exact scanner census: base 9 + NEW captures 5 across four modules = 14.
     // The conservative typed-parameter heuristic also captures `expected`
     // and `gateway`; this number is scanner bindings, not distinct env keys.
     // Keep that detector and every other assertion unchanged.
-    // The complete archive selectors add two more bindings to that earlier 14.
-    expect(result.boundBindingCount).toBe(16);
+    // The archive selectors add two bindings to that earlier 14, and the
+    // claimant adapter adds one; distinct keys and binding sites differ.
+    expect(result.boundBindingCount).toBe(17);
     expect(result.dynamicReadSiteCount).toBe(1);
-    expect(result.readKeyCount).toBe(48);
-    expect(result.templateKeyCount).toBe(40);
+    expect(result.readKeyCount).toBe(49);
+    expect(result.templateKeyCount).toBe(41);
     // Every key an operator is told to fill in is named in the guide they
     // follow, and the ten further names the guide writes as configuration are
     // the recorded ones: the two labels the Supabase CLI prints, the worker's
     // own project URL, and the seven nobody should ever set by hand.
-    expect(result.guideDocumentedKeyCount).toBe(40);
-    expect(result.guideNamedCount).toBe(51);
+    expect(result.guideDocumentedKeyCount).toBe(41);
+    expect(result.guideNamedCount).toBe(52);
     expect(result.guideNamedCount).toBe(result.templateKeyCount + GUIDE_FOREIGN_NAMES.length);
     expect(result.runtimeInjectedKeyCount).toBe(8);
   });
@@ -173,14 +178,15 @@ describe("the env gate holds .env.example to what the code reads", () => {
       const result = runEnvGate(root);
       expect(result.failures).toEqual([]);
       expect(result.directReadKeyCount).toBe(26);
-      // The other current archive reader still contributes the same bound key.
-      expect(result.boundReadKeyCount).toBe(25);
-      expect(result.boundBindingCount).toBe(15);
-      expect(result.readKeyCount).toBe(48);
+      // The other archive reader and the independent claimant adapter still
+      // bind this flag; the claimant adapter also retains its transport keys.
+      expect(result.boundReadKeyCount).toBe(28);
+      expect(result.boundBindingCount).toBe(16);
+      expect(result.readKeyCount).toBe(49);
     },
   );
 
-  it("restores the prior bound census only when both real archive bindings are removed", () => {
+  it("retains the claimant bound keys when both archive bindings are removed", () => {
     const modules: Record<string, string> = {};
     for (const file of ["src/lib/exports/account-archive-chunk-http.ts", "src/lib/exports/account-archive-test-capabilities.ts"]) {
       const source = readFileSync(path.join(REPOSITORY_ROOT, file), "utf8");
@@ -190,10 +196,43 @@ describe("the env gate holds .env.example to what the code reads", () => {
     const result = runEnvGate(plant({ modules }));
     expect(result.failures).toEqual([]);
     expect(result.directReadKeyCount).toBe(26);
-    expect(result.boundReadKeyCount).toBe(24);
-    expect(result.boundBindingCount).toBe(14);
+    // Removing two binding sites does not remove a key still bound by the
+    // claimant adapter, including its independent request/retained transport.
+    expect(result.boundReadKeyCount).toBe(28);
+    expect(result.boundBindingCount).toBe(15);
     // The original direct R2 reader and declaration remain: this is not a lost key.
+    expect(result.readKeyCount).toBe(49);
+  });
+
+  it("counts the claimant's exact binding and refuses its declaration after that binding is removed", () => {
+    const file = "src/lib/future-person/claimant-deletion-test.ts";
+    const source = readFileSync(path.join(REPOSITORY_ROOT, file), "utf8");
+    expect(moduleEnvReads(source)).toEqual({
+      direct: [],
+      bound: ["INHERIT_TEST_ACCOUNT_ARCHIVE_R2", "INHERIT_TEST_ACCOUNT_ARCHIVE_R2_DATABASE",
+        "INHERIT_TEST_ACCOUNT_ARCHIVE_R2_DATABASE_CA_CERT", "INHERIT_TEST_CLAIMANT_RIGHTS"],
+      bindings: ["env"], dynamic: [],
+    });
+    expect(source.split("=process.env")).toHaveLength(2);
+    const removed = source.replace("=process.env", "={}");
+    expect(moduleEnvReads(removed)).toEqual({ direct: [], bound: [], bindings: [], dynamic: [] });
+    const result = runEnvGate(plant({ modules: { [file]: removed } }));
+    // The archive readers retain their bound flag, and the direct adapter
+    // retains the declared DSN/CA. Only the claimant-only flag loses its read.
+    expect(result.failures).toEqual([
+      "stale environment variable: .env.example declares INHERIT_TEST_CLAIMANT_RIGHTS but nothing under src/ reads it",
+    ]);
+    expect(result.directReadKeyCount).toBe(26);
+    expect(result.boundReadKeyCount).toBe(25);
+    expect(result.boundBindingCount).toBe(16);
     expect(result.readKeyCount).toBe(48);
+  });
+
+  it("refuses a missing claimant declaration read through its actual environment binding", () => {
+    const root = plant({ template: withoutTemplateLine("INHERIT_TEST_CLAIMANT_RIGHTS") });
+    expect(runEnvGate(root).failures).toContain(
+      `undocumented environment variable: not recorded in RUNTIME_INJECTED in ${GATE}: INHERIT_TEST_CLAIMANT_RIGHTS`,
+    );
   });
 
   it.each(["INHERIT_TEST_ACCOUNT_ARCHIVE_R2", "INHERIT_TEST_ACCOUNT_ARCHIVE_R2_DATABASE", "INHERIT_TEST_ACCOUNT_ARCHIVE_R2_DATABASE_CA_CERT"])(

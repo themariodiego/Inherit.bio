@@ -1,3 +1,77 @@
+## 2026-10-15 — Claimant environment binding census correction (source proposal, UNRUN)
+
+The first affected 20-file qualification at staged tree `7573dfc38e441716d8d5d5798d537af3c24323bf` completed all 374 cases: 370 passed and four failed in `scripts/env-gate.test.ts`. Three assertions expected 26 bound keys and one expected 25; all observed 28. The original complete JSON vector and stdout/stderr/result remain intact under `integration-evidence/20261015/current-ci-affected-qualification-actual-v1`. No SQL-includes, canonical types or quality gate was launched after that failure, and no qualification retry has run.
+
+`boundReadKeyCount` counts distinct keys read through any detected `process.env` binding, independently of direct reads and binding-site count. The claimant adapter adds one binding for the existing archive flag, its new claimant flag, and the already-declared archive database DSN and public CA. The last two were already direct reads and are now also bound reads; the shared archive flag remains bound through the claimant adapter even after both archive-reader bindings are removed. The complete source therefore has 28 bound keys; removing one/two archive binding sites leaves 28 keys and reduces binding count from 17 to 16/15.
+
+The proposed correction changes those exact census expectations, names all four claimant-bound keys and the single binding, then removes only that binding to require 25 bound keys, 16 bindings and the exact stale claimant-declaration refusal. An additive control removes the claimant template line and requires its original undocumented-variable refusal. All prior negative cases, detector logic, runtime/dynamic ledgers, declarations, guide, parser and refusal semantics remain unchanged. These two additional cases remain UNRUN; only the whole env-gate file needs affected unit qualification before the previously unlaunched SQL-includes/types/full quality sequence.
+
+## 2026-10-15 — No-ever-fit absence precedes split-dependent recapture (source composed)
+
+The native correction proposed on 11 October is now composed locally after Root source review. After the unchanged TEST/admission, transition/subject locks, sensitive session and current cohort authority, a cohort with no retained fit job returns NULL before split-dependent full capture. Queued jobs already receive the exact kind/output/revision at creation and immutable bindings preserve them thereafter; every retained queued, running, failed, cancelled, terminal or stale fit attempt still enters the unchanged full refusal and receipt/source checks.
+
+The source invariant now counts the added third NULL branch and checks authority-before-absence, absence-before-capture, and the lack of status/receipt/freshness filters. Both original NULL branches and every other original assertion remain. The existing 40 pure native controls are byte-exact. A separate owner-only pgTAP include/caller is saved for review against the actual admitted signed participant-C fixture after split restores OFF; it installs no admission, provider proof or successful fit receipt. All changed controls remain UNRUN; no native/provider/browser/CI command has run for this composition.
+
+## 2026-10-15 — Complete reader refusal source composed for affected qualification
+
+Root reviewed and approved the 11 October source proposal below on 15 October. The stored-origin guard and eight additive native assertions are now composed locally over the preserved ArchiveV3+DELETEV2 work. No native function or test has run for this composition; qualification remains pending.
+
+## 2026-10-11 — Complete account reader refuses disabled native mode before legacy recapture (source-only)
+
+Actual Account60065 CI38116771997/a1 database job114403098922 and Density5c0b CI38116981290/a1 database job114403702745 completed with the same single pgTAP failure: account_archive_complete.sql test234, `config OFF cannot fall back to a prior legacy receipt`, caught `0A000: export_partition_projection_unavailable` while the unchanged assertion requires `42501: not_found`. All276 account assertions ran; full database vectors were Account200files/13465 outcomes and Density201files/13541 outcomes, bothFAIL. Complete original logs and exact job/head/attempt metadata are preserved locally under integration-evidence/20261011/account60065-density5c0b-database-terminal-originals-v1 because the external evidence SSD was physically absent. Neither original was rerun.
+
+Source trace: the complete RPC currently enters generic attempt/currentness recapture before its complete-mode capture guard. Disabling the native configuration selects the preserved ordinary default-OFF delegate; the genuine claimant's related partitions then raise the unsupported legacy projection exception. The proposed change adds one early call to the unchanged native complete-enabled predicate on the exact durable job's stored origin before that recapture. The original attempt, consumed nonce, actor/session, target, whole capture/currentness, source bytes/EOF, before/after checks, operation/selector DTOs, role/ACL and all limits remain byte-exact. Ordinary default-OFF and subject capture/delegate behavior are unchanged; no exception expectation, fallback or provider requirement is relaxed.
+
+The full original276 assertion vector stays intact. Eight additive native controls use existing genuine ordinary/context, large-byte, signed report, history, foreign raw and physical-version original selectors, then compare the complete stored job/export/attempt/configuration bag during refusal and after the original rollback. All eight controls and the proposed correction remain UNRUN; no native function, browser, provider or qualification command was executed for this source proposal. ArchiveV3+DELETE stagedtree18221 and full current history are preserved; this prefix alone is for later reviewed composition.
+
+The owner separately approved a separate TEST Cloudflare account. That decision is a provisioning prerequisite only: it does not qualify any provider, permission boundary, all-writer gateway, binding, native configuration or archive/deletion completion. No provider access/configuration/activation was performed here, and the broad-writer/rebinding-token HOLD remains until genuine isolated qualification.
+
+## Optional claimant cleanup requires a retained dedicated transport · 11 October 2026
+
+The V1 claimant DELETE source proposal created an optional maintenance capability
+in every TEST run, even when its dedicated database transport was absent. The
+unchanged retention route catches that continuation failure, increments its
+private failure accumulator and reports `completed_with_failures` through the
+existing data-free machine result. An unused feature must preserve the ordinary
+idle `no_work` outcome.
+
+The saved V2 successor adds only an absent-or-empty dedicated-DSN guard for
+maintenance before parser/client acquisition. A nonempty malformed DSN still
+refuses through the unchanged strict transport parser. Request activation and
+native TEST configuration remain mandatory for new deletion requests; already
+sealed due cleanup may still use its genuine retained DSN after those request
+flags or configuration are revoked. No request, grant, source authority, clock,
+retry, native function, production activation or acceptance row is changed.
+
+All 53 V1 control identities and three whole files are retained. Two added
+factory cases assert no parser, client, query, RPC or close for absent transport.
+A new whole route control file composes the actual retention POST, actual
+capability factory and actual strict parser with explicit unrelated idle queue
+doubles. Its four cases require exact `no_work` without acquisition for absent
+or empty DSN, and exact `completed_with_failures` for nonempty malformed DSN.
+The existing retained-DSN due/finish positive after request/configuration
+revocation remains unchanged. All six added controls are UNRUN; the original
+5000ms case default and every DELETE/native/provider bound remain unchanged.
+There is no provider or complete rights lifecycle credit from this source pack.
+
+## 2026-10-11 — G5.4 claimant DELETE source slice (TEST only; UNRUN)
+
+The registered accountless `DELETE /api/future-person/claim/session` now has a source candidate using the existing current attested claimant rights cookie, same-origin CSRF and a distinct one-use operation token. It prepares the existing native sealed plan exactly once. It then uses the existing source-part gateway and unchanged claim token for actual empty-marker verification and native ACK/proof, and invokes the existing private full-graph finisher. The public 202 `{status:"deletion_accepted"}` is possible only after that exact finisher returned `{status:"deleted"}` and the actual owned native connection closed. Preparation, revocation, a source tombstone, a supplied receipt, a timeout and an unknown COMMIT never constitute completion or send a success notice. No native body, role grant, source authority, retention clock, class-specific refusal or parent/sibling permission changes.
+
+A separately blank `INHERIT_TEST_CLAIMANT_RIGHTS` opt-in requires TEST jurisdiction, the existing TEST transport setting, actual enabled native TEST store configuration and configured source gateway before request admission. Production remains OFF. The claimant-only page control is presented from the real strict current native rights view and is submitted once. Existing recovery and stop controls retain their original behavior. The existing retention job gains a one-manifest native discovery/continuation after its actual claim-document removal/confirmation and intake/contact purge: this reuses a genuinely sealed due plan after revocation, never prepares another request or renews the original seven/thirty-day clocks, and refuses any still-unproved store graph. It retains the original worker authorization and bound.
+
+Three new whole control files author 53 UNRUN cases: 15 real in-memory gateway/source ACK/full terminal and maintenance cases, 18 actual adapter owner/configuration/POST/no-retry/30-second deadline/connection-closure cases, and 20 registered route/origin/cookie/body/CSRF/nonce/current-presentation cases. The in-memory gateway is the existing actual gateway implementation over public fixture rows; it is not private R2 or native execution evidence. Native responses and connection events in pure controls are explicit test doubles, not permission or disposal proof. All existing source adapter, rights, whole native erasure, genuine archive/ZIP64 and environment gate assertions remain required. The environment census expectations add exactly the new declared key and its one process.env binding, including dependent planted-module cases.
+
+The exact historical Account66f originals and all whole inverses are saved in the separate source packet. This entry is a raw UTF-8 prefix for composition with the entire then-current history; the immutable historical suffix must never replace newer notes. Root must still qualify complete affected files/types/gates and execute the genuinely approved claimant/native/provider flow, full source graph/parent-and-sibling preservation and physical closure before any acceptance credit or activation. No tests or runtime were run for this candidate.
+
+Claimant export remains HOLD. Its current native request and complete ZIP producer already exist, but the account-only native R2 READY/delivery/disposal doors do not authorize a claimant export. Two prospective private caller adapters are retained separately as HELD and excluded from this DELETE composition. No public export create route or queued result is called completed export; a distinct genuine claimant-family reservation, complete readback, READY, receipt ACK and terminal disposal integration is still required.
+
+## 11 October 2026 — keep the genuine complete-archive delivery obligation outside transient output
+
+The two existing complete account archive audit helpers were not called by a browser spec. The separate Root TEST journey prepares a real authenticated own-file request, native complete capture, generated whole ZIP bytes and actual browser ACK, then saves only its strict synthetic proof for the later original due disposal operation. The outstanding checkpoint now lives in the fixed protected sibling `.<checkout>-account-archive-root-obligation`, outside the checkout and all test/build output. Saving refuses an existing obligation; reading retains canonical ownership/mode, no-follow, one-link, whole-FD/EOF and strict closed proof checks. No saved proof grants private provider authority. Two additive real-file controls cover output cleanup survival and overwrite/symlink refusal; all earlier controls are unchanged.
+
+The helper's former pre-operation stop and cleanup-due assertions are removed only because the same original due worker performs the stop and disposal. The already existing equivalent after-operation assertions remain exactly once. The original native 24-hour job deadline and allocation lease plus 30-second cleanup boundary are unchanged. Root must admit the actual private TEST object provider and select the two phases separately after the real due time; no clock change, generation fixture shortcut, provider execution or G5.6 acceptance is claimed. Frozen V1 and all original source remain preserved; every new control and this journey are UNRUN.
+
 ## 2026-10-11 — Complete archive foreign original stored-version prerequisite (source only; UNRUN)
 
 Exact Account7574 hosted CI38114924246/a1 database job114397816510 retained its full original175,187-byte log. The complete200-file suite ran13,409 TAP outcomes, then reported an abort in account_archive_complete.sql:476 after all220 preceding subtests passed. The closed native error was `not_found` at private.account_archive_complete_original_v1 prosrc line36, whose unchanged predicate requires a strict UUID4 physical Storage version and an unexpired byte lease. The actual private returned descriptor is not in the log; no private field or timeout cause is invented.
