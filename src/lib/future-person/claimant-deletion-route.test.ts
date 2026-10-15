@@ -34,7 +34,7 @@ describe("registered one-use claimant DELETE and presentation",()=>{
   release({status:"deletion_accepted"});const result=await pending;expect(result.status).toBe(202);expect(await result.json()).toEqual({status:"deletion_accepted"});
   expect(result.headers.get("cache-control")).toBe("private, no-store");expect(result.headers.get("referrer-policy")).toBe("no-referrer");
  });
- it.each([{cookie:""},{cookie:`${cookie}; ${cookie}`},{cookie:`${RIGHTS_COOKIE_NAME}=${crypto.randomBytes(32).toString("base64url")}`},
+ it.each<Record<string,string>>([{cookie:""},{cookie:`${cookie}; ${cookie}`},{cookie:`${RIGHTS_COOKIE_NAME}=${crypto.randomBytes(32).toString("base64url")}`},
   {origin:"https://foreign.test"},{"sec-fetch-site":"cross-site"},{"x-inherit-csrf":"c".repeat(64)},
   {"x-inherit-operation-nonce":mintPublicFormToken("future-person-analysis-stop",Date.now(),hash)},
   {"x-inherit-operation-nonce":"x".repeat(2049)}])("refuses crossed/missing destructive control %j before service discovery",async headers=>{

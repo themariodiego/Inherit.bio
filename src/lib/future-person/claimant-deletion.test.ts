@@ -65,7 +65,7 @@ describe("complete claimed-subject deletion boundary",()=>{
   expect(await maintainClaimantDeletion({execution:f.execution,signal:new AbortController().signal})).toEqual({completed:0});
   expect(fetch).not.toHaveBeenCalled();expect(f.execution.finish).not.toHaveBeenCalled();
  });
- it.each([[{manifestId},{manifestId}],[{manifestId,subjectId:randomUUID()}],[{manifestId:"missing"}]])("refuses malformed or oversized discovery %j before any provider bytes",async rows=>{
+ it.each([[[{manifestId},{manifestId}]],[[{manifestId,subjectId:randomUUID()}]],[[{manifestId:"missing"}]]])("refuses malformed or oversized discovery %j before any provider bytes",async rows=>{
   const f=fixture();f.execution={...f.execution,due:vi.fn(async()=>rows)};
   await expect(maintainClaimantDeletion({execution:f.execution,signal:new AbortController().signal})).rejects.toThrow();expect(fetch).not.toHaveBeenCalled();expect(f.execution.finish).not.toHaveBeenCalled();
  });
