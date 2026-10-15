@@ -2,7 +2,7 @@ import { mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, symlinkSync,
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { afterAll, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import { DYNAMIC_ENV_READS, GUIDE_FOREIGN_NAMES, GUIDE_OMITTED, RUNTIME_INJECTED, guideNames, moduleEnvReads,
   runEnvGate, templateKeys } from "./env-gate";
 
@@ -28,8 +28,9 @@ const REPOSITORY_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)
 const GATE = "scripts/env-gate.ts";
 const temporaryRoots: string[] = [];
 
-afterAll(() => {
-  for (const root of temporaryRoots) rmSync(root, { recursive: true, force: true });
+// Each planted repository belongs to one test, so remove it after that test.
+afterEach(() => {
+  for (const root of temporaryRoots.splice(0)) rmSync(root, { recursive: true, force: true });
 });
 
 interface Overrides {
