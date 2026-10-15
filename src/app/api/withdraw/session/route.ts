@@ -1,6 +1,7 @@
 import { getSensitiveAccountContext } from "@/lib/account-deletion";
 import { contactDigestSet, type DigestSet } from "@/lib/hmac-keyring";
 import { adultSubjectResponseBody, readAdultSubjectResponse } from "@/lib/embryos/adult-subject-review";
+import { embryoParentWithdrawalBody, readEmbryoParentWithdrawal, respondEmbryoParentWithdrawal } from "@/lib/embryos/embryo-parent-withdrawal";
 import { notFound } from "@/lib/embryos/api";
 import { closedResponse } from "@/lib/embryos/guards";
 import { invitationRefusalBody, readInvitationRefusal, refusalRequestAllowed } from "@/lib/embryos/invitation-refusal";
@@ -16,12 +17,10 @@ import { readAdultUploadRevisionResponse } from "@/lib/uploads/path-b-review";
 
 /**
  * `POST /api/withdraw/[token]` with the segment pinned to `session`
- * (register api.withdraw). Three rights holders answer here: the invited
- * adult, the co-parent, and (TEST-LOCAL only) the person a Path B file was
- * added for, answering that one file. Which one is answering is decided by
- * the form token the page served, never by a field in the body: an
- * adult-subject form token cannot drive a co-parent refusal or a file answer,
- * and no other pairing is possible either.
+ * (register api.withdraw). Adult-subject, co-parent, embryo-parent and
+ * held-file answers each require their own purpose-bound form token.
+ * The body cannot select authority for another form or rights holder.
+ * The database rechecks the current credential and purpose matrix.
  *
  * The registered receipt is `{status, operation}` and nothing else. An
  * invitation that has expired, been answered or was never this session's is
@@ -79,6 +78,16 @@ export async function POST(request: Request) {
   if (adult.success) {
     const authority = readAdultSubjectResponse(request, adult.data.nonce);
     if (authority) return answerAdultSubject(authority, adult.data.operation);
+  }
+
+  const embryo = embryoParentWithdrawalBody.safeParse(json);
+  if (embryo.success) {
+    const authority = readEmbryoParentWithdrawal(request, embryo.data.nonce);
+    if (authority) {
+      if (!(await respondEmbryoParentWithdrawal(authority, embryo.data.operation))) return notFound();
+      return closedResponse("api.withdraw", RECEIPT_KEYS,
+        { status: "accepted", operation: embryo.data.operation }, 202);
+    }
   }
 
   const body = invitationRefusalBody.safeParse(json);

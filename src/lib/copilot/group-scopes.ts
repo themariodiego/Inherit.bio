@@ -1,3 +1,5 @@
+import { isTestJurisdictionEnabled } from "@/lib/legal/jurisdictions";
+
 /**
  * The Copilot group scopes (register `copilot-route-scope-v1`,
  * `scope-derived-v1`, `copilot-transport-availability-v1`).
@@ -9,8 +11,11 @@
  *      it on everywhere on 2026-09-28 (PR #260), so Overview's Family Copilot
  *      box and the Family hub's Copilot tile open `/copilot/family` wherever
  *      Inherit runs, exactly as the register's box contract names it. The
- *      Embryo (cohort) scope is not built: it waits for embryo publication
- *      and stays refused with the register's `copilotCohortUnavailablePage`.
+ *      Embryo (cohort) scope is built under the TEST-LOCAL acceptance row
+ *      only (`INHERIT_TEST_JURISDICTION=1`), read-only over a published
+ *      cohort (ADR 0034: no sex, no ranking, no score); elsewhere a readable
+ *      cohort's scope is the register's `copilotCohortUnavailablePage` and
+ *      the Embryos box and tile stay on the hub.
  *   2. Can THIS deployment run it? Every group scope is a true non-self
  *      scope, so it runs only on a server-attested same-host local model
  *      (`model-endpoint-v1`). That is decided per request by the page and
@@ -29,7 +34,7 @@ export interface CopilotGroupScopes {
 }
 
 export function copilotGroupScopes(): CopilotGroupScopes {
-  return { family: true, cohort: false };
+  return { family: true, cohort: isTestJurisdictionEnabled() };
 }
 
 const UUID = "[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}";

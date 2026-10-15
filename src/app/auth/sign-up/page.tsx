@@ -1,5 +1,6 @@
 "use client";
 
+import { route } from "@/lib/primary-routes";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -85,7 +86,7 @@ export default function SignUpPage() {
       </p>
       <p className="border-t border-line py-4 text-center text-sm text-ink-muted">
         Already have an account?{" "}
-        <Link href="/auth/sign-in" className="quiet-link">
+        <Link href={route("auth.sign-in")} className="quiet-link">
           Sign in
         </Link>
       </p>

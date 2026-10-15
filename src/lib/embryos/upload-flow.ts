@@ -21,10 +21,16 @@
  *   then `unavailable` — the honest terminal while
  *   `EMBRYO_INGEST_AVAILABLE` is false (design §10). "No" to the first
  *   question ends the flow on that screen.
+ *
+ * Where the later steps are built (`ingest`, TEST-LOCAL only; see
+ * `embryoIngestBuilt` in src/lib/embryos/upload-stage.ts), step 2 ends on
+ * `draft` instead: the embryo count and the other parents' addresses, which
+ * the draft route keeps. Steps 3 to 5 are server-rendered stages of the
+ * record that route makes, so the reducer ends there.
  */
 import type { Basis, SentAnswer, TestedAnswer, UploadSituation } from "@/copy/embryos/upload";
 
-export type Screen = "tested" | "sent" | "pdf-end" | "situation" | "basis" | "basis-named" | "unavailable";
+export type Screen = "tested" | "sent" | "pdf-end" | "situation" | "basis" | "basis-named" | "draft" | "unavailable";
 
 export interface FlowState {
   screen: Screen;
@@ -35,6 +41,8 @@ export interface FlowState {
   /** The attestation checkbox of the chosen situation. */
   attested: boolean;
   basis: Basis | null;
+  /** Whether this deployment builds the steps past step 2 (TEST-LOCAL only). */
+  ingest: boolean;
 }
 
 export const INITIAL_FLOW: FlowState = {
@@ -44,6 +52,7 @@ export const INITIAL_FLOW: FlowState = {
   situation: null,
   attested: false,
   basis: null,
+  ingest: false,
 };
 
 export type FlowEvent =
@@ -65,6 +74,7 @@ export function stepOf(screen: Screen): 1 | 2 | null {
     case "situation":
     case "basis":
     case "basis-named":
+    case "draft":
       return 2;
     case "unavailable":
       return null;
@@ -95,6 +105,7 @@ export function canContinue(state: FlowState): boolean {
     case "sent":
     case "pdf-end":
     case "basis":
+    case "draft":
     case "unavailable":
       return false;
   }
@@ -111,9 +122,14 @@ const NEXT: Readonly<Record<Screen, Screen | null>> = {
   "pdf-end": null,
   situation: "basis",
   basis: null, // a choice decides: basis-named
-  "basis-named": "unavailable",
+  "basis-named": "unavailable", // or `draft` where ingest is built; see `nextOf`
+  draft: null, // the draft form submits; the page moves on to step 3
   unavailable: null,
 };
+
+function nextOf(state: FlowState): Screen | null {
+  return state.screen === "basis-named" && state.ingest ? "draft" : NEXT[state.screen];
+}
 
 const PREVIOUS: Readonly<Record<Screen, Screen | null>> = {
   tested: null,
@@ -122,6 +138,7 @@ const PREVIOUS: Readonly<Record<Screen, Screen | null>> = {
   situation: "sent",
   basis: "situation",
   "basis-named": "basis",
+  draft: "basis-named",
   unavailable: "basis-named",
 };
 
@@ -143,7 +160,7 @@ export function reduceFlow(state: FlowState, event: FlowEvent): FlowState {
     case "choose-basis":
       return state.screen === "basis" ? { ...state, basis: event.basis, screen: "basis-named" } : state;
     case "continue": {
-      const next = NEXT[state.screen];
+      const next = nextOf(state);
       return canContinue(state) && next ? { ...state, screen: next } : state;
     }
     case "back": {
@@ -178,5 +195,6 @@ export const SCREEN_BUDGET: Readonly<Record<Screen, { interactives: number; prim
   situation: { interactives: 5, primaries: 1 }, // two options + one checkbox + Back + Continue
   basis: { interactives: 5, primaries: 0 }, // four options of equal weight, each an action, + Back
   "basis-named": { interactives: 2, primaries: 1 }, // Back + Continue
+  draft: { interactives: 5, primaries: 1 }, // the count + at most two addresses + Back + Save
   unavailable: { interactives: 3, primaries: 1 }, // the letter link + Back + the way back to Embryos
 };

@@ -174,7 +174,8 @@ describe("independent synchronous own reports", () => {
     expect((await generateOwnReports(request(), fileId)).status).toBe(200);
     const completed = mocks.rpc.mock.calls.find(([, a]) => a.p_operation === "complete")![1].p_payload;
     expect(ownAncestryCapturedContentSchema.parse(completed.ancestry)).toMatchObject({
-      schemaVersion: 3, computationRevision: "own-ancestry-content-v3",
+      schemaVersion: 4, computationRevision: "own-ancestry-content-v4",
+      figureBasis: { shares: { version: 1, basis: "modelled" }, coverage: { version: 1, basis: "observed" } },
       panel: { id: "aims-hgdp-tgp-168", version: "hgdp-1kg-v3.1.2-cap30-168-v1", minimumMarkers: 168 },
     });
     expect(completed.ancestry.panelPositions.noCall).toBe(1);
@@ -375,7 +376,8 @@ describe("explicit canonical ancestry generation", () => {
     const payload = ancestryPayload();
     expect(Object.keys(payload).sort()).toEqual(["ancestry", "readyMail"]);
     expect(ownAncestryCapturedContentSchema.parse(payload.ancestry)).toMatchObject({
-      schemaVersion: 3, computationRevision: "own-ancestry-content-v3",
+      schemaVersion: 4, computationRevision: "own-ancestry-content-v4",
+      figureBasis: { shares: { version: 1, basis: "modelled" }, coverage: { version: 1, basis: "observed" } },
       source: { fileId, subjectId: subject,
       sourceSha256: authorization.sourceSha256, sourceRevision: 1, normalizedAt: authorization.normalizedAt, callEncoding: "vcf-literal" },
       admixture: { result_state: "partial", result: { markersUsed: 1 }, coverage: 1 / 168 } });

@@ -1,0 +1,5 @@
+
+> inherit@0.1.0 gate:claims /Users/mariodiego/Documents/ChatGPT/Inherit Bio/verified-own-account-contact-lifetime
+> tsx scripts/claims-gate.ts
+
+claims gate passed: 41 cited sources with 11 local snapshots, 106 canonical claims on 156 pieces of evidence, 106 of 746 report-body prose blocks registered, 42 of 227 template citations in the register, 17 provenance expressions and 3 claim or figure elements read across 801 modules, 6 designated surfaces checked, 817 files swept for archaic ranking

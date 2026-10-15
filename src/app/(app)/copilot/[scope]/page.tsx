@@ -8,6 +8,8 @@ import { Breadcrumbs } from "@/components/site/breadcrumbs";
 import { EmptyState } from "@/components/site/empty-state";
 import { Button } from "@/components/ui/button";
 import { NAV_LABELS } from "@/copy/navigation";
+import { EmbryoResultGate } from "@/components/embryo/result-gate";
+import { acknowledgeEmbryoGate } from "../../embryos/acknowledge";
 import { parseCopilotRouteScope } from "@/lib/copilot/group-scopes";
 import { prepareOwnCopilotChat } from "@/lib/copilot/own-chat";
 import { isLocalBaseUrl, providerKeyFor } from "@/lib/llm";
@@ -37,7 +39,9 @@ export default async function ChatPage(
   const routeScope = parseCopilotRouteScope(scope);
   if (!routeScope || routeScope.kind === "report") notFound();
   if (routeScope.kind === "family") return <FamilyCopilotPage />;
-  if (routeScope.kind === "cohort") return <CohortCopilotPage accountId={user.id} cohortId={routeScope.id} />;
+  if (routeScope.kind === "cohort") {
+    return <CohortCopilotPage cohortId={routeScope.id} gate={<EmbryoResultGate action={acknowledgeEmbryoGate} />} />;
+  }
   const subject = await resolveSubjectForAccount(user.id, scope);
   if (!subject) notFound();
   const ownChat = subject.subjectClass === "self" ? await prepareOwnCopilotChat(subject.id) : null;

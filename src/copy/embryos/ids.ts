@@ -14,6 +14,7 @@ import {
 } from "./compare";
 import {
   DROPOUT_NOT_MEASURED,
+  DROPOUT_NOT_MEASURED_NO_RANGE,
   NOT_MEASURABLE_FROM_FILE,
   NOT_STATED_BY_SOURCE,
   QC_FAILED_CHIP,
@@ -29,6 +30,7 @@ export const COPY_IDS = {
   "embryo.qc.not-measurable-from-file": NOT_MEASURABLE_FROM_FILE,
   "embryo.qc.source-not-stated": NOT_STATED_BY_SOURCE,
   "embryo.qc.dropout-not-measured": DROPOUT_NOT_MEASURED,
+  "embryo.qc.dropout-no-range": DROPOUT_NOT_MEASURED_NO_RANGE,
   "embryo.qc.review-required": CELL_WORDS.underReview,
   "embryo.context.analysed": contextAnalysed,
   "embryo.context.quality-check-passed": contextPassed,

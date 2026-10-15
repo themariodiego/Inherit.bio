@@ -30,7 +30,7 @@ vi.mock("next/navigation", () => ({ notFound: () => { throw new Error("not_found
 const subjectId = "79130000-0000-4000-8000-000000000001", fileA = "79130000-0000-4000-8000-000000000002", fileB = "79130000-0000-4000-8000-000000000003";
 const context = { kind: "ok", user: { id: "viewer" }, subject: { routeSegment: "me", displayLabel: "You" }, dataSubjectId: subjectId,
   person: null as unknown, domain: { label: "My Genome", href: "/genome" } };
-const row = (file_id: string) => ({ kind: "admixture", file_id, result: { proportions: { AFR: 0, AMR: 0, EAS: 0, EUR: 1, SAS: 0 }, markersUsed: 168 },
+const row = (file_id: string) => ({ kind: "admixture", file_id, basis: "modelled" as const, result: { proportions: { AFR: 0, AMR: 0, EAS: 0, EUR: 1, SAS: 0 }, markersUsed: 168 },
   support_note: "Saved", model_id: "aims-kidd-seldin-168", model_version: "2026-08-28", created_at: "2026-09-15T00:00:00Z" });
 const props = { params: Promise.resolve({ subject: "me" }) } as Parameters<typeof Page>[0];
 /** The Reports page's "Choose your reports" section, with the Ancestry choice on or off. */
@@ -143,4 +143,18 @@ it("withholds the entire Family surface when final recipient confirmation fails"
   mocks.shared.mockResolvedValue({ rows: [row(fileA)], confirm: async () => ({ authorized: false, rows: [], sources: [] }) });
   await expect(Page(props)).rejects.toThrow("not_found");
   expect(InputProvenance).not.toHaveBeenCalled(); expect(mocks.own).not.toHaveBeenCalled();
+});
+
+
+it("withholds only unclassified historical numbers and preserves their record context", async () => {
+  const saved = { ...row(fileA), basis: undefined };
+  mocks.own.mockResolvedValue({ rows: [saved], confirm: async () => [saved] });
+  const html = renderToStaticMarkup(await Page(props));
+  expect(html).toContain('data-slot="ancestry-unclassified-result"');
+  expect(html).toContain("Its record does not say how they were made.");
+  expect(AncestryRegions).not.toHaveBeenCalled();
+  expect(RegionalAncestryRegions).not.toHaveBeenCalled();
+  expect(AncestryAbsent).not.toHaveBeenCalled();
+  expect(vi.mocked(InputProvenance).mock.calls[0][0]).toMatchObject({ sources: [{ fileId: fileA }] });
+  expect(html).toContain("2026-08-28");
 });

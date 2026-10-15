@@ -19,6 +19,7 @@ export const COMPARE_H1 = "Compare embryos";
 
 export const SIDE_BY_SIDE_HEADING = "Side by side";
 export const QUALITY_CHECK_HEADING = "Quality check";
+export const QUALITY_CHECK_TABLE_LABEL = "Quality check table";
 /** Two of the six fixed report headings, from their one home. */
 export const HOW_SURE_HEADING = REPORT_HEADINGS[3];
 export const WHERE_FROM_HEADING = REPORT_HEADINGS[5];
@@ -174,6 +175,10 @@ export const READ_FAILED_HEADING = SHAPE_BLOCKED_HEADING;
 /** Under "Where this comes from" while no condition is registered. */
 export const REGISTRY_EMPTY_SENTENCE =
   "The list of conditions Inherit may report for embryos is empty on this site. No model and no source is cited until one is registered and reviewed.";
+
+/** Only after the current authorized saved reader verifies the whole result. */
+export const SAVED_SCIENTIFIC_REVIEW_SENTENCE =
+  "The analysis is saved. Findings stay hidden while the source details are reviewed.";
 
 /** The §4 §1 sentence, once per layer table, from its home. */
 export { NO_RANGE_YET, NOT_DIAGNOSTIC };

@@ -1,0 +1,5 @@
+
+> inherit@0.1.0 gate:sql-includes /Users/mariodiego/Documents/ChatGPT/Inherit Bio/verified-own-account-contact-lifetime
+> tsx scripts/sql-fixture-includes.ts
+
+SQL fixture includes passed: 472 source files, 154 exact relative includes

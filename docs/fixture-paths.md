@@ -20,6 +20,15 @@ The same route's `GET` is the Vercel Cron entry point and is live-only — it
 passes `null` where `POST` passes the fixture — and it accepts `JOBS_SECRET` or
 `CRON_SECRET`, as does a `POST` with no fixture in it.
 
+`POST /api/jobs/account-export` is a separate default-closed TEST operator
+endpoint. It accepts an empty body only, no query or target selector, and a
+fixed `X-Inherit-Account-Export-Operation` value of `generation` or `disposal`.
+The current `JOBS_SECRET` or `CRON_SECRET` must match before configuration or
+data access. Actual enabled native TEST configuration and the same private
+gateway binding are checked before either real worker runs. It accepts no
+fixture rows or invented provider receipts; ordinary production generation
+remains closed. Its actual private TEST flow is still unqualified.
+
 That split is the point: fixture input is an operator's, so it takes the
 operator secret, while the schedule's secret drives the live path and nothing
 else. Both are server-side and neither reaches a browser, so this narrows an

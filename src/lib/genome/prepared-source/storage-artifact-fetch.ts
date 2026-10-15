@@ -4,6 +4,7 @@ import "server-only";
 import { preparedStorageConfig } from "./storage-common";
 import { type PreparedStoredArtifact } from "./storage-writer";
 import type { PreparationMetrics } from "../../uploads/preparation-metrics";
+import type { RequesterStatementRuntime } from "../../exports/requester-statement-runtime";
 
 export class PreparedArtifactFetchError extends Error {
   constructor(readonly code: "invalid_artifact" | "integrity_mismatch" | "unavailable" | "aborted") {
@@ -33,7 +34,7 @@ function preflight(value: unknown, depth = 0): void {
  * readVerifiedPreparedArtifact for actual length/hash/EOF and current authority.
  * The receipt's historical write lease is not a present read authorization.
  * One request, one iterator, no buffering, redirects, cache, or retries. */
-export function createPreparedArtifactFetch(metrics?: PreparationMetrics):
+export function createPreparedArtifactFetch(metrics?: PreparationMetrics, runtime?: RequesterStatementRuntime):
   (artifact: PreparedStoredArtifact, signal: AbortSignal) => Promise<AsyncIterable<Uint8Array>> {
   let config: ReturnType<typeof preparedStorageConfig>;
   try { config = preparedStorageConfig(); }
@@ -44,8 +45,22 @@ export function createPreparedArtifactFetch(metrics?: PreparationMetrics):
     let response: Response | undefined, reader: ReadableStreamDefaultReader<Uint8Array> | undefined;
     let closed = false, ended = false, reading = false, acquired = false;
     let measured: ReturnType<PreparationMetrics["operation"]> | undefined, transferredBytes = 0;
+    let ownedClosing: Promise<void> | undefined;
     const active = () => { if (signal.aborted) throw new PreparedArtifactFetchError("aborted"); };
+    // Only the explicit runtime owner requests settled physical cancellation.
+    // The actual task stays registered if cancellation or a late fetch does
+    // not settle; the caller's existing wait/settle deadline then fails closed.
+    function closeOwned(): Promise<void> {
+      if (ownedClosing) return ownedClosing;
+      closed = true; signal.removeEventListener("abort", close); controller.abort(); measured?.(false);
+      ownedClosing = runtime!.cleanup("prepared-artifact-physical-close", async () => {
+        if (reader) { try { await reader.cancel(); } finally { reader.releaseLock(); } }
+        else if (response?.body) await response.body.cancel();
+      });
+      void ownedClosing.catch(() => {}); return ownedClosing;
+    }
     function close() {
+      if (runtime) { void closeOwned().catch(() => {}); return; }
       if (closed) return; closed = true;
       signal.removeEventListener("abort", close);
       // Cancellation is best effort and cannot delay the caller's deadline or
@@ -80,13 +95,21 @@ export function createPreparedArtifactFetch(metrics?: PreparationMetrics):
       if (!parsed.success) throw new PreparedArtifactFetchError("invalid_artifact");
       const artifact = parsed.data;
       measured = metrics?.operation("provider_get");
-      const pending = artifact.receipt.version === "own-preparation-artifact-v2"
+      const acquire = () => artifact.receipt.version === "own-preparation-artifact-v2"
         ? fetchPreparedR2({ receipt: artifact.receipt, stored: artifact, operation: "get", signal })
         : fetch(`${config.origin}/storage/v1/object/authenticated/genomes/${artifact.receipt.objectKey}`, {
         method: "GET", signal, cache: "no-store", redirect: "error",
         headers: { Authorization: `Bearer ${config.key}`, apikey: config.key, "Accept-Encoding": "identity" },
       });
-      void pending.then(late => {
+      const pending = runtime ? runtime.track("prepared-artifact-acquire", async () => {
+        const late = await acquire(); response = late;
+        if (closed || signal.aborted) {
+          if (late.body) await runtime.cleanup("prepared-artifact-late-body-close", () => late.body!.cancel());
+          throw new PreparedArtifactFetchError("aborted");
+        }
+        return late;
+      }) : acquire();
+      if (!runtime) void pending.then(late => {
         response = late;
         if (closed || signal.aborted) { try { void late.body?.cancel().catch(() => {}); } catch { /* Best effort. */ } }
       }, () => {});
@@ -110,18 +133,31 @@ export function createPreparedArtifactFetch(metrics?: PreparationMetrics):
             active();
             if (reading) throw new PreparedArtifactFetchError("unavailable");
             reading = true;
-            const next = await wait(reader!.read());
-            if (next.done) { ended = true; measured?.(true, transferredBytes); close(); return { done: true, value: undefined }; }
+            const next = await wait(runtime ? runtime.track("prepared-artifact-read", async () => {
+              const item = await reader!.read();
+              if (!item.done && item.value instanceof Uint8Array) runtime.own(item.value);
+              return item;
+            }) : reader!.read());
+            if (next.done) { ended = true; measured?.(true, transferredBytes);
+              if (runtime) await closeOwned(); else close(); return { done: true, value: undefined }; }
             if (!(next.value instanceof Uint8Array)) throw new PreparedArtifactFetchError("integrity_mismatch");
             transferredBytes += next.value.byteLength;
             return { done: false, value: next.value };
-          } catch (error) { const safe = failure(error); close(); throw safe; }
+          } catch (error) { const safe = failure(error);
+            if (runtime) { try { await closeOwned(); } catch { /* Runtime retains failed physical cleanup. */ } }
+            else close(); throw safe; }
           finally { reading = false; }
         },
-        async return() { ended = true; close(); return { done: true, value: undefined }; },
-        async throw() { ended = true; close(); throw new PreparedArtifactFetchError("unavailable"); },
+        async return() { ended = true;
+          if (runtime) { try { await closeOwned(); } catch { throw new PreparedArtifactFetchError("unavailable"); } }
+          else close(); return { done: true, value: undefined }; },
+        async throw() { ended = true;
+          if (runtime) { try { await closeOwned(); } catch { /* Runtime retains failed physical cleanup. */ } }
+          else close(); throw new PreparedArtifactFetchError("unavailable"); },
       };
       return iterator;
-    } catch (error) { const safe = failure(error); close(); throw safe; }
+    } catch (error) { const safe = failure(error);
+      if (runtime) { try { await closeOwned(); } catch { /* Preserve safe operation refusal; cleanup still holds. */ } }
+      else close(); throw safe; }
   };
 }

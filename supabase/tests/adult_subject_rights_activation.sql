@@ -1,5 +1,5 @@
 begin;
-select plan(38);
+select plan(39);
 \ir fixtures/invitation_quota_keys.inc
 
 -- Only synthetic accounts; the outer transaction rolls back.
@@ -81,6 +81,9 @@ select is((select count(*) from public.activate_rights_session_v1(
  'the unchanged original token still activates after rejected attempts');
 select is((select purpose from public.rights_sessions where session_hash=repeat('d',64)),
  'adult-subject-invitation','the session carries the adult purpose, not the co-parent one');
+select lives_ok($$update public.rights_sessions set token_hash_id=token_hash_id,
+ principal_id=principal_id,authority_revision=authority_revision where session_hash=repeat('d',64)$$,
+ 'an ordinary adult session passes the shared identity trigger without claimant credentials');
 select is((select target_kind from public.rights_sessions where session_hash=repeat('d',64)),
  'subject','the session targets the reserved subject');
 select is((select target_id from public.rights_sessions where session_hash=repeat('d',64)),

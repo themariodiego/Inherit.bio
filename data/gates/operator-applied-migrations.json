@@ -16,6 +16,11 @@
       "name": "own_genome_release_phase_c_guarded",
       "why": "The ledger row the hosted apply tool wrote for the owner-approved guarded envelope that applied phase C of the 23 September release, after the compatible application deployed. Its single statement (SHA-256 216fb328355128371dfe1298d417dc3de0ef89c99cd2c003dedfc540740dad3c, re-read 2026-09-25) contains own_copilot_captured_ancestry and own_copilot_prepared_sources verbatim plus their original ledger rows; the rest is guarding whose only schema text is expected-state JSON. It adds no schema beyond those files and is kept, not deleted, per the release record.",
       "recordedOn": "2026-09-25"
+    },
+    {
+      "name": "current_authority_release69_guarded",
+      "why": "The planned hosted apply-tool ledger envelope for the guarded current-authority release. It contains the 69 repository migration sources pinned in docs/evidence/current-authority-release69/operator-envelope-registration.json, plus exact original repository ledger inserts and predecessor/postcondition guards; it is not an additional schema migration. Keep the operator audit row. This registration records the intended static envelope name, not an observed application: the compiled apply SHA-256 and actual envelope evidence remain unbound until the dated release receipt records and verifies them. The unchanged schema-drift gate refuses this exemption while the envelope is absent.",
+      "recordedOn": "2026-10-02"
     }
   ]
 }

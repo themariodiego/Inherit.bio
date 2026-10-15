@@ -2,10 +2,11 @@
 
 Status, 28 September 2026: the Family scope is built and runs under the
 TEST-LOCAL acceptance row on a deployment that attests a same-host model. The
-Embryo (cohort) scope is designed here and stays refused with the register's
-unavailable page until embryo publication exists. Nothing here is available on
-the hosted site: `/copilot/family` renders the registered unavailable page
-there, before anything is read.
+Embryo (cohort) scope is built too (the same day, later), under TEST-LOCAL
+only and read-only over a published cohort; see its section below. Nothing
+here is available on the hosted site: `/copilot/family` and a readable
+cohort's `/copilot/c-{cohort}` render the registered unavailable page there,
+before anything is read.
 
 **Turned on everywhere, 28 September 2026 (owner decision, PR #260).**
 `copilotGroupScopes()` answers `family: true` on every deployment, and reads
@@ -109,30 +110,109 @@ then that person's shared report, then its publications.
 - Family chats are not exported (the export already excludes every scope but
   `self`). That is a gap for G5.6 to decide, recorded, not changed here.
 
-## The Embryo (cohort) scope: designed, refused
+## The Embryo (cohort) scope: built under TEST-LOCAL, read-only
 
-`/copilot/c-{cohort}` parses in the register's grammar. A cohort this account
-cannot read, or any refused embryo jurisdiction, is the same 404 as an unknown
-id. A readable cohort renders the registered `copilotCohortUnavailablePage`
-(the same closed fields as the transport page) and reads nothing else. The
-Embryos Overview box and hub tile keep landing on `/embryos`
-(`copilotGroupScopes().cohort` is false).
+Built 28 September 2026 on `claude/copilot-cohort-scope`, over the
+whole-cohort publication of #258. `copilotGroupScopes().cohort` is on under
+the TEST-LOCAL acceptance row only. Everywhere else a readable cohort's
+`/copilot/c-{cohort}` is the registered `copilotCohortUnavailablePage`, and
+the Embryos Overview box and hub tile stay on `/embryos`.
 
-When embryo publication exists, the scope should follow `scope-derived-v1`'s
-`cohort:*` cases and reuse this Family structure:
+### The page's order
 
-- member check: every `requiredUploadPrincipals` member's current
-  `embryo.analysis` grant under `embryo-basis-authority-v1`, the donor
-  classification of `embryo-donor-attribution-v1`, and each parent's
-  `copilot.local` grant for `authorized_parent_carrier_reports`;
-- context: `copilotCohortContext` exactly (embryos, findings,
-  parent carrier summaries, standing statement), never a genotype or a source
-  row, and `EmbryoFinding` leaves only;
-- provenance: the basis case, basis revision, five set revisions and donor
-  classification as turn dependencies, rechecked at every checkpoint the
-  register lists (token mint, each context read, model call, commit, history);
-- guard: `scope: "cohort"` with the cohort size, which the guard already
-  supports.
+1. A cohort this account cannot read, or a refused embryo jurisdiction for
+   the account itself, is the same 404 as an unknown id.
+2. The transport comes next. With no attested same-host model, or where the
+   scope is not built, the page is the registered unavailable page, and
+   nothing else about the cohort is read.
+3. The cohort's jurisdiction, for the viewer and every required upload
+   principal.
+4. The embryo pages' own states, in their order (`resolveResultSurfaceState`):
+   files still being checked, then a missing analysis grant, then the domain's
+   one Tier-2 gate.
+5. The asker's own local model and permission.
+6. The database authority over the published cohort.
+
+### The authority
+
+`private.cohort_copilot_authority_v1` (migration
+`20260929143000_cohort_copilot_scope.sql`) requires all of these:
+
+- the cohort is `active` with a publication revision;
+- the reader is a current required upload principal, or the non-parent
+  uploader owner of an `embryo_third_party` cohort;
+- every required upload principal holds a current `embryo.analysis` grant at
+  the current participant-set revision, in both grant tables;
+- no attestation contradiction is open;
+- each embryo it names is published (`qc_pass`, `qc_marginal`, `qc_fail`) with
+  an active subject.
+
+The authority is one closed JSON value. It records the basis case and basis
+revision, the participant-set revision, the publication revision, the donor
+attribution revision with the explicit `donor-neutral` classification, each
+grant, and each embryo subject's lifecycle revision. Its SHA-256 is the
+chat's `cohort_authority_fingerprint`, and the page's context token binds it
+too.
+
+### What the model reads
+
+Exactly `copilotCohortContext`, built from the same projection
+`/embryos/compare` renders, and nothing else. There are no tools.
+
+- `embryos`: each published embryo in ordinal order, with its label, status
+  word and quality check.
+- `findings`: none while `data/embryo/allowed_conditions.json` is empty.
+- `authorized_parent_carrier_reports`: empty. No route yet lets a parent grant
+  `copilot.local` over a cohort, and the register's `authorizationRule`
+  requires one.
+- The standing statement.
+
+No genotype, source row, file name, laboratory or sample identifier reaches
+the model. Neither does any sex, karyotype, rank or score field: the context
+builder refuses such a key outright, and fails closed if one ever appears
+(ADR 0034). The system prompt forbids ranking, choosing, recommending,
+disclosure of sex, and any condition claim. Both guard gates refuse selection
+and sex questions and answers, and every number in an answer must be in the
+context.
+
+### Turns, provenance and revocation
+
+`public.cohort_copilot_chat_v1` is the service-only dispatcher, with four
+operations: `authority`, `list`, `history` and `commit`. `commit` re-reads the
+authority under `FOR SHARE NOWAIT` locks and stores the turn only if the
+authority is exactly the one the turn read under. The context nonce is used
+once.
+
+Each turn records:
+
+- every embryo subject it read (`retrieved_subject_ids`);
+- the purpose (`embryo.analysis`);
+- every parent's grant (`contributor_ids`, `grant_revisions`);
+- one dependency row each for the publication, the basis, the participant
+  set, the donor classification, each grant and each embryo subject.
+
+Each answer cites the cohort's comparison, then exactly the embryos the
+answer names. Nothing else can be cited: the database validator and the
+commit refuse any link outside this cohort's pages.
+
+Two things end a conversation:
+
+- Withdrawing any `embryo.analysis` grant for the cohort deletes every
+  account's cohort conversation content in the same transaction. A trigger
+  on `purpose_grants.revoked_at` does this. Cohort restriction and
+  jurisdiction changes revoke grants, so they go the same way.
+- Any other change to the authority (an embryo record, the participant set,
+  the publication) makes the next read or turn delete that account's stale
+  content, and the route answers 404.
+
+### Not built
+
+- Parent carrier summaries.
+- Registered findings. A registered statistical estimate would also be
+  refused by the forbidden-key rule, because embryo estimates are research
+  only (ADR 0034).
+- Donor-specific fields: the scope is donor-neutral by construction.
+- Any production availability.
 
 ## Verification
 
@@ -142,8 +222,13 @@ When embryo publication exists, the scope should follow `scope-derived-v1`'s
 - Unit: `family-chat.test.ts`, `family-chat-route.test.ts`,
   `family-chat-content.test.ts`, `family-chat-token.test.ts`,
   `group-scopes.test.ts`, `guard-people.test.ts`.
+- Cohort: `supabase/tests/cohort_copilot_scope.sql` (over a cohort published
+  through the real worker functions, `fixtures/embryo_cohort_published.inc`),
+  `cohort-chat.test.ts`, `cohort-chat-route.test.ts`,
+  `cohort-chat-content.test.ts`, `cohort-chat-token.test.ts`, and
+  `e2e/copilot-cohort.spec.ts` (`copilot-local`: the journey).
 - Browser: `e2e/copilot-group-scopes.spec.ts` (main variant: the registered
-  unavailable page, the boxes and the hub tile, 404s),
+  unavailable page, the boxes and the hub tiles, 404s),
   `e2e/copilot-group-scopes.nojurisdiction.spec.ts` (`jurisdiction-off`, the
   hosted case: the box, the unavailable page, nothing minted or stored, the
   endpoints, the hub's unchanged refusal) and `e2e/copilot-family.spec.ts`

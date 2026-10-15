@@ -38,12 +38,13 @@ function listedRow(table: string, select: string, index: number): Record<string,
     if (join) row[join[1]] = { [join[2]]: ACCOUNT };
     // The first subject is the one the other readers are keyed to.
     else if (table === "subjects" && token === "id" && index === 0) row[token] = SUBJECT;
+    else if (table === "subject_consents" && token === "copilot_recipient") row[token] = null;
     else row[token] = token === "id" || token === "grant_id" ? `${table}-${String(index).padStart(5, "0")}` : `${table}.${token}`;
   }
   return row;
 }
 
-function admin(calls: Call[], options: { failing?: string; rows?: Record<string, number> } = {}): SupabaseClient {
+function admin(calls: Call[], options: { failing?: string; rows?: Record<string, number>; recipient?: unknown } = {}): SupabaseClient {
   return {
     from(table: string) {
       const call: Call = { table, select: "", filters: [] };
@@ -53,6 +54,9 @@ function admin(calls: Call[], options: { failing?: string; rows?: Record<string,
         if (table === options.failing) return { data: null, error: { message: "unavailable" } };
         if (!LISTED.has(table)) return { data: null, error: { message: `unexpected table ${table}` } };
         const all = Array.from({ length: options.rows?.[table] ?? 1 }, (_, i) => listedRow(table, call.select, i));
+        if (table === "subject_consents" && Object.hasOwn(options, "recipient")) {
+          for (const row of all) row.copilot_recipient = options.recipient;
+        }
         const [from, to] = range ?? [0, all.length - 1];
         return { data: all.slice(from, Math.min(to + 1, from + MAX_ROWS)), error: null };
       };
@@ -79,6 +83,42 @@ function queries(calls: Call[]) {
 }
 
 describe("the subject record in the free export", () => {
+  it("retains every recorded destination field and withholds all nested credential evidence", async () => {
+    const destination = { providerLabel: "Synthetic provider", origin: "https://model.e2e.local", revision: 3,
+      providerClass: "cloud", baseUrl: "https://model.e2e.local/v1", provider: "openai_compatible", model: "synthetic-model" };
+    const recipient = { ...destination, credentialFingerprint: "c".repeat(64), runtimeAttestationFingerprint: "d".repeat(64),
+      apiKey: "synthetic-private-key", key_last4: "last", futureInternalEvidence: { private: true } };
+    const record = (await subjectRecordOf(admin([], { recipient, rows: { subject_consents: 1003 } }), ACCOUNT))!;
+    expect(record.subject_consents).toHaveLength(1003);
+    for (const row of record.subject_consents as Record<string, unknown>[]) {
+      expect(row.copilot_recipient).toEqual(destination);
+      expect(Object.keys(row.copilot_recipient as object).sort()).toEqual(Object.keys(destination).sort());
+    }
+    expect(JSON.stringify(record)).not.toMatch(/credentialFingerprint|runtimeAttestationFingerprint|apiKey|key_last4|futureInternalEvidence/);
+    expect(recipient).toHaveProperty("credentialFingerprint", "c".repeat(64));
+  });
+
+  it.each(["missing-destination", "credential-url", "invalid-revision", "scalar"])(
+    "refuses %s instead of publishing incomplete or unsafe destination history", async (failure) => {
+      let recipient: unknown = { providerLabel: "Synthetic", origin: "https://model.e2e.local", revision: 1,
+        providerClass: "cloud", baseUrl: "https://model.e2e.local/v1", provider: "openai_compatible", model: "synthetic-model" };
+      if (failure === "missing-destination") delete (recipient as Record<string, unknown>).model;
+      if (failure === "credential-url") {
+        const unsafe = new URL("https://model.e2e.local/v1");
+        unsafe.username = "synthetic-user"; unsafe.password = "synthetic-secret";
+        (recipient as Record<string, unknown>).baseUrl = unsafe.href;
+      }
+      if (failure === "invalid-revision") (recipient as Record<string, unknown>).revision = Number.MAX_SAFE_INTEGER + 1;
+      if (failure === "scalar") recipient = "invalid-stored-recipient";
+      expect(await subjectRecordOf(admin([], { recipient }), ACCOUNT)).toBeNull();
+    },
+  );
+
+  it("preserves a genuinely absent historical destination as null", async () => {
+    const record = (await subjectRecordOf(admin([], { recipient: null }), ACCOUNT))!;
+    expect(record.subject_consents[0]).toHaveProperty("copilot_recipient", null);
+  });
+
   it("keys every table to the requesting account, and subjects to the account it IS", async () => {
     const calls: Call[] = [];
     const record = await subjectRecordOf(admin(calls), ACCOUNT);

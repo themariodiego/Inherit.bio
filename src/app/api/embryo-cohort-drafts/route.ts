@@ -36,7 +36,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
  */
 export async function POST(request: Request) {
   const context = await getSensitiveAccountContext();
-  if (!context?.user.email) return unauthorized();
+  if (!context?.user.email || !context.user.email_confirmed_at) return unauthorized();
   const forbidden = originDenied(request);
   if (forbidden) return forbidden;
   const denied = await accountJurisdictionDenied(context.user.id);
@@ -58,8 +58,9 @@ export async function POST(request: Request) {
 
   const owner = normalizeContact(context.user.email);
   const contacts = draftContacts(parsed.data);
-  const { data, error } = await createAdminClient().rpc("create_embryo_cohort_draft_v1", {
+  const { data, error } = await createAdminClient().rpc("create_embryo_cohort_draft_v2", {
     p_account_id: context.user.id,
+    p_verified_auth_email: owner,
     p_session_id: context.sessionId,
     p_upload_situation: uploadSituationValue(parsed.data.uploadSituation),
     p_basis_case: basisCaseFor(parsed.data.basis),

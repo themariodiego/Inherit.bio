@@ -116,16 +116,42 @@ describe("bounded synthetic prepared-artifact binding", () => {
     await f.fixture.close();
   });
   it("caps keys and requests and keeps separate instances isolated", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-10-01T00:00:00.000Z"));
     const f = setup(), bytes = Uint8Array.of(1);
-    for (let i = 0; i < PREPARED_FIXTURE_LIMITS.objects; i++)
-      expect((await f.fixture.fetch(f.request(f.claim(bytes), bytes))).status).toBe(200);
-    expect((await f.fixture.fetch(f.request(f.claim(bytes), bytes))).status).toBe(503);
-    expect(setup().fixture.snapshot().objects).toBe(0);
-    while (f.fixture.snapshot().requests < PREPARED_FIXTURE_LIMITS.requests)
-      expect((await f.fixture.fetch(new Request(`${PREPARED_FIXTURE_ORIGIN}/refused`))).status).toBe(404);
-    expect((await f.fixture.fetch(f.request(f.claim()))).status).toBe(503);
-    expect(f.fixture.snapshot().objects).toBe(PREPARED_FIXTURE_LIMITS.objects);
-    await f.fixture.close();
+    try {
+      for (let i = 0; i < PREPARED_FIXTURE_LIMITS.objects; i++)
+        expect((await f.fixture.fetch(f.request(f.claim(bytes), bytes))).status).toBe(200);
+      expect((await f.fixture.fetch(f.request(f.claim(bytes), bytes))).status).toBe(503);
+      expect(setup().fixture.snapshot().objects).toBe(0);
+      while (f.fixture.snapshot().requests < PREPARED_FIXTURE_LIMITS.requests)
+        expect((await f.fixture.fetch(new Request(`${PREPARED_FIXTURE_ORIGIN}/refused`))).status).toBe(404);
+      expect((await f.fixture.fetch(f.request(f.claim()))).status).toBe(503);
+      expect(f.fixture.snapshot().objects).toBe(PREPARED_FIXTURE_LIMITS.objects);
+    } finally {
+      await f.fixture.close();
+      vi.useRealTimers();
+    }
+  });
+  it("refuses future-issued and exactly expired capabilities with the original thirty-second limit", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    const instant = Date.parse("2026-10-01T00:00:00.000Z");
+    vi.setSystemTime(instant);
+    const f = setup(), claim = f.claim();
+    try {
+      const now = instant / 1000;
+      expect((await f.fixture.fetch(f.request({ ...claim, iat: now + 1, nbf: now + 1,
+        exp: now + 31, expiresAt: new Date(instant + 31_000).toISOString() }))).status).toBe(404);
+      expect((await f.fixture.fetch(f.request({ ...claim, exp: now + 31,
+        expiresAt: new Date(instant + 31_000).toISOString() }))).status).toBe(404);
+      expect((await f.fixture.fetch(f.request(claim))).status).toBe(200);
+      vi.setSystemTime(instant + 30_000);
+      expect((await f.fixture.fetch(f.request(claim))).status).toBe(404);
+      expect(f.fixture.snapshot()).toMatchObject({ objects: 1, putCommits: 1, rejected: 3 });
+    } finally {
+      await f.fixture.close();
+      vi.useRealTimers();
+    }
   });
   it("caps concurrent work and cancels pending fixture bodies when closed", async () => {
     const f = setup(), pending: Promise<Response>[] = [];
