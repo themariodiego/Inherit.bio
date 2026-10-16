@@ -478,17 +478,23 @@ describe("the route gate holds the register to the code", () => {
     );
   });
 
+  /**
+   * 16 Oct 2026: 20261016190000 creates legal-evidence, the last declared
+   * bucket no migration created, and its row is closed. The declaration is
+   * planted instead: a copy of the legal-evidence prefix over a bucket that
+   * nothing creates, with no ledger row for it.
+   */
+  const plantUncreatedPrefix = (register: Record<string, unknown>) => {
+    const prefixes = register.storagePrefixes as { id: string; bucket: string }[];
+    const template = prefixes.find((prefix) => prefix.bucket === "legal-evidence")!;
+    prefixes.push({ ...template, id: "storage.planted-uncreated-v1", bucket: "planted-uncreated" });
+  };
+
   it("fails when a declared bucket that no migration creates is not recorded", async () => {
-    const root = plant({
-      ledger: (ledger) => {
-        ledger.storageBucketDivergence = (
-          ledger.storageBucketDivergence as { bucket: string }[]
-        ).filter((known) => known.bucket !== "legal-evidence");
-      },
-    });
+    const root = plant({ register: plantUncreatedPrefix });
     const { failures } = await runRouteGate(root);
     expect(failures).toContain(
-      "storage bucket: not recorded in docs/route-divergence.json: declared-not-created legal-evidence",
+      "storage bucket: not recorded in docs/route-divergence.json: declared-not-created planted-uncreated",
     );
   });
 
@@ -520,15 +526,17 @@ describe("the route gate holds the register to the code", () => {
    * names first the wrong migration, then the right one as the control.
    */
   it("fails when a storage row's evidence no longer says what the row says", async () => {
+    // The declared-not-created half uses the planted uncreated bucket (see
+    // plantUncreatedPrefix): its row names a prefix that is not over it.
     const plantExportsRow = (createdBy: string) => plant({
       register: (register) => {
         register.storagePrefixes = (register.storagePrefixes as { bucket: string }[])
           .filter((prefix) => prefix.bucket !== "exports");
+        plantUncreatedPrefix(register);
       },
       ledger: (ledger) => {
-        for (const known of ledger.storageBucketDivergence as Record<string, unknown>[]) {
-          if (known.bucket === "legal-evidence") known.declaredBy = "storage.subject-v2";
-        }
+        (ledger.storageBucketDivergence as Record<string, unknown>[]).push({ bucket: "planted-uncreated",
+          direction: "declared-not-created", declaredBy: "storage.subject-v2" });
         (ledger.storageBucketDivergence as Record<string, unknown>[]).push({ bucket: "exports",
           direction: "created-not-declared", createdBy });
       },
@@ -536,7 +544,7 @@ describe("the route gate holds the register to the code", () => {
     const wrong = await runRouteGate(plantExportsRow("supabase/migrations/20260831224054_storage_and_download_sessions.sql"));
     expect(wrong.failures).toContain("storage bucket: exports names createdBy "
       + "supabase/migrations/20260831224054_storage_and_download_sessions.sql, which does not create it");
-    expect(wrong.failures).toContain("storage bucket: legal-evidence names declaredBy storage.subject-v2, which is not a prefix over it");
+    expect(wrong.failures).toContain("storage bucket: planted-uncreated names declaredBy storage.subject-v2, which is not a prefix over it");
     const right = await runRouteGate(plantExportsRow("supabase/migrations/20260923123240_export_archive_persistence.sql"));
     expect(right.failures.filter((failure) => failure.startsWith("storage bucket: exports names createdBy"))).toEqual([]);
   });

@@ -6,7 +6,8 @@ import { invitationQuotaKeys } from "@/lib/rate-limit-keys";
 import { accountCapability } from "@/lib/legal/jurisdictions";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
-import { isPathBDraftPayload } from "@/lib/uploads/other-adult-upload";
+import { isPathBDraftPayload, isPathBReviewedDocumentDraftPayload } from "@/lib/uploads/other-adult-upload";
+import { createPathBReviewedDocumentDraft } from "@/lib/uploads/path-b-reviewed-document-server";
 import { createPathBDraft } from "@/lib/uploads/path-b-routes";
 
 const requestSchema = z.object({
@@ -37,6 +38,9 @@ export async function POST(request: Request) {
   // person's name, date of birth and address, TEST-LOCAL only
   // (`src/lib/uploads/path-b-routes.ts`). Path A below is unchanged.
   if (isPathBDraftPayload(payload)) return createPathBDraft(request, payload);
+  // The register's third body, path-b-reviewed-document (owner decision
+  // 2026-10-16): the same person fields, evidence a named human reviews.
+  if (isPathBReviewedDocumentDraftPayload(payload)) return createPathBReviewedDocumentDraft(request, payload);
 
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();

@@ -238,6 +238,39 @@ describe("independent retention queues", () => {
     expect(mocks.rpc).toHaveBeenCalledWith("run_due_embryo_retention_phases_v1");
   });
 
+  it("purges ended subject original download sessions as independent due work", async () => {
+    vi.stubEnv("JOBS_SECRET", "test-job-secret");
+    mocks.rpc.mockImplementation(async (name: string) => {
+      if (name === "drain_due_new_public_appeals_v1") return { data: { shredded: 0, completed: 0, held: 0 }, error: null };
+      if (name === "prepare_due_prepared_scratch_v1") return { data: 0, error: null };
+      if (name === "reap_expired_own_normalizations_v1") return { data: 0, error: null };
+      if (name === "expire_due_adult_subject_invitations_v1") return { data: 0, error: null };
+      if (name === "purge_ended_subject_original_downloads_v1") return { data: 3, error: null };
+      return { data: null, error: null };
+    });
+    const response = await run();
+    expect(await response.json()).toEqual({ status: "complete", outcome: "completed" });
+    // No selector: the database alone decides which sessions have ended.
+    expect(mocks.rpc.mock.calls.filter(call => call[0] === "purge_ended_subject_original_downloads_v1"))
+      .toEqual([["purge_ended_subject_original_downloads_v1"]]);
+  });
+
+  it("keeps draining other queues when the download session purge fails", async () => {
+    vi.stubEnv("JOBS_SECRET", "test-job-secret");
+    mocks.rpc.mockImplementation(async (name: string) => {
+      if (name === "drain_due_new_public_appeals_v1") return { data: { shredded: 0, completed: 0, held: 0 }, error: null };
+      if (name === "prepare_due_prepared_scratch_v1") return { data: 0, error: null };
+      if (name === "reap_expired_own_normalizations_v1") return { data: 0, error: null };
+      if (name === "expire_due_adult_subject_invitations_v1") return { data: 0, error: null };
+      if (name === "purge_ended_subject_original_downloads_v1") return { data: null, error: { code: "synthetic" } };
+      return { data: null, error: null };
+    });
+    const response = await run();
+    expect(await response.json()).toEqual({ status: "complete", outcome: "completed_with_failures" });
+    expect(mocks.rpc).toHaveBeenCalledWith("run_due_embryo_retention_phases_v1");
+    expect(mocks.rpc).toHaveBeenCalledWith("claim_due_account_deletion_v1", expect.any(Object));
+  });
+
   it("reports an idle sweep as no_work, not as a completed one", async () => {
     vi.stubEnv("JOBS_SECRET", "test-job-secret");
     mocks.rpc.mockImplementation(async (name: string) => {
@@ -359,6 +392,60 @@ describe("Future Person claim document objects", () => {
     const response = await run();
     expect(await response.json()).toEqual({ status: "complete", outcome: "completed_with_failures" });
     expect(mocks.rpc).not.toHaveBeenCalledWith("confirm_claim_document_objects_deleted_v1", expect.anything());
+  });
+});
+
+describe("reviewed-document Path B documents", () => {
+  afterEach(() => { vi.unstubAllEnvs(); vi.clearAllMocks(); });
+  const KEY = "permission/44444444-4444-4444-8444-444444444444/55555555-5555-4555-8555-555555555555";
+  function permissionObjects(due: unknown, expired: unknown = { data: 0, error: null }) {
+    mocks.rpc.mockImplementation(async (name: string) => {
+      if (name === "drain_due_new_public_appeals_v1") return { data: { shredded: 0, completed: 0, held: 0 }, error: null };
+      if (name === "prepare_due_prepared_scratch_v1") return { data: 0, error: null };
+      if (name === "reap_expired_own_normalizations_v1") return { data: 0, error: null };
+      if (name === "expire_due_adult_subject_invitations_v1") return { data: 0, error: null };
+      if (name === "expire_due_path_b_reviewed_documents_v1") return expired as { data: unknown; error: unknown };
+      if (name === "permission_document_objects_due_v1") return due as { data: unknown; error: unknown };
+      if (name === "confirm_permission_document_objects_deleted_v1") return { data: 1, error: null };
+      return { data: null, error: null };
+    });
+  }
+
+  it("expires due requests after the invitation sweep, then removes and confirms the due objects", async () => {
+    vi.stubEnv("JOBS_SECRET", "test-job-secret");
+    permissionObjects({ data: [{ object_key: KEY }], error: null }, { data: 1, error: null });
+    mocks.remove.mockResolvedValue({ data: [], error: null });
+    expect(await (await run()).json()).toEqual({ status: "complete", outcome: "completed" });
+    expect(mocks.remove.mock.calls).toEqual([["legal-evidence", [KEY]]]);
+    const names = mocks.rpc.mock.calls.map(call => call[0] as string).filter(name => [
+      "expire_due_adult_subject_invitations_v1", "expire_due_path_b_reviewed_documents_v1",
+      "permission_document_objects_due_v1", "confirm_permission_document_objects_deleted_v1",
+    ].includes(name));
+    expect(names).toEqual(["expire_due_adult_subject_invitations_v1", "expire_due_path_b_reviewed_documents_v1",
+      "permission_document_objects_due_v1", "confirm_permission_document_objects_deleted_v1"]);
+    // No selector: the database alone decides what is due.
+    expect(mocks.rpc).toHaveBeenCalledWith("expire_due_path_b_reviewed_documents_v1");
+    expect(mocks.rpc).toHaveBeenCalledWith("confirm_permission_document_objects_deleted_v1",
+      { p_object_keys: [KEY], p_route_id: "jobs.retention" });
+  });
+
+  it("confirms nothing when Storage refuses the deletion, and keeps the other queues", async () => {
+    vi.stubEnv("JOBS_SECRET", "test-job-secret");
+    permissionObjects({ data: [{ object_key: KEY }], error: null });
+    mocks.remove.mockResolvedValue({ data: null, error: { message: "private storage failure" } });
+    expect(await (await run()).json()).toEqual({ status: "complete", outcome: "completed_with_failures" });
+    expect(mocks.rpc).not.toHaveBeenCalledWith("confirm_permission_document_objects_deleted_v1", expect.anything());
+    expect(mocks.rpc).toHaveBeenCalledWith("run_due_embryo_retention_phases_v1");
+    expect(mocks.rpc).toHaveBeenCalledWith("claim_due_account_deletion_v1", expect.any(Object));
+  });
+
+  it("reports a failed request expiry and still removes the due objects", async () => {
+    vi.stubEnv("JOBS_SECRET", "test-job-secret");
+    permissionObjects({ data: [{ object_key: KEY }], error: null }, { data: null, error: { code: "synthetic" } });
+    mocks.remove.mockResolvedValue({ data: [], error: null });
+    expect(await (await run()).json()).toEqual({ status: "complete", outcome: "completed_with_failures" });
+    expect(mocks.remove.mock.calls).toEqual([["legal-evidence", [KEY]]]);
+    expect(mocks.rpc).toHaveBeenCalledWith("claim_due_account_deletion_v1", expect.any(Object));
   });
 });
 

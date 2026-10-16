@@ -81,13 +81,27 @@ describe("the complete account and Future source union", () => {
     expect(read("supabase/tests/v2_contracts.sql")).toContain("174::bigint");
   });
 
-  it("preserves protected/withheld Future classifications and the account provenance exclusions in the 253-table plan", () => {
+  it("preserves protected/withheld Future classifications and the account provenance exclusions in the 262-table plan", () => {
     const plan = JSON.parse(read("docs/export-member-plan.json")) as {
       tables: Record<string, { disposition: string; withheld?: string[]; scope?: string }>;
     };
     // 251 plus the two auth credential stores (private.auth_form_nonces,
-    // private.auth_recovery_sessions; 20261016151200_auth_public_endpoints).
-    expect(Object.keys(plan.tables)).toHaveLength(253);
+    // private.auth_recovery_sessions; 20261016151200_auth_public_endpoints),
+    // plus the nine reviewed-document Path B stores
+    // (20261016190000_path_b_reviewed_document), each classified like its
+    // claim/appeal evidence analog.
+    expect(Object.keys(plan.tables)).toHaveLength(262);
+    for (const [name, disposition] of Object.entries({
+      "private.permission_document_sessions": "excluded-credential",
+      "private.permission_document_fragments": "excluded-protected",
+      "private.permission_documents": "excluded-protected",
+      "private.permission_document_assignments": "out-of-scope",
+      "private.permission_document_review_downloads": "excluded-credential",
+      "private.permission_document_review_reads": "excluded-internal",
+      "private.permission_document_reviews": "excluded-protected",
+      "private.path_b_reviewed_document_requests": "excluded-internal",
+      "private.path_b_reviewed_document_nonces": "excluded-credential",
+    })) expect(plan.tables[name]?.disposition, name).toBe(disposition);
     for (const name of ["private.auth_form_nonces", "private.auth_recovery_sessions"])
       expect(plan.tables[name]?.disposition).toBe("excluded-credential");
     expect(plan.tables["private.embryo_test_statistical_admission"]?.disposition).toBe("excluded-protected");

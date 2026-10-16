@@ -7668,6 +7668,12 @@ export type Database = {
       record_appeal_document_scan_v1: { Args: { p_document_id:string; p_lease_hash:string; p_outcome:string; p_scanned_sha256:string|null; p_scan_engine:string|null; p_signature_version:number|null; p_signature_at:string|null }; Returns: string };
       appeal_document_objects_due_v1: { Args: { p_limit:number }; Returns: { object_key:string }[] };
       confirm_appeal_document_objects_deleted_v1: { Args: { p_object_keys:string[]; p_route_id:string }; Returns: number };
+      claim_next_permission_document_scan_v1: { Args: { p_lease_hash:string }; Returns: Json };
+      record_permission_document_scan_v1: { Args: { p_document_id:string; p_lease_hash:string; p_outcome:string; p_scanned_sha256:string|null; p_scan_engine:string|null; p_signature_version:number|null; p_signature_at:string|null }; Returns: string };
+      permission_document_objects_due_v1: { Args: { p_limit:number }; Returns: { object_key:string }[] };
+      confirm_permission_document_objects_deleted_v1: { Args: { p_object_keys:string[]; p_route_id:string }; Returns: number };
+      expire_due_path_b_reviewed_documents_v1: { Args: Record<PropertyKey, never>; Returns: number };
+      purge_ended_subject_original_downloads_v1: { Args: Record<PropertyKey, never>; Returns: number };
       read_new_public_appeal_mail_contact_v1: {
         Args: { p_outbox_id: string; p_attempt_ordinal: number };
         Returns: Json;

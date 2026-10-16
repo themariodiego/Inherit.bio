@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { OTHER_ADULT_UPLOAD_COPY as COPY } from "@/copy/upload/other-adult";
+import { OTHER_ADULT_UPLOAD_COPY as COPY, REVIEWED_DOCUMENT_COPY as DOCUMENT } from "@/copy/upload/other-adult";
 import { route } from "@/lib/primary-routes";
 import {
   isAdultOn,
@@ -26,9 +26,12 @@ const serverReady = () => false;
  * Step one of the register's Path B: the person's name, address and date of
  * birth reserve a draft. Nothing is sent to them yet.
  */
-export function OtherAdultNewPersonForm({ token }: { token: string }) {
+export function OtherAdultNewPersonForm({ token, documentFlow = false }: { token: string; documentFlow?: boolean }) {
   const router = useRouter();
   const [person, setPerson] = useState(EMPTY_PERSON);
+  // The reviewed-document branch (20261016190000) is offered only where the
+  // page says it is open; the e-signature request stays the default.
+  const [flow, setFlow] = useState<"path-b-subject-esignature" | "path-b-reviewed-document">("path-b-subject-esignature");
   const [requestId, setRequestId] = useState(() => crypto.randomUUID());
   const [birthError, setBirthError] = useState(false);
   const [failed, setFailed] = useState(false);
@@ -42,7 +45,7 @@ export function OtherAdultNewPersonForm({ token }: { token: string }) {
       const response = await fetch("/api/subject-drafts", {
         method: "POST", credentials: "same-origin", cache: "no-store",
         headers: { "content-type": "application/json", "x-inherit-csrf": token },
-        body: JSON.stringify({ kind: "adult", adultFlow: "path-b-subject-esignature", displayName: person.name.trim(),
+        body: JSON.stringify({ kind: "adult", adultFlow: documentFlow ? flow : "path-b-subject-esignature", displayName: person.name.trim(),
           dateOfBirth: person.birth, contactEmail: person.email.trim(), requestId }),
       });
       if (response.status !== 201) throw new Error("not_saved");
@@ -74,6 +77,19 @@ export function OtherAdultNewPersonForm({ token }: { token: string }) {
             onChange={event => { setPerson(current => ({ ...current, birth: event.target.value })); setBirthError(false); }} />
         </div>
         {birthError ? <p id="other-adult-birth-error" role="alert" className="text-sm text-danger">{COPY.birthError}</p> : null}
+        {documentFlow ? <fieldset className="rec-stack">
+          <legend className="label">{DOCUMENT.flowLegend}</legend>
+          <label className="rec-choice">
+            <input type="radio" name="adultFlow" value="path-b-subject-esignature" checked={flow === "path-b-subject-esignature"}
+              onChange={() => setFlow("path-b-subject-esignature")} className="size-5 accent-forest" />
+            <span>{DOCUMENT.flowEsignature}</span>
+          </label>
+          <label className="rec-choice">
+            <input type="radio" name="adultFlow" value="path-b-reviewed-document" checked={flow === "path-b-reviewed-document"}
+              onChange={() => setFlow("path-b-reviewed-document")} className="size-5 accent-forest" />
+            <span>{DOCUMENT.flowDocument}</span>
+          </label>
+        </fieldset> : null}
       </fieldset>
       {failed ? <p role="alert" className="text-sm text-danger">{COPY.detailsFailed}</p> : null}
       <div><Button type="submit" disabled={saving}>{saving ? COPY.saving : COPY.detailsButton}</Button></div>
@@ -85,7 +101,7 @@ export function OtherAdultNewPersonForm({ token }: { token: string }) {
  * The approved uploader consent, Tier 2: every statement its own checkbox, a
  * typed name, and the artifact's own warning directly above the control.
  */
-function ConsentFields({ consent, checked, setChecked, typedName, setTypedName, nameError, setNameError, id }: {
+export function ConsentFields({ consent, checked, setChecked, typedName, setTypedName, nameError, setNameError, id }: {
   consent: OtherAdultConsentView; checked: Record<string, boolean>;
   setChecked: (update: (current: Record<string, boolean>) => Record<string, boolean>) => void;
   typedName: string; setTypedName: (value: string) => void; nameError: boolean; setNameError: (value: boolean) => void;

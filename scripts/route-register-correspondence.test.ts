@@ -24,7 +24,8 @@ import { storageBucketsInSource, UNRESOLVED_STORAGE_BUCKET } from "./storage-con
  *
  * Registered-but-unbuilt is deliberately not failed here. The register is
  * written from the brief and describes routes the product has not reached
- * yet; 23 of them remain unbuilt after the native appeal review, notice and auth routes.
+ * yet; 19 of them remain unbuilt after the native appeal review, notice, auth,
+ * mapping and subjects (G2.1) routes.
  * The exact current count prevents a broken walker from passing silently.
  *
  * Known divergences live in `docs/route-divergence.json` and are checked in
@@ -216,8 +217,12 @@ describe("the route register and the App Router describe the same surface", () =
     // auth.forgot-password-submit, auth.reset-password-submit; owner decision
     // 2026-10-16) reduce it from 26 to 23, and the laboratory-table mapping
     // route (api.embryo-ingest-mapping, ADR 0037) reduces it once more, to 22.
+    // The subjects endpoints (owner decision 2026-10-16, G2.1) build three
+    // more: api.subjects, api.legal-evidence-upload-session and
+    // api.subject-download, 22 - 3 = 19. api.subject-export stays unbuilt (its
+    // joint-result projection and TEST R2 run are reported back undecided).
     // Keep the exact census: new implementations require an explicit review.
-    expect(unbuilt.length).toBe(22);
+    expect(unbuilt.length).toBe(19);
     expect(unbuilt.length).toBeLessThan(entries.length);
   });
 });
@@ -1014,7 +1019,11 @@ const CLIENT_FORM_REVIEW: ClientFormReview[] = [
   { file: "src/components/family/invite-adult-form.tsx", forms: 1, sha256: "1866d5e668f9069c0d94a2aa8c8d3f8e55ccd341403a029915fb39d8ac8e04d7" },
   { file: "src/components/settings/jurisdiction-form.tsx", forms: 1, sha256: "995f24840ae8e802a2f4d6b8be1c0ce3dbe804dfa75fc9b62a64572395c8fe6c" },
   { file: "src/components/settings/llm-settings-form.tsx", forms: 1, sha256: "7b669b559f7db5b0fe391bd39ce8095a33bd8c37cd80d37e06d138ec0d55f45b" },
-  { file: "src/components/uploads/other-adult-upload-card.tsx", forms: 2, sha256: "1ab2652e70ddca9ed64966a10dbf557244f4e31c3a0390dd631f5a9265c84137" },
+  // G2.1 (2026-10-16): re-reviewed after the new-person form gained the
+  // reviewed-document flow choice (two radio inputs inside the same form, the
+  // same handler and target) and ConsentFields became an export. Still two
+  // actionless forms whose onSubmit handlers cancel native submission.
+  { file: "src/components/uploads/other-adult-upload-card.tsx", forms: 2, sha256: "024b7da96d938bfe4fdc5228b9ec65b4723dd551bf653677bfe6c22750c6896d" },
   { file: "src/components/uploads/own-upload-flow.tsx", forms: 1, sha256: "f78a81339439a1b91840e7138ad560055d61d618f788715d1fb0651f73a7fede" },
   // G5.4 (2026-10-16): re-reviewed after two copy lines (the 30/730-day keep
   // line and the contact of last resort). Still one actionless form whose
