@@ -4926,3 +4926,22 @@ Owner decisions (clickable chat answers) for `auth.sign-up-submit`,
   and reset alike. The auth service refuses longer ones, and bcrypt only uses
   the first 72 bytes. A longer password gets `invalid-request-v1` with issue
   `password` before any auth-service call.
+
+## 2026-10-16 — Claimant deletion runs the planned raw-copy cleanup
+
+- Owner decision (clickable chat answer): a claimant's deletion runs the
+  cleanup already planned for the original embryo upload's raw copies. Those
+  copies also hold the siblings' DNA, because the combined raw file cannot be
+  erased for one embryo alone.
+- Siblings' published records are untouched, and the pgTAP proof requires them
+  to stay byte-identical. The effect is stated in the rights and retention
+  documentation.
+
+## 2026-10-16 — Confirmed file of an accountless person: 730 days (G5.4)
+
+- Owner decision (clickable chat answer): a file confirmed by an accountless
+  person under Path B is kept for at most exactly 730 days. The retention class
+  `adult.non-account-holder-24mo` is defined as 730 days, with its retention
+  row, deletion job and retention-job test.
+- The review page and the notice state "730 days", because G5.4 requires
+  retention stated in days.
