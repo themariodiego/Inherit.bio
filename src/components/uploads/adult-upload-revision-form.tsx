@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { ADULT_UPLOAD_REVISION_COPY as COPY } from "@/copy/upload/other-adult";
+import { ADULT_UPLOAD_DERIVED_LIST as DERIVED, ADULT_UPLOAD_REVISION_COPY as COPY } from "@/copy/upload/other-adult";
 import type { AdultUploadRevisionReview } from "@/lib/uploads/path-b-review";
 import { day } from "./other-adult-lines";
 
@@ -12,8 +12,10 @@ type Status = "ready" | "pending" | Operation | "failed";
 /**
  * One DNA file added for the person under the register's Path B, from the
  * rights session its upload-time notice opened: exactly what the uploader
- * can see, and three answers that need no account. Yes confirms only this
- * file; no deletes only this file; the third deletes everything.
+ * can see, the closed list of what can be made from it (the same list the
+ * upload-time email gives), and three answers that need no account. Yes
+ * confirms only this file; no deletes only this file; the third deletes
+ * everything.
  */
 export function AdultUploadRevisionForm({ review }: { review: AdultUploadRevisionReview }) {
   const [status, setStatus] = useState<Status>("ready");
@@ -44,6 +46,15 @@ export function AdultUploadRevisionForm({ review }: { review: AdultUploadRevisio
   );
 
   const busy = status === "pending";
+  const derived = (
+    <div data-slot="adult-upload-derived">
+      <h2 className="title">{DERIVED.heading}</h2>
+      <ul className="mt-2 max-w-measure list-disc space-y-1 pl-5 text-sm leading-relaxed">
+        {DERIVED.items.map(item => <li key={item.category} data-category={item.category}>{item.text}</li>)}
+      </ul>
+      <p className="mt-2 max-w-measure text-sm leading-relaxed text-ink-muted">{DERIVED.closing}</p>
+    </div>
+  );
   return (
     <section className="rec-column px-6 py-16" data-slot="adult-upload-revision">
       <header className="rec-head">
@@ -59,10 +70,14 @@ export function AdultUploadRevisionForm({ review }: { review: AdultUploadRevisio
         </div>
         {revision.state === "pending" ? <>
           <p className="max-w-measure text-sm leading-relaxed">{COPY.nothingYet}</p>
+          {derived}
           <p className="max-w-measure text-sm leading-relaxed text-ink-muted">{COPY.deadline(day(revision.deleteBy))}</p>
           <div><Button type="button" disabled={busy} onClick={() => void answer("confirm")}>
             {busy ? COPY.saving : COPY.confirmButton}</Button></div>
-        </> : <p role="status" className="max-w-measure text-sm leading-relaxed">{COPY.confirmedOn(day(revision.confirmedOn))}</p>}
+        </> : <>
+          <p role="status" className="max-w-measure text-sm leading-relaxed">{COPY.confirmedOn(day(revision.confirmedOn))}</p>
+          {derived}
+        </>}
         <div className="flex flex-wrap gap-3 border-t border-line pt-5">
           <Button type="button" variant="outline" disabled={busy} onClick={() => void answer("refuse")}>{COPY.refuseButton}</Button>
           <Button type="button" variant="outline" disabled={busy} onClick={() => void answer("delete")}>{COPY.deleteButton}</Button>

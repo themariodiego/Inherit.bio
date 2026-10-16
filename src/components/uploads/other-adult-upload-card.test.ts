@@ -6,11 +6,14 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: () => {} }) }));
 
 import {
+  ADULT_UPLOAD_DERIVED_LIST as DERIVED,
   ADULT_UPLOAD_REVISION_COPY as REVISION,
   HELD_FOR_YOU_COPY as HELD,
   OTHER_ADULT_UPLOAD_COPY as COPY,
+  PATH_B_CHOICES_COPY as CHOICES,
   PATH_B_REQUEST_COPY as REQUEST,
 } from "@/copy/upload/other-adult";
+import { PATH_B_PURPOSES } from "@/lib/uploads/path-b-purpose";
 import { JURISDICTION_AFFIRM, JURISDICTION_SELECT_LABEL } from "@/copy/settings/jurisdiction";
 import { parseArtifactFile } from "@/lib/legal/artifact-file";
 import {
@@ -188,6 +191,48 @@ describe("the person's Path B screens", () => {
     expect(text(html)).toContain(REVISION.confirmedOn("29 September 2026"));
     expect(text(html)).not.toContain(REVISION.confirmButton);
     expect(text(html)).toContain(REVISION.refuseButton);
+  });
+  // The register's prospectiveDerivedCategoryLabels: one closed server list,
+  // the same one the upload-time email renders, and nothing beyond it.
+  const DERIVED_TEXTS = [
+    "A private copy of its DNA readings, put in a standard form. This can be made once you say yes.",
+    "Observed genetic variants, only if you turn this on later.",
+    "Trait reports and estimates, only if you turn this on later.",
+  ];
+  const derivedBlock = (html: string) => {
+    const blocks = [...html.matchAll(/<div data-slot="adult-upload-derived">([\s\S]*?)<\/div>/g)];
+    expect(blocks).toHaveLength(1);
+    return blocks[0]![1]!;
+  };
+  it("is the exact closed list of what can be made, and names no other result", () => {
+    expect(DERIVED.heading).toBe("What can be made from this file");
+    expect(DERIVED.items.map(item => item.category)).toEqual(["standard-copy", "reports.monogenic", "reports.polygenic"]);
+    expect(DERIVED.items.map(item => item.text)).toEqual(DERIVED_TEXTS);
+    expect(DERIVED.closing).toBe("Each of these needs your own Inherit account. You turn on each kind of result by itself. "
+      + "The person who added it sees a result only if you share it with them. Nothing else is made from this file.");
+    // The two results carry the names the person later turns on, one at a time.
+    expect(DERIVED.items[1]!.text.startsWith(`${CHOICES.layers["reports.monogenic"]},`)).toBe(true);
+    expect(DERIVED.items[2]!.text.startsWith(`${CHOICES.layers["reports.polygenic"]},`)).toBe(true);
+    // Ancestry can be chosen but nothing makes it from this file, so it is not listed.
+    expect(PATH_B_PURPOSES.filter(purpose => !DERIVED.items.some(item => item.category === purpose))).toEqual(["ancestry"]);
+    expect(JSON.stringify(DERIVED)).not.toMatch(/ancestry|portrait|health picture|embryo|carrier|copilot/i);
+    // The database's Path B report store holds exactly these two outputs.
+    const reports = fs.readFileSync("supabase/migrations/20260930234000_path_b_queued_reports.sql", "utf8");
+    expect(reports).toContain(" purpose text not null check(purpose in('reports.monogenic','reports.polygenic')),");
+  });
+  it.each([
+    ["pending", revision, REVISION.nothingYet],
+    ["confirmed", { ...revision, state: "confirmed" as const, confirmedOn: "2026-09-29T11:00:00Z" }, REVISION.confirmedOn("29 September 2026")],
+  ] as const)("renders that list on the %s review, after its own line", (_state, shown, line) => {
+    const html = renderToStaticMarkup(createElement(AdultUploadRevisionForm, { review: { nonce: "n".repeat(40), revision: shown } }));
+    const block = derivedBlock(html);
+    expect(block).toContain(`<h2 class="title">${DERIVED.heading}</h2>`);
+    expect([...block.matchAll(/<li data-category="([^"]+)">([^<]*)<\/li>/g)].map(match => [match[1], match[2]]))
+      .toEqual(DERIVED.items.map(item => [item.category, item.text]));
+    expect(block.match(/<li\b/g)).toHaveLength(DERIVED_TEXTS.length);
+    expect(text(block)).toContain(DERIVED.closing);
+    expect(html.indexOf(line)).toBeGreaterThan(-1);
+    expect(html.indexOf(line)).toBeLessThan(html.indexOf('data-slot="adult-upload-derived"'));
   });
   it("leaves the Path A review with its own words: no file is ever added there", () => {
     const html = renderToStaticMarkup(createElement(AdultSubjectReviewForm, { review: { nonce: "n".repeat(40),

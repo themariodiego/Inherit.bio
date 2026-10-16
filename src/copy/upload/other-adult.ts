@@ -179,3 +179,38 @@ export const PATH_B_CHOICES_COPY = {
   readResults: (layer: string) => `Read your ${layer.toLowerCase()}`,
   openShared: "Read shared reports",
 } as const;
+
+/**
+ * The closed list of what can ever be made from one file added under Path B:
+ * the register's `closed-list-of-what-will-be-derived`
+ * (upload-time-rights-notice-v1.adult.content) and the review projection's
+ * `prospectiveDerivedCategoryLabels` (`closed-server-allowlist-only`). The
+ * upload-time email and the review page on `/withdraw/session` both render
+ * this one list, beside "nothing is made until you say yes", so the two
+ * cannot drift. It names only what the code can produce from that file:
+ *
+ *   - `standard-copy`: the normalization a confirmed revision queues by
+ *     itself, with no purpose grant, and only when the record is bound to
+ *     the person's own account (path_b_normalization_authority_v1). It writes
+ *     the file's private canonical rows; no reader policy admits them.
+ *   - `reports.monogenic`, `reports.polygenic`: the two queued report
+ *     outputs, each only after the person's own current grant for that
+ *     purpose (enqueue_path_b_reports_v1), named as on the person's choices.
+ *
+ * Ancestry is not listed: a Path B ancestry choice can be recorded, but no
+ * job makes an ancestry result from this file. Family pages read the
+ * person's own record, never this file, and Copilot never reads it: the
+ * file's descriptor closes the legacy chat scope (hasCanonicalCopilotScope).
+ */
+export const ADULT_UPLOAD_DERIVED_LIST = {
+  heading: "What can be made from this file",
+  items: [
+    { category: "standard-copy",
+      text: "A private copy of its DNA readings, put in a standard form. This can be made once you say yes." },
+    { category: "reports.monogenic",
+      text: `${PATH_B_CHOICES_COPY.layers["reports.monogenic"]}, only if you turn this on later.` },
+    { category: "reports.polygenic",
+      text: `${PATH_B_CHOICES_COPY.layers["reports.polygenic"]}, only if you turn this on later.` },
+  ],
+  closing: "Each of these needs your own Inherit account. You turn on each kind of result by itself. The person who added it sees a result only if you share it with them. Nothing else is made from this file.",
+} as const;

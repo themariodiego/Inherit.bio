@@ -1,8 +1,9 @@
 // Renders each template to HTML (node environment) and asserts key strings.
 // createElement instead of JSX so the file stays .test.ts per repo convention.
 import { createElement } from "react";
-import { render } from "@react-email/components";
+import { render, toPlainText } from "@react-email/components";
 import { describe, expect, it } from "vitest";
+import { ADULT_UPLOAD_DERIVED_LIST as DERIVED } from "@/copy/upload/other-adult";
 import { ReportReadyEmail } from "./report-ready";
 import { ResearchDigestEmail } from "./research-digest";
 import { AdultSubjectInvitationEmail } from "./adult-subject-invitation";
@@ -489,6 +490,9 @@ describe("Path B mails", () => {
       expect(html).toContain("If the link does not work, or you did not expect this, write to privacy@inherit.bio.");
       expect(html).not.toContain("verified identity");
       expect(html).toContain("Nothing is made from it unless you say yes");
+      expect(html).toContain(DERIVED.heading);
+      for (const item of DERIVED.items) expect(html).toContain(item.text);
+      expect(html).toContain(DERIVED.closing);
       expect(html).toContain("If you do nothing, it is deleted on 28 October 2026, 30 days after it was added.");
       expect(html).toContain("You do not need an account.");
       expect(html.match(/href="/g)).toHaveLength(1);
@@ -497,6 +501,33 @@ describe("Path B mails", () => {
       for (const addition of ["participant@e2e.local", "privacy@inherit.bio", "privacy@inherit.bio.attacker@example.test"]) {
         expect(() => expectSafeBody(html + addition, true)).toThrow();
       }
+    });
+
+  // upload-time-rights-notice-v1.adult.content: closed-list-of-what-will-be-derived,
+  // from the one server list the review page renders too.
+  it.each(["array", "vcf"] as const)(
+    "states the closed list of what can be made from a held %s file, after the nothing-yet line, and nothing more", async (fileKind) => {
+      const html = stripMarkers(await renderMail({ id: "adult-upload-notice", payload: { fileKind, uploaderName: null,
+        uploadedOn: "2026-09-28", deleteBy: "2026-10-28", reviewUrl: invitationUrl } }));
+      const plain = toPlainText(html);
+      expect(plain).toContain(DERIVED.heading);
+      // Exactly the list's items, in order, and no other list item anywhere in the mail.
+      expect([...html.matchAll(/<li\b[^>]*>([\s\S]*?)<\/li>/g)].map(match => match[1])).toEqual(DERIVED.items.map(item => item.text));
+      expect(DERIVED.items.map(item => item.text)).toEqual([
+        "A private copy of its DNA readings, put in a standard form. This can be made once you say yes.",
+        "Observed genetic variants, only if you turn this on later.",
+        "Trait reports and estimates, only if you turn this on later.",
+      ]);
+      expect(plain).toContain(DERIVED.closing);
+      expect(plain).toContain("Nothing else is made from this file.");
+      // The zero-derived-now line stays, and comes first.
+      const now = plain.indexOf("Nothing is made from it unless you say yes.");
+      expect(now).toBeGreaterThan(-1);
+      expect(now).toBeLessThan(plain.indexOf(DERIVED.heading));
+      expect(plain.indexOf(DERIVED.heading)).toBeLessThan(plain.indexOf(DERIVED.closing));
+      // No result outside the list is claimed.
+      expect(plain).not.toMatch(/ancestry|portrait|health picture|embryo|carrier|copilot|chat/i);
+      expectSafeBody(html, true);
     });
 });
 
