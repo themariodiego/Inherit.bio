@@ -18,6 +18,8 @@ import { deletionControlState } from "@/lib/account-deletion-state";
 import { route } from "@/lib/primary-routes";
 import {AccountExport} from "@/components/settings/account-export";
 import {accountExportControls} from "@/lib/exports/account-export-controls";
+import {SubjectExports} from "@/components/settings/subject-exports";
+import {subjectExportControls} from "@/lib/exports/subject-export-controls";
 import { RecordKeyCards } from "@/components/settings/record-key-cards";
 import { recordKeyCardControls } from "@/lib/embryos/record-key-card-controls";
 import { RECORD_KEY_CARDS_HEADING } from "@/copy/embryos/upload";
@@ -31,10 +33,11 @@ export default async function DataSettingsPage({searchParams}:PageProps<"/settin
   const dispositionAfter=typeof query.dispositionAfter==="string"?query.dispositionAfter:query.dispositionAfter?"invalid":null;
   const objectionAfter=typeof query.objectionAfter==="string"?query.objectionAfter:query.objectionAfter?"invalid":null;
   const keyCardAfter=typeof query.keyCardAfter==="string"?query.keyCardAfter:query.keyCardAfter?"invalid":null;
-  const [deletion,profiles,dispositions,objections,exports,keyCards] = await Promise.all([
+  const [deletion,profiles,dispositions,objections,exports,keyCards,subjectExports] = await Promise.all([
     deletionControlState(),identityProfileControls(after),embryoDispositionControls(dispositionAfter),ownerAccountObjectionControls(objectionAfter),
     accountExportControls(),
     recordKeyCardControls(keyCardAfter),
+    subjectExportControls(),
   ]);
   return (
     <div className="page-stack rec-column stack-sections">
@@ -49,6 +52,7 @@ export default async function DataSettingsPage({searchParams}:PageProps<"/settin
         <div><Button asChild variant="outline"><a href="/api/export">{DATA_EXPORT_BUTTON}</a></Button></div>
         <AccountExport control={exports}/>
       </section>
+      {subjectExports?.length?<SubjectExports items={subjectExports}/>:null}
       <DangerZone deletion={deletion} />
       {keyCards ? <section className="space-y-4 rounded-2xl border border-line bg-card p-5" aria-labelledby="record-key-cards-heading">
         <h2 id="record-key-cards-heading" className="font-medium">{RECORD_KEY_CARDS_HEADING}</h2>

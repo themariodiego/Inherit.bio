@@ -1,4 +1,4 @@
-import {runTestAccountArchiveFlow} from "./account-archive-test-flow";
+import {runTestAccountArchiveFlow,runTestSubjectArchiveFlow} from "./account-archive-test-flow";
 import {readTestAccountArchiveChunk} from "./account-archive-test-publication";
 import {r2AllocationDigest} from "./archive-r2-current-fence";
 import type {RequesterStatementR2Gateway} from "./requester-statement-r2";
@@ -28,6 +28,7 @@ import {ACCOUNT_SUBJECT_MEMBERS} from "./account-archive-plan";
 import {accountPartitionFixture} from "./__fixtures__/account-partitions";
 import {claimantArchiveFixture} from "./__fixtures__/claimant-archive";
 import {ORDINARY_SUBJECT_AUDIT_NOTE,type AccountAuditRpc} from "./account-audit-members";
+import {SUBJECT_EXPORT_AUDIT_NOTE} from "@/copy/subjects/subject-export";
 import type {AccountMemberRpc,AccountBoundSourceRpc} from "./bound-account-archive-worker";
 import type {AccountContentRpc} from "./account-content-reader";
 import type {AccountOriginalRpc} from "./account-original-source";
@@ -389,6 +390,64 @@ describe("complete consumed-account unpublished archive executor",()=>{
  });
 });
 
+
+/** api.subject-export: the same fixture as one ordinary record job. The
+ * database serves only the record's own rows (20261016200000_subject_export.sql,
+ * supabase/tests/subject_export.sql); the adult record, its consents and the
+ * account-level legacy consents and recipient grants are not the record's. */
+function subjectScope(f:Awaited<ReturnType<typeof fixture>>){
+ const self=f.context.partitions.find(p=>p.subjectId===f.self)!;
+ Object.assign(f.context,{targetKind:"subject",targetId:f.self,partitions:[self],fileCount:self.fileCount});
+ for(const kind of Object.keys(f.historySource) as (keyof typeof f.historySource)[])
+  f.historySource[kind]=f.historySource[kind].filter(row=>kind==="subjects"&&row.id===f.self);
+ for(const entry of f.historyContext.classes){let digest=createHash("sha256").update(`account-history-members-v1|${entry.kind}`).digest();
+  for(const row of f.historySource[entry.kind as keyof typeof f.historySource])digest=createHash("sha256").update(digest).update(`${row.id}:${row.rowText}\n`).digest();
+  Object.assign(entry,{rows:f.historySource[entry.kind as keyof typeof f.historySource].length,membershipSha256:digest.toString("hex")});}
+ for(const kind of Object.keys(f.classRows) as (keyof typeof f.classRows)[]){f.classRows[kind]=[];
+  Object.assign(f.classContext.classes.find(e=>e.kind===kind)!,{rows:0,membershipSha256:hash(`account-class-members-v1|${kind}`),partitions:[]});}
+ const metadata=f.metadataRpc.getMockImplementation()!;
+ f.metadataRpc.mockImplementation(async(...args)=>{const result=await metadata(...args),data=result.data as {rows:Record<string,unknown>[]};
+  if(args[1].p_operation==="context")data.rows[0].purposeGrantCount=0;if(args[1].p_operation==="purpose-grants")data.rows=[];return result;});
+ return f;
+}
+const subjectAudit={schema_version:"legal-audit-v1",attribution:"unrecorded",attribution_started_at:null,note:SUBJECT_EXPORT_AUDIT_NOTE,events:[]};
+describe("one-record (api.subject-export) archive on the account producer",()=>{
+ it("builds the record's own archive with every required member and the stated audit exclusion",async()=>{
+  const f=subjectScope(await fixture()),completeRpc=vi.fn<AccountCompleteRpc>(async()=>{throw new Error("never-read");});
+  const result=await buildAccountArchive({...f.options,scope:"subject",completeRpc}),zip=new AdmZip(Buffer.concat(f.historical.writes));
+  const manifest=JSON.parse(zip.readAsText("manifest.json"));expect(result.summary.state).toBe("bytes-complete");
+  expect(new Set(zip.getEntries().map(e=>e.entryName))).toEqual(new Set(["manifest.json",...manifest.members.map((m:{name:string})=>m.name)]));
+  for(const name of ACCOUNT_SUBJECT_MEMBERS)expect(zip.getEntry(`subjects/${f.self}/${name}`)).not.toBeNull();
+  for(const d of manifest.members){const bytes=zip.readFile(d.name)!;expect(bytes.byteLength).toBe(d.sizeBytes);expect(hash(bytes)).toBe(d.sha256);}
+  expect(manifest.subjectPartitions).toEqual([f.self]);expect(manifest.exportContract).toBe("subject-export-v1");
+  expect(manifest.excludedClasses).toEqual([{class:"legal-audit",reasonCode:"audit-events-record-no-subject"}]);
+  expect(JSON.parse(zip.readAsText("legal-audit.json"))).toEqual(subjectAudit);
+  expect(JSON.parse(zip.readAsText(`subjects/${f.self}/audit-log.json`))).toEqual(subjectAudit);
+  expect(f.auditRpc).not.toHaveBeenCalled();expect(completeRpc).not.toHaveBeenCalled();
+  expect(zip.readAsText(`subjects/${f.self}/reports.txt`)).toContain("Original saved finding");
+  expect(zip.readFile(`originals/${f.file.file.id}/original.vcf`)!.equals(Buffer.from("ABC"))).toBe(true);
+  expect(zip.readAsText(`variants/${f.file.file.id}.csv`).trim().split("\n")).toHaveLength(3);
+  expect(JSON.parse(zip.readAsText("subjects.json")).rows).toEqual([{subjectId:f.self,path:`subjects/${f.self}/`}]);
+  const archive=Buffer.concat(f.historical.writes);
+  for(const absent of [f.adult,f.foreign,"synthetic-model",f.context.actor.sessionId])expect(archive.includes(Buffer.from(absent))).toBe(false);
+  // The requester's own profile is filed under the record, as account history.
+  expect(zip.readAsText(`subjects/${f.self}/subject.json`)).toContain('"kind":"profile","scope":"requester-account-history"');
+  expect(f.historical.calls.at(-1)?.p_operation).toBe("bytes-complete");expect(f.historical.calls.some(c=>String(c.p_operation)==="ready")).toBe(false);
+ });
+ it("refuses a context that is not the scope its due reader selected, before any reservation",async()=>{
+  const subject=subjectScope(await fixture());
+  await expect(buildAccountArchive(subject.options)).rejects.toThrow();
+  expect(subject.historical.write).not.toHaveBeenCalled();expect(subject.historical.calls.some(c=>c.p_operation==="reserve")).toBe(false);
+  const account=await fixture();
+  await expect(buildAccountArchive({...account.options,scope:"subject"})).rejects.toThrow();
+  expect(account.historical.write).not.toHaveBeenCalled();expect(account.historical.calls.some(c=>c.p_operation==="reserve")).toBe(false);
+ });
+ it("refuses a record context carrying a second partition",async()=>{
+  const f=subjectScope(await fixture());f.context.partitions.push({subjectId:f.adult,class:"ordinary",fileCount:0,fileIds:[]});
+  await expect(buildAccountArchive({...f.options,scope:"subject"})).rejects.toThrow();expect(f.historical.write).not.toHaveBeenCalled();
+ });
+});
+
 it("runs the real due/account producer/R2 writer through full READY and sequential complete-manifest download",async()=>{
  vi.stubEnv("INHERIT_TEST_JURISDICTION","1");vi.stubEnv("INHERIT_TEST_ACCOUNT_ARCHIVE_R2","1");
  const f=await fixture(),events:string[]=[],frames=new Map<number,Parameters<RequesterStatementR2Gateway["assertReady"]>[0]>();
@@ -494,4 +553,103 @@ it("clears the actual owned configuration buffer when TEST gateway setup refuses
  await expect(runTestAccountArchiveFlow({signal:stop.signal,assertReady:async()=>{},
   rpc:()=>async()=>({data:[job],error:null}),gateway:runtime=>{runtime.own(bytes);throw failure;}})).rejects.toBe(failure);
  expect([...bytes]).toEqual([0,0,0]);expect(testNative.invoke).toBeUndefined();
+});
+
+it("runs a one-record job through the subject due reader, the same producer and R2 writer, READY and the sequential download",async()=>{
+ vi.stubEnv("INHERIT_TEST_JURISDICTION","1");vi.stubEnv("INHERIT_TEST_ACCOUNT_ARCHIVE_R2","1");
+ const f=subjectScope(await fixture()),events:string[]=[],frames=new Map<number,Parameters<RequesterStatementR2Gateway["assertReady"]>[0]>();
+ const stored=new Map<number,Uint8Array>(),reserved=new Map<number,Record<string,unknown>>(),pages=new Map<number,Record<string,unknown>>();
+ let summary:Record<string,unknown>|undefined,ready:unknown,grant=false,nextSequence=0;
+ const readers={workerRpc:f.options.workerRpc,memberRpc:f.options.memberRpc,contentRpc:f.options.contentRpc,
+  metadataRpc:f.options.metadataRpc,inventoryRpc:f.options.inventoryRpc,classRpc:f.options.classRpc,
+  auditRpc:f.options.auditRpc,originalRpc:f.options.originalRpc,boundSourceRpc:f.options.boundSourceRpc,
+  graphRpc:f.options.graphRpc,pathBRpc:f.options.pathBRpc,readOriginalRange:f.options.readOriginalRange};
+ const previous=f.options.workerRpc;
+ readers.workerRpc=(name,args,options)=>{
+  const query=previous(name,args,options);return {retry:(retry:false)=>({abortSignal:async(signal:AbortSignal)=>{
+   const result=await query.retry(retry).abortSignal(signal);if(result.error===null){
+    if(args.p_operation==="reserve")reserved.set(Number(args.p_payload!.ordinal),structuredClone(args.p_payload!));
+    if(args.p_operation==="acknowledge")reserved.set(Number(args.p_payload!.ordinal),structuredClone(args.p_payload!));
+    if(args.p_operation==="page")pages.set(Number(args.p_payload!.page),structuredClone(args.p_payload!));
+    if(args.p_operation==="bytes-complete")summary=structuredClone(args.p_payload!);
+   }return result;
+  }})};
+ };
+ const frame=(ordinal:number)=>{
+  const segment=reserved.get(ordinal)!;if(!segment)throw new Error("not-reserved");
+  const locator={provider:"archive-r2-current-object-v1" as const,bucket:"inherit-export-test",objectKey:`export/${randomUUID()}`,
+   byteCount:Number(segment.sizeBytes),sha256:String(segment.sha256)};
+  const value={objectId:randomUUID(),writeIdentity:{purpose:"inherit-export-reservation-v1" as const,
+   exportId:f.options.job.exportId,attemptId:f.historical.calls.find(c=>c.p_operation==="begin")!.p_attempt_id,
+   ordinal,offset:Number(segment.offset),byteCount:Number(segment.sizeBytes),sha256:String(segment.sha256),logicalKey:String(segment.objectKey),
+   reservedAt:new Date().toISOString(),authorityReceipt:f.options.job.authorityReceipt,locator},
+   writeBindingSha256:"c".repeat(64),allocationSha256:r2AllocationDigest(locator.bucket,locator.objectKey),configurationSha256:"d".repeat(64),
+   originalDeadline:new Date(Date.now()+120_000).toISOString()};frames.set(ordinal,value);return value;
+ };
+ testNative.invoke=async(sql,values)=>{
+  const name=sql.match(/private\.([a-z0-9_]+)/u)?.[1];events.push(name!);
+  const ordinal=Number(values[1]);
+  if(name==="reserve_account_archive_r2_write_v1")return [{frame:frame(ordinal)}];
+  if(name==="current_account_archive_r2_write_v1")return [{frame:frames.get(ordinal)}];
+  if(name==="complete_account_archive_r2_write_v1")return [{id:frames.get(ordinal)!.objectId}];
+  if(name==="account_archive_test_manifest_page_v1"){
+   if(values.length===5&&!grant)throw new Error("grant-required");const page=pages.get(Number(values[2]))!;
+   return [{page:{...summary,page:Number(values[2]),segments:(page.segments as Record<string,unknown>[]).map(segment=>({segment,
+    frame:frames.get(Number(segment.ordinal)),providerVersion:"v1",providerEtag:"e1"}))}}];
+  }
+  if(name==="current_account_archive_test_object_v1"){
+   if(values.length===5&&(!grant||ordinal!==nextSequence))throw new Error("grant-sequence");
+   return [{entry:{frame:frames.get(ordinal),providerVersion:"v1",providerEtag:"e1"}}];
+  }
+  if(name==="complete_test_account_archive_v1"){
+   expect(stored.size).toBe(Number(summary!.segmentCount));const producer=JSON.parse(String(values[2]));
+   ready={status:"ready",exportId:f.options.job.exportId,attemptId:String(values[0]),...summary,
+    authorityReceipt:f.options.job.authorityReceipt,principalHash:f.options.job.principalHash,expiresAt:new Date(Date.now()+60_000).toISOString(),
+    memberCount:producer.memberCount,payloadBytes:producer.payloadBytes,memberSha256:producer.memberSha256,manifestMemberSha256:producer.manifestMemberSha256};return [{ready}];
+  }
+  if(name==="ack_test_account_archive_download_v1"){
+   if(!grant||ordinal!==nextSequence)throw new Error("grant-sequence");nextSequence++;return [{acknowledged:true}];
+  }
+  throw new Error("unexpected-native-door");
+ };
+ const gateway=():RequesterStatementR2Gateway=>({assertReady:async()=>{},createPayload:async(binding,bytes)=>{
+  events.push("physical-create");expect(stored.has(binding.writeIdentity.ordinal)).toBe(false);stored.set(binding.writeIdentity.ordinal,bytes.slice());
+  return {key:binding.writeIdentity.locator.objectKey,version:"v1",etag:"e1",size:bytes.byteLength,
+   customMetadata:{state:"owned-payload",allocationSha256:binding.allocationSha256,writeBindingSha256:binding.writeBindingSha256}};
+ },readPayload:async(binding)=>{
+  events.push("physical-read");const bytes=stored.get(binding.writeIdentity.ordinal)!.slice();return {
+   descriptor:{key:binding.writeIdentity.locator.objectKey,version:"v1",etag:"e1",size:bytes.byteLength,
+    customMetadata:{state:"owned-payload",allocationSha256:binding.allocationSha256,writeBindingSha256:binding.writeBindingSha256}},
+   body:new ReadableStream<Uint8Array>({start(c){c.enqueue(bytes);c.close();}})};
+ },disposalProvider:{assertReady:async()=>{},serializeExactKey:async(_b,_s,work)=>work(),headCurrent:async()=>null,
+  readCurrent:async()=>{throw new Error("not-selected");},replaceWithEmptyMarker:async()=>{throw new Error("not-selected");}}});
+ const env={INHERIT_TEST_JURISDICTION:"1",INHERIT_TEST_ACCOUNT_ARCHIVE_R2:"1"};
+ const result=await runTestSubjectArchiveFlow({env,signal:f.abort.signal,assertReady:async()=>{},gateway,readers,
+  rpc:()=>async name=>{expect(name).toBe("export_archive_subject_due_v1");return {error:null,data:[f.options.job]};}});
+ expect(result.completed).toBe(1);expect(result.ready).toHaveLength(1);
+ expect(events.filter(e=>e==="complete_test_account_archive_v1")).toHaveLength(1);
+ expect(events.filter(e=>e==="physical-read")).toHaveLength(stored.size*2);
+ expect(f.historical.calls.at(-1)?.p_operation).toBe("bytes-complete");
+ const value=result.ready[0];const blocked=createRequesterStatementRuntime();
+ await expect(readTestAccountArchiveChunk({ready:value,ordinal:0,downloadHash:"9".repeat(64),origin:{kind:"account",...f.context.actor},
+  gateway:gateway(),runtime:blocked,signal:f.abort.signal,env})).rejects.toThrow();
+ await blocked.settle(Date.parse(f.options.job.deadline));blocked.assertSettled();
+ // The native request/nonce/cookie grant is exercised in account_archive_test_completion.sql.
+ // This synthetic boundary supplies its exact already-consumed grant response.
+ grant=true;const chunks:Buffer[]=[];
+ for(let ordinal=0;ordinal<value.segmentCount;ordinal++){
+  const runtime=createRequesterStatementRuntime(),lease=await readTestAccountArchiveChunk({ready:value,ordinal,downloadHash:"9".repeat(64),
+   origin:{kind:"account",...f.context.actor},gateway:gateway(),runtime,signal:f.abort.signal,env});
+  chunks.push(Buffer.from(lease.bytes));await lease.release();expect(lease.bytes.every(b=>b===0)).toBe(true);
+ }
+ const bytes=Buffer.concat(chunks),zip=new AdmZip(bytes),manifest=JSON.parse(zip.readAsText("manifest.json"));
+ expect(hash(bytes)).toBe(value.sha256);expect(bytes.byteLength).toBe(value.sizeBytes);
+ expect(zip.getEntries()).toHaveLength(value.memberCount);expect(hash(zip.readFile("manifest.json")!)).toBe(value.manifestMemberSha256);
+ expect(hash(JSON.stringify(manifest.members))).toBe(value.memberSha256);
+ for(const member of manifest.members){const actual=zip.readFile(member.name)!;expect(actual.byteLength).toBe(member.sizeBytes);expect(hash(actual)).toBe(member.sha256);}
+ expect(JSON.parse(zip.readAsText("legal-audit.json"))).toEqual(subjectAudit);expect(f.auditRpc).not.toHaveBeenCalled();
+ expect(manifest.exportContract).toBe("subject-export-v1");expect(manifest.subjectPartitions).toEqual([f.self]);
+ expect(zip.getEntries().some(e=>e.entryName.includes(f.adult))).toBe(false);
+ expect(nextSequence).toBe(value.segmentCount);
+ for(const bytes of [...stored.values(),...chunks])bytes.fill(0);testNative.invoke=undefined;
 });

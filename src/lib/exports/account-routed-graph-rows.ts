@@ -2,6 +2,7 @@ import "server-only";
 import {createHash} from "node:crypto";
 import {z} from "zod";
 import {accountArchiveContextSchema} from "./bound-account-archive-worker";
+import {accountArchiveScope} from "./account-archive-scope";
 import {ACCOUNT_GRAPH_CLASSES,accountGraphIdentitySchemas,accountGraphRowSchemas,accountGraphProjectionDigest,type AccountGraphClass} from "./account-graph-projection";
 import {anySignal} from "./abort-signals";
 const hash=z.string().regex(/^[a-f0-9]{64}$/u),count=z.number().int().nonnegative().safe();
@@ -25,7 +26,7 @@ export async function prepareAccountRoutedGraphRows(options:{kind:AccountGraphCl
  reference:{exportId:string;attemptId:string;authorityReceipt:string};rpc:AccountRoutedGraphRpc;check:(signal:AbortSignal)=>Promise<unknown>;signal:AbortSignal}){
  const kind=z.enum(ACCOUNT_GRAPH_CLASSES).parse(options.kind),context=accountArchiveContextSchema.parse(options.context);
  z.object({exportId:z.uuid(),attemptId:z.uuid(),authorityReceipt:hash}).strict().parse(options.reference);
- if(context.targetKind!=="account"||context.targetId!==context.actor.accountId||context.authorityReceipt!==options.reference.authorityReceipt)throw unavailable();
+ if(accountArchiveScope(context)===null||context.authorityReceipt!==options.reference.authorityReceipt)throw unavailable();
  let captured:z.infer<typeof membership>|null=null,complete=false;const subjects=new Set(context.partitions.map(p=>p.subjectId)),partitions=new Map<string,number>();
  const active=(signal:AbortSignal)=>{if(signal.aborted||options.signal.aborted||Date.now()>=Date.parse(context.deadline))throw unavailable();};
  async function bounded<T>(signal:AbortSignal,operation:(current:AbortSignal)=>PromiseLike<T>){

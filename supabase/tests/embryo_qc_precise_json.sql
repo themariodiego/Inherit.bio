@@ -43,8 +43,11 @@ select ok((select p.prosecdef and pg_get_userbyid(p.proowner)='postgres' and md5
  ('public.future_person_export_members_v1(text,uuid,uuid,text,text)','8510090f140b1680cca24da74fdc48c5',true),
  ('public.export_archive_account_members_pre_requester_v1(text,uuid,uuid,text,uuid,text)','61796b5fc5f91b3e9a65a2697a5bbe31',false)
  )x(signature,body_md5,service_execute);
+-- 20261016200000_subject_export.sql widened this wrapper's own-statements
+-- door to one ordinary subject job (api.subject-export). Its new exact body is
+-- pinned here; the inverse check below recovers the prior body exactly.
 select ok((select prosecdef and pg_get_userbyid(proowner)='postgres'
- and md5(prosrc)='1b91b51e8e66201104f0e43d34bf02da'
+ and md5(prosrc)='018fd08f563e621e93499d19313dc051'
  and proconfig=array['search_path=""','lock_timeout=250ms']::text[]
  and has_function_privilege('service_role',oid,'execute')
  and not exists(select 1 from unnest(array['anon','authenticated','inherit_upload_only'])r
@@ -62,13 +65,20 @@ select ok((select
  $current_score$jsonb_build_object('id',score.id,'condition_id',score.condition_id,'condition_name',score.condition_name,'finding',score.finding,'evidence_label',score.evidence_label,'coverage_state',score.coverage_state,'citation_ids',score.citation_ids,'not_covered_reason',score.not_covered_reason,'model_id',score.model_id,'model_version',score.model_version,'source_binding_fingerprint',score.source_binding_fingerprint,'computation_revision',score.computation_revision,'computed_at',score.computed_at)$current_score$,$prior_score$to_jsonb(score)-'embryo_id'$prior_score$))='1e04b020763456c3c95ca362e3cae7d2'
  from pg_proc where oid='public.export_archive_account_members_pre_requester_v1(text,uuid,uuid,text,uuid,text)'::regprocedure),
  'the exact complete legacy score/file-count corrections invert to the whole original precision body');
+-- The subject-export widening is inverted first (both of its exact edits,
+-- counted), giving the prior body; the original partition-guard inverse then
+-- recovers the whole original requester wrapper from it.
 select ok((select
- (length(prosrc)-length(replace(prosrc,$current_requester$capture:=private.export_account_owned_capture_v1(permit->'origin','account',account);
+ (length(prosrc)-length(replace(prosrc,$subject_scope$if private.export_account_door_scope_v1(permit) is null or not(permit->'partitions' ? p_subject_id::text) then$subject_scope$,'')))/length($subject_scope$if private.export_account_door_scope_v1(permit) is null or not(permit->'partitions' ? p_subject_id::text) then$subject_scope$)=1
+ and (length(prosrc)-length(replace(prosrc,$subject_capture$private.export_account_owned_capture_v1(permit->'origin',permit->>'targetKind',(permit->>'targetId')::uuid)$subject_capture$,'')))/length($subject_capture$private.export_account_owned_capture_v1(permit->'origin',permit->>'targetKind',(permit->>'targetId')::uuid)$subject_capture$)=2
+ and md5(prior)='1b91b51e8e66201104f0e43d34bf02da'
+ and (length(prior)-length(replace(prior,$current_requester$capture:=private.export_account_owned_capture_v1(permit->'origin','account',account);
  if not exists(select 1 from jsonb_array_elements(capture->'partitions')x where x->>'subjectId'=p_subject_id::text) then raise exception using errcode='42501',message='not_found';end if;$current_requester$,'')))/length($current_requester$capture:=private.export_account_owned_capture_v1(permit->'origin','account',account);
  if not exists(select 1 from jsonb_array_elements(capture->'partitions')x where x->>'subjectId'=p_subject_id::text) then raise exception using errcode='42501',message='not_found';end if;$current_requester$)=1
- and md5(replace(prosrc,$current_requester$capture:=private.export_account_owned_capture_v1(permit->'origin','account',account);
+ and md5(replace(prior,$current_requester$capture:=private.export_account_owned_capture_v1(permit->'origin','account',account);
  if not exists(select 1 from jsonb_array_elements(capture->'partitions')x where x->>'subjectId'=p_subject_id::text) then raise exception using errcode='42501',message='not_found';end if;$current_requester$,$prior_requester$capture:=private.export_account_owned_capture_v1(permit->'origin','account',account);$prior_requester$))='b88c74c6a3fa64fff3fac75858996ad0'
- from pg_proc where oid='public.export_archive_account_members_v1(text,uuid,uuid,text,uuid,text)'::regprocedure),
+ from pg_proc,lateral(select replace(replace(prosrc,$subject_scope$if private.export_account_door_scope_v1(permit) is null or not(permit->'partitions' ? p_subject_id::text) then$subject_scope$,$account_scope$if permit->>'targetKind' is distinct from 'account' or not(permit->'partitions' ? p_subject_id::text) then$account_scope$),$subject_capture$private.export_account_owned_capture_v1(permit->'origin',permit->>'targetKind',(permit->>'targetId')::uuid)$subject_capture$,$account_capture$private.export_account_owned_capture_v1(permit->'origin','account',account)$account_capture$) prior)x
+ where oid='public.export_archive_account_members_v1(text,uuid,uuid,text,uuid,text)'::regprocedure),
  'the exact added partition guard inverts to the whole original requester wrapper');
 
 set local role anon;

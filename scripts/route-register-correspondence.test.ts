@@ -24,8 +24,9 @@ import { storageBucketsInSource, UNRESOLVED_STORAGE_BUCKET } from "./storage-con
  *
  * Registered-but-unbuilt is deliberately not failed here. The register is
  * written from the brief and describes routes the product has not reached
- * yet; 18 of them remain unbuilt after the native appeal review, notice, auth,
- * mapping, subject-sharing and subjects (G2.1) routes.
+ * yet; 17 of them remain unbuilt after the native appeal review, notice, auth,
+ * mapping, subject-sharing and subjects (G2.1) routes, and the one-record
+ * subject export.
  * The exact current count prevents a broken walker from passing silently.
  *
  * Known divergences live in `docs/route-divergence.json` and are checked in
@@ -220,11 +221,13 @@ describe("the route register and the App Router describe the same surface", () =
     // The UUID-addressed sharing twin (api.subject-sharing; owner decision
     // 2026-10-16, "The subjects endpoints (G2.1)") reduces it to 21, and three
     // more subjects endpoints, api.subjects, api.legal-evidence-upload-session
-    // and api.subject-download, reduce it to 18. api.subject-export stays
-    // unbuilt (its joint-result projection and TEST R2 run are reported back
-    // undecided).
+    // and api.subject-download, reduce it to 18. api.subject-export (owner
+    // decision 2026-10-16, "Subject export with joint results: built in two
+    // steps") reduces it to 17: the one-record export ships first and refuses,
+    // with the stated reason jointResults, while the record has live joint
+    // results.
     // Keep the exact census: new implementations require an explicit review.
-    expect(unbuilt.length).toBe(18);
+    expect(unbuilt.length).toBe(17);
     expect(unbuilt.length).toBeLessThan(entries.length);
   });
 });
