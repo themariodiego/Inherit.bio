@@ -11,7 +11,7 @@ import {
   JURISDICTION_READ_ATTESTATION,
   JURISDICTION_SELECT_LABEL,
 } from "@/copy/settings/jurisdiction";
-import { otherAdultTypedNameIsValid } from "@/lib/uploads/other-adult-upload";
+import { ADULT_NON_ACCOUNT_HOLDER_KEEP_DAYS, otherAdultTypedNameIsValid } from "@/lib/uploads/other-adult-upload";
 import type { PathBRequestReview } from "@/lib/uploads/path-b-review";
 
 type Operation = "confirm" | "refuse" | "delete";
@@ -23,6 +23,8 @@ type Status = "ready" | "pending" | Operation | "failed";
  * the country they live in, and their typed name. No account is needed to
  * sign, refuse or delete. Signed in with the invited address, they sign with
  * that account instead and its own country counts (Path B's account branch).
+ * With no account, the page states the 30-day and 730-day maxima that then
+ * apply; either way it gives the contact of last resort.
  * The flow is for tests only, and the page says so.
  */
 export function PathBRequestForm({ review }: { review: PathBRequestReview }) {
@@ -84,6 +86,9 @@ export function PathBRequestForm({ review }: { review: PathBRequestReview }) {
         <p className="eyebrow">Your rights</p>
         <h1 className="display">{COPY.heading}</h1>
         <p className="max-w-measure">{COPY.detail(review.label)}</p>
+        {review.account ? null : (
+          <p className="max-w-measure text-sm" data-slot="path-b-request-keep">{COPY.keep(ADULT_NON_ACCOUNT_HOLDER_KEEP_DAYS)}</p>
+        )}
         <p role="note" className="max-w-measure text-sm">{COPY.testNote}</p>
       </header>
       <form onSubmit={sign} className="surface surface-pad rec-stack mt-10">
@@ -138,6 +143,7 @@ export function PathBRequestForm({ review }: { review: PathBRequestReview }) {
           <Button type="button" variant="outline" disabled={busy} onClick={() => void send("refuse", {})}>{COPY.refuseButton}</Button>
           <Button type="button" variant="outline" disabled={busy} onClick={() => void send("delete", {})}>{COPY.deleteButton}</Button>
         </div>
+        <p className="max-w-measure text-sm text-ink-muted">{COPY.contact}</p>
         {status === "failed" ? <p role="alert" className="text-sm">{COPY.failed}</p> : null}
       </form>
     </section>

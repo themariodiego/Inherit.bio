@@ -3,12 +3,14 @@
 // as the held file and sent to the address the person's own record holds.
 // It says what was stored and what was not, the closed list of what can be
 // made from the file (the same ADULT_UPLOAD_DERIVED_LIST the review page
-// renders), the fixed deletion date, and gives one link, with no account, to
+// renders), the fixed deletion date, the 730-day maximum for a file confirmed
+// with no account (adult.non-account-holder-24mo), and gives one link, with no account, to
 // see what the uploader sees and to say yes, say no, or delete everything.
 // Only the uploader's safe account display name is shown; no recipient
 // address, file name or genetic value is carried.
 import { Button, Text } from "@react-email/components";
-import { ADULT_UPLOAD_DERIVED_LIST as DERIVED } from "@/copy/upload/other-adult";
+import { ADULT_UPLOAD_DERIVED_LIST as DERIVED, ADULT_UPLOAD_REVISION_COPY as REVISION } from "@/copy/upload/other-adult";
+import { ADULT_NON_ACCOUNT_HOLDER_KEEP_DAYS } from "@/lib/uploads/other-adult-upload";
 import { EmailLayout, brand } from "./base";
 
 export interface AdultUploadNoticeProps {
@@ -65,6 +67,7 @@ export function AdultUploadNoticeEmail({ fileKind, uploaderName, uploadedOn, del
         If you do nothing, it is deleted on {words(deleteBy)}, 30 days after it
         was added.
       </Text>
+      <Text style={paragraph}>{REVISION.noticeKeep(ADULT_NON_ACCOUNT_HOLDER_KEEP_DAYS)}</Text>
       <Text style={paragraph}>
         You do not need an account. The link shows what they can see, and lets
         you say yes, say no, or delete everything.

@@ -15,11 +15,13 @@ type Status = "ready" | "pending" | Operation | "failed";
  * can see, the closed list of what can be made from it (the same list the
  * upload-time email gives), and three answers that need no account. Yes
  * confirms only this file; no deletes only this file; the third deletes
- * everything.
+ * everything. When the database reports the file's 730-day clock
+ * (adult.non-account-holder-24mo), the page states it in days.
  */
 export function AdultUploadRevisionForm({ review }: { review: AdultUploadRevisionReview }) {
   const [status, setStatus] = useState<Status>("ready");
   const revision = review.revision;
+  const retention = review.retention;
 
   async function answer(operation: Operation) {
     setStatus("pending");
@@ -72,10 +74,18 @@ export function AdultUploadRevisionForm({ review }: { review: AdultUploadRevisio
           <p className="max-w-measure text-sm leading-relaxed">{COPY.nothingYet}</p>
           {derived}
           <p className="max-w-measure text-sm leading-relaxed text-ink-muted">{COPY.deadline(day(revision.deleteBy))}</p>
+          {retention.keepDays ? (
+            <p className="max-w-measure text-sm leading-relaxed text-ink-muted" data-slot="adult-upload-keep">
+              {COPY.keepIfYes(retention.keepDays)}</p>
+          ) : null}
           <div><Button type="button" disabled={busy} onClick={() => void answer("confirm")}>
             {busy ? COPY.saving : COPY.confirmButton}</Button></div>
         </> : <>
           <p role="status" className="max-w-measure text-sm leading-relaxed">{COPY.confirmedOn(day(revision.confirmedOn))}</p>
+          {retention.keepDays && retention.keepUntil ? (
+            <p className="max-w-measure text-sm leading-relaxed text-ink-muted" data-slot="adult-upload-keep">
+              {COPY.keptUntil(retention.keepDays, day(retention.keepUntil))}</p>
+          ) : null}
           {derived}
         </>}
         <div className="flex flex-wrap gap-3 border-t border-line pt-5">

@@ -264,6 +264,27 @@ export const adultUploadRevisionView = z.object({
 export type AdultUploadRevisionView = z.infer<typeof adultUploadRevisionView>;
 
 /**
+ * `adult.non-account-holder-24mo`, defined as exactly 730 days (owner decision
+ * 2026-10-16, docs/retention.md): how long a file confirmed by a person with
+ * no account of their own is kept, from that confirmation. The database's
+ * `private.adult_non_account_holder_days_v1()` is the same number, and the
+ * notice and review page state it from here.
+ */
+export const ADULT_NON_ACCOUNT_HOLDER_KEEP_DAYS = 730;
+
+/**
+ * `public.adult_upload_revision_retention_v1`, for the same session as the
+ * view above. Pending: the days a yes would keep the file, or null when the
+ * person is bound to their own account. Confirmed: the days and the fixed
+ * end of the running clock, or nulls when no such clock runs.
+ */
+export const adultUploadRevisionRetention = z.object({
+  keepDays: z.literal(ADULT_NON_ACCOUNT_HOLDER_KEEP_DAYS).nullable(),
+  keepUntil: z.string().nullable(),
+}).strict().refine(value => (value.keepUntil === null) || value.keepDays !== null);
+export type AdultUploadRevisionRetention = z.infer<typeof adultUploadRevisionRetention>;
+
+/**
  * What the person's own account shows (Path B's account branch): for each
  * person they were added as, the name the uploader typed and each current
  * file's kind, dates and state. No identifier, uploader, address or hash.
