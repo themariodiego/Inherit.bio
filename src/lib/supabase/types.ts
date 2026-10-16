@@ -8460,6 +8460,15 @@ export type Database = {
           invitation_id: string | null
         }[]
       }
+      deliver_embryo_record_key_cards_rights_v1: {
+        Args: { p_nonce: string; p_session_hash: string }
+        Returns: {
+          cards: Json
+          cohort_id: string
+          key_revision: number
+          recipient_set_revision: number
+        }[]
+      }
       deliver_embryo_record_key_cards_v1: {
         Args: {
           p_account_id: string
@@ -8766,6 +8775,15 @@ export type Database = {
       }
       resume_family_sharing_v1: {
         Args: { p_account_id: string; p_counterpart_account_id: string }
+        Returns: number
+      }
+      revoke_all_own_consents_v1: {
+        Args: {
+          p_account_id: string
+          p_nonce_expires_at: string
+          p_nonce_hash: string
+          p_session_id: string
+        }
         Returns: number
       }
       revoke_cloud_model_consent: {
