@@ -143,9 +143,21 @@ export async function POST(request: Request) {
   // deleting their account is rejected here, so the upload cleanup just below
   // deletes it in this same run; an unsent Path B draft past its own deadline
   // is closed. Selected by the database; nothing is read.
-  const expireHeld = admin.rpc.bind(admin) as unknown as (name: string) => PromiseLike<{ error: unknown }>;
+  const expireHeld = admin.rpc.bind(admin) as unknown as (name: string) => PromiseLike<{ data: unknown; error: unknown }>;
   const { error: heldExpiryError } = await expireHeld("expire_due_other_adult_held_uploads_v1");
   if (heldExpiryError) failed++;
+
+  // adult.non-account-holder-24mo (Path B, owner decision 2026-10-16): a file
+  // the person confirmed with no account of their own is kept for exactly 730
+  // days from that confirmation. The database selects each due clock and ends
+  // that revision the way a refusal does, so the same upload cleanup just
+  // below deletes it in this run. Independent of the 30-day sweep above.
+  try {
+    const { data: expiredConfirmed, error: confirmedExpiryError } =
+      await expireHeld("expire_due_path_b_confirmed_files_v1");
+    if (confirmedExpiryError) failed++;
+    else if (typeof expiredConfirmed === "number") processed += expiredConfirmed;
+  } catch { failed++; }
 
   // Independent due work: a failed mail/embryo queue must not strand uploads.
   try {

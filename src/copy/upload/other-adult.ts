@@ -73,6 +73,13 @@ export const PATH_B_REQUEST_COPY = {
     `You are signed in, so this is kept with your Inherit account. The country on your account, ${country}, is the one that counts.`,
   typedNameLabel: "Type your full legal name to sign",
   typedNameError: "Type your first and family name, each two letters or more.",
+  // adult.unconfirmed-30d and adult.non-account-holder-24mo (730 days), shown
+  // only to a person signing with no account: a person who signs with their
+  // own account has no 730-day clock (the register's cancelWhen).
+  keep: (days: number) =>
+    `Each file they add is deleted after 30 days unless you say yes to it. If you say yes, we keep that file for at most ${days} days from that day. Then we delete it.`,
+  // The existing registered contact of last resort (the same as the notice's).
+  contact: "If the link does not work, or you did not expect this, write to privacy@inherit.bio.",
   signButton: "Sign",
   saving: "Saving…",
   refuseButton: "Refuse",
@@ -111,6 +118,16 @@ export const ADULT_UPLOAD_REVISION_COPY = {
     `The name they wrote for you (${label}), the day the file was added, and whether you said yes. They see no result.`,
   nothingYet: "Nothing is made from this file until you say yes.",
   deadline: (date: string) => `If you do nothing, it is deleted on ${date}.`,
+  // adult.non-account-holder-24mo: a file confirmed with no account of your
+  // own is kept for exactly 730 days from the yes. Each line is shown only
+  // when the database reports that clock for this file.
+  keepIfYes: (days: number) => `If you say yes, we keep it for at most ${days} days from that day. Then we delete it.`,
+  keptUntil: (days: number, date: string) =>
+    `We keep it for at most ${days} days from the day you said yes. It is deleted on ${date}.`,
+  // The upload-time notice's fixed payload does not say whether the person
+  // signed with an account, so it states the condition the clock depends on.
+  noticeKeep: (days: number) =>
+    `If you signed our request without an Inherit account and you say yes, we keep the file for at most ${days} days from that day. Then we delete it.`,
   confirmedOn: (date: string) => `You said yes to this file on ${date}.`,
   confirmButton: "Yes, this is my file",
   refuseButton: "No, delete this file",

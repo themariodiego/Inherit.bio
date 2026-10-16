@@ -383,6 +383,52 @@ describe("another adult's held uploads", () => {
     expect(await response.json()).toEqual({ status: "complete", outcome: "completed_with_failures" });
     expect(mocks.rpc.mock.calls.some(call => call[0] === "claim_own_upload_purge_v1")).toBe(true);
   });
+  // adult.non-account-holder-24mo: a file confirmed with no account is kept for
+  // exactly 730 days. The database selects the due clocks; this route only
+  // runs the selector-free sweep before the upload cleanup that deletes them.
+  it("ends confirmed files past their 730-day clock before the upload cleanup, with no selector, and counts them", async () => {
+    vi.stubEnv("JOBS_SECRET", "test-job-secret");
+    idleExceptStranded([]);
+    const idle = mocks.rpc.getMockImplementation()!;
+    mocks.rpc.mockImplementation(async (name: string, ...rest: unknown[]) =>
+      name === "expire_due_path_b_confirmed_files_v1" ? { data: 2, error: null } : idle(name, ...rest));
+    const response = await run();
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ status: "complete", outcome: "completed" });
+    expect(mocks.rpc.mock.calls.filter(call => call[0] === "expire_due_path_b_confirmed_files_v1"))
+      .toEqual([["expire_due_path_b_confirmed_files_v1"]]);
+    const names = mocks.rpc.mock.calls.map(call => call[0] as string);
+    expect(names.indexOf("expire_due_other_adult_held_uploads_v1"))
+      .toBeLessThan(names.indexOf("expire_due_path_b_confirmed_files_v1"));
+    expect(names.indexOf("expire_due_path_b_confirmed_files_v1")).toBeLessThan(names.indexOf("claim_own_upload_purge_v1"));
+  });
+  it("reports nothing due as no_work when no 730-day clock has ended", async () => {
+    vi.stubEnv("JOBS_SECRET", "test-job-secret");
+    idleExceptStranded([]);
+    const idle = mocks.rpc.getMockImplementation()!;
+    mocks.rpc.mockImplementation(async (name: string, ...rest: unknown[]) =>
+      name === "expire_due_path_b_confirmed_files_v1" ? { data: 0, error: null } : idle(name, ...rest));
+    expect(await (await run()).json()).toEqual({ status: "complete", outcome: "no_work" });
+    expect(mocks.rpc).toHaveBeenCalledWith("expire_due_path_b_confirmed_files_v1");
+  });
+  it.each(["returned", "thrown"])("keeps the 30-day sweep and the upload cleanup running after a %s 730-day sweep failure", async failure => {
+    vi.stubEnv("JOBS_SECRET", "test-job-secret");
+    idleExceptStranded([]);
+    const idle = mocks.rpc.getMockImplementation()!;
+    mocks.rpc.mockImplementation(async (name: string, ...rest: unknown[]) => {
+      if (name === "expire_due_path_b_confirmed_files_v1") {
+        if (failure === "thrown") throw new Error("synthetic transport failure");
+        return { data: null, error: { code: "synthetic" } };
+      }
+      return idle(name, ...rest);
+    });
+    const response = await run();
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ status: "complete", outcome: "completed_with_failures" });
+    expect(mocks.rpc).toHaveBeenCalledWith("expire_due_other_adult_held_uploads_v1");
+    expect(mocks.rpc.mock.calls.some(call => call[0] === "claim_own_upload_purge_v1")).toBe(true);
+    expect(mocks.rpc).toHaveBeenCalledWith("claim_due_account_deletion_v1", expect.any(Object));
+  });
 });
 
 // Composed orchestration only: RPC/provider responses below are synthetic.

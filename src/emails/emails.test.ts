@@ -3,7 +3,7 @@
 import { createElement } from "react";
 import { render, toPlainText } from "@react-email/components";
 import { describe, expect, it } from "vitest";
-import { ADULT_UPLOAD_DERIVED_LIST as DERIVED } from "@/copy/upload/other-adult";
+import { ADULT_UPLOAD_DERIVED_LIST as DERIVED, ADULT_UPLOAD_REVISION_COPY as REVISION } from "@/copy/upload/other-adult";
 import { ReportReadyEmail } from "./report-ready";
 import { ResearchDigestEmail } from "./research-digest";
 import { AdultSubjectInvitationEmail } from "./adult-subject-invitation";
@@ -494,6 +494,13 @@ describe("Path B mails", () => {
       for (const item of DERIVED.items) expect(html).toContain(item.text);
       expect(html).toContain(DERIVED.closing);
       expect(html).toContain("If you do nothing, it is deleted on 28 October 2026, 30 days after it was added.");
+      // adult.non-account-holder-24mo (owner decision 2026-10-16): the 730-day
+      // maximum, with the condition it depends on, after the 30-day line.
+      const kept = "If you signed our request without an Inherit account and you say yes, we keep the file for at most 730 days from that day. Then we delete it.";
+      expect(REVISION.noticeKeep(730)).toBe(kept);
+      const plainNotice = toPlainText(html);
+      expect(plainNotice).toContain(kept);
+      expect(plainNotice.indexOf("30 days after it was added")).toBeLessThan(plainNotice.indexOf(kept));
       expect(html).toContain("You do not need an account.");
       expect(html.match(/href="/g)).toHaveLength(1);
       expect(html).toContain(invitationUrl);

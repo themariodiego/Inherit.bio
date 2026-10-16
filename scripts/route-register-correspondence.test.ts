@@ -1015,7 +1015,10 @@ const CLIENT_FORM_REVIEW: ClientFormReview[] = [
   { file: "src/components/settings/llm-settings-form.tsx", forms: 1, sha256: "7b669b559f7db5b0fe391bd39ce8095a33bd8c37cd80d37e06d138ec0d55f45b" },
   { file: "src/components/uploads/other-adult-upload-card.tsx", forms: 2, sha256: "1ab2652e70ddca9ed64966a10dbf557244f4e31c3a0390dd631f5a9265c84137" },
   { file: "src/components/uploads/own-upload-flow.tsx", forms: 1, sha256: "f78a81339439a1b91840e7138ad560055d61d618f788715d1fb0651f73a7fede" },
-  { file: "src/components/uploads/path-b-request-form.tsx", forms: 1, sha256: "0002fe0e675e8f4634b43bd92476f6d5672d62139f7b11924b31d099d2e2e280" },
+  // G5.4 (2026-10-16): re-reviewed after two copy lines (the 30/730-day keep
+  // line and the contact of last resort). Still one actionless form whose
+  // onSubmit handler cancels native submission; no handler, field or target changed.
+  { file: "src/components/uploads/path-b-request-form.tsx", forms: 1, sha256: "b8372876fa10c03bac696a1c5e7af89c1cdc5674b0638e7682ba7c1a466c44e4" },
   ...GUARDED_FLOW_CLIENT_FORM_REVIEW,
   ...FUTURE_INTAKE_CLIENT_FORM_REVIEW,
 ];
