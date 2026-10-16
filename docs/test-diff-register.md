@@ -1,3 +1,17 @@
+## 2026-10-16 — Build the prepared worker image from the digest-pinned base without a second ECR request
+
+The separate prepared-worker workflow ran `docker build --pull`, which asks `public.ecr.aws` for the pinned base on every run. The runner returned `429 Too Many Requests: Data limit exceeded` before any build step ran, on `08a33a0b`, `ec734a87` (passed after its one re-run) and `e0977c0f` (run 38900910225).
+
+`scripts/ci-prepared-worker-build.sh` is the shell twin of `scripts/ci-pinned-base.ts`, because this workflow installs no Node or pnpm. It accepts only one official digest-pinned `FROM`. It pulls that exact digest from `public.ecr.aws`, then from `mirror.gcr.io`. It then builds with one named build context mapping the exact `FROM` reference to the reference it pulled. `--pull` is dropped because the pin already fixes the bytes, and the named context is what keeps BuildKit from asking ECR again. The Dockerfile, its pin, the build file, the tag and the context are unchanged. The script is in the workflow's trigger paths.
+
+In `scripts/cloudflare-hosting-config.test.ts`, the workflow's one run command is now `sh scripts/ci-prepared-worker-build.sh`, so that expected string changes. The test also requires the script's final command to be the exact build. The same forbidden pattern, which covers secrets, environments, build arguments, run, push and registry configuration, now applies to the script as well as the workflow, with `docker login` added. Three new cases in `scripts/ci-pinned-base.test.ts` run the real script with a stub `docker`:
+
+- The mirror path pulls both references in order, then builds with the mirror context.
+- The primary path pulls once, then builds with the primary context.
+- When neither pull works, the script refuses with `ci_pinned_base:unavailable`.
+
+The named-context mechanism was proven on a classic-image-store daemon earlier the same day (see the entry below).
+
 ## 2026-10-16 — G5.3 notice and review page state the closed list of what can be made
 
 The register's `upload-time-rights-notice-v1.adult.content` requires `closed-list-of-what-will-be-derived`, and the `adult-upload-confirmation` review projection requires `prospectiveDerivedCategoryLabels` (`closed-server-allowlist-only`) beside `derivedNowLabel` (`zero-derived-until-confirmed`). Neither the mailed notice nor the review page had such a list. One constant, `ADULT_UPLOAD_DERIVED_LIST` in `src/copy/upload/other-adult.ts`, now holds it. `src/emails/adult-upload-notice.tsx` and `src/components/uploads/adult-upload-revision-form.tsx` both render it; the form is the screen `src/app/(marketing)/withdraw/session/page.tsx` serves from `loadAdultUploadRevisionReview`. The page keeps "Nothing is made from this file until you say yes." and shows the list right after it, and after the "You said yes" line once confirmed. The email keeps "Nothing is made from it unless you say yes." Its next sentence, "Even then, Inherit asks you first, one purpose at a time.", is removed. For a person with their own account, a confirmed file is put in standard form with no purpose question, so that sentence was not true beside the list. The list's closing says each kind of result is turned on by itself. The register is unchanged: no gate or test reads `prospectiveDerivedCategoryLabels`.
