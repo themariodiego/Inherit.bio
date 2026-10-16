@@ -150,7 +150,7 @@ jobs:
       - name: Fetch the pinned runtime base by digest
         run: pnpm exec tsx scripts/ci-pinned-base.run.mts scripts/ci-browser/Dockerfile
       - name: Prepare credential-free isolated Linux runtime image
-        run: docker build --tag inherit-ci-browser:local --file scripts/ci-browser/Dockerfile scripts/ci-browser
+        run: docker build --build-context "$INHERIT_PINNED_BASE_CONTEXT" --tag inherit-ci-browser:local --file scripts/ci-browser/Dockerfile scripts/ci-browser
       - name: Production build with current local public configuration
         env:
           INHERIT_DISPOSABLE_LOCAL_E2E: "true"
@@ -304,7 +304,7 @@ jobs:
       - name: Fetch the pinned runtime base by digest
         run: pnpm exec tsx scripts/ci-pinned-base.run.mts scripts/ci-browser/Dockerfile
       - name: Prepare the unchanged credential-free isolated runtime image
-        run: docker build --tag inherit-ci-browser:local --file scripts/ci-browser/Dockerfile scripts/ci-browser
+        run: docker build --build-context "$INHERIT_PINNED_BASE_CONTEXT" --tag inherit-ci-browser:local --file scripts/ci-browser/Dockerfile scripts/ci-browser
       - name: Build and bind the exact checkout and local public configuration
         run: |
           build_start=$(node -e 'process.stdout.write(String(Date.now()))')
@@ -363,7 +363,7 @@ jobs:
       - name: Fetch the pinned runtime base by digest
         run: pnpm exec tsx scripts/ci-pinned-base.run.mts scripts/ci-browser/Dockerfile
       - name: Prepare credential-free runtime image
-        run: docker build --tag inherit-ci-browser:local --file scripts/ci-browser/Dockerfile scripts/ci-browser
+        run: docker build --build-context "$INHERIT_PINNED_BASE_CONTEXT" --tag inherit-ci-browser:local --file scripts/ci-browser/Dockerfile scripts/ci-browser
       - name: Run four owned key-free T6/T7 sessions
         run: pnpm exec tsx scripts/comprehension/run-hosted-owned-smoke.mts
       - name: Retain selected public synthetic smoke record
