@@ -4827,3 +4827,35 @@ unchanged budget must still qualify before the matrix row changes.
   register rights endpoints are tracked under G2.1 and G8.5.
 - Consequence: the future-adult deletion mechanism (the claimant DELETE) must
   still be built before G5.4 can close.
+
+## 2026-10-16 — Claim scope on legal pages and consent summaries (G1.11)
+
+- Owner decision (clickable chat answer): on the legal pages and consent
+  summaries, only statements of external law or regulator positions are
+  claims. They are cited as statute or regulator entries with snapshots, and
+  quoted statute sits in `data-legal-verbatim` regions. Inherit's own policy
+  text is not a claim.
+- This is a scope decision, not legal approval. Counsel still reviews the
+  legal text, and no citation is credited as reviewed by this decision.
+
+## 2026-10-16 — Copilot system prompt as a claim surface (G1.11)
+
+- Owner decision (clickable chat answer): the Copilot system prompt moves to
+  `src/copy/copilot`, and each factual rule in it is registered as a claim
+  under a new `copilot:<id>` locator. This keeps the brief literal.
+- The owner's scientific source review of those claims remains required.
+
+## 2026-10-16 — Recorded attestation-field divergences (G2.1)
+
+- Owner decision (clickable chat answer): the five recorded, both-direction-checked
+  divergences for `jurisdictionAttestationVersion` and `jurisdictionAttestationHash`
+  satisfy G2.1, consistent with the 2026-09-13 decision.
+- Serving those fields stays a counsel item (D-083) under G8.5.
+
+## 2026-10-16 — BAM/CRAM read calling and the Neanderthal estimate (G7.4)
+
+- Owner decision (clickable chat answer): build both, rather than withhold
+  them. BAM/CRAM calling and a Neanderthal estimate from a licence-checked
+  marker list are each tested on synthetic data.
+- The Neanderthal comparison figure still needs the owner's source review
+  before it is shown.
