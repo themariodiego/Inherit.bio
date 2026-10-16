@@ -1,0 +1,47 @@
+{
+  "status": "PASS_FOCUSED_SOURCE",
+  "parent": "c7180f51efb8fd86f98c3538eba5776dd96f301e",
+  "scope": "restore two historical citation date values only; retain actual new abstract scope separately",
+  "exactTwoTemplateEdits": [
+    {
+      "slug": "vkorc1-rs9923231-one-position",
+      "field": "citations[0].accessedOn",
+      "before": "2026-10-02",
+      "after": "2026-09-03"
+    },
+    {
+      "slug": "nudt15-rs116855232-one-position",
+      "field": "citations[0].accessedOn",
+      "before": "2026-10-02",
+      "after": "2026-09-03"
+    }
+  ],
+  "originalPharmacogenomicsTestSha256": "1e1db8148b82f42a850b8f1a7abf95c7d6abe4d331ef68b4c38c11d6bca15977",
+  "originalPharmacogenomicsTestAndReadOnByteExact": true,
+  "canonicalCitationsSha256Unchanged": "403a3c71593b4b403175f192a64fe17c13d3a215e7e68b4b2bb7fbb302cda6f5",
+  "canonicalClaimsSha256Unchanged": "27790b911f0cbdfc773ff3f5d76947cc417474f0b0d038f1d2c1c2587371fb32",
+  "allOriginalTrancheAccessReceiptsQuotesCountsAndBoundsUnchanged": true,
+  "exactTwoUpdatedObjectHashFields": [
+    "vkorc1-rs9923231-one-position",
+    "nudt15-rs116855232-one-position"
+  ],
+  "originalTemplateObjectsRecoveredByRemovingOnlyNewContext": true,
+  "allOriginalSupabasePathsByteExact": 451,
+  "renderingAndGateSourceByteExact": true,
+  "focus": {
+    "files": 3,
+    "tests": 37,
+    "passed": true,
+    "workerCount": 1,
+    "testTimeoutsUnchanged": true,
+    "runtime": "Node22.23.3; pnpm10.33; Vitest4.1.11",
+    "summary": "focused-summary.log"
+  },
+  "lint": {
+    "scope": "src/lib/claims/primary-source-tranche.test.ts",
+    "exitCode": 0
+  },
+  "initialCliRejectedBeforeTests": "initial-cli-failure.json",
+  "fullUnitCompilerDatabaseBrowserProvider": "NOT RUN in this child",
+  "acceptancePromotion": false
+}

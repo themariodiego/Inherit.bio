@@ -1,4 +1,9 @@
 import type { Metadata } from "next";
+import {headers} from "next/headers";
+import {Suspense} from "react";
+import {AppealIntakeForm} from "@/components/future-person/appeal-intake-form";
+import {APPEAL_FORM_TOKEN_HEADER} from "@/lib/future-person/appeal-form";
+import {testAppealIntakeOpen} from "@/lib/future-person/appeals-open";
 import { LegalPage } from "@/components/legal/legal-page";
 
 export const metadata: Metadata = {
@@ -14,11 +19,13 @@ export default function AppealsPolicyPage() {
       title="Appeals and corrections"
       effectiveDate="2026-09-01"
       intro={
+        <>
+        <Suspense fallback={null}><TestAppealForm/> </Suspense>
         <p>
           You do not need an Inherit account to object or appeal. Send the
           details listed below to <strong>legal@inherit.bio</strong>. Do not
           send genome data or identity documents by email.
-        </p>
+        </p></>
       }
       sections={[
         {
@@ -109,4 +116,9 @@ export default function AppealsPolicyPage() {
       ]}
     />
   );
+}
+
+async function TestAppealForm(){
+ if(!testAppealIntakeOpen())return null;const token=(await headers()).get(APPEAL_FORM_TOKEN_HEADER);
+ return token?<AppealIntakeForm formToken={token}/>:null;
 }

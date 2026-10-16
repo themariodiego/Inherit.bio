@@ -408,5 +408,125 @@
     "access_date": "2026-09-23",
     "quote": "NC_000001.11:g.169549811C>T NM_000130.5:c.1601G>A NP_000121.2:p.Arg534Gln",
     "claim": "Official Variant Details identity fields only, directly read by the independent agent: VCV000000642.133 links rs6025 to GRCh38 chr1:169549811 C>T, transcript G>A and historical R506Q naming. No clinical classification, population frequency or consumer assay validation is used. Reference status differs between assemblies and does not imply benignity."
+  },
+  {
+    "id": "pmid:17952075",
+    "type": "pmid",
+    "identifier": "17952075",
+    "url": "https://pubmed.ncbi.nlm.nih.gov/17952075/",
+    "archived_path": null,
+    "access_date": "2026-10-02",
+    "quote": "a variant near KITLG",
+    "claim": "Pigmentation associations in Icelandic and Dutch groups; abstract does not name this report’s position or allele direction. Actual complete author abstract read on 2026-10-02; no publisher full text or supplement was read. Scope and response pins: docs/sources/reviews/primary-source-tranche-20261002.json."
+  },
+  {
+    "id": "pmid:18509540",
+    "type": "pmid",
+    "identifier": "18509540",
+    "url": "https://pubmed.ncbi.nlm.nih.gov/18509540/",
+    "archived_path": null,
+    "access_date": "2026-10-02",
+    "quote": "three European celiac populations",
+    "claim": "Six-marker HLA typing method validated in European celiac groups; not a one-marker diagnosis or individual disease probability. Actual complete author abstract read on 2026-10-02; no publisher full text or supplement was read. Scope and response pins: docs/sources/reviews/primary-source-tranche-20261002.json."
+  },
+  {
+    "id": "pmid:18711365",
+    "type": "pmid",
+    "identifier": "18711365",
+    "url": "https://pubmed.ncbi.nlm.nih.gov/18711365/",
+    "archived_path": null,
+    "access_date": "2026-10-02",
+    "quote": "4,387 cases and 6,209 controls",
+    "claim": "Bipolar case-control associations at ANK3 and CACNA1C; abstract does not establish allele direction, cognition or personal disease probability. Actual complete author abstract read on 2026-10-02; no publisher full text or supplement was read. Scope and response pins: docs/sources/reviews/primary-source-tranche-20261002.json."
+  },
+  {
+    "id": "pmid:28198005",
+    "type": "pmid",
+    "identifier": "28198005",
+    "url": "https://pubmed.ncbi.nlm.nih.gov/28198005/",
+    "archived_path": null,
+    "access_date": "2026-10-02",
+    "quote": "when clinical genotype results are available",
+    "claim": "2017 warfarin guideline scope when clinical genotype results exist; not current guideline certification, allele-definition review or a personal dose. Actual complete author abstract read on 2026-10-02; no publisher full text or supplement was read. Scope and response pins: docs/sources/reviews/primary-source-tranche-20261002.json."
+  },
+  {
+    "id": "pmid:41618934",
+    "type": "pmid",
+    "identifier": "41618934",
+    "url": "https://pubmed.ncbi.nlm.nih.gov/41618934/",
+    "archived_path": null,
+    "access_date": "2026-10-02",
+    "quote": "including for individuals with variants in both genes",
+    "claim": "2025 thiopurine guideline update published in 2026, including both genes; abstract is not full allele-definition or personal dosing evidence. Actual complete author abstract read on 2026-10-02; no publisher full text or supplement was read. Scope and response pins: docs/sources/reviews/primary-source-tranche-20261002.json."
+  },
+  {
+    "id": "pmid:12595690",
+    "type": "pmid",
+    "identifier": "12595690",
+    "url": "https://pubmed.ncbi.nlm.nih.gov/12595690/",
+    "archived_path": null,
+    "access_date": "2026-10-02",
+    "quote": "three coding SNPs",
+    "claim": "PTC sensitivity and combined three-position patterns; not food preference or a complete pattern inferred from one position. Actual complete author abstract read on 2026-10-02; no publisher full text or supplement was read. Scope and response pins: docs/sources/reviews/primary-source-tranche-20261002.json."
+  },
+  {
+    "id": "pmid:12879365",
+    "type": "pmid",
+    "identifier": "12879365",
+    "url": "https://pubmed.ncbi.nlm.nih.gov/12879365/",
+    "archived_path": null,
+    "access_date": "2026-10-02",
+    "quote": "577R allele",
+    "claim": "Elite athlete group associations and sex-dependent findings; not an ordered performance gradient, personal endurance prediction or universal health assurance. Actual complete author abstract read on 2026-10-02; no publisher full text or supplement was read. Scope and response pins: docs/sources/reviews/primary-source-tranche-20261002.json."
+  },
+  {
+    "id": "pmid:18193043",
+    "type": "pmid",
+    "identifier": "18193043",
+    "url": "https://pubmed.ncbi.nlm.nih.gov/18193043/",
+    "archived_path": null,
+    "access_date": "2026-10-02",
+    "quote": "three genome-wide scans",
+    "claim": "Group associations between blood lipids and DNA regions, including SORT1 and LDLR; not an abstract-verified allele direction or individual cholesterol result. Actual complete author abstract read on 2026-10-02; no publisher full text or supplement was read. Scope and response pins: docs/sources/reviews/primary-source-tranche-20261002.json."
+  },
+  {
+    "id": "pmid:18199861",
+    "type": "pmid",
+    "identifier": "18199861",
+    "url": "https://pubmed.ncbi.nlm.nih.gov/18199861/",
+    "archived_path": null,
+    "access_date": "2026-10-02",
+    "quote": "followed for an average of 12 years",
+    "claim": "Observed disease and blood-iron outcomes in an adult northern-European cohort; group estimates are not a personal risk or iron measurement. Actual complete author abstract read on 2026-10-02; no publisher full text or supplement was read. Scope and response pins: docs/sources/reviews/primary-source-tranche-20261002.json."
+  },
+  {
+    "id": "pmid:19934046",
+    "type": "pmid",
+    "identifier": "19934046",
+    "url": "https://pubmed.ncbi.nlm.nih.gov/19934046/",
+    "archived_path": null,
+    "access_date": "2026-10-02",
+    "quote": "one or two copies of the A allele",
+    "claim": "GG versus pooled AA/AG empathy and stress-task findings; not separate AA/AG effects, replication proof or a personality measurement. Actual complete author abstract read on 2026-10-02; no publisher full text or supplement was read. Scope and response pins: docs/sources/reviews/primary-source-tranche-20261002.json."
+  },
+  {
+    "id": "pmid:20541252",
+    "type": "pmid",
+    "identifier": "20541252",
+    "url": "https://pubmed.ncbi.nlm.nih.gov/20541252/",
+    "archived_path": null,
+    "access_date": "2026-10-02",
+    "quote": "33 996 individuals of European descent",
+    "claim": "European-ancestry group associations with measured blood vitamin D; not a personal blood result, allele direction from the abstract or supplement advice. Actual complete author abstract read on 2026-10-02; no publisher full text or supplement was read. Scope and response pins: docs/sources/reviews/primary-source-tranche-20261002.json."
+  },
+  {
+    "id": "pmid:23535734",
+    "type": "pmid",
+    "identifier": "23535734",
+    "url": "https://pubmed.ncbi.nlm.nih.gov/23535734/",
+    "archived_path": null,
+    "access_date": "2026-10-02",
+    "quote": "37,684 individuals",
+    "claim": "Group mean leukocyte telomere-length associations; not a personal telomere measurement, longevity prediction or allele-direction verification. Actual complete author abstract read on 2026-10-02; no publisher full text or supplement was read. Scope and response pins: docs/sources/reviews/primary-source-tranche-20261002.json."
   }
 ]

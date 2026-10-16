@@ -37,10 +37,10 @@ function parentsOutsideGit(file: string): string[] {
 
 /** Read only this private file. No journal, credential, browser or provider is opened.
  * Mutable input bytes are cleared; returned strings are not an erasure proof. */
-export function loadPrivateRunConfig(file: string): RunConfig {
+export function loadPrivateConfiguration<T>(file: string, parse: (value: unknown) => T): T {
   let fd: number | undefined;
   let bytes: Buffer | undefined;
-  let config: RunConfig | undefined;
+  let config: T | undefined;
   let refused = false;
   try {
     if (!path.isAbsolute(file) || path.resolve(file) !== file || realpathSync(file) !== file)
@@ -71,7 +71,7 @@ export function loadPrivateRunConfig(file: string): RunConfig {
     current();
     // Keep BOM rejection from the original JSON.parse(readFileSync(..., "utf8")).
     const text = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(bytes.subarray(0, count));
-    config = runConfigSchema.parse(JSON.parse(text));
+    config = parse(JSON.parse(text));
     current();
   } catch {
     // Parser, schema and filesystem diagnostics must not print private values.
@@ -86,4 +86,8 @@ export function loadPrivateRunConfig(file: string): RunConfig {
   }
   if (refused || config === undefined) throw new Error(PRIVATE_CONFIG_REFUSAL);
   return config;
+}
+
+export function loadPrivateRunConfig(file: string): RunConfig {
+  return loadPrivateConfiguration(file, value => runConfigSchema.parse(value));
 }

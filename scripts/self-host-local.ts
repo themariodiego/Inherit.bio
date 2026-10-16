@@ -150,6 +150,7 @@ export function configureLocal(root: string, io: LocalSetupIO, env: Readonly<Rec
     INHERIT_CANONICAL_UPLOADS_PAUSED: "false", INHERIT_NORMALIZATION_DIRECT_DATABASE: "false", INHERIT_PREPARED_WGS_ENABLED: "false",
     // No keyed-digest rotation has happened on a fresh local database.
     INHERIT_HMAC_KEYRING: "",
+    INHERIT_CLAMD_ADDRESS: "",
     ...generated, EMAIL_FROM: "Inherit <inherit@localhost>" });
   const versions = io.fs.readdirSync(path.join(root, "supabase/migrations")).map(name => {
     const match = /^(\d{14})_[\w-]+\.sql$/.exec(name); requireLocal(match, "migration_filename"); return match[1];

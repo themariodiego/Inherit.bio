@@ -1,5 +1,9 @@
 import type { NextConfig } from "next";
 
+if (process.env.VERCEL_ENV === "production" && process.env.INHERIT_TEST_REQUESTER_STATEMENTS === "1") {
+  throw new Error("INHERIT_TEST_REQUESTER_STATEMENTS cannot be enabled in a production deployment.");
+}
+
 if (
   process.env.VERCEL_ENV === "production" &&
   process.env.INHERIT_TEST_JURISDICTION === "1"

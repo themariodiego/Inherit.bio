@@ -21,7 +21,7 @@ const embryos: EmbryoRow[] = [
 const qcRows = [
   syntheticQcRow("e1", { call_rate: 0.6, sites_called: 600, qc_verdict: "fail", qc_reasons: ["embryo_call_rate"] }),
   syntheticQcRow("e2", { call_rate: 0.99 }),
-  syntheticQcRow("e3", { call_rate: 0.97 }),
+  syntheticQcRow("e3", { call_rate: 0.97, sites_called: 970 }),
 ];
 
 function score(embryoId: string, finding: ReturnType<typeof syntheticAbsoluteFinding>): EmbryoScoreRow {
@@ -38,9 +38,9 @@ function score(embryoId: string, finding: ReturnType<typeof syntheticAbsoluteFin
 }
 
 describe("projection", () => {
-  it("projects twenty QC fields plus closed source facts and drops the key", () => {
+  it("projects the exact QC fields, source facts and saved receipt and drops the key", () => {
     const qc = projectQc(syntheticQcRow("e1"));
-    expect(Object.keys(qc)).toHaveLength(21);
+    expect(Object.keys(qc)).toHaveLength(22);
     expect(qc.source_facts.coordinate_conversion).toBe("not-recorded");
     expect(qc).not.toHaveProperty("embryo_id");
     expect(qc.call_rate).toBe(0.99);

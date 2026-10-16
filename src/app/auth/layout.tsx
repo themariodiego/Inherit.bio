@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { Terrain } from "@/components/site/terrain";
 import { Attribution, Wordmark } from "@/components/site/wordmark";
 
 /**
@@ -15,10 +14,9 @@ import { Attribution, Wordmark } from "@/components/site/wordmark";
  * No skip link here on purpose: the only thing before the form is the
  * wordmark, so a skip control would add a focus stop rather than remove one.
  *
- * The terrain is a quiet ground under the column: lines on paper, behind a
- * form that sits on its own surface, so no text crosses a hill. Below sm the
- * card would cover it, so a short band above the card stands in (reading.css
- * hides the ground there).
+ * The form now reads directly on the page ground. Its column, reserved
+ * height and padding stay fixed; removing decorative terrain and the card
+ * does not move safety copy into a disclosure or change hydration.
  */
 export default function AuthLayout({
   children,
@@ -27,19 +25,13 @@ export default function AuthLayout({
 }) {
   return (
     <div className="auth-shell flex min-h-screen flex-col items-center justify-start gap-8 bg-paper px-6 py-12 md:py-20">
-      <div aria-hidden="true" className="auth-terrain">
-        <Terrain variant="ground" seed={3} />
-      </div>
       <header>
         <Wordmark />
       </header>
-      <div aria-hidden="true" className="auth-band quiet-band sm:hidden">
-        <Terrain variant="band" seed={11} />
-      </div>
       <main
         id="main"
         tabIndex={-1}
-        className="auth-surface surface surface-pad focus:outline-none"
+        className="auth-surface surface-pad focus:outline-none"
       >
         {children}
       </main>

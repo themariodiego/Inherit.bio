@@ -1,7 +1,6 @@
 import type { CSSProperties } from "react";
 import Link from "next/link";
 import { BookOpen, Fingerprint, LockKeyhole } from "lucide-react";
-import { Terrain } from "@/components/site/terrain";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { route } from "@/lib/primary-routes";
@@ -62,9 +61,6 @@ export default function LandingPage() {
   return (
     <>
       <section className="hero">
-        <div aria-hidden="true" className="hero-ground">
-          <div className="terrain-glow" />
-        </div>
         <div className="hero-content mx-auto w-full max-w-6xl px-6 pt-12 pb-8 md:pt-20 md:pb-10">
           <p className="eyebrow rise" style={stagger(0)}>
             Open-source consumer genomics
@@ -88,11 +84,6 @@ export default function LandingPage() {
               <Link href={route("marketing.providers")}>Find a sequencing provider</Link>
             </Button>
           </div>
-        </div>
-        {/* The hills start below the action row (the content's bottom padding
-            is the clear paper between them), so no ridge crosses a button. */}
-        <div aria-hidden="true" className="hero-band">
-          <Terrain variant="hero" />
         </div>
       </section>
 

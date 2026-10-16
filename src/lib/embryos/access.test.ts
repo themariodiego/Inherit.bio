@@ -114,3 +114,33 @@ describe("embryo access", () => {
     expect(resolveResultSurfaceState({ decision: permitted, cohort: cohort(), embryoStatus: "qc_fail", acknowledged: true })).toBe("complete");
   });
 });
+
+/** Actual native reservation facts are an additive exception to pending=work;
+ * every original order/security assertion above remains unchanged. */
+describe("detail pending reservations", () => {
+  it("shows empty only for the exact untouched native embryo, before grants and Tier-2", async () => {
+    const { untouchedPending } = await import("./pending-input-fixture.test-support");
+    const input = untouchedPending();
+    expect(resolveResultSurfaceState({ decision: decision("permitted"), cohort: cohort({ status: "upload_pending", analysisGranted: false }),
+      embryoStatus: "pending", embryoId: input.embryoId, subjectId: input.subjectId, accountId: input.accountId, pendingInput: input, acknowledged: false })).toBe("empty");
+  });
+  it("retains real staged, running and file-without-QC processing and foreign proof refusal", async () => {
+    const { untouchedPending } = await import("./pending-input-fixture.test-support");
+    const input = untouchedPending(), base = { decision: decision("permitted"), cohort: cohort({ status: "upload_pending" }),
+      embryoStatus: "pending" as const, embryoId: input.embryoId, subjectId: input.subjectId, accountId: input.accountId, acknowledged: false };
+    for (const pendingInput of [{ ...input, chunkCount: 1 }, { ...input, fileCount: 1 },
+      { ...input, workCount: 1, activeWorkCount: 1 }, { ...input, embryoId: "ffffffff-ffff-4fff-8fff-ffffffffffff" },
+      { ...input, cohortId: "ffffffff-ffff-4fff-8fff-ffffffffffff" },
+      { ...input, subjectId: "ffffffff-ffff-4fff-8fff-ffffffffffff" },
+      { ...input, accountId: "ffffffff-ffff-4fff-8fff-ffffffffffff" }])
+      expect(resolveResultSurfaceState({ ...base, pendingInput })).toBe("processing");
+  });
+  it("never moves empty facts ahead of jurisdiction or hides ingesting/active QC work", async () => {
+    const { untouchedPending } = await import("./pending-input-fixture.test-support");
+    const pendingInput = untouchedPending();
+    const base = { embryoStatus: "pending" as const, embryoId: pendingInput.embryoId, subjectId: pendingInput.subjectId, accountId: pendingInput.accountId, pendingInput, acknowledged: true };
+    expect(resolveResultSurfaceState({ ...base, decision: decision("unreviewed"), cohort: cohort({ status: "upload_pending" }) })).toBe("jurisdiction-unavailable");
+    for (const status of ["ingesting", "active"] as const)
+      expect(resolveResultSurfaceState({ ...base, decision: decision("permitted"), cohort: cohort({ status }) })).toBe("processing");
+  });
+});

@@ -183,11 +183,17 @@ describe("the container Worker configuration", () => {
 });
 
 describe("the image", () => {
+  it("keeps the browser runtime on the verified official Node 22 mirror digest", () => {
+    const browserImage = read("scripts/ci-browser/Dockerfile").split("\n").map(line => line.trim());
+    expect(browserImage.filter(line => line.startsWith("FROM "))).toEqual(["FROM public.ecr.aws/docker/library/node:22-bookworm-slim@sha256:c3de60bf2f9dd0ac6370e6117950ff62d6e339527e7472301c9c78a017978392"]);
+  });
+
+
   const dockerfile = read(DOCKERFILE);
   const lines = dockerfile.split("\n").map((line) => line.trim()).filter((line) => line && !line.startsWith("#"));
 
   it("is Node 24, runs unprivileged, runs one pass, and copies neither an environment file nor a dependency tree", () => {
-    expect(lines.filter((line) => line.startsWith("FROM "))).toEqual([expect.stringMatching(/^FROM node:24-/)]);
+    expect(lines.filter((line) => line.startsWith("FROM "))).toEqual(["FROM public.ecr.aws/docker/library/node:24-bookworm-slim@sha256:d6aa754f16b3197301076f047b5def2f02ea1dbbc2ca920407d46d7ec7f87b20"]);
     const users = lines.filter((line) => line.startsWith("USER "));
     expect(users.length).toBeGreaterThan(0);
     expect(users.at(-1)).toBe("USER node");

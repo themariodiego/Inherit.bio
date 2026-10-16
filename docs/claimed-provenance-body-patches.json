@@ -1,0 +1,157 @@
+[
+  {
+    "name": "private.capture_claimed_embryo_provenance_v1",
+    "signature": "private.capture_claimed_embryo_provenance_v1(uuid,uuid)",
+    "source": "20260930235000_account_cohort_purge.sql",
+    "args": [
+      "p_deletion",
+      "p_cohort"
+    ],
+    "ret": "void",
+    "config": [
+      "search_path=\"\""
+    ],
+    "before": "3970b934f3165fd1e8cf2f26ce913d34",
+    "after": "9d2ad554c7193b23e64714db6166e9f3",
+    "replacements": [
+      [
+        "declare d public.account_deletion_requests; r record;",
+        "declare d public.account_deletion_requests; r record; candidates jsonb;"
+      ],
+      [
+        "  for r in select distinct x.session_id,x.worker_job_id",
+        "  candidates:='[]'::jsonb;\n  for r in select distinct on(x.session_id,x.worker_job_id) x.file_id,x.session_id,x.worker_job_id from private.future_person_custody_slices c\n    join private.embryo_canonical_sources x on x.file_id=c.source_file_id and x.subject_id=c.subject_id\n      and x.cohort_id=c.historical_cohort_id and x.source_sha256=c.source_sha256\n      and x.membership_sha256=c.source_membership_sha256 and x.publication_revision=c.publication_revision\n    join public.subjects u on u.id=c.subject_id and u.cohort_id is null\n      and u.claimant_principal_id=c.claimant_principal_id and u.lifecycle in('claimed_unbound','claimed_bound')\n    where c.historical_cohort_id=p_cohort order by x.session_id,x.worker_job_id,x.file_id loop\n    candidates:=candidates||jsonb_build_array(private.claimed_provenance_candidate_v1(r.file_id));\n  end loop;\n  perform private.lock_claimed_provenance_pairs_v1(candidates);\n  for r in select distinct x.session_id,x.worker_job_id"
+      ]
+    ]
+  },
+  {
+    "name": "private.purge_account_owned_cohorts_v1",
+    "signature": "private.purge_account_owned_cohorts_v1(uuid)",
+    "source": "20260930235000_account_cohort_purge.sql",
+    "args": [
+      "p_deletion"
+    ],
+    "ret": "void",
+    "config": [
+      "search_path=\"\""
+    ],
+    "before": "cec89910d9191838a890db56e14cb18c",
+    "after": "3fe1b53e74675885cb9f825917dc3c70",
+    "replacements": [
+      [
+        "v_outbox_ids uuid[]; v_invitation_ids uuid[]; deleted_ids uuid[]; r record; n bigint;",
+        "v_outbox_ids uuid[]; v_invitation_ids uuid[]; deleted_ids uuid[]; r record; n bigint; candidates jsonb; candidate jsonb;"
+      ],
+      [
+        "    if c.id is null then\n",
+        "    if c.id is null then\n      if exists(select 1 from private.claimed_embryo_ingest_receipts where historical_cohort_id=t.cohort_id)\n        or exists(select 1 from private.claimed_embryo_job_receipts where historical_cohort_id=t.cohort_id) then\n        raise exception using errcode='42501',message='claimed provenance unavailable';end if;\n"
+      ],
+      [
+        "    perform private.assert_account_owned_cohorts_v1(d.account_id);",
+        "    perform private.assert_account_owned_cohorts_v1(d.account_id);\n    candidates:=private.account_claimed_provenance_candidates_v1(d.id,c.id);"
+      ],
+      [
+        "    delete from public.embryo_cohort_drafts where id=c.draft_id;",
+        "    delete from public.embryo_cohort_drafts where id=c.draft_id;\n    for candidate in select value from jsonb_array_elements(candidates) loop\n      perform private.collect_claimed_provenance_pair_v1('account',d.id,candidate,null);\n    end loop;"
+      ]
+    ]
+  },
+  {
+    "name": "private.prepare_future_person_deletion_v1",
+    "signature": "private.prepare_future_person_deletion_v1(text,text)",
+    "source": "20260930245000_future_person_claimant_erasure.sql",
+    "args": [
+      "p_session_hash",
+      "p_nonce"
+    ],
+    "ret": "uuid",
+    "config": [
+      "search_path=\"\"",
+      "lock_timeout=250ms"
+    ],
+    "before": "825d2bb042623900b71bfc516f9e8b42",
+    "after": "d059d03088936f868ce748772073f5db",
+    "replacements": [
+      [
+        "'completionDeadline',v_now+interval '30 days');",
+        "'completionDeadline',v_now+interval '30 days',\n   'sharedProvenance',private.claimed_provenance_candidate_v1(x.file_id));\n exception when sqlstate '42501' then\n  if sqlerrm is distinct from 'claimed provenance unavailable' then raise;end if;\n  raise exception using errcode='42501',message='claimant deletion unavailable';\n end;"
+      ],
+      [
+        " env:=jsonb_build_object('version','future-person-deletion-plan-v1','subjectId',s.id,",
+        " begin\n env:=jsonb_build_object('version','future-person-deletion-plan-v1','subjectId',s.id,"
+      ]
+    ]
+  },
+  {
+    "name": "private.assert_future_person_deletion_plan_v1",
+    "signature": "private.assert_future_person_deletion_plan_v1(uuid)",
+    "source": "20260930245000_future_person_claimant_erasure.sql",
+    "args": [
+      "p_manifest"
+    ],
+    "ret": "public.retention_due_phases",
+    "config": [
+      "search_path=\"\""
+    ],
+    "before": "e3d743b8f35d8f655712ec0d8f996b8f",
+    "after": "c009f02ee0e43a661d7b70d23b5c6ba3",
+    "replacements": [
+      [
+        "'sourceDeadline',r.created_at+interval '7 days','completionDeadline',r.created_at+interval '30 days')",
+        "'sourceDeadline',r.created_at+interval '7 days','completionDeadline',r.created_at+interval '30 days',\n     'sharedProvenance',private.claimed_provenance_candidate_v1(x.file_id))"
+      ]
+    ]
+  },
+  {
+    "name": "private.finish_future_person_deletion_v1",
+    "signature": "private.finish_future_person_deletion_v1(uuid,text)",
+    "source": "20260930245000_future_person_claimant_erasure.sql",
+    "args": [
+      "p_manifest",
+      "p_claim_token_hash"
+    ],
+    "ret": "jsonb",
+    "config": [
+      "search_path=\"\"",
+      "lock_timeout=250ms"
+    ],
+    "before": "0ac6a4d7e63942e35d4303464d2aac89",
+    "after": "644965a2ad8adff622d7121725f40922",
+    "replacements": [
+      [
+        "v_controls uuid[];v_control uuid;old_entry public.purge_manifest_entries;",
+        "v_controls uuid[];v_control uuid;old_entry public.purge_manifest_entries;v_shared_disposition text;"
+      ],
+      [
+        " perform private.assert_future_person_deletion_fk_closure_v1(p_manifest);",
+        " perform private.lock_claimed_provenance_pairs_v1(jsonb_build_array(p.immutable_envelope->'sharedProvenance'));\n perform private.assert_future_person_deletion_fk_closure_v1(p_manifest);"
+      ],
+      [
+        " perform private.append_legal_audit_event('claimant.deleted'",
+        " v_shared_disposition:=private.collect_claimed_provenance_pair_v1('claimant',p_manifest,p.immutable_envelope->'sharedProvenance',p_claim_token_hash);\n perform private.append_legal_audit_event('claimant.deleted'"
+      ],
+      [
+        "'sourceDeadline',p.immutable_envelope->'sourceDeadline','completionDeadline',p.immutable_envelope->'completionDeadline')",
+        "'sourceDeadline',p.immutable_envelope->'sourceDeadline','completionDeadline',p.immutable_envelope->'completionDeadline',\n   'sharedProvenanceDisposition',v_shared_disposition)"
+      ]
+    ]
+  },
+  {
+    "name": "private.freeze_future_person_deletion_plan_v1",
+    "signature": "private.freeze_future_person_deletion_plan_v1()",
+    "source": "20260930245000_future_person_claimant_erasure.sql",
+    "args": [],
+    "ret": "trigger",
+    "config": [
+      "search_path=\"\""
+    ],
+    "before": "815d32207dd7ab2da6218102863eed8b",
+    "after": "79e16acea2f613885ad4d461cef1ecdf",
+    "replacements": [
+      [
+        "'sourceDeadline',old.immutable_envelope->'sourceDeadline','completionDeadline',old.immutable_envelope->'completionDeadline')",
+        "'sourceDeadline',old.immutable_envelope->'sourceDeadline','completionDeadline',old.immutable_envelope->'completionDeadline',\n    'sharedProvenanceDisposition',new.immutable_envelope->'sharedProvenanceDisposition')\n   or new.immutable_envelope->>'sharedProvenanceDisposition' is null\n   or new.immutable_envelope->>'sharedProvenanceDisposition' not in('absent','collected','retained-for-surviving-provenance','retained-for-live-runtime')"
+      ]
+    ]
+  }
+]

@@ -1,5 +1,6 @@
 import { ownChatResponse } from "@/lib/copilot/own-chat-route";
 import { familyChatResponse, isFamilyChatRequest } from "@/lib/copilot/family-chat-route";
+import { cohortChatResponse, isCohortChatRequest } from "@/lib/copilot/cohort-chat-route";
 import { hasCanonicalCopilotScope } from "@/lib/copilot/own-chat";
 import { createAnthropic } from "@ai-sdk/anthropic";
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
@@ -119,6 +120,7 @@ export async function POST(request: Request) {
     // The Family group scope has its own token domain and chat rows; the
     // own scope never reads either, and the two answer the same closed shape.
     if (await isFamilyChatRequest(raw)) return familyChatResponse(request, raw, { refusal: refusalResponse });
+    if (await isCohortChatRequest(raw)) return cohortChatResponse(request, raw, { refusal: refusalResponse });
     return ownChatResponse(request, raw, { systemPrompt: SYSTEM_PROMPT, refusal: refusalResponse });
   }
   // The AI SDK transport posts an ENVELOPE around the turns, not the turns

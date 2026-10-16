@@ -1,0 +1,341 @@
+{
+  "version": 1,
+  "purpose": "The human reviewer's worklist for G4.7 (scripts/citation-surface-gate.ts). Each entry is a sentence on a non-template surface that carries a scientific-claim marker but no registered, dated citation, grouped by surface and file. A reviewer sets verdict to \"product-wording\" (not a scientific fact; this closes it without registering anything) or \"claim-to-register\" (a fact whose source must be registered in data/claims.json and data/citations.json, which then removes it), with reviewedBy and reviewedOn. null means not yet reviewed. The open count (every entry not marked product-wording) is pinned by OPEN_BACKLOG and can only go down. Regenerate the entries, keeping verdicts, with `pnpm exec tsx scripts/citation-surface-gate.ts --write-backlog`.",
+  "surfaces": {
+    "copilot-context": {
+      "src/app/api/chat/route.ts": [
+        {
+          "sha256": "4661ac8ccdffcc1585dde25affc0bfb37dbe80e23af914a7a1c2928dc147cad7",
+          "text": "Frame everything as association and probability shift, with effect sizes where available. - Ground every substantive claim in the user's own data via the tools, and cite which report or variant it came from (e.g. \"your Caffeine metabolism report (rs762551, genotype A/A)\").",
+          "verdict": null
+        },
+        {
+          "sha256": "50ca227664a9b4a10671c75127c1292c7c62e15aa63e28a7bedb4a7025b0cdb2",
+          "text": "The rsID to look up, e.g. 'rs762551'",
+          "verdict": null
+        },
+        {
+          "sha256": "8fae27cf6edde9da682d59e51911ee8dca51dc62af9d6bc8c18755c170a88c07",
+          "text": "Coverage counts are not risk; do not turn them into one.",
+          "verdict": null
+        },
+        {
+          "sha256": "b68bd251517276494a7f86929dedf7deed2062462731083884acc3c390e148d3",
+          "text": "Never invent genotypes — only report what tools return. - Sensitive topics (cancer, neurodegeneration, mental health, reproductive decisions): extra care, remind the user this is one small factor, and suggest a clinician or genetic counselor for decisions. - Refuse requests to diagnose, prescribe, or interpret data of people other than the account holder. - Never say an embryo is better, best or recommended, never rank embryos, never advise what to do with one, and never predict or disclose an embryo's sex. - State no number that the tools did not return this turn, and cite nothing beyond the citations the tools returned. - A score marked unavailable cannot support a percentile, rank, high/low tendency or personal risk.",
+          "verdict": null
+        },
+        {
+          "sha256": "d9b7048bca4bc2ea986d012d11661b2ea42502204ba65147ddf55bfeb97d1c17",
+          "text": "No percentile, rank or risk is available.",
+          "verdict": null
+        }
+      ],
+      "src/copy/copilot/refusals.ts": [
+        {
+          "sha256": "33088ab9b75fe8a6a53a0e1cc5336f0af1071ec9d4cad62e5ec886e119a66868",
+          "text": "I can explain what your reports say and which studies they rest on.",
+          "verdict": null
+        }
+      ],
+      "src/lib/copilot/own-chat-route.ts": [
+        {
+          "sha256": "4f0c20b56b3f59e0a13734f47e6bb104f10c071a10feb8371fb6fd7cc369d6e4",
+          "text": "No personal score, rank, percentile or risk is available.",
+          "verdict": null
+        }
+      ]
+    },
+    "embryo-card": {
+      "src/copy/embryos/compare.ts": [
+        {
+          "sha256": "5498f3dcd2cb8c310085a08e45ca7f6034a2592c7f264d9f94cefd6e34e9ee90",
+          "text": "of this score’s positions were found.",
+          "verdict": null
+        },
+        {
+          "sha256": "cba94257cb35188a7bc380b985507de208ab36a68507422e38886eb711b2b170",
+          "text": "Too little of this score is in the file the laboratory sent to give a number. fact of fact positions were found.",
+          "verdict": null
+        }
+      ],
+      "src/copy/embryos/tradeoffs.ts": [
+        {
+          "sha256": "5a9b28b86256fd3a8e95627fd41bb067a01c0fa5a351905e1f29ef5abea71895",
+          "text": "fact has the lowest fact risk and the highest fact risk.",
+          "verdict": null
+        }
+      ]
+    },
+    "portrait": {
+      "src/copy/family/health-picture.ts": [
+        {
+          "sha256": "7a592c9193c29fb4f644ec03b7229413f17ee71ba9f728373a0d78fa89131ef4",
+          "text": "— a 1 in 4 chance — that a child inherits both copies.",
+          "verdict": null
+        },
+        {
+          "sha256": "c8e644bf9f8fe255c8c8d584dfb70bed686a232c9b07ec5e25d6f8085c1911e0",
+          "text": "Each pregnancy is independent; this is not 1 in 4 of your children.",
+          "verdict": null
+        }
+      ],
+      "src/copy/family/portrait.ts": [
+        {
+          "sha256": "09f3c1391bfe4f7a30b29c3153b389109b210ae4970dcd8f3144966b5f01da69",
+          "text": "Fewer than 1 in 100 — but not zero.",
+          "verdict": null
+        },
+        {
+          "sha256": "33bfe1b850d31ac39f2894429991b54116c122d106e8b224df7112e4d357a8e5",
+          "text": "This is routine care, not a risk to the pregnancy.",
+          "verdict": null
+        },
+        {
+          "sha256": "59161364981055095f06795c28f2c9a4fb3cbb98ca24d38039503e7b5e404af0",
+          "text": "A file for fact that covers more of the changes known to cause this condition.",
+          "verdict": null
+        },
+        {
+          "sha256": "71e6ff91e0d07b48827fc3956da2a8f76b3d1599e6fd7194a8130629ce5d8ef3",
+          "text": "This is not zero risk: your files do not cover every variant known to cause this condition.",
+          "verdict": null
+        },
+        {
+          "sha256": "897e668d59d65d595c89ceedf4eb3b90e73ae16af6b583dd628fb6d70fde243a",
+          "text": "Both files cover the one change known to cause this condition.",
+          "verdict": null
+        },
+        {
+          "sha256": "c4fb1c065136f2f4546bf1dfd1a5af1915cea79940a7aac5e772e8c4830e05c4",
+          "text": "Both files cover fact of the fact changes known to cause this condition.",
+          "verdict": null
+        },
+        {
+          "sha256": "c7ac5dcdc81c50374c382db51c1a01fab951e0ed28b2fd08f8f71172e2de740b",
+          "text": "Disease risk for a hypothetical child from polygenic scores.",
+          "verdict": null
+        }
+      ]
+    },
+    "report-copy": {
+      "src/components/reports/sensitive-gate.tsx": [
+        {
+          "sha256": "934d1999f2b07693c960065fa57047f0f4828671cec3777e119812b28c70aae9",
+          "text": "This report may show a serious health risk.",
+          "verdict": null
+        }
+      ],
+      "src/components/results/ancestry/regional-ancestry-regions.tsx": [
+        {
+          "sha256": "6c7075806314cc4fb0113141bc704a802f1bc624eff8937d081299e40b75095f",
+          "text": "This reference combines samples from study groups.",
+          "verdict": null
+        }
+      ],
+      "src/copy/genome/data.ts": [
+        {
+          "sha256": "34bc3a05d1043a3fa497c6d1a1784ad4aea69d329e284270cf3f613d16300ec7",
+          "text": "Consumer DNA chip files also cannot rule out inherited cancer risk.",
+          "verdict": null
+        },
+        {
+          "sha256": "9c49c14694b03dd9ad91cdc7a137af5402840dd16098e5ad85db7eddb2c27b84",
+          "text": "Try an rsID (rs123...), a gene symbol (CYP1A2), or a position (chr15:74749576).",
+          "verdict": null
+        }
+      ],
+      "src/copy/regional-ancestry.ts": [
+        {
+          "sha256": "0683ec9864bce178933c195bd74c7f3271d521cd7029654f532694c601986b3a",
+          "text": "Oceania uses only two study groups.",
+          "verdict": null
+        },
+        {
+          "sha256": "2aec964c1a2eb35e8ed94275420866239f0e3f53c3883a4d359135c47052341e",
+          "text": "Study groups are comparison sets, not identities.",
+          "verdict": null
+        },
+        {
+          "sha256": "d7f2be2bdb1f4c108c52aca91ae0853dbcf82c0664fb76933d9f24b888eb8f24",
+          "text": "The fact-marker panel uses fact reference samples from fact study groups in the gnomAD HGDP+1kGP release.",
+          "verdict": null
+        }
+      ],
+      "src/copy/reports/basis.ts": [
+        {
+          "sha256": "a377ba1dc45606f79240cb44e34807efc14e8922fe6151ad0b2ac2a246ec74e0",
+          "text": "A source may be a study or a guideline.",
+          "verdict": null
+        }
+      ],
+      "src/copy/reports/evidence.ts": [
+        {
+          "sha256": "33d265c584b207c902fa29283e85998cb48fc7381ea63e17e43f3a647493a19e",
+          "text": "Seen in only one study, or in studies that do not yet agree.",
+          "verdict": null
+        },
+        {
+          "sha256": "c1be0a637e9b80033d98e9c1decaf16555c85b2fb595ef79d3843f0b09d24c6e",
+          "text": "Seen in more than one study and checked by comparing brothers and sisters.",
+          "verdict": null
+        },
+        {
+          "sha256": "cc3ddf3ae4848f41c5b93f11931f28d51d58876fb6e5cfdb45866204f5509ace",
+          "text": "Seen in more than one study, but not yet checked by comparing brothers and sisters.",
+          "verdict": null
+        }
+      ],
+      "src/copy/reports/personal-previews.ts": [
+        {
+          "sha256": "1add129659a107203ee3d3b2b9954cc84498e5825e9a79e6795784ef5bfd10f5",
+          "text": "Your file shows a form linked to lower activity of the enzyme that breaks down milk sugar after childhood.",
+          "verdict": null
+        },
+        {
+          "sha256": "1bb835cd87d7302dbb7f769d2165b7078024d870a4abc053de0106e30a65bbcf",
+          "text": "Abstract: dry earwax association and dominance of the wet type",
+          "verdict": null
+        },
+        {
+          "sha256": "203a943e29483ba8831f4872e9921b3d57db48ac8424eeef622ed5e5047174a4",
+          "text": "Your file shows a form linked to keeping the enzyme that breaks down milk sugar active in adulthood.",
+          "verdict": null
+        },
+        {
+          "sha256": "2705aef5da89f1d1802af9b49d69f01d9e6567ba23f211bf1a2bebc284c6c097",
+          "text": "Your file shows a form linked to noticing the asparagus odor less often.",
+          "verdict": null
+        },
+        {
+          "sha256": "2b8174092d45bc4136da764cd0d15fe829534f078a38df86a52e8f88d7e9bd73",
+          "text": "Your file shows a form linked to dry, flaky earwax.",
+          "verdict": null
+        },
+        {
+          "sha256": "56819fe8de48be55064e74e351f36b25baa641951e741e7d5a9aba6e9fc2b89d",
+          "text": "Your file shows the form found in a DNA pattern linked to tasting a bitter test chemical more strongly.",
+          "verdict": null
+        },
+        {
+          "sha256": "5b05f18c8683d31513e0057c9ccd1bde9b7e69f1be450e086e5278e2f56174a0",
+          "text": "Your file does not show the common ALDH2 change linked to alcohol flushing.",
+          "verdict": null
+        },
+        {
+          "sha256": "69ba53cd4f0b32e71d89da7de5e3ce209ba25cc5838c62fd9174f02aed1effe4",
+          "text": "Your file shows two copies of a form linked to less frequent reports of soapy-tasting cilantro.",
+          "verdict": null
+        },
+        {
+          "sha256": "74d11251201aa6f8b5e8bf2e43c8fba5a6d70a826af520a2996b236fbb8b0aa1",
+          "text": "Your file shows the form found in a DNA pattern linked to tasting a bitter test chemical less strongly.",
+          "verdict": null
+        },
+        {
+          "sha256": "78802dba3f67c2cf0fc61023868ad6d2c5881042b6c1b1ac7c7c3b9aba98080b",
+          "text": "The study asked about urine.",
+          "verdict": null
+        },
+        {
+          "sha256": "7d3e9eb4fdf4b97a3e573703d7dccf273e9ecbca9748457f78f9686b8a80304f",
+          "text": "Your file shows one copy of a form linked to more reports of sneezing in bright light.",
+          "verdict": null
+        },
+        {
+          "sha256": "8da876e6cef14b767a7a4475ad801d350f83524045bedeeef98da8d04d7291a5",
+          "text": "Most people with it in the study still noticed the odor.",
+          "verdict": null
+        },
+        {
+          "sha256": "9b62be5039e7120511b1525247ff857e27b194ad192681514d765604494f832d",
+          "text": "Your file shows a form linked to noticing an odor after asparagus.",
+          "verdict": null
+        },
+        {
+          "sha256": "9e28524e36506304154f65275f333b80e8aebe5d67614e918d5a09bef42d5ada",
+          "text": "It does not tell you whether dairy causes symptoms.",
+          "verdict": null
+        },
+        {
+          "sha256": "b78bd31d464b359a0370c5d7fbc1880984c220cb7d25834d80e4d31239aadc38",
+          "text": "Your file shows two copies of a form linked to noticing a soapy taste in cilantro.",
+          "verdict": null
+        },
+        {
+          "sha256": "c09dfe8a9024fd1753871cd174651467f0f37b462b69407628e04a2349a4657b",
+          "text": "Table 2 and Methods: per-A association with self-reported soapiness",
+          "verdict": null
+        },
+        {
+          "sha256": "c3ba83421eb1b941c2f9a3d07aea93a949141ca33a5217500c3867448547c963",
+          "text": "Your file shows one copy of a form linked to less frequent reports of soapy-tasting cilantro.",
+          "verdict": null
+        },
+        {
+          "sha256": "d69acdd281191b4b62c4204490e8b2363d9801bda3204fd8479503ff077799d7",
+          "text": "Abstract: association with biochemically verified lactase activity",
+          "verdict": null
+        },
+        {
+          "sha256": "de64d93c430b17b19253deaefc7e6a9c5f9c4c4d16c874ccb0d02f5844a90ccd",
+          "text": "Your file shows two copies of a form linked to very low ALDH2 activity.",
+          "verdict": null
+        },
+        {
+          "sha256": "e5f90f077632727fd913f4ae6ab52f8278e1e8c2800e17f67932313b5b824541",
+          "text": "Your file shows the form linked to fewer reports of sneezing in bright light.",
+          "verdict": null
+        },
+        {
+          "sha256": "f43b940c813fd1ddfdd582defbe6bf5356160e21fe2b9cf867c9be32d4233912",
+          "text": "Your file shows two copies of a form linked to more reports of sneezing in bright light.",
+          "verdict": null
+        },
+        {
+          "sha256": "fc7223ba01348e5de408d879b28f170293e72d778dfe01545d8bd9f5f7c31efe",
+          "text": "Your file shows a form linked to wet, sticky earwax.",
+          "verdict": null
+        }
+      ],
+      "src/copy/reports/strings.ts": [
+        {
+          "sha256": "9173904e1c67ae82190607bc02ef0b81c84a97737d91107e38ecf74ce7f74bc8",
+          "text": "Links between DNA and traits found in studies.",
+          "verdict": null
+        },
+        {
+          "sha256": "c7963794388442353ff474269d47924db167ca3596993d76f87a56ddcb2a3bdc",
+          "text": "Common DNA changes linked to a higher or lower chance of some cancers.",
+          "verdict": null
+        }
+      ],
+      "src/copy/reports/study-context.ts": [
+        {
+          "sha256": "07ce165bcd69824737ed7cd8b83ed2bb2587426fba857c255e9e928888dbe313",
+          "text": "What the study measured",
+          "verdict": null
+        },
+        {
+          "sha256": "5b8c391ca80c5826f5c52d330281ba21e7d775322c8b5fe2d73a210d3632db91",
+          "text": "People in the study",
+          "verdict": null
+        },
+        {
+          "sha256": "63303cff66be51841ae75d4e4f7154106ea44e8878e9368a34ede1091f557a51",
+          "text": "What the study found",
+          "verdict": null
+        },
+        {
+          "sha256": "ab93500c8b9b44e9868629b66182c4fafa4c8ea0b2fab4355d19b5338f544405",
+          "text": "About this study, not a personal result.",
+          "verdict": null
+        },
+        {
+          "sha256": "ed67f8c289c34a55b48a08151cbab0dc659f6e8b7c06fed4591c60c1663eb8ea",
+          "text": "Not recorded in this study summary.",
+          "verdict": null
+        }
+      ]
+    }
+  }
+}

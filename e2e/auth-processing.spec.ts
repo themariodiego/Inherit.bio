@@ -97,7 +97,40 @@ async function assertPendingControl(
   }
 }
 
+/** Initial forms are actual served UI, before any credentials or submission.
+ * The existing audited test owns the real page and all network observations. */
+async function assertInitialForm(page: Page, path: string, heading: string, labels: readonly string[], submitLabel: string) {
+  let authCalls = 0;
+  const observed = (request: import("@playwright/test").Request) => {
+    if (new URL(request.url()).pathname.startsWith("/auth/v1/")) authCalls += 1;
+  };
+  page.on("request", observed);
+  try {
+    await page.goto(path);
+    expect(new URL(page.url()).pathname).toBe(path);
+    expect(new URL(page.url()).search).toBe("");
+    await expect(page.locator("main h1")).toHaveText(heading);
+    const form = page.locator("main form");
+    await expect(form).toHaveCount(1);
+    await expect(form.locator("input")).toHaveCount(labels.length);
+    for (const label of labels) {
+      const input = form.getByLabel(label, { exact: true });
+      await expect(input).toBeVisible();
+      await expect(input).toBeEnabled();
+      await expect(input).toHaveValue("");
+    }
+    await expect(form.getByRole("button", { name: submitLabel, exact: true })).toBeVisible();
+    await expect(form.getByRole("button", { name: submitLabel, exact: true })).toBeEnabled();
+    await expect(form.getByRole("button", { name: "Working…", exact: true })).toHaveCount(0);
+    await expect(form.getByRole("alert")).toHaveCount(0);
+    expect(authCalls, "no submit or synthetic auth response supplies this state").toBe(0);
+  } finally { page.off("request", observed); }
+}
+
 test("/auth/sign-in processing: the submit control says Working and refuses a second submission", async ({ page }) => {
+  await test.step("/auth/sign-in initial-form: the actual served fields precede every submit", async () => {
+    await assertInitialForm(page, "/auth/sign-in", "Welcome back", ["Email", "Password"], "Sign in");
+  });
   await assertPendingControl(page, "/auth/sign-in", async (target) => {
     await target.getByLabel("Email").fill(`processing-${randomUUID()}@e2e.local`);
     await target.getByLabel("Password").fill("synthetic-not-a-real-account");
@@ -105,6 +138,9 @@ test("/auth/sign-in processing: the submit control says Working and refuses a se
 });
 
 test("/auth/sign-up processing: the submit control says Working and refuses a second submission", async ({ page }) => {
+  await test.step("/auth/sign-up initial-form: the actual served fields precede every submit", async () => {
+    await assertInitialForm(page, "/auth/sign-up", "Create your account", ["Email", "Password"], "Sign up");
+  });
   await assertPendingControl(page, "/auth/sign-up", async (target) => {
     await target.getByLabel("Email").fill(`processing-${randomUUID()}@e2e.local`);
     await target.getByLabel("Password").fill("synthetic-not-a-real-account");
@@ -112,6 +148,9 @@ test("/auth/sign-up processing: the submit control says Working and refuses a se
 });
 
 test("/auth/forgot-password processing: the submit control says Working and refuses a second submission", async ({ page }) => {
+  await test.step("/auth/forgot-password initial-form: the actual served fields precede every submit", async () => {
+    await assertInitialForm(page, "/auth/forgot-password", "Reset your password", ["Email"], "Send reset link");
+  });
   await assertPendingControl(page, "/auth/forgot-password", async (target) => {
     await target.getByLabel("Email").fill(`processing-${randomUUID()}@e2e.local`);
   }, "Send reset link");
@@ -125,6 +164,9 @@ test("/auth/reset-password processing: the submit control says Working and refus
   await createConfirmedUser(email, password);
   await signIn(page, email, password);
 
+  await test.step("/auth/reset-password initial-form: the signed-in reader sees empty new-password input", async () => {
+    await assertInitialForm(page, "/auth/reset-password", "Choose a new password", ["New password"], "Update password");
+  });
   await assertPendingControl(page, "/auth/reset-password", async (target) => {
     await target.getByLabel("New password").fill("synthetic-a-different-password");
   }, "Update password");

@@ -1,0 +1,5 @@
+
+> inherit@0.1.0 gate:jurisdictions /Users/mariodiego/Documents/ChatGPT/Inherit Bio/verified-own-account-contact-lifetime
+> tsx scripts/jurisdiction-gate.ts
+
+jurisdiction gate passed: 12 restricted capabilities, 249 catalogue codes, 51 committed real jurisdictions or subdivisions, 0 signed decisions, 627 dates checked (oldest 32 days), 0 exact ancestor decisions verified.

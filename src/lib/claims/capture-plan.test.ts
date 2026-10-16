@@ -89,3 +89,46 @@ describe("independent rendered-claim capture planning", () => {
     expect(captures.every((c) => c.required.requiredClaimRegions.length === 1)).toBe(true);
   });
 });
+
+
+describe("whole current global state-profile declarations", () => {
+  type Profile = { supported: string[]; notApplicable: Record<string, string> };
+  const profiles = register.stateProfiles as Record<string, Profile>;
+  const pageProfiles = [...new Set(register.routes.filter(route => route.kind === "page").map(route => route.stateProfile))];
+
+  it("declares every global state exactly once for every current profile", () => {
+    for (const [name, profile] of Object.entries(profiles)) {
+      expect([...profile.supported, ...Object.keys(profile.notApplicable)].sort(), name)
+        .toEqual([...register.stateIds].sort());
+      expect(Object.values(profile.notApplicable).every(reason => reason.trim().length > 0), name).toBe(true);
+    }
+    expect(profiles["auth-density-flow"].supported).toContain("initial-form");
+    expect(profiles["settings-unbuilt-render"].supported).toContain("not-built");
+  });
+
+  it.each(["initial-form", "not-built"])("still refuses any current page-profile omission of %s", state => {
+    let checked = 0;
+    for (const name of pageProfiles) {
+      if (profiles[name].supported.includes(state)) continue;
+      const changed = JSON.parse(JSON.stringify(register)) as typeof register;
+      const changedProfiles = changed.stateProfiles as Record<string, Profile>;
+      delete changedProfiles[name].notApplicable[state];
+      expect(() => planClaimCaptures({ ...fixture(), routeRegister: changed }), name).toThrow("undeclared-state");
+      checked++;
+    }
+    expect(checked).toBeGreaterThan(0);
+  });
+
+  it.each(["initial-form", "not-built"])("still refuses any blank current page-profile reason for %s", state => {
+    let checked = 0;
+    for (const name of pageProfiles) {
+      if (profiles[name].supported.includes(state)) continue;
+      const changed = JSON.parse(JSON.stringify(register)) as typeof register;
+      const changedProfiles = changed.stateProfiles as Record<string, Profile>;
+      changedProfiles[name].notApplicable[state] = " ";
+      expect(() => planClaimCaptures({ ...fixture(), routeRegister: changed }), name).toThrow("invalid-state-exemption");
+      checked++;
+    }
+    expect(checked).toBeGreaterThan(0);
+  });
+});

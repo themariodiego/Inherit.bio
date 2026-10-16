@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { EMBRYO_INGEST_SESSION_LIMITS as LIMITS, INGEST_CHUNK_MAXIMUM_BYTES } from "@/lib/genome/ingest-limits";
-import { route } from "@/lib/primary-routes";
+import { route, routePattern } from "@/lib/primary-routes";
 import { cohortCard, parseRpcCards, type CohortCard } from "./record-key-cards";
 
 /**
@@ -96,6 +96,8 @@ export interface CohortCreatedBody {
     expiresAt: string;
     operationNonce: string;
     configureRoute: string;
+    chunkRoute: string;
+    completeRoute: string;
   };
   record_key_delivery: {
     recipient_set_revision: number;
@@ -129,8 +131,10 @@ export interface CohortCreatedBody {
  * - `configureRoute`, the path of `api.embryo-ingest-configure` for this
  *   session, built from the route register.
  *
- * `chunkRoute` and `completeRoute` are still absent: their routes are not
- * built yet, and a response must not direct a browser to a URL that 404s.
+ * With the chunk and completion routes built, `chunkRoute` and
+ * `completeRoute` join them. `chunkRoute`'s sequence is caller-selected
+ * (`params.sequence`), so it keeps the register's literal `[sequence]`
+ * segment for the browser to fill; the session segment is filled here.
  */
 export function cohortCreatedBody(result: unknown, operationNonce: string, origin?: string): CohortCreatedBody {
   const { cohort, ingest } = cohortFinalizeResult.parse(result);
@@ -151,6 +155,8 @@ export function cohortCreatedBody(result: unknown, operationNonce: string, origi
       expiresAt: new Date(ingest.expiresAt).toISOString(),
       operationNonce,
       configureRoute: route("api.embryo-ingest-configure", { session: ingest.session }),
+      chunkRoute: routePattern("api.embryo-ingest-chunk").replace("[session]", encodeURIComponent(ingest.session)),
+      completeRoute: route("api.embryo-ingest-complete", { session: ingest.session }),
     },
     record_key_delivery: {
       recipient_set_revision: cohort.recipient_set_revision,

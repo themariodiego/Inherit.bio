@@ -58,7 +58,9 @@ export function figureText(spec: StandaloneFigureSpec, denominator?: number | nu
       return { value: percentileSentence(spec.value), unit: null };
     case "coverage":
       return {
-        value: spec.wording === "listed-calls"
+        value: spec.wording === "reviewed-condition"
+          ? `Your file was checked at ${groupNumber(spec.read)} of the ${groupNumber(spec.needed)} positions known for ${spec.condition}.`
+          : spec.wording === "listed-calls"
           ? `calls in ${groupNumber(spec.read)} of ${groupNumber(spec.needed)} listed, supported ${spec.needed === 1 ? "record" : "records"}`
           : `read ${groupNumber(spec.read)} of the ${groupNumber(spec.needed)} positions this needs`,
         unit: null,

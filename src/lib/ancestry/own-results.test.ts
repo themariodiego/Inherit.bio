@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Db } from "../genome/load";
 import { computeOwnAncestryContent, CURRENT_OWN_ANCESTRY_PANEL } from "../uploads/own-ancestry-content";
 import { computeOwnAncestryContentV3, SEVEN_OWN_ANCESTRY_PANEL } from "../uploads/own-ancestry-content-v3";
+import { computeOwnAncestryContentV4 } from "../uploads/own-ancestry-content-v4";
 import { REGIONAL_AIMS, REGIONAL_CAVEAT } from "../genome/regional-admixture";
 import { LINEAGE_NO_POSITIONS } from "@/copy/ancestry";
 import { loadAncestryResults, loadOwnAncestryRows, UNCOMPUTED_LINEAGE } from "./own-results";
@@ -30,6 +31,24 @@ beforeEach(() => {
 });
 
 describe("checked own ancestry result projection", () => {
+  it("preserves the producer's serialized revision-4 receipts through the live checked reader", async () => {
+    const saved = JSON.parse(JSON.stringify(computeOwnAncestryContentV4({ source: content().source,
+      calls: [], panel: SEVEN_OWN_ANCESTRY_PANEL })));
+    mocks.rpc.mockResolvedValue({ data: { ...receipt(), content: saved }, error: null });
+    const rows = await loadOwnAncestryRows(db, subjectId, [file]);
+    expect(rows[0]).toMatchObject({ basis: saved.figureBasis.shares.basis,
+      coverageBasis: saved.figureBasis.coverage.basis, result: saved.admixture.result });
+    expect(mocks.rpc).toHaveBeenCalledTimes(2);
+  });
+  it.each(["missing", "observed_share", "unknown_version"])("withholds a %s basis on the actual checked reader path", fault => {
+    const saved = JSON.parse(JSON.stringify(computeOwnAncestryContentV4({ source: content().source,
+      calls: [], panel: SEVEN_OWN_ANCESTRY_PANEL })));
+    if (fault === "missing") delete saved.figureBasis;
+    if (fault === "observed_share") saved.figureBasis.shares.basis = "observed";
+    if (fault === "unknown_version") saved.figureBasis.coverage.version = 2;
+    mocks.rpc.mockResolvedValue({ data: { ...receipt(), content: saved }, error: null });
+    return expect(loadOwnAncestryRows(db, subjectId, [file])).resolves.toEqual([]);
+  });
   it("keeps seven-region shares, their caveat and lineages bound to the saved reference", async () => {
     const saved = computeOwnAncestryContentV3({ source: content().source,
       calls: REGIONAL_AIMS.map(marker => ({ file_id: fileId, chrom: marker.chrom, pos: marker.pos38,

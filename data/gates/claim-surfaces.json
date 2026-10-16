@@ -1,0 +1,53 @@
+{
+  "version": 1,
+  "purpose": "The non-template surfaces that can state a scientific fact (G4.7). scripts/citation-surface-gate.ts reads every non-test .ts and .tsx file under these paths. Report prose in data/templates is gated by gate:templates and gate:claims instead. Glossary definitions (src/copy/glossary) follow the owner's 18 September 2026 decision that a definition is not a claim. Neither is repeated here.",
+  "surfaces": [
+    {
+      "type": "report-copy",
+      "paths": [
+        "src/copy/reports",
+        "src/copy/genome",
+        "src/copy/ancestry.ts",
+        "src/copy/regional-ancestry.ts",
+        "src/copy/figures",
+        "src/components/reports",
+        "src/components/results"
+      ]
+    },
+    {
+      "type": "copilot-context",
+      "paths": [
+        "src/copy/copilot",
+        "src/app/api/chat/route.ts",
+        "src/lib/copilot/own-chat-route.ts",
+        "src/lib/copilot/own-chat-content.ts",
+        "src/lib/copilot/own-chat-report-context.ts",
+        "src/lib/copilot/own-chat-ancestry-content.ts",
+        "src/lib/copilot/family-chat-route.ts",
+        "src/lib/copilot/family-chat-content.ts"
+      ]
+    },
+    {
+      "type": "email",
+      "paths": [
+        "src/emails"
+      ]
+    },
+    {
+      "type": "portrait",
+      "paths": [
+        "src/copy/family/portrait.ts",
+        "src/copy/family/health-picture.ts",
+        "src/components/family/portrait"
+      ]
+    },
+    {
+      "type": "embryo-card",
+      "paths": [
+        "src/copy/embryos",
+        "src/components/embryo",
+        "src/lib/embryos/record-key-cards.ts"
+      ]
+    }
+  ]
+}

@@ -49,6 +49,8 @@ jobs:
       - name: Prepare fresh local signing keys before stack startup
         id: prepare
         run: corepack pnpm exec tsx scripts/self-host-local.ts prepare
+      - name: SQL fixture relative-include preflight
+        run: corepack pnpm gate:sql-includes
       - name: Start the stock local Supabase stack
         id: stack
         # The CLI prints credentials. Its private log is never an artifact.

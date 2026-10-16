@@ -2,6 +2,11 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { LOCATION_UNAVAILABLE_BODY, LOCATION_UNAVAILABLE_TITLE } from "@/copy/availability";
 import { isEmbargoedCountry, isEmbargoedLocation } from "@/lib/legal/service-restrictions";
+import { futurePersonClaimsOpen } from "@/lib/future-person/claims-open";
+import { CLAIM_FORM_TOKEN_HEADER, claimFormSecret, mintClaimForm } from "@/lib/future-person/claim-session";
+import {APPEAL_FORM_TOKEN_HEADER,appealFormSecret,mintAppealForm} from "@/lib/future-person/appeal-form";
+import {testAppealIntakeOpen} from "@/lib/future-person/appeals-open";
+import {applyAppealIntakeHeaders} from "@/lib/future-person/appeal-intake-response";
 
 /**
  * Response headers every page or endpoint that can read or write user,
@@ -21,9 +26,22 @@ export const SENSITIVE_RESPONSE_HEADERS: Readonly<Record<string, string>> = {
   "X-Frame-Options": "DENY",
 };
 
-function withSensitiveHeaders<T extends NextResponse>(response: T): T {
+function withSensitiveHeaders<T extends NextResponse>(response: T, path?: string): T {
   for (const [name, value] of Object.entries(SENSITIVE_RESPONSE_HEADERS)) {
     response.headers.set(name, value);
+  }
+  if(path==="/api/appeals"||path==="/api/future-person/claim/session/corrections")return applyAppealIntakeHeaders(response);
+  // The proxy's response headers also reach route-handler responses. Review
+  // IDs, documentary decisions and document download sessions require the
+  // stricter policy, including refusals produced by the proxy itself. Next's
+  // response sender retains an already-present proxy header, so the download
+  // handler's no-referrer policy must also be set here.
+  if (path?.startsWith("/reviews/future-person/claims/") ||
+      path?.startsWith("/api/reviews/future-person/claims/") ||
+      path?.startsWith("/reviews/appeals/") ||
+      path?.startsWith("/api/reviews/appeals/") ||
+      (path !== undefined && /^\/api\/legal-evidence\/[^/]+\/review-download$/.test(path))) {
+    response.headers.set("Referrer-Policy", "no-referrer");
   }
   return response;
 }
@@ -56,7 +74,7 @@ function locationUnavailable(path: string): NextResponse {
           `</main></body></html>`,
         { status: 451, headers: { "Content-Type": "text/html; charset=utf-8" } },
       );
-  return withSensitiveHeaders(response);
+  return withSensitiveHeaders(response, path);
 }
 
 // Next.js 16 proxy (successor to middleware): keeps the Supabase auth session
@@ -73,6 +91,10 @@ export async function proxy(request: NextRequest) {
     return locationUnavailable(request.nextUrl.pathname);
   }
 
+  if(request.nextUrl.pathname==="/legal/appeals")return appealPage(request);
+  // Public intake is account-free. A suspension POST performs its separate
+  // native own-JWT account/current-session check inside its exact branch.
+  if(request.nextUrl.pathname==="/api/appeals")return withSensitiveHeaders(NextResponse.next({request}),request.nextUrl.pathname);
   // This generic document must not look up an account or an invitation.
   // Its handler sets its own nonce CSP and non-authorizing candidate cookie.
   if (request.nextUrl.pathname === "/withdraw/request") {
@@ -82,8 +104,16 @@ export async function proxy(request: NextRequest) {
   // signed-in account. An unrelated account's deletion notice must not block
   // the recipient from declining an invitation.
   if (request.nextUrl.pathname === "/api/rights/activate"
-    || request.nextUrl.pathname === "/api/withdraw/session") {
-    return withSensitiveHeaders(NextResponse.next({ request }));
+    || request.nextUrl.pathname === "/api/withdraw/session"
+    || request.nextUrl.pathname === "/api/future-person/claim"
+    || request.nextUrl.pathname.startsWith("/api/future-person/claim/session/")
+    || request.nextUrl.pathname.startsWith("/api/evidence/")) {
+    return withSensitiveHeaders(NextResponse.next({ request }),request.nextUrl.pathname);
+  }
+  // The public claim page reads only what the claimant types: no account,
+  // no record, no prior claim (rights.future-person-claim.policy.dataScope).
+  if (request.nextUrl.pathname === "/future-person/claim") {
+    return claimPage(request);
   }
   let response = NextResponse.next({ request });
 
@@ -130,7 +160,8 @@ export async function proxy(request: NextRequest) {
     path.startsWith("/chat") ||
     path.startsWith("/settings");
 
-  const sensitive = isProtected || path.startsWith("/api/") || path.startsWith("/withdraw/");
+  const isReviewPage=path.startsWith("/reviews/future-person/claims/") || path.startsWith("/reviews/appeals/");
+  const sensitive = isProtected || path.startsWith("/api/") || path.startsWith("/withdraw/") || isReviewPage;
 
   if (!user && isProtected) {
     const url = request.nextUrl.clone();
@@ -152,7 +183,7 @@ export async function proxy(request: NextRequest) {
           NextResponse.json(
             { error: "account_deletion_notice_period" },
             { status: 423 },
-          ),
+          ), path,
         );
       }
       if (isProtected && path !== "/settings/data") {
@@ -169,7 +200,7 @@ export async function proxy(request: NextRequest) {
     if (profile && isEmbargoedCountry(profile.jurisdiction_code)) {
       if (path.startsWith("/api/") && !isRightsEndpoint(path) && path !== "/api/settings/jurisdiction") {
         return withSensitiveHeaders(
-          NextResponse.json({ error: "not_available_in_jurisdiction" }, { status: 451 }),
+          NextResponse.json({ error: "not_available_in_jurisdiction" }, { status: 451 }), path,
         );
       }
       if (isProtected && !path.startsWith("/settings")) {
@@ -190,7 +221,35 @@ export async function proxy(request: NextRequest) {
     }
   }
 
-  return sensitive ? withSensitiveHeaders(response) : response;
+  if(sensitive)withSensitiveHeaders(response,path);
+  return response;
+}
+
+/**
+ * `GET /future-person/claim` while claims are open: a non-authorizing form
+ * pair. The cookie goes to the browser, and a browser that already holds one
+ * keeps it, because Next.js prefetches this page while it is showing it. The
+ * sealed token goes only to this render, in a request header no client value
+ * can supply, and the page writes it into the form. Nothing is looked up.
+ */
+function claimPage(request: NextRequest): NextResponse {
+  const headers = new Headers(request.headers);
+  headers.delete(CLAIM_FORM_TOKEN_HEADER);
+  if (request.method !== "GET" || !futurePersonClaimsOpen()) {
+    return withSensitiveHeaders(NextResponse.next({ request: { headers } }));
+  }
+  let form: ReturnType<typeof mintClaimForm>;
+  try {
+    form = mintClaimForm(Date.now(), claimFormSecret(request));
+  } catch {
+    // No sealing key: the page renders closed rather than a form that cannot post.
+    return withSensitiveHeaders(NextResponse.next({ request: { headers } }));
+  }
+  headers.set(CLAIM_FORM_TOKEN_HEADER, form.formToken);
+  const response = withSensitiveHeaders(NextResponse.next({ request: { headers } }));
+  response.headers.append("Set-Cookie", form.setCookie);
+  response.headers.set("Referrer-Policy", "no-referrer");
+  return response;
 }
 
 export const config = {
@@ -198,3 +257,12 @@ export const config = {
     "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|txt|xml)$).*)",
   ],
 };
+
+function appealPage(request:NextRequest):NextResponse{
+ const headers=new Headers(request.headers);headers.delete(APPEAL_FORM_TOKEN_HEADER);
+ if(request.method!=="GET"||!testAppealIntakeOpen())return withSensitiveHeaders(NextResponse.next({request:{headers}}));
+ try{const form=mintAppealForm(Date.now(),appealFormSecret(request));headers.set(APPEAL_FORM_TOKEN_HEADER,form.formToken);
+  const response=withSensitiveHeaders(NextResponse.next({request:{headers}}));response.headers.append("Set-Cookie",form.setCookie);
+  response.headers.set("Referrer-Policy","no-referrer");return response;}
+ catch{return withSensitiveHeaders(NextResponse.next({request:{headers}}));}
+}

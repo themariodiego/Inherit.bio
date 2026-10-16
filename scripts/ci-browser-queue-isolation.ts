@@ -6,6 +6,7 @@ export const QUEUE_EXCLUSIVE_BROWSER_FILES = Object.freeze({
   "embryo-mixed-qc-journey.spec.ts": "embryo-mixed-qc",
   "embryo-qc-second-seed-journey.spec.ts": "chromium",
   "reviews-keyless-owner-notice-journey.spec.ts": "chromium",
+  "embryo-third-party-journey.spec.ts": "chromium",
 });
 type Group = { file: string; project: string; cases: readonly string[] };
 const exclusiveProjects = ["embryo-ingest", "embryo-mixed-qc"];

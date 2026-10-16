@@ -3,7 +3,7 @@ import "server-only";
 import { hmacSecret } from "@/lib/crypto";
 import { encryptedLiteral } from "@/lib/embryos/guards";
 import { contactDigestSet, legacyContactDigest } from "@/lib/hmac-keyring";
-import { invitationQuotaKeys } from "@/lib/invitation-quota";
+import { invitationQuotaKeys } from "@/lib/rate-limit-keys";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
   isAdultOn,

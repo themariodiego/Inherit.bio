@@ -1,0 +1,5 @@
+#AncestryDNA synthetic TEST-LOCAL fixture, no real person
+# Build 38
+rsid	chromosome	position	allele1	allele2
+rs762551	15	74749576	C	A
+rs9923231	16	31096368	C	T

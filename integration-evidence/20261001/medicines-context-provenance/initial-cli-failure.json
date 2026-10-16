@@ -1,0 +1,8 @@
+{
+  "status": "FAILED_BEFORE_TEST_EXECUTION",
+  "requestedOption": "--minWorkers=1",
+  "actualError": "CACError: Unknown option --minWorkers",
+  "runtime": "Node22.23.3; installed Vitest4.1.11",
+  "testsExecuted": 0,
+  "recovery": "Read installed CLI help, retained maxWorkers1 and used supported no-file-parallelism; no test/assertion/deadline change"
+}

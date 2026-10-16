@@ -1,0 +1,17 @@
+{
+  "status": "PASS_SOURCE_ONLY",
+  "parent": "68eb33680dd1e2ea78b07cd21d09975c5b13e0a5",
+  "changedOriginalSupabasePaths": [
+    "supabase/tests/fixtures/verified_account_ready_mail.inc"
+  ],
+  "allOtherSupabasePathsByteExact": true,
+  "predicateInput": "public.mail_outbox",
+  "caller": "exact captured event ID joined to actual public.mail_outbox row",
+  "originalPredicateExpectedTrueAndOneEventCountRetained": true,
+  "migrationSha256Unchanged": "659c5496965ea9c72f8e453b62a45d11f8d9885c0c798c418f19f3279f1517cb",
+  "originalAlgorithmsAssertionsAndDeadlinesUnchanged": true,
+  "initialActualResult": "153 assertions passed then 42783 wrong temporary composite; root reported exact baseline restored with separately proven one sequence restoration",
+  "sqlExecution": "NOT RUN by agent; root rehearses corrected successor",
+  "compiler": "NOT RUN; SQL fixture/docs only",
+  "provider": "NOT RUN"
+}

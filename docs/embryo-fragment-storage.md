@@ -157,6 +157,25 @@ upload-staging object under its recorded bucket, which fixes D-130. Then:
 4. `confirm_embryo_ingest_unwind_storage_v1(unwind)` moves the unwind to
    `storage_confirmed` only when nothing is unresolved. Otherwise it reports
    what is. A trigger enforces the same rule for any writer.
+5. `complete_embryo_ingest_unwind_v1(unwind)` (`completeEmbryoUnwind`, added
+   30 September in `20260930130000_embryo_ingest_terminal_purge.sql`) runs
+   only after that. For an abandoned attempt it is the terminal graph purge.
+   For a published attempt it deletes the fragment, write intent and
+   handle-map rows. Before `storage_confirmed` it answers with the unwind's
+   state and changes nothing.
+
+Publication plans its own cleanup: a `purpose = 'published'` unwind whose
+inventory lists every fragment object, and never a published source. Its
+objects go through steps 1 to 5 like any other.
+`embryo_ingest_unwind_work_v1(limit)` (`listEmbryoUnwindWork`) lists the
+unwinds still waiting on storage or on completion.
+
+Canonical parts (added 30 September,
+`20260930132000_embryo_canonical_part_disposal.sql`) use the same receipts:
+an R2 marker at the part's exact `embryo/<uuid>` key. A part is claimed once
+it landed or its write window closed, and never while a canonical source
+binds it. A `purpose = 'source'` unwind, made by the internal source-deletion
+planner, lists only the parts of the sources it deleted.
 
 What stays unresolved, and keeps the unwind at `storage_pending`:
 

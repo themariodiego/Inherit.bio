@@ -26,31 +26,65 @@ Full details, including the self-host path, are in
 
 ## Before you open a pull request
 
+Before pushing a draft, run the focused unit tests for every changed flow,
+then these source checks:
+
 ```bash
 pnpm typecheck
 pnpm lint
-pnpm test                  # full unit suite
+pnpm test:source-inventories
 pnpm gate:legal && pnpm gate:first-glance && pnpm gate:names && pnpm gate:templates
 pnpm gate:readability && pnpm gate:secrets && pnpm gate:routes && pnpm gate:claims
-pnpm gate:env && pnpm gate:jurisdictions
-pnpm exec supabase db reset && pnpm exec supabase test db   # fresh local database
+pnpm gate:citations
+pnpm gate:env && pnpm gate:jurisdictions && pnpm gate:sql-includes
 ```
 
-Run these local checks before pushing a draft pull request. Configure
-`NAME_DENYLIST_FILE` for the name gate and stage changes before the repository
-and history secret scan. Database reset is only for the disposable local stack.
+New migration tables must also have an explicit disposition in
+`docs/export-member-plan.json`; regenerate its native test block with
+`pnpm exec tsx scripts/export-member-plan.ts`. The source inventory preflight
+checks literal new table declarations, the exact whole-plan provenance and
+account/Future classifications, graph exclusions, and SQL include/startup order.
+Update the active plan byte/hash/source-commit pin when its reviewed contents
+change; the separate proposal stays inert. Hosted CI checks the complete actual
+database catalog immediately after fresh startup and runs the unchanged full
+database suite later; the targeted census does not replace that suite.
 
-The complete hosted browser suite is required before merging or any guarded
-production change. Six fresh, isolated browser jobs preserve whole fixture
-groups; the required `checks` gate rejects failed, skipped, cancelled, missing,
-duplicate or stale evidence. Use **Re-run all jobs** after a CI failure so every
-job provides evidence from the same attempt.
 
-`pnpm e2e` remains the optional complete local browser command against a
-production build and local Supabase stack. The owner approved hosted full-suite
-verification as the permanent pre-merge policy on 30 September 2026. The workflow
-and its coverage safeguards are described in
+The source-inventory command checks exact environment reads, TEST-only token
+readers, native function sites, rendered mail, routes and the complete
+`scripts/ci-browser` source-contract test namespace, including partition,
+accessibility and queue placement. Run it when files, routes, environment reads, migrations,
+mail or test partitions change. A missing or stale inventory must fail before
+a draft push. Mail rendering requires a clean committed input tree; a local
+commit is allowed before these checks. Configure `NAME_DENYLIST_FILE` for the
+name gate. Stage changes for the tracked secret scan and run the history scan
+on the final local commit before pushing.
+
+The owner approved complete hosted unit, database and browser verification
+as the permanent policy for all current and future branches. The complete
+`pnpm test`, fresh-database pgTAP suite and browser suite must pass on the final
+version before any merge or production change. A focused selection cannot
+replace these complete suites. Keep all assertions and time limits. Missing,
+failed, skipped, cancelled, retried or stale tests and jobs block release.
+Six fresh isolated browser jobs must together cover the complete discovered
+suite exactly once, on the same source, run and attempt. Use **Re-run all jobs**
+after a CI failure; retain the original failure.
+
+Complete local production migration rollback checks remain required. Then
+production changes must pass the predecessor checks, exact dry-run sentinel,
+guarded apply and read-only verification in that order. CI does not replace
+these checks. A database reset is only for a disposable local test stack.
+
+`pnpm test`, `pnpm exec supabase db reset && pnpm exec supabase test db` and
+`pnpm e2e` remain optional complete local checks for development. The permanent
+policy is recorded in [`docs/protocol/decisions.md`](docs/protocol/decisions.md)
+(30 September and 3–4 October 2026). The browser workflow and its coverage
+checks are described in
 [`docs/evidence/ci-browser-sharding.md`](docs/evidence/ci-browser-sharding.md).
+
+The [citation surface gate](docs/citation-surface-gate.md) complements
+`pnpm gate:claims`; passing either does not certify that the existing human
+source-review backlog is complete.
 
 ## What we are looking for
 
@@ -96,3 +130,7 @@ writing code. Decisions are reversible; they are just not reversible silently.
 
 Inherit is [AGPL-3.0](LICENSE). By contributing, you agree that your
 contributions are licensed under the same terms.
+
+Before a fresh database reset or test, run `pnpm gate:sql-includes`. It checks the complete tracked SQL/fixture include graph without database access, resolving every literal relative include from its containing file. Missing, escaping, dynamic or cyclic paths refuse the run. CI and the native browser bootstrap enforce this preflight before starting their database.
+
+The focused source-inventory preflight also checks every kept page has an actual named accessibility audit. A new protected page needs a genuine authorized fixture; a 404 visit or an unexecuted coverage label does not satisfy its browser audit.

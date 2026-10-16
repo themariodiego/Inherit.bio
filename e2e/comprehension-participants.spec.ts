@@ -21,8 +21,9 @@ import { generateOwnFileWithChosenReports, ownRunCompletions, uploadOwnFilePrepa
  * browser, the real upload and preparation, and the report choices a person
  * makes on `/genome/me/reports`. The owner's decision of 18 September 2026
  * closes a fixture-only path that writes rows directly, and that is also why
- * `participant-c` is absent: its two embryo files have no ingest path until
- * G2.6 lands, and the bindings record that as its blocker.
+ * `participant-c` is seeded separately by the real signed-parent embryo
+ * journey in its own exact fresh native CI partition. This ordinary
+ * own-file seed cannot create or adopt that isolated worker runtime.
  *
  * Run on its own against the local stack with `pnpm seed:participants`; the
  * full browser suite also runs it, so a seed that stops working fails CI

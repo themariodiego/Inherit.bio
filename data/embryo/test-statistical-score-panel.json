@@ -1,0 +1,22 @@
+{
+  "version": "embryo-statistical-test-panel-v1",
+  "panelId": "synthetic-score-coverage-v1",
+  "conditionId": "SYNTHETIC:9001",
+  "conditionName": "Synthetic score coverage",
+  "referenceBuild": "GRCh38",
+  "jurisdiction": "TEST-LOCAL",
+  "purpose": "coverage-failure-only",
+  "nVariants": 10,
+  "variants": [
+    { "id": "synthetic-row-01", "chrom": 1, "pos": 1000, "effectAllele": "G", "otherAllele": "A" },
+    { "id": "synthetic-row-02", "chrom": 1, "pos": 1001, "effectAllele": "T", "otherAllele": "C" },
+    { "id": "synthetic-row-03", "chrom": 1, "pos": 1002, "effectAllele": "A", "otherAllele": "G" },
+    { "id": "synthetic-row-04", "chrom": 1, "pos": 1003, "effectAllele": "C", "otherAllele": "T" },
+    { "id": "synthetic-row-05", "chrom": 1, "pos": 1004, "effectAllele": "C", "otherAllele": "A" },
+    { "id": "synthetic-row-06", "chrom": 1, "pos": 1005, "effectAllele": "G", "otherAllele": "T" },
+    { "id": "synthetic-row-07", "chrom": 1, "pos": 1006, "effectAllele": "A", "otherAllele": "C" },
+    { "id": "synthetic-row-08", "chrom": 1, "pos": 1007, "effectAllele": "T", "otherAllele": "G" },
+    { "id": "synthetic-row-09", "chrom": 7, "pos": 3000, "effectAllele": "C", "otherAllele": "T" },
+    { "id": "synthetic-row-10", "chrom": 13, "pos": 4000, "effectAllele": "G", "otherAllele": "A" }
+  ]
+}

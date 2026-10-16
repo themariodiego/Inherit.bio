@@ -36,7 +36,7 @@ import {
 import { ClaimBlock } from "@/components/figures/claim-block";
 import type { CarrierMatch } from "@/lib/family/carrier-pair";
 import { distribute } from "@/lib/family/distribution";
-import { crossShares, type MendelOutcome } from "@/lib/family/mendel";
+import { crossShares, readMendelBasis, type MendelOutcome } from "@/lib/family/mendel";
 import type { StandaloneFigureSpec } from "@/lib/figures/spec";
 import { SubjectChip, type HealthPictureColumn } from "./health-picture-table";
 
@@ -73,18 +73,19 @@ export function CarrierMatchBlock({ match, people, viewerAccountId }: CarrierMat
     match.kind === "probability" && recessive === null
       ? distribute<MendelOutcome>(crossShares(match.cross), OUTCOME_PHRASES)
       : null;
-  const frequency = (value: number): StandaloneFigureSpec => ({
+  const crossBasis = match.kind === "probability" ? readMendelBasis(match.cross) : null;
+  const frequency = (value: number, basis: "exact"): StandaloneFigureSpec => ({
     kind: "natural-frequency",
     class: "variant-call",
-    basis: "exact",
+    basis,
     provenance: CARRIER_PROVENANCE,
     value,
   });
   const figures: StandaloneFigureSpec[] =
     recessive !== null
-      ? [...statuses, frequency(recessive)]
+      ? [...statuses, frequency(recessive, crossBasis!)]
       : split
-        ? [...statuses, ...split.categories.map((category) => frequency(category.share))]
+        ? [...statuses, ...split.categories.map((category) => frequency(category.share, crossBasis!))]
         : statuses;
 
   return (
