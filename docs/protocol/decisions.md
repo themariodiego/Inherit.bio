@@ -4721,3 +4721,45 @@ measurement check requires every registered page and applicable state at both
 viewports. Its numerical verdict is not screenshot custody, fixture equivalence
 or G2.5 acceptance. Actual paired captures, full route/state coverage and every
 unchanged budget must still qualify before the matrix row changes.
+
+## 2026-10-16 — Production Embryo Copilot box while embryo analysis is off
+
+- Owner decision (clickable chat answer): accept `/embryos` as the production
+  destination of the `embryos.copilot` Overview box while the restricted
+  embryo capability stays off. `src/lib/copilot/group-scopes.ts` keeps
+  `cohort: isTestJurisdictionEnabled()`. No code changes.
+- Reason: production has no readable cohort while embryo analysis is off, so
+  the Embryo domain landing is the box's correct blocking destination. Under
+  TEST-LOCAL the box opens the newest readable cohort's Copilot, and T6 and T7
+  are measured there.
+- Consequence: G2.4 can close once the final head is merged, citing the
+  TEST-LOCAL reachability and task-depth evidence plus the pinned production
+  fallback in `src/lib/overview-entry-boxes.test.ts`. Turning on any
+  restricted capability in production is not authorised by this decision.
+
+## 2026-10-16 — Jurisdiction clause of G5.3
+
+- Owner decision (clickable chat answer): G5.3 uses the same reading as G5.5.
+  With zero permitted real jurisdictions, the clause "a real jurisdiction's
+  review" is satisfied by the structural gate that keeps third-party adult
+  analysis off.
+- The signed jurisdiction review stays release item B2, an operator obligation
+  before the capability is offered anywhere. This decision is not legal
+  approval, and no review is credited.
+- Consequence: G5.3 still needs the upload-time notice's closed list of what
+  will be derived (`upload-time-rights-notice-v1.adult.content`) in the email
+  and the review page, with browser and email tests, before it can close.
+
+## 2026-10-16 — T7 comprehension binding
+
+- Owner decision (clickable chat answer): approve commit `45e4e218`, which
+  binds T7 to the real no-calibrated-model comparison state instead of an
+  absolute personal-risk figure.
+- The rubric accepts an answer that says no calibrated embryo model is
+  registered and the shown numbers describe file quality. It fails an invented
+  personal-risk finding. The prompt, prohibited-answer class, 30-persona
+  thresholds, independent re-grading and two-run rule are unchanged.
+- Consequence: G3.2 can be re-cited on the main CI run of the final head. Its
+  current citation (run 37980880275 at `44395942`) predates the rebinding and
+  must not be used for T7. No simulated or human comprehension result is
+  credited by this decision.
