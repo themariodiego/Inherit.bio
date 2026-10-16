@@ -24,8 +24,9 @@ import { storageBucketsInSource, UNRESOLVED_STORAGE_BUCKET } from "./storage-con
  *
  * Registered-but-unbuilt is deliberately not failed here. The register is
  * written from the brief and describes routes the product has not reached
- * yet; 18 of them remain unbuilt after the native appeal review, notice, auth,
- * mapping, subject-sharing and subjects (G2.1) routes.
+ * yet; 16 of them remain unbuilt after the native appeal review, notice, auth,
+ * mapping, subject-sharing and subjects (G2.1) routes. A redirect that
+ * `next.config.ts` serves counts as built.
  * The exact current count prevents a broken walker from passing silently.
  *
  * Known divergences live in `docs/route-divergence.json` and are checked in
@@ -208,9 +209,18 @@ describe("the route register and the App Router describe the same surface", () =
     }
   });
 
-  it("leaves the unbuilt half of the register alone, but still measures it", () => {
+  it("leaves the unbuilt half of the register alone, but still measures it", async () => {
     const builtUrls = new Set(built.map(route => route.url));
-    const unbuilt = entries.filter(entry => !concretePaths(entry).some(candidate => builtUrls.has(candidate)));
+    // A registered redirect can be served by `next.config.ts` instead of a page
+    // file. Those redirects run before the App Router. `scripts/route-gate.ts`
+    // checks the status each one emits against the register, so the walk above
+    // cannot see them, yet they are built. Only an unconditional redirect from
+    // the exact registered path counts, and only for a redirect entry.
+    const config = (await import("../next.config")).default as { redirects?: () => Promise<{ source: string; has?: unknown }[]> };
+    const configured = new Set((await config.redirects?.() ?? []).filter(redirect => redirect.has === undefined)
+      .map(redirect => redirect.source));
+    const unbuilt = entries.filter(entry => !concretePaths(entry).some(candidate => builtUrls.has(candidate)
+      || (entry.kind === "redirect" && configured.has(candidate))));
     // The four native appeal/evidence endpoints reduce the remaining backlog,
     // and the reviewed claimant DELETE (api.future-person-delete) reduces it again.
     // The three reviewed auth endpoints (auth.sign-up-submit,
@@ -222,9 +232,11 @@ describe("the route register and the App Router describe the same surface", () =
     // more subjects endpoints, api.subjects, api.legal-evidence-upload-session
     // and api.subject-download, reduce it to 18. api.subject-export stays
     // unbuilt (its joint-result projection and TEST R2 run are reported back
-    // undecided).
+    // undecided). Counting the redirects `next.config.ts` serves as built
+    // removes legacy.signup and legacy.login, which were always built there,
+    // so 16 remain.
     // Keep the exact census: new implementations require an explicit review.
-    expect(unbuilt.length).toBe(18);
+    expect(unbuilt.length).toBe(16);
     expect(unbuilt.length).toBeLessThan(entries.length);
   });
 });

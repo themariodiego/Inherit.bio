@@ -1,3 +1,9 @@
+## 2026-10-16 — Route census: a redirect served by `next.config.ts` counts as built
+
+`scripts/route-register-correspondence.test.ts` "leaves the unbuilt half of the register alone, but still measures it" walks only `src/app`. `legacy.signup` (`/signup`) and `legacy.login` (`/login`) are served by unconditional permanent redirects in `next.config.ts`, which run before the App Router. `scripts/route-gate.ts` already checks their emitted 308 against the register, and `scripts/canonical-host.test.ts` checks the query is kept. They were built, but the census counted them as unbuilt.
+
+Test change: the test now loads `next.config.ts` redirects. An entry counts as built through one only when the entry's kind is `redirect` and the redirect is unconditional (no `has`) from the exact registered path. The exact census goes from 18 to 16, with a comment. No other assertion changes. Planted defect: deleting the `/signup` redirect from `next.config.ts` makes the test fail with 17 instead of 16.
+
 ## 2026-10-16 — A laboratory-table source could never publish: the call fence could not hash a call with no reference allele
 
 Hosted failure: PR 324, CI run 38943838371, job "browser (5)", commit 58922301. In `e2e/embryo-ingest-journey.spec.ts:46`, the step "a laboratory table answers its column and build questions and reaches native publication" failed in `runtime.runWorker` (`e2e/participant-c-journey.ts:194`) with "Embryo journey fixed local command failed; diagnostics withheld". That was the step's first hosted run. The SQL precondition before the worker had passed.
