@@ -345,6 +345,27 @@ describe("the public auth forms and endpoints (auth.sign-up-submit, auth.forgot-
     }
   });
 
+  it.each(["next-router-prefetch", "next-router-segment-prefetch"])(
+    "sets no auth form cookie for a %s request from a browser that holds none", async (header) => {
+      vi.stubEnv("BYOK_ENCRYPTION_KEY", Buffer.alloc(32, 9).toString("base64"));
+      try {
+        const prefetch = await authVisit("GET", "/auth/sign-up", { rsc: "1", [header]: "1" });
+        expect(prefetch.headers.get("set-cookie")).toBeNull();
+        expect(forwardedToken(prefetch)).toBeNull();
+        expect(prefetch.headers.get("cache-control")).toBe("private, no-store");
+        expect(mocks.sessionReads).toBe(0);
+        const page = await authVisit("GET", "/auth/sign-up");
+        const cookie = page.headers.get("set-cookie")!.split(";")[0]!;
+        const held = await authVisit("GET", "/auth/sign-up", { cookie, rsc: "1", [header]: "1" });
+        expect(held.headers.get("set-cookie")!.split(";")[0]).toBe(cookie);
+        expect(forwardedToken(held)).toMatch(/^[A-Za-z0-9_-]+\.[0-9a-f]{64}$/);
+      } finally {
+        vi.unstubAllEnvs();
+        vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "http://127.0.0.1:54321");
+        vi.stubEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY", "anon");
+      }
+    });
+
   it("never forwards a form token a client supplied itself", async () => {
     vi.stubEnv("BYOK_ENCRYPTION_KEY", Buffer.alloc(32, 9).toString("base64"));
     try {

@@ -283,6 +283,13 @@ function authFormPage(request: NextRequest, form: (typeof AUTH_FORM_PAGES)[strin
   const headers = new Headers(request.headers);
   headers.delete(AUTH_FORM_TOKEN_HEADER);
   if (request.method !== "GET") return withSensitiveHeaders(NextResponse.next({ request: { headers } }));
+  // A prefetch from another page (the header's sign-up link) must not hand
+  // that page's visitor an auth form cookie they never asked for. A browser
+  // already holding one, prefetching the form it shows, keeps it as before.
+  const prefetch = request.headers.has("next-router-prefetch") || request.headers.has("next-router-segment-prefetch");
+  if (prefetch && authFormSecret(request) === null) {
+    return withSensitiveHeaders(NextResponse.next({ request: { headers } }));
+  }
   let pair: ReturnType<typeof mintAuthForm>;
   try {
     pair = mintAuthForm(form, Date.now(), authFormSecret(request));
