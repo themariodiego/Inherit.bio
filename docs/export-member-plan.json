@@ -40,6 +40,14 @@
       "disposition": "excluded-protected",
       "reason": "Original case envelopes, wrapped keys and immutable authorship bindings stay private. The authorized native requester pager opens only the current author’s own statement; raw capsules, other people’s statements, contact data and reviewer notes are never archive rows."
     },
+    "private.auth_form_nonces": {
+      "disposition": "excluded-credential",
+      "reason": "Spent sign-up and forgot-password form nonce hashes and their ten-minute expiry. They prevent replay and must never be archive content."
+    },
+    "private.auth_recovery_sessions": {
+      "disposition": "excluded-credential",
+      "reason": "Password reset sessions: the SHA-256 of a reset cookie, the account, the revoked recovery-origin session and a 15-minute expiry. A one-use credential, never archive content."
+    },
     "private.appeal_document_fragments": {
       "disposition": "excluded-protected",
       "reason": "Sealed appeal identity/authority document fragments and reserved private object locators. Evidence bytes are excluded from member exports and retained only for actual cleanup."

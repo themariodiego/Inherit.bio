@@ -1,95 +1,13 @@
-"use client";
+import { headers } from "next/headers";
+import { SignUpForm } from "@/components/auth/sign-up-form";
+import { AUTH_FORM_TOKEN_HEADER } from "@/lib/auth/auth-form";
 
-import { route } from "@/lib/primary-routes";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
-import { AuthForm } from "@/components/auth/auth-form";
-import { createClient } from "@/lib/supabase/client";
-
-export default function SignUpPage() {
-  const router = useRouter();
-  const [sent, setSent] = useState<string | null>(null);
-
-  if (sent) {
-    return (
-      <div className="space-y-4">
-        <h1 className="display">Check your email</h1>
-        <p className="max-w-measure text-ink">
-          We sent a verification link to <strong>{sent}</strong>. Open it to
-          activate your account.
-        </p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="display">Create your account</h1>
-        <p className="mt-3 text-sm text-ink-muted">
-          Inherit is for adults (18+) and only for your own DNA. You
-          can&rsquo;t upload a child&rsquo;s or relative&rsquo;s file (
-          <Link
-            href="/terms#eligibility"
-            className="prose-link"
-          >
-            why?
-          </Link>
-          ). Your data stays yours.
-        </p>
-      </div>
-      <AuthForm
-        fields={[
-          { name: "email", label: "Email", type: "email", autoComplete: "email" },
-          {
-            name: "password",
-            label: "Password",
-            type: "password",
-            autoComplete: "new-password",
-            minLength: 8,
-          },
-        ]}
-        submitLabel="Sign up"
-        onSubmit={async ({ email, password }) => {
-          const supabase = createClient();
-          const { data, error } = await supabase.auth.signUp({
-            email,
-            password,
-            options: {
-              // `flow=signup` lets the callback say the email is confirmed
-              // when the link opens in another browser or after the PKCE
-              // flow state has expired.
-              emailRedirectTo: `${window.location.origin}/auth/callback?next=/overview&flow=signup`,
-            },
-          });
-          if (error) return error.message;
-          if (data.session) {
-            router.push("/overview");
-            router.refresh();
-            return null;
-          }
-          setSent(email);
-          return null;
-        }}
-      />
-      <p className="caption text-center">
-        By creating an account you agree to the{" "}
-        <Link href="/terms" className="prose-link">
-          Terms
-        </Link>{" "}
-        and{" "}
-        <Link href="/privacy" className="prose-link">
-          Privacy Policy
-        </Link>
-        .
-      </p>
-      <p className="border-t border-line py-4 text-center text-sm text-ink-muted">
-        Already have an account?{" "}
-        <Link href={route("auth.sign-in")} className="quiet-link">
-          Sign in
-        </Link>
-      </p>
-    </div>
-  );
+/**
+ * `/auth/sign-up` (register auth.sign-up). The proxy minted this render's
+ * one-time form token and set the cookie it is bound to
+ * (`src/lib/auth/auth-form.ts`); the form posts it to `/api/auth/sign-up`.
+ */
+export default async function SignUpPage() {
+  const formToken = (await headers()).get(AUTH_FORM_TOKEN_HEADER) ?? "";
+  return <SignUpForm formToken={formToken} />;
 }

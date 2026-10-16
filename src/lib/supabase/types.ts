@@ -7923,6 +7923,31 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: number
       }
+      purge_expired_auth_credentials_v1: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
+      admit_auth_public_request_v1: {
+        Args: {
+          p_form_nonce_hash: string
+          p_identifier_digests: Json
+          p_network_digests: Json
+          p_route_id: string
+        }
+        Returns: string
+      }
+      issue_auth_recovery_session_v1: {
+        Args: {
+          p_account_id: string
+          p_origin_session_id: string
+          p_session_hash: string
+        }
+        Returns: string
+      }
+      reset_password_with_recovery_v1: {
+        Args: { p_password_hash: string; p_session_hash: string }
+        Returns: string
+      }
       purge_future_person_claim_intakes_v1: {
         Args: Record<PropertyKey, never>
         Returns: number

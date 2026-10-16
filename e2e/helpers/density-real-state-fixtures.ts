@@ -3,7 +3,7 @@ import { createHash, randomUUID } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { expect, type Browser, type Page } from "@playwright/test";
-import { createConfirmedUser, signIn } from "../helpers";
+import { createConfirmedUser } from "../helpers";
 import { latestEmailTo } from "../helpers";
 import { DOCUMENTS } from "../accessibility-sweeps";
 import { densityCapturePlan, type DensityStateCase } from "../../scripts/density-capture-plan";
@@ -23,11 +23,13 @@ export function realPublicAndAuthDensityFixtures(input: {
   "Existing disposable local app required");
   const sourcePath = "e2e/helpers/density-real-state-fixtures.ts";
   const sourceSha256 = createHash("sha256").update(fs.readFileSync(path.join(input.root, sourcePath))).digest("hex");
-  const auth: Record<string, { path: string; submit: string; password?: string; reset?: boolean }> = {
+  // Sign-in still calls the auth service from the browser; the other three
+  // post to their own endpoint (owner decision 2026-10-16).
+  const auth: Record<string, { path: string; submit: string; password?: string; reset?: boolean; endpoint?: string }> = {
     "auth.sign-in": { path: "/auth/sign-in", submit: "Sign in", password: "synthetic-not-a-real-account" },
-    "auth.sign-up": { path: "/auth/sign-up", submit: "Sign up", password: "synthetic-not-a-real-account" },
-    "auth.forgot-password": { path: "/auth/forgot-password", submit: "Send reset link" },
-    "auth.reset-password": { path: "/auth/reset-password", submit: "Update password", reset: true },
+    "auth.sign-up": { path: "/auth/sign-up", submit: "Sign up", password: "synthetic-not-a-real-account", endpoint: "/api/auth/sign-up" },
+    "auth.forgot-password": { path: "/auth/forgot-password", submit: "Send reset link", endpoint: "/api/auth/forgot-password" },
+    "auth.reset-password": { path: "/auth/reset-password", submit: "Update password", reset: true, endpoint: "/api/auth/reset-password" },
   };
   const fixtures: DensityStateFixture[] = [];
   for (const row of densityCapturePlan(input.register, []).states) {
@@ -58,12 +60,23 @@ export function realPublicAndAuthDensityFixtures(input: {
           if (form?.reset || (route.id === "auth.forgot-password" && row.state === "complete")) {
             const password = "synthetic-reset-processing-password";
             await createConfirmedUser(address, password);
-            if (form?.reset) await signIn(page, address, password); // Existing real native session; no injected storage state.
+            if (form?.reset) {
+              // The real reset session: the forgot form, the mailed recovery link and the callback. No injected state.
+              await page.goto("/auth/forgot-password", { waitUntil: "domcontentloaded" });
+              await page.getByLabel("Email").fill(address);
+              await page.locator("form").getByRole("button", { name: "Send reset link", exact: true }).click();
+              await expect(page.getByRole("heading", { name: "Check your email", exact: true })).toBeVisible();
+              const recovery = await latestEmailTo(address);
+              const link = recovery && /https?:\/\/[^\s"<>]+verify[^\s"<>]*/u.exec(recovery.body)?.[0];
+              assert(link, "Actual original recovery mail required");
+              await page.goto(link.replace(/&amp;/gu, "&"));
+              await page.waitForURL(/\/auth\/reset-password$/u);
+            }
           }
           if (authForm && row.state === "processing") {
             const held = new Promise<void>(resolve => { release = resolve; });
             let intercepted = 0;
-            await page.route("**/auth/v1/**", async request => {
+            await page.route(form.endpoint ? `**${form.endpoint}` : "**/auth/v1/**", async request => {
               intercepted += 1;
               // Only an actual intercepted request creates settlement work.
               // A failed navigation must not await a request that never began.
@@ -110,7 +123,7 @@ export function realPublicAndAuthDensityFixtures(input: {
             const originalReply = page.waitForResponse(reply => {
               const url = new URL(reply.url());
               return reply.request().method() === "POST"
-                && url.pathname === (route.id === "auth.sign-up" ? "/auth/v1/signup" : "/auth/v1/recover");
+                && url.pathname === (route.id === "auth.sign-up" ? "/api/auth/sign-up" : "/api/auth/forgot-password");
             });
             await page.locator("form").getByRole("button", { name: form.submit, exact: true }).click();
             const reply = await originalReply;

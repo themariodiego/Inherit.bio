@@ -1,37 +1,16 @@
-"use client";
+import { cookies } from "next/headers";
+import { ResetPasswordForm } from "@/components/auth/reset-password-form";
+import { RESET_CSRF_COOKIE } from "@/lib/auth/auth-cookies";
+import { presentedResetCsrf } from "@/lib/auth/reset-session";
 
-import { useRouter } from "next/navigation";
-import { AuthForm } from "@/components/auth/auth-form";
-import { createClient } from "@/lib/supabase/client";
-
-export default function ResetPasswordPage() {
-  const router = useRouter();
-
-  return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="display">Choose a new password</h1>
-      </div>
-      <AuthForm
-        fields={[
-          {
-            name: "password",
-            label: "New password",
-            type: "password",
-            autoComplete: "new-password",
-            minLength: 8,
-          },
-        ]}
-        submitLabel="Update password"
-        onSubmit={async ({ password }) => {
-          const supabase = createClient();
-          const { error } = await supabase.auth.updateUser({ password });
-          if (error) return error.message;
-          router.push("/overview");
-          router.refresh();
-          return null;
-        }}
-      />
-    </div>
-  );
+/**
+ * `/auth/reset-password` (register auth.reset-password). A recovery link
+ * reaches it through the callback, which set this browser's reset session
+ * and the CSRF value bound to it (`src/lib/auth/reset-session.ts`). The page
+ * reads only that value; without a reset session the form still renders and
+ * its POST is refused as a spent link.
+ */
+export default async function ResetPasswordPage() {
+  const csrf = presentedResetCsrf((await cookies()).get(RESET_CSRF_COOKIE)?.value);
+  return <ResetPasswordForm csrf={csrf} />;
 }
