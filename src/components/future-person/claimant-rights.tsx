@@ -1,7 +1,7 @@
 "use client";
 import {useRef,useState} from "react";
 import {z} from "zod";
-import {CLAIMANT_DELETION_DAYS as DAYS,CLAIMANT_RIGHTS_COPY as COPY} from "@/copy/rights/claimant-rights";
+import {CLAIMANT_CONTACT_KEEP_DAYS as CONTACT_DAYS,CLAIMANT_DELETION_DAYS as DAYS,CLAIMANT_RIGHTS_COPY as COPY} from "@/copy/rights/claimant-rights";
 const recoveryReceipt=z.object({recoveryKey:z.string().regex(/^[0-9A-HJKMNP-TV-Z]{20}$/u),contactMaterialExpiresOn:z.string().regex(/^\d{4}-\d{2}-\d{2}$/u),
   reverificationBinding:z.literal("retained-until-account-binding-key-rotation-or-claimant-deletion"),
   recordRetention:z.literal("claimed-record-is-not-deleted-by-temporary-contact-expiry")}).strict();
@@ -43,7 +43,7 @@ export function ClaimantRights({csrf,recoveryNonce,analysisNonce,deletion}:{csrf
   return <section className="mx-auto max-w-3xl px-6 py-16">
     <h1 className="display text-4xl">Your claimed record</h1>
     <p className="mt-5 max-w-prose text-ink-muted">You control this record. Its genetic information is not shown on this page. You do not need an account.</p>
-    <p className="mt-4 max-w-prose text-ink-muted" data-slot="claimant-retention">{COPY.retention(DAYS.complete,DAYS.source)}</p>
+    <p className="mt-4 max-w-prose text-ink-muted" data-slot="claimant-retention">{COPY.retention(DAYS.complete,DAYS.source,CONTACT_DAYS)}</p>
     <fieldset className="mt-8" disabled={busy||recoveryKey!==null}>
       <legend className="font-semibold">Keep access without an account</legend>
       <p className="mt-4 max-w-prose text-ink-muted">Write your key on paper or print this page. It is shown once.</p>

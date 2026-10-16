@@ -2,7 +2,7 @@ import fs from "node:fs";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import { CLAIMANT_DELETION_DAYS, CLAIMANT_RIGHTS_COPY as COPY } from "@/copy/rights/claimant-rights";
+import { CLAIMANT_CONTACT_KEEP_DAYS, CLAIMANT_DELETION_DAYS, CLAIMANT_RIGHTS_COPY as COPY } from "@/copy/rights/claimant-rights";
 import { ClaimantRights } from "./claimant-rights";
 
 /**
@@ -16,14 +16,32 @@ const render = (deletion: { csrf: string; nonce: string } | null) => renderToSta
 
 describe("the claimed record's rights page", () => {
   it("states the retention in days: kept until asked, then deleted within 30 days and its DNA data within 7", () => {
-    expect(COPY.retention(30, 7)).toBe("Your record stays until you ask to delete it. Once you ask, we delete it "
-      + "within 30 days, and its DNA data within 7 days. The temporary contact address expires separately. "
+    // Owner decision 2026-10-16 ("Claimant retention stated in days (G5.4)"):
+    // the temporary contact sentence now states its 730 days.
+    expect(COPY.retention(30, 7, 730)).toBe("Your record stays until you ask to delete it. Once you ask, we delete it "
+      + "within 30 days, and its DNA data within 7 days. We keep the contact address you gave us for at most 730 days "
+      + "after your claim was approved. Deleting it does not delete your record. "
       + "Keep a Recovery Key so you can start a new claim later with fresh identity documents.");
     for (const deletion of [null, { csrf: "d".repeat(64), nonce: "n".repeat(40) }]) {
       const html = render(deletion);
       expect(html).toContain('data-slot="claimant-retention"');
-      expect(text(html)).toContain(COPY.retention(30, 7));
+      expect(text(html)).toContain(COPY.retention(30, 7, 730));
     }
+  });
+  it("states the temporary contact's 730 days, the number the database enforces", () => {
+    expect(CLAIMANT_CONTACT_KEEP_DAYS).toBe(730);
+    const html = text(render(null));
+    expect(html).toContain("for at most 730 days after your claim was approved");
+    expect(html).not.toMatch(/expires separately|24 months/);
+    const migration = fs.readFileSync("supabase/migrations/20261016175000_future_person_claimant_contact_730_days.sql", "utf8");
+    expect(migration).toContain("create function private.future_person_claimed_unbound_days_v1()\n"
+      + "returns integer language sql immutable set search_path='' as $$ select 730 $$;");
+    expect(migration).toContain("$new$contact_expiry:=v_now+make_interval(hours=>24*private.future_person_claimed_unbound_days_v1());$new$");
+    expect(migration).toContain("$new$and t.fixed_deadline=c.created_at+make_interval(hours=>24*private.future_person_claimed_unbound_days_v1()))$new$");
+    const register = fs.readFileSync("docs/retention.md", "utf8").split("\n")
+      .find(line => line.startsWith("| `future-person.claimed-unbound-24mo` |"))!;
+    expect(register).toContain("Exactly 730 days");
+    expect(register).not.toMatch(/24 months|24-month/);
   });
   it("gives the registered contact of last resort once, with or without the delete control", () => {
     expect(COPY.contact).toBe("If this page does not work, or you need help with your rights, write to privacy@inherit.bio.");
