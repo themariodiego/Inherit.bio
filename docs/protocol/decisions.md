@@ -4945,3 +4945,46 @@ Owner decisions (clickable chat answers) for `auth.sign-up-submit`,
   row, deletion job and retention-job test.
 - The review page and the notice state "730 days", because G5.4 requires
   retention stated in days.
+
+## 2026-10-16 — The subjects endpoints (G2.1)
+
+Owner decisions (clickable chat answers) for the six `/api/subjects*` endpoints:
+
+- **`api.subjects`:** build the reviewed-document branch of Path B as one
+  unit, TEST-LOCAL only with production off. It covers the new draft body and
+  `uploaded_document` evidence kind, the permission-document upload
+  (`api.legal-evidence-upload-session`), named-human review of that document,
+  `api.subjects` with the global contact bar, and the recipient activation step.
+- **`api.subject-download`:** build a revocable genome chunk session, with no
+  signed URLs, for the person's own data only (self, or an adult record whose
+  account is the caller). The uploader, grantee and embryo cases answer
+  `resource-not-found-v1` until their permission paths exist.
+- **`api.subject-export`:** a one-subject archive. It is the account producer
+  restricted to self or an adult record the caller owns, on the same TEST R2
+  pipeline. Joint results are included only while each other contributor's
+  permission is live. The audit log is left out with a stated reason, and the
+  audit schema is unchanged. Claimed-embryo export answers
+  `resource-not-found-v1` for now.
+- **`api.subject-transfer`:** a transferred adult record stays a separate
+  `other_adult` record, now owned by the person. A flagged migration widens the
+  ownership check, and transfer relocation rows plus a worker branch are added.
+  Original consents and the audit trail are kept, and no uploads are merged.
+- **`api.subject-delete`, self record:** deleting the self record empties it.
+  Every file, result, chat, permission and consent on it is revoked and purged,
+  and the record stays as the account's one self record.
+- **`api.subject-delete`, scope:** all five cases are built in one slice (self,
+  adult, transferred embryo, claimed embryo, other embryo), adding the missing
+  deletion functions. Every embryo case locks and rechecks the parents'
+  authority before the case is chosen.
+- **`api.subject-sharing`:** a UUID-addressed twin of `api.family-sharing`,
+  reusing the three existing sharing functions, with a new single-use stop
+  code tied to this route and subject, issued on the Family permissions page.
+
+## 2026-10-16 — Claimant retention stated in days (G5.4)
+
+- Owner decision (clickable chat answer): the claimant's temporary contact class
+  `future-person.claimed-unbound-24mo` is defined as exactly 730 days, and the
+  claimant page states it.
+- A claimed record stays until the claimant asks to delete it. The page
+  states the 30-day record and 7-day DNA deletion times, and that reading
+  satisfies G5.4.
