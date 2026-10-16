@@ -119,6 +119,12 @@ are recorded so a reviewer can overturn any one of them.
   write-once triggers, the table staging rule and table publication.
   `supabase/tests/embryo_table_mapping_route.sql` covers it. Its production
   release is guarded like every embryo migration.
+- Migration `20261016195000_embryo_table_call_hash.sql` lets the call fence
+  hash a table call, which has no reference allele. Before it, the fence
+  refused every table call at publication, so no table source could publish.
+  A reference allele still hashes exactly as before.
+  `supabase/tests/embryo_table_call_hash.sql` covers it. Its production
+  release is guarded too.
 - `docs/route-register.json` gains the table body and answer on configure, the
   three `pgt-mapping-challenge-v1` branches, a 200 decision answer, a
   `tableConfiguration` resolver clause and the table notes on chunks, worker and

@@ -1,3 +1,57 @@
+## 2026-10-16 — A laboratory-table source could never publish: the call fence could not hash a call with no reference allele
+
+Hosted failure: PR 324, CI run 38943838371, job "browser (5)", commit 58922301. In `e2e/embryo-ingest-journey.spec.ts:46`, the step "a laboratory table answers its column and build questions and reaches native publication" failed in `runtime.runWorker` (`e2e/participant-c-journey.ts:194`) with "Embryo journey fixed local command failed; diagnostics withheld". That was the step's first hosted run. The SQL precondition before the worker had passed.
+
+Root cause, reproduced on the shared database in a rolled-back transaction:
+
+- A table call is staged with no reference allele. `20261016120000_embryo_table_mapping_route.sql:477` drops NOT NULL, and its stage door requires the null (`:593`, ADR 0037).
+- `publish_embryo_split_v1` copies each staged call into `public.embryo_variants` (`20261016120000:766`). The insert trigger `zz_embryo_canonical_calls_fence` (`20260930243000_future_person_export_members.sql:70`) runs `private.guard_immutable_embryo_calls_v1` (`20260930245000_future_person_claimant_erasure.sql:1093-1121`). For a source the running worker publishes, it admits a call only when `private.embryo_call_value_hash_v1` of a staged call equals the new call's hash.
+- That hash (`20260930243000:27-33`) length-prefixes the reference allele with `private.length_prefix_utf8`, which is STRICT (`20260831224034_worker_jobs_v2.sql:3-7`). A NULL reference made the whole hash NULL. NULL never equals NULL, so the fence raised 42501 `embryo_source_unavailable` on the first table call. The publication rolled back.
+- The worker then failed closed. The RPC error became `unavailable` (`src/lib/embryos/split-worker.ts:141`, `:325`), the loop printed `split_failed` and exited 1 (`split-worker-loop.ts:61-62`, `scripts/embryo-split-worker.run.mts:17`), and the CI entry refused anything but `split_published` (`scripts/ci-embryo-journey.ts:91`).
+- Every table source fails this way. A VCF call always has a reference allele, so the VCF journeys pass.
+
+The in-memory half is correct. A scratch harness took the real fixture `e2e/fixtures/embryo-pair-table-unstated-build.csv` through the browser rewrite (answer `Bases` = genotype, GRCh38), the chunk route's table validation and per-embryo split, and `analyseEmbryoTableFragment` and `embryoOrdinalOutcome`. It gave one 2,400-record chunk and one fragment per embryo. Embryo 1 had 1200/1200 calls and embryo 2 had 1188/1200, and both passed QC. That is the same as `e2e/fixtures/embryo-pair-grch38.vcf` through the VCF path, down to the QC receipt.
+
+Why no test caught it. The table probe in `supabase/tests/embryo_canonical_sources.sql:246-254` publishes a table session, but its staged calls are the VCF-shaped calls of that suite, with a reference allele. `supabase/tests/embryo_split_worker.sql` stages table calls but never publishes them. The vitest fake database does not model the fence.
+
+The fix is new migration `supabase/migrations/20261016195000_embryo_table_call_hash.sql`, flagged: TEST-LOCAL, and it needs a later guarded release. `20261016120000` is not edited. It patches `private.embryo_call_value_hash_v1` in place with the same guard pattern as earlier patches: the exact predecessor body md5, one anchor, the pinned successor md5 and unchanged privileges. It also checks that a call with a reference allele hashes exactly as before.
+
+- A NULL reference is now encoded as the bytes `ff ff ff ff`, which is `int4send(-1)`. A length prefix can never be negative, so the encoding stays unambiguous.
+- Every non-NULL reference is encoded byte for byte as before. Every VCF hash, every existing index entry and the fence's exact row comparison are unchanged, and the fence admits only an exact staged call, as before.
+- It rebuilds `private.embryo_split_exact_call_lookup`, the fence's index, because the function's answer for NULL changed.
+
+There is no code-only fix. The stage door requires a NULL reference for a table (ADR 0037), and the fence requires a non-NULL hash. No TypeScript changes.
+
+Changed existing tests: none.
+
+New test `supabase/tests/embryo_table_call_hash.sql` has 24 assertions, 66 with the completed-upload fixture. It covers:
+
+- two frozen hash vectors for calls with a reference allele;
+- a NULL reference that hashes, never as `''` and never as a stated allele;
+- the hash staying closed to every API role, and the index being valid;
+- the fence's indexed lookup of a staged table call;
+- a table attempt through the worker's own doors (claim, stage, parts, finish, publish) that publishes two `pgt_table` sources and one QC failure, fenced as `exact-staged-calls-v1`;
+- published calls that are exactly the staged called bases, with no reference or alternate allele, each bound to its own source and digest;
+- no further call accepted after publication.
+
+Without the migration, two assertions fail ("a table call with no reference allele has a hash" and "the fence finds a staged table call by its hash"), and `publish_embryo_split_v1` raises `embryo_source_unavailable`, which ends the run. With it, 66/66 pass. Both planted defects failed named assertions:
+
+- A symmetric `00`/`01` reference marker, like the alternate allele's, changed every existing hash and failed both frozen vectors.
+- Encoding NULL as an empty reference failed "a missing reference allele never hashes as an empty one".
+
+Applying the migration twice stops at "embryo call hash predecessor differs".
+
+Local results:
+
+- `pnpm typecheck` and `pnpm lint` exit 0. `gate:secrets`, `gate:env`, `gate:routes`, `gate:sql-includes` and `gate:readability` exit 0.
+- Vitest: `scripts/ci-embryo-journey.test.ts`, `src/lib/embryos/split-worker.test.ts`, `upload-transport.test.ts`, `table-transport.test.ts`, `ingest-chunk.test.ts` and `scripts/embryo-pair-fixture.test.ts` pass, 222 tests. The full `pnpm test`, with `PLAYWRIGHT_BROWSERS_PATH` set for the browser-backed files, leaves six owned-runtime files failing. They are the same 40 tests that fail without this change, because they refuse to run as root.
+- pgTAP ran each suite in its own rolled-back transaction on the shared database, with and without the migration. The 36 existing `embryo_*` suites give identical results. So do nine future-person, archive, deletion, export and copilot suites that publish, export or erase embryo calls. For those nine, the one leftover quarantined claim document from browser runs was leased for one hour inside the same transaction, as before.
+- Pre-existing shared-database results are the same on both sides. `embryo_authority` stops at a fixture error, `embryo_ingest_session_configuration` fails one assertion, `embryo_ingest_sessions` fails two and `export_member_plan` fails three.
+- No other suite can see the change. Outside the two table suites, no test stages or fences a call with no reference allele.
+- The shared database was left as found: 246 ledger rows, the predecessor hash body and no pgtap extension.
+
+The full browser journey was not run locally. Its admission installer (`scripts/embryo-test-statistical-admission.ts`) refuses a database that holds accounts, and requires the ledger to equal every migration file. The shared database has 39 accounts and lacks five later migrations of this tree. `withEmbryoJourney` is bound to project `sequence` on port 54321, so a second stack cannot stand in for it. The hosted "browser (5)" run is the proof that the table step now reaches publication.
+
 ## 2026-10-16 — G5.4: the claimant's temporary contact is exactly 730 days, and the claimant page states it
 
 Owner decision 2026-10-16 ("Claimant retention stated in days (G5.4)", `docs/protocol/decisions.md`). The contact class `future-person.claimed-unbound-24mo` was `v_now+interval '24 months'` (`20260930237000_future_person_contact_retention.sql:17`). That is 730 or 731 days depending on the dates, so it could not be stated in days. It is now exactly 730 days. Part 2 of the decision needs no code change: a claimed record stays until the claimant asks, and the page keeps the 30-day record and 7-day DNA deletion times.
