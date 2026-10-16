@@ -5017,3 +5017,7 @@ Owner decisions (clickable chat answers) on questions raised while building
   is narrowed. It refuses only a family pair that is still pending or current,
   or one that still has joint results. The same change applies to
   `api.file-delete`.
+- **Subject export with joint results:** built in two steps. The one-subject
+  export ships first and refuses, with a stated reason, while the subject has
+  live joint results. The next slice adds the live-permission joint-result
+  projection and lifts that refusal.
