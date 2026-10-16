@@ -7,9 +7,13 @@ import {
   configureResult,
   configuredResponse,
   deriveHeaderBuild,
+  TABLE_CONFIGURATION_KEYS,
   isPermittedEvidenceLine,
+  isPermittedTableEvidenceLine,
   newTransportChallenge,
   readConfigureBody,
+  tableConfigureResult,
+  tableConfiguredResponse,
   terminalResponse,
 } from "./ingest-configure";
 
@@ -104,8 +108,10 @@ describe("the configure request body", () => {
     }
   });
 
-  it("refuses a format other than vcf, and names only closed fields", async () => {
-    expect(await readConfigureBody(post({ ...VALID, format: "pgt_table" }))).toEqual({ ok: false, issues: ["format"] });
+  it("refuses a format other than vcf or pgt_table, and names only closed fields", async () => {
+    // ADR 0037: `pgt_table` now selects the table's own closed body, which
+    // has no sample count, so a VCF body relabelled as a table is refused.
+    expect(await readConfigureBody(post({ ...VALID, format: "pgt_table" }))).toEqual({ ok: false, issues: ["body"] });
     const missing = { format: VALID.format, buildEvidence: VALID.buildEvidence, sampleCount: VALID.sampleCount };
     expect(await readConfigureBody(post(missing))).toEqual({ ok: false, issues: ["nonce"] });
     expect(await readConfigureBody(post({ ...missing, format: "gvcf", sampleCount: 0 })))
@@ -227,5 +233,76 @@ describe("the configure responses", () => {
       { status: "terminal", branch: "mapping", cohortId, ingestRevision: 1 },
       { status: "authorized" },
     ]) expect(configureResult.safeParse(value).success).toBe(false);
+  });
+});
+
+/**
+ * ADR 0037 (owner decision of 16 October 2026): a laboratory table has its
+ * own closed configure body. Its build comes only from its own
+ * `##reference`/`##contig` header lines, through the same product rule.
+ */
+describe("the laboratory-table configure body", () => {
+  const TABLE = { format: "pgt_table", buildEvidence: ["##reference=GRCh38"], nonce: "sealed.token" };
+
+  it("accepts the three closed fields, and no header lines at all", async () => {
+    expect(await readConfigureBody(post(TABLE))).toEqual({ ok: true, body: TABLE });
+    expect(await readConfigureBody(post({ ...TABLE, buildEvidence: [] }))).toEqual({ ok: true, body: { ...TABLE, buildEvidence: [] } });
+  });
+
+  it.each([
+    ["a sample count", { sampleCount: 3 }],
+    ["column names", { headerColumns: ["Embryo", "Genotype"] }],
+    ["a declared build", { referenceBuild: "GRCh38" }],
+    ["a sex field", { sex: "unknown" }],
+    ["a laboratory name", { labIdentifier: "Synthetic lab" }],
+  ])("refuses %s as an invalid request", async (_label, extra) => {
+    expect(await readConfigureBody(post({ ...TABLE, ...extra }))).toEqual({ ok: false, issues: ["body"] });
+  });
+
+  it.each([
+    "##fileformat=VCFv4.2", "#Embryo,Chromosome,Position,Genotype", "##source=SyntheticLab",
+    "##SAMPLE=<ID=A>", "# Build 38", "Embryo,Chromosome,Position,Genotype",
+  ])("refuses the header line %j before anything is written", async (line) => {
+    expect(await readConfigureBody(post({ ...TABLE, buildEvidence: ["##reference=GRCh38", line] })))
+      .toEqual({ ok: false, issues: ["buildEvidence"] });
+  });
+
+  it("permits only reference and contig lines for a table", () => {
+    expect(["##reference=GRCh37", GRCH38].every((line) => isPermittedTableEvidenceLine(line))).toBe(true);
+    expect(["##fileformat=VCFv4.3", "##source=x", "#CHROM"].some((line) => isPermittedTableEvidenceLine(line))).toBe(false);
+  });
+
+  it("refuses more than 64 lines, a line over 512 characters and a control character", async () => {
+    for (const buildEvidence of [Array.from({ length: 65 }, () => "##reference=GRCh38"),
+      [`##reference=${"x".repeat(BUILD_EVIDENCE_MAXIMUM_CHARACTERS)}`], ["##reference=GRCh38\tSample"]]) {
+      expect(await readConfigureBody(post({ ...TABLE, buildEvidence }))).toEqual({ ok: false, issues: ["buildEvidence"] });
+    }
+  });
+
+  it("decides the table's build by the same header rule: one stated build or none", () => {
+    expect(deriveHeaderBuild({ buildEvidence: ["##reference=GRCh38"] })).toBe("GRCh38");
+    expect(deriveHeaderBuild({ buildEvidence: [GRCH37] })).toBe("GRCh37");
+    for (const lines of [[], ["##reference=GRCh37", "##reference=GRCh38"], ["##reference=NCBI36"]]) {
+      expect(deriveHeaderBuild({ buildEvidence: lines })).toBeNull();
+    }
+  });
+
+  it("answers configured with exactly the one inspection nonce", async () => {
+    const response = await tableConfiguredResponse("sealed.inspection");
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ nonce: "sealed.inspection" });
+    expect([...TABLE_CONFIGURATION_KEYS]).toEqual(["nonce"]);
+    expect(response.headers.get("referrer-policy")).toBe("no-referrer");
+    expect(response.headers.get("cache-control")).toBe("private, no-store");
+  });
+
+  it("reads only the two closed table outcomes", () => {
+    const cohortId = "a0000000-0000-4000-8000-000000000001";
+    for (const value of [{ status: "configured", build: null }, { status: "configured", build: "GRCh38" },
+      { status: "failure_pending", cohortId, ingestRevision: 1 }]) expect(tableConfigureResult.safeParse(value).success).toBe(true);
+    for (const value of [{ status: "configured", build: "unknown" }, { status: "configured", build: null, revision: 3 },
+      { status: "terminal", branch: "build_unknown", cohortId, ingestRevision: 1 }]) {
+      expect(tableConfigureResult.safeParse(value).success).toBe(false);
+    }
   });
 });

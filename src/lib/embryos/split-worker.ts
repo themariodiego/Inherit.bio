@@ -7,7 +7,7 @@ import { enqueueCurrentEmbryoCarrier } from "./carrier-enqueue";
 import { embryoR2WriteTargetSchema, type EmbryoFragmentRpc, type EmbryoR2WriteTarget,
   type EmbryoStoredFragment } from "./fragment-storage";
 import { EmbryoTransportError } from "./ingest-lines";
-import { addMeasures, analyseEmbryoFragment, embryoOrdinalOutcome, emptyMeasure,
+import { addMeasures, analyseEmbryoFragment, analyseEmbryoTableFragment, embryoOrdinalOutcome, emptyMeasure,
   type EmbryoSplitRow } from "./split-analysis";
 
 /**
@@ -19,7 +19,9 @@ import { addMeasures, analyseEmbryoFragment, embryoOrdinalOutcome, emptyMeasure,
  *
  * For each embryo ordinal, in order: recheck the claim, read each of that
  * embryo's fragments, prove its size and SHA-256 against the locked manifest,
- * revalidate and parse it with the product parser, stage its validated rows,
+ * revalidate and parse it (a VCF fragment with the product VCF parser, a
+ * laboratory-table fragment with the same closed table record rule the
+ * chunk route applied, ADR 0037), stage its validated rows,
  * then record its QC outcome in its own transaction. An embryo that fails QC
  * keeps only a closed reason and the job continues. An embryo that passes is
  * recorded only after its canonical source has landed: each of its fragments
@@ -48,7 +50,7 @@ const fragmentSchema = z.object({ ordinal: z.number().int().min(0).max(63), sequ
   byteCount: z.number().int().min(1).max(4_004_096), sha256: hash, lineCount: z.number().int().min(1) }).strict();
 const claimSchema = z.object({ version: z.literal("embryo-split-claim-v1"), jobId: uuid,
   attempt: z.number().int().min(1).max(20), claimExpiresAt: date, deadline: date, sessionId: uuid, cohortId: uuid,
-  format: z.literal("vcf"), build: z.enum(["GRCh37", "GRCh38"]), embryoCount: z.number().int().min(1).max(64),
+  format: z.enum(["vcf", "pgt_table"]), build: z.enum(["GRCh37", "GRCh38"]), embryoCount: z.number().int().min(1).max(64),
   manifestSha256: hash, fragments: z.array(fragmentSchema).min(1).max(3200) }).strict();
 const leaseSchema = z.object({ version: z.literal("embryo-split-lease-v1"), jobId: uuid,
   attempt: z.number().int().min(1).max(20), claimExpiresAt: date, deadline: date, sessionId: uuid,
@@ -278,11 +280,14 @@ export async function runNextEmbryoSplit(options: {
       let measure = emptyMeasure();
       for (const fragment of byOrdinal[ordinal]) {
         const bytes = await readVerified(ordinal, fragment);
+        const stage = async (row: EmbryoSplitRow) => {
+          pending.push(row);
+          if (pending.length >= batchSize) await flush();
+        };
         try {
-          measure = addMeasures(measure, await analyseEmbryoFragment(bytes, ordinal, claim.build, async (row) => {
-            pending.push(row);
-            if (pending.length >= batchSize) await flush();
-          }));
+          measure = addMeasures(measure, claim.format === "pgt_table"
+            ? await analyseEmbryoTableFragment(bytes, claim.build, stage)
+            : await analyseEmbryoFragment(bytes, ordinal, claim.build, stage));
         } catch (error) {
           if (error instanceof EmbryoTransportError) {
             return await report(error.code === "build_unknown" ? "build" : "format");

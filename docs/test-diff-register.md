@@ -1,3 +1,61 @@
+## 2026-10-16 — Laboratory-table embryo ingest: configure, the mapping route and token rotation (ADR 0037)
+
+Under the owner's two decisions of 16 October, "Genome build for laboratory-table embryo sessions" and "Token rotation in the embryo mapping responses", the laboratory-table path is built under TEST-LOCAL. The configure route records a table as `pgt_table` from its own `##reference` and `##contig` lines: `explicit-header` when they state one build, otherwise `decision-required`, with no position-based inference. The new `src/app/api/embryo-ingest/[session]/mapping/route.ts` inspects the header copy once. It refuses a sex, gender, karyotype or proxy column, a non-table and an unmappable plan terminally, before any write except the failure mark. It asks at most one column question, then the GRCh37, GRCh38 or unknown question before any chunk, and `unknown` ends the upload. Every mapping answer carries the next nonce, and the answer that leaves nothing to decide carries the transport challenge, revision, completion nonce and CSRF token. The CSRF header rule is unchanged: only completion requires it. Table chunks answer `mappingRequired` (409) until the build is resolved and the transport issued. The split worker reads table fragments into the same canonical outputs, and a passing source is published as `embryo-autosomal-source.tsv` of type `pgt_table`. ADR 0037 records the readings taken where the register was silent.
+
+The new migration is `20261016120000_embryo_table_mapping_route.sql`. **Its production release is guarded**, like every embryo migration. It was applied to the shared local database with psql and its ledger row, with no reset. `supabase/tests/embryo_table_mapping_route.sql` adds 154 assertions. `docs/route-register.json` changes as follows:
+
+- `pgt-mapping-challenge-v1` now has `columns`, `build` and `transport` branches.
+- `embryo-ingest-decision-v1` answers 200 with the next branch, in place of 204.
+- `embryo-table-configuration-v1` is new.
+- The configure route gains the table body.
+- `policyResolvers.embryo-ingest-session-v1` gains `tableConfiguration`.
+- The chunk, worker and completion entries gain table notes.
+
+Modified assertions, none weakened:
+
+- `src/lib/embryos/ingest-configure.test.ts`: a VCF body relabelled `format: "pgt_table"` was refused with `["format"]`. It is now refused with `["body"]`, because `pgt_table` selects the table's own strict body, which has no `sampleCount`. The test is retitled "refuses a format other than vcf or pgt_table". `gvcf` still answers `format`.
+- `src/app/api/embryo-ingest/[session]/configure/route.test.ts`: the same row is now `["a table format carrying a VCF's sample count", { format: "pgt_table" }, ["body"]]`. It still refuses before any database call.
+- `supabase/tests/embryo_split_worker.sql`: "a laboratory-table attempt ends with the closed format code" is replaced by two probes through one helper. A `pgt_table` attempt is now claimed (`pgt_table / none:running`). `gvcf` still ends `none / format:failed`, so the closed format code keeps its assertion. Six new staging assertions follow:
+  - a VCF row with no reference allele is refused;
+  - a table row is stored with no reference or alternate allele;
+  - a table row claiming a reference allele is refused;
+  - a partial table call is refused;
+  - an `N` call is refused;
+  - the `23514` constraint refuses an alternate allele with no reference allele.
+- `src/lib/embryos/split-worker.test.ts`: the database double's allele check is unchanged for VCF rows. Table rows must carry `[null, null]` and called bases only.
+- `src/lib/embryos/upload-transport.test.ts`: the VCF test server now throws on any non-VCF configure body before reading `sampleCount`. This is stricter.
+- `scripts/route-register-correspondence.test.ts`: the unbuilt census goes from 26 to 25, with a comment naming `api.embryo-ingest-mapping`. The reviewed `src/components/embryo/upload/upload-stage.tsx` is re-pinned to `84d2461d…`. Its native form count stays 2, because the new question panel uses no `<form>`.
+- `src/lib/primary-routes.test.ts`: `EXPECTED_IDS` gains `api.embryo-ingest-mapping`.
+- `scripts/comprehension/participant-c-seed.ts`: `publishedEmbryoFiles` takes an optional `fileType`, `vcf` by default. `participantCPublication` still accepts only `vcf`, and a new case proves it refuses `pgt_table` files.
+- `data/ref/lab-tables/column-synonyms.json`: the forbidden list gains the register's proxies `biologicalsex`, `male`, `female`, `x`, `y`, `m` and `mt`. This is stricter.
+
+Copy changes. `FILE_FORMAT_BODY` now reads "Choose one VCF file, or one table from your laboratory, with at least two embryos." The column and build questions are new strings that use registered plain words.
+
+The browser journey. `e2e/embryo-ingest-journey.spec.ts` keeps its title, its single case and `test.setTimeout(300_000)`. A step after the fitted case adds 180 s and runs one more fresh cohort through `withTableJourney` (new in `scripts/ci-embryo-journey.ts`). The cohort uses `e2e/fixtures/embryo-pair-table-unstated-build.csv`, which is derived from `embryo-pair-grch38.vcf` by `scripts/embryo-pair-table-fixture.ts`. The step answers the column question (`Bases`) and the build question (GRCh38). It requires the request order: configure, one inspection, two decisions, chunks, completion. It requires that no request carries an embryo label or the file's comment, and that no decision carries a column name. It then requires publication of two `pgt_table` sources by the real worker. `withTableJourney` admits only an untouched `pgt_table`, `decision-required`, GRCh38, `chrom-pos` cohort of `table-test@e2e.local` after the original publication. `scripts/ci-embryo-journey.test.ts` gains 8 cases for it.
+
+**This journey has not run.** It runs only in the isolated GitHub-hosted runtime (`playwright.config.ts:26-30`, `assertCiRuntime`). Locally, `flock /tmp/inherit-e2e.lock node --import tsx scripts/run-upload-browser.mts --full -- e2e/embryo-ingest-journey.spec.ts` exits 1 with "No tests found", after the provider preflight passes. The upload page's local spec was run the same way: `-- e2e/embryos.spec.ts` passed all 16 cases with no skips or retries. The runner then exited 1 on its own final invariant, "No browser upload crossed the actual provider proxy", because that spec makes no Storage upload.
+
+Planted regressions:
+
+- Dropping the forbidden-column check in `inspectHeader` failed 15 tests.
+- Dropping the chunk route's `mappingRequired` guard failed 2.
+- A pgTAP copy with the decision-nonce check removed failed 6, starting with "only the nonce issued with this challenge answers it".
+
+All three were reverted.
+
+Validation. Each of these exits 0:
+
+- `pnpm typecheck`, `pnpm lint`;
+- `pnpm gate:secrets`, `gate:env`, `gate:routes`, `gate:sql-includes`, `gate:readability` (3369 blocks);
+- the production build (`pnpm build`, with `node_modules` bind-mounted and the symlink restored).
+
+The full `npx vitest run` passes 12,799 tests, with 40 failures in 6 files. Every failure is environment-bound:
+
+- `manual-reconciliation` and `owned-lifecycle`, as known when run as root;
+- `ci-browser-runtime`, `owned-linux-runtime`, `account-archive-root/checkpoint` and `ci-browser/owned-control-close`, which fail the same 28 tests on a clean checkout of `7e3ce3f5`.
+
+35 of the 37 embryo pgTAP suites pass. `embryo_authority.sql` and `embryo_ingest_session_configuration.sql` (test 103) read global rows of the shared database, a `consent_signatures` reference and two existing `genome_files`, and fail for that reason.
+
 ## 2026-10-16 — TEST-LOCAL embryo capabilities as shipped-degraded, and the Copilot system prompts as a claim surface
 
 G7.4, under the owner's decision "TEST-LOCAL capabilities in the capability register". Embryo ingest (VCF only), embryo quality and embryo comparison move from `not shipped` to `shipped-degraded` in `docs/capability-register.md`. Each row now opens with the state production users see. No real jurisdiction permits `embryo_analysis`, so `/embryos/upload`, `/embryos/[embryoId]` and `/embryos/compare` render `EmbryoUnavailable` (`data-slot="jurisdiction-unavailable"`) with "This part of Inherit is not available here because its legal review is not complete." `e2e/embryos.nojurisdiction.spec.ts` proves it. Counts move to shipped 7 · shipped-degraded 15 · withheld 0 · not shipped 4. Production behaviour and every flag are unchanged, and G7.4 stays NO.

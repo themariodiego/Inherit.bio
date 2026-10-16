@@ -65,6 +65,7 @@ const EXPECTED_IDS: readonly RouteId[] = [
   "api.embryo-cohort-drafts",
   "api.embryo-cohorts",
   "api.embryo-ingest-configure",
+  "api.embryo-ingest-mapping",
   "api.embryo-ingest-chunk",
   "api.embryo-ingest-complete",
   "marketing.providers",

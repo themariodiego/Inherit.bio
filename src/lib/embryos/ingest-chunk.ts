@@ -4,10 +4,12 @@ import crypto from "node:crypto";
 import { z } from "zod";
 import { SENSITIVE_HEADERS, sensitiveJson } from "./api";
 import type { ServerTransportBinding } from "./ingest-binding";
-import type { IngestAuthorization } from "./ingest-http";
+import type { IngestAuthorization, IngestAuthorizationArgs } from "./ingest-http";
 import { EmbryoTransportError } from "./ingest-lines";
 import type { RouteFailureCode } from "./ingest-failure";
 import { validateEmbryoVcfChunk } from "./vcf-transport";
+import { embryoTableFragments, validateEmbryoTableChunk, type TableServerBinding } from "./table-transport";
+import type { PgtLocusKind } from "../genome/parsers/pgt-table";
 
 /**
  * The in-memory half of `PUT /api/embryo-ingest/[session]/chunks/[sequence]`
@@ -59,6 +61,38 @@ export function chunkBinding(bytes: Uint8Array, authority: Authorized): ServerTr
   };
 }
 
+/**
+ * The table counterpart of `chunkBinding` (ADR 0037): the same challenge,
+ * revision and handle binding, plus the locus kind the mapping route
+ * recorded and the server reference store for rsID loci. Null for anything
+ * but a table session whose build is resolved and whose transport and locus
+ * are issued, or when the header names another challenge or revision.
+ */
+export function tableChunkBinding(
+  bytes: Uint8Array,
+  authority: Authorized,
+  locusKind: PgtLocusKind | null,
+  resolveRsid: TableServerBinding["resolveRsid"],
+): TableServerBinding | null {
+  if (authority.format !== "pgt_table" || authority.build === null || authority.challengeHash === null || locusKind === null) return null;
+  const prefix = new TextDecoder("utf-8", { fatal: false }).decode(bytes.subarray(0, 512));
+  const lines = prefix.split("\n");
+  if (lines[0] !== "##inheritTable=1") return null;
+  const match = CHALLENGE_LINE.exec(lines[2] ?? "");
+  if (!match || match[2] !== String(authority.transportRevision)) return null;
+  if (!sameDigest(sha256Hex(match[1]), authority.challengeHash)) return null;
+  const ordinals = new Map(authority.handles.map((handle) => [handle.hash, handle.ordinal]));
+  return {
+    challenge: match[1],
+    revision: authority.transportRevision,
+    build: authority.build,
+    sampleCount: authority.sampleCount,
+    locusKind,
+    resolveRsid,
+    resolveHandle: (handle) => ordinals.get(sha256Hex(handle)) ?? null,
+  };
+}
+
 export interface ReservedFragment {
   ordinal: number;
   bytes: Uint8Array;
@@ -102,6 +136,31 @@ export function validateChunk(bytes: Uint8Array, binding: ServerTransportBinding
         sha256: sha256Hex(encoded),
         lines: fragment.vcf.split("\n").length - 1,
       };
+    }),
+  };
+}
+
+/**
+ * The whole table chunk, validated by `validateEmbryoTableChunk` before any
+ * fragment is handed to a writer, split into one neutral fragment per
+ * embryo with a retained row, and measured for the reservation. Every line
+ * after the column line is a logical record, retained or not.
+ */
+export function validateTableChunk(bytes: Uint8Array, binding: TableServerBinding): ValidatedChunk {
+  const records = validateEmbryoTableChunk(bytes, binding);
+  const lines = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(bytes).slice(0, -1).split("\n");
+  const recordCount = lines.length - 4;
+  let maximumLineBytes = 1;
+  for (const line of lines) maximumLineBytes = Math.max(maximumLineBytes, encoder.encode(line).byteLength);
+  lines.length = 0;
+  return {
+    sha256: sha256Hex(bytes),
+    byteCount: bytes.byteLength,
+    recordCount,
+    maximumLineBytes,
+    fragments: embryoTableFragments(records, binding.build).map((fragment) => {
+      const encoded = encoder.encode(fragment.table);
+      return { ordinal: fragment.ordinal, bytes: encoded, sha256: sha256Hex(encoded), lines: fragment.table.split("\n").length - 1 };
     }),
   };
 }
@@ -160,6 +219,39 @@ export function isPdf(bytes: Uint8Array): boolean {
 
 /** A header that names no issued challenge, revision or handle. */
 export const headerRejection: ChunkRejection = { code: "header", response: invalidChunk("header") };
+
+/**
+ * `embryo-ingest-chunk-v1.mappingRequired`: 409 and a constant body. A table
+ * chunk sent before the mapping route resolved the build and issued the
+ * transport writes nothing and is nonterminal: the live session and its
+ * fixed due target are untouched.
+ */
+export function mappingRequired(): Response {
+  return noReferrer(sensitiveJson({ error: "mapping_required" }, 409));
+}
+
+type LocusRpc = (args: {
+  p_account_id: string; p_auth_session_id: string; p_ingest_session_id: string;
+  p_cookie_hash: string; p_origin: string; p_test_jurisdiction: true;
+}) => PromiseLike<{ data: unknown; error: unknown }>;
+
+/**
+ * The locus kind the mapping route recorded for this table session, read
+ * through the credential-filtered `embryo_ingest_table_locus_v1`; null until
+ * the transport is issued. Throws when the read fails or answers outside
+ * the closed vocabulary, so the caller answers the retryable 503.
+ */
+export async function tableLocus(credentials: IngestAuthorizationArgs, rpc: LocusRpc): Promise<PgtLocusKind | null> {
+  const { data, error } = await rpc({
+    p_account_id: credentials.p_account_id, p_auth_session_id: credentials.p_auth_session_id,
+    p_ingest_session_id: credentials.p_ingest_session_id, p_cookie_hash: credentials.p_cookie_hash,
+    p_origin: credentials.p_origin, p_test_jurisdiction: credentials.p_test_jurisdiction,
+  });
+  if (error) throw new Error("table locus unavailable");
+  if (data === null) return null;
+  if (data === "rsid" || data === "chrom-pos") return data;
+  throw new Error("table locus unavailable");
+}
 
 /** `embryo-ingest-chunk-v1.success`: 204, empty. */
 export function chunkStored(): Response {
