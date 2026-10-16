@@ -27,18 +27,26 @@ import {
  * alone. Both bypass the jurisdiction gate: they are rights, not features
  * (register family.permissions.rightActions). Both triggers are outline
  * buttons; only the confirmation inside the dialog is destructive.
+ *
+ * Pause and resume go to the person route (api.family-sharing). Stop goes to
+ * its UUID-addressed twin (api.subject-sharing) with the single-use stop
+ * code this page issued for that route and this person's record (owner
+ * decision 2026-10-16); both routes run the same sharing functions.
  */
 export function SharingActions({
   personName,
   personSegment,
+  subjectId,
   paused,
   stopNonce,
 }: {
   personName: string;
   /** The `s-{uuid}` segment the sharing endpoint resolves to one counterpart. */
   personSegment: string;
+  /** The same record's UUID, which the stop route resolves the same way. */
+  subjectId: string;
   paused: boolean;
-  /** The one-time operation nonce this page minted for the stop. */
+  /** The single-use stop code this page issued for the stop route and this record. */
   stopNonce: string;
 }) {
   const router = useRouter();
@@ -49,7 +57,10 @@ export function SharingActions({
   async function send(operation: "pause" | "resume" | "stop") {
     setPending(true);
     setFailed(false);
-    const response = await fetch(`/api/family/${personSegment}/sharing`, {
+    const endpoint = operation === "stop"
+      ? `/api/subjects/${subjectId}/sharing`
+      : `/api/family/${personSegment}/sharing`;
+    const response = await fetch(endpoint, {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify(
