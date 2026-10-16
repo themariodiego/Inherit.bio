@@ -1,12 +1,17 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import crypto from "node:crypto";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
   exchange: vi.fn(), verify: vi.fn(), user: vi.fn(), mark: vi.fn(),
+  setSession: vi.fn(), rpc: vi.fn(), signOut: vi.fn(), fetch: vi.fn(),
 }));
 vi.mock("@/lib/supabase/server", () => ({ createClient: async () => ({ auth: {
-  exchangeCodeForSession: mocks.exchange, verifyOtp: mocks.verify, getUser: mocks.user,
+  exchangeCodeForSession: mocks.exchange, verifyOtp: mocks.verify, getUser: mocks.user, setSession: mocks.setSession,
 } }) }));
+vi.mock("@/lib/supabase/admin", () => ({ createAdminClient: () => ({ rpc: mocks.rpc, auth: { admin: { signOut: mocks.signOut } } }) }));
 vi.mock("@/lib/family/independent-login", () => ({ markIndependentLogin: mocks.mark }));
 import { signInMessage } from "@/copy/sign-in";
+import { PKCE_COOKIE, RESET_CSRF_COOKIE, RESET_SESSION_COOKIE } from "@/lib/auth/auth-cookies";
+import { newPkceFlow } from "@/lib/auth/pkce-state";
 import { GET } from "./route";
 
 type Query = Record<string, string>;
@@ -156,5 +161,128 @@ describe("used or expired email links", () => {
       expect(response.headers.get("location")).toBe("https://inherit.example.test/auth/sign-in?error=verification_failed#");
     }
     expect(mocks.exchange).not.toHaveBeenCalled();
+  });
+});
+
+/**
+ * The flows `/api/auth/sign-up` and `/api/auth/forgot-password` start carry
+ * a `state` (register auth.callback `queryContract.closed.state`, `policy.PKCE`).
+ */
+describe("server-started flows with a PKCE state", () => {
+  const ACCOUNT = "7a000000-0000-4000-8000-000000000001";
+  const SESSION = "7a000000-0000-4000-8000-000000000011";
+  const accessToken = (sub = ACCOUNT, sessionId = SESSION) =>
+    `h.${Buffer.from(JSON.stringify({ sub, session_id: sessionId })).toString("base64url")}.s`;
+  const cookieValue = (setCookie: string) => setCookie.slice(setCookie.indexOf("=") + 1, setCookie.indexOf(";"));
+
+  function stateLink(flow: ReturnType<typeof newPkceFlow> | null, state: string, extra: Query = {}) {
+    const url = new URL("https://inherit.example.test/auth/callback");
+    for (const [name, value] of Object.entries(extra)) url.searchParams.set(name, value);
+    url.searchParams.set("code", "synthetic-code");
+    url.searchParams.set("state", state);
+    return new Request(url, { headers: flow ? { cookie: `${PKCE_COOKIE}=${cookieValue(flow.setCookie)}` } : {} });
+  }
+  function tokenAnswer(token = accessToken()) {
+    return Response.json({ access_token: token, refresh_token: "synthetic-refresh", user: { id: ACCOUNT } }, { status: 200 });
+  }
+
+  beforeEach(() => {
+    vi.stubEnv("BYOK_ENCRYPTION_KEY", crypto.randomBytes(32).toString("base64"));
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "http://127.0.0.1:54321");
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY", "anon-key");
+    vi.stubGlobal("fetch", mocks.fetch);
+    mocks.fetch.mockResolvedValue(tokenAnswer());
+    mocks.setSession.mockResolvedValue({ error: null });
+    mocks.rpc.mockResolvedValue({ data: "issued", error: null });
+    mocks.signOut.mockResolvedValue({ error: null });
+  });
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.unstubAllGlobals();
+  });
+
+  it("exchanges a sign-up code once with this browser's verifier, signs in and goes to the fixed destination", async () => {
+    const flow = newPkceFlow("signup");
+    const response = await GET(stateLink(flow, flow.state, { next: "//external.example.test", flow: "signup" }));
+    expect(response.headers.get("location")).toBe("https://inherit.example.test/overview");
+    const [target, init] = mocks.fetch.mock.calls[0]!;
+    expect(String(target)).toBe("http://127.0.0.1:54321/auth/v1/token?grant_type=pkce");
+    const body = JSON.parse(String((init as RequestInit).body)) as { auth_code: string; code_verifier: string };
+    expect(body.auth_code).toBe("synthetic-code");
+    expect(crypto.createHash("sha256").update(body.code_verifier).digest("base64url")).toBe(flow.codeChallenge);
+    expect(mocks.fetch).toHaveBeenCalledOnce();
+    expect(mocks.setSession).toHaveBeenCalledExactlyOnceWith({ access_token: accessToken(), refresh_token: "synthetic-refresh" });
+    expect(mocks.mark).toHaveBeenCalledExactlyOnceWith(ACCOUNT);
+    expect(mocks.exchange).not.toHaveBeenCalled();
+    expect(response.headers.getSetCookie()).toEqual([expect.stringMatching(new RegExp(`^${PKCE_COOKIE}=; Path=/; Max-Age=0;`))]);
+  });
+
+  it("turns a recovery code into a reset session, never a signed-in session", async () => {
+    const flow = newPkceFlow("recovery");
+    const response = await GET(stateLink(flow, flow.state));
+    expect(response.headers.get("location")).toBe("https://inherit.example.test/auth/reset-password");
+    expect(mocks.setSession).not.toHaveBeenCalled();
+    expect(mocks.mark).not.toHaveBeenCalled();
+    expect(mocks.rpc).toHaveBeenCalledExactlyOnceWith("issue_auth_recovery_session_v1", {
+      p_session_hash: expect.stringMatching(/^[0-9a-f]{64}$/), p_account_id: ACCOUNT, p_origin_session_id: SESSION,
+    });
+    const cookies = response.headers.getSetCookie();
+    expect(cookies.map((line) => line.slice(0, line.indexOf("=")))).toEqual([RESET_SESSION_COOKIE, RESET_CSRF_COOKIE, PKCE_COOKIE]);
+    expect(cookies[0]).toMatch(/; Max-Age=900; HttpOnly; SameSite=Strict$/);
+    const secret = cookieValue(cookies[0]!);
+    const { p_session_hash } = mocks.rpc.mock.calls[0]![1] as { p_session_hash: string };
+    expect(crypto.createHash("sha256").update(secret).digest("hex")).toBe(p_session_hash);
+    expect(response.headers.get("location")).not.toContain(secret);
+    expect(response.headers.get("location")).not.toContain("synthetic");
+  });
+
+  it("revokes the exchanged session when no reset session could be issued", async () => {
+    mocks.rpc.mockResolvedValueOnce({ data: null, error: { code: "42501", message: "not_found" } });
+    const flow = newPkceFlow("recovery");
+    const response = await GET(stateLink(flow, flow.state));
+    expect(response.headers.get("location")).toBe("https://inherit.example.test/auth/sign-in?error=verification_failed#");
+    expect(mocks.signOut).toHaveBeenCalledExactlyOnceWith(accessToken(), "local");
+    expect(response.headers.getSetCookie().map((line) => line.slice(0, line.indexOf("=")))).toEqual([PKCE_COOKIE]);
+  });
+
+  it("exchanges nothing for a state this browser does not hold", async () => {
+    const flow = newPkceFlow("recovery");
+    const other = newPkceFlow("recovery");
+    for (const request of [stateLink(flow, other.state), stateLink(null, flow.state), stateLink(flow, "not-a-state")]) {
+      const response = await GET(request);
+      expect(response.headers.get("location")).toBe("https://inherit.example.test/auth/sign-in?error=verification_failed#");
+      expect(response.headers.getSetCookie().map((line) => line.slice(0, line.indexOf("=")))).toEqual([PKCE_COOKIE]);
+    }
+    expect(mocks.fetch).not.toHaveBeenCalled();
+    expect(mocks.rpc).not.toHaveBeenCalled();
+  });
+
+  it("says a sign-up email is confirmed when the link is opened in another browser", async () => {
+    const flow = newPkceFlow("signup");
+    const { location, message } = signInTarget(await GET(stateLink(null, flow.state, { next: "/overview", flow: "signup" })));
+    expect(location).toBe("https://inherit.example.test/auth/sign-in?notice=email_confirmed&next=%2Foverview#");
+    expect(message).toEqual({ role: "status", text: "Your email is confirmed. Sign in to continue." });
+    expect(mocks.fetch).not.toHaveBeenCalled();
+  });
+
+  it.each(["flow_state_expired", "flow_state_not_found", "bad_code_verifier"])(
+    "says a sign-up email is confirmed when its exchange fails with %s", async (code) => {
+      mocks.fetch.mockResolvedValueOnce(Response.json({ error_code: code }, { status: 400 }));
+      const flow = newPkceFlow("signup");
+      const { location } = signInTarget(await GET(stateLink(flow, flow.state, { flow: "signup" })));
+      expect(location).toBe("https://inherit.example.test/auth/sign-in?notice=email_confirmed&next=%2Foverview#");
+      expect(mocks.setSession).not.toHaveBeenCalled();
+    },
+  );
+
+  it("refuses an exchange answer whose token does not name the user, or a failed recovery exchange", async () => {
+    mocks.fetch.mockResolvedValueOnce(tokenAnswer(accessToken("7a000000-0000-4000-8000-0000000000ff")));
+    const flow = newPkceFlow("recovery");
+    expect(signInTarget(await GET(stateLink(flow, flow.state))).location)
+      .toBe("https://inherit.example.test/auth/sign-in?error=verification_failed#");
+    mocks.fetch.mockResolvedValueOnce(Response.json({ error_code: "flow_state_expired" }, { status: 400 }));
+    expect(signInTarget(await GET(stateLink(flow, flow.state))).location)
+      .toBe("https://inherit.example.test/auth/sign-in?error=verification_failed#");
+    expect(mocks.rpc).not.toHaveBeenCalled();
   });
 });

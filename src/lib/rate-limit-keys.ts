@@ -13,7 +13,8 @@ import { sourceNetwork } from "@/lib/source-network";
  * them.
  *
  * This is the only module that may read the client's source network (owner
- * decision, 28 September 2026): `networkBucketDigests` is its one use, and
+ * decision, 28 September 2026, extended to the public auth endpoints on
+ * 16 October 2026): `networkBucketDigests` is its one use, and
  * `scripts/jurisdiction-inference.test.ts` fails any other. The network is
  * never used to decide a jurisdiction.
  */
@@ -22,7 +23,15 @@ import { sourceNetwork } from "@/lib/source-network";
 export type NetworkLimitedOperation =
   | "global-contact-refusal-bar-v1.invitation-attempt"
   | "api.future-person-claim"
-  | "api.subject-access-request";
+  | "api.subject-access-request"
+  | AuthLimitedOperation;
+
+/**
+ * The two public auth forms (owner decision 2026-10-16): sign-up counts 5 an
+ * hour per normalized email and 20 an hour per network, forgot-password 3 and
+ * 10. The ceilings live in `private.admit_auth_public_request_v1`.
+ */
+export type AuthLimitedOperation = "auth.sign-up-submit" | "auth.forgot-password-submit";
 
 export const INVITATION_ATTEMPT_OPERATION = "global-contact-refusal-bar-v1.invitation-attempt";
 export const CLAIM_START_OPERATION = "api.future-person-claim";
@@ -60,4 +69,13 @@ export function invitationQuotaKeys(accountId: string, headers: Headers): Invita
  */
 export function claimIdentifierDigests(mode: string, identifier: string): DigestSet {
   return keyedDigestSet("rate-limit", `${CLAIM_START_OPERATION}|identifier|${mode}|${identifier}`);
+}
+
+/**
+ * auth.sign-up-submit and auth.forgot-password-submit: the normalized email,
+ * namespaced by the operation, under every rate-limit revision. The address
+ * itself is never stored or sent to the database.
+ */
+export function authIdentifierDigests(operation: AuthLimitedOperation, normalizedEmail: string): DigestSet {
+  return keyedDigestSet("rate-limit", `${operation}|normalized-identifier|${normalizedEmail}`);
 }

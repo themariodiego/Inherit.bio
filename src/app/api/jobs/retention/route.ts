@@ -173,6 +173,15 @@ export async function POST(request: Request) {
   if (rateLimitPurgeError) failed++;
   else if (typeof purgedBuckets === "number") processed += purgedBuckets;
 
+  // auth.sign-up-submit / auth.forgot-password-submit form nonces after their
+  // ten-minute token lifetime, and reset sessions after their 15 minutes
+  // (authContracts.reset-session-api-v1). Independent of every other queue.
+  const { data: purgedAuthCredentials, error: authCredentialPurgeError } = await admin.rpc(
+    "purge_expired_auth_credentials_v1",
+  );
+  if (authCredentialPurgeError) failed++;
+  else if (typeof purgedAuthCredentials === "number") processed += purgedAuthCredentials;
+
   // Claim documents (evidence.ingest-session-24h, future-person.claim-intake-
   // session-24h): delete the objects the database lists as due (fragments,
   // refused documents, everything of an ended claim) and confirm each batch,

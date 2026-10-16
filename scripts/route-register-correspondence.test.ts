@@ -24,7 +24,7 @@ import { storageBucketsInSource, UNRESOLVED_STORAGE_BUCKET } from "./storage-con
  *
  * Registered-but-unbuilt is deliberately not failed here. The register is
  * written from the brief and describes routes the product has not reached
- * yet; 27 of them remain unbuilt after the native appeal review and notice routes.
+ * yet; 23 of them remain unbuilt after the native appeal review, notice and auth routes.
  * The exact current count prevents a broken walker from passing silently.
  *
  * Known divergences live in `docs/route-divergence.json` and are checked in
@@ -212,8 +212,11 @@ describe("the route register and the App Router describe the same surface", () =
     const unbuilt = entries.filter(entry => !concretePaths(entry).some(candidate => builtUrls.has(candidate)));
     // The four native appeal/evidence endpoints reduce the remaining backlog,
     // and the reviewed claimant DELETE (api.future-person-delete) reduces it again.
+    // The three reviewed auth endpoints (auth.sign-up-submit,
+    // auth.forgot-password-submit, auth.reset-password-submit; owner decision
+    // 2026-10-16) reduce it from 26 to 23.
     // Keep the exact census: new implementations require an explicit review.
-    expect(unbuilt.length).toBe(26);
+    expect(unbuilt.length).toBe(23);
     expect(unbuilt.length).toBeLessThan(entries.length);
   });
 });

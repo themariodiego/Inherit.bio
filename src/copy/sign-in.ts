@@ -9,9 +9,11 @@
  * able to put words on this page. A code not listed here shows nothing.
  */
 
-/** `?notice=`: the link did its job, but no session came with it. */
+/** `?notice=`: the link or the reset did its job, but no session came with it. */
 export const SIGN_IN_STATUS = {
   email_confirmed: "Your email is confirmed. Sign in to continue.",
+  // A reset ends every session, so the reader signs in again (owner decision 2026-10-16).
+  password_changed: "Your password has changed. Sign in with your new password.",
 } as const;
 
 /** `?error=`: the link or the provider could not sign the reader in. */

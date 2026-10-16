@@ -13197,20 +13197,7 @@
       },
       "unknownFieldsRecursively": "forbidden",
       "newEligibleAndExistingIdentity": "identical-status-body-header-shape-and-bounded-timing-with-no-user-id-session-or-existence-indicator",
-      "under18": {
-        "status": 422,
-        "contentType": "application/json",
-        "body": {
-          "error": {
-            "const": "age_requirement"
-          },
-          "message": "resolved-user-facing-copy"
-        },
-        "messageSource": "src/copy/upload/errors.ts#livingMinor",
-        "unknownFieldsRecursively": "forbidden",
-        "authUserWrites": 0
-      },
-      "transaction": "server-calculates-age-at-the-current-UTC-calendar-date-before-any-Supabase-Auth-call-then-for-a-new-identity-atomically-creates-the-auth-user-profile-declared-jurisdiction-and-one-self-subject-or-compensates-by-deleting-the-new-auth-user-on-failure"
+      "transaction": "for-a-new-identity-the-Supabase-Auth-user-insert-and-its-trigger-create-the-auth-user-profile-and-one-self-subject-atomically; an-existing-identity-receives-no-write; age-is-attested-at-account-completion-and-jurisdiction-at-first-sign-in-owner-decision-2026-10-16"
     },
     "auth-opaque-request-v1": {
       "status": 202,
@@ -13228,7 +13215,7 @@
       "status": 204,
       "contentType": "empty",
       "body": "empty",
-      "effects": "atomically-change-the-password-revoke-every-other-auth-session-and-consume-the-recovery-session"
+      "effects": "atomically-change-the-password-revoke-every-auth-session-of-the-account-and-consume-the-recovery-session; the-response-clears-every-auth-cookie-and-the-person-signs-in-again"
     },
     "raw-region-v1": {
       "status": 200,
@@ -13799,6 +13786,7 @@
       ],
       "auth.reset-password-submit": [
         "resource-not-found-v1",
+        "invalid-request-v1",
         "password-reset-v1"
       ],
       "api.account-delete": [
@@ -15228,7 +15216,7 @@
       "width": "64rem",
       "stateProfile": "auth-density-flow",
       "notApplicableStates": {
-        "complete": "Success calls router.push() to /overview (reset-password/page.tsx:30) and the route renders no outcome of its own. Same shape as /auth/sign-in. Corrections item 10, signed 2026-09-13."
+        "complete": "Success calls router.push() to the sign-in route with notice=password_changed (src/components/auth/reset-password-form.tsx:37) and the route renders no outcome of its own: a reset revokes every session, so the reader signs in again with the new password (owner decision 2026-10-16, Auth endpoints). Same shape as /auth/sign-in. Corrections item 10, signed 2026-09-13."
       },
       "disposition": "kept",
       "expectedStatus": 200
@@ -16391,15 +16379,7 @@
         "contentType": "application/json",
         "closedBody": {
           "email": "normalized-valid-address-at-most-254-bytes",
-          "password": "12-through-1024-Unicode-characters",
-          "displayName": "two-through-120-Unicode-characters",
-          "dateOfBirth": "valid-ISO-calendar-date",
-          "jurisdictionCode": "normalized-code-valid-under-data/jurisdictions.json-determination.resolutionGrammar",
-          "jurisdictionAttestationVersion": "current-server-published-version",
-          "jurisdictionAttestationHash": "lowercase-sha256-of-current-artifact",
-          "jurisdictionAffirmed": {
-            "const": true
-          }
+          "password": "12-through-72-Unicode-characters-and-at-most-72-UTF-8-bytes"
         },
         "requiredSignals": [
           "Origin-exactly-canonical-origin",
@@ -16407,14 +16387,27 @@
           "X-Inherit-CSRF-header-with-one-time-public-form-token-bound-to-the-host-only-cookie"
         ],
         "unknownMissingInvalidStaleOrAmbiguous": "invalid-request-v1",
-        "passwordBodyLogAnalyticsAudit": "forbidden"
+        "passwordOutsideLimits": "invalid-request-v1-issue-password-before-any-Supabase-Auth-call",
+        "passwordBodyLogAnalyticsAudit": "forbidden",
+        "ownerDecision": "docs/protocol/decisions.md#2026-10-16-auth-endpoints-jurisdiction-date-of-birth-reset-and-limits-g21: jurisdiction-is-declared-at-first-sign-in-date-of-birth-at-account-completion-and-no-display-name-is-collected"
       },
       "stateProfile": "endpoint",
       "policy": {
         "mode": "pre-auth-eligibility",
-        "ageCalculation": "server-calculates-completed-years-on-the-current-UTC-calendar-date-before-the-first-Supabase-Auth-create-call",
-        "under18": "signup-v1.under18",
-        "transaction": "after-age-and-jurisdiction-validation-create-the-Supabase-Auth-user-profile-one-self-subject-and-jurisdiction-attestation-as-one-compensated-operation; any-follow-on-failure-deletes-the-new-auth-user-before-return",
+        "rateLimits": {
+          "contract": "securityRateLimitContract",
+          "normalized-identifier": {
+            "windowSeconds": 3600,
+            "limit": 5
+          },
+          "source-network": {
+            "windowSeconds": 3600,
+            "limit": 20
+          },
+          "limited": "the-identical-signup-v1-answer-with-no-Supabase-Auth-call-and-the-form-nonce-spent"
+        },
+        "transaction": "after-validation-and-the-rate-limit-buckets-create-the-Supabase-Auth-user-whose-insert-trigger-creates-the-profile-and-one-self-subject-in-the-same-transaction; an-existing-confirmed-or-unconfirmed-identity-receives-no-follow-on-write-and-nothing-is-compensated",
+        "delivery": "the-confirmation-link-returns-through-auth.callback-with-a-PKCE-state-whose-hash-and-verifier-only-the-host-only-state-cookie-holds-and-never-puts-a-token-in-an-Inherit-URL",
         "selfSubject": "server-owned-kind-self-upload_class-self-is_self-true-owner_account_id-equals-subject_account_id-equals-the-new-auth-user-and-exactly-one-current-self-subject-per-account; the-same-invariant-is-required-by-the-ordered-legacy-self-subject-backfill-before-own-subject-routes-enable",
         "retentionAssignment": {
           "creationRouteSource": "retentionAssignmentBindings.creationRoutes",
@@ -16453,7 +16446,20 @@
       "policy": {
         "mode": "public-auth-recovery",
         "enumeration": "call-the-opaque-Supabase-recovery-path-and-normalize-existing-missing-disabled-and-rate-limited-identities-to-the-same-bounded-response",
-        "delivery": "callback-uses-auth.callback-PKCE-state-and-never-puts-an-access-token-in-an-Inherit-URL"
+        "delivery": "callback-uses-auth.callback-PKCE-state-and-never-puts-an-access-token-in-an-Inherit-URL",
+        "rateLimits": {
+          "contract": "securityRateLimitContract",
+          "normalized-identifier": {
+            "windowSeconds": 3600,
+            "limit": 3
+          },
+          "source-network": {
+            "windowSeconds": 3600,
+            "limit": 10
+          },
+          "limited": "the-identical-auth-opaque-request-v1-answer-with-no-Supabase-Auth-call-and-the-form-nonce-spent"
+        },
+        "ownerDecision": "docs/protocol/decisions.md#2026-10-16-auth-endpoints-jurisdiction-date-of-birth-reset-and-limits-g21"
       },
       "successResponseContract": "auth-opaque-request-v1",
       "disposition": "kept"
@@ -16470,7 +16476,7 @@
       "requestContract": {
         "contentType": "application/json",
         "closedBody": {
-          "password": "12-through-1024-Unicode-characters"
+          "password": "12-through-72-Unicode-characters-and-at-most-72-UTF-8-bytes"
         },
         "requiredSignals": [
           "Origin-exactly-canonical-origin",
@@ -16478,6 +16484,7 @@
           "X-Inherit-CSRF-header-bound-to-the-reset-session"
         ],
         "unknownMissingOrInvalid": "resource-not-found-v1",
+        "passwordOutsideLimits": "invalid-request-v1-issue-password-only-after-the-reset-session-and-CSRF-authorize-and-before-any-password-write",
         "passwordBodyLogAnalyticsAudit": "forbidden"
       },
       "stateProfile": "endpoint",
@@ -16486,7 +16493,10 @@
         "operation": "password-reset",
         "sessionInvalidationContract": "authContracts.authenticated-session-v1",
         "transaction": "atomically-set-the-password-revoke-every-pre-reset-auth.sessions-row-including-the-recovery-origin-invalidate-every-authenticatedDerivedCapability-row-increment-the-account-auth-session-revision-consume-the-recovery-session-and-CSRF-token-clear-every-auth-cookie-and-require-a-fresh-sign-in; no-stolen-pre-reset-access-JWT-upload-bearer-ingest-export-or-download-capability-remains-valid-after-success",
-        "identityExistenceOrUserId": "never-returned"
+        "identityExistenceOrUserId": "never-returned",
+        "rateLimits": "one-use-per-reset-session-with-the-15-minute-hard-absolute-expiry-of-authContracts.reset-session-api-v1",
+        "afterSuccess": "every-session-is-revoked-and-the-person-signs-in-again-with-the-new-password",
+        "ownerDecision": "docs/protocol/decisions.md#2026-10-16-auth-endpoints-jurisdiction-date-of-birth-reset-and-limits-g21"
       },
       "successResponseContract": "password-reset-v1",
       "disposition": "kept"

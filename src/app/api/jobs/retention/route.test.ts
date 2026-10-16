@@ -205,6 +205,39 @@ describe("independent retention queues", () => {
     expect(mocks.rpc).toHaveBeenCalledWith("claim_due_account_deletion_v1", expect.any(Object));
   });
 
+  it("purges spent auth form nonces and expired reset sessions as independent due work", async () => {
+    vi.stubEnv("JOBS_SECRET", "test-job-secret");
+    mocks.rpc.mockImplementation(async (name: string) => {
+      if (name === "drain_due_new_public_appeals_v1") return { data: { shredded: 0, completed: 0, held: 0 }, error: null };
+      if (name === "prepare_due_prepared_scratch_v1") return { data: 0, error: null };
+      if (name === "reap_expired_own_normalizations_v1") return { data: 0, error: null };
+      if (name === "expire_due_adult_subject_invitations_v1") return { data: 0, error: null };
+      if (name === "purge_expired_auth_credentials_v1") return { data: 2, error: null };
+      return { data: null, error: null };
+    });
+    const response = await run();
+    expect(await response.json()).toEqual({ status: "complete", outcome: "completed" });
+    // No selector: the database alone decides what is past its lifetime.
+    expect(mocks.rpc.mock.calls.filter(call => call[0] === "purge_expired_auth_credentials_v1"))
+      .toEqual([["purge_expired_auth_credentials_v1"]]);
+  });
+
+  it("keeps draining other queues when the auth credential purge fails", async () => {
+    vi.stubEnv("JOBS_SECRET", "test-job-secret");
+    mocks.rpc.mockImplementation(async (name: string) => {
+      if (name === "drain_due_new_public_appeals_v1") return { data: { shredded: 0, completed: 0, held: 0 }, error: null };
+      if (name === "prepare_due_prepared_scratch_v1") return { data: 0, error: null };
+      if (name === "reap_expired_own_normalizations_v1") return { data: 0, error: null };
+      if (name === "expire_due_adult_subject_invitations_v1") return { data: 0, error: null };
+      if (name === "purge_expired_auth_credentials_v1") return { data: null, error: { code: "synthetic" } };
+      return { data: null, error: null };
+    });
+    const response = await run();
+    expect(await response.json()).toEqual({ status: "complete", outcome: "completed_with_failures" });
+    expect(mocks.rpc).toHaveBeenCalledWith("purge_expired_rate_limit_buckets_v1");
+    expect(mocks.rpc).toHaveBeenCalledWith("run_due_embryo_retention_phases_v1");
+  });
+
   it("reports an idle sweep as no_work, not as a completed one", async () => {
     vi.stubEnv("JOBS_SECRET", "test-job-secret");
     mocks.rpc.mockImplementation(async (name: string) => {
