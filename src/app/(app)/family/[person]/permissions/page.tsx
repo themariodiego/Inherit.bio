@@ -36,9 +36,10 @@ import {
   SHARE_WITH_ADULT_ARTIFACT,
   SHARE_WITH_ADULT_STATEMENT_KEYS,
   mintGrantPresentation,
-  mintSharingOperation,
   type GrantPurposeRequest,
 } from "@/lib/family/grant-token";
+import { getSensitiveAccountContext } from "@/lib/account-deletion";
+import { mintSubjectOperationNonce } from "@/lib/subject-endpoints/operation-nonce";
 import { route } from "@/lib/primary-routes";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
@@ -89,6 +90,9 @@ export default async function FamilyPermissionsPage(
   const context = await loadPerson(segment);
   if (!context) notFound();
   const { user, person } = context;
+  // The single-use stop code is bound to this session, so the page needs it.
+  const account = await getSensitiveAccountContext();
+  if (!account || account.user.id !== user.id) notFound();
 
   const decision = await personCapability(user.id, person, "third_party_adult_analysis");
   const mayGrant = permits(decision);
@@ -363,11 +367,13 @@ export default async function FamilyPermissionsPage(
       <SharingActions
         personName={person.displayLabel}
         personSegment={person.handle.routeSegment}
+        subjectId={person.handle.id}
         paused={person.sharing === "paused"}
-        stopNonce={mintSharingOperation({
+        stopNonce={mintSubjectOperationNonce({
           accountId: user.id,
-          counterpartAccountId: person.counterpartAccountId,
-          operation: "stop",
+          sessionId: account.sessionId,
+          operation: "subject_sharing_stop",
+          subjectId: person.handle.id,
         })}
       />
     </div>

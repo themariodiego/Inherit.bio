@@ -9018,6 +9018,20 @@ export type Database = {
           ended_at: string
         }[]
       }
+      stop_subject_sharing_v1: {
+        Args: {
+          p_account_id: string
+          p_counterpart_account_id: string
+          p_nonce_expires_at: string
+          p_nonce_hash: string
+          p_session_id: string
+          p_subject_id: string
+        }
+        Returns: {
+          deleted_counts: Json
+          ended_at: string
+        }[]
+      }
     }
     Enums: {
       evidence_level:

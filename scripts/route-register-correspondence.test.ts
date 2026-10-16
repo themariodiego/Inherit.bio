@@ -24,7 +24,8 @@ import { storageBucketsInSource, UNRESOLVED_STORAGE_BUCKET } from "./storage-con
  *
  * Registered-but-unbuilt is deliberately not failed here. The register is
  * written from the brief and describes routes the product has not reached
- * yet; 23 of them remain unbuilt after the native appeal review, notice and auth routes.
+ * yet; 21 of them remain unbuilt after the native appeal review, notice, auth,
+ * mapping and subject-sharing routes.
  * The exact current count prevents a broken walker from passing silently.
  *
  * Known divergences live in `docs/route-divergence.json` and are checked in
@@ -216,8 +217,10 @@ describe("the route register and the App Router describe the same surface", () =
     // auth.forgot-password-submit, auth.reset-password-submit; owner decision
     // 2026-10-16) reduce it from 26 to 23, and the laboratory-table mapping
     // route (api.embryo-ingest-mapping, ADR 0037) reduces it once more, to 22.
+    // The UUID-addressed sharing twin (api.subject-sharing; owner decision
+    // 2026-10-16, "The subjects endpoints (G2.1)") reduces it to 21.
     // Keep the exact census: new implementations require an explicit review.
-    expect(unbuilt.length).toBe(22);
+    expect(unbuilt.length).toBe(21);
     expect(unbuilt.length).toBeLessThan(entries.length);
   });
 });
