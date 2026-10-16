@@ -3155,7 +3155,7 @@
         },
         "publishedSourceFence": "exact completed publication or exact immutable account235 receipt plus current approved detached custody; original still-live create-only capabilities are permanently fenced by verified empty markers",
         "auditSelector": "new approved custody receives one random immutable audit principal through the closed issuer; existing NULL selectors remain NULL with no historical backfill; erase only matching current subject linkage and preserve the append-only chain",
-        "availability": "public claimant DELETE and deletion_accepted remain closed until complete registered-store graph cleanup and actual provider ACKs are proved"
+        "availability": "TEST-LOCAL only, behind the default-OFF INHERIT_TEST_CLAIMANT_RIGHTS door and the enabled native TEST configuration: the claimant DELETE answers deletion_accepted only after every source marker, the plan's own identity-object and original-upload-copy disposal under the same live lease, and the complete graph transaction have committed; production remains closed until a guarded production release and hosted provider ACKs are proved"
       }
     },
     "claim-review-receipt-v1": {
