@@ -5,6 +5,7 @@ import {accountArchiveContextSchema} from "./bound-account-archive-worker";
 import {reportScientificCorrections,reportOutcomeScientificCorrections,REPORT_SCIENTIFIC_CORRECTION_NOTICE} from "@/lib/genome/report-scientific-corrections";
 import {reportCatalogSnapshotSchema} from "@/lib/genome/report-catalog-snapshot";
 import type {FuturePersonMemberFactory} from "./future-person-member-plan";
+import {anySignal} from "./abort-signals";
 
 const uuid=z.uuid(),hash=z.string().regex(/^[a-f0-9]{64}$/u),count=z.number().int().nonnegative().safe();
 const revision=count.positive(),date=z.iso.datetime({offset:true});
@@ -58,7 +59,7 @@ export async function prepareAccountPathBMembers(options:{context:z.infer<typeof
  const selected=context.partitions.filter(p=>p.class==="ordinary"),captured=new Map<string,z.infer<typeof snapshot>>();
  async function bounded<T>(signal:AbortSignal,operation:(signal:AbortSignal)=>PromiseLike<T>){
   const remaining=Date.parse(context.deadline)-Date.now();if(signal.aborted||options.signal.aborted||remaining<=0)throw unavailable();
-  const stop=new AbortController(),current=AbortSignal.any([options.signal,signal,stop.signal]);let abort=()=>{};
+  const stop=new AbortController(),current=anySignal([options.signal,signal,stop.signal]);let abort=()=>{};
   const timer=setTimeout(()=>stop.abort(),Math.min(30000,remaining));timer.unref();
   const canceled=new Promise<never>((_,reject)=>{abort=()=>reject(unavailable());current.addEventListener("abort",abort,{once:true});});
   try{if(current.aborted)throw unavailable();const value=await Promise.race([Promise.resolve().then(()=>operation(current)),canceled]);

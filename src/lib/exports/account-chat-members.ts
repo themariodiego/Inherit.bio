@@ -4,6 +4,7 @@ import {z} from "zod";
 import {ownChatCitationSchema} from "@/lib/copilot/own-chat-content";
 import type {createAccountContentReader} from "./account-content-reader";
 import type {FuturePersonMemberFactory} from "./future-person-member-plan";
+import {anySignal} from "./abort-signals";
 const uuid=z.uuid(),count=z.number().int().nonnegative().safe(),date=z.iso.datetime({offset:true});
 const header=z.object({id:uuid,subject_id:uuid,scope_kind:z.literal("self"),created_at:date,message_count:count.positive()}).strict();
 const headers=z.object({chats:z.array(header).max(100),nextAfterChatId:uuid.nullable()}).strict();
@@ -22,7 +23,7 @@ export async function prepareAccountChatMembers(options:{reader:Reader;signal:Ab
  async function check(signal:AbortSignal){
   const remaining=Date.parse(context.deadline)-Date.now();
   if(options.signal.aborted||signal.aborted||remaining<=0)throw unavailable();
-  const stop=new AbortController(),current=AbortSignal.any([options.signal,signal,stop.signal]);let abort=()=>{};
+  const stop=new AbortController(),current=anySignal([options.signal,signal,stop.signal]);let abort=()=>{};
   const timer=setTimeout(()=>stop.abort(),Math.min(30_000,remaining));timer.unref();
   const canceled=new Promise<never>((_,reject)=>{abort=()=>reject(unavailable());current.addEventListener("abort",abort,{once:true});});
   try{if(current.aborted)throw unavailable();await Promise.race([Promise.resolve().then(async()=>{

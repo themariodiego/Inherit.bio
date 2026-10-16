@@ -1,6 +1,7 @@
 import "server-only";
 import { createHash, randomUUID } from "node:crypto";
 import type {RequesterStatementRuntime} from "./requester-statement-runtime";
+import { anySignal } from "./abort-signals";
 
 /** Physical objects and download chunks share this boundary. This is decimal
  * bytes, as required by payloadBoundaryContract, not 4 MiB. */
@@ -194,7 +195,7 @@ export async function storeArchiveSegments(options: ArchiveSegmentationOptions):
   }
   async function operation<T>(code: FailureCode, work: (current: AbortSignal) => Promise<T>): Promise<T> {
     active();
-    const bound = new AbortController(), current = AbortSignal.any([signal, bound.signal]);
+    const bound = new AbortController(), current = anySignal([signal, bound.signal]);
     const timer = setTimeout(() => bound.abort(), ARCHIVE_OPERATION_TIMEOUT_MS); timer.unref();
     let abort = () => {};
     const cancelled = new Promise<never>((_, reject) => {

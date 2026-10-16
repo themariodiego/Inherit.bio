@@ -8,6 +8,7 @@ import {originalFileExtension} from "@/lib/uploads/original-download-name";
 import {accountArchiveContextSchema} from "./bound-account-archive-worker";
 import {ownExportSnapshotSchema} from "./own-subject-content";
 import type {Zip64Member} from "./archive-zip64";
+import {anySignal} from "./abort-signals";
 const uuid=z.uuid(),hash=z.string().regex(/^[a-f0-9]{64}$/u),date=z.iso.datetime({offset:true});
 const legacySource=z.object({version:z.literal("account-original-download-v1"),fileId:uuid,
  sourceRevision:z.number().int().positive().safe(),rawSha256:hash,bucket:z.literal("genomes"),objectId:uuid,objectKey:uuid,
@@ -41,7 +42,7 @@ export async function prepareAccountOriginalSource(options:{reference:{exportId:
  const active=(signal:AbortSignal)=>{if(options.signal.aborted||signal.aborted||Date.now()>=Date.parse(context.deadline)
   ||(held.receipt?.source&&Date.now()>=Date.parse(held.receipt.source.expiresAt)))throw unavailable();};
  async function call(operation:"descriptor"|"check",signal:AbortSignal){
-  active(signal);await options.check(signal);const stop=new AbortController(),combined=AbortSignal.any([options.signal,signal,stop.signal]);
+  active(signal);await options.check(signal);const stop=new AbortController(),combined=anySignal([options.signal,signal,stop.signal]);
   const end=Math.min(Date.now()+30_000,Date.parse(context.deadline),held.receipt?.source?Date.parse(held.receipt.source.expiresAt):Infinity);
   const timer=setTimeout(()=>stop.abort(),Math.max(0,end-Date.now()));timer.unref();let abort=()=>{};
   const stopped=new Promise<never>((_,reject)=>{abort=()=>reject(unavailable());combined.addEventListener("abort",abort,{once:true});});

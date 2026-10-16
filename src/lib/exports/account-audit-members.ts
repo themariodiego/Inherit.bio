@@ -4,6 +4,7 @@ import {LEGAL_AUDIT_SCHEMA_VERSION,legalAuditEventSchema} from "@/lib/export/leg
 import {exportLegalAuditNote} from "@/copy/settings/data-export";
 import {accountArchiveContextSchema} from "./bound-account-archive-worker";
 import type {FuturePersonMemberFactory} from "./future-person-member-plan";
+import {anySignal} from "./abort-signals";
 
 export const ORDINARY_SUBJECT_AUDIT_NOTE="These audit records do not identify the subject of each action. Your recorded account actions are in legal-audit.json. This does not mean that nothing happened to this record.";
 export const ordinarySubjectAuditSchema=z.object({schema_version:z.literal(LEGAL_AUDIT_SCHEMA_VERSION),
@@ -29,7 +30,7 @@ export async function prepareAccountArchiveAuditMembers(options:{reference:{expo
  if(context.targetKind!=="account"||context.targetId!==context.actor.accountId||context.authorityReceipt!==reference.authorityReceipt)throw unavailable();
  async function call(operation:"context"|"events"|"ordinary-subject",signal:AbortSignal,subject:string|null=null,after:number|null=null){
   await options.check(signal);if(signal.aborted||Date.now()>=Date.parse(context.deadline))throw unavailable();
-  const controller=new AbortController(),combined=AbortSignal.any([signal,controller.signal]);
+  const controller=new AbortController(),combined=anySignal([signal,controller.signal]);
   const timer=setTimeout(()=>controller.abort(),Math.min(30_000,Date.parse(context.deadline)-Date.now()));timer.unref();let stop=()=>{};
   const canceled=new Promise<never>((_,reject)=>{stop=()=>reject(unavailable());combined.addEventListener("abort",stop,{once:true});});
   try{if(combined.aborted)throw unavailable();const response=await Promise.race([Promise.resolve(options.rpc("export_archive_account_audit_v1",{

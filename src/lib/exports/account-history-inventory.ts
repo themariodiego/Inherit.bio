@@ -3,6 +3,7 @@ import {createHash} from "node:crypto";
 import {z} from "zod";
 import {accountArchiveContextSchema} from "./bound-account-archive-worker";
 import {consentRecipientSchema} from "@/lib/export/consent-recipient";
+import {anySignal} from "./abort-signals";
 
 export const ACCOUNT_HISTORY_KINDS=["legacy-consents","subjects","demographics","principals","bindings",
  "account-consents","signatures","attestations","recipient-grants"] as const;
@@ -55,7 +56,7 @@ export async function prepareAccountHistoryInventory(options:{reference:{exportI
   ||context.authorityReceipt!==options.reference.authorityReceipt)throw unavailable();
  async function call(operation:"context"|"history",signal:AbortSignal,kind:AccountHistoryKind|null=null,after:string|null=null){
   await options.check(signal);if(signal.aborted||Date.now()>=Date.parse(context.deadline))throw unavailable();
-  const stop=new AbortController(),current=AbortSignal.any([signal,stop.signal]);let abort=()=>{};
+  const stop=new AbortController(),current=anySignal([signal,stop.signal]);let abort=()=>{};
   const timer=setTimeout(()=>stop.abort(),Math.min(30_000,Date.parse(context.deadline)-Date.now()));timer.unref();
   const stopped=new Promise<never>((_,reject)=>{abort=()=>reject(unavailable());current.addEventListener("abort",abort,{once:true});});
   try{if(current.aborted)throw unavailable();const reply=await Promise.race([Promise.resolve(options.rpc("export_archive_account_inventory_v1",{

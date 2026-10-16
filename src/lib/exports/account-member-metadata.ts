@@ -2,6 +2,7 @@ import "server-only";
 import {z} from "zod";
 import {accountArchiveContextSchema} from "./bound-account-archive-worker";
 import {ownExportSnapshotSchema} from "./own-subject-content";
+import {anySignal} from "./abort-signals";
 const uuid=z.uuid(),positive=z.number().int().positive().safe(),count=z.number().int().nonnegative().safe();
 const date=z.iso.datetime({offset:true}),hash=z.string().regex(/^[a-f0-9]{64}$/u),country=z.string().regex(/^[A-Z]{2}$/u);
 const counts=z.object({profileCount:z.literal(1),purposeGrantCount:count,fileCount:count}).strict();
@@ -34,7 +35,7 @@ export async function prepareAccountArchiveMetadata(options:{reference:{exportId
    ||file.binding.sessionId!==context.actor.sessionId))throw unavailable();
  async function call<T>(operation:AccountMetadataOperation,schema:z.ZodType<T>,maximum:number,signal:AbortSignal,after:string|null=null){
   await options.check(signal);if(signal.aborted||Date.now()>=Date.parse(context.deadline))throw unavailable();
-  const controller=new AbortController(),combined=AbortSignal.any([signal,controller.signal]);let stop=()=>{};
+  const controller=new AbortController(),combined=anySignal([signal,controller.signal]);let stop=()=>{};
   const timer=setTimeout(()=>controller.abort(),Math.min(30_000,Date.parse(context.deadline)-Date.now()));timer.unref();
   const canceled=new Promise<never>((_,reject)=>{stop=()=>reject(unavailable());combined.addEventListener("abort",stop,{once:true});});
   try{if(combined.aborted)throw unavailable();const response=await Promise.race([Promise.resolve(options.rpc("export_archive_account_metadata_v1",{

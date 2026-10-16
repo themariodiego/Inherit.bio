@@ -11,6 +11,7 @@ import type {RequesterStatementRuntime} from "./requester-statement-runtime";
 import {ACCOUNT_SUBJECT_MEMBERS} from "./account-subject-member-names";
 import {accountCompleteContextSchema,type AccountCompleteContext} from "./account-complete-context";
 import {ACCOUNT_COMPLETE_VARIANT_COLUMNS} from "./account-complete-variant-csv";
+import {anySignal} from "./abort-signals";
 
 export {ACCOUNT_SUBJECT_MEMBERS} from "./account-subject-member-names";
 const indexes=["subjects","consents","legacy-consents","attestations","audit-log","portrait","embryos"] as const;
@@ -66,7 +67,7 @@ export async function prepareAccountArchivePlan(options:{context:z.infer<typeof 
  const fileById=new Map(files.map(f=>[f.fileId,f]));
  async function bounded<T>(signal:AbortSignal,operation:(current:AbortSignal)=>PromiseLike<T>){
   const remaining=Date.parse(context.deadline)-Date.now();if(options.signal.aborted||signal.aborted||remaining<=0||remaining>86_400_000)throw unavailable();
-  const stop=new AbortController(),current=AbortSignal.any([options.signal,signal,stop.signal]);let abort=()=>{};
+  const stop=new AbortController(),current=anySignal([options.signal,signal,stop.signal]);let abort=()=>{};
   const timer=setTimeout(()=>stop.abort(),Math.min(30_000,remaining));timer.unref();
   const canceled=new Promise<never>((_,reject)=>{abort=()=>reject(unavailable());current.addEventListener("abort",abort,{once:true});});
   const execute=async()=>{
