@@ -4780,3 +4780,50 @@ unchanged budget must still qualify before the matrix row changes.
   the endpoint. The owner revokes the token after the release, and deletes
   `PRODUCTION_DATABASE_URL` if it was added. No production change is credited
   by this decision.
+
+## 2026-10-16 — G4.2 is judged on the figures admitted producers emit
+
+- Owner decision (clickable chat answer): G4.2 is judged on the figures that
+  admitted producers can actually emit. The embryo absolute-risk path is
+  covered by its fail-closed reader tests, because no embryo absolute-risk
+  producer is approved and the registry is empty by design.
+- When a laboratory-dropout producer is admitted, it is recorded with the
+  `modelled` basis.
+- Consequence: G4.2 can close once the cross-surface basis and marker audit
+  (`e2e/claim-block-basis.ts`, run from `e2e/figures-cross-surface.spec.ts`)
+  passes on green main CI. No producer is invented or approved by this
+  decision.
+
+## 2026-10-16 — TEST-LOCAL capabilities in the capability register
+
+- Owner decision (clickable chat answer): a capability that works end to end
+  under TEST-LOCAL, but is off in production because no real jurisdiction
+  permits it, is classed `shipped-degraded`. Its entry names the
+  jurisdiction-unavailable state that production users see. This follows brief
+  line 2580 and the TEST-LOCAL reading already used for G5.4 and G5.5.
+- Applies now to embryo ingest (VCF only), embryo quality and embryo
+  comparison. Production behaviour is unchanged, and no restricted capability
+  is turned on.
+
+## 2026-10-16 — Unbuilt registered endpoints (G2.1)
+
+- Owner decision (clickable chat answer): build all 24 registered but unbuilt
+  endpoints rather than moving any into a proposals section. The two
+  `/signup` and `/login` aliases served from `next.config.ts` are counted
+  separately.
+- Consequence: G2.1 stays NO until every registered endpoint is built and its
+  correspondence census reaches the aliases only. Endpoints whose contracts
+  depend on unbuilt pieces or open design questions are raised as owner
+  decisions before they are built, never guessed.
+
+## 2026-10-16 — G5.4 is judged on the brief's minimum under TEST-LOCAL
+
+- Owner decision (clickable chat answer): G5.4 is judged on the brief's own
+  minimum under TEST-LOCAL: both accountless paths (third-party subject and
+  future adult) with access, retention stated in days, a working deletion
+  mechanism, a contact of last resort and a retention-job test. Local mail
+  capture is accepted as delivery proof.
+- Real email-provider delivery becomes a release-checklist item. The other
+  register rights endpoints are tracked under G2.1 and G8.5.
+- Consequence: the future-adult deletion mechanism (the claimant DELETE) must
+  still be built before G5.4 can close.
