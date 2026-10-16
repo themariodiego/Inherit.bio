@@ -21,11 +21,12 @@ import { hmacSecret } from "@/lib/crypto";
  * in the same transaction as the operation, which is what makes it one-time.
  */
 
-export type SubjectOperation = "subject_sharing_stop";
+export type SubjectOperation = "subject_sharing_stop" | "subject_delete";
 
 /** Each operation belongs to exactly one registered route. */
 export const SUBJECT_OPERATION_ROUTES: Readonly<Record<SubjectOperation, string>> = Object.freeze({
   subject_sharing_stop: "api.subject-sharing",
+  subject_delete: "api.subject-delete",
 });
 
 export const SUBJECT_OPERATION_NONCE_LIFETIME_MS = 10 * 60 * 1000;

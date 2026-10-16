@@ -5017,3 +5017,29 @@ Owner decisions (clickable chat answers) on questions raised while building
   is narrowed. It refuses only a family pair that is still pending or current,
   or one that still has joint results. The same change applies to
   `api.file-delete`.
+
+## 2026-10-16 — Stated behaviour change: `api.file-delete` after an ended family pair
+
+This applies the file-byte guard decision above ("Subjects delete and
+transfer: four further cases"); it is not a new decision.
+
+- **Before:** `DELETE /api/files/[id]` refused with 409
+  `file_delete_subject_unavailable` whenever any `family_pairs` row named the
+  owner's self record, in any status, even after the pair had ended and
+  nothing was left on it.
+- **After:** the refusal applies only while a pair naming the record is
+  `pending` or `current`, or still holds a joint result (a Portrait row, or a
+  message in one of the pair's chats). An ended pair with nothing left on it
+  no longer blocks the owner's own file delete. Every other refusal of the
+  guard is unchanged.
+- **Where:** migration `20261016181000_subject_delete.sql` replaces the shared
+  guard body, `private.prepare_genome_file_deletion_body_v1`, which both
+  `api.file-delete` and the self case of `api.subject-delete` use, as does the
+  seven-day backstop. The migration is flagged and needs a later guarded
+  release.
+- **Tests:** pgTAP `supabase/tests/subject_delete.sql` checks the file
+  route's own door (`prepare_own_prepared_file_cleanup_v1`) for a current,
+  pending and ended pair with a joint result (each still refused) and an
+  ended pair with nothing left (now prepared), and the self-record emptying
+  over a current pair. `e2e/file-deletion.spec.ts` checks the same four states
+  through the real route in a browser. Recorded in `docs/test-diff-register.md`.

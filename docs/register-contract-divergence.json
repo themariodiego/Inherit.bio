@@ -144,6 +144,10 @@
     {
       "site": "(database-selected) src/lib/uploads/file-deletion-backstop.ts",
       "why": "The source.revocation-7d backstop (D-126) redoes a stranded self file deletion: it removes admin.storage.from(target.bucket) where the bucket and name come from the claimed private.genome_file_deletions record, whose check constraint pins the bucket to genomes. Same limitation as DELETE /api/files/[id], same database allowlist."
+    },
+    {
+      "site": "(database-selected) src/lib/subject-endpoints/file-drain.ts",
+      "why": "DELETE /api/subjects/[id] (api.subject-delete, self case) finishes each file the emptying transaction prepared: it removes admin.storage.from(target.bucket) where the bucket and name come from the same owner-path prepare DELETE /api/files/[id] calls, parsed by the same closed target schema that pins the bucket to genomes. Same limitation, same database allowlist."
     }
   ],
   "declaredPrefixBucketNotAddressedNote": "The exact exports callsites are now visible through their imported constant, so no declared bucket is unaddressed in this source census. This retires only the scanner's false absence. The archive adapters do not by themselves prove the declared manifest namespace, route integration, authorization, export.generated-artifact-24h cleanup or provider readiness. The real object-key, R2 location and uncreated-bucket divergences remain below; G8.5 is not closed by this precision correction.",

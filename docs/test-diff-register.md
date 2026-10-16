@@ -1,3 +1,66 @@
+## 2026-10-16 — `api.subject-delete` (G2.1): all five cases through one door, and the narrowed per-file guard (Q6)
+
+Owner decisions 2026-10-16 ("The subjects endpoints (G2.1)" and "Subjects delete and transfer: four further cases", `docs/protocol/decisions.md`). `DELETE /api/subjects/[id]` takes no body and one single-use code in `X-Inherit-Operation-Nonce`. It calls one database door, `public.delete_subject_v1`, which chooses the case from server state after rechecking the caller's authority over the route subject. The register binds only `lifecycle-accepted-v1` (202 `{"status":"accepted"}`) and `resource-not-found-v1` here, so every refusal is the same opaque 404. That includes a body, a missing, foreign or spent code, an unknown or foreign record, a claimed record and a refused case. The 401 and 403 answers for a missing session or a cross-origin request are the shared authenticated-mutation answers.
+
+The five cases:
+
+- **self:** the owning account empties its own self record. Before anything is written, a file still uploading or being processed, a subject export or an embryo source built from the record's files refuses. Then the transaction cancels the record's queued and running jobs and open upload sessions. It removes every joint result and chat turn built from the record, whoever owns the chat, through the existing `delete_pair_derived_rows_v1`, and deletes every chat about the record with its model working state. It revokes every grant on the record or its principal, and every pair grant. It ends its relationships (not `self`) and pairs, and deletes its Portrait, ancestry, PRS, observed-call, analysis-run and report rows. It revokes every consent and every rights and download session, and invalidates its queued mail and the account's queued exports. Finally it prepares each file through the shared per-file pipeline, so each file is unreadable from that commit on. The record, its principal, binding and demographics stay, and its lifecycle revision moves. The route then finishes up to 16 files the way `api.file-delete` does (prepare, Storage remove, finish) within 40 seconds. Anything else is finished by the existing seven-day backstop (source.revocation-7d), and the answer is 202 either way.
+- **adult:** the owning account (a Path B uploader) or the verified subject account deletes an `other_adult` record. A Path B record runs the body of the existing `delete_path_b_subject_v1`. Every held file ends, the record is purged, and its contact is shredded. A delete by the person ends the files as `deleted` and first writes the subject-controlled refusal bar (`global-contact-refusal-bar-v1.adult-path-b-subject-revocation`) from every contact HMAC the record holds: a `contact_refusal_bars` row for the record and a year-long `invitation_refusal_hmacs` row. A delete by the uploader ends them as `withdrawn` and writes no bar. A Path A record (owner null, bound to the caller) ends its grants, relationships, binding, consents, principals and sessions and is purged.
+- **embryo, transferred and unclaimed (Q5):** `embryo_disposition_authority_v1` locks and rechecks the parents' current authority first, as the disposition route does, so it needs a recent sign-in. While a claim or a claim review of the embryo is open, the answer is 404 and nothing is written. Otherwise only that embryo is purged. Its record keys and print rights are revoked, rights and download sessions end, and mail and jobs stop. The `embryo.transferred-claim-window` row, its phases and manifests are cancelled, and its scores, figures, QC and variants are deleted. Its one canonical source goes through `plan_embryo_source_deletion_v1` (reason `withdrawal`), whose parts wait under a planned unwind. The existing trigger shreds the identity profile. Siblings and the cohort are untouched.
+- **embryo, claimed (Q1):** 404, while claimant binding is closed. A record whose claim is approved fails the authority recheck and is 404 too.
+- **embryo, any other:** after the same recheck, the whole cohort is restricted through `restrict_embryo_cohort_core_v1`, the mechanism `api.cohort-restrict` uses, and its audit names that route.
+
+New migration `supabase/migrations/20261016181000_subject_delete.sql`, flagged: it needs a later guarded release. It is guarded by the predecessor md5 of the per-file guard body and by its prerequisites, and it adds the door and five private case functions, all service role only. `account_operation_nonces_operation_check` gains `subject_delete` and keeps every earlier value. The recorder accepts it. The code's SHA-256 is recorded in the same transaction after the authority recheck, so a refused or failed delete writes no code and a replay is refused. For an adult record, the door takes the invitation-transition lock before any row lock, as every Path B writer does. Self follows the file pipeline's order: account, sessions, profile, subject.
+
+**Stated behaviour change on `api.file-delete` (Q6, recorded in `docs/protocol/decisions.md`).** The same migration replaces the shared guard body, `private.prepare_genome_file_deletion_body_v1`, which `api.file-delete`, the self case and the backstop share. Only one predicate changes. A family pair naming the record now blocks the per-file shortcut only while it is `pending` or `current`, or while it still holds a joint result (a Portrait row, or a message in one of its pair chats). Before, any pair row in any status blocked it, so an ended pair with nothing left on it stranded the owner's files. Every other refusal is unchanged.
+
+The route is `src/app/api/subjects/[id]/route.ts`. It is joined by `src/lib/subject-endpoints/file-drain.ts`, a new `subject_delete` operation in `src/lib/subject-endpoints/operation-nonce.ts` bound to `api.subject-delete`, and the `delete_subject_v1` entry in `src/lib/supabase/types.ts`.
+
+New tests:
+
+- pgTAP `supabase/tests/subject_delete.sql`, 47 assertions: privileges, the nonce constraint, refusals that write nothing, the self case in full, the replay, the file route's drain of an emptied file, and Q6 on the file route's own door. On that door a current, pending, and ended-with-a-joint-result pair still refuse, and an ended pair with nothing left now prepares.
+- pgTAP `supabase/tests/subject_delete_adult.sql`, 30 assertions, 6 of them fixture checks, over the existing Path B fixture: the person's delete with the bar, the uploader's withdrawal without one, Path A, and refusals for an outsider, another person and another account.
+- pgTAP `supabase/tests/subject_delete_embryo.sql`, 35 assertions plus the 56 of the custody publication fixture. It runs the native two-parent transfer and a saved identity profile. It covers the stranger, an older sign-in and a crossed session, then open-claim and open-review probes that roll back their own rows and report that nothing was written. Then come the transferred purge with its source, untouched siblings and cohort, the approved-claim refusal, and the cohort restriction through a stored record.
+- Vitest: `src/app/api/subjects/[id]/route.test.ts` (9 cases), `src/lib/subject-endpoints/file-drain.test.ts` (6 cases), and a new case in `operation-nonce.test.ts`: a stop code never deletes, and a delete code never stops.
+- `e2e/file-deletion.spec.ts`, new test "an ended family pair with nothing left on it no longer blocks the owner's file delete (Q6)". Through the real `DELETE /api/files/[id]` in a browser, a current pair, a pending pair and an ended pair with a Portrait row each answer 409 `file_delete_subject_unavailable`, and the ended pair with nothing left answers 204 and removes the file. The seeded pair row is removed at the end.
+
+Planted defects, each failing named assertions:
+
+- SQL, nine:
+  - The old any-pair guard: the self case's own prepare refuses, and the suite stops at that exception.
+  - A guard that ignores Portrait rows (2).
+  - No code record on the self case (3, then an exception).
+  - No reader-turn removal and no residual check (1).
+  - No bar on a person's delete (3).
+  - A bar on an uploader's delete too (2).
+  - No open-claim check (2).
+  - Purging the siblings as well (1, then an exception).
+  - Skipping the authority recheck (4, then an exception).
+- Route and drain, six, each failing one case: accepting a request without a valid code, a 55000 refusal answered as 503, draining for every case, allowing a body, finishing without a Storage acknowledgement, and an unbounded drain.
+
+Changed existing tests. None is weakened.
+
+- `scripts/route-register-correspondence.test.ts`: the exact unbuilt census goes from 21 to 20 for `api.subject-delete`, with a comment, and the header sentence names the route.
+- `supabase/tests/other_adult_held_upload.sql`, "the held table is named only by the exact reviewed lifecycle functions": the exact list gains `private.delete_path_b_subject_for_route_v1` and `private.purge_path_a_subject_v1`. Each is conditional on its own presence, as earlier additions to this census are. Every other name is unchanged, and it passes 173/173 with and without the migration.
+- `src/lib/subject-endpoints/operation-nonce.test.ts`, "names one registered route per operation": the expected map gains `subject_delete: "api.subject-delete"`.
+- `scripts/jurisdiction-enforcement.test.ts`: `WITHOUT_CHECK` lists the new route with its reason. The register sets `jurisdictionBypass`: deletion is a right that answers in every jurisdiction and opens no analysis, as `api.cohort-restrict` and the withdrawal routes are listed.
+- `docs/register-contract-divergence.json` records the drain's database-selected Storage call, as it records the file route's and the backstop's.
+- `e2e/portrait-no-file.spec.ts`: a header comment that described the old any-pair guard now describes the narrowed one. No assertion changes.
+
+Local results:
+
+- pgTAP ran in rolled-back transactions on the shared database, which applied `20261016170000`, `20261016175000`, `20261016180000` and this migration first. Results: 47/47, 30/30 and 91/91.
+- Regression: all 207 other pgTAP suites ran twice, over the same three predecessors, once with this migration and once without, and gave identical results. 148 pass completely both ways. The other 59 fail identically both ways on the shared database, for example `family_sharing`'s 6 global counts from leftover browser rows. Then 45 of those stopped at an exception. They were rerun with the local claim-document scan-lease workaround inside the transaction, and 35 then pass completely both ways. The remaining 10 still stop identically both ways.
+- `e2e/file-deletion.spec.ts -g "Q6"` ran under `flock /tmp/inherit-e2e.lock`, with the shared `node_modules` bind-mounted for the build and the symlink restored. `20261016180000` and this migration were applied for the run with no ledger row. Afterwards their objects were dropped, and the guard body was restored from its saved definition (md5 `687df80d56b38d2aabeacd4bc1350154` checked). Result: 1 passed; "E2E contract passed: 1 result(s), no skips, no retries."
+- Full Vitest run as root: 42 failed and 12,846 passed. With this change unstaged, the same 26 environment-bound files fail (41 tests: browser executables missing, root-only paths, and the two known comprehension files). The 42nd was `jurisdiction-enforcement` before the route was listed, and it now passes.
+- Typecheck, lint, and `gate:secrets`, `gate:env`, `gate:sql-includes`, `gate:readability` and `gate:routes` all exit 0. Vitest: 47 files and 1,221 cases across the subjects routes, the file routes, the prepared-source cleanup, the Family components and the register correspondence all pass.
+
+Not built, or left as it is:
+
+- No page renders the `subject_delete` code yet. The register names a confirmation page that does not exist, so no browser path reaches this route, and no browser test covers it.
+- A self record with a subject export, or one whose file is an embryo source, refuses with 404 until those dispositions are defined.
+- An `other_adult` record that is neither a confirmed Path B record nor a Path A record, such as an unconfirmed draft, is not found here. Its existing withdrawal flows are unchanged.
+
 ## 2026-10-16 — G5.4: the claimant's temporary contact is exactly 730 days, and the claimant page states it
 
 Owner decision 2026-10-16 ("Claimant retention stated in days (G5.4)", `docs/protocol/decisions.md`). The contact class `future-person.claimed-unbound-24mo` was `v_now+interval '24 months'` (`20260930237000_future_person_contact_retention.sql:17`). That is 730 or 731 days depending on the dates, so it could not be stated in days. It is now exactly 730 days. Part 2 of the decision needs no code change: a claimed record stays until the claimant asks, and the page keeps the 30-day record and 7-day DNA deletion times.

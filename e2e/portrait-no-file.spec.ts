@@ -32,8 +32,9 @@ const B_AS_SEEN_BY_A = "Invited adult";
  * one from there — delete a file at the end — does not work, and the reason
  * is deliberate product behaviour rather than a fixture problem:
  * `prepare_genome_file_deletion_v1` refuses with `file_delete_shared_graph`
- * (surfaced as 409 `file_delete_subject_unavailable`) as soon as a
- * `family_pairs` row names the subject, because "these graph cases need their
+ * (surfaced as 409 `file_delete_subject_unavailable`) while a pending or
+ * current `family_pairs` row names the subject, or one that still holds joint
+ * results (narrowed 2026-10-16, Q6), because "these graph cases need their
  * existing subject-level disposition, not a file shortcut that might remove
  * another adult's shared working data". Measured 2026-09-13: the delete
  * control on `/files` answers 409 for exactly that reason. So the state is

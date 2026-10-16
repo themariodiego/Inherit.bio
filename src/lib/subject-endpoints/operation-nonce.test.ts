@@ -21,7 +21,10 @@ const OTHER = "dddddddd-dddd-4ddd-8ddd-dddddddddddd";
 
 describe("the subject-route operation nonce", () => {
   it("names one registered route per operation", () => {
-    expect(SUBJECT_OPERATION_ROUTES).toEqual({ subject_sharing_stop: "api.subject-sharing" });
+    expect(SUBJECT_OPERATION_ROUTES).toEqual({
+      subject_sharing_stop: "api.subject-sharing",
+      subject_delete: "api.subject-delete",
+    });
   });
 
   it("verifies for exactly the account, session, operation and subject it was minted for", () => {
@@ -33,6 +36,14 @@ describe("the subject-route operation nonce", () => {
     for (const changed of [{ accountId: OTHER }, { sessionId: OTHER }, { subjectId: OTHER }]) {
       expect(verifySubjectOperationNonce(nonce, { ...STOP, ...changed }, NOW)).toBeNull();
     }
+  });
+
+  it("is bound to its operation: a stop code never deletes and a delete code never stops", () => {
+    const stop = mintSubjectOperationNonce(STOP, NOW);
+    const remove = mintSubjectOperationNonce({ ...STOP, operation: "subject_delete" }, NOW);
+    expect(verifySubjectOperationNonce(stop, { ...STOP, operation: "subject_delete" }, NOW)).toBeNull();
+    expect(verifySubjectOperationNonce(remove, STOP, NOW)).toBeNull();
+    expect(verifySubjectOperationNonce(remove, { ...STOP, operation: "subject_delete" }, NOW)).not.toBeNull();
   });
 
   it("carries no identity: the account, session and subject appear nowhere in it", () => {
