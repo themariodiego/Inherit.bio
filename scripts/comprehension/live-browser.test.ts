@@ -1,8 +1,12 @@
+import { execFile } from "node:child_process";
 import http from "node:http";
 import type { AddressInfo } from "node:net";
+import { fileURLToPath } from "node:url";
+import { promisify } from "node:util";
 import { chromium, type Browser } from "@playwright/test";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { openLiveSession, windowLines, type LiveSessionOptions } from "./live-browser";
+import { CONTROL_ATTRIBUTE, isNavigationRace, openLiveSession, pageSource, snapshotDocument, windowLines,
+  type LiveSessionOptions } from "./live-browser";
 
 // A tiny synthetic site. Nothing here is the product or a participant.
 const pages: Record<string, (outside: string, cookie: string) => string> = {
@@ -14,6 +18,9 @@ const pages: Record<string, (outside: string, cookie: string) => string> = {
   "/third": () => `<title>Third</title><main><p>Reached by typing.</p></main>`,
   "/mail": () => `<title>Mailed</title><main><p>Opened from an email.</p></main>`,
   "/cookie": (_outside, cookie) => `<title>Cookie</title><main><p>Cookie: ${cookie || "none"}</p></main>`,
+  // A page whose own script breaks the reader. That is not a page loading.
+  "/refusing": () => `<title>Refusing</title><script>Element.prototype.matches = () => {
+    throw new Error("synthetic snapshot refusal"); };</script><main><p>Unreadable.</p></main>`,
 };
 let browser: Browser, app: http.Server, outside: http.Server, origin = "", outsideOrigin = "", outsideHits = 0;
 const listen = (server: http.Server) => new Promise<string>(resolve => server.listen(0, "127.0.0.1",
@@ -89,6 +96,71 @@ describe("a live participant session", () => {
       expect(first.paths()).toEqual(["/cookie"]);
     } finally { await first.close(); await second.close(); }
   }, 60_000);
+
+  it("shows the same first view and counts actions when tsx loads the session module, as the owned launcher does", async () => {
+    // tsx keeps function names by wrapping named inner functions in a
+    // module-scope helper that does not exist in the page. Vitest's transform
+    // does not, so the probe drives the same synthetic site from a tsx child.
+    const probe = fileURLToPath(new URL("./live-browser-tsx-probe.mts", import.meta.url));
+    const { stdout } = await promisify(execFile)(process.execPath, ["--import", "tsx", probe, origin],
+      { timeout: 45_000, maxBuffer: 1024 * 1024 });
+    type View = { path: string; visibleText: string; controls: string[] };
+    const result = JSON.parse(stdout) as { first: View; second: View; record: unknown; diagnostics: { failedActions: number } };
+    expect(result.first.path).toBe("/");
+    expect(result.first.visibleText.split("\n")[0]).toBe("Page title: Home");
+    expect(result.first.visibleText).not.toContain("The page is still loading.");
+    expect(result.first.visibleText).toContain("# Welcome");
+    expect(result.first.visibleText).toMatch(/\[c0 link\] Second page/);
+    expect(result.first.visibleText).toMatch(/\[c1 text field\] Friend email/);
+    expect(result.first.visibleText).toMatch(/\[c3 button\] Not yet \(disabled\)/);
+    expect(result.first.controls).toEqual(["c0", "c1", "c2", "c3"]);
+    const local = await openLiveSession(options());
+    try { expect(result.first).toEqual(await local.observe()); } finally { await local.close(); }
+    expect(result.second.path).toBe("/second");
+    expect(result.second.visibleText).toContain("## Second heading");
+    expect(result.diagnostics.failedActions).toBe(0);
+    // One real click on "Second page", counted by the installed listener.
+    expect(result.record).toEqual({ completed: true, path: ["/", "/second"], actions: 1, entries: 0, confirmationExclusions: [] });
+    expect(outsideHits).toBe(0);
+  }, 60_000);
+
+  it("reads the same snapshot from its source text as from the function itself", async () => {
+    // Vitest adds no `__name`, so the function form still runs here.
+    const context = await browser.newContext({ baseURL: origin });
+    try {
+      await context.route(`${outsideOrigin}/**`, route => route.abort("blockedbyclient"));
+      const [direct, sent] = [await context.newPage(), await context.newPage()];
+      for (const page of [direct, sent]) await page.goto("/", { waitUntil: "domcontentloaded" });
+      const expected = await direct.evaluate(snapshotDocument, CONTROL_ATTRIBUTE);
+      expect(expected).toMatchObject({ title: "Home", controls: ["c0", "c1", "c2", "c3"] });
+      expect(await sent.evaluate<typeof expected>(pageSource(snapshotDocument, CONTROL_ATTRIBUTE))).toEqual(expected);
+      // The identity binding stays local: the page gains no global.
+      expect(await sent.evaluate("typeof globalThis.__name")).toBe("undefined");
+    } finally { await context.close(); }
+    expect(outsideHits).toBe(0);
+  }, 60_000);
+
+  it("fails the session when the page cannot be read for any reason but a navigation", async () => {
+    const session = await openLiveSession(options({ startPath: "/refusing" }));
+    try {
+      await expect(session.observe()).rejects.toThrow("synthetic snapshot refusal");
+    } finally { await session.close(); }
+  }, 60_000);
+
+  it("treats only playwright-core's navigation messages as a page still loading", () => {
+    // What playwright-core 1.62.1 gives page.evaluate when a navigation
+    // replaces the document mid-read, with and without the final stop.
+    for (const message of ["page.evaluate: Execution context was destroyed, most likely because of a navigation.",
+      "page.evaluate: Execution context was destroyed, most likely because of a navigation"])
+      expect(isNavigationRace(new Error(message))).toBe(true);
+    // A page error, a closed tab and anything unprefixed must stop the session.
+    for (const message of ["page.evaluate: ReferenceError: __name is not defined",
+      "page.evaluate: Error: Execution context was destroyed, most likely because of a navigation",
+      "page.evaluate: Target page, context or browser has been closed", "page.evaluate: Frame was detached",
+      "Execution context was destroyed, most likely because of a navigation."])
+      expect(isNavigationRace(new Error(message))).toBe(false);
+    expect(isNavigationRace("page.evaluate: Execution context was destroyed, most likely because of a navigation.")).toBe(false);
+  });
 
   it("windows long pages by lines and scrolls through them", () => {
     const lines = Array.from({ length: 10 }, (_, index) => `line ${index} ${"x".repeat(20)}`);

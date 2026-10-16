@@ -29,7 +29,8 @@ function artifact() {
   const events: object[] = [{ kind: "start", manifest }];
   for (const row of selected.responses) {
     const { personaId, taskId, sessionId, completed, path, actions, entries, answer, verdict, regrade } = row;
-    const history = [{ view: { path: "/overview", visibleText: "Public synthetic control", controls: [] } }];
+    const history = [{ view: { path: "/overview", controls: ["c0"],
+      visibleText: "Page title: Public synthetic overview\n# Public synthetic control\n[c0 link] Public synthetic link" } }];
     const processIds = ["participant", "grader", "regrader"].map(role => `${sessionId}-${role}`);
     events.push({ kind: "session-open", runId, personaId, taskId, sessionId });
     spend.push({ kind: "reserve", id: `fresh-stack-${sessionId}`, maximum: 1_000_000 });
@@ -215,6 +216,25 @@ it.each(["closed", "foreign-run", "foreign-open", "foreign-ended", "clean", "sta
   value.history = history.map(row => JSON.stringify(row)).join("\n") + "\n";
   value.spend = spend.map(row => JSON.stringify(row)).join("\n") + "\n";
   expect(() => verifyHostedSmokeArtifact(value, head, tree)).toThrow();
+});
+it.each(["untitled", "blank-title", "still-loading", "no-controls", "mailed-link-only", "unlisted-control"])("refuses a session whose first view is %s", mode => {
+  const value = artifact();
+  const history = value.history.trimEnd().split("\n").map(line => JSON.parse(line));
+  const session = history.find(row => row.kind === "session");
+  const ended = history.find(row => row.phase === "ended" && row.sessionId === session.sessionId);
+  // The session record and its ended trace must stay equal, so only the
+  // first-view rule can refuse.
+  for (const view of [session.evidence.history[0].view, ended.value.history[0].view]) {
+    if (mode === "untitled") view.visibleText = view.visibleText.replace(/^Page title: .*$/m, "Page title: (none)");
+    if (mode === "blank-title") view.visibleText = view.visibleText.replace(/^Page title: .*$/m, "Page title:  ");
+    if (mode === "still-loading") view.visibleText = view.visibleText.replace("\n", "\nNote: The page is still loading.\n");
+    if (mode === "no-controls") view.controls = [];
+    if (mode === "mailed-link-only") Object.assign(view, { controls: ["m1"],
+      visibleText: "Page title: Public synthetic overview\n[m1 mailed-link] Public synthetic email link" });
+    if (mode === "unlisted-control") view.controls = ["c9"];
+  }
+  value.history = history.map(row => JSON.stringify(row)).join("\n") + "\n";
+  expect(() => verifyHostedSmokeArtifact(value, head, tree)).toThrow("Each session must first read a titled, loaded page with at least one control");
 });
 it("retains the foreground timeout in the actual owned group and the original TERM/5s/KILL bounds", () => {
   const pipe = readFileSync("scripts/comprehension/hosted-owned-pipe.py", "utf8");

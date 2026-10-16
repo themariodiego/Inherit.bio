@@ -26,7 +26,7 @@ export const CONTROL_ATTRIBUTE = "data-comprehension-control";
 const COUNTER_KEY = "__inheritComprehensionActions";
 const SYNTHETIC_EMAIL = /@(?:[a-z0-9-]+\.)*(?:e2e\.local|invalid)$/i;
 
-/** Runs in the page. Self-contained: Playwright serialises it. */
+/** Runs in the page. Self-contained: it is sent to the page as source. */
 export function snapshotDocument(attribute: string): { title: string; lines: string[]; controls: string[] } {
   const root = document.documentElement;
   let next = Number(root.getAttribute(`${attribute}-next`) ?? "0");
@@ -112,6 +112,39 @@ export function snapshotDocument(attribute: string): { title: string; lines: str
   return { title: document.title, lines, controls };
 }
 
+/** Runs in every document before its own scripts. Self-contained: it is sent as source. */
+function installActionCounter(key: string) {
+  const bump = () => {
+    // A refused storage reads back as zero actions, which can only fail a
+    // ceiling-free task and never passes a task with a floor.
+    try { window.sessionStorage.setItem(key, String(Number(window.sessionStorage.getItem(key) ?? "0") + 1)); } catch { /* counted as zero */ }
+  };
+  for (const name of ["click", "submit"]) window.addEventListener(name, bump, true);
+}
+
+/**
+ * Page code as source text: `source(argument)` with a local identity
+ * `__name`. The owned and fresh launchers load this module under tsx, whose
+ * esbuild transform keeps function names by wrapping each named inner
+ * function in a call to a module-scope `__name` helper. The page has no such
+ * helper, so a function handed to Playwright threw there. The local binding
+ * satisfies those calls and adds nothing to the page's global scope; under
+ * other loaders it is unused. Playwright builds the same `(source)(argument)`
+ * text from a function, and the argument is a fixed string sent as a JSON
+ * string literal.
+ */
+export function pageSource(source: (argument: string) => unknown, argument: string): string {
+  return `(() => { const __name = (target) => target; return (${source.toString()})(${JSON.stringify(argument)}); })()`;
+}
+
+/** The only rejections playwright-core 1.62.1 gives a main-frame evaluate whose
+ * document went away during a navigation (`contextDestroyed` and the protocol
+ * error rewrite). Any other failure is a defect, never a page still loading. */
+export function isNavigationRace(error: unknown): boolean {
+  return error instanceof Error
+    && /^page\.evaluate: Execution context was destroyed, most likely because of a navigation\.?(?:\n|$)/.test(error.message);
+}
+
 /** Lines from `offset` until the character budget is spent. */
 export function windowLines(lines: readonly string[], offset: number, limit: number) {
   const start = Math.max(0, Math.min(offset, Math.max(0, lines.length - 1)));
@@ -174,14 +207,7 @@ export async function openLiveSession(options: LiveSessionOptions): Promise<Live
       await setup.close();
     }
     stage = "read-browser-init-script";
-    await context.addInitScript(key => {
-      const bump = () => {
-        // A refused storage reads back as zero actions, which can only fail a
-        // ceiling-free task and never passes a task with a floor.
-        try { window.sessionStorage.setItem(key, String(Number(window.sessionStorage.getItem(key) ?? "0") + 1)); } catch { /* counted as zero */ }
-      };
-      for (const name of ["click", "submit"]) window.addEventListener(name, bump, true);
-    }, COUNTER_KEY);
+    await context.addInitScript({ content: pageSource(installActionCounter, COUNTER_KEY) });
     stage = "read-browser-page-open";
     let page = await context.newPage();
     context.on("page", opened => { page = opened; });
@@ -230,8 +256,13 @@ export async function openLiveSession(options: LiveSessionOptions): Promise<Live
       async observe() {
         await readCount();
         let snapshot = { title: "", lines: [] as string[], controls: [] as string[] };
-        try { snapshot = await page.evaluate(snapshotDocument, CONTROL_ATTRIBUTE); }
-        catch { note ??= "The page is still loading."; }
+        try { snapshot = await page.evaluate<ReturnType<typeof snapshotDocument>>(pageSource(snapshotDocument, CONTROL_ATTRIBUTE)); }
+        catch (error) {
+          // Only a navigation that replaced the document mid-read is a page
+          // still loading; any other failure stops the session.
+          if (!isNavigationRace(error)) throw error;
+          note ??= "The page is still loading.";
+        }
         const path = (() => { try { return new URL(page.url()).pathname || "/"; } catch { return "/"; } })();
         if (path !== lastPath) { offset = 0; lastPath = path; }
         const shown = windowLines(snapshot.lines, offset, options.textLimit);
