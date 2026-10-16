@@ -4988,3 +4988,22 @@ Owner decisions (clickable chat answers) for the six `/api/subjects*` endpoints:
 - A claimed record stays until the claimant asks to delete it. The page
   states the 30-day record and 7-day DNA deletion times, and that reading
   satisfies G5.4.
+
+## 2026-10-16 — Subjects delete and transfer: four further cases
+
+Owner decisions (clickable chat answers) on questions raised while building
+`api.subject-delete` and `api.subject-transfer`:
+
+- **Claimed-bound embryo delete:** while claimant binding is closed, a
+  `claimed_bound` subject cannot exist, so the delete answers
+  `resource-not-found-v1` for it. The bound erasure ships with the binding
+  release.
+- **Transfer with held files:** a transfer is refused while any Path B file on
+  the record is still pending. Once every file is confirmed, each one is
+  detached into a person-owned file, which the relocation worker copies to a
+  fresh key.
+- **Relocated key shape:** relocated objects get a fresh flat `<uuid>` key, as
+  live code uses. The `storage.subject-v2` declared prefix stays undecided.
+- **Reading after transfer:** existing results stay readable under the person's
+  own grants, and the uploader loses all access. No new analysis runs on the
+  record until a person-owned analysis path is decided.
