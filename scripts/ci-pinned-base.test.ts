@@ -1,6 +1,9 @@
-import { readFileSync } from "node:fs";
+import { spawnSync } from "node:child_process";
+import { chmodSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { pinnedBase, prefetchPinnedBase } from "./ci-pinned-base";
+import { pinnedBase, pinnedBaseContext, prefetchPinnedBase } from "./ci-pinned-base";
 
 const DIGEST = "c3de60bf2f9dd0ac6370e6117950ff62d6e339527e7472301c9c78a017978392";
 const PINNED = `FROM public.ecr.aws/docker/library/node:22-bookworm-slim@sha256:${DIGEST}`;
@@ -37,5 +40,40 @@ describe("pinned CI base images", () => {
     expect(asked).toEqual([base.primary, base.mirror]);
     expect(asked.every(reference => reference.endsWith(`@sha256:${DIGEST}`))).toBe(true);
     expect(() => prefetchPinnedBase(base, () => false)).toThrow("ci_pinned_base:unavailable");
+  });
+
+  it("maps the exact pinned FROM to the exact reference that was pulled", () => {
+    const base = pinnedBase(PINNED);
+    expect(pinnedBaseContext(base, "primary")).toBe(`${base.primary}=docker-image://${base.primary}`);
+    expect(pinnedBaseContext(base, "mirror")).toBe(`${base.primary}=docker-image://mirror.gcr.io/library/node@sha256:${DIGEST}`);
+  });
+
+  it("exports the mirror context to later steps when the pinned registry refuses", () => {
+    const root = mkdtempSync(join(tmpdir(), "ci-pinned-base-"));
+    try {
+      const pulls = join(root, "pulls"), env = join(root, "github-env");
+      writeFileSync(join(root, "docker"), `#!/bin/sh\necho "$2" >> "${pulls}"\ncase "$2" in public.ecr.aws/*) exit 1;; esac\nexit 0\n`);
+      chmodSync(join(root, "docker"), 0o755);
+      writeFileSync(env, "");
+      const run = spawnSync(process.execPath, ["--import", "tsx", "scripts/ci-pinned-base.run.mts", "scripts/ci-browser/Dockerfile"], {
+        encoding: "utf8", env: { ...process.env, PATH: `${root}:${process.env.PATH}`, GITHUB_ENV: env },
+      });
+      expect(run.status, run.stderr).toBe(0);
+      const base = pinnedBase(readFileSync("scripts/ci-browser/Dockerfile", "utf8"));
+      expect(readFileSync(pulls, "utf8").trim().split("\n")).toEqual([base.primary, base.mirror]);
+      expect(readFileSync(env, "utf8")).toBe(`INHERIT_PINNED_BASE_CONTEXT=${pinnedBaseContext(base, "mirror")}\n`);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("prefetches immediately before every CI build of the runtime image and passes its context", () => {
+    const workflow = readFileSync(".github/workflows/ci.yml", "utf8").split("\n").map(line => line.trim());
+    const builds = workflow.flatMap((line, index) => line.includes("--file scripts/ci-browser/Dockerfile") ? [index] : []);
+    expect(builds).toHaveLength(3);
+    for (const index of builds) {
+      expect(workflow[index]).toBe('run: docker build --build-context "$INHERIT_PINNED_BASE_CONTEXT" --tag inherit-ci-browser:local --file scripts/ci-browser/Dockerfile scripts/ci-browser');
+      expect(workflow[index - 2]).toBe("run: pnpm exec tsx scripts/ci-pinned-base.run.mts scripts/ci-browser/Dockerfile");
+    }
   });
 });

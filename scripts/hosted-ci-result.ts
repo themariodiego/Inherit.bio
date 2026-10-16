@@ -129,7 +129,7 @@ export function hostedWorkflowContract(value: unknown) {
     'sudo -- python3 scripts/ci_apt_mirror_priority.py "$ImageOS" "$ImageVersion" "$GITHUB_ACTIONS" "$RUNNER_ENVIRONMENT"',
     "pnpm exec playwright install --with-deps chromium",
     "pnpm exec tsx scripts/ci-pinned-base.run.mts scripts/ci-browser/Dockerfile",
-    "docker build --tag inherit-ci-browser:local --file scripts/ci-browser/Dockerfile scripts/ci-browser",
+    "docker build --build-context \"$INHERIT_PINNED_BASE_CONTEXT\" --tag inherit-ci-browser:local --file scripts/ci-browser/Dockerfile scripts/ci-browser",
     "pnpm exec tsx scripts/comprehension/run-hosted-owned-smoke.mts", "actions/upload-artifact@v4",
   ], "Complete owned smoke setup, fixed sender or artifact producer differs");
   assert.deepEqual(smoke.steps[0].with, { "fetch-depth": 0, "persist-credentials": false });

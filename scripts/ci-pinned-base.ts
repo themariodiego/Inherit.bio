@@ -6,8 +6,14 @@
  * Data limit exceeded` on some shared hosted-runner addresses. A pull by digest
  * is content-addressed, so the identical image index from Google's
  * mirror.gcr.io copy of Docker Hub's official images is the same verified
- * bytes. BuildKit then resolves the pinned FROM from local content without a
- * registry request. The Dockerfile and its pin stay unchanged.
+ * bytes. The Dockerfile and its pin stay unchanged.
+ *
+ * The hosted runners use Docker's classic image store, which finds a local
+ * image only under the exact name it was pulled by. A mirror pull is therefore
+ * invisible to the pinned FROM, and BuildKit asks public.ecr.aws again. The
+ * build gets one named build context that maps the exact FROM reference to the
+ * exact reference that was pulled, so BuildKit reads the base from local
+ * content with no registry request.
  */
 export interface PinnedBase {
   readonly repository: string;
@@ -36,4 +42,12 @@ export function prefetchPinnedBase(base: PinnedBase, pull: (reference: string) =
   if (pull(base.primary)) return "primary";
   if (pull(base.mirror)) return "mirror";
   throw new Error("ci_pinned_base:unavailable");
+}
+
+/**
+ * The `docker build --build-context` value that resolves the pinned FROM from
+ * the image the prefetch pulled, by the same digest.
+ */
+export function pinnedBaseContext(base: PinnedBase, source: "primary" | "mirror"): string {
+  return `${base.primary}=docker-image://${source === "primary" ? base.primary : base.mirror}`;
 }
