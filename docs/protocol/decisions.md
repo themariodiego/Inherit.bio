@@ -5007,3 +5007,13 @@ Owner decisions (clickable chat answers) on questions raised while building
 - **Reading after transfer:** existing results stay readable under the person's
   own grants, and the uploader loses all access. No new analysis runs on the
   record until a person-owned analysis path is decided.
+- **Transferred embryo delete with an open claim:** while a claim or claim
+  review on the embryo is open, the delete answers `resource-not-found-v1` and
+  writes nothing. Otherwise it purges only that embryo. Its record key and
+  print rights are revoked, rights and download sessions end, and the
+  claim-window retention row closes. The identity profile and derived rows are
+  deleted, and the one source deletion is planned.
+- **Self "empty it" and the file-byte guard:** the shared per-file delete guard
+  is narrowed. It refuses only a family pair that is still pending or current,
+  or one that still has joint results. The same change applies to
+  `api.file-delete`.
