@@ -4859,3 +4859,34 @@ unchanged budget must still qualify before the matrix row changes.
   marker list are each tested on synthetic data.
 - The Neanderthal comparison figure still needs the owner's source review
   before it is shown.
+
+## 2026-10-16 — Protective legal anchors on consent documents (G5.8)
+
+- Owner decision (clickable chat answer): counsel drafts one versioned,
+  anchored block containing the protective statements. It is rendered inside
+  every activation-point consent and incorporated by reference in each signed
+  body, provided counsel confirms that incorporation by reference works.
+- The absent statements (indemnity, no-reproductive-reliance, no-sale-no-payment)
+  and the incomplete ones (no-warranty, governing-law) remain counsel's to
+  draft. No legal text is written or approved by this decision.
+
+## 2026-10-16 — Genome build for laboratory-table embryo sessions
+
+- Owner decision (clickable chat answer): the configure step records a
+  laboratory-table session as `pgt_table`. Its build comes from the file
+  header when the header states one (`explicit-header` evidence). Otherwise
+  the session is `decision-required`, and the mapping route asks for GRCh37,
+  GRCh38 or unknown before any chunk is accepted. `unknown` ends the upload.
+  Tables do not use position-based build inference in this release.
+- Table chunks are refused until the build is resolved, consistent with the
+  existing fragment trigger.
+
+## 2026-10-16 — Token rotation in the embryo mapping responses
+
+- Owner decision (clickable chat answer): change the register so that
+  `pgt-mapping-challenge-v1` and a 200 PUT decision response carry the next
+  operation nonce and the transport challenge, instead of an empty 204. This
+  follows the VCF configure response's pattern. The session CSRF header rule
+  is unchanged.
+- The register change is recorded in `docs/route-register.json` with tests,
+  and it is built together with the mapping route.
