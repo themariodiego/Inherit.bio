@@ -4763,3 +4763,20 @@ unchanged budget must still qualify before the matrix row changes.
   current citation (run 37980880275 at `44395942`) predates the rebinding and
   must not be used for T7. No simulated or human comprehension result is
   credited by this decision.
+
+## 2026-10-16 — Transport for the guarded PR 323 release
+
+- Owner decision (clickable chat answer): run the guarded release over HTTPS,
+  through the Supabase Management API's SQL endpoint, with a short-lived
+  personal access token held as the environment secret `SUPABASE_ACCESS_TOKEN`.
+  This replaces the earlier choice of `psql` with `PRODUCTION_DATABASE_URL`.
+- Reason: cloud sessions reach the internet only through an HTTPS proxy. A TCP
+  connection to the Supabase pooler on port 5432 timed out, so `psql` cannot
+  connect from any session in this environment. A read-only check through the
+  connector showed that the endpoint runs as `postgres` with a 2-minute
+  `statement_timeout`, which the batch guard accepts.
+- Consequence: the batch files, order, checks and stop rules are unchanged.
+  `docs/evidence/pr323-production-apply-20261016/api/RUNBOOK.md` maps them onto
+  the endpoint. The owner revokes the token after the release, and deletes
+  `PRODUCTION_DATABASE_URL` if it was added. No production change is credited
+  by this decision.
