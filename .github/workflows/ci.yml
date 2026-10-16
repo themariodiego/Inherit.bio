@@ -147,6 +147,8 @@ jobs:
         run: |
           eval "$(pnpm exec supabase status -o env)"
           SUPABASE_DB_URL="$DB_URL" pnpm gate:catalog-drift
+      - name: Fetch the pinned runtime base by digest
+        run: pnpm exec tsx scripts/ci-pinned-base.run.mts scripts/ci-browser/Dockerfile
       - name: Prepare credential-free isolated Linux runtime image
         run: docker build --tag inherit-ci-browser:local --file scripts/ci-browser/Dockerfile scripts/ci-browser
       - name: Production build with current local public configuration
@@ -299,6 +301,8 @@ jobs:
           echo "SUPABASE_SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY" >> "$GITHUB_ENV"
       - name: Seed this job's independent database
         run: pnpm seed
+      - name: Fetch the pinned runtime base by digest
+        run: pnpm exec tsx scripts/ci-pinned-base.run.mts scripts/ci-browser/Dockerfile
       - name: Prepare the unchanged credential-free isolated runtime image
         run: docker build --tag inherit-ci-browser:local --file scripts/ci-browser/Dockerfile scripts/ci-browser
       - name: Build and bind the exact checkout and local public configuration
@@ -356,6 +360,8 @@ jobs:
         run: sudo -- python3 scripts/ci_apt_mirror_priority.py "$ImageOS" "$ImageVersion" "$GITHUB_ACTIONS" "$RUNNER_ENVIRONMENT"
       - name: Install Playwright Chromium
         run: pnpm exec playwright install --with-deps chromium
+      - name: Fetch the pinned runtime base by digest
+        run: pnpm exec tsx scripts/ci-pinned-base.run.mts scripts/ci-browser/Dockerfile
       - name: Prepare credential-free runtime image
         run: docker build --tag inherit-ci-browser:local --file scripts/ci-browser/Dockerfile scripts/ci-browser
       - name: Run four owned key-free T6/T7 sessions

@@ -128,6 +128,7 @@ export function hostedWorkflowContract(value: unknown) {
     "actions/checkout@v4", "pnpm/action-setup@v4", "actions/setup-node@v4", "pnpm install --frozen-lockfile",
     'sudo -- python3 scripts/ci_apt_mirror_priority.py "$ImageOS" "$ImageVersion" "$GITHUB_ACTIONS" "$RUNNER_ENVIRONMENT"',
     "pnpm exec playwright install --with-deps chromium",
+    "pnpm exec tsx scripts/ci-pinned-base.run.mts scripts/ci-browser/Dockerfile",
     "docker build --tag inherit-ci-browser:local --file scripts/ci-browser/Dockerfile scripts/ci-browser",
     "pnpm exec tsx scripts/comprehension/run-hosted-owned-smoke.mts", "actions/upload-artifact@v4",
   ], "Complete owned smoke setup, fixed sender or artifact producer differs");
