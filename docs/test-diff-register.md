@@ -1,3 +1,9 @@
+## 2026-10-16 — Laboratory-table transport test: the fake server's random tokens no longer spell a withheld value
+
+Hosted CI run 38943838371 (`repository-checks`, commit 58922301) failed `src/lib/embryos/upload-transport.test.ts` "drops a forbidden column, and every label and note, before any byte leaves this browser". The chunk body it reported held no file value. The fake server's random sample handle `S-69UrXOTyxYcCPozqVQwklJuS4njIcDwXXjWiVT87M` contains `XX`, one of the withheld Sex values. Every handle, the transport challenge and each question id are 43 random base64url characters, so the test failed at random. Locally the unchanged file failed this test in 5 of 40 runs.
+
+Test change, assertion unchanged: `tableServer` now draws its handles, transport challenge and question ids from `serverToken()`. It redraws any token that contains a withheld value, so they keep their shape and randomness. The withheld list moves to one `WITHHELD` constant with the same seven values, and the no-leak loop iterates it. The loop still asserts that no request body contains any of them. After the change, the test failed in 0 of 40 runs. A planted defect, where `serverToken()` returns a token starting `XX`, fails the test, so a server token that spells a withheld value is still caught.
+
 ## 2026-10-16 — G5.4: the claimant's temporary contact is exactly 730 days, and the claimant page states it
 
 Owner decision 2026-10-16 ("Claimant retention stated in days (G5.4)", `docs/protocol/decisions.md`). The contact class `future-person.claimed-unbound-24mo` was `v_now+interval '24 months'` (`20260930237000_future_person_contact_retention.sql:17`). That is 730 or 731 days depending on the dates, so it could not be stated in days. It is now exactly 730 days. Part 2 of the decision needs no code change: a claimed record stays until the claimant asks, and the page keeps the 30-day record and 7-day DNA deletion times.
