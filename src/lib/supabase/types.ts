@@ -8794,6 +8794,15 @@ export type Database = {
         Args: { p_account_id: string; p_grant_id: string }
         Returns: string
       }
+      revoke_purpose_rights_v1: {
+        Args: {
+          p_nonce: string
+          p_purpose: string
+          p_session_hash: string
+          p_test_jurisdiction: boolean
+        }
+        Returns: string
+      }
       run_due_embryo_retention_phases_v1: {
         Args: never
         Returns: {
@@ -8882,6 +8891,18 @@ export type Database = {
         Args: {
           p_account_id: string; p_session_id: string; p_file_id: string; p_purpose: string;
           p_rsids: number[]; p_offset: number
+        }
+        Returns: Json
+      }
+      grant_purpose_rights_v1: {
+        Args: {
+          p_jurisdiction_code: string
+          p_nonce: string
+          p_presentation: Json
+          p_session_hash: string
+          p_signing_name_ciphertext: string
+          p_statement_keys: string[]
+          p_test_jurisdiction: boolean
         }
         Returns: Json
       }
