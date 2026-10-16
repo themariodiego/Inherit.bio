@@ -4890,3 +4890,39 @@ unchanged budget must still qualify before the matrix row changes.
   is unchanged.
 - The register change is recorded in `docs/route-register.json` with tests,
   and it is built together with the mapping route.
+
+## 2026-10-16 — Auth endpoints: jurisdiction, date of birth, reset and limits (G2.1)
+
+Owner decisions (clickable chat answers) for `auth.sign-up-submit`,
+`auth.forgot-password-submit` and `auth.reset-password-submit`:
+
+- **Jurisdiction stays at first sign-in.** The sign-up endpoint's register
+  contract drops `jurisdictionCode`, the two attestation fields and
+  `jurisdictionAffirmed`. The first-sign-in country step and its G5.1a test are
+  unchanged, so sign-up does not depend on counsel (D-083).
+- **Date of birth stays at account completion.** The sign-up contract drops
+  `dateOfBirth` and the under-18 check. The existing account-completion step and
+  its age gate are unchanged.
+- **A successful reset requires a fresh sign-in.** Every session is revoked,
+  and the person signs in again with the new password. The `auth.reset-password`
+  page entry and the reset e2e assertions are updated to match. Each test change
+  is recorded in `docs/test-diff-register.md`.
+- **The pages post to `/api/auth/*`.** The e2e assertions that required the
+  page's own request to reach Supabase's `/auth/v1/` are rewritten to be just as
+  strict: they require exactly the `/api/auth/*` request and no direct browser
+  call to `/auth/v1/`.
+- **Rate limits use email and network buckets.**
+  - Sign-up: 5 per hour per normalized email, 20 per hour per source network.
+  - Forgot password: 3 per hour per email, 10 per hour per network.
+  - Reset: one use per recovery session, with a 15-minute expiry.
+  - Answers stay identical whether or not the identity exists.
+  - The 2026-09-28 client-address exception is extended to these three auth
+    routes. Storage stays HMAC-keyed with 24-hour retention, as
+    `securityRateLimitContract` requires.
+- **Sign-up has no display name.** `displayName` is dropped from the sign-up
+  contract. The form keeps email and password, and the self record stays
+  labelled "You".
+- **Passwords are 12 to 72 characters** and at most 72 UTF-8 bytes, for sign-up
+  and reset alike. The auth service refuses longer ones, and bcrypt only uses
+  the first 72 bytes. A longer password gets `invalid-request-v1` with issue
+  `password` before any auth-service call.
