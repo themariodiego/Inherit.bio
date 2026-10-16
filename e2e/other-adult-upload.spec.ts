@@ -26,6 +26,7 @@ import { GATE_BUTTON, GATE_CHECKBOX_LABEL } from "../src/copy/family/person";
 import { EMAIL_LABEL, REQUESTED_HEADING, SEND_BUTTON } from "../src/copy/family/invite";
 import { JURISDICTION_AFFIRM, JURISDICTION_SELECT_LABEL } from "../src/copy/settings/jurisdiction";
 import {
+  ADULT_UPLOAD_DERIVED_LIST as DERIVED,
   ADULT_UPLOAD_REVISION_COPY as REVISION,
   HELD_FOR_YOU_COPY as HELD,
   OTHER_ADULT_UPLOAD_COPY as COPY,
@@ -360,12 +361,23 @@ test("another adult's file under Path B: signed without an account, held unreada
   expect(noticeMail.html).toContain("If you do nothing, it is deleted on");
   expect(toPlainText(noticeMail.html!)).toContain(`Who added it: ${UPLOADER_NAME}.`);
   expect(noticeMail.html).toContain("write to privacy@inherit.bio.");
+  // The register's closed list of what can be made from the file, from the
+  // one server list the review page renders too, and no other list item.
+  const noticeText = toPlainText(noticeMail.html!);
+  expect(noticeText).toContain(DERIVED.heading);
+  for (const item of DERIVED.items) expect(noticeText).toContain(item.text);
+  expect(noticeText).toContain(DERIVED.closing);
+  expect(noticeMail.html!.match(/<li\b/g)).toHaveLength(DERIVED.items.length);
   await signOut(page);
   await openRightsLink(page, noticeMail.html);
   const screen = page.locator('[data-slot="adult-upload-revision"]');
   await expect(screen.getByRole("heading", { name: REVISION.heading })).toBeVisible();
   await expect(screen.getByText(REVISION.see(CONFIRMER.name), { exact: true })).toBeVisible();
   await expect(screen.getByText(REVISION.nothingYet, { exact: true })).toBeVisible();
+  const derived = screen.locator('[data-slot="adult-upload-derived"]');
+  await expect(derived.getByRole("heading", { name: DERIVED.heading, exact: true })).toBeVisible();
+  await expect(derived.getByRole("listitem")).toHaveText(DERIVED.items.map(item => item.text));
+  await expect(derived.getByText(DERIVED.closing, { exact: true })).toBeVisible();
   await expect(screen.getByText(REVISION.uploader(UPLOADER_NAME), { exact: true })).toBeVisible();
   await expect(screen.getByText(REVISION.contact, { exact: true })).toBeVisible();
   await screen.getByRole("button", { name: REVISION.confirmButton, exact: true }).click();
