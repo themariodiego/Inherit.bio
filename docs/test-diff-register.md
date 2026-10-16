@@ -1,3 +1,11 @@
+## 2026-10-16 — Future-person and claim endpoints (G2.1): the route census moves
+
+The owner's G2.1 decision ("Build all 24") builds the registered but unbuilt endpoints. This slice builds `api.future-person-correction-review` (`src/app/api/reviews/future-person/corrections/[id]/route.ts`) and `api.future-person-export` (`src/app/api/future-person/claim/session/export/route.ts`).
+
+Pin moved: `scripts/route-register-correspondence.test.ts` "leaves the unbuilt half of the register alone, but still measures it". The exact census goes from 16 to 14, one per route built, with a comment that names both. No other assertion changes. Planted defect: removing either new route file makes the test fail with 15.
+
+No other test assertion, frozen baseline, privacy control or waiting period changes. The new tests are additive: `supabase/tests/future_person_correction_review.sql`, `supabase/tests/future_person_export_open_ready.sql`, `src/lib/future-person/correction-review-route.test.ts` and `src/lib/exports/claimant-export-http.test.ts`.
+
 ## 2026-10-16 — Route census: a redirect served by `next.config.ts` counts as built
 
 `scripts/route-register-correspondence.test.ts` "leaves the unbuilt half of the register alone, but still measures it" walks only `src/app`. `legacy.signup` (`/signup`) and `legacy.login` (`/login`) are served by unconditional permanent redirects in `next.config.ts`, which run before the App Router. `scripts/route-gate.ts` already checks their emitted 308 against the register, and `scripts/canonical-host.test.ts` checks the query is kept. They were built, but the census counted them as unbuilt.

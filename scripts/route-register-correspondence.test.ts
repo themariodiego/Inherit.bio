@@ -24,8 +24,9 @@ import { storageBucketsInSource, UNRESOLVED_STORAGE_BUCKET } from "./storage-con
  *
  * Registered-but-unbuilt is deliberately not failed here. The register is
  * written from the brief and describes routes the product has not reached
- * yet; 16 of them remain unbuilt after the native appeal review, notice, auth,
- * mapping, subject-sharing and subjects (G2.1) routes. A redirect that
+ * yet; 14 of them remain unbuilt after the native appeal review, notice, auth,
+ * mapping, subject-sharing, subjects, correction-review and claimant export
+ * (G2.1) routes. A redirect that
  * `next.config.ts` serves counts as built.
  * The exact current count prevents a broken walker from passing silently.
  *
@@ -234,9 +235,12 @@ describe("the route register and the App Router describe the same surface", () =
     // unbuilt (its joint-result projection and TEST R2 run are reported back
     // undecided). Counting the redirects `next.config.ts` serves as built
     // removes legacy.signup and legacy.login, which were always built there,
-    // so 16 remain.
+    // so 16 remain. The named correction review
+    // (api.future-person-correction-review) and the claimant export
+    // (api.future-person-export; owner decision 2026-10-16, "Unbuilt
+    // registered endpoints (G2.1)") reduce it to 14.
     // Keep the exact census: new implementations require an explicit review.
-    expect(unbuilt.length).toBe(16);
+    expect(unbuilt.length).toBe(14);
     expect(unbuilt.length).toBeLessThan(entries.length);
   });
 });
