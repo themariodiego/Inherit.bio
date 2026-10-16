@@ -89,10 +89,16 @@ export async function* embryoTableChunks(file: Blob, inputBinding: TableBrowserB
   let hasRow = false;
   let sourceHeader: ReturnType<typeof detectPgtHeader> = null;
   const samples = new Map<string, number>();
+  let first = true;
   try {
     for await (const line of embryoInputLines(await embryoFileStream(file))) {
       if (!sourceHeader) {
-        if (line.startsWith("%PDF-")) throw new EmbryoTransportError("pdf_not_data");
+        if (first && line.startsWith("%PDF-")) throw new EmbryoTransportError("pdf_not_data");
+        first = false;
+        // A table may open with `#` header lines (its build statement among
+        // them, ADR 0037). None of them is ever sent: the configure route
+        // received only the `##reference`/`##contig` copies it needed.
+        if (line.startsWith("#")) continue;
         sourceHeader = detectPgtHeader(line);
         if (!sourceHeader) throw new EmbryoTransportError("unrecognised_format");
         // Validate syntax separately: detection alone is deliberately lenient.
@@ -201,4 +207,94 @@ export function validateEmbryoTableChunk(bytes: Uint8Array, binding: TableServer
   // An rsID-only chunk may resolve entirely to excluded chromosomes. It
   // writes zero rows; completion must still require retained cohort data.
   return records;
+}
+
+/**
+ * One embryo's stored table fragment (ADR 0037): a regenerated, neutral
+ * header with the resolved build, then that embryo's rows only, each its
+ * chromosome, position, rsID or `.`, and the call. No handle, challenge,
+ * label or source column survives; the fragment is bound to its ordinal by
+ * the locked manifest, not by anything it says.
+ */
+export const TABLE_FRAGMENT_COLUMNS = "chrom\tpos\trsid\tgenotype";
+
+export function embryoTableFragmentHeader(build: EmbryoTransportBinding["build"]): string[] {
+  if (!["GRCh37", "GRCh38"].includes(build)) throw new EmbryoTransportError("invalid_session");
+  return ["##inheritTableFragment=1", `##reference=${build}`, TABLE_FRAGMENT_COLUMNS];
+}
+
+function fragmentRecord(record: EmbryoTableRecord): string {
+  return [String(record.chrom), String(record.pos), record.rsid === null ? "." : `rs${record.rsid}`, record.genotype].join("\t");
+}
+
+export interface EmbryoTableFragment {
+  ordinal: number;
+  table: string;
+  /** Record lines, header excluded. */
+  records: number;
+}
+
+/**
+ * The validated rows of one chunk, split by embryo. A table chunk may carry
+ * a subset of the embryos, so only the ordinals with a retained row get a
+ * fragment; the completion transaction requires every embryo overall.
+ */
+export function embryoTableFragments(records: readonly EmbryoTableRecord[], build: EmbryoTransportBinding["build"]): EmbryoTableFragment[] {
+  const header = embryoTableFragmentHeader(build);
+  const byOrdinal = new Map<number, string[]>();
+  for (const record of records) {
+    const lines = byOrdinal.get(record.ordinal) ?? [];
+    lines.push(fragmentRecord(record));
+    byOrdinal.set(record.ordinal, lines);
+  }
+  return [...byOrdinal.entries()].sort(([left], [right]) => left - right)
+    .map(([ordinal, lines]) => ({ ordinal, records: lines.length, table: [...header, ...lines, ""].join("\n") }));
+}
+
+export interface EmbryoTableFragmentRow {
+  chrom: number;
+  pos: number;
+  rsid: number | null;
+  genotype: string;
+}
+
+/**
+ * Revalidate one stored table fragment before the worker reads a call from
+ * it: exactly the regenerated header for this build, then rows that
+ * re-serialize byte for byte through the same closed record rule. A
+ * fragment that fails here was changed after it was written and is never
+ * partly used.
+ */
+export function validateEmbryoTableFragment(bytes: Uint8Array, build: EmbryoTransportBinding["build"]): EmbryoTableFragmentRow[] {
+  const expected = embryoTableFragmentHeader(build);
+  if (!bytes.length || bytes.length > INGEST_CHUNK_MAXIMUM_BYTES + 4096) throw new EmbryoTransportError("too_large");
+  if (bytes[bytes.length - 1] !== 10) throw new EmbryoTransportError("invalid_chunk");
+  let text: string;
+  try { text = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(bytes); }
+  catch { throw new EmbryoTransportError("invalid_chunk"); }
+  const lines = text.split("\n");
+  lines.pop();
+  if (lines.length <= expected.length || expected.some((line, index) => lines[index] !== line)) {
+    if (lines.slice(0, expected.length).some((line) => line.startsWith("##reference=") && line !== expected[1])) {
+      throw new EmbryoTransportError("build_unknown");
+    }
+    throw new EmbryoTransportError("invalid_chunk");
+  }
+  const rows: EmbryoTableFragmentRow[] = [];
+  for (const line of lines.slice(expected.length)) {
+    if (encoder.encode(line).byteLength + 1 > LIMITS.maximumLogicalLineBytes) throw new EmbryoTransportError("too_large");
+    const fields = line.split("\t");
+    if (fields.length !== 4) throw new EmbryoTransportError("invalid_chunk");
+    const chrom = autosome(fields[0]);
+    if (chrom === null || fields[0] !== String(chrom)) throw new EmbryoTransportError("invalid_chunk");
+    const pos = positiveInteger(fields[1]);
+    const id = fields[2] === "." ? null : rsid(fields[2]);
+    if (id !== null && fields[2] !== `rs${id}`) throw new EmbryoTransportError("invalid_chunk");
+    if (call(fields[3]) !== fields[3]) throw new EmbryoTransportError("invalid_chunk");
+    const row = { chrom, pos, rsid: id, genotype: fields[3] };
+    if (fragmentRecord({ ordinal: 0, ...row }) !== line) throw new EmbryoTransportError("invalid_chunk");
+    rows.push(row);
+  }
+  if (rows.length > LIMITS.maximumLogicalRecords) throw new EmbryoTransportError("too_large");
+  return rows;
 }

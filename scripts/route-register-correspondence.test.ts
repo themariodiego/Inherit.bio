@@ -214,9 +214,10 @@ describe("the route register and the App Router describe the same surface", () =
     // and the reviewed claimant DELETE (api.future-person-delete) reduces it again.
     // The three reviewed auth endpoints (auth.sign-up-submit,
     // auth.forgot-password-submit, auth.reset-password-submit; owner decision
-    // 2026-10-16) reduce it from 26 to 23.
+    // 2026-10-16) reduce it from 26 to 23, and the laboratory-table mapping
+    // route (api.embryo-ingest-mapping, ADR 0037) reduces it once more, to 22.
     // Keep the exact census: new implementations require an explicit review.
-    expect(unbuilt.length).toBe(23);
+    expect(unbuilt.length).toBe(22);
     expect(unbuilt.length).toBeLessThan(entries.length);
   });
 });
@@ -980,7 +981,7 @@ type ClientFormReview = { file: string; forms: number; sha256: string };
 const GUARDED_FLOW_CLIENT_FORM_REVIEW: ClientFormReview[] = [
   { file: "src/components/embryo/upload/draft-form.tsx", forms: 1, sha256: "c216fd24a0d903e38171cf53079abe439f1656d010560de8f32694a253dfdc2e" },
   { file: "src/components/embryo/upload/signing-form.tsx", forms: 1, sha256: "09ef84e65cf77e765d40d4034fb9b5345a19196857cd1bc4e6781b820eaffcf8" },
-  { file: "src/components/embryo/upload/upload-stage.tsx", forms: 2, sha256: "4404ca716bf5d60510687e31c64036ca316939962e7abe048b7f704ac668eac1" },
+  { file: "src/components/embryo/upload/upload-stage.tsx", forms: 2, sha256: "84d2461d1e510ca23f2b66f8c77cfcd656480c70e0d8c55288267d0e5db42e6e" },
   { file: "src/components/future-person/claim-form.tsx", forms: 1, sha256: "15879dd96632b930bcaf494fc2f47cabd9b75bddfc328ab104bc8610be10fbdb" },
   { file: "src/components/future-person/claim-review.tsx", forms: 1, sha256: "ef96f46a4dec3c6cf56759c7699fdcc71613c14d3171f25e549c75ba2d7f3f6c" },
   { file: "src/components/future-person/keyless-pending-review.tsx", forms: 1, sha256: "d44c1530368a229dc5b3f75339ba541cdb04ce0f0f8442558792306f3a5f7c31" },

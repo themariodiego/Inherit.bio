@@ -17,6 +17,7 @@ import { openParticipantCReadSession } from "./participant-c-harness";
 import { seedParticipantC } from "./participant-c-journey";
 import { viewSchema } from "../scripts/comprehension/conductor-contract";
 import { auditNativeStatisticalCoverage, auditNativeFittedStatisticalCoverage } from "./helpers/embryo-statistical-coverage-audit";
+import { EMBRYO_PAIR_TABLE_FIXTURE } from "../scripts/embryo-pair-table-fixture";
 
 /** No product handler, consent, worker or stored result is replaced here.
  * The local mail receiver captures synthetic delivery only. The isolated
@@ -201,6 +202,27 @@ test("participant-c adds the bound embryo pair through both parents, upload and 
           await testInfo.attach("native-fitted-test-statistical-audits", { contentType: "application/json",
             body: JSON.stringify(fittedAudits) });
         } finally { await second.closeCoParent(); }
+      });
+      // ADR 0037: the same synthetic pair as a laboratory table. The file
+      // names its result column `Bases` and states no build, so the reader
+      // answers one column question and the build question in the browser
+      // before any chunk; the actual worker then publishes both sources.
+      await test.step("a laboratory table answers its column and build questions and reaches native publication", async () => {
+        testInfo.setTimeout(testInfo.timeout + 180_000);
+        await runtime.withTableJourney(cohortId, async table => {
+          const third = await seedParticipantC({ page, browser, ownerEmail: "table-test@e2e.local",
+            parentEmail: "table-test-parent@e2e.local", password, messages, runtime: table, tableSeed: "unstated-build" });
+          try {
+            for (const embryo of third.embryos) {
+              await page.goto(`/embryos/${embryo.id}`);
+              await expect(page.getByRole("heading", { level: 1, name: `Embryo ${embryo.sample_ordinal + 1}` })).toBeVisible();
+              await expect(page.locator('[data-slot="consent-required"]')).toHaveCount(0);
+            }
+            await testInfo.attach("laboratory-table-publication", { contentType: "application/json", body: JSON.stringify({
+              source: "actual-native-signed-parent-publication", fixture: EMBRYO_PAIR_TABLE_FIXTURE, cohortId: third.cohortId,
+              proof: await table.proof(third.cohortId) }) });
+          } finally { await third.closeCoParent(); }
+        });
       });
     } finally { await closeCoParent(); }
   });

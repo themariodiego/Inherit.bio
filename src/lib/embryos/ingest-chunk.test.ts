@@ -1,8 +1,11 @@
 import crypto from "node:crypto";
 import { describe, expect, it } from "vitest";
 import { EmbryoTransportError } from "./ingest-lines";
-import { chunkBinding, chunkRejection, headerRejection, reservationFragments, validateChunk, zeroizeChunk } from "./ingest-chunk";
+import { chunkBinding, chunkRejection, headerRejection, mappingRequired, reservationFragments, tableChunkBinding, tableLocus,
+  validateChunk, validateTableChunk, zeroizeChunk } from "./ingest-chunk";
 import { embryoVcfChunks } from "./vcf-transport";
+import { embryoTableChunks } from "./table-transport";
+import { resolveTableRsid } from "./table-reference";
 
 /**
  * The in-memory half of the embryo chunk route. Chunks are produced by the
@@ -126,5 +129,75 @@ describe("terminal answers", () => {
     expect(chunkRejection(new Error("PRIVATE SOURCE")).code).toBe("chunk");
     expect(JSON.stringify(await chunkRejection(new Error("PRIVATE SOURCE")).response().json())).not.toContain("PRIVATE");
     expect(headerRejection.code).toBe("header");
+  });
+});
+
+/**
+ * ADR 0037: the table half. Chunks come from the real browser table rewrite
+ * over a synthetic table; the rsIDs are sites of the shipped coordinate
+ * reference (`data/ref/build-discriminating-sites.json`), so resolving them
+ * is a real lookup.
+ */
+describe("binding and validating a laboratory-table chunk", () => {
+  const table = { ...authority, format: "pgt_table" as const };
+  const SOURCE_TABLE = "Sample,SNP,Genotype,Sex\nPRIVATE_A,rs116422505,TC,XX\nPRIVATE_B,rs116422505,CC,XY\nPRIVATE_C,rs12139609,AG,XX\nPRIVATE_A,rs999999999999,AA,XX\n";
+  async function tableChunk(source = SOURCE_TABLE, overrides: Partial<{ challenge: string; revision: number }> = {}) {
+    const [chunk] = await Array.fromAsync(embryoTableChunks(new Blob([source]), {
+      challenge: CHALLENGE, revision: authority.transportRevision, build: "GRCh38", sampleCount: 3, handles: HANDLES,
+      mapping: { complete: true, identifier: { field: "sample", column: 0 }, genotype: 2, locus: { kind: "rsid", column: 1 } },
+      ...overrides,
+    }));
+    return chunk;
+  }
+
+  it("binds only a table session with a resolved build, an issued transport and a recorded locus", async () => {
+    const bytes = await tableChunk();
+    const binding = tableChunkBinding(bytes, table, "rsid", resolveTableRsid);
+    expect(binding).toMatchObject({ challenge: CHALLENGE, build: "GRCh38", locusKind: "rsid", sampleCount: 3 });
+    expect(HANDLES.map((handle) => binding!.resolveHandle(handle))).toEqual([0, 1, 2]);
+    for (const [changed, locus] of [[{ build: null }, "rsid"], [{ challengeHash: null }, "rsid"], [{ format: "vcf" as const }, "rsid"],
+      [{ challengeHash: sha("x") }, "rsid"], [{}, null]] as const) {
+      expect(tableChunkBinding(bytes, { ...table, ...changed }, locus, resolveTableRsid)).toBeNull();
+    }
+    expect(tableChunkBinding(await tableChunk(SOURCE_TABLE, { revision: authority.transportRevision + 1 }), table, "rsid", resolveTableRsid)).toBeNull();
+    expect(tableChunkBinding(await browserChunk(), table, "rsid", resolveTableRsid)).toBeNull();
+    expect(chunkBinding(bytes, table)).toBeNull();
+  });
+
+  it("resolves each rsID from the reference store in the resolved build, and refuses one it does not hold", async () => {
+    const bytes = await tableChunk();
+    const binding = tableChunkBinding(bytes, table, "rsid", resolveTableRsid)!;
+    // rs999999999999 is not in the store: the whole chunk is refused, never guessed.
+    expect(() => validateTableChunk(bytes, binding)).toThrow("unrecognised_format");
+    const held = await tableChunk(SOURCE_TABLE.replace("PRIVATE_A,rs999999999999,AA,XX\n", ""));
+    const validated = validateTableChunk(held, tableChunkBinding(held, table, "rsid", resolveTableRsid)!);
+    expect(validated.fragments.map((fragment) => new TextDecoder().decode(fragment.bytes))).toEqual([
+      "##inheritTableFragment=1\n##reference=GRCh38\nchrom\tpos\trsid\tgenotype\n1\t22133085\trs116422505\tT/C\n",
+      "##inheritTableFragment=1\n##reference=GRCh38\nchrom\tpos\trsid\tgenotype\n1\t22133085\trs116422505\tC/C\n",
+      "##inheritTableFragment=1\n##reference=GRCh38\nchrom\tpos\trsid\tgenotype\n1\t22134498\trs12139609\tA/G\n",
+    ]);
+    expect(validated).toMatchObject({ recordCount: 3, byteCount: held.byteLength, sha256: sha(held) });
+    // The same rsID resolves to its GRCh37 coordinate in a GRCh37 session.
+    expect(resolveTableRsid(116422505, "GRCh37")).toEqual({ chrom: 1, pos: 22459578 });
+    expect(resolveTableRsid(999999999999, "GRCh38")).toBeNull();
+    expect(reservationFragments(validated).map((fragment) => fragment.ordinal)).toEqual([0, 1, 2]);
+  });
+
+  it("answers mapping_required with a constant body and no referrer", async () => {
+    const response = mappingRequired();
+    expect(response.status).toBe(409);
+    expect(await response.json()).toEqual({ error: "mapping_required" });
+    expect(response.headers.get("referrer-policy")).toBe("no-referrer");
+  });
+
+  it("reads the recorded locus kind through credentials only, and refuses anything outside its vocabulary", async () => {
+    const credentials = { p_account_id: COHORT, p_auth_session_id: COHORT, p_ingest_session_id: COHORT,
+      p_cookie_hash: "a".repeat(64), p_origin: "https://inherit.example", p_test_jurisdiction: true as const };
+    const seen: unknown[] = [];
+    expect(await tableLocus(credentials, async (args) => { seen.push(args); return { data: "chrom-pos", error: null }; })).toBe("chrom-pos");
+    expect(seen).toEqual([credentials]);
+    expect(await tableLocus(credentials, async () => ({ data: null, error: null }))).toBeNull();
+    await expect(tableLocus(credentials, async () => ({ data: "sample", error: null }))).rejects.toThrow();
+    await expect(tableLocus(credentials, async () => ({ data: null, error: { code: "42501" } }))).rejects.toThrow();
   });
 });

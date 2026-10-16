@@ -8229,6 +8229,75 @@ export type Database = {
         }
         Returns: Json
       }
+      configure_embryo_table_ingest_v1: {
+        Args: {
+          p_account_id: string
+          p_auth_session_id: string
+          p_ingest_session_id: string
+          p_cookie_hash: string
+          p_origin: string
+          p_cohort_id: string
+          p_ingest_revision: number
+          p_build: string | null
+          p_nonce: string
+          p_mapping_nonce: string
+          p_test_jurisdiction?: boolean
+        }
+        Returns: Json
+      }
+      inspect_embryo_table_mapping_v1: {
+        Args: {
+          p_account_id: string
+          p_auth_session_id: string
+          p_ingest_session_id: string
+          p_cookie_hash: string
+          p_origin: string
+          p_cohort_id: string
+          p_ingest_revision: number
+          p_outcome: string
+          p_column_count: number | null
+          p_locus: string | null
+          p_nonce: string
+          p_challenge: string | null
+          p_next_nonce: string | null
+          p_completion_nonce: string | null
+          p_csrf_nonce: string | null
+          p_test_jurisdiction?: boolean
+        }
+        Returns: Json
+      }
+      decide_embryo_table_mapping_v1: {
+        Args: {
+          p_account_id: string
+          p_auth_session_id: string
+          p_ingest_session_id: string
+          p_cookie_hash: string
+          p_origin: string
+          p_cohort_id: string
+          p_ingest_revision: number
+          p_challenge: string
+          p_resolution: Json
+          p_nonce: string
+          p_build_challenge: string | null
+          p_build_nonce: string | null
+          p_transport_challenge: string | null
+          p_completion_nonce: string | null
+          p_csrf_nonce: string | null
+          p_test_jurisdiction?: boolean
+        }
+        Returns: Json
+      }
+      embryo_ingest_table_locus_v1: {
+        Args: {
+          p_account_id: string
+          p_auth_session_id: string
+          p_ingest_session_id: string
+          p_cookie_hash: string
+          p_origin: string
+          p_test_jurisdiction?: boolean
+        }
+        Returns: string | null
+      }
       embryo_ingest_issued_tokens_match_v1: {
         Args: {
           p_account_id: string

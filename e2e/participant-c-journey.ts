@@ -1,15 +1,17 @@
 import path from "node:path";
-import { expect, type Browser, type Page } from "@playwright/test";
+import { expect, type Browser, type Page, type Request } from "@playwright/test";
 import bindings from "../scripts/comprehension/bindings.json";
 import { adminClient, createConfirmedUser, DEFAULT_TEST_JURISDICTION, drainMailUntil, signIn, SUPABASE_URL } from "./helpers";
 import { GATE_BUTTON } from "@/copy/embryos/gate";
-import { ANALYSIS_PERMISSION_BUTTON, FILE_INPUT_LABEL, FINALIZE_BUTTON, SAVE_DRAFT_BUTTON, SEND_FILE_BUTTON, SEND_INVITATION_BUTTON } from "@/copy/embryos/upload";
+import { ANALYSIS_PERMISSION_BUTTON, FILE_INPUT_LABEL, FINALIZE_BUTTON, MAPPING_COLUMNS_BUTTON, MAPPING_FIELD_QUESTIONS, mappingColumnOption,
+  SAVE_DRAFT_BUTTON, SEND_FILE_BUTTON, SEND_INVITATION_BUTTON } from "@/copy/embryos/upload";
 import { SIGN_BUTTON } from "@/copy/embryos/signing";
 import { signStatements } from "./embryo-signing-helpers";
 import { EMBRYO_PUBLISHED_FILE_SELECT, participantCSeed, publishedEmbryoFiles, type ParticipantCReadDiagnostic, type ParticipantCReadStage } from "../scripts/comprehension/participant-c-seed";
 
 import { observeNativeResponses } from "./helpers/native-response-observer";
 import { readUploadReceipt } from "../src/lib/embryos/upload-receipt";
+import { EMBRYO_PAIR_TABLE_FIXTURE, TABLE_EMBRYOS, TABLE_HEADER } from "../scripts/embryo-pair-table-fixture";
 
 export const participantCPassword = "synthetic-embryo-browser-password";
 const origin = "http://localhost:3105";
@@ -20,6 +22,8 @@ export type ParticipantCMail = { to: string | string[]; html?: string };
  * signature, permission, job advancement or provider ACK is substituted. */
 export async function seedParticipantC(options: { page: Page; browser: Browser;
   ownerEmail: string; parentEmail: string; password: typeof participantCPassword; qcSeed?: "b"; fittedSeed?: "partial";
+  /** ADR 0037: the same pair as a laboratory table that states no build and leaves its result column unnamed. */
+  tableSeed?: "unstated-build";
   messages: ParticipantCMail[]; jobsSecret?: string; readDiagnostic?: ParticipantCReadDiagnostic;
   runtime: { runWorker(id: string): Promise<void>; proof(id: string): Promise<unknown> };
   beforeFile?: (scope: { owner: string; parentAccount: string; cohortId: string; nativeSessionId: string;
@@ -29,13 +33,19 @@ export async function seedParticipantC(options: { page: Page; browser: Browser;
   if (options.qcSeed !== undefined && options.qcSeed !== "b") throw new Error("Unregistered QC seed");
   if (options.fittedSeed !== undefined && (options.fittedSeed !== "partial" || options.qcSeed !== undefined))
     throw new Error("Unregistered fitted TEST seed");
+  if (options.tableSeed !== undefined && (options.tableSeed !== "unstated-build" || options.qcSeed !== undefined
+    || options.fittedSeed !== undefined)) throw new Error("Unregistered table TEST seed");
   const fittedSeed = options.fittedSeed === "partial";
   const qcSeed = options.qcSeed === "b";
-  const fixture = fittedSeed ? "e2e/fixtures/embryo-pair-fitted-partial-grch38.vcf"
+  const tableSeed = options.tableSeed === "unstated-build";
+  const fixture = tableSeed ? EMBRYO_PAIR_TABLE_FIXTURE : fittedSeed ? "e2e/fixtures/embryo-pair-fitted-partial-grch38.vcf"
     : qcSeed ? "e2e/fixtures/embryo-pair-qc-b-grch38.vcf" : defaultFixture;
   const regular = ownerEmail ==="participant-c@e2e.local" && parentEmail ==="participant-c-parent@e2e.local";
   const fresh = ownerEmail.match(/^cmp-t6-([0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})@e2e\.local$/);
-  if (fittedSeed) {
+  if (tableSeed) {
+    if (ownerEmail !== "table-test@e2e.local" || parentEmail !== "table-test-parent@e2e.local")
+      throw new Error("Exact table TEST parent pair required");
+  } else if (fittedSeed) {
     if (ownerEmail !== "fitted-test@e2e.local" || parentEmail !== "fitted-test-parent@e2e.local")
       throw new Error("Exact fitted TEST parent pair required");
   } else {
@@ -126,8 +136,56 @@ export async function seedParticipantC(options: { page: Page; browser: Browser;
     }
     await page.getByLabel(FILE_INPUT_LABEL, { exact: true }).setInputFiles(path.resolve(fixture));
     const completion = page.waitForResponse(response => /\/api\/embryo-ingest\/[^/]+\/complete$/.test(response.url()) && response.request().method() === "POST");
+    // Every request body the browser sends to the ingest routes, for the
+    // table's privacy checks below. Nothing is changed or replaced.
+    const sent: { method: string; path: string; body: string }[] = [];
+    const record = (request: Request) => {
+      const url = new URL(request.url());
+      if (url.pathname.startsWith("/api/embryo-ingest/")) sent.push({ method: request.method(), path: url.pathname, body: request.postData() ?? "" });
+    };
+    if (tableSeed) page.on("request", record);
+    const mapping = (method: "POST" | "PUT") => page.waitForResponse(response => /\/api\/embryo-ingest\/[^/]+\/mapping$/.test(response.url())
+      && response.request().method() === method);
+    const inspected = tableSeed ? mapping("POST") : undefined;
     await page.getByRole("button", { name: SEND_FILE_BUTTON }).click();
+    if (tableSeed) {
+      expect((await inspected!).status()).toBe(200);
+      // The column question: the file names its result column `Bases`, which
+      // no header synonym matches, so the reader chooses it.
+      const columns = page.locator('[data-stage="columns-question"]');
+      await expect(columns).toBeVisible();
+      await expect(columns.locator("select")).toHaveCount(1);
+      const result = TABLE_HEADER.indexOf("Bases");
+      await expect(columns.locator(`option[value="${result}"]`)).toHaveText(mappingColumnOption(result, "Bases"));
+      const columnDecision = mapping("PUT");
+      await columns.getByLabel(MAPPING_FIELD_QUESTIONS.genotype, { exact: true }).selectOption(String(result));
+      await columns.getByRole("button", { name: MAPPING_COLUMNS_BUTTON, exact: true }).click();
+      expect((await columnDecision).status()).toBe(200);
+      // The build question: the table states no build, so the reader answers it before any chunk.
+      const build = page.locator('[data-stage="build-question"]');
+      await expect(build).toBeVisible();
+      const buildDecision = mapping("PUT");
+      await build.locator('button[data-option="GRCh38"]').click();
+      expect((await buildDecision).status()).toBe(200);
+    }
     expect((await completion).status()).toBe(202);
+    if (tableSeed) {
+      page.off("request", record);
+      const routes = sent.map(({ method, path }) => `${method} ${path.replace(/^\/api\/embryo-ingest\/[^/]+\//, "")}`);
+      expect(routes.slice(0, 4)).toEqual(["POST configure", "POST mapping", "PUT mapping", "PUT mapping"]);
+      expect(routes.at(-1)).toBe("POST complete");
+      expect(routes.slice(4, -1).every(route => /^PUT chunks\/\d+$/.test(route))).toBe(true);
+      expect(routes.length).toBeGreaterThan(5);
+      expect(JSON.parse(sent[0].body)).toMatchObject({ format: "pgt_table", buildEvidence: [] });
+      expect(JSON.parse(sent[1].body).headerColumns).toEqual([...TABLE_HEADER]);
+      // Decisions carry column numbers and a build only; no embryo label, file
+      // comment or column name leaves the browser in any request.
+      for (const decision of sent.slice(2, 4)) expect(decision.body).not.toContain("Bases");
+      for (const { body } of sent) {
+        for (const label of TABLE_EMBRYOS) expect(body).not.toContain(label);
+        expect(body).not.toContain("deterministic synthetic laboratory table");
+      }
+    }
     await expect(page.locator('[data-stage="processing"]')).toBeVisible();
     await expect(page.locator('[data-figure-kind]')).toHaveCount(0);
     const cohort = await adminClient().from("embryo_cohorts").select("id").eq("owner_account_id", owner).single();
@@ -145,7 +203,7 @@ export async function seedParticipantC(options: { page: Page; browser: Browser;
     const files = await adminClient().from("genome_files").select(EMBRYO_PUBLISHED_FILE_SELECT).in("subject_id", embryos.data!.map(item => item.subject_id));
     expect(files.error).toBeNull(); expect(files.data).toHaveLength(2);
     expect(publishedEmbryoFiles(files.data, { ownerId: owner, publishedAt: published.data!.uploaded_at!,
-      subjectIds: embryos.data!.map(item => item.subject_id) })).toHaveLength(2);
+      subjectIds: embryos.data!.map(item => item.subject_id), fileType: tableSeed ? "pgt_table" : "vcf" })).toHaveLength(2);
     for (const [parent, accountId] of [[other, parentAccount], [page, owner]] as const) {
       await parent.goto(`/embryos/compare?cohort=${cohortId}`);
       await expect(parent.locator('[data-slot="cohort-permission"]')).toBeVisible();
