@@ -1,3 +1,37 @@
+## 2026-10-16 — G5.4: the claimant's temporary contact is exactly 730 days, and the claimant page states it
+
+Owner decision 2026-10-16 ("Claimant retention stated in days (G5.4)", `docs/protocol/decisions.md`). The contact class `future-person.claimed-unbound-24mo` was `v_now+interval '24 months'` (`20260930237000_future_person_contact_retention.sql:17`). That is 730 or 731 days depending on the dates, so it could not be stated in days. It is now exactly 730 days. Part 2 of the decision needs no code change: a claimed record stays until the claimant asks, and the page keeps the 30-day record and 7-day DNA deletion times.
+
+New migration `supabase/migrations/20261016175000_future_person_claimant_contact_730_days.sql`, flagged: TEST-LOCAL, and it needs a later guarded release. `20261016170000` is not edited.
+
+- It adds `private.future_person_claimed_unbound_days_v1()`, which returns 730.
+- It patches two existing functions in place. Each patch is guarded by the exact predecessor body md5, one anchor and the pinned successor md5, with privileges unchanged:
+  - `private.queue_future_person_release_v1` now computes `contact_expiry` as the release plus exactly 730 × 24 hours. The row, the due phase, the contact index expiry, `contact_expires_at` and the Recovery Key receipt date all follow from that value, independent of the session time zone. A documentary recovery uses the same function, so its new deadline is 730 days too.
+  - `private.purge_future_person_contact_phase_v1` binds a contact to its row by the same rule.
+- It refuses to run while any contact clock of this class is scheduled or active, so it never rewrites a running deadline. None exist on the shared database or on a hosted one, because claims are closed.
+
+The claimant page (`src/copy/rights/claimant-rights.ts`, `claimant-rights.tsx:46`) now reads: "We keep the contact address you gave us for at most 730 days after your claim was approved. Deleting it does not delete your record." This replaces "The temporary contact address expires separately." The words "at most" are there because account binding or the claimant's own deletion removes the contact sooner. The record sentence ("stays until you ask… within 30 days, and its DNA data within 7 days") is unchanged and accurate. `docs/retention.md` row `future-person.claimed-unbound-24mo` now says "Exactly 730 days" and gives the Recovery-Key replacement as a 730-day deadline. The route register states no duration for this class and is unchanged.
+
+Changed existing tests, required by the decision. No assertion is removed, skipped or relaxed.
+
+- `supabase/tests/future_person_claim_contact_retention.sql`, "only contact delivery starts the fixed clock; no subject-source clock is introduced": the expected deadline changes from `c.created_at+interval '24 months'` to `c.created_at+interval '730 days'`. It also gains an exact check of 730 × 86400 seconds. Without the migration this assertion now fails, and with it the suite passes 70/70.
+- `src/components/future-person/claimant-rights.test.ts`, "states the retention in days…": the expected paragraph is the new one, and `COPY.retention` takes the contact days as a third argument.
+
+New tests:
+
+- `supabase/tests/future_person_claimant_contact_730_days.sql`: 17 assertions, 72 with the custody fixtures. They cover the constant; the row, the phase, every contact index and `contact_expires_at` at exactly 730 days; the release mail's 7-day window inside that; and the Recovery Key receipt reporting the 730th day. Through the existing private test clock, with no deadline moved, the purge refuses one second early and completes at the deadline. Both bodies are the pinned successors, with no '24 months' and no new privilege.
+- A new `claimant-rights.test.ts` case ties the page's 730 to the migration's constant and both patched fragments. It also requires the register row to say "Exactly 730 days" with no "24 months".
+
+Two planted defects each failed: a constant of 731 failed "the class is exactly 730 days" and the deadline assertion; omitting the purge patch made the purge refuse at the deadline.
+
+Local results:
+
+- `pnpm typecheck`, `pnpm lint`, and `gate:secrets`, `gate:env`, `gate:routes`, `gate:sql-includes`, `gate:readability`, `gate:legal` and `gate:claims` all exit 0.
+- Vitest: 9 claimant, retention-route, readability and register files, 179 passed.
+- pgTAP ran in rolled-back transactions on the shared database, with and without the migration, over all 29 other `future_person_*` suites, both `claimed_provenance_*` suites and `account_archive_legacy_signing_refusal`. Every suite passes completely with the migration. The only difference from the baseline is the intended changed assertion above.
+- Locally only, the custody fixture's scan step needs leftover quarantined claim documents from browser runs to be skipped. The wrapper leased them for one hour inside the same rolled-back transaction, and CI's fresh database needs no such step.
+- No e2e was run: no browser spec reaches the claimed-record page, and the claim intake page is unchanged.
+
 ## 2026-10-16 — G5.4: the 730-day clock for a Path B file confirmed with no account, and retention in days with a contact of last resort on both accountless paths
 
 Owner decisions 2026-10-16 ("G5.4 is judged on the brief's minimum under TEST-LOCAL" and "Confirmed file of an accountless person: 730 days", `docs/protocol/decisions.md`). Before this change, a person's yes cancelled the file's 30-day clock and created no clock, so a confirmed Path B file had no maximum (`20260928150000_other_adult_held_upload.sql:1791-1803`). The class `adult.non-account-holder-24mo` was 24 months in the register and unbuilt in the database.
