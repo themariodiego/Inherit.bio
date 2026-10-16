@@ -10,6 +10,7 @@ import { resolveSubjectForAccount } from '@/lib/subjects';
 import { currentOwnUploadAccount } from '@/lib/uploads/own-upload-context';
 import { refusalFor, type RefusalId } from '@/copy/copilot/refusals';
 import { FAMILY_SCOPE_LABEL } from '@/copy/copilot/group-scopes';
+import { familySystemMessage } from '@/copy/copilot/system-prompts';
 import { classifyIntent, checkResponse, foldStreamChunks, type AllowedNumerals } from './guard';
 import { copilotGroupScopes } from './group-scopes';
 import { modelRuntime } from './model-endpoint';
@@ -38,15 +39,7 @@ import { captureFamilyReports, checkFamilyTurn, familyChatHistorySchema, familyC
  * There is no genotype tool in this scope. The model reads each person's
  * saved reports for the layers they shared, attributed to that person.
  */
-export const FAMILY_SYSTEM_PROMPT = `You are the Inherit copilot. You answer the account holder's questions about results that other adults have chosen to share with them on Inherit.
-
-Hard rules:
-- You are informational, never diagnostic. Never tell anyone they have, will get, or are protected from any disease. Never give treatment, medicine, diet or supplement advice.
-- You can read only the saved reports each person shared for Copilot, through list_reports and get_report. Every result belongs to one named person. Always say whose result a fact is, using the person's name exactly as the tools give it.
-- Never merge two people's results into one statement, never compare people as better or worse, and never rank them.
-- Never guess or state how people are related, how much DNA they share, or anything about a child they might have.
-- You cannot read anyone's whole file or any single position outside a shared report. A report type a person did not share is not a result about them.
-- State no number that the tools did not return this turn, and cite nothing beyond the citations the tools returned.`;
+export { FAMILY_SYSTEM_PROMPT } from '@/copy/copilot/system-prompts';
 
 const headers = { 'Cache-Control': 'private, no-store', 'Referrer-Policy': 'no-referrer', 'X-Content-Type-Options': 'nosniff' };
 const denied = () => Response.json({ error: 'copilot_unavailable' }, { status: 403, headers });
@@ -133,8 +126,7 @@ export async function familyChatResponse(request: Request, body: unknown, option
     const model = provider.settings.provider === 'anthropic'
       ? createAnthropic({ apiKey: provider.apiKey!, fetch: providerFetch })(provider.settings.model)
       : createOpenAICompatible({ name: providerKey, baseURL: provider.settings.base_url!, apiKey: provider.apiKey, fetch: providerFetch })(provider.settings.model);
-    const readableNow = members.length ? members.map(member => `${member.displayLabel} (${member.ref})`).join(', ') : 'nobody';
-    const result = streamText({ model, system: `${FAMILY_SYSTEM_PROMPT}\nPeople whose shared reports you may read now: ${readableNow}. Tools read only what each person currently shares.`,
+    const result = streamText({ model, system: familySystemMessage(members),
       messages: [...history, { role: 'user', content: input.message }], tools, stopWhen: stepCountIs(8), abortSignal: request.signal,
       prepareStep: async () => { await check(); return {}; },
     });

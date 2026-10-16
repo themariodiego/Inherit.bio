@@ -8,6 +8,7 @@ import {
   collectReadabilityBlocks,
   extractCopyRegistryBlocksFromSource,
   extractTsxBlocksFromSource,
+  MODEL_FACING_COPY,
   runReadabilityGate,
   vocabularyWords,
 } from "./readability-gate";
@@ -477,5 +478,59 @@ describe("copy registry and runtime copy extraction", () => {
     expect(fixtures.cases).toHaveLength(10);
     expect(fixtures.tolerance).toBe(0.2);
     expect(failures.filter((failure) => /scorer drift|fixtures|pinned/.test(failure))).toEqual([]);
+  });
+});
+
+/**
+ * Model-facing copy (16 October 2026). The Copilot system prompts moved into
+ * src/copy/copilot under the owner's G1.11 decision. They are model input,
+ * never shown to a person, and no readability scan read them before the move,
+ * so the module is listed by exact path. The listing holds only while no
+ * rendered file imports it, and only while the module exists.
+ */
+describe("model-facing copy", () => {
+  const PROMPTS = "src/copy/copilot/system-prompts.ts";
+  const roots: string[] = [];
+  afterAll(() => {
+    for (const root of roots) fs.rmSync(root, { recursive: true, force: true });
+  });
+  const planted = (files: Record<string, string>) => {
+    const root = createFixtureRepository(files);
+    roots.push(root);
+    return runReadabilityGate(root).failures;
+  };
+
+  it("lists exactly the Copilot system prompts module", () => {
+    expect(MODEL_FACING_COPY).toEqual([PROMPTS]);
+  });
+
+  it("does not score the listed module while every other copy file is still scored", () => {
+    const failures = planted({
+      [PROMPTS]: `export const PROMPT = "${DENSE_SENTENCE}";\n`,
+      "src/copy/copilot/refusal-planted.ts": `export const REFUSAL = "${DENSE_SENTENCE}";\n`,
+    });
+    expect(failures.filter((failure) => failure.startsWith(`${PROMPTS}:`))).toEqual([]);
+    expect(failures).toContainEqual(expect.stringMatching(/^src\/copy\/copilot\/refusal-planted\.ts:1: grade \d+\.\d exceeds 9 \(/));
+    expect(failures.filter((failure) => /model-facing/.test(failure))).toEqual([]);
+  });
+
+  it("fails once a rendered file imports the listed module", () => {
+    const failures = planted({
+      [PROMPTS]: `export const PROMPT = "${DENSE_SENTENCE}";\n`,
+      "src/app/page.tsx": 'import { PROMPT } from "@/copy/copilot/system-prompts";\nexport default function Page() { return <p>{PROMPT}</p>; }\n',
+    });
+    expect(failures).toContain(
+      "src/app/page.tsx: a rendered file imports model-facing copy src/copy/copilot/system-prompts.ts, which the readability gate does not score",
+    );
+  });
+
+  it("fails when a listed module no longer exists", () => {
+    expect(planted({ "src/copy/site.ts": 'export const SITE = "Read your file.";\n' }))
+      .toContain(`${PROMPTS}: listed as model-facing copy but does not exist`);
+  });
+
+  it("finds no rendered importer in this repository", () => {
+    const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+    expect(runReadabilityGate(repositoryRoot).failures.filter((failure) => /model-facing/.test(failure))).toEqual([]);
   });
 });

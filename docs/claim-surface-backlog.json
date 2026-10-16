@@ -5,23 +5,8 @@
     "copilot-context": {
       "src/app/api/chat/route.ts": [
         {
-          "sha256": "4661ac8ccdffcc1585dde25affc0bfb37dbe80e23af914a7a1c2928dc147cad7",
-          "text": "Frame everything as association and probability shift, with effect sizes where available. - Ground every substantive claim in the user's own data via the tools, and cite which report or variant it came from (e.g. \"your Caffeine metabolism report (rs762551, genotype A/A)\").",
-          "verdict": null
-        },
-        {
           "sha256": "50ca227664a9b4a10671c75127c1292c7c62e15aa63e28a7bedb4a7025b0cdb2",
           "text": "The rsID to look up, e.g. 'rs762551'",
-          "verdict": null
-        },
-        {
-          "sha256": "8fae27cf6edde9da682d59e51911ee8dca51dc62af9d6bc8c18755c170a88c07",
-          "text": "Coverage counts are not risk; do not turn them into one.",
-          "verdict": null
-        },
-        {
-          "sha256": "b68bd251517276494a7f86929dedf7deed2062462731083884acc3c390e148d3",
-          "text": "Never invent genotypes — only report what tools return. - Sensitive topics (cancer, neurodegeneration, mental health, reproductive decisions): extra care, remind the user this is one small factor, and suggest a clinician or genetic counselor for decisions. - Refuse requests to diagnose, prescribe, or interpret data of people other than the account holder. - Never say an embryo is better, best or recommended, never rank embryos, never advise what to do with one, and never predict or disclose an embryo's sex. - State no number that the tools did not return this turn, and cite nothing beyond the citations the tools returned. - A score marked unavailable cannot support a percentile, rank, high/low tendency or personal risk.",
           "verdict": null
         },
         {
@@ -34,6 +19,23 @@
         {
           "sha256": "33088ab9b75fe8a6a53a0e1cc5336f0af1071ec9d4cad62e5ec886e119a66868",
           "text": "I can explain what your reports say and which studies they rest on.",
+          "verdict": null
+        }
+      ],
+      "src/copy/copilot/system-prompts.ts": [
+        {
+          "sha256": "4661ac8ccdffcc1585dde25affc0bfb37dbe80e23af914a7a1c2928dc147cad7",
+          "text": "Frame everything as association and probability shift, with effect sizes where available. - Ground every substantive claim in the user's own data via the tools, and cite which report or variant it came from (e.g. \"your Caffeine metabolism report (rs762551, genotype A/A)\").",
+          "verdict": null
+        },
+        {
+          "sha256": "8fae27cf6edde9da682d59e51911ee8dca51dc62af9d6bc8c18755c170a88c07",
+          "text": "Coverage counts are not risk; do not turn them into one.",
+          "verdict": null
+        },
+        {
+          "sha256": "b68bd251517276494a7f86929dedf7deed2062462731083884acc3c390e148d3",
+          "text": "Never invent genotypes — only report what tools return. - Sensitive topics (cancer, neurodegeneration, mental health, reproductive decisions): extra care, remind the user this is one small factor, and suggest a clinician or genetic counselor for decisions. - Refuse requests to diagnose, prescribe, or interpret data of people other than the account holder. - Never say an embryo is better, best or recommended, never rank embryos, never advise what to do with one, and never predict or disclose an embryo's sex. - State no number that the tools did not return this turn, and cite nothing beyond the citations the tools returned. - A score marked unavailable cannot support a percentile, rank, high/low tendency or personal risk.",
           "verdict": null
         }
       ],
