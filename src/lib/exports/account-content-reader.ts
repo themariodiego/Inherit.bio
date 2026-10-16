@@ -2,6 +2,7 @@ import "server-only";
 import {z} from "zod";
 import {accountArchiveContextSchema,type AccountMemberRpc} from "./bound-account-archive-worker";
 import {ownExportSnapshotSchema,ownSubjectExportContent,type OwnExportRpc,type OwnExportSnapshot} from "./own-subject-content";
+import {anySignal} from "./abort-signals";
 const unavailable=()=>new Error("account_archive_content_unavailable");
 export type AccountContentOperation="history"|"chats"|"chat-messages"|"check"|"variants"|"observed"|"reports"|"prs"|"ancestry";
 export type AccountContentRpc=(name:"export_archive_account_content_v1",args:{p_operation:AccountContentOperation;
@@ -19,7 +20,7 @@ export async function createAccountContentReader(options:{reference:{exportId:st
  let captured:z.infer<typeof accountArchiveContextSchema>|undefined;
  async function wait<T>(signal:AbortSignal,work:(signal:AbortSignal)=>PromiseLike<T>):Promise<T>{
   await options.check(signal);if(signal.aborted||Date.now()>=Date.parse(options.deadline))throw unavailable();
-  const controller=new AbortController(),combined=AbortSignal.any([signal,controller.signal]);let interrupt=()=>{};
+  const controller=new AbortController(),combined=anySignal([signal,controller.signal]);let interrupt=()=>{};
   const timer=setTimeout(()=>controller.abort(),Math.min(30_000,Date.parse(options.deadline)-Date.now()));timer.unref();
   const canceled=new Promise<never>((_,reject)=>{interrupt=()=>reject(unavailable());combined.addEventListener("abort",interrupt,{once:true});});
   try{if(combined.aborted)throw unavailable();const result=await Promise.race([Promise.resolve(work(combined)),canceled]);

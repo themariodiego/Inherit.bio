@@ -5,6 +5,7 @@ import {ACCOUNT_HISTORY_KINDS,type AccountHistoryKind,type prepareAccountHistory
 import {accountClassRowSchemas,type AccountProjectedClass,type prepareAccountClassInventory} from "./account-class-inventory";
 import type {prepareAccountArchiveMetadata} from "./account-member-metadata";
 import type {FuturePersonMemberFactory} from "./future-person-member-plan";
+import {anySignal} from "./abort-signals";
 
 type History=Awaited<ReturnType<typeof prepareAccountHistoryInventory>>;
 type Classes=Awaited<ReturnType<typeof prepareAccountClassInventory>>;
@@ -33,7 +34,7 @@ export async function prepareAccountPartitionMembers(options:{context:Context;hi
  const subjects=new Map<string,{id:string;subject_class:string}>();
  async function currentAuthority(signal:AbortSignal){
   const remaining=Date.parse(context.deadline)-Date.now();if(signal.aborted||remaining<=0)throw unavailable();
-  const stop=new AbortController(),current=AbortSignal.any([options.signal,signal,stop.signal]);let abort=()=>{};
+  const stop=new AbortController(),current=anySignal([options.signal,signal,stop.signal]);let abort=()=>{};
   const timer=setTimeout(()=>stop.abort(),Math.min(30_000,remaining));timer.unref();
   const canceled=new Promise<never>((_,reject)=>{abort=()=>reject(unavailable());current.addEventListener("abort",abort,{once:true});});
   try{if(current.aborted)throw unavailable();await Promise.race([Promise.resolve().then(()=>options.check(current)),canceled]);

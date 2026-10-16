@@ -3,6 +3,7 @@ import {createHash} from "node:crypto";
 import {z} from "zod";
 import {accountArchiveContextSchema} from "./bound-account-archive-worker";
 import {ACCOUNT_GRAPH_CLASSES,accountGraphIdentitySchemas,accountGraphRowSchemas,accountGraphProjectionDigest,type AccountGraphClass} from "./account-graph-projection";
+import {anySignal} from "./abort-signals";
 const hash=z.string().regex(/^[a-f0-9]{64}$/u),count=z.number().int().nonnegative().safe();
 const membership=z.object({rows:count,sha256:hash}).strict();
 const page=z.object({version:z.literal("account-graph-page-v2"),kind:z.enum(ACCOUNT_GRAPH_CLASSES),authorityReceipt:hash,membership,
@@ -28,7 +29,7 @@ export async function prepareAccountRoutedGraphRows(options:{kind:AccountGraphCl
  let captured:z.infer<typeof membership>|null=null,complete=false;const subjects=new Set(context.partitions.map(p=>p.subjectId)),partitions=new Map<string,number>();
  const active=(signal:AbortSignal)=>{if(signal.aborted||options.signal.aborted||Date.now()>=Date.parse(context.deadline))throw unavailable();};
  async function bounded<T>(signal:AbortSignal,operation:(current:AbortSignal)=>PromiseLike<T>){
-  active(signal);const stop=new AbortController(),current=AbortSignal.any([signal,options.signal,stop.signal]);let abort=()=>{};
+  active(signal);const stop=new AbortController(),current=anySignal([signal,options.signal,stop.signal]);let abort=()=>{};
   const timer=setTimeout(()=>stop.abort(),Math.min(30_000,Date.parse(context.deadline)-Date.now()));timer.unref();
   const canceled=new Promise<never>((_,reject)=>{abort=()=>reject(unavailable());current.addEventListener("abort",abort,{once:true});});
   try{if(current.aborted)throw unavailable();const result=await Promise.race([Promise.resolve().then(()=>operation(current)),canceled]);active(current);return result;

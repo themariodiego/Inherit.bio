@@ -642,13 +642,13 @@ describe("independent required owned key-free native smoke", () => {
       if (mode === "missing") delete value.jobs["owned-keyfree-smoke"];
       if (mode === "conditional") job.if = "always()";
       if (mode === "dependent") job.needs = ["repository-checks"];
-      if (mode === "optional") job.steps[7]["continue-on-error"] = true;
-      if (mode === "command") job.steps[7].run += " --plan";
+      if (mode === "optional") job.steps[8]["continue-on-error"] = true;
+      if (mode === "command") job.steps[8].run += " --plan";
       if (mode === "node") job.steps[2].with!["node-version"] = 20;
       if (mode === "cap") (job as unknown as Record<string, unknown>)["timeout-minutes"] = 56;
       if (mode === "aggregate") value.jobs.checks.needs!.pop();
       if (mode === "result") delete value.jobs.checks.env!.OWNED_SMOKE_RESULT;
-      if (mode === "artifact") job.steps[8].with!.path = "${{ runner.temp }}/inherit-owned-keyfree/";
+      if (mode === "artifact") job.steps[9].with!.path = "${{ runner.temp }}/inherit-owned-keyfree/";
       expect(() => hostedWorkflowContract(value)).toThrow();
     });
   it.each(["missing", "skipped", "failure"])("refuses %s owned job while all original jobs pass", mode => {

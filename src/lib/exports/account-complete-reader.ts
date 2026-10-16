@@ -7,6 +7,7 @@ import {ACCOUNT_SUBJECT_MEMBERS} from "./account-subject-member-names";
 import {ACCOUNT_COMPLETE_FILE_KINDS,accountCompleteContextSchema,type AccountCompleteContext} from "./account-complete-context";
 import type {PreparedStoredArtifact} from "@/lib/genome/prepared-source/artifact-identity";
 import type {RequesterStatementRuntime} from "./requester-statement-runtime";
+import {anySignal} from "./abort-signals";
 
 const count=z.number().int().nonnegative().safe(),hash=z.string().regex(/^[a-f0-9]{64}$/u),uuid=z.uuid();
 const identity=z.string().regex(/^[\x20-\x7e]{1,2048}$/u),key=z.tuple([uuid,identity]);
@@ -35,7 +36,7 @@ export async function prepareAccountCompleteReader(options:{reference:Reference;
  const stopAt=Date.parse(options.deadline);
  async function call(operation:Parameters<AccountCompleteRpc>[1]["p_operation"],signal:AbortSignal,kind:string|null=null,selected:unknown=null){
   if(options.signal.aborted||signal.aborted||!Number.isFinite(stopAt)||Date.now()>=stopAt)throw unavailable();
-  await options.check(signal);const stop=new AbortController(),current=AbortSignal.any([options.signal,signal,stop.signal]);let interrupt=()=>{};
+  await options.check(signal);const stop=new AbortController(),current=anySignal([options.signal,signal,stop.signal]);let interrupt=()=>{};
   const timer=setTimeout(()=>stop.abort(),Math.min(30_000,stopAt-Date.now()));timer.unref();
   const canceled=new Promise<never>((_,reject)=>{interrupt=()=>reject(unavailable());current.addEventListener("abort",interrupt,{once:true});});
   try{

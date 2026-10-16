@@ -6,6 +6,7 @@ import {z} from "zod";
 import {accountArchiveContextSchema} from "./bound-account-archive-worker";
 import {ACCOUNT_GRAPH_CLASSES,type AccountGraphClass} from "./account-graph-projection";
 import {futurePersonExportSnapshot} from "./future-person-content";
+import {anySignal} from "./abort-signals";
 
 export const ACCOUNT_CLASS_KINDS=["ancestry_regions","appeal_intakes","attestation_contradictions","correction_requests",
  "directional_grants","embryo_basis_bindings","embryo_cohorts","embryo_disposition_confirmations","embryo_disposition_proposals",
@@ -65,7 +66,7 @@ export async function prepareAccountClassInventory(options:{reference:{exportId:
  if(context.targetKind!=="account"||context.targetId!==context.actor.accountId||context.authorityReceipt!==options.reference.authorityReceipt)throw unavailable();
  async function bounded<T>(signal:AbortSignal,operation:(current:AbortSignal)=>PromiseLike<T>){
   if(signal.aborted||Date.now()>=Date.parse(context.deadline))throw unavailable();
-  const controller=new AbortController(),current=AbortSignal.any([signal,controller.signal]);let stop=()=>{};
+  const controller=new AbortController(),current=anySignal([signal,controller.signal]);let stop=()=>{};
   const timer=setTimeout(()=>controller.abort(),Math.min(30_000,Date.parse(context.deadline)-Date.now()));timer.unref();
   const canceled=new Promise<never>((_,reject)=>{stop=()=>reject(unavailable());current.addEventListener("abort",stop,{once:true});});
   try{if(current.aborted)throw unavailable();const result=await Promise.race([Promise.resolve().then(()=>operation(current)),canceled]);

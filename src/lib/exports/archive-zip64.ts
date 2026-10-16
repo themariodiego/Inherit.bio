@@ -5,6 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { ARCHIVE_OPERATION_TIMEOUT_MS, ARCHIVE_SEGMENT_BYTES } from "./archive-segments";
 import type {RequesterStatementRuntime} from "./requester-statement-runtime";
+import { anySignal } from "./abort-signals";
 
 /** A byte producer only: the caller supplies the complete, authorized manifest
  * and its captured receipt. No route, source selection or ready state is here. */
@@ -153,7 +154,7 @@ export function createZip64Archive(options: Zip64Options): ReadableStream<Uint8A
     else try { void reader?.cancel().catch(() => {}); } catch { /* Original unmarked path. */ }
   }
   async function operation<T>(code: Failure, work: (current: AbortSignal) => Promise<T>): Promise<T> {
-    active(); const local = new AbortController(), current = AbortSignal.any([signal, local.signal]);
+    active(); const local = new AbortController(), current = anySignal([signal, local.signal]);
     const timer = setTimeout(() => local.abort(), Math.min(ARCHIVE_OPERATION_TIMEOUT_MS, deadline - Date.now())); timer.unref();
     let rejectAbort = () => {};
     const cancelled = new Promise<never>((_, reject) => {

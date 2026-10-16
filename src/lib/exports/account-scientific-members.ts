@@ -7,6 +7,7 @@ import type {FuturePersonMemberFactory} from "./future-person-member-plan";
 import {canonicalRecordSchema,type CanonicalRecord} from "@/lib/genome/prepared-source/canonical-schema";
 import type {OwnPreparedExportHeader} from "@/lib/genome/prepared-source/export-source";
 import {callbackSource} from "./callback-source";
+import {anySignal} from "./abort-signals";
 
 type Reader=Awaited<ReturnType<typeof createAccountContentReader>>;
 type Metadata=Awaited<ReturnType<typeof prepareAccountArchiveMetadata>>;
@@ -31,7 +32,7 @@ export async function prepareAccountScientificMembers(options:{reader:Reader;met
  if(counts.size!==files.length||files.some(file=>counts.get(file.file.id)?.subjectId!==file.file.subject_id))throw unavailable();
  async function bounded<T>(signal:AbortSignal,operation:(current:AbortSignal)=>PromiseLike<T>){
   const remaining=Date.parse(context.deadline)-Date.now();if(signal.aborted||options.signal.aborted||remaining<=0)throw unavailable();
-  const stop=new AbortController(),current=AbortSignal.any([options.signal,signal,stop.signal]);let abort=()=>{};
+  const stop=new AbortController(),current=anySignal([options.signal,signal,stop.signal]);let abort=()=>{};
   const timer=setTimeout(()=>stop.abort(),Math.min(30_000,remaining));timer.unref();
   const canceled=new Promise<never>((_,reject)=>{abort=()=>reject(unavailable());current.addEventListener("abort",abort,{once:true});});
   try{if(current.aborted)throw unavailable();const value=await Promise.race([Promise.resolve().then(()=>operation(current)),canceled]);
