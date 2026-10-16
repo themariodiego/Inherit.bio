@@ -418,6 +418,42 @@
       "disposition": "deferred",
       "reason": "Saved report results for an exact other-adult purpose and recipient. Dedicated current-grant reading exists; the subject-partitioned export projection is still required before these rows can be exported. Source-owner access cannot substitute for that projection."
     },
+    "private.path_b_reviewed_document_nonces": {
+      "disposition": "excluded-credential",
+      "reason": "Hashes of spent one-time operation nonces for the Path B reviewed-document session and finalization. They are credentials, deleted a day after use, never archive content."
+    },
+    "private.path_b_reviewed_document_requests": {
+      "disposition": "excluded-internal",
+      "reason": "The binding between a hidden Path B request and the exact draft, permission document and review it was issued on. It is activation machinery, not the person's record."
+    },
+    "private.permission_document_assignments": {
+      "disposition": "out-of-scope",
+      "reason": "Staff review assignments of an adult-signed permission document. It is not the requester's own record."
+    },
+    "private.permission_document_fragments": {
+      "disposition": "excluded-protected",
+      "reason": "Sealed pieces of an adult-signed permission document in upload, deleted once composed or refused. The export contracts always exclude evidence documents and their bytes."
+    },
+    "private.permission_document_review_downloads": {
+      "disposition": "excluded-credential",
+      "reason": "A named reviewer's revocable chunk sessions for one permission document: a download cookie hash bound to the reviewer's auth session. Exporting it would be a security defect."
+    },
+    "private.permission_document_review_reads": {
+      "disposition": "excluded-internal",
+      "reason": "Temporary staff read receipts used to authorize a permission document decision, as for claim reviews. This is authorization and review machinery, not a member export class."
+    },
+    "private.permission_document_reviews": {
+      "disposition": "excluded-protected",
+      "reason": "Immutable named-human decisions on a permission document: the document hash, kind, decision, the reviewer's sealed reason and their session binding. Evidence decisions and reviewer notes are withheld from member exports."
+    },
+    "private.permission_document_sessions": {
+      "disposition": "excluded-credential",
+      "reason": "Permission document upload sessions: an evidence cookie hash, one-time nonce hashes, an independent wrapped document key and the originating auth session. These credentials never leave in an archive."
+    },
+    "private.permission_documents": {
+      "disposition": "excluded-protected",
+      "reason": "Adult-signed permission documents with their scan verdicts and review states. The export contracts always exclude evidence documents, their locators and their bytes."
+    },
     "private.rights_purpose_matrix": {
       "disposition": "reference",
       "reason": "The rights-purpose matrix the database enforces: purposes, actions and routes. It holds no person's data."

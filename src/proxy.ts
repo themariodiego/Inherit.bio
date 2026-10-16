@@ -53,7 +53,12 @@ function withSensitiveHeaders<T extends NextResponse>(response: T, path?: string
       path?.startsWith("/api/reviews/future-person/claims/") ||
       path?.startsWith("/reviews/appeals/") ||
       path?.startsWith("/api/reviews/appeals/") ||
-      (path !== undefined && /^\/api\/legal-evidence\/[^/]+\/review-download$/.test(path))) {
+      (path !== undefined && /^\/api\/legal-evidence\/[^/]+\/review-download$/.test(path)) ||
+      // sensitiveResponseHeaderBindings.downloadOrExport: the subject download
+      // entry and the shared chunk route it hands off to. (api.subject-export
+      // is not built; its binding joins this list when it is.)
+      (path !== undefined && /^\/api\/subjects\/[^/]+\/download$/.test(path)) ||
+      path?.startsWith("/api/downloads/")) {
     response.headers.set("Referrer-Policy", "no-referrer");
   }
   return response;

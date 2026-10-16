@@ -500,8 +500,10 @@ select ok((select md5(prosrc)='7c176e100123ecbdf9aedd8ee41b0539' from pg_proc
         'public.activate_rights_before_appeal_notice_v1(text,text,text)'])f
        where has_function_privilege(r,f,'execute')))))),
  'the exact held, keyless, evidence, notice and information bodies form the reviewed service door; every preserved delegate remains API-denied');
+-- 20261016190000_path_b_reviewed_document.sql extends this exact helper to the
+-- reviewed-document flow's graph; the pin follows the reviewed body.
 select ok(to_regprocedure('private.assert_account_path_b_deletion_supported_v1(uuid)') is null
- or ((select md5(prosrc)='6382fbb06d5525dc983806ecefebb629' from pg_proc
+ or ((select md5(prosrc)='cd6a5921924d50f1857ac8d8b545b30d' from pg_proc
     where oid=to_regprocedure('private.assert_account_path_b_deletion_supported_v1(uuid)'))
    and not exists(select 1 from unnest(array['anon','authenticated','inherit_upload_only','service_role'])r
     where has_function_privilege(r,to_regprocedure('private.assert_account_path_b_deletion_supported_v1(uuid)'),'execute'))),

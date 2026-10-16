@@ -1,16 +1,18 @@
 import crypto from "node:crypto";
 import { SENSITIVE_HEADERS, notFound, sensitiveJson, unavailable } from "@/lib/embryos/api";
 import { readBoundedBytes } from "@/lib/future-person/bounded-body";
-import { supabaseClaimObjectStore, supabaseAppealObjectStore } from "@/lib/future-person/claim-objects";
+import { supabaseClaimObjectStore, supabaseAppealObjectStore, supabasePermissionObjectStore } from "@/lib/future-person/claim-objects";
 import { testAppealIntakeOpen } from "@/lib/future-person/appeals-open";
 import { futurePersonClaimsOpen } from "@/lib/future-person/claims-open";
 import { claimDataKey, sealDocumentBytes } from "@/lib/future-person/document-envelope";
 import { readEvidenceRequest } from "@/lib/future-person/evidence-session";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { permissionDocumentsOpen } from "@/lib/uploads/permission-document-open";
 
 /**
  * `PUT /api/evidence/[session]/chunks/[sequence]` (register api.evidence-chunk),
- * for the claim document sessions this deployment issues.
+ * for the claim, appeal and Path B permission document sessions this
+ * deployment issues. The native session row chooses the store.
  *
  * The session id in the path must match the evidence cookie, and the
  * request must carry `X-Inherit-CSRF` for that session, the exact origin and
@@ -31,11 +33,18 @@ import { createAdminClient } from "@/lib/supabase/admin";
 const CHUNK_BYTES = 4_000_000;
 const SEQUENCE = /^(0|[1-4])$/u;
 
-const reserved = (value: unknown): value is { status: "reserved"; objectKey: string; wrappedDataKey: string; storageKind?: "appeal" } =>
+const reserved = (value: unknown): value is { status: "reserved"; objectKey: string; wrappedDataKey: string; storageKind?: "appeal" | "permission" } =>
   typeof value === "object" && value !== null && (value as { status?: unknown }).status === "reserved"
   && typeof (value as { objectKey?: unknown }).objectKey === "string"
   && typeof (value as { wrappedDataKey?: unknown }).wrappedDataKey === "string"
-  && ((value as { storageKind?: unknown }).storageKind === undefined || (value as { storageKind?: unknown }).storageKind === "appeal");
+  && ((value as { storageKind?: unknown }).storageKind === undefined || (value as { storageKind?: unknown }).storageKind === "appeal"
+    || (value as { storageKind?: unknown }).storageKind === "permission");
+
+/** Whether this session's own domain is open here. */
+function domainOpen(storageKind: "appeal" | "permission" | undefined): boolean {
+  return storageKind === "appeal" ? testAppealIntakeOpen()
+    : storageKind === "permission" ? permissionDocumentsOpen() : futurePersonClaimsOpen();
+}
 
 function withoutReferrer(response: Response): Response {
   response.headers.set("Referrer-Policy", "no-referrer");
@@ -52,7 +61,7 @@ export async function PUT(request: Request, context: { params: Promise<{ session
 }
 
 async function putChunk(request: Request, session: string, sequence: string): Promise<Response> {
-  if (!futurePersonClaimsOpen() && !testAppealIntakeOpen()) return notFound();
+  if (!futurePersonClaimsOpen() && !testAppealIntakeOpen() && !permissionDocumentsOpen()) return notFound();
   const cookieHash = readEvidenceRequest(request, session, "application/octet-stream");
   if (!cookieHash || !SEQUENCE.test(sequence)) return notFound();
   const admin = createAdminClient();
@@ -77,8 +86,9 @@ async function putChunk(request: Request, session: string, sequence: string): Pr
     if (body.kind === "too_large") return sensitiveJson({ error: "chunk_too_large" }, 413);
     if (!reserved(data)) return (data as { status?: unknown } | null)?.status === "invalid" ? invalid("size") : unavailable();
 
-    if (data.storageKind === "appeal" ? !testAppealIntakeOpen() : !futurePersonClaimsOpen()) return notFound();
-    const store = data.storageKind === "appeal" ? supabaseAppealObjectStore(admin) : supabaseClaimObjectStore(admin);
+    if (!domainOpen(data.storageKind)) return notFound();
+    const store = data.storageKind === "appeal" ? supabaseAppealObjectStore(admin)
+      : data.storageKind === "permission" ? supabasePermissionObjectStore(admin) : supabaseClaimObjectStore(admin);
     let written = false;
     const key = claimDataKey(data.wrappedDataKey);
     try {

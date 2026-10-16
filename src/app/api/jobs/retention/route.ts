@@ -10,7 +10,7 @@ import { hasEmptyRequestBody } from "@/lib/empty-request-body";
 import { enqueueAccountMail } from "@/lib/mail-outbox";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { testAppealIntakeOpen } from "@/lib/future-person/appeals-open";
-import { supabaseClaimObjectStore, supabaseAppealObjectStore } from "@/lib/future-person/claim-objects";
+import { supabaseClaimObjectStore, supabaseAppealObjectStore, supabasePermissionObjectStore } from "@/lib/future-person/claim-objects";
 import { drainRefusedInvitationCleanup } from "@/lib/embryos/refused-invitation-cleanup";
 import { drainOwnUploadCleanup } from "@/lib/uploads/retention-cleanup";
 import { drainStrandedFileDeletions } from "@/lib/uploads/file-deletion-backstop";
@@ -194,6 +194,15 @@ export async function POST(request: Request) {
   if (authCredentialPurgeError) failed++;
   else if (typeof purgedAuthCredentials === "number") processed += purgedAuthCredentials;
 
+  // api.subject-download sessions hold identifiers and a cookie hash only;
+  // each goes with its served ranges an hour after it ended or expired.
+  // Independent of every other queue.
+  const { data: purgedOriginalDownloads, error: originalDownloadPurgeError } = await admin.rpc(
+    "purge_ended_subject_original_downloads_v1",
+  );
+  if (originalDownloadPurgeError) failed++;
+  else if (typeof purgedOriginalDownloads === "number") processed += purgedOriginalDownloads;
+
   // Claim documents (evidence.ingest-session-24h, future-person.claim-intake-
   // session-24h): delete the objects the database lists as due (fragments,
   // refused documents, everything of an ended claim) and confirm each batch,
@@ -306,6 +315,35 @@ export async function POST(request: Request) {
       { status: 503 },
     );
   }
+
+  // The reviewed-document Path B (20261016190000). A request with no pending
+  // invitation past its fixed deadline ends as the same tombstone as an
+  // expired e-signature draft (a pending one was ended just above), and its
+  // document key is erased at commit. Then the signed-permission objects the
+  // database lists as due (fragments, refused or retired documents, those of
+  // an ended request) leave the legal-evidence bucket, each batch confirmed.
+  // Independent of every other queue; never gated, as deletion only removes.
+  try {
+    const { data: expiredReviewed, error: reviewedExpiryError } = await admin.rpc("expire_due_path_b_reviewed_documents_v1");
+    if (reviewedExpiryError) failed++;
+    else if (typeof expiredReviewed === "number") processed += expiredReviewed;
+  } catch { failed++; }
+  try {
+    const objects = supabasePermissionObjectStore(admin);
+    for (let batch = 0; batch < 10; batch++) {
+      const { data: due, error: dueError } = await admin.rpc("permission_document_objects_due_v1", { p_limit: 100 });
+      if (dueError) { failed++; break; }
+      const keys = (Array.isArray(due) ? due : []).map((row: { object_key?: unknown }) => row.object_key).filter((key): key is string => typeof key === "string");
+      if (!keys.length) break;
+      await objects.remove(keys);
+      const { data: confirmed, error: confirmError } = await admin.rpc("confirm_permission_document_objects_deleted_v1", {
+        p_object_keys: keys, p_route_id: "jobs.retention",
+      });
+      if (confirmError) { failed++; break; }
+      if (typeof confirmed === "number") processed += confirmed;
+      if (keys.length < 100) break;
+    }
+  } catch { failed++; }
 
   // Embryo cohort drafts past their 30-day deadline (E0 contract §6.9): the
   // database expires every draft that is due and shreds its contacts; this
