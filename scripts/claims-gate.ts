@@ -1,6 +1,7 @@
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import ts from "typescript";
 
 /**
  * G1.11: `pnpm gate:claims` exits 0.
@@ -60,6 +61,16 @@ import { fileURLToPath, pathToFileURL } from "node:url";
  *    question is decided at the module graph: a page whose imports never
  *    reach `src/components/claims/claim.tsx` cannot be emitting anything
  *    through the shared claim component.
+ *  - Copilot system prompts are not markup, so they are read as registration
+ *    too (owner decision of 16 October 2026, `docs/protocol/decisions.md`).
+ *    Every prompt is written in `src/copy/copilot/system-prompts.ts`, whose
+ *    `COPILOT_PROMPT_RULES` names and classifies each rule. A rule classed
+ *    `claim` must be registered in `data/claims.json` as `copilot.<id>` on
+ *    the surface `copilot:<id>` with the rule's exact text, a `copilot:`
+ *    surface must name such a rule, and no system prompt text may be written
+ *    anywhere else in `src/`. That is the eleventh check. Registration is not
+ *    review: a prompt claim without a citation is a claim-evidence finding
+ *    like any other.
  *
  * Every check compares its findings against `docs/claims-divergence.json` in
  * both directions: an unrecorded finding fails, and a recorded finding that no
@@ -92,6 +103,11 @@ const APP = "src/app";
 const CLAIM_COMPONENT = "src/components/claims/claim.tsx";
 const LEDGER = "docs/claims-divergence.json";
 const ARCHAIC_ALLOWLIST = "data/gates/archaic-allowlist.json";
+/** The one module that holds Copilot system prompt text (owner decision, 16 October 2026). */
+const COPILOT_PROMPTS = "src/copy/copilot/system-prompts.ts";
+/** The claim surface locator that names one rule of a Copilot system prompt. */
+const COPILOT_LOCATOR = "copilot:";
+const COPILOT_RULE_KINDS = ["claim", "instruction"];
 
 /** The `type` enum, verbatim from G1.11. */
 const CITATION_TYPES = ["pmid", "doi", "statute", "registry", "regulator", "dataset"] as const;
@@ -134,6 +150,12 @@ interface DesignatedSurface {
    * rendered it.
    */
   rendersMarkup: boolean;
+  /**
+   * The claim surface locator that binds a claim to this surface where no
+   * route renders it. Only `copilot:` exists, and a claim is bound by it only
+   * when the locator names a rule the prompt module classifies as a claim.
+   */
+  locator?: typeof COPILOT_LOCATOR;
 }
 
 /**
@@ -164,8 +186,9 @@ const DESIGNATED_SURFACES: DesignatedSurface[] = [
     id: "copilot-system-prompts",
     name: "Copilot system prompts",
     routes: [],
-    modules: ["src/lib/copilot"],
+    modules: [COPILOT_PROMPTS],
     rendersMarkup: false,
+    locator: COPILOT_LOCATOR,
   },
   {
     id: "legal-pages",
@@ -260,7 +283,7 @@ export function archaicFindings(sources: ArchaicSource[], sentences: string[]): 
 export type ClaimsLedger = Record<string, string[]>;
 
 /**
- * A recorded divergence for the seven checks whose findings are one-off
+ * A recorded divergence for the eight checks whose findings are one-off
  * sentences about a single record — a citation, a claim, a provenance
  * expression, an element. There is nothing to recount, so the sentence itself
  * is what the ledger holds and what the comparison matches.
@@ -309,6 +332,7 @@ interface ClaimsDivergenceFile {
   reportBodyRegistration?: ReportBodyDivergence[];
   templateCitationRegistration?: TemplateCitationDivergence[];
   designatedSurface?: DesignatedSurfaceDivergence[];
+  copilotPrompt?: RecordedFinding[];
 }
 
 /**
@@ -367,6 +391,7 @@ export function readClaimsLedger(repositoryRoot: string): ClaimsLedger {
     "report body registration": (file.reportBodyRegistration ?? []).map(reportBodyFinding),
     "template citation registration": (file.templateCitationRegistration ?? []).map(templateCitationFinding),
     "designated surface": (file.designatedSurface ?? []).map(designatedSurfaceFinding),
+    "copilot prompt": verbatim(file.copilotPrompt),
   };
 }
 
@@ -393,6 +418,8 @@ interface CanonicalClaim {
   text_verbatim: string;
   surfaces: string[];
   evidence: ClaimEvidence[];
+  reviewed_on?: string | null;
+  reviewer?: string | null;
 }
 
 interface RegisterRoute {
@@ -418,6 +445,8 @@ export interface ClaimsGateResult {
   registeredTemplateCitationCount: number;
   designatedSurfaceCount: number;
   archaicScannedFileCount: number;
+  copilotRuleCount: number;
+  copilotClaimRuleCount: number;
 }
 
 /** A word for the ≤ 25-word quote limit: a whitespace-separated token carrying a letter or digit. */
@@ -771,6 +800,171 @@ export function createdTables(sql: string): string[] {
   ].map((match) => match[1].toLowerCase());
 }
 
+/** One rule of a Copilot system prompt, as the prompt module declares it. */
+export interface CopilotPromptRule {
+  id: string;
+  kind: string;
+  /** The exported constant it belongs to. */
+  part: string;
+  /** The rule's exact text, or null when the constant and its declarations disagree in number. */
+  text: string | null;
+}
+
+/**
+ * A prompt constant's rules: its lines after "Hard rules:", without their
+ * dash, or the whole constant when it has no such heading. A line after the
+ * heading that is not a rule is returned as stray, never read as one.
+ */
+export function copilotRuleTexts(text: string): { rules: string[]; stray: string[] } {
+  const heading = "\n\nHard rules:\n";
+  const at = text.indexOf(heading);
+  if (at === -1) return { rules: [text], stray: [] };
+  const rules: string[] = [];
+  const stray: string[] = [];
+  for (const line of text.slice(at + heading.length).split("\n")) {
+    if (line.startsWith("- ")) rules.push(line.slice(2));
+    else stray.push(line);
+  }
+  return { rules, stray };
+}
+
+/**
+ * The prompt module read statically, without running it: every exported
+ * string constant, and `COPILOT_PROMPT_RULES`, which names and classifies
+ * each constant's rules in order. Findings are about the module itself — a
+ * constant left unclassified, a count that disagrees, a kind outside the two,
+ * an id given twice — so that the rule list cannot drift from the text.
+ */
+export function readCopilotPrompts(source: string): { rules: CopilotPromptRule[]; findings: string[] } {
+  const findings: string[] = [];
+  const rules: CopilotPromptRule[] = [];
+  const file = ts.createSourceFile(COPILOT_PROMPTS, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
+  const unwrap = (node: ts.Expression): ts.Expression => {
+    let current = node;
+    while (ts.isAsExpression(current) || ts.isSatisfiesExpression(current) || ts.isParenthesizedExpression(current)) {
+      current = current.expression;
+    }
+    return current;
+  };
+  const literal = (node: ts.Expression | undefined): string | null => {
+    const value = node ? unwrap(node) : undefined;
+    return value && (ts.isStringLiteral(value) || ts.isNoSubstitutionTemplateLiteral(value)) ? value.text : null;
+  };
+  const strings = new Map<string, string>();
+  const exported: string[] = [];
+  let declared: ts.ObjectLiteralExpression | null = null;
+  for (const statement of file.statements) {
+    if (!ts.isVariableStatement(statement)) continue;
+    const isExported = statement.modifiers?.some((modifier) => modifier.kind === ts.SyntaxKind.ExportKeyword) ?? false;
+    for (const declaration of statement.declarationList.declarations) {
+      if (!ts.isIdentifier(declaration.name) || !declaration.initializer) continue;
+      const name = declaration.name.text;
+      const text = literal(declaration.initializer);
+      if (text !== null) {
+        strings.set(name, text);
+        if (isExported) exported.push(name);
+      } else if (name === "COPILOT_PROMPT_RULES" && ts.isObjectLiteralExpression(unwrap(declaration.initializer))) {
+        declared = unwrap(declaration.initializer) as ts.ObjectLiteralExpression;
+      }
+    }
+  }
+  if (!declared) {
+    findings.push(`${COPILOT_PROMPTS} declares no COPILOT_PROMPT_RULES, so no prompt rule is classified`);
+    return { rules, findings };
+  }
+  const classified = new Set<string>();
+  for (const property of (declared as ts.ObjectLiteralExpression).properties) {
+    if (!ts.isPropertyAssignment(property)) {
+      findings.push(`${COPILOT_PROMPTS}: COPILOT_PROMPT_RULES holds an entry the reader cannot read: ${property.getText(file)}`);
+      continue;
+    }
+    const part = property.name.getText(file);
+    classified.add(part);
+    const text = strings.get(part);
+    if (text === undefined) {
+      findings.push(`${COPILOT_PROMPTS}: COPILOT_PROMPT_RULES names ${part}, which is not a string constant of the module`);
+    }
+    const list = unwrap(property.initializer);
+    if (!ts.isArrayLiteralExpression(list)) {
+      findings.push(`${COPILOT_PROMPTS}: COPILOT_PROMPT_RULES.${part} is not a list of rules`);
+      continue;
+    }
+    const entries = list.elements.map((element) => {
+      const entry = unwrap(element as ts.Expression);
+      const field = (name: string) => {
+        if (!ts.isObjectLiteralExpression(entry)) return null;
+        const held = entry.properties.find(
+          (candidate): candidate is ts.PropertyAssignment =>
+            ts.isPropertyAssignment(candidate) && candidate.name.getText(file) === name,
+        );
+        return literal(held?.initializer);
+      };
+      return { id: field("id"), kind: field("kind") };
+    });
+    const texts = text === undefined ? null : copilotRuleTexts(text);
+    for (const line of texts?.stray ?? []) {
+      findings.push(`${COPILOT_PROMPTS}: ${part} holds a line after its rules heading that is not a rule: ${line}`);
+    }
+    const aligned = texts !== null && texts.rules.length === entries.length;
+    if (texts && !aligned) {
+      findings.push(
+        `${COPILOT_PROMPTS}: ${part} holds ${texts.rules.length} rules and COPILOT_PROMPT_RULES names ${entries.length}`,
+      );
+    }
+    entries.forEach((entry, index) => {
+      if (!entry.id) {
+        findings.push(`${COPILOT_PROMPTS}: rule ${index + 1} of ${part} has no literal id`);
+        return;
+      }
+      if (!entry.kind || !COPILOT_RULE_KINDS.includes(entry.kind)) {
+        findings.push(`${COPILOT_PROMPTS}: rule ${entry.id} has kind ${String(entry.kind)}, outside ${COPILOT_RULE_KINDS.join("|")}`);
+      }
+      rules.push({ id: entry.id, kind: entry.kind ?? "", part, text: aligned ? texts.rules[index] : null });
+    });
+  }
+  for (const name of exported) {
+    if (!classified.has(name)) {
+      findings.push(`${COPILOT_PROMPTS}: ${name} is prompt text and COPILOT_PROMPT_RULES does not classify its rules`);
+    }
+  }
+  const ids = rules.map((rule) => rule.id);
+  for (const id of new Set(ids)) {
+    if (ids.filter((candidate) => candidate === id).length > 1) {
+      findings.push(`${COPILOT_PROMPTS}: rule id ${id} is declared more than once`);
+    }
+  }
+  return { rules, findings };
+}
+
+/**
+ * System prompt text written outside the prompt module: a `*SYSTEM_PROMPT*`
+ * constant defined (not re-exported) elsewhere, or a `system` or
+ * `systemPrompt` property given a literal that carries words outside its
+ * `${…}` slots. Either would put prose in front of a model that the claim
+ * register cannot see.
+ */
+export function strayCopilotPromptText(relative: string, input: string): string[] {
+  const source = withoutComments(input);
+  const findings: string[] = [];
+  const lineOf = (index: number) => source.slice(0, index).split("\n").length;
+  for (const match of source.matchAll(/\b(?:const|let|var)\s+([A-Za-z_$][\w$]*SYSTEM_PROMPT[\w$]*)\s*=/g)) {
+    findings.push(`${relative}:${lineOf(match.index ?? 0)} defines ${match[1]} outside ${COPILOT_PROMPTS}`);
+  }
+  for (const match of source.matchAll(
+    /\b(system|systemPrompt)\s*:\s*(`(?:\\[\s\S]|[^`\\])*`|"(?:\\.|[^"\\\n])*"|'(?:\\.|[^'\\\n])*')/g,
+  )) {
+    // Slots and escapes (`\n`, `’`) are not words.
+    const prose = match[2]
+      .slice(1, -1)
+      .replace(/\$\{[^}]*\}/g, "")
+      .replace(/\\u\{?[0-9a-fA-F]+\}?|\\x[0-9a-fA-F]{2}|\\[\s\S]/g, "");
+    if (/[A-Za-z]/.test(prose)) {
+      findings.push(`${relative}:${lineOf(match.index ?? 0)} gives a model literal ${match[1]} text outside ${COPILOT_PROMPTS}`);
+    }
+  }
+  return findings;
+}
+
 /** Both directions at once: what is present, against what is recorded. */
 function compareLedger(
   ledger: ClaimsLedger,
@@ -900,6 +1094,11 @@ export function runClaimsGate(
     const evidence = Array.isArray(claim.evidence) ? claim.evidence : [];
     if (evidence.length === 0) {
       evidenceFindings.push(`${at} carries no citation`);
+      // A review with nothing reviewed is an invented one: a claim that
+      // carries no source must not record a reviewer or a review date.
+      if ((claim.reviewed_on ?? null) !== null || (claim.reviewer ?? null) !== null) {
+        evidenceFindings.push(`${at} records a review without any citation to have reviewed`);
+      }
       continue;
     }
     for (const item of evidence) {
@@ -920,6 +1119,14 @@ export function runClaimsGate(
     }
   }
   compare("claim evidence", evidenceFindings);
+
+  // The Copilot prompt module, read before the surfaces because `copilot:`
+  // locators resolve against its rules.
+  const copilotPath = path.join(repositoryRoot, COPILOT_PROMPTS);
+  const copilotReading = existsSync(copilotPath)
+    ? readCopilotPrompts(readSource(copilotPath))
+    : { rules: [], findings: [`${COPILOT_PROMPTS} does not exist, so no Copilot system prompt rule can be read`] };
+  const copilotRuleById = new Map(copilotReading.rules.map((rule) => [rule.id, rule]));
 
   // 4. Every surface a claim names is a surface this product has.
   const templateFiles = readdirSync(path.join(repositoryRoot, TEMPLATES))
@@ -965,6 +1172,27 @@ export function runClaimsGate(
       if (locator.startsWith("email:")) {
         if (!existsSync(path.join(repositoryRoot, locator.slice("email:".length)))) {
           surfaceFindings.push(`${claim.claim_id} names ${locator}, which does not exist`);
+        }
+        continue;
+      }
+      if (locator.startsWith(COPILOT_LOCATOR)) {
+        const id = locator.slice(COPILOT_LOCATOR.length);
+        const rule = copilotRuleById.get(id);
+        if (!rule) {
+          surfaceFindings.push(`${claim.claim_id} names ${locator}, which no rule in ${COPILOT_PROMPTS} declares`);
+          continue;
+        }
+        if (rule.kind !== "claim") {
+          surfaceFindings.push(
+            `${claim.claim_id} names ${locator}, which ${COPILOT_PROMPTS} classifies as ${rule.kind || "nothing"}, not as a factual rule`,
+          );
+          continue;
+        }
+        if (claim.claim_id !== `copilot.${id}`) {
+          surfaceFindings.push(`${claim.claim_id} names ${locator} but is not registered as copilot.${id}`);
+        }
+        if (rule.text === null || claim.text_verbatim !== rule.text) {
+          surfaceFindings.push(`${claim.claim_id} names ${locator}, and its text is not that rule's exact text`);
         }
         continue;
       }
@@ -1179,6 +1407,9 @@ export function runClaimsGate(
     const bound = claims.filter((claim) =>
       (Array.isArray(claim?.surfaces) ? claim.surfaces : []).some((entry) => {
         const locator = typeof entry === "string" ? entry.split("#")[0] : "";
+        if (surface.locator && locator.startsWith(surface.locator)) {
+          return copilotRuleById.get(locator.slice(surface.locator.length))?.kind === "claim";
+        }
         return routes.some((route) => pathMatchesRoute(locator, route.path));
       }),
     );
@@ -1187,6 +1418,32 @@ export function runClaimsGate(
     }
   }
   compare("designated surface", surfaceStatus);
+
+  // 11. Copilot system prompts (G1.11; owner decision of 16 October 2026):
+  // the module reconciles with its own rule list, every rule it classes as a
+  // claim is registered with its exact text, and no prompt text is written
+  // outside it. Whether a registered claim carries a source is check 3's.
+  const copilotFindings = [...copilotReading.findings];
+  for (const rule of copilotReading.rules.filter((entry) => entry.kind === "claim")) {
+    const registered = claimById.get(`copilot.${rule.id}`);
+    const exact =
+      registered !== undefined &&
+      rule.text !== null &&
+      registered.text_verbatim === rule.text &&
+      Array.isArray(registered.surfaces) &&
+      registered.surfaces.includes(`${COPILOT_LOCATOR}${rule.id}`);
+    if (!exact) {
+      copilotFindings.push(
+        `${COPILOT_LOCATOR}${rule.id} is a factual rule of ${rule.part} with no claim in ${CLAIMS} registering its exact text`,
+      );
+    }
+  }
+  for (const file of markupFiles) {
+    const relative = path.relative(repositoryRoot, file).split(path.sep).join("/");
+    if (relative === COPILOT_PROMPTS) continue;
+    copilotFindings.push(...strayCopilotPromptText(relative, readSource(file)));
+  }
+  compare("copilot prompt", copilotFindings);
 
   // Archaic ancestry is never ranked (brief §7.6). The sweep is the
   // user-visible tree: every source module the walker already collected, plus
@@ -1230,6 +1487,9 @@ export function runClaimsGate(
   if (archaicSources.length < 200) {
     failures.push(`archaic sweep read ${archaicSources.length} files, expected over 200`);
   }
+  if (copilotReading.rules.length < 10) {
+    failures.push(`copilot prompt reader found ${copilotReading.rules.length} rules, expected over 10`);
+  }
 
   return {
     failures,
@@ -1248,6 +1508,8 @@ export function runClaimsGate(
     registeredTemplateCitationCount,
     designatedSurfaceCount: DESIGNATED_SURFACES.length,
     archaicScannedFileCount: archaicSources.length,
+    copilotRuleCount: copilotReading.rules.length,
+    copilotClaimRuleCount: copilotReading.rules.filter((rule) => rule.kind === "claim").length,
   };
 }
 
@@ -1269,6 +1531,7 @@ function main() {
       `register, ${result.provenanceLiteralCount} provenance expressions and ${result.markedElementCount} claim ` +
       `or figure elements read across ${result.scannedMarkupFileCount} modules, ` +
       `${result.designatedSurfaceCount} designated surfaces checked, ` +
+      `${result.copilotClaimRuleCount} of ${result.copilotRuleCount} Copilot prompt rules registered as claims, ` +
       `${result.archaicScannedFileCount} files swept for archaic ranking`,
   );
 }
