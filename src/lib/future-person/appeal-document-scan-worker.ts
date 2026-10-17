@@ -47,10 +47,44 @@ export interface ScanPassDependencies {
   signal?: AbortSignal;
 }
 
+/**
+ * The three ledger calls one document store answers. The appeal store and the
+ * signed-permission store (20261016190000) keep separate tables and the same
+ * state machine, so one pass serves both.
+ */
+export interface DocumentScanLedger {
+  claim: string;
+  record: string;
+  confirm: string;
+  event: string;
+}
+
+export const APPEAL_DOCUMENT_SCAN_LEDGER: DocumentScanLedger = {
+  claim: "claim_next_appeal_document_scan_v1",
+  record: "record_appeal_document_scan_v1",
+  confirm: "confirm_appeal_document_objects_deleted_v1",
+  event: "appeal_document_scan",
+};
+
+export const PERMISSION_DOCUMENT_SCAN_LEDGER: DocumentScanLedger = {
+  claim: "claim_next_permission_document_scan_v1",
+  record: "record_permission_document_scan_v1",
+  confirm: "confirm_permission_document_objects_deleted_v1",
+  event: "permission_document_scan",
+};
+
 export async function scanNextAppealDocument(deps: ScanPassDependencies): Promise<ScanPassOutcome> {
+  return scanNextDocument(deps, APPEAL_DOCUMENT_SCAN_LEDGER);
+}
+
+export async function scanNextPermissionDocument(deps: ScanPassDependencies): Promise<ScanPassOutcome> {
+  return scanNextDocument(deps, PERMISSION_DOCUMENT_SCAN_LEDGER);
+}
+
+async function scanNextDocument(deps: ScanPassDependencies, ledger: DocumentScanLedger): Promise<ScanPassOutcome> {
   const lease = crypto.randomBytes(32).toString("hex");
   const leaseHash = crypto.createHash("sha256").update(lease).digest("hex");
-  const claimed = await deps.rpc("claim_next_appeal_document_scan_v1", { p_lease_hash: leaseHash });
+  const claimed = await deps.rpc(ledger.claim, { p_lease_hash: leaseHash });
   if (claimed.error) return "failed";
   if (claimed.data === null) return "idle";
   const parsed = job.safeParse(claimed.data);
@@ -58,7 +92,7 @@ export async function scanNextAppealDocument(deps: ScanPassDependencies): Promis
   const document = parsed.data;
 
   const record = async (outcome: string, verdict?: { sha256: string; engine: string; version: number; publishedAt: Date }) =>
-    deps.rpc("record_appeal_document_scan_v1", {
+    deps.rpc(ledger.record, {
       p_document_id: document.documentId,
       p_lease_hash: leaseHash,
       p_outcome: outcome,
@@ -73,7 +107,7 @@ export async function scanNextAppealDocument(deps: ScanPassDependencies): Promis
     if (recorded.error || recorded.data !== "delete") return "failed";
     try {
       await deps.store.remove([document.objectKey]);
-      await deps.rpc("confirm_appeal_document_objects_deleted_v1", {
+      await deps.rpc(ledger.confirm, {
         p_object_keys: [document.objectKey], p_route_id: "jobs.claim-document-scan",
       });
     } catch {
@@ -88,7 +122,7 @@ export async function scanNextAppealDocument(deps: ScanPassDependencies): Promis
     if (recorded.data === "delete") {
       try {
         await deps.store.remove([document.objectKey]);
-        await deps.rpc("confirm_appeal_document_objects_deleted_v1", {
+        await deps.rpc(ledger.confirm, {
           p_object_keys: [document.objectKey], p_route_id: "jobs.claim-document-scan",
         });
       } catch {
@@ -148,18 +182,27 @@ export interface ScanLoopOptions extends ScanPassDependencies {
 
 /** Scan until aborted (or for `maximumIterations` passes), waiting while idle or after a failure. */
 export async function runAppealDocumentScanLoop(options: ScanLoopOptions): Promise<{ hadFailure: boolean }> {
+  return runDocumentScanLoop(options, APPEAL_DOCUMENT_SCAN_LEDGER);
+}
+
+/** The same loop over signed-permission documents (legal-evidence bucket). */
+export async function runPermissionDocumentScanLoop(options: ScanLoopOptions): Promise<{ hadFailure: boolean }> {
+  return runDocumentScanLoop(options, PERMISSION_DOCUMENT_SCAN_LEDGER);
+}
+
+async function runDocumentScanLoop(options: ScanLoopOptions, ledger: DocumentScanLedger): Promise<{ hadFailure: boolean }> {
   let hadFailure = false;
   const idleMs = options.idleMs ?? 5000;
   for (let pass = 0; options.maximumIterations === undefined || pass < options.maximumIterations; pass++) {
     if (options.signal?.aborted) break;
     let outcome: ScanPassOutcome;
     try {
-      outcome = await scanNextAppealDocument(options);
+      outcome = await scanNextDocument(options, ledger);
     } catch {
       outcome = "failed";
     }
     if (outcome === "failed") hadFailure = true;
-    options.emit?.(`appeal_document_scan_${outcome}`);
+    options.emit?.(`${ledger.event}_${outcome}`);
     if (outcome === "idle" || outcome === "failed" || outcome === "retry") {
       await new Promise<void>((resolve) => {
         const timer = setTimeout(resolve, idleMs);

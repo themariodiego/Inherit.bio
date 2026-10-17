@@ -17,8 +17,10 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import {
   SUBJECT_ESIGNATURE_ARTIFACT_KEY,
   SUBJECT_ESIGNATURE_STATEMENT_KEYS,
+  adultUploadRevisionRetention,
   adultUploadRevisionView,
   artifactStatements,
+  type AdultUploadRevisionRetention,
   type AdultUploadRevisionView,
 } from "./other-adult-upload";
 import { contactDigestCandidates } from "@/lib/hmac-keyring";
@@ -125,7 +127,10 @@ export async function loadPathBRequestReview(request: Request, now = Date.now())
   const nowIso = new Date(now).toISOString();
   const { data: draftData } = await looseAdmin(admin).from("adult_subject_drafts")
     .select("adult_flow, state, fixed_expires_at, owner_account_id").eq("subject_id", session.data.target_id).maybeSingle();
-  const draft = z.object({ adult_flow: z.literal("path-b-subject-esignature"), state: z.literal("invited"),
+  // Both Path B branches end in the person's own signature on this page: the
+  // reviewed-document branch (20261016190000) only adds the named-human
+  // document review before the request is sent. The database rechecks which.
+  const draft = z.object({ adult_flow: z.enum(["path-b-subject-esignature", "path-b-reviewed-document"]), state: z.literal("invited"),
     fixed_expires_at: z.string(), owner_account_id: z.uuid() }).safeParse(draftData);
   if (!draft.success || !(Date.parse(draft.data.fixed_expires_at) > now)) return null;
   const [{ data: subject }, { data: invitation }] = await Promise.all([
@@ -201,17 +206,27 @@ export function readAdultUploadRevisionResponse(request: Request, nonce: string,
 export interface AdultUploadRevisionReview {
   nonce: string;
   revision: AdultUploadRevisionView;
+  /** The 730-day clock this file has, or a yes would start (adult.non-account-holder-24mo). */
+  retention: AdultUploadRevisionRetention;
 }
 
-/** The file revision this session was opened for, or null. */
+/**
+ * The file revision this session was opened for, or null. The page must say
+ * how long a confirmed file is kept, so it is not served without that answer.
+ */
 export async function loadAdultUploadRevisionReview(request: Request, now = Date.now()):
   Promise<AdultUploadRevisionReview | null> {
   if (!isTestJurisdictionEnabled()) return null;
   const sessionHash = readRightsSessionHash(request);
   if (!sessionHash) return null;
-  const { data, error } = await heldUploadRpc(createAdminClient(), "read_adult_upload_revision_v1",
-    { p_session_hash: sessionHash });
+  const admin = createAdminClient();
+  const { data, error } = await heldUploadRpc(admin, "read_adult_upload_revision_v1", { p_session_hash: sessionHash });
   const revision = adultUploadRevisionView.safeParse(data);
   if (error || !revision.success) return null;
-  return { nonce: mintPublicFormToken("adult-upload-respond", now, sessionHash), revision: revision.data };
+  const kept = await heldUploadRpc(admin, "adult_upload_revision_retention_v1", { p_session_hash: sessionHash });
+  const retention = adultUploadRevisionRetention.safeParse(kept.data);
+  if (kept.error || !retention.success
+    || (revision.data.state === "pending" && retention.data.keepUntil !== null)) return null;
+  return { nonce: mintPublicFormToken("adult-upload-respond", now, sessionHash), revision: revision.data,
+    retention: retention.data };
 }

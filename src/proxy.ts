@@ -7,6 +7,19 @@ import { CLAIM_FORM_TOKEN_HEADER, claimFormSecret, mintClaimForm } from "@/lib/f
 import {APPEAL_FORM_TOKEN_HEADER,appealFormSecret,mintAppealForm} from "@/lib/future-person/appeal-form";
 import {testAppealIntakeOpen} from "@/lib/future-person/appeals-open";
 import {applyAppealIntakeHeaders} from "@/lib/future-person/appeal-intake-response";
+import { AUTH_FORM_PAGES, AUTH_FORM_TOKEN_HEADER, authFormSecret, mintAuthForm } from "@/lib/auth/auth-form";
+
+/**
+ * The three public auth endpoints (auth.sign-up-submit,
+ * auth.forgot-password-submit, auth.reset-password-submit). They answer for
+ * no signed-in account, so none is looked up or refreshed on their way, and
+ * every answer, the proxy's included, carries the authOrRecovery profile.
+ */
+const AUTH_ENDPOINTS: ReadonlySet<string> = new Set([
+  "/api/auth/sign-up",
+  "/api/auth/forgot-password",
+  "/api/auth/reset-password",
+]);
 
 /**
  * Response headers every page or endpoint that can read or write user,
@@ -30,7 +43,7 @@ function withSensitiveHeaders<T extends NextResponse>(response: T, path?: string
   for (const [name, value] of Object.entries(SENSITIVE_RESPONSE_HEADERS)) {
     response.headers.set(name, value);
   }
-  if(path==="/api/appeals"||path==="/api/future-person/claim/session/corrections")return applyAppealIntakeHeaders(response);
+  if(path==="/api/appeals"||path==="/api/future-person/claim/session/corrections"||(path!==undefined&&AUTH_ENDPOINTS.has(path)))return applyAppealIntakeHeaders(response);
   // The proxy's response headers also reach route-handler responses. Review
   // IDs, documentary decisions and document download sessions require the
   // stricter policy, including refusals produced by the proxy itself. Next's
@@ -40,7 +53,12 @@ function withSensitiveHeaders<T extends NextResponse>(response: T, path?: string
       path?.startsWith("/api/reviews/future-person/claims/") ||
       path?.startsWith("/reviews/appeals/") ||
       path?.startsWith("/api/reviews/appeals/") ||
-      (path !== undefined && /^\/api\/legal-evidence\/[^/]+\/review-download$/.test(path))) {
+      (path !== undefined && /^\/api\/legal-evidence\/[^/]+\/review-download$/.test(path)) ||
+      // sensitiveResponseHeaderBindings.downloadOrExport: the subject download
+      // entry and the shared chunk route it hands off to. (api.subject-export
+      // is not built; its binding joins this list when it is.)
+      (path !== undefined && /^\/api\/subjects\/[^/]+\/download$/.test(path)) ||
+      path?.startsWith("/api/downloads/")) {
     response.headers.set("Referrer-Policy", "no-referrer");
   }
   return response;
@@ -114,6 +132,12 @@ export async function proxy(request: NextRequest) {
   // no record, no prior claim (rights.future-person-claim.policy.dataScope).
   if (request.nextUrl.pathname === "/future-person/claim") {
     return claimPage(request);
+  }
+  if (AUTH_ENDPOINTS.has(request.nextUrl.pathname)) {
+    return withSensitiveHeaders(NextResponse.next({ request }), request.nextUrl.pathname);
+  }
+  if (Object.hasOwn(AUTH_FORM_PAGES, request.nextUrl.pathname)) {
+    return authFormPage(request, AUTH_FORM_PAGES[request.nextUrl.pathname]!);
   }
   let response = NextResponse.next({ request });
 
@@ -248,6 +272,39 @@ function claimPage(request: NextRequest): NextResponse {
   headers.set(CLAIM_FORM_TOKEN_HEADER, form.formToken);
   const response = withSensitiveHeaders(NextResponse.next({ request: { headers } }));
   response.headers.append("Set-Cookie", form.setCookie);
+  response.headers.set("Referrer-Policy", "no-referrer");
+  return response;
+}
+
+/**
+ * `GET /auth/sign-up` and `GET /auth/forgot-password`: a non-authorizing
+ * form pair (`src/lib/auth/auth-form.ts`). The cookie goes to the browser,
+ * kept when it already holds one; the sealed token goes only to this render,
+ * in a request header this function always strips from the incoming request,
+ * so no client can supply it. The page carries a per-request token, so it is
+ * never cached.
+ */
+function authFormPage(request: NextRequest, form: (typeof AUTH_FORM_PAGES)[string]): NextResponse {
+  const headers = new Headers(request.headers);
+  headers.delete(AUTH_FORM_TOKEN_HEADER);
+  if (request.method !== "GET") return withSensitiveHeaders(NextResponse.next({ request: { headers } }));
+  // A prefetch from another page (the header's sign-up link) must not hand
+  // that page's visitor an auth form cookie they never asked for. A browser
+  // already holding one, prefetching the form it shows, keeps it as before.
+  const prefetch = request.headers.has("next-router-prefetch") || request.headers.has("next-router-segment-prefetch");
+  if (prefetch && authFormSecret(request) === null) {
+    return withSensitiveHeaders(NextResponse.next({ request: { headers } }));
+  }
+  let pair: ReturnType<typeof mintAuthForm>;
+  try {
+    pair = mintAuthForm(form, Date.now(), authFormSecret(request));
+  } catch {
+    // No sealing key: the page renders, and its POST is refused as stale.
+    return withSensitiveHeaders(NextResponse.next({ request: { headers } }));
+  }
+  headers.set(AUTH_FORM_TOKEN_HEADER, pair.formToken);
+  const response = withSensitiveHeaders(NextResponse.next({ request: { headers } }));
+  response.headers.append("Set-Cookie", pair.setCookie);
   response.headers.set("Referrer-Policy", "no-referrer");
   return response;
 }

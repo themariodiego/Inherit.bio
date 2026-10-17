@@ -1,7 +1,7 @@
 import crypto from "node:crypto";
 import { getSensitiveAccountContext } from "@/lib/account-deletion";
 import { SENSITIVE_HEADERS, notFound, unavailable } from "@/lib/embryos/api";
-import { supabaseClaimObjectStore, supabaseAppealObjectStore } from "@/lib/future-person/claim-objects";
+import { supabaseClaimObjectStore, supabaseAppealObjectStore, supabasePermissionObjectStore } from "@/lib/future-person/claim-objects";
 import { testAppealIntakeOpen } from "@/lib/future-person/appeals-open";
 import { futurePersonClaimsOpen } from "@/lib/future-person/claims-open";
 import { claimDataKey, openDocumentBytes } from "@/lib/future-person/document-envelope";
@@ -11,11 +11,14 @@ import { chunkReceiptProof } from "@/lib/future-person/review-receipt";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import {getAccountArchiveChunk,accountArchiveChunkDependencies} from "@/lib/exports/account-archive-chunk-http";
+import { getSubjectOriginalChunk, subjectDownloadDependencies } from "@/lib/uploads/subject-original-download";
+import { permissionDocumentsOpen } from "@/lib/uploads/permission-document-open";
 
 /**
  * `GET /api/downloads/[session]/chunks/[sequence]` (register
- * api.download-chunk), for claim review downloads, the only download
- * sessions this deployment issues.
+ * api.download-chunk), for account archive, subject original
+ * (api.subject-download) and claim review download sessions. Each kind is
+ * chosen by the native session row, never by the request.
  *
  * The cookie and session id only identify; every chunk re-authorizes under
  * the reviewer's own JWT: the same reviewer and auth session that opened
@@ -33,13 +36,17 @@ export async function GET(request: Request, context: { params: Promise<{ session
   const { session, sequence } = await context.params;
   const archive=await getAccountArchiveChunk(request,{session,sequence},accountArchiveChunkDependencies());
   if(archive)return archive;
-  const response = await chunk(request, session, sequence);
+  // A review session is tried first, unchanged. Only when the review
+  // authorizer does not know this session (42501) may it be a subject
+  // original session; that dispatcher answers null for any other kind.
+  const response = await chunk(request, session, sequence)
+    ?? await getSubjectOriginalChunk(request, { session, sequence }, subjectDownloadDependencies()) ?? notFound();
   response.headers.set("Referrer-Policy", "no-referrer");
   return response;
 }
 
-async function chunk(request: Request, session: string, sequence: string): Promise<Response> {
-  if (!(futurePersonClaimsOpen() || testAppealIntakeOpen()) || !isCanonicalId(session) || !SEQUENCE.test(sequence)
+async function chunk(request: Request, session: string, sequence: string): Promise<Response | null> {
+  if (!(futurePersonClaimsOpen() || testAppealIntakeOpen() || permissionDocumentsOpen()) || !isCanonicalId(session) || !SEQUENCE.test(sequence)
     || new URL(request.url).search !== "" || request.headers.get("range") !== null
     || request.headers.get("sec-fetch-site") !== "same-origin") {
     return notFound();
@@ -51,17 +58,21 @@ async function chunk(request: Request, session: string, sequence: string): Promi
   const { data, error } = await supabase.rpc("authorize_claim_review_chunk_v1", {
     p_session_id: session, p_cookie_hash: cookieHash, p_sequence: Number(sequence),
   });
-  if (error) return error.code === "42501" ? notFound() : unavailable();
+  if (error) return error.code === "42501" ? null : unavailable();
   const grant = data as { objectKey?: unknown; sha256?: unknown; byteCount?: unknown; wrappedDataKey?: unknown; receiptChallenge?: unknown; transport?: unknown } | null;
   if (!grant || typeof grant.objectKey !== "string" || typeof grant.sha256 !== "string"
     || typeof grant.byteCount !== "number" || typeof grant.wrappedDataKey !== "string") {
     return unavailable();
   }
-  if ((grant.transport !== undefined && grant.transport !== "appeal") || (grant.transport === "appeal" ? !testAppealIntakeOpen() : !futurePersonClaimsOpen())) return notFound();
+  if ((grant.transport !== undefined && grant.transport !== "appeal" && grant.transport !== "permission")
+    || (grant.transport === "appeal" ? !testAppealIntakeOpen()
+      : grant.transport === "permission" ? !permissionDocumentsOpen() : !futurePersonClaimsOpen())) return notFound();
 
   let sealed: Uint8Array;
   try {
-    sealed = await (grant.transport === "appeal" ? supabaseAppealObjectStore(createAdminClient()) : supabaseClaimObjectStore(createAdminClient())).read(grant.objectKey);
+    sealed = await (grant.transport === "appeal" ? supabaseAppealObjectStore(createAdminClient())
+      : grant.transport === "permission" ? supabasePermissionObjectStore(createAdminClient())
+        : supabaseClaimObjectStore(createAdminClient())).read(grant.objectKey);
   } catch {
     return unavailable();
   }

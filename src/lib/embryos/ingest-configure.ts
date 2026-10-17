@@ -9,18 +9,22 @@ import { sensitiveJson } from "./api";
 
 /**
  * The request and response halves of `POST /api/embryo-ingest/[session]/configure`
- * (register `api.embryo-ingest-configure`, response `embryo-vcf-transport-v1`,
- * ADR 0035). The route owns authority and ordering; this module owns what may
- * cross the boundary in each direction.
+ * (register `api.embryo-ingest-configure`, responses `embryo-vcf-transport-v1`
+ * and `embryo-table-configuration-v1`, ADR 0035 and ADR 0037). The route owns
+ * authority and ordering; this module owns what may cross the boundary in
+ * each direction.
  *
- * In: four closed fields, and of the source file only its `##fileformat`,
- * `##reference` and `##contig` lines and its sample count. Sample names, the
- * `#CHROM` line and every other meta line are refused before any database
- * row is touched, because they can name people or laboratories and the build
- * does not need them.
+ * In, for a VCF: four closed fields, and of the source file only its
+ * `##fileformat`, `##reference` and `##contig` lines and its sample count.
+ * In, for a laboratory table: three closed fields, and of the source file
+ * only the `##reference` and `##contig` lines of its header. Sample names,
+ * column names, the `#CHROM` line and every other meta line are refused
+ * before any database row is touched, because they can name people or
+ * laboratories and the build does not need them.
  *
- * Out: the server-derived build and the credentials the rest of the upload
- * needs. Nothing a caller submitted is echoed in any branch.
+ * Out: for a VCF, the server-derived build and the credentials the rest of
+ * the upload needs; for a table, only the one mapping-inspection nonce.
+ * Nothing a caller submitted is echoed in any branch.
  */
 
 export const BUILD_EVIDENCE_MAXIMUM_LINES = 64;
@@ -36,6 +40,12 @@ export const CONFIGURE_BODY_MAXIMUM_BYTES = 131_072;
 /** The only meta lines the build rule may see (`forbiddenLines`). */
 const PERMITTED_PREFIXES = ["##fileformat=", "##reference=", "##contig="] as const;
 
+/**
+ * A laboratory table's header lines the build rule may see: the same rule,
+ * without the VCF file-format line a table never carries (ADR 0037).
+ */
+const TABLE_PERMITTED_PREFIXES = ["##reference=", "##contig="] as const;
+
 /** No line terminator, tab or other control character survives a verbatim copy of one line. */
 const CONTROL = /[\u0000-\u001f\u007f]/;
 
@@ -48,8 +58,8 @@ const evidenceLine = z
   .max(BUILD_EVIDENCE_MAXIMUM_CHARACTERS)
   .refine((line) => !CONTROL.test(line));
 
-/** `methodRequestContracts.POST.closedBody`; every other key is refused, including the forbidden fields. */
-export const configureBody = z
+/** `methodRequestContracts.POST.oneOfClosedBodies[0]`; every other key is refused, including the forbidden fields. */
+export const vcfConfigureBody = z
   .object({
     format: z.literal("vcf"),
     buildEvidence: z.array(evidenceLine).max(BUILD_EVIDENCE_MAXIMUM_LINES),
@@ -57,13 +67,39 @@ export const configureBody = z
     nonce: z.string().min(1).max(4096),
   })
   .strict();
-export type ConfigureRequest = z.infer<typeof configureBody>;
+
+/**
+ * `methodRequestContracts.POST.oneOfClosedBodies[1]`: a laboratory table.
+ * It carries no sample count, because a table's samples are a row property
+ * that only the full read in the browser counts; the transport and the
+ * completion transaction enforce it.
+ */
+export const tableConfigureBody = z
+  .object({
+    format: z.literal("pgt_table"),
+    buildEvidence: z.array(evidenceLine).max(BUILD_EVIDENCE_MAXIMUM_LINES),
+    nonce: z.string().min(1).max(4096),
+  })
+  .strict();
+
+/** The VCF body under its original name (ADR 0035 registered it first). */
+export const configureBody = vcfConfigureBody;
+
+/** The two closed bodies, selected by `format`. */
+export type ConfigureRequest = z.infer<typeof vcfConfigureBody> | z.infer<typeof tableConfigureBody>;
+export type VcfConfigureRequest = z.infer<typeof vcfConfigureBody>;
+export type TableConfigureRequest = z.infer<typeof tableConfigureBody>;
 
 export type ConfigureParse = { ok: true; body: ConfigureRequest } | { ok: false; issues: ConfigureIssue[] };
 
 /** Whether a submitted line is one the build rule may read. `#CHROM`, `##SAMPLE`, `##PEDIGREE` and `##source` are not. */
 export function isPermittedEvidenceLine(line: string): boolean {
   return PERMITTED_PREFIXES.some((prefix) => line.startsWith(prefix));
+}
+
+/** The same question for a laboratory table: only `##reference` and `##contig` lines. */
+export function isPermittedTableEvidenceLine(line: string): boolean {
+  return TABLE_PERMITTED_PREFIXES.some((prefix) => line.startsWith(prefix));
 }
 
 function issuesOf(error: z.ZodError): ConfigureIssue[] {
@@ -150,10 +186,14 @@ export async function readConfigureBody(request: Request): Promise<ConfigurePars
   } finally {
     bytes.fill(0);
   }
-  const parsed = configureBody.safeParse(raw);
+  // `format` selects the closed body. Anything but a table is read as the
+  // VCF body, so every other value is refused field by field, as before.
+  const table = typeof raw === "object" && raw !== null && (raw as { format?: unknown }).format === "pgt_table";
+  const parsed = (table ? tableConfigureBody : vcfConfigureBody).safeParse(raw);
   raw = undefined;
   if (!parsed.success) return { ok: false, issues: issuesOf(parsed.error) };
-  if (!parsed.data.buildEvidence.every(isPermittedEvidenceLine)) {
+  const permitted = parsed.data.format === "pgt_table" ? isPermittedTableEvidenceLine : isPermittedEvidenceLine;
+  if (!parsed.data.buildEvidence.every((line) => permitted(line))) {
     zeroizeEvidence(parsed.data);
     return { ok: false, issues: ["buildEvidence"] };
   }
@@ -205,6 +245,27 @@ export const configureResult = z.discriminatedUnion("status", [
 ]);
 export type ConfigureResult = z.infer<typeof configureResult>;
 export type TerminalBranch = Extract<ConfigureResult, { status: "terminal" }>["branch"];
+
+/**
+ * What `public.configure_embryo_table_ingest_v1` returns: the recorded build
+ * (null while it is decision-required), or the failure-pending envelope of
+ * an attempt that no longer authorizes anything.
+ */
+export const tableConfigureResult = z.discriminatedUnion("status", [
+  z.object({ status: z.literal("configured"), build: z.enum(["GRCh37", "GRCh38"]).nullable() }).strict(),
+  z.object({ status: z.literal("failure_pending"), cohortId: uuid, ingestRevision: positiveRevision }).strict(),
+]);
+
+export const TABLE_CONFIGURATION_KEYS = ["nonce"] as const;
+
+/**
+ * `embryo-table-configuration-v1.configured`: 200 and exactly one key, the
+ * one-time mapping-inspection nonce. The build, the transport challenge and
+ * the completion credentials come from the mapping route's responses.
+ */
+export async function tableConfiguredResponse(nonce: string): Promise<Response> {
+  return withNoReferrer(await closedResponse("api.embryo-ingest-configure", TABLE_CONFIGURATION_KEYS, { nonce }, 200));
+}
 
 /** `embryo-vcf-transport-v1` headers: `private-no-store-no-referrer`. */
 export function withNoReferrer(response: Response): Response {

@@ -363,9 +363,14 @@ describe("the independent preparation image check", () => {
     expect(workflow).toContain("persist-credentials: false");
     expect([...workflow.matchAll(/^ +(?:- )?uses: (.+)$/gm)].map(match => match[1])).toEqual(["actions/checkout@v4"]);
     expect([...workflow.matchAll(/^ +run: (.+)$/gm)].map(match => match[1])).toEqual([
-      "docker build --pull --file workers/prepared-worker/Dockerfile --tag inherit-prepared-worker:ci .",
+      "sh scripts/ci-prepared-worker-build.sh",
     ]);
-    expect(workflow).not.toMatch(/secrets\.|pull_request_target:|environment:|\benv:|--build-arg|--secret|--ssh|docker (?:run|start|push)|registry/);
+    const build = read("scripts/ci-prepared-worker-build.sh");
+    expect(build.trimEnd().split("\n").at(-1)).toBe(
+      'docker build --build-context "$from=docker-image://$pulled" --file "$dockerfile" --tag inherit-prepared-worker:ci .');
+    for (const source of [workflow, build]) {
+      expect(source).not.toMatch(/secrets\.|pull_request_target:|environment:|\benv:|--build-arg|--secret|--ssh|docker (?:run|start|push|login)|registry/);
+    }
   });
 
   it("triggers for the Dockerfile, context rules and every copied build input", () => {

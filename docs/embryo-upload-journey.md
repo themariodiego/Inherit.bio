@@ -19,10 +19,14 @@ not reconstruct handles or reveal keys again. The browser rejects a malformed
 receipt and any route pointing to another session or origin. Configuration,
 chunks and completion run in order; a completion receipt must name this upload.
 
-The implemented file journey takes one multi-sample VCF with at least two
-embryos. It does not imply that laboratory tables, separate embryo files or
-zip archives work. Evidence-dependent bases still stop at the unavailable
-human-review step. There is no automated approval.
+The implemented file journey takes one multi-sample VCF, or one laboratory
+table, with at least two embryos. Tables were added on 16 October 2026 (ADR 0037).
+The browser drops any sex, gender or karyotype column before sending the
+table's header once to the mapping route. It asks at most one column question
+and, when the table states no build, asks GRCh37, GRCh38 or "I don’t know"
+before any chunk. "I don’t know" ends the upload. Separate embryo files and
+zip archives still do not work. Evidence-dependent bases still stop at the
+unavailable human-review step. There is no automated approval.
 
 After real publication each parent can separately sign the existing
 `embryo.analysis` grant on the comparison page. The artifact is shown in full;
@@ -36,6 +40,16 @@ synthetic invitation through the actual mail worker, proves that invitation
 acceptance alone cannot advance the owner, uploads through the real routes,
 runs the fenced real worker, and requires whole-cohort publication and both
 canonical sources before granting and reading comparison/detail pages.
+After the fitted case, the same test adds one more fresh cohort from
+`e2e/fixtures/embryo-pair-table-unstated-build.csv`, the same pair as a
+laboratory table. That table states no build and names its result column
+`Bases`. The browser answers the column question and the build question
+(GRCh38). The test checks the order of requests: configure, one mapping
+inspection, two decisions, the chunks, then completion. It checks that no
+request carries an embryo label, the file's comment or a column name in a
+decision. The real worker then publishes both `pgt_table` sources
+(`withTableJourney` in `scripts/ci-embryo-journey.ts`). This step, like the
+rest of the journey, runs only in the isolated CI runtime and has not run yet.
 
 The fixed app on port 3105 uses the bounded TLS gateway at
 `https://embryo.fragments.test:8141` and bucket `inherit-embryo-ci`. The gateway

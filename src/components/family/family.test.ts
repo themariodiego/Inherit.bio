@@ -197,6 +197,7 @@ describe("sharing actions", () => {
       h(SharingActions, {
         personName: "Bo",
         personSegment: `s-${HANDLE}`,
+        subjectId: HANDLE,
         paused: false,
         stopNonce: "nonce",
       }),
@@ -212,6 +213,7 @@ describe("sharing actions", () => {
       h(SharingActions, {
         personName: "Bo",
         personSegment: `s-${HANDLE}`,
+        subjectId: HANDLE,
         paused: true,
         stopNonce: "nonce",
       }),

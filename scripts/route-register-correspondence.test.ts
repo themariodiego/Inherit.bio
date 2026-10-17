@@ -24,7 +24,9 @@ import { storageBucketsInSource, UNRESOLVED_STORAGE_BUCKET } from "./storage-con
  *
  * Registered-but-unbuilt is deliberately not failed here. The register is
  * written from the brief and describes routes the product has not reached
- * yet; 27 of them remain unbuilt after the native appeal review and notice routes.
+ * yet; 16 of them remain unbuilt after the native appeal review, notice, auth,
+ * mapping, subject-sharing and subjects (G2.1) routes. A redirect that
+ * `next.config.ts` serves counts as built.
  * The exact current count prevents a broken walker from passing silently.
  *
  * Known divergences live in `docs/route-divergence.json` and are checked in
@@ -207,13 +209,34 @@ describe("the route register and the App Router describe the same surface", () =
     }
   });
 
-  it("leaves the unbuilt half of the register alone, but still measures it", () => {
+  it("leaves the unbuilt half of the register alone, but still measures it", async () => {
     const builtUrls = new Set(built.map(route => route.url));
-    const unbuilt = entries.filter(entry => !concretePaths(entry).some(candidate => builtUrls.has(candidate)));
+    // A registered redirect can be served by `next.config.ts` instead of a page
+    // file. Those redirects run before the App Router. `scripts/route-gate.ts`
+    // checks the status each one emits against the register, so the walk above
+    // cannot see them, yet they are built. Only an unconditional redirect from
+    // the exact registered path counts, and only for a redirect entry.
+    const config = (await import("../next.config")).default as { redirects?: () => Promise<{ source: string; has?: unknown }[]> };
+    const configured = new Set((await config.redirects?.() ?? []).filter(redirect => redirect.has === undefined)
+      .map(redirect => redirect.source));
+    const unbuilt = entries.filter(entry => !concretePaths(entry).some(candidate => builtUrls.has(candidate)
+      || (entry.kind === "redirect" && configured.has(candidate))));
     // The four native appeal/evidence endpoints reduce the remaining backlog,
     // and the reviewed claimant DELETE (api.future-person-delete) reduces it again.
+    // The three reviewed auth endpoints (auth.sign-up-submit,
+    // auth.forgot-password-submit, auth.reset-password-submit; owner decision
+    // 2026-10-16) reduce it from 26 to 23, and the laboratory-table mapping
+    // route (api.embryo-ingest-mapping, ADR 0037) reduces it once more, to 22.
+    // The UUID-addressed sharing twin (api.subject-sharing; owner decision
+    // 2026-10-16, "The subjects endpoints (G2.1)") reduces it to 21, and three
+    // more subjects endpoints, api.subjects, api.legal-evidence-upload-session
+    // and api.subject-download, reduce it to 18. api.subject-export stays
+    // unbuilt (its joint-result projection and TEST R2 run are reported back
+    // undecided). Counting the redirects `next.config.ts` serves as built
+    // removes legacy.signup and legacy.login, which were always built there,
+    // so 16 remain.
     // Keep the exact census: new implementations require an explicit review.
-    expect(unbuilt.length).toBe(26);
+    expect(unbuilt.length).toBe(16);
     expect(unbuilt.length).toBeLessThan(entries.length);
   });
 });
@@ -977,7 +1000,7 @@ type ClientFormReview = { file: string; forms: number; sha256: string };
 const GUARDED_FLOW_CLIENT_FORM_REVIEW: ClientFormReview[] = [
   { file: "src/components/embryo/upload/draft-form.tsx", forms: 1, sha256: "c216fd24a0d903e38171cf53079abe439f1656d010560de8f32694a253dfdc2e" },
   { file: "src/components/embryo/upload/signing-form.tsx", forms: 1, sha256: "09ef84e65cf77e765d40d4034fb9b5345a19196857cd1bc4e6781b820eaffcf8" },
-  { file: "src/components/embryo/upload/upload-stage.tsx", forms: 2, sha256: "4404ca716bf5d60510687e31c64036ca316939962e7abe048b7f704ac668eac1" },
+  { file: "src/components/embryo/upload/upload-stage.tsx", forms: 2, sha256: "84d2461d1e510ca23f2b66f8c77cfcd656480c70e0d8c55288267d0e5db42e6e" },
   { file: "src/components/future-person/claim-form.tsx", forms: 1, sha256: "15879dd96632b930bcaf494fc2f47cabd9b75bddfc328ab104bc8610be10fbdb" },
   { file: "src/components/future-person/claim-review.tsx", forms: 1, sha256: "ef96f46a4dec3c6cf56759c7699fdcc71613c14d3171f25e549c75ba2d7f3f6c" },
   { file: "src/components/future-person/keyless-pending-review.tsx", forms: 1, sha256: "d44c1530368a229dc5b3f75339ba541cdb04ce0f0f8442558792306f3a5f7c31" },
@@ -1010,9 +1033,16 @@ const CLIENT_FORM_REVIEW: ClientFormReview[] = [
   { file: "src/components/family/invite-adult-form.tsx", forms: 1, sha256: "1866d5e668f9069c0d94a2aa8c8d3f8e55ccd341403a029915fb39d8ac8e04d7" },
   { file: "src/components/settings/jurisdiction-form.tsx", forms: 1, sha256: "995f24840ae8e802a2f4d6b8be1c0ce3dbe804dfa75fc9b62a64572395c8fe6c" },
   { file: "src/components/settings/llm-settings-form.tsx", forms: 1, sha256: "7b669b559f7db5b0fe391bd39ce8095a33bd8c37cd80d37e06d138ec0d55f45b" },
-  { file: "src/components/uploads/other-adult-upload-card.tsx", forms: 2, sha256: "1ab2652e70ddca9ed64966a10dbf557244f4e31c3a0390dd631f5a9265c84137" },
+  // G2.1 (2026-10-16): re-reviewed after the new-person form gained the
+  // reviewed-document flow choice (two radio inputs inside the same form, the
+  // same handler and target) and ConsentFields became an export. Still two
+  // actionless forms whose onSubmit handlers cancel native submission.
+  { file: "src/components/uploads/other-adult-upload-card.tsx", forms: 2, sha256: "024b7da96d938bfe4fdc5228b9ec65b4723dd551bf653677bfe6c22750c6896d" },
   { file: "src/components/uploads/own-upload-flow.tsx", forms: 1, sha256: "f78a81339439a1b91840e7138ad560055d61d618f788715d1fb0651f73a7fede" },
-  { file: "src/components/uploads/path-b-request-form.tsx", forms: 1, sha256: "0002fe0e675e8f4634b43bd92476f6d5672d62139f7b11924b31d099d2e2e280" },
+  // G5.4 (2026-10-16): re-reviewed after two copy lines (the 30/730-day keep
+  // line and the contact of last resort). Still one actionless form whose
+  // onSubmit handler cancels native submission; no handler, field or target changed.
+  { file: "src/components/uploads/path-b-request-form.tsx", forms: 1, sha256: "b8372876fa10c03bac696a1c5e7af89c1cdc5674b0638e7682ba7c1a466c44e4" },
   ...GUARDED_FLOW_CLIENT_FORM_REVIEW,
   ...FUTURE_INTAKE_CLIENT_FORM_REVIEW,
 ];

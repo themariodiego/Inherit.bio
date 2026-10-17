@@ -429,3 +429,129 @@ describe("reserve, targets, write, commit", () => {
     expect(store.write).not.toHaveBeenCalled();
   });
 });
+
+/**
+ * ADR 0037 (owner decision of 16 October 2026): a laboratory-table chunk is
+ * refused, without reading it, until the mapping route has resolved the
+ * build and issued the transport; afterwards it must carry the canonical
+ * columns of the recorded locus kind, and only the embryos with a retained
+ * row get a fragment. Chunks come from the real browser table rewrite.
+ */
+const { embryoTableChunks } = await import("@/lib/embryos/table-transport");
+describe("a laboratory table", () => {
+  const SOURCE_TABLE = [
+    "#Synthetic laboratory export PRIVATE_LAB", "Embryo,Chromosome,Position,Genotype,Sex",
+    "PRIVATE_A,1,1000,AG,XX", "PRIVATE_B,1,1000,GG,XY", "PRIVATE_A,2,2000,CT,XX", "PRIVATE_C,X,5,A,XX", "",
+  ].join("\n");
+  const mapping = { complete: true as const, identifier: { field: "embryo" as const, column: 0 }, genotype: 3,
+    locus: { kind: "chrom-pos" as const, chrom: 1, pos: 2 } };
+  async function tableChunk(overrides: Partial<{ challenge: string }> = {}) {
+    const [chunk] = await Array.fromAsync(embryoTableChunks(new Blob([SOURCE_TABLE]), {
+      challenge: CHALLENGE, revision: REVISION, build: "GRCh38", sampleCount: 3, handles: HANDLES, mapping, ...overrides,
+    }));
+    return chunk;
+  }
+  const tableAuthority = (overrides: Record<string, unknown> = {}) => ({ ...authorized(), format: "pgt_table", ...overrides });
+
+  beforeEach(() => {
+    mocks.results.authorize_embryo_ingest_request_v1 = { data: tableAuthority(), error: null };
+    mocks.results.embryo_ingest_table_locus_v1 = { data: "chrom-pos", error: null };
+    mocks.results.reserve_embryo_ingest_chunk_v1 = { data: { status: "reserved", objects: [0, 1].map((ordinal) => ({
+      ordinal, objectId: crypto.randomUUID() })) }, error: null };
+  });
+
+  it.each([
+    ["the build is still decision-required", { build: null }],
+    ["no transport has been issued", { challengeHash: null }],
+  ])("answers mapping_required, reading and failing nothing, while %s", async (_label, overrides) => {
+    mocks.results.authorize_embryo_ingest_request_v1 = { data: tableAuthority(overrides), error: null };
+    const request = put(await tableChunk());
+    const response = await call(request);
+    expect(response.status).toBe(409);
+    expect(await response.json()).toEqual({ error: "mapping_required" });
+    expect(response.headers.get("referrer-policy")).toBe("no-referrer");
+    expect(request.bodyUsed).toBe(false);
+    expect(named("embryo_ingest_table_locus_v1")).toEqual([]);
+    expect(named("fail_embryo_ingest_attempt_v1")).toEqual([]);
+    expect(named("reserve_embryo_ingest_chunk_v1")).toEqual([]);
+  });
+
+  it("answers mapping_required while the database holds no locus kind for the session", async () => {
+    mocks.results.embryo_ingest_table_locus_v1 = { data: null, error: null };
+    const request = put(await tableChunk());
+    expect((await call(request)).status).toBe(409);
+    expect(request.bodyUsed).toBe(false);
+    expect(named("embryo_ingest_table_locus_v1")[0].args).toEqual({
+      p_account_id: ACCOUNT, p_auth_session_id: AUTH_SESSION, p_ingest_session_id: SESSION,
+      p_cookie_hash: sha(COOKIE_VALUE), p_origin: ORIGIN, p_test_jurisdiction: true,
+    });
+    expect(named("fail_embryo_ingest_attempt_v1")).toEqual([]);
+  });
+
+  it("answers the retryable 503 when the locus read fails or answers outside its vocabulary", async () => {
+    for (const result of [{ data: null, error: { code: "55P03" } }, { data: "sample", error: null }]) {
+      mocks.calls = [];
+      mocks.results.embryo_ingest_table_locus_v1 = result;
+      expect((await call(put(await tableChunk()))).status).toBe(503);
+      expect(named("fail_embryo_ingest_attempt_v1")).toEqual([]);
+    }
+  });
+
+  it("stores one neutral fragment for each embryo with a retained row, and answers 204", async () => {
+    const response = await call(put(await tableChunk()));
+    expect(response.status).toBe(204);
+    const [reserved] = named("reserve_embryo_ingest_chunk_v1");
+    const fragments = reserved.args.p_fragments as Fragment[];
+    // Embryo 3's only row was on a sex chromosome: the browser dropped it.
+    expect(fragments.map((fragment) => fragment.ordinal)).toEqual([0, 1]);
+    expect(reserved.args.p_record_count).toBe(3);
+    const texts = store.written.map((entry) => new TextDecoder().decode(entry.copy));
+    expect(texts).toEqual([
+      "##inheritTableFragment=1\n##reference=GRCh38\nchrom\tpos\trsid\tgenotype\n1\t1000\t.\tA/G\n2\t2000\t.\tC/T\n",
+      "##inheritTableFragment=1\n##reference=GRCh38\nchrom\tpos\trsid\tgenotype\n1\t1000\t.\tG/G\n",
+    ]);
+    for (const text of texts) {
+      expect(text).not.toMatch(/PRIVATE|Sex|XX|XY|inheritChallenge/);
+      for (const handle of HANDLES) expect(text).not.toContain(handle);
+    }
+    expect(fragments.map((fragment) => fragment.sha256)).toEqual(store.written.map((entry) => sha(entry.copy)));
+    expect(named("commit_embryo_ingest_chunk_v1")).toHaveLength(1);
+  });
+
+  it("fails a table chunk bound to another challenge as a header failure", async () => {
+    const response = await call(put(await tableChunk({ challenge: crypto.randomBytes(32).toString("base64url") })));
+    expect(response.status).toBe(422);
+    expect(await response.json()).toEqual({ error: "invalid_genetic_chunk", issues: ["header"] });
+    expect(named("fail_embryo_ingest_attempt_v1").map((entry) => entry.args.p_code)).toEqual(["header"]);
+    expect(named("reserve_embryo_ingest_chunk_v1")).toEqual([]);
+  });
+
+  it("fails a VCF chunk sent to a table session as a header failure", async () => {
+    const response = await call(put(await browserChunk()));
+    expect(await response.json()).toEqual({ error: "invalid_genetic_chunk", issues: ["header"] });
+    expect(named("fail_embryo_ingest_attempt_v1").map((entry) => entry.args.p_code)).toEqual(["header"]);
+  });
+
+  it("fails a chunk whose columns are not the recorded locus kind, before any reservation", async () => {
+    mocks.results.embryo_ingest_table_locus_v1 = { data: "rsid", error: null };
+    const response = await call(put(await tableChunk()));
+    expect(response.status).toBe(422);
+    expect(named("fail_embryo_ingest_attempt_v1")).toHaveLength(1);
+    expect(named("reserve_embryo_ingest_chunk_v1")).toEqual([]);
+    expect(store.write).not.toHaveBeenCalled();
+  });
+
+  it("fails a row naming a source label instead of an issued handle", async () => {
+    const text = new TextDecoder().decode(await tableChunk()).replace(HANDLES[0], "PRIVATE_A");
+    expect((await call(put(text))).status).toBe(422);
+    expect(named("fail_embryo_ingest_attempt_v1")).toHaveLength(1);
+    expect(store.write).not.toHaveBeenCalled();
+  });
+
+  it("refuses a VCF session's chunk binding for a table chunk", async () => {
+    mocks.results.authorize_embryo_ingest_request_v1 = { data: authorized(), error: null };
+    const response = await call(put(await tableChunk()));
+    expect(await response.json()).toEqual({ error: "invalid_genetic_chunk", issues: ["header"] });
+    expect(named("embryo_ingest_table_locus_v1")).toEqual([]);
+  });
+});

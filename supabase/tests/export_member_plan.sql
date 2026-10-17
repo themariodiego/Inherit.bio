@@ -60,6 +60,14 @@ create temporary table export_member_plan as select $plan$
       "disposition": "excluded-protected",
       "reason": "Original case envelopes, wrapped keys and immutable authorship bindings stay private. The authorized native requester pager opens only the current author’s own statement; raw capsules, other people’s statements, contact data and reviewer notes are never archive rows."
     },
+    "private.auth_form_nonces": {
+      "disposition": "excluded-credential",
+      "reason": "Spent sign-up and forgot-password form nonce hashes and their ten-minute expiry. They prevent replay and must never be archive content."
+    },
+    "private.auth_recovery_sessions": {
+      "disposition": "excluded-credential",
+      "reason": "Password reset sessions: the SHA-256 of a reset cookie, the account, the revoked recovery-origin session and a 15-minute expiry. A one-use credential, never archive content."
+    },
     "private.appeal_document_fragments": {
       "disposition": "excluded-protected",
       "reason": "Sealed appeal identity/authority document fragments and reserved private object locators. Evidence bytes are excluded from member exports and retained only for actual cleanup."
@@ -429,6 +437,42 @@ create temporary table export_member_plan as select $plan$
     "private.path_b_report_bindings": {
       "disposition": "deferred",
       "reason": "Saved report results for an exact other-adult purpose and recipient. Dedicated current-grant reading exists; the subject-partitioned export projection is still required before these rows can be exported. Source-owner access cannot substitute for that projection."
+    },
+    "private.path_b_reviewed_document_nonces": {
+      "disposition": "excluded-credential",
+      "reason": "Hashes of spent one-time operation nonces for the Path B reviewed-document session and finalization. They are credentials, deleted a day after use, never archive content."
+    },
+    "private.path_b_reviewed_document_requests": {
+      "disposition": "excluded-internal",
+      "reason": "The binding between a hidden Path B request and the exact draft, permission document and review it was issued on. It is activation machinery, not the person's record."
+    },
+    "private.permission_document_assignments": {
+      "disposition": "out-of-scope",
+      "reason": "Staff review assignments of an adult-signed permission document. It is not the requester's own record."
+    },
+    "private.permission_document_fragments": {
+      "disposition": "excluded-protected",
+      "reason": "Sealed pieces of an adult-signed permission document in upload, deleted once composed or refused. The export contracts always exclude evidence documents and their bytes."
+    },
+    "private.permission_document_review_downloads": {
+      "disposition": "excluded-credential",
+      "reason": "A named reviewer's revocable chunk sessions for one permission document: a download cookie hash bound to the reviewer's auth session. Exporting it would be a security defect."
+    },
+    "private.permission_document_review_reads": {
+      "disposition": "excluded-internal",
+      "reason": "Temporary staff read receipts used to authorize a permission document decision, as for claim reviews. This is authorization and review machinery, not a member export class."
+    },
+    "private.permission_document_reviews": {
+      "disposition": "excluded-protected",
+      "reason": "Immutable named-human decisions on a permission document: the document hash, kind, decision, the reviewer's sealed reason and their session binding. Evidence decisions and reviewer notes are withheld from member exports."
+    },
+    "private.permission_document_sessions": {
+      "disposition": "excluded-credential",
+      "reason": "Permission document upload sessions: an evidence cookie hash, one-time nonce hashes, an independent wrapped document key and the originating auth session. These credentials never leave in an archive."
+    },
+    "private.permission_documents": {
+      "disposition": "excluded-protected",
+      "reason": "Adult-signed permission documents with their scan verdicts and review states. The export contracts always exclude evidence documents, their locators and their bytes."
     },
     "private.rights_purpose_matrix": {
       "disposition": "reference",

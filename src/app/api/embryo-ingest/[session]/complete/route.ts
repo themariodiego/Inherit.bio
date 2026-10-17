@@ -17,11 +17,13 @@ const withNoReferrer = (response: Response): Response => {
  * `api.embryo-ingest-complete`). TEST-LOCAL only; `EMBRYO_INGEST_AVAILABLE`
  * stays false.
  *
- * Authority is the configure route's, plus the two tokens that route issued:
- * the upload-session-bound `X-Inherit-CSRF` header (`requiredHeader`) and the
- * one-time `completionNonce` in the body. Both must be sealed for this
- * account, auth session and upload session, and their digests must be the
- * ones the configure transaction stored (`embryo_ingest_issued_tokens_match_v1`),
+ * Authority is the configure route's, plus the two tokens issued with the
+ * transport (by the configure route for a VCF, by the mapping route for a
+ * laboratory table): the upload-session-bound `X-Inherit-CSRF` header
+ * (`requiredHeader`) and the one-time `completionNonce` in the body. Both must
+ * be sealed for this account, auth session and upload session, and their
+ * digests must be the ones the issuing transaction stored
+ * (`embryo_ingest_issued_tokens_match_v1`),
  * so no other token, however it was minted, completes this attempt.
  *
  * The transaction is the worker stream's `public.complete_embryo_ingest_v1`
@@ -107,10 +109,11 @@ export async function POST(request: Request, context: { params: Promise<{ sessio
       await dispatchIngestAttemptFailure(result.data);
       return withNoReferrer(result.data.failureCode === "chunk" ? incompleteUpload() : notFound());
     case "mapping_required":
-      // Unreachable for a configured VCF, whose build is fixed at configure.
-      // A table's `buildDecisionRequired` needs the mapping route's raw
-      // challenge id, which is stored hash-only; answering it is that route's
-      // work. Nothing was written, and the nonce is unspent.
+      // Unreachable: a VCF's build is fixed at configure, and a laboratory
+      // table's completion nonce is issued only by the mapping response that
+      // leaves nothing to decide (ADR 0037, the build is asked before any
+      // chunk). The challenge id is stored hash-only, so this route could not
+      // repeat it anyway. Nothing was written, and the nonce is unspent.
       return withNoReferrer(unavailable());
   }
 }

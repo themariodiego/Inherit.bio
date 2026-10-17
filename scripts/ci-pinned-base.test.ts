@@ -76,4 +76,40 @@ describe("pinned CI base images", () => {
       expect(workflow[index - 2]).toBe("run: pnpm exec tsx scripts/ci-pinned-base.run.mts scripts/ci-browser/Dockerfile");
     }
   });
+
+  it.each(["mirror", "primary"] as const)("builds the prepared worker from the same digest when the %s pull serves", source => {
+    const root = mkdtempSync(join(tmpdir(), "ci-prepared-worker-"));
+    try {
+      const calls = join(root, "calls");
+      const refuse = source === "mirror" ? 'case "$1:$2" in pull:public.ecr.aws/*) exit 1;; esac\n' : "";
+      writeFileSync(join(root, "docker"), `#!/bin/sh\nprintf '%s\\n' "$*" >> "${calls}"\n${refuse}exit 0\n`);
+      chmodSync(join(root, "docker"), 0o755);
+      const run = spawnSync("sh", ["scripts/ci-prepared-worker-build.sh"], {
+        encoding: "utf8", env: { ...process.env, PATH: `${root}:${process.env.PATH}` },
+      });
+      expect(run.status, run.stderr).toBe(0);
+      const base = pinnedBase(readFileSync("workers/prepared-worker/Dockerfile", "utf8"));
+      expect(readFileSync(calls, "utf8").trim().split("\n")).toEqual([
+        `pull ${base.primary}`, ...(source === "mirror" ? [`pull ${base.mirror}`] : []),
+        `build --build-context ${pinnedBaseContext(base, source)} --file workers/prepared-worker/Dockerfile --tag inherit-prepared-worker:ci .`,
+      ]);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("refuses to build the prepared worker when neither pull serves the digest", () => {
+    const root = mkdtempSync(join(tmpdir(), "ci-prepared-worker-"));
+    try {
+      writeFileSync(join(root, "docker"), "#!/bin/sh\n[ \"$1\" = pull ] && exit 1\nexit 0\n");
+      chmodSync(join(root, "docker"), 0o755);
+      const run = spawnSync("sh", ["scripts/ci-prepared-worker-build.sh"], {
+        encoding: "utf8", env: { ...process.env, PATH: `${root}:${process.env.PATH}` },
+      });
+      expect(run.status).toBe(1);
+      expect(run.stderr).toContain("ci_pinned_base:unavailable");
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
 });

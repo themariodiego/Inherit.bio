@@ -7668,6 +7668,12 @@ export type Database = {
       record_appeal_document_scan_v1: { Args: { p_document_id:string; p_lease_hash:string; p_outcome:string; p_scanned_sha256:string|null; p_scan_engine:string|null; p_signature_version:number|null; p_signature_at:string|null }; Returns: string };
       appeal_document_objects_due_v1: { Args: { p_limit:number }; Returns: { object_key:string }[] };
       confirm_appeal_document_objects_deleted_v1: { Args: { p_object_keys:string[]; p_route_id:string }; Returns: number };
+      claim_next_permission_document_scan_v1: { Args: { p_lease_hash:string }; Returns: Json };
+      record_permission_document_scan_v1: { Args: { p_document_id:string; p_lease_hash:string; p_outcome:string; p_scanned_sha256:string|null; p_scan_engine:string|null; p_signature_version:number|null; p_signature_at:string|null }; Returns: string };
+      permission_document_objects_due_v1: { Args: { p_limit:number }; Returns: { object_key:string }[] };
+      confirm_permission_document_objects_deleted_v1: { Args: { p_object_keys:string[]; p_route_id:string }; Returns: number };
+      expire_due_path_b_reviewed_documents_v1: { Args: Record<PropertyKey, never>; Returns: number };
+      purge_ended_subject_original_downloads_v1: { Args: Record<PropertyKey, never>; Returns: number };
       read_new_public_appeal_mail_contact_v1: {
         Args: { p_outbox_id: string; p_attempt_ordinal: number };
         Returns: Json;
@@ -7922,6 +7928,31 @@ export type Database = {
       purge_expired_rate_limit_buckets_v1: {
         Args: Record<PropertyKey, never>
         Returns: number
+      }
+      purge_expired_auth_credentials_v1: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
+      admit_auth_public_request_v1: {
+        Args: {
+          p_form_nonce_hash: string
+          p_identifier_digests: Json
+          p_network_digests: Json
+          p_route_id: string
+        }
+        Returns: string
+      }
+      issue_auth_recovery_session_v1: {
+        Args: {
+          p_account_id: string
+          p_origin_session_id: string
+          p_session_hash: string
+        }
+        Returns: string
+      }
+      reset_password_with_recovery_v1: {
+        Args: { p_password_hash: string; p_session_hash: string }
+        Returns: string
       }
       purge_future_person_claim_intakes_v1: {
         Args: Record<PropertyKey, never>
@@ -8203,6 +8234,75 @@ export type Database = {
           p_test?: boolean
         }
         Returns: Json
+      }
+      configure_embryo_table_ingest_v1: {
+        Args: {
+          p_account_id: string
+          p_auth_session_id: string
+          p_ingest_session_id: string
+          p_cookie_hash: string
+          p_origin: string
+          p_cohort_id: string
+          p_ingest_revision: number
+          p_build: string | null
+          p_nonce: string
+          p_mapping_nonce: string
+          p_test_jurisdiction?: boolean
+        }
+        Returns: Json
+      }
+      inspect_embryo_table_mapping_v1: {
+        Args: {
+          p_account_id: string
+          p_auth_session_id: string
+          p_ingest_session_id: string
+          p_cookie_hash: string
+          p_origin: string
+          p_cohort_id: string
+          p_ingest_revision: number
+          p_outcome: string
+          p_column_count: number | null
+          p_locus: string | null
+          p_nonce: string
+          p_challenge: string | null
+          p_next_nonce: string | null
+          p_completion_nonce: string | null
+          p_csrf_nonce: string | null
+          p_test_jurisdiction?: boolean
+        }
+        Returns: Json
+      }
+      decide_embryo_table_mapping_v1: {
+        Args: {
+          p_account_id: string
+          p_auth_session_id: string
+          p_ingest_session_id: string
+          p_cookie_hash: string
+          p_origin: string
+          p_cohort_id: string
+          p_ingest_revision: number
+          p_challenge: string
+          p_resolution: Json
+          p_nonce: string
+          p_build_challenge: string | null
+          p_build_nonce: string | null
+          p_transport_challenge: string | null
+          p_completion_nonce: string | null
+          p_csrf_nonce: string | null
+          p_test_jurisdiction?: boolean
+        }
+        Returns: Json
+      }
+      embryo_ingest_table_locus_v1: {
+        Args: {
+          p_account_id: string
+          p_auth_session_id: string
+          p_ingest_session_id: string
+          p_cookie_hash: string
+          p_origin: string
+          p_test_jurisdiction?: boolean
+        }
+        Returns: string | null
       }
       embryo_ingest_issued_tokens_match_v1: {
         Args: {
@@ -8919,6 +9019,20 @@ export type Database = {
       }
       stop_family_sharing_v1: {
         Args: { p_account_id: string; p_counterpart_account_id: string }
+        Returns: {
+          deleted_counts: Json
+          ended_at: string
+        }[]
+      }
+      stop_subject_sharing_v1: {
+        Args: {
+          p_account_id: string
+          p_counterpart_account_id: string
+          p_nonce_expires_at: string
+          p_nonce_hash: string
+          p_session_id: string
+          p_subject_id: string
+        }
         Returns: {
           deleted_counts: Json
           ended_at: string

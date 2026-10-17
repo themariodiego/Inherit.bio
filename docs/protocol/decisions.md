@@ -4721,3 +4721,303 @@ measurement check requires every registered page and applicable state at both
 viewports. Its numerical verdict is not screenshot custody, fixture equivalence
 or G2.5 acceptance. Actual paired captures, full route/state coverage and every
 unchanged budget must still qualify before the matrix row changes.
+
+## 2026-10-16 — Production Embryo Copilot box while embryo analysis is off
+
+- Owner decision (clickable chat answer): accept `/embryos` as the production
+  destination of the `embryos.copilot` Overview box while the restricted
+  embryo capability stays off. `src/lib/copilot/group-scopes.ts` keeps
+  `cohort: isTestJurisdictionEnabled()`. No code changes.
+- Reason: production has no readable cohort while embryo analysis is off, so
+  the Embryo domain landing is the box's correct blocking destination. Under
+  TEST-LOCAL the box opens the newest readable cohort's Copilot, and T6 and T7
+  are measured there.
+- Consequence: G2.4 can close once the final head is merged, citing the
+  TEST-LOCAL reachability and task-depth evidence plus the pinned production
+  fallback in `src/lib/overview-entry-boxes.test.ts`. Turning on any
+  restricted capability in production is not authorised by this decision.
+
+## 2026-10-16 — Jurisdiction clause of G5.3
+
+- Owner decision (clickable chat answer): G5.3 uses the same reading as G5.5.
+  With zero permitted real jurisdictions, the clause "a real jurisdiction's
+  review" is satisfied by the structural gate that keeps third-party adult
+  analysis off.
+- The signed jurisdiction review stays release item B2, an operator obligation
+  before the capability is offered anywhere. This decision is not legal
+  approval, and no review is credited.
+- Consequence: G5.3 still needs the upload-time notice's closed list of what
+  will be derived (`upload-time-rights-notice-v1.adult.content`) in the email
+  and the review page, with browser and email tests, before it can close.
+
+## 2026-10-16 — T7 comprehension binding
+
+- Owner decision (clickable chat answer): approve commit `45e4e218`, which
+  binds T7 to the real no-calibrated-model comparison state instead of an
+  absolute personal-risk figure.
+- The rubric accepts an answer that says no calibrated embryo model is
+  registered and the shown numbers describe file quality. It fails an invented
+  personal-risk finding. The prompt, prohibited-answer class, 30-persona
+  thresholds, independent re-grading and two-run rule are unchanged.
+- Consequence: G3.2 can be re-cited on the main CI run of the final head. Its
+  current citation (run 37980880275 at `44395942`) predates the rebinding and
+  must not be used for T7. No simulated or human comprehension result is
+  credited by this decision.
+
+## 2026-10-16 — Transport for the guarded PR 323 release
+
+- Owner decision (clickable chat answer): run the guarded release over HTTPS,
+  through the Supabase Management API's SQL endpoint, with a short-lived
+  personal access token held as the environment secret `SUPABASE_ACCESS_TOKEN`.
+  This replaces the earlier choice of `psql` with `PRODUCTION_DATABASE_URL`.
+- Reason: cloud sessions reach the internet only through an HTTPS proxy. A TCP
+  connection to the Supabase pooler on port 5432 timed out, so `psql` cannot
+  connect from any session in this environment. A read-only check through the
+  connector showed that the endpoint runs as `postgres` with a 2-minute
+  `statement_timeout`, which the batch guard accepts.
+- Consequence: the batch files, order, checks and stop rules are unchanged.
+  `docs/evidence/pr323-production-apply-20261016/api/RUNBOOK.md` maps them onto
+  the endpoint. The owner revokes the token after the release, and deletes
+  `PRODUCTION_DATABASE_URL` if it was added. No production change is credited
+  by this decision.
+
+## 2026-10-16 — G4.2 is judged on the figures admitted producers emit
+
+- Owner decision (clickable chat answer): G4.2 is judged on the figures that
+  admitted producers can actually emit. The embryo absolute-risk path is
+  covered by its fail-closed reader tests, because no embryo absolute-risk
+  producer is approved and the registry is empty by design.
+- When a laboratory-dropout producer is admitted, it is recorded with the
+  `modelled` basis.
+- Consequence: G4.2 can close once the cross-surface basis and marker audit
+  (`e2e/claim-block-basis.ts`, run from `e2e/figures-cross-surface.spec.ts`)
+  passes on green main CI. No producer is invented or approved by this
+  decision.
+
+## 2026-10-16 — TEST-LOCAL capabilities in the capability register
+
+- Owner decision (clickable chat answer): a capability that works end to end
+  under TEST-LOCAL, but is off in production because no real jurisdiction
+  permits it, is classed `shipped-degraded`. Its entry names the
+  jurisdiction-unavailable state that production users see. This follows brief
+  line 2580 and the TEST-LOCAL reading already used for G5.4 and G5.5.
+- Applies now to embryo ingest (VCF only), embryo quality and embryo
+  comparison. Production behaviour is unchanged, and no restricted capability
+  is turned on.
+
+## 2026-10-16 — Unbuilt registered endpoints (G2.1)
+
+- Owner decision (clickable chat answer): build all 24 registered but unbuilt
+  endpoints rather than moving any into a proposals section. The two
+  `/signup` and `/login` aliases served from `next.config.ts` are counted
+  separately.
+- Consequence: G2.1 stays NO until every registered endpoint is built and its
+  correspondence census reaches the aliases only. Endpoints whose contracts
+  depend on unbuilt pieces or open design questions are raised as owner
+  decisions before they are built, never guessed.
+
+## 2026-10-16 — G5.4 is judged on the brief's minimum under TEST-LOCAL
+
+- Owner decision (clickable chat answer): G5.4 is judged on the brief's own
+  minimum under TEST-LOCAL: both accountless paths (third-party subject and
+  future adult) with access, retention stated in days, a working deletion
+  mechanism, a contact of last resort and a retention-job test. Local mail
+  capture is accepted as delivery proof.
+- Real email-provider delivery becomes a release-checklist item. The other
+  register rights endpoints are tracked under G2.1 and G8.5.
+- Consequence: the future-adult deletion mechanism (the claimant DELETE) must
+  still be built before G5.4 can close.
+
+## 2026-10-16 — Claim scope on legal pages and consent summaries (G1.11)
+
+- Owner decision (clickable chat answer): on the legal pages and consent
+  summaries, only statements of external law or regulator positions are
+  claims. They are cited as statute or regulator entries with snapshots, and
+  quoted statute sits in `data-legal-verbatim` regions. Inherit's own policy
+  text is not a claim.
+- This is a scope decision, not legal approval. Counsel still reviews the
+  legal text, and no citation is credited as reviewed by this decision.
+
+## 2026-10-16 — Copilot system prompt as a claim surface (G1.11)
+
+- Owner decision (clickable chat answer): the Copilot system prompt moves to
+  `src/copy/copilot`, and each factual rule in it is registered as a claim
+  under a new `copilot:<id>` locator. This keeps the brief literal.
+- The owner's scientific source review of those claims remains required.
+
+## 2026-10-16 — Recorded attestation-field divergences (G2.1)
+
+- Owner decision (clickable chat answer): the five recorded, both-direction-checked
+  divergences for `jurisdictionAttestationVersion` and `jurisdictionAttestationHash`
+  satisfy G2.1, consistent with the 2026-09-13 decision.
+- Serving those fields stays a counsel item (D-083) under G8.5.
+
+## 2026-10-16 — BAM/CRAM read calling and the Neanderthal estimate (G7.4)
+
+- Owner decision (clickable chat answer): build both, rather than withhold
+  them. BAM/CRAM calling and a Neanderthal estimate from a licence-checked
+  marker list are each tested on synthetic data.
+- The Neanderthal comparison figure still needs the owner's source review
+  before it is shown.
+
+## 2026-10-16 — Protective legal anchors on consent documents (G5.8)
+
+- Owner decision (clickable chat answer): counsel drafts one versioned,
+  anchored block containing the protective statements. It is rendered inside
+  every activation-point consent and incorporated by reference in each signed
+  body, provided counsel confirms that incorporation by reference works.
+- The absent statements (indemnity, no-reproductive-reliance, no-sale-no-payment)
+  and the incomplete ones (no-warranty, governing-law) remain counsel's to
+  draft. No legal text is written or approved by this decision.
+
+## 2026-10-16 — Genome build for laboratory-table embryo sessions
+
+- Owner decision (clickable chat answer): the configure step records a
+  laboratory-table session as `pgt_table`. Its build comes from the file
+  header when the header states one (`explicit-header` evidence). Otherwise
+  the session is `decision-required`, and the mapping route asks for GRCh37,
+  GRCh38 or unknown before any chunk is accepted. `unknown` ends the upload.
+  Tables do not use position-based build inference in this release.
+- Table chunks are refused until the build is resolved, consistent with the
+  existing fragment trigger.
+
+## 2026-10-16 — Token rotation in the embryo mapping responses
+
+- Owner decision (clickable chat answer): change the register so that
+  `pgt-mapping-challenge-v1` and a 200 PUT decision response carry the next
+  operation nonce and the transport challenge, instead of an empty 204. This
+  follows the VCF configure response's pattern. The session CSRF header rule
+  is unchanged.
+- The register change is recorded in `docs/route-register.json` with tests,
+  and it is built together with the mapping route.
+
+## 2026-10-16 — Auth endpoints: jurisdiction, date of birth, reset and limits (G2.1)
+
+Owner decisions (clickable chat answers) for `auth.sign-up-submit`,
+`auth.forgot-password-submit` and `auth.reset-password-submit`:
+
+- **Jurisdiction stays at first sign-in.** The sign-up endpoint's register
+  contract drops `jurisdictionCode`, the two attestation fields and
+  `jurisdictionAffirmed`. The first-sign-in country step and its G5.1a test are
+  unchanged, so sign-up does not depend on counsel (D-083).
+- **Date of birth stays at account completion.** The sign-up contract drops
+  `dateOfBirth` and the under-18 check. The existing account-completion step and
+  its age gate are unchanged.
+- **A successful reset requires a fresh sign-in.** Every session is revoked,
+  and the person signs in again with the new password. The `auth.reset-password`
+  page entry and the reset e2e assertions are updated to match. Each test change
+  is recorded in `docs/test-diff-register.md`.
+- **The pages post to `/api/auth/*`.** The e2e assertions that required the
+  page's own request to reach Supabase's `/auth/v1/` are rewritten to be just as
+  strict: they require exactly the `/api/auth/*` request and no direct browser
+  call to `/auth/v1/`.
+- **Rate limits use email and network buckets.**
+  - Sign-up: 5 per hour per normalized email, 20 per hour per source network.
+  - Forgot password: 3 per hour per email, 10 per hour per network.
+  - Reset: one use per recovery session, with a 15-minute expiry.
+  - Answers stay identical whether or not the identity exists.
+  - The 2026-09-28 client-address exception is extended to these three auth
+    routes. Storage stays HMAC-keyed with 24-hour retention, as
+    `securityRateLimitContract` requires.
+- **Sign-up has no display name.** `displayName` is dropped from the sign-up
+  contract. The form keeps email and password, and the self record stays
+  labelled "You".
+- **Passwords are 12 to 72 characters** and at most 72 UTF-8 bytes, for sign-up
+  and reset alike. The auth service refuses longer ones, and bcrypt only uses
+  the first 72 bytes. A longer password gets `invalid-request-v1` with issue
+  `password` before any auth-service call.
+
+## 2026-10-16 — Claimant deletion runs the planned raw-copy cleanup
+
+- Owner decision (clickable chat answer): a claimant's deletion runs the
+  cleanup already planned for the original embryo upload's raw copies. Those
+  copies also hold the siblings' DNA, because the combined raw file cannot be
+  erased for one embryo alone.
+- Siblings' published records are untouched, and the pgTAP proof requires them
+  to stay byte-identical. The effect is stated in the rights and retention
+  documentation.
+
+## 2026-10-16 — Confirmed file of an accountless person: 730 days (G5.4)
+
+- Owner decision (clickable chat answer): a file confirmed by an accountless
+  person under Path B is kept for at most exactly 730 days. The retention class
+  `adult.non-account-holder-24mo` is defined as 730 days, with its retention
+  row, deletion job and retention-job test.
+- The review page and the notice state "730 days", because G5.4 requires
+  retention stated in days.
+
+## 2026-10-16 — The subjects endpoints (G2.1)
+
+Owner decisions (clickable chat answers) for the six `/api/subjects*` endpoints:
+
+- **`api.subjects`:** build the reviewed-document branch of Path B as one
+  unit, TEST-LOCAL only with production off. It covers the new draft body and
+  `uploaded_document` evidence kind, the permission-document upload
+  (`api.legal-evidence-upload-session`), named-human review of that document,
+  `api.subjects` with the global contact bar, and the recipient activation step.
+- **`api.subject-download`:** build a revocable genome chunk session, with no
+  signed URLs, for the person's own data only (self, or an adult record whose
+  account is the caller). The uploader, grantee and embryo cases answer
+  `resource-not-found-v1` until their permission paths exist.
+- **`api.subject-export`:** a one-subject archive. It is the account producer
+  restricted to self or an adult record the caller owns, on the same TEST R2
+  pipeline. Joint results are included only while each other contributor's
+  permission is live. The audit log is left out with a stated reason, and the
+  audit schema is unchanged. Claimed-embryo export answers
+  `resource-not-found-v1` for now.
+- **`api.subject-transfer`:** a transferred adult record stays a separate
+  `other_adult` record, now owned by the person. A flagged migration widens the
+  ownership check, and transfer relocation rows plus a worker branch are added.
+  Original consents and the audit trail are kept, and no uploads are merged.
+- **`api.subject-delete`, self record:** deleting the self record empties it.
+  Every file, result, chat, permission and consent on it is revoked and purged,
+  and the record stays as the account's one self record.
+- **`api.subject-delete`, scope:** all five cases are built in one slice (self,
+  adult, transferred embryo, claimed embryo, other embryo), adding the missing
+  deletion functions. Every embryo case locks and rechecks the parents'
+  authority before the case is chosen.
+- **`api.subject-sharing`:** a UUID-addressed twin of `api.family-sharing`,
+  reusing the three existing sharing functions, with a new single-use stop
+  code tied to this route and subject, issued on the Family permissions page.
+
+## 2026-10-16 — Claimant retention stated in days (G5.4)
+
+- Owner decision (clickable chat answer): the claimant's temporary contact class
+  `future-person.claimed-unbound-24mo` is defined as exactly 730 days, and the
+  claimant page states it.
+- A claimed record stays until the claimant asks to delete it. The page
+  states the 30-day record and 7-day DNA deletion times, and that reading
+  satisfies G5.4.
+
+## 2026-10-16 — Subjects delete and transfer: four further cases
+
+Owner decisions (clickable chat answers) on questions raised while building
+`api.subject-delete` and `api.subject-transfer`:
+
+- **Claimed-bound embryo delete:** while claimant binding is closed, a
+  `claimed_bound` subject cannot exist, so the delete answers
+  `resource-not-found-v1` for it. The bound erasure ships with the binding
+  release.
+- **Transfer with held files:** a transfer is refused while any Path B file on
+  the record is still pending. Once every file is confirmed, each one is
+  detached into a person-owned file, which the relocation worker copies to a
+  fresh key.
+- **Relocated key shape:** relocated objects get a fresh flat `<uuid>` key, as
+  live code uses. The `storage.subject-v2` declared prefix stays undecided.
+- **Reading after transfer:** existing results stay readable under the person's
+  own grants, and the uploader loses all access. No new analysis runs on the
+  record until a person-owned analysis path is decided.
+- **Transferred embryo delete with an open claim:** while a claim or claim
+  review on the embryo is open, the delete answers `resource-not-found-v1` and
+  writes nothing. Otherwise it purges only that embryo. Its record key and
+  print rights are revoked, rights and download sessions end, and the
+  claim-window retention row closes. The identity profile and derived rows are
+  deleted, and the one source deletion is planned.
+- **Self "empty it" and the file-byte guard:** the shared per-file delete guard
+  is narrowed. It refuses only a family pair that is still pending or current,
+  or one that still has joint results. The same change applies to
+  `api.file-delete`.
+- **Subject export with joint results:** built in two steps. The one-subject
+  export ships first and refuses, with a stated reason, while the subject has
+  live joint results. The next slice adds the live-permission joint-result
+  projection and lifts that refusal.
