@@ -1,3 +1,9 @@
+## 2026-10-16 — Refused-invitation cleanup e2e: synthetic evidence uses the registered bucket's content type
+
+Hosted CI run 38966526629 ("browser (2)", commit ffa538ab) failed `e2e/refused-invitation-cleanup.spec.ts` "jobs.retention: physically delete refused-draft evidence without deleting another draft" at its own setup upload: `StorageApiError: mime type text/plain is not supported`. Migration `20261016190000_path_b_reviewed_document.sql` creates the registered `legal-evidence` bucket with `allowed_mime_types = {application/octet-stream}`. Before that migration, the spec created the bucket itself with no restriction. The product writes only opaque `application/octet-stream` objects there (`src/lib/future-person/claim-objects.ts`).
+
+Test change, no assertion changed: the spec's synthetic evidence upload now declares `application/octet-stream`. A throwaway local bucket with the migration's exact limits refused `text/plain` with the same message and accepted `application/octet-stream`; it was deleted afterwards.
+
 ## 2026-10-16 — Route census: a redirect served by `next.config.ts` counts as built
 
 `scripts/route-register-correspondence.test.ts` "leaves the unbuilt half of the register alone, but still measures it" walks only `src/app`. `legacy.signup` (`/signup`) and `legacy.login` (`/login`) are served by unconditional permanent redirects in `next.config.ts`, which run before the App Router. `scripts/route-gate.ts` already checks their emitted 308 against the register, and `scripts/canonical-host.test.ts` checks the query is kept. They were built, but the census counted them as unbuilt.
