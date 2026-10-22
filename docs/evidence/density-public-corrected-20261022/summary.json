@@ -1,0 +1,41 @@
+{
+ "schemaVersion": 1,
+ "measuredAt": "2026-10-22",
+ "what": "The 70 public and auth captures, before (cf79b1b6) and after (ac13250f), evaluated by scripts/density-current.ts evaluateDensityCapture under the contract rules and under the owner's corrected rules of 2026-10-22. Engineering measurement, not G2.5 acceptance; the frozen baseline and docs/density-baseline.json are unchanged.",
+ "browser": "151.0.7922.34",
+ "readingsModuleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+ "textOnlyFloorVariantSha256": "dd099009b40dccc61525264e9849fc8e5d51b84b62103f56f1a18bce5176a396",
+ "predecessors": "docs/evidence/density-public-20261022/measurements.json#baseline (the frozen baseline re-captured on this machine and browser build)",
+ "pngsByteIdenticalToTheEarlierCaptures": {
+  "before": 70,
+  "after": "70 at 1f9a8947; this branch's later changes alter no first-viewport pixel"
+ },
+ "before": {
+  "everyBudget": {
+   "contract": 2,
+   "corrected": 6
+  },
+  "relativeWithin": {
+   "contract": 1,
+   "corrected": 1,
+   "of": 28,
+   "textBound": 0
+  }
+ },
+ "after": {
+  "everyBudget": {
+   "contract": 14,
+   "corrected": 41
+  },
+  "relativeWithin": {
+   "contract": 12,
+   "corrected": 26,
+   "of": 28,
+   "textBound": 14
+  }
+ },
+ "sources": {
+  "before": "cf79b1b6 (PR 324 head)",
+  "after": "ac13250f (local/density)"
+ }
+}
