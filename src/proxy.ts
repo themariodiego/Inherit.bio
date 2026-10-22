@@ -55,9 +55,8 @@ function withSensitiveHeaders<T extends NextResponse>(response: T, path?: string
       path?.startsWith("/api/reviews/appeals/") ||
       (path !== undefined && /^\/api\/legal-evidence\/[^/]+\/review-download$/.test(path)) ||
       // sensitiveResponseHeaderBindings.downloadOrExport: the subject download
-      // entry and the shared chunk route it hands off to. (api.subject-export
-      // is not built; its binding joins this list when it is.)
-      (path !== undefined && /^\/api\/subjects\/[^/]+\/download$/.test(path)) ||
+      // and export entries and the shared chunk route they hand off to.
+      (path !== undefined && /^\/api\/subjects\/[^/]+\/(?:download|export)$/.test(path)) ||
       path?.startsWith("/api/downloads/")) {
     response.headers.set("Referrer-Policy", "no-referrer");
   }
@@ -70,6 +69,7 @@ function withSensitiveHeaders<T extends NextResponse>(response: T, path?: string
  */
 function isRightsEndpoint(path: string): boolean {
   return path === "/api/export" ||
+    /^\/api\/subjects\/[^/]+\/export$/.test(path) ||
     path === "/api/account/delete" ||
     path === "/api/account/delete/cancel" ||
     (path.startsWith("/api/consents/") && path.endsWith("/revoke")) ||

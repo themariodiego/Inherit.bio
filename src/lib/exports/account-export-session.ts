@@ -56,6 +56,26 @@ export function readAccountExportCookie(request:Request,actor:AccountExportActor
  if(!match||!z.uuid().safeParse(match[1]).success||Buffer.from(match[2],"base64url").toString("base64url")!==match[2])return null;
  return {exportId:match[1],hash:accountExportCookieHash(match[2],actor)};
 }
+/** api.subject-export uses the same registered cookie name, bound to its
+ * route subject as well as the principal: a one-record export cookie cannot
+ * poll or open the account export or another record's export, nor the other
+ * way round, because the stored hash differs. */
+export function createSubjectExportCookie(actor:AccountExportActor,subjectId:string){
+ accountExportActor.parse(actor);z.uuid().parse(subjectId);const value=randomBytes(32).toString("base64url");
+ return {hash:subjectExportCookieHash(value,actor,subjectId),header:(exportId:string)=>{
+  z.uuid().parse(exportId);return `${ACCOUNT_EXPORT_COOKIE}=${exportId}.${value}; Path=/; Secure; HttpOnly; SameSite=Strict; Max-Age=86400`;
+ }};
+}
+export function subjectExportCookieHash(value:string,actor:AccountExportActor,subjectId:string){
+ secret.parse(value);return hmacSecret(JSON.stringify([accountExportActor.parse(actor),z.uuid().parse(subjectId),value]),"subject-export-cookie-v1");
+}
+export function readSubjectExportCookie(request:Request,actor:AccountExportActor,subjectId:string){
+ const matches=(request.headers.get("cookie")??"").split(";").map(v=>v.trim()).filter(v=>v.split("=")[0]===ACCOUNT_EXPORT_COOKIE);
+ if(matches.length!==1)return null;
+ const token=matches[0].slice(ACCOUNT_EXPORT_COOKIE.length+1),match=/^([a-f0-9-]{36})\.([A-Za-z0-9_-]{43})$/u.exec(token);
+ if(!match||!z.uuid().safeParse(match[1]).success||Buffer.from(match[2],"base64url").toString("base64url")!==match[2])return null;
+ return {exportId:match[1],hash:subjectExportCookieHash(match[2],actor,subjectId)};
+}
 export function hasAccountExportCookie(request:Request){
  return (request.headers.get("cookie")??"").split(";").some(v=>v.trim().split("=")[0]===ACCOUNT_EXPORT_COOKIE);
 }
