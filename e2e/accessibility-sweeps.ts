@@ -56,6 +56,7 @@ export const VISIT: Record<string, string> = {
   "/genome/[subject]/reports": "/genome/me/reports",
   "/genome/[subject]/reports/[slug]": "/genome/me/reports/caffeine-metabolism-cyp1a2-rs762551",
   "/genome/[subject]/ancestry": "/genome/me/ancestry",
+  "/genome/[subject]/carrier": "/genome/me/carrier",
   "/genome/[subject]/data": "/genome/me/data",
   "/genome/[subject]/data/browser": "/genome/me/data/browser?q=rs762551",
   "/copilot/[scope]": "/copilot/me",

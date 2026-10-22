@@ -167,13 +167,19 @@ describe("the route gate holds the register to the code", () => {
     // Source census is exact; the controlled browser cases are UI-only and unrun here.
     // 161 -> 163: the appeal reviewer adds complete and processing obligations;
     // their original native journey now authors both without removing any previous proof.
-    expect(result.requiredStateCount).toBe(168);
+    // 168 -> 174 on 2026-10-22 (G7.4): `/genome/[subject]/carrier` adds six
+    // product-result obligations (awaiting-choice and jurisdiction-unavailable
+    // waived with their reasons) and e2e/own-carrier-status.spec.ts authors a
+    // proof of each, so the unproven count does not move.
+    expect(result.requiredStateCount).toBe(174);
     // Three native complete steps passed on 2def; two appeal steps are authored here;
     // all six scientific partial/not-covered gaps remain required.
     // 162 -> 168 on 2026-10-22: the six are named by steps driven by the
     // TEST-only synthetic producers (owner decision, G1.7, G1.12, G2.2), and
     // still required, so the required count above does not move.
-    expect(result.provenStateCount).toBe(168);
+    // 168 -> 174 on 2026-10-22 (G7.4): the six carrier-page pairs above, each
+    // proven by e2e/own-carrier-status.spec.ts, so nothing is left unproven.
+    expect(result.provenStateCount).toBe(174);
     expect(result.browserTestTitleCount).toBeGreaterThan(100);
     // The 34 routes src/app served at the baseline commit, measured by git
     // ls-tree and recorded in docs/route-dispositions.json: 27 kept, 7
@@ -1172,8 +1178,8 @@ describe("the current rights session processing contract", () => {
       };
     } });
     const result = await runRouteGate(root);
-    // Exact current168 minus only the deliberately waived /withdraw/[token] processing pair.
-    expect(result.requiredStateCount).toBe(167);
+    // Exact current 174 minus only the deliberately waived /withdraw/[token] processing pair.
+    expect(result.requiredStateCount).toBe(173);
     expect(result.failures).toEqual([
       "proven route state: recorded in docs/route-divergence.json but no longer present: /withdraw/[token] processing",
     ]);

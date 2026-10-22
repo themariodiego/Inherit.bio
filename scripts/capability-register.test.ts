@@ -162,6 +162,46 @@ describe("jurisdiction-only degradations under the TEST-LOCAL reading", () => {
 });
 
 /**
+ * Owner decision, 22 October 2026 ("Carrier status and carrier-pair arithmetic
+ * (G7.4)"): both carrier rows are `shipped-degraded` once TEST-LOCAL proves
+ * them with synthetic activated conditions, while production says the check
+ * is unavailable and is not a negative carrier screen until the owner approves
+ * the starter list, the guarded import runs and a named reviewer activates
+ * each condition. Such a row opens with its own marker. These checks hold it
+ * to what it claims: the row quotes the approved unavailable sentence, every
+ * jurisdiction-off browser test it cites exists and pins a sentence the row
+ * quotes, and the row says what TEST-LOCAL delivers.
+ */
+describe("reviewed-activation degradations under the 22 October decision", () => {
+  const MARKER = "**Production: unavailable until reviewed activation.**";
+  const DECIDED = ["Carrier status", "Carrier-pair arithmetic"];
+  const UNAVAILABLE =
+    "This check is unavailable. Inherit cannot yet verify the evidence for each gene change. This is not a negative carrier screen.";
+  const marked = () => capabilityRows().filter(row => row.uiState.startsWith(MARKER));
+
+  it("applies to exactly the two carrier rows the decision names, and only as shipped-degraded", () => {
+    expect(marked().map(row => row.capability).sort()).toEqual([...DECIDED].sort());
+    for (const row of marked()) expect(row.status, row.capability).toBe("shipped-degraded");
+  });
+
+  it("quotes the unavailable sentence, cites jurisdiction-off tests that pin what it quotes, and says what TEST-LOCAL delivers", () => {
+    for (const row of marked()) {
+      const name = row.capability;
+      expect(row.uiState, `${name} does not quote the unavailable sentence`).toContain(`"${UNAVAILABLE}"`);
+      expect(row.uiState, `${name} does not say what TEST-LOCAL delivers`).toContain("**Under TEST-LOCAL**");
+      const quoted = [...row.uiState.matchAll(/"([^"]{40,})"/g)].map(match => match[1]!);
+      const specs = [...row.evidence.matchAll(/e2e\/[a-z0-9.-]+\.nojurisdiction\.spec\.ts/g)].map(match => match[0]);
+      expect(specs.length, `${name} cites no jurisdiction-off browser test`).toBeGreaterThan(0);
+      for (const spec of specs) {
+        expect(existsSync(spec), `${name} cites a missing ${spec}`).toBe(true);
+        const source = readFileSync(spec, "utf8");
+        expect(quoted.some(sentence => source.includes(sentence)), `${spec} pins none of the sentences ${name} quotes`).toBe(true);
+      }
+    }
+  });
+});
+
+/**
  * The decision index drifted silently: three accepted ADRs existed on disk
  * without a row in `docs/adr/README.md`, which is where a reader looks for the
  * decisions a feature must conform to. An unindexed decision is an invisible

@@ -8243,6 +8243,12 @@
         "operation": "ancestry-read",
         "resolver": "subject-route-v1"
       },
+      "genome.carrier": {
+        "targetSource": "route-subject",
+        "operation": "own-carrier-status-read",
+        "resolver": "subject-route-v1",
+        "ownSelfOnly": "a Family handle, an other-adult record and a Path B record answer resource-not-found-page-v1, exactly like an unknown record"
+      },
       "genome.data": {
         "targetSource": "route-subject",
         "operation": "data-metadata-read",
@@ -15432,6 +15438,26 @@
       "notApplicableStates": {
         "awaiting-choice": "This route shows what a subject's file already produced. The invitation to choose an analysis renders on /overview alone, and its link points at /genome/[subject]/reports.",
         "partial-coverage": "Not a state this page can render, measured 2026-09-18 (corrections document, ‘Measured 2026-09-18’). The seven-region panel's minimum is its whole panel (SEVEN_ANCESTRY_PANEL.minimumMarkers = 168), so any shortfall, one marker or 147, is the grey state already proven as /genome/[subject]/ancestry not-covered; the capture distinguishes result_state partial from not_covered, but the page says the same sentence for both and draws no map for either. The owner chose on 2026-09-18 to waive the state here rather than add a sentence saying shares were computed from a partial panel and withheld. Reopens if the page ever renders a partial panel differently from none."
+      },
+      "policy": {
+        "mode": "resolved",
+        "resolver": "subject-route-v1"
+      },
+      "disposition": "kept",
+      "expectedStatus": 200
+    },
+    {
+      "id": "genome.carrier",
+      "path": "/genome/[subject]/carrier",
+      "kind": "page",
+      "domain": "genome",
+      "auth": "authenticated",
+      "surface": "standard",
+      "width": "64rem",
+      "stateProfile": "product-result",
+      "notApplicableStates": {
+        "awaiting-choice": "This route shows what the reader's own prepared file supports under the reviewed carrier rule. The invitation to choose an analysis renders on /overview alone; a prepared file whose Observed genetic variants choice is off is this route's consent-required state, which names the choice and links to /genome/[subject]/reports where it is made.",
+        "jurisdiction-unavailable": "Own self records only: a Family handle, a record held for another adult and a Path B record answer notFound() before anything is read, so no restricted capability is ever reached here. One person's own carrier status is a My Genome reading under adult_self_analysis (X12.3), not carrier_match, which governs the two-person arithmetic on /family/health-picture, /family/portrait/[pairId] and /overview and is enforced there. Owner decision of 22 October 2026 (G7.4): production is unchanged and states that the check is unavailable until the owner approves the starter list, the guarded import runs and a named reviewer activates each condition. Whether an activated own carrier result should also be jurisdiction-gated is an open question for the owner and counsel before that activation, and this waiver must be revisited then."
       },
       "policy": {
         "mode": "resolved",

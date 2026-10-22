@@ -53,6 +53,56 @@ Hosted CI run 39819670513 (`database-tests`, commit 538dcee6) failed `supabase/t
 
 Test change, no assertion changed: a new shared fixture, `supabase/tests/fixtures/synthetic_rights_token.inc`, defines `pg_temp.synthetic_rights_token(account, purpose, label)`. It builds an invented chain for the account's own principal: contact reference, submitted outbox row, issued candidate, then current hash. It returns the hash id, and nothing is mailed. The three suites include it and use it in place of the borrowed row. The doors under test never read the token row (`rights_sessions` is joined, `token_hashes` is not), so only the foreign key depends on it. Evidence, each run in a rolled-back transaction over the full migration chain: with `token_hashes` truncated inside the transaction to match a fresh database, the old fixtures reproduce the CI failure (test 1 fails, then 31–35 errors), and the new ones pass 37/37, 33/33 and 32/32. Against the shared database's existing rows the new ones pass with the same counts. `embryo_record_key_cards_rights.sql` and `adult_subject_bind.sql` borrow a token the same way, but each creates one in its own transaction first, so they pass on a fresh database and are unchanged.
 
+## 2026-10-22 — Carrier status and carrier-pair arithmetic (G7.4): the own-genome carrier page and its TEST-LOCAL proof
+
+Owner decision of 2026-10-22 ("Carrier status and carrier-pair arithmetic (G7.4)", `docs/protocol/decisions.md`). This entry records every test this slice adds or changes. No migration is added. No existing assertion is weakened; three pinned inventory numbers move with the new surface, and each is named below with its reason.
+
+### The own carrier page, `/genome/[subject]/carrier`
+
+New page `src/app/(app)/genome/[subject]/carrier/page.tsx` (register `genome.carrier`), over `src/lib/family/own-carrier-read.ts` (the read order) and `src/lib/family/own-carrier-status.ts` (pure). It reads the account's own `self` record only. It asks the reviewed rule first (`carrier_assertions_v1`), and outside the TEST-LOCAL build it refuses every synthetic row (`rowsForBuild`). With nothing left it shows the approved "This check is unavailable. Inherit cannot yet verify the evidence for each gene change. This is not a negative carrier screen." and reads no file. Otherwise it states the record (no file, a file in flight, the Observed genetic variants choice off), and only then reads the person's own calls at the rule's loci from the files `filterOwnAnalysisFiles` admits for `reports.monogenic`, checking that authority again after the read. The copy is the approved carrier wording, reused; the four new strings are state sentences modelled on the existing My Genome ones (`src/copy/genome/carrier.ts`).
+
+New Vitest files, all passing:
+
+- `src/lib/family/own-carrier-status.test.ts` (9 cases): copies counted in the assertion's own spelling; an unreadable call is never a finding; one copy named with its reviewed evidence; two copies preferred to one; a deletion read in its other spelling; ties to the lower assertion id; unreported, unreadable, failed and disagreeing calls counted as not checked, never as no copy; no rsID or other-letter match; synthetic rows refused outside TEST-LOCAL.
+- `src/lib/family/own-carrier-read.test.ts` (7 cases): production reads nothing of the person when only synthetic rows are active; an empty rule is unavailable; no file, a file in flight and the choice off are stated from metadata only; the read is scoped to the admitted files, the account's own rows and the rule's loci, and only certified observations; a grant withdrawn during the read is never a result; the build flag is read as the exact value `1`.
+- `src/components/results/carrier/own-carrier-panel.test.ts` (9 cases): each state's one sentence and no result; the brief's four §4 requirements on a finding and on a condition the file does not cover; the ClinVar source line; the four limits that apply to one person, once; no chance, pregnancy or child sentence.
+- `src/app/(app)/genome/[subject]/carrier/page.test.ts` (7 cases): the own `self` record only; a Family handle, another adult's record, a Path B record, an unknown record, a refused jurisdiction and the Tier-2 gate all answer 404 before the reader is called.
+- `src/copy/genome/carrier.test.ts` (3 cases): the four new strings pinned, and every reused string is its approved original.
+
+New pgTAP file `supabase/tests/own_carrier_status.sql` (17 assertions), all passing in one rolled-back transaction on the shared local database. It pins the doors the page reads through: a synthetic release imported inactive; activation and withdrawal through the review door under a reviewer identity named as a browser test identity; the rule returning a synthetic condition only with its synthetic release id; the import door refusing a synthetic condition under a ClinVar release and a ClinVar-shaped condition under a synthetic release; the release check refusing a synthetic id with a ClinVar source; the service door's row keys equal to the application's strict parser; and `filter_own_analysis_files_v1` admitting nothing for an unknown account, session or file.
+
+New browser specs:
+
+- `e2e/own-carrier-status.spec.ts` (7 tests) proves `/genome/[subject]/carrier` in `not-covered`, `consent-required`, `complete`, `partial-coverage`, `empty` and `processing`, each with its cause established from the database, plus the 404 for an unknown record. The conditions are synthetic, imported and activated through the rule's doors by `e2e/synthetic-carrier-release.ts` (new helper) and withdrawn afterwards.
+- `e2e/own-carrier-status.nojurisdiction.spec.ts` (1 test) is the production variant: on the build with the TEST-LOCAL flag unset, with a synthetic condition active and a prepared file carrying it, the page shows only the unavailable sentence; the same account on the TEST-LOCAL server shows the finding.
+
+### Changed tests
+
+- `e2e/portrait-reviewed-carrier.spec.ts`: one new last test, "each adult's own carrier status shows the same reviewed reading the pair arithmetic used". Each adult turns on Observed genetic variants and their own page shows the reading the pair blocks used. The import line gains `generateOwnFileWithChosenReports`. No existing assertion changes.
+- `e2e/figures-two-seed.spec.ts`: one new test, "every figure on the own carrier surface moves between two seeds", with one synthetic condition activated for that test only and withdrawn in `finally`. `docs/figures-register.json` records the route as `differenced` and names its two seeds. No existing assertion changes.
+- `e2e/accessibility-sweeps.ts`: `VISIT` gains `/genome/[subject]/carrier`, so the register-derived axe, reflow, target-size and keyboard sweeps reach the new page; the coverage assertion in `e2e/accessible-authenticated-pages.spec.ts` requires it.
+- `scripts/route-gate.test.ts`: `requiredStateCount` 168 → 174 and `provenStateCount` 162 → 168, and the rights-session case's 167 → 173, each with a comment. The new route adds six required pairs and the new spec authors a proof of each, so `UNPROVEN_ROUTE_STATE_PAIRS` stays 6 and `docs/route-divergence.json` records the six proven pairs.
+- `scripts/citation-surface-gate.test.ts`: `fileCount` 119 → 121, with a comment. The two new surface files carry no claim-marked sentence, so the 59 candidates are unchanged.
+- `scripts/capability-register.test.ts`: a new describe block (2 cases) holds the 22 October marker, "**Production: unavailable until reviewed activation.**", to the two carrier rows: each is `shipped-degraded`, quotes the approved unavailable sentence, says what TEST-LOCAL delivers, and cites jurisdiction-off browser tests that exist and pin a sentence the row quotes.
+- `src/lib/figures/contract.ts` gains the computed module `family/own-carrier-status`, which `gate:claims` resolves.
+
+### Runs on the shared local stack
+
+- Browser, one `next build` with the TEST-LOCAL and jurisdiction-off servers: 14 of 14 passed, no skips or retries (8.0 min). That is the 7 tests of `e2e/own-carrier-status.spec.ts`, the production variant, all 5 tests of `e2e/portrait-reviewed-carrier.spec.ts` (its first full local run) and the new two-seed test. No migration was applied or dropped. Every synthetic condition was withdrawn afterwards; the last imported synthetic release stays current with no active condition, as the Portrait spec has always left it.
+- pgTAP: `supabase/tests/own_carrier_status.sql` 17 of 17 and `supabase/tests/carrier_portrait_reader.sql` 24 of 24, each in one rolled-back transaction. `supabase/tests/carrier_assertions.sql` gives 50 of 51 on the shared database only because the e2e runs leave a current synthetic release, so its first import retires one (`"retired":[]` expected); on a fresh database it is unaffected, and no assertion of it changed.
+- Vitest: the five new files (35 cases) and the changed `scripts/route-gate.test.ts`, `scripts/route-register-correspondence.test.ts`, `scripts/figures-census.test.ts`, `scripts/capability-register.test.ts`, `scripts/citation-surface-gate.test.ts`, `scripts/env-gate.test.ts` and `scripts/mock-token-allowlist.test.ts` pass. The whole `scripts/` suite has the same 40 failures in six environment-bound files (uid 0, Docker, the owned runtime) with and without this change, measured by stashing it, plus the suites that need a Playwright headless shell this container lacks.
+
+### Planted defects
+
+Each was applied alone, the named tests run, and the source restored.
+
+- Production keeps synthetic rows (`rowsForBuild` returns every row): the production-variant browser test failed (`data-state` "complete" where "unavailable" was expected), and 4 unit cases failed.
+- An unreadable call counted as a finding: 2 cases. An unreadable or single-letter position counted as checked: 1. One copy preferred to two: 1.
+- No re-check of the grant after the read: 2. Files read before the rule is asked: 1. Another account's rows read: 1. Uncertified observations read: 1.
+- "This is not a negative result." dropped: 1. The laboratory line dropped from a finding: 1. The limits shown beside the unavailable sentence: 4. The pair-only limit shown on one person's page: 2. Another adult's record served: 1.
+- The Carrier status row stops quoting the unavailable sentence: 1 (`scripts/capability-register.test.ts`).
+- pgTAP, each inside the rolled-back transaction: a key added to `carrier_assertions_v1` failed assertion 11; the release check `clinical_assertion_releases_check` dropped failed 10; a review recorded under another name failed 5.
+
 ## 2026-10-22 — Consent and rights endpoints, continued (G2.1, "Build all 24"): the no-account uploader gate, the revoke-all control and the remaining consent and rights routes
 
 Owner decisions of 2026-10-22 ("Consent, rights and claim endpoints (G2.1)", `docs/protocol/decisions.md`). This entry records each test change of the slice's second half.

@@ -17,6 +17,7 @@ import { ACKNOWLEDGE_BUTTON } from "../src/copy/family/portrait";
 import type { OwnReportPurpose } from "../src/lib/uploads/own-report-purpose";
 import { REGIONAL_FIGURE_PAIRS } from "./fixtures/regional-figure-fixtures";
 import { REGIONAL_CAVEAT } from "../src/lib/genome/regional-admixture";
+import { importSyntheticRelease, reviewSynthetic, ruleGenes, withdrawSynthetic, type SyntheticCondition } from "./synthetic-carrier-release";
 
 /**
  * G8.3: every number is seeded, proved by differencing.
@@ -162,6 +163,51 @@ test("every figure on the My Genome surfaces moves between two seeds", async ({ 
   // soft, so a run names every surface that carries a constant instead of
   // stopping at the first.
   for (const surface of surfaces) assertEveryFigureMoved(surface, a.get(surface)!, b.get(surface)!);
+});
+
+/**
+ * The own carrier surface, on the same rule (owner decision of 22 October
+ * 2026, G7.4). Its figures exist only while the reviewed rule admits a
+ * condition, so one synthetic condition is imported and activated through the
+ * rule's own doors (`e2e/synthetic-carrier-release.ts`) for this test alone
+ * and withdrawn through the same door whatever happens.
+ *
+ * The two seeds are the pair fixtures, which describe different people at
+ * both reviewed positions: at chr1:21,000,000 seed A reads one changed copy
+ * (A/G) and seed B two (G/G); at chr1:10,000,000 seed A reads C/T and seed B
+ * has no row. So the person's reading moves from "one copy" to "two copies"
+ * and the checked count from 2 of 2 to 1 of 2. Both seeds show a finding, so
+ * both render the same two figures and pairing is by shape.
+ */
+const CARRIER = "/genome/me/carrier";
+const CARRIER_SPEC = "e2e/figures-two-seed.spec.ts";
+const CARRIER_SEED: SyntheticCondition = {
+  conditionId: "SYNTHETIC:8821", conditionName: "Synthetic seed condition", gene: "SYNSEED",
+  assertions: [
+    { variationId: 882101, variantName: "Synthetic seed change one", reviewStatus: "reviewed by expert panel", reviewStars: 3,
+      lastEvaluated: "2024-01-01", pos: 21_000_000, ref: "A", alt: "G" },
+    { variationId: 882102, variantName: "Synthetic seed change two", reviewStatus: "practice guideline", reviewStars: 4,
+      lastEvaluated: "2023-06-15", pos: 10_000_000, ref: "C", alt: "T" },
+  ],
+};
+
+test("every figure on the own carrier surface moves between two seeds", async ({ browser }) => {
+  test.setTimeout(300_000);
+  await importSyntheticRelease(`synthetic-e2e-figures-${RUN_ID.slice(0, 8)}`, [CARRIER_SEED], CARRIER_SPEC);
+  try {
+    await reviewSynthetic(CARRIER_SEED, "activate", CARRIER_SPEC);
+    expect(await ruleGenes()).toEqual([CARRIER_SEED.gene]);
+    const { a, b } = await bothSeeds(browser, [CARRIER], ["reports.monogenic"],
+      { label: "carrier-a", fixture: "e2e/fixtures/carrier-pair-grch38.vcf" },
+      { label: "carrier-b", fixture: "e2e/fixtures/carrier-pair-b-grch38.vcf" });
+    expect([...a.get(CARRIER)!.values()].map(figure => figure.value)).toEqual([
+      "one copy", "Your file was checked at 2 of the 2 positions known for Synthetic seed condition."]);
+    expect([...b.get(CARRIER)!.values()].map(figure => figure.value)).toEqual([
+      "two copies", "Your file was checked at 1 of the 2 positions known for Synthetic seed condition."]);
+    assertEveryFigureMoved(CARRIER, a.get(CARRIER)!, b.get(CARRIER)!);
+  } finally {
+    await withdrawSynthetic([CARRIER_SEED], CARRIER_SPEC);
+  }
 });
 
 /* ────────────────────────────────────────────────────────────────────────
