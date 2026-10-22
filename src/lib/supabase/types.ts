@@ -1549,6 +1549,8 @@ export type Database = {
           decided_at: string
           decision: string
           id: string
+          nonce_hash: string | null
+          reason_ciphertext: string | null
           reason_code: string
           review_revision: number
           reviewed_evidence_id: string | null
@@ -1559,6 +1561,8 @@ export type Database = {
           decided_at?: string
           decision: string
           id?: string
+          nonce_hash?: string | null
+          reason_ciphertext?: string | null
           reason_code: string
           review_revision: number
           reviewed_evidence_id?: string | null
@@ -1569,6 +1573,8 @@ export type Database = {
           decided_at?: string
           decision?: string
           id?: string
+          nonce_hash?: string | null
+          reason_ciphertext?: string | null
           reason_code?: string
           review_revision?: number
           reviewed_evidence_id?: string | null
@@ -7727,6 +7733,14 @@ export type Database = {
         Args: { p_operation: string; p_session_hash: string; p_payload?: Json; p_csrf_binding?: string }
         Returns: Json
       }
+      future_person_export_ready_v1: {
+        Args: { p_session_hash: string; p_payload: Json }
+        Returns: Json
+      }
+      future_person_export_open_ready_v1: {
+        Args: { p_session_hash: string; p_payload: Json; p_csrf_binding: string }
+        Returns: Json
+      }
       future_person_export_members_v1: {
         Args: { p_operation: string; p_export_id: string; p_attempt_id: string; p_authority_receipt: string; p_after_id?: string }
         Returns: Json
@@ -8055,6 +8069,11 @@ export type Database = {
       future_person_rights_view_v1:{Args:{p_session_hash:string};Returns:Json}
       issue_future_person_recovery_key_v1:{Args:{p_session_hash:string;p_nonce:string;p_key_hash:string};Returns:string}
       stop_future_person_analysis_v1:{Args:{p_session_hash:string;p_nonce:string};Returns:string}
+      read_future_person_correction_review_v1:{Args:{p_correction:string};Returns:Json}
+      check_future_person_correction_review_v1:{Args:{p_correction:string;p_expected:Json};Returns:boolean}
+      future_person_correction_decision_context_v1:{Args:{p_correction:string};Returns:Json}
+      decide_future_person_correction_review_v1:{Args:{p_correction:string;p_decision:string;p_correction_revision:number;
+        p_expected:Json;p_nonce_hash:string;p_reason_ciphertext:string};Returns:Json}
       purge_due_future_person_contacts_v1:{Args:Record<PropertyKey,never>;Returns:number}
       shred_due_claim_working_keys_v1:{Args:Record<PropertyKey,never>;Returns:number}
       decide_claim_review_attested_v1: {

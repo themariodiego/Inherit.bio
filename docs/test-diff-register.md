@@ -1,6 +1,8 @@
 ## 2026-10-22 — Consent and rights endpoints, continued (G2.1, "Build all 24"): the no-account uploader gate, the revoke-all control and the remaining consent and rights routes
 
-Owner decisions of 2026-10-22 ("Consent, rights and claim endpoints (G2.1)", `docs/protocol/decisions.md`). This entry records each test change of the slice's second half. The census starts from the integration value 15, after `api.subject-export`.
+Owner decisions of 2026-10-22 ("Consent, rights and claim endpoints (G2.1)", `docs/protocol/decisions.md`). This entry records each test change of the slice's second half.
+
+Route census, `scripts/route-register-correspondence.test.ts` "leaves the unbuilt half of the register alone, but still measures it": it was lowered one step per endpoint as each was built, counted from the integration value of 15. After the merge of integration 7852ef75, which brought the fpclaims slice and a census of 10, it is 10 lowered by exactly the eight endpoints this branch builds. That gives 2, with a comment naming each step. The intermediate numbers below (11 to 7) are the pre-merge steps. The two left are not in this slice.
 
 ### Stated privacy-control change: the uploader gate for a person who confirmed with no account
 
@@ -210,6 +212,35 @@ Test changes, none weakened:
 
 - `scripts/route-register-correspondence.test.ts`: the exact unbuilt census goes from the integration value 15 (after `api.subject-export`) to 11 for `api.consents-revoke-all`, `api.embryo-record-key-cards-rights`, `api.consent-revoke-rights` and `api.consent-grant-rights`, with a comment. The header sentence now reads 11.
 - `src/lib/account-operation-nonce.test.ts` "verifies for exactly the account, session and operation it was minted for" gains one assertion: a delete nonce does not verify as `consents_revoke_all`. Every existing assertion is unchanged.
+
+## 2026-10-22 — Future-person and claim endpoints (G2.1), continued: correction provenance
+
+Owner decision 2026-10-22 ("Consent, rights and claim endpoints (G2.1)") fixes how the named correction review computes `currentProvenance`. Two points differed from it in the 2026-10-16 slice: `sourceReference` was an unkeyed digest, and `affectedResultCount` counted every report and score row of the subject rather than those bound to the canonical source. The new guarded migration `supabase/migrations/20261016212000_future_person_correction_provenance.sql` patches `private.correction_review_provenance_v1` (md5-pinned predecessor and successor). The database now hands over an unkeyed `sourceDigest`, and the route publishes only a keyed HMAC of it as `sourceReference`.
+
+Pins moved, all in tests this branch added on 2026-10-16 and none yet on the integration branch:
+
+- `supabase/tests/future_person_correction_review.sql`: the two provenance checks name `sourceDigest` instead of `sourceReference`. The disputed-source count expects only rows whose `source_binding_fingerprint` is the custody slice's `source_sha256`, which is a stricter expectation than before.
+- `src/lib/future-person/correction-review-route.test.ts`: the database row carries `sourceDigest`, and the GET body must carry the keyed HMAC of it, never the digest itself.
+
+New tests: `supabase/tests/future_person_correction_provenance.sql`, which seeds synthetic results on and off the canonical source. Planted defects: without the new migration, 10 of its assertions fail; counting every score again fails 3; publishing the digest unkeyed fails the route test.
+
+The claimant export button, from the same decision: the claimant page under TEST-LOCAL shows a button with the plain label "Export my claimed record", registered in `src/copy/rights/claimant-rights.ts`. Pin moved in `src/lib/exports/claimant-export-http.test.ts`, also a test this branch added: "renders no create action while no generation capability exists" asserted that the presenter returns nothing without a generation capability. The decision needs the button to reach the route's 503 instead. So that test is replaced by two. One shows the presenter still returns nothing, and reads nothing, outside TEST-LOCAL or without exactly one rights session. The other shows it presents the action without a generation capability, and that the action's create then answers 503 with no cookie and no write past the capture. New assertions in `src/components/future-person/claimant-rights.test.ts` show the button renders only when the server presents the action, and adds no text but its label. Planted defects: restoring the old presenter guard fails the new route test; always rendering the button fails the component test.
+
+The two bound-claimant endpoints, from the same decision: `api.claimed-subject-analysis-stop` (`src/app/api/subjects/[id]/analysis/route.ts`) and `api.claimed-subject-correction` (`src/app/api/subjects/[id]/corrections/route.ts`) answer `resource-not-found-v1` until the binding release, before any body is read. Pin moved: `scripts/route-register-correspondence.test.ts` "leaves the unbuilt half of the register alone, but still measures it" goes from 13 to 11, with a comment naming both. New test: `src/lib/subject-endpoints/claimed-subject-routes.test.ts`. Planted defect: removing either route file makes the census test fail with 12.
+
+The rights-session export, from the same decision: `api.third-party-subject-export` (`src/app/api/withdraw/session/export/route.ts`) validates a POST in full, including its rights-session-bound one-time nonce, and polls by GET. Both resolver cases answer `resource-not-found-v1` until their producers exist. The withdraw page stays refuse/delete only. Pin moved: the census goes from 11 to 10, with a comment. New tests: `src/lib/exports/third-party-export-http.test.ts`, and two additive cases in `src/proxy.test.ts` that let this path through without reading an account, as `/api/withdraw/session` already is. Planted defects: removing the route file makes the census test fail with 11; dropping the session binding from the nonce, answering a valid request with 202, and removing the proxy pass-through each fail a test.
+
+Classification added in `scripts/jurisdiction-enforcement.test.ts`: the three new route files enter `WITHOUT_CHECK`, each with its stated reason. The register binds all three to `jurisdictionBypass: true` because each is a right, and each answers `resource-not-found-v1` and opens no capability. No assertion changes. Without the entries, "leaves no surface in scope both unguarded and unexplained" fails, naming exactly these three files.
+
+No frozen baseline, privacy control or waiting period changes.
+
+## 2026-10-16 — Future-person and claim endpoints (G2.1): the route census moves
+
+The owner's G2.1 decision ("Build all 24") builds the registered but unbuilt endpoints. This slice builds `api.future-person-correction-review` (`src/app/api/reviews/future-person/corrections/[id]/route.ts`) and `api.future-person-export` (`src/app/api/future-person/claim/session/export/route.ts`).
+
+Pin moved: `scripts/route-register-correspondence.test.ts` "leaves the unbuilt half of the register alone, but still measures it". The exact census goes from 15 (the integration branch's count once `api.subject-export` is built) to 13, one per route built, with a comment that names both. No other assertion changes. Planted defect: removing either new route file makes the test fail with 14.
+
+No other test assertion, frozen baseline, privacy control or waiting period changes. The new tests are additive: `supabase/tests/future_person_correction_review.sql`, `supabase/tests/future_person_export_open_ready.sql`, `src/lib/future-person/correction-review-route.test.ts` and `src/lib/exports/claimant-export-http.test.ts`.
 
 ## 2026-10-16 — api.subject-export: the one-record export on the account producer, refused with a stated reason while joint results are live
 
