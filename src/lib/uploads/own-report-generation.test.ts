@@ -15,6 +15,8 @@ import { AIMS } from "../genome/admixture";
 import { ownAncestryCapturedContentSchema } from "./own-ancestry-captured-content";
 import { hasEmptyRequestBody } from "../empty-request-body";
 import { ALL_PRS_SCORES } from "../genome/prs-data";
+import { NEANDERTHAL_SITES } from "../genome/neanderthal";
+import { NEANDERTHAL_PANEL } from "../genome/neanderthal-panel";
 
 const account = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", session = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
 const fileId = "cccccccc-cccc-4ccc-8ccc-cccccccccccc", claimId = "dddddddd-dddd-4ddd-8ddd-dddddddddddd";
@@ -465,5 +467,56 @@ describe("explicit canonical ancestry generation", () => {
       .toEqual(["reports.monogenic", "reports.polygenic", "ancestry"]);
     expect(mocks.rpc.mock.calls.filter(call => call[1].p_operation === "check" && call[1].p_claim === null).map(call => call[1].p_purpose))
       .toEqual(["reports.monogenic", "reports.polygenic", "ancestry"]);
+  });
+});
+
+/**
+ * The Neanderthal estimate is TEST-LOCAL only (owner decision 2026-10-16,
+ * G7.4). The writer reads the Neanderthal panel and writes revision 5 only when
+ * `isTestJurisdictionEnabled()`; otherwise it makes no Neanderthal read and
+ * writes revision 4, exactly as before. Synthetic calls only.
+ */
+describe("Neanderthal estimate: the writer's revision choice", () => {
+  beforeEach(() => { selected = new Set(["ancestry"]); });
+  const site = NEANDERTHAL_SITES[0];
+  const neanderthalCall = { file_id: fileId, rsid: Number(site.rsid.slice(2)), chrom: site.chrom, pos: site.pos38,
+    ref: site.other, alt: site.archaic, genotype: `${site.other}/${site.archaic}`, usable: true };
+  /** Serve each read only the rows at the loci it asked for, as the database does. */
+  function withLocusRows(rows: { chrom: number; pos: number }[]) {
+    mocks.rpc.mockImplementation(async (name, args) => {
+      if (args.p_purpose !== "ancestry" || !args.p_operation.startsWith("read-")) return rpc(name, args);
+      if (args.p_payload.offset !== 0 || args.p_operation === "read-lineage") return { data: [], error: null };
+      const asked = new Set((args.p_payload.loci as { chrom: number; pos: number }[]).map(point => `${point.chrom}:${point.pos}`));
+      return { data: rows.filter(row => asked.has(`${row.chrom}:${row.pos}`)), error: null };
+    });
+  }
+
+  it("production (flag unset): no Neanderthal read, and revision 4 is written", async () => {
+    vi.stubEnv("INHERIT_TEST_JURISDICTION", "");
+    withLocusRows([ancestryObservation, neanderthalCall]);
+    expect((await generateOwnReports(request(), fileId)).status).toBe(200);
+    const content = ownAncestryCapturedContentSchema.parse(ancestryPayload().ancestry);
+    expect(content.schemaVersion).toBe(4);
+    expect("neanderthal" in content).toBe(false);
+    const asked = mocks.rpc.mock.calls.filter(call => call[1].p_operation.startsWith("read-"))
+      .flatMap(call => call[1].p_payload.loci as { chrom: number; pos: number }[]);
+    expect(asked.some(point => point.chrom === site.chrom && point.pos === site.pos38)).toBe(false);
+  });
+
+  it("TEST-LOCAL (flag set): reads the panel with the same operation and writes revision 5 with the estimate", async () => {
+    vi.stubEnv("INHERIT_TEST_JURISDICTION", "1");
+    withLocusRows([ancestryObservation, neanderthalCall]);
+    expect((await generateOwnReports(request(), fileId)).status).toBe(200);
+    const content = ownAncestryCapturedContentSchema.parse(ancestryPayload().ancestry);
+    expect(content.schemaVersion).toBe(5);
+    if (content.schemaVersion !== 5) throw new Error("expected revision 5");
+    expect(content.neanderthal).toMatchObject({ panelId: NEANDERTHAL_PANEL.id, coveredSites: 1, archaicSites: 1, estimate: 1, basis: "modelled" });
+    // The admixture half is the revision-4 result, unchanged by the extra read.
+    expect(content.admixture).toMatchObject({ result_state: "partial", result: { markersUsed: 1 } });
+    const reads = mocks.rpc.mock.calls.filter(call => call[1].p_operation.startsWith("read-"));
+    expect(new Set(reads.map(read => read[1].p_operation))).toEqual(new Set(["read-observed", "read-lineage"]));
+    const askedNeanderthal = reads.flatMap(read => read[1].p_payload.loci as { chrom: number; pos: number }[])
+      .filter(point => NEANDERTHAL_SITES.some(entry => entry.chrom === point.chrom && entry.pos38 === point.pos));
+    expect(askedNeanderthal).toHaveLength(NEANDERTHAL_PANEL.siteCount);
   });
 });
