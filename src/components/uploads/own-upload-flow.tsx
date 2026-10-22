@@ -13,7 +13,8 @@ import type { OwnUploadView } from "@/lib/uploads/own-upload-view";
 import type { OwnUploadLimits } from "@/lib/uploads/subject-upload-contract";
 import { OWN_UPLOAD_COPY as COPY } from "@/copy/upload/consent";
 
-export function OwnUploadFlow({ view, limits = null }: { view: OwnUploadView; limits?: OwnUploadLimits | null }) {
+export function OwnUploadFlow({ view, limits = null, readCalling = false }: { view: OwnUploadView;
+  limits?: OwnUploadLimits | null; /** TEST-LOCAL read calling (ADR 0038), server-decided. */ readCalling?: boolean }) {
   const router = useRouter();
   const [checked, setChecked] = useState(false);
   const [pending, setPending] = useState(false);
@@ -23,7 +24,7 @@ export function OwnUploadFlow({ view, limits = null }: { view: OwnUploadView; li
     return <p role="status" className="surface-inset surface-pad-sm max-w-measure text-ink">
       {view.kind === "underage" ? COPY.underage : COPY.unavailable}</p>;
   }
-  if (view.kind === "ready") return <Uploader subjectId={view.subjectId} limits={limits} />;
+  if (view.kind === "ready") return <Uploader subjectId={view.subjectId} limits={limits} readCalling={readCalling} />;
 
   async function submit(path: string, body: unknown, token: string, refresh: boolean) {
     setPending(true); setError(null);
@@ -103,7 +104,7 @@ export function OwnUploadFlow({ view, limits = null }: { view: OwnUploadView; li
         }} /><span>{own ? COPY.ownCheckbox : COPY.insuranceCheckbox}</span></label>
       {error ? <p role="alert" className="text-sm text-danger">{error}</p> : null}
       {saved ? <p role="status" className="text-sm">{COPY.saved}</p> : null}
-      {own ? <Uploader subjectId={view.subjectId} limits={limits} disabled framed={false} /> : <div><Button onClick={() => void sign()}
+      {own ? <Uploader subjectId={view.subjectId} limits={limits} readCalling={readCalling} disabled framed={false} /> : <div><Button onClick={() => void sign()}
         disabled={!checked || pending || saved}>{pending ? COPY.saving : COPY.insuranceContinue}</Button></div>}
     </div>
   </section>;

@@ -110,6 +110,131 @@ It closes the gap that the G5.4 checklist of 16 October (below) left open: "No e
 - SQL rehearsal: one `begin … rollback` on the shared database, under `flock /tmp/inherit-e2e.lock`. It applied `20261016175000` and the existing `future_person_deletion_authority.inc` (real `decide_claim_review_attested_v1` approval, release mail claim and acceptance, `activate_rights_session_v1`). It then ran the spec's own SQL, extracted verbatim from its source: 8 of 8 checks pass, with the fixture's 56 checks also passing. Afterwards `private.future_person_claimed_unbound_days_v1()` is absent and no `future-person.*` retention row exists, so the database was restored.
 - **The browser journey has not run locally.** The embryo app and the five other embryo journeys exist only inside the isolated CI runtime, and the shared database lacks PR 324's 25 newest migrations. Its first run is hosted CI.
 
+## 2026-10-22 — BAM/CRAM read calling (G7.4): targeted calling on the device under TEST-LOCAL, the called VCF through the unchanged path
+
+Owner decision of 2026-10-16, "BAM/CRAM read calling and the Neanderthal estimate (G7.4)" (`docs/protocol/decisions.md`): build BAM/CRAM calling rather than withhold it, and test it on synthetic data. The capability stays TEST-LOCAL only, and production keeps refusing before any upload session. ADR 0038 records the design. This entry records every test this slice adds or changes. No existing assertion is changed or weakened. Four existing test files gain new `describe` blocks only. One migration is added; the integrating session approved its scope on 22 October 2026, and it is labelled PRODUCTION RELEASE: GUARDED.
+
+**Dependencies.** None added. The BAM and CRAM readers, BGZF, rANS 4x8 and CRC-32 are written in the repository (`src/lib/genome/reads/`), so `package.json` and `pnpm-lock.yaml` are unchanged. They use only Web APIs available in both the browser and Node 22 (`DecompressionStream("deflate-raw")`, `Blob`), plus the existing `hash-wasm` (MIT) for the reference MD5. An independent implementation was used once, outside the repository and outside every CI job, to write the cross-check files in `src/lib/genome/reads/fixtures/htslib/`: pysam 0.24.1 from PyPI (MIT), bundling htslib 1.24 and samtools 1.24 (MIT/BSD). `htslib/recipe.py` is the exact recipe, and `htslib/htslib-cross-check.json` pins its output. It is not a dependency, and nothing in the product or CI imports or runs it.
+
+### New unit tests (vitest)
+
+- `src/lib/genome/reads/readers.test.ts` (9 tests) covers:
+  - the CRC-32 check value, and ITF8/LTF8 round trips at every width;
+  - the matrix BAM, and the matrix CRAM rebuilt against its reference, each equal record for record to the generator's planted reads;
+  - a CRAM without its reference refused with `reference_required`, and with a changed reference refused with `reference_mismatch`;
+  - a truncated BAM and a CRAM block with a bad checksum, both refused;
+  - htslib's BAM, CRAM 3.0 (gzip and rANS order 0) and CRAM 3.0 with rANS order 1, each read with a record digest equal to htslib's own reading;
+  - htslib's CRAM 3.1 refused with `unsupported_compression`.
+- `src/lib/genome/reads/caller.test.ts` (10 tests) covers:
+  - the thresholds are the registered engineering defaults, with `reviewed: false`;
+  - the matrix covers all ten planted cases;
+  - for each of BAM, CRAM and htslib's CRAM, every position equals the planted truth field for field: state, genotype, alternate, depth, reference, alternate and other counts, overlapping reads and reason;
+  - loosening any threshold or filter (minimum depth, base quality, mapping quality, heterozygous band, homozygous fraction) breaks the planted truth at the position that tests it;
+  - the genotype rule at its band edges, other letters and a second alternate, alternate choice, and not covered versus no call.
+- `src/lib/genome/reads/read-calls.test.ts` (8 tests) covers:
+  - the product BAM yields exactly four VCF rows (1/1, `./.`, 0/0, 0/1) and leaves every other panel position unlisted;
+  - the header names the caller, the input and every threshold, with `Reviewed=false` and the plain note;
+  - the VCF passes the server's own `validateSubjectStructure` and `countInputLines`;
+  - `prepareIncrementalVcf` stages exactly the expected canonical observed rows and variant rows;
+  - the CRAM matrix through the same path;
+  - kind detection; a CRAM needs its reference, and the invented contigs stop at the build check;
+  - GRCh37 and uncovered files are refused.
+- `src/lib/uploads/subject-upload-read-calls.test.ts` (5 tests) covers:
+  - with read calling off (production), a BAM is refused as an unrecognised file before any request;
+  - with it on, only the called VCF is declared (`VCF`, its size and hash) and sent, never BGZF or BAM bytes;
+  - CRAM reference handling;
+  - a file that only starts like CRAM keeps the ordinary refusal;
+  - an ordinary VCF is unchanged, and a second file beside it is refused.
+- `src/lib/uploads/subject-normalization-read-calls.test.ts` (5 tests) runs the real route handler over the caller's VCF:
+  - production never writes `readCalls`, and the provenance keys are exactly the existing ten;
+  - TEST-LOCAL writes the closed object;
+  - TEST-LOCAL writes nothing for an ordinary VCF, changed thresholds, `Reviewed=true`, a foreign source line or a duplicated note;
+  - the pure helper and its closed schema.
+- `scripts/read-calling-fixtures.test.ts` (6 tests) covers:
+  - the six generated files are byte-identical to a fresh run of the generator;
+  - each receipt pins its file's hash, and every file is under 100 kB;
+  - each receipt calls its file invented;
+  - the panel equals what the generator builds from the product's data files, holds every report, ancestry and carrier single-letter position once, and names the report's rsID and alternate first.
+
+### Changed unit tests (new blocks only)
+
+- `src/components/reports/input-provenance.test.ts`: new describe "input provenance for a source called from reads", with 2 tests.
+  - A read-called source says plainly that Inherit called it from reads it did not create, gives the thresholds and says they are unreviewed, and never says "Inherit did not create these files".
+  - Beside an ordinary source, the ordinary sentence stays; an ordinary source alone renders nothing new.
+- `src/lib/genome/canonical-input-sources.test.ts`: new describe "read-calling provenance in the canonical display facts", with 1 plus 6 cases. A projected `readCalls` object is accepted, and six malformed shapes refuse the source.
+- `src/components/uploads/uploader.test.ts`: new describe "uploader read-calling statement", with 2 tests.
+  - Off (production): the existing refusal sentence and a single-file picker.
+  - On: the TEST-LOCAL statement before the button, and `multiple`.
+- `scripts/capability-register.test.ts`: new describe "refused-before-issuance degradations under the 16 October decision", with 2 tests.
+  - The new marker applies exactly to the BAM/CRAM row, as `shipped-degraded`.
+  - The row quotes production's sentence, and cites a jurisdiction-off spec that pins it.
+  - Its open-work cell registers the thresholds as "engineering defaults pending scientific review" and names the `INPUT_PROVENANCE_COPY.external` gap.
+
+### One pinned review seal moves
+
+`scripts/route-register-correspondence.test.ts` seals each reviewed actionless client form to its complete source SHA-256. `src/components/uploads/own-upload-flow.tsx` now passes the server-decided `readCalling` prop to its two `Uploader` renders. The seal moves from `f78a8133…` to `5a3b9baa…`, with a dated re-review comment, as earlier slices did. The form count (1) is unchanged, and its handler, fields and target are unchanged.
+
+### Database (pgTAP)
+
+`supabase/tests/read_called_input_provenance.sql` (51 assertions) reuses `own_input_provenance.sql`'s fixture setup with its own identifiers. It checks four things:
+
+- The predecessor is rebuilt from the live definition by reversing the one anchor, and its `md5(prosrc)` must equal `5f6d4777cf080f59ffa0d7d5e888fc8b`. The live reader is the guarded successor `13d4287ed62bbb15069d56ca3c935d6f`, and its ACL is unchanged.
+- An ordinary VCF source, and the same source as `array_23andme`, get a DTO that is jsonb-equal and text-identical to the predecessor's.
+- A valid `readCalls` object (BAM and CRAM) is projected after `counts`, and nothing else moves.
+- Eighteen malformed shapes are each dropped while the source is still read, byte-identical to the predecessor's output. The shapes are: an extra key, a missing key, a wrong version, an unknown input, non-integer or negative depth and quality, a quality as text, fractions above 1, below 0 or as text, `reviewed` true or null, an array, a string, a number and JSON null.
+
+`own_input_provenance.sql` passes unchanged with the migration applied (33 of 33).
+
+### Browser
+
+- `e2e/read-calls.spec.ts` (chromium, TEST-LOCAL; serial, 3 tests):
+  - "a synthetic BAM is called on the device, only the VCF it yields is uploaded, and the report pages render its calls". Every request body is recorded. The one Storage POST is byte-identical to the stored VCF, the declaration is `VCF` with that size and hash, and no body carries BAM bytes. The canonical `report_observed_calls` rows and the private journal's `readCalls` are as planted. The lactase, CYP1A2 and ALDH2 reports render their genotypes, ACTN3 renders the no-call sentence, and TAS2R38 renders `NOT_COVERED_VCF`.
+  - "the report's source facts say plainly that Inherit called the file from reads it did not create, under unreviewed thresholds". This one needs the migration.
+  - "under TEST-LOCAL a CRAM asks for its reference, and with it reaches the build check, before anything is sent".
+- `e2e/read-calls.nojurisdiction.spec.ts` (jurisdiction-off, 1 test): "the production build refuses a readable synthetic BAM and CRAM before any upload session, with the reason stated". The production sentence is retyped and pinned; there is no `multiple` and no read-calling statement. The unrecognised-file alert shows, and no upload session, Storage request or file row is created. The TEST-LOCAL control on the same account shows the statement.
+- `e2e/tier2-upload.spec.ts` is unchanged. Under TEST-LOCAL its fake BAM is not BGZF, so it reaches the ordinary refusal. Its fake CRAM is opened, fails at its missing header container, and maps to the same `unrecognised_format` sentence, still before any request.
+
+### Fixtures
+
+Invented, generated and pinned (`scripts/generate-read-calling-fixtures.ts --check`; provenance in `src/lib/genome/reads/fixtures/PROVENANCE.md` and `e2e/fixtures/PROVENANCE.md`): `src/lib/genome/reads/fixtures/{synthetic-reference.fa, synthetic-matrix.bam, synthetic-matrix.cram, synthetic-matrix.receipt.json}` and `e2e/fixtures/read-calls-product-grch38.{bam,receipt.json}`. The htslib cross-check files are in `src/lib/genome/reads/fixtures/htslib/`. The panel `data/ref/read-calling-loci.json` is generated by `scripts/generate-read-calling-panel.ts`.
+
+### Planted defects (each applied alone by a throwaway script, not committed: the named tests run, then the exact bytes are restored)
+
+| Defect | Result |
+| --- | --- |
+| `minimumBaseQuality` 20 → 0 | `caller.test.ts`: 4 failed, 6 passed |
+| `minimumDepth` 10 → 5 | `caller.test.ts` and `read-calls.test.ts`: 6 failed, 12 passed |
+| A fraction between the bands is called 0/1 instead of `./.` | `caller.test.ts`: 4 failed, 6 passed |
+| The 1/1 band starts at the heterozygous ceiling (0.75) instead of 0.90 | `caller.test.ts`: 1 failed (the band-edge case), 9 passed |
+| Duplicate, secondary, QC-fail and supplementary reads counted | `caller.test.ts`: 3 failed, 7 passed |
+| Both reads of a fragment counted | `caller.test.ts`: 3 failed, 7 passed |
+| `readCalls` written in production too | `subject-normalization-read-calls.test.ts`: 2 failed, 3 passed |
+| The reads file sent instead of the called VCF | `subject-upload-read-calls.test.ts`: 1 failed, 4 passed |
+| "Inherit did not create these files" kept for a read-called source | `input-provenance.test.ts`: 1 failed, 7 passed |
+| pgTAP without the migration | the predecessor rebuild raises "patched anchor not found exactly once"; no assertion passes |
+| pgTAP with the `reviewed = false` check removed from the patch | the same guard raises; the test pins the exact patched fragment |
+| pgTAP with the ordinary projection also changed (`blocks` forced to 0) | "the rebuilt predecessor is byte-identical…" and "the live reader is the guarded successor" fail (49 of 51 pass) |
+
+After every restore: the six affected unit files, 45 of 45, pass.
+
+
+### Evidence, local (worktree `local/bamcram`)
+
+- vitest: the six new files, 43 of 43 (readers 9, caller 10, read-calls 8, normalization 5, upload 5, fixtures 6). The four changed files' new blocks: 13 cases. `src/lib/uploads`, `src/lib/genome`, `src/components/uploads` and `src/components/reports`: 3,167 of 3,168 before the correspondence seal moved, then all pass. `scripts/route-register-correspondence.test.ts` 66 of 66, `scripts/env-gate.test.ts` passes, and `scripts/capability-register.test.ts` 17 of 17.
+- The remaining `scripts/` failures on this machine are environment-only. They are the Docker namespace runtime, file-descriptor and symlink ownership, live-browser and IGV harnesses, and port 3102 held by another session's servers. A clean `git archive` export of `49e1c768` fails the same files.
+- pgTAP, inside one transaction that rolls back: `read_called_input_provenance.sql` 51 of 51, and `own_input_provenance.sql` 33 of 33 with the migration applied. The predecessor `md5(prosrc)` `5f6d4777…` was read back after every run. The migration applied a second time refuses with "own input sources reader predecessor differs" (55000).
+- `pnpm typecheck` equivalent (`tsc --noEmit`, `NODE_OPTIONS=--max-old-space-size=6144`): clean.
+- `pnpm lint`: clean on the repository's tracked sources. The only findings were in `public/review-document-assets/`, build output this run's `next build` wrote and the cleanup removed.
+- `gate:readability`, `gate:claims`, `gate:routes`, `gate:env`, `gate:secrets`, `gate:templates`, `gate:citations`, `gate:first-glance`, `gate:legal`, `gate:jurisdictions` and `gate:sql-includes` pass.
+- Browser, against a local production build with the TEST-LOCAL and jurisdiction-off servers: `e2e/read-calls.spec.ts` (the BAM journey and the CRAM refusals), `e2e/read-calls.nojurisdiction.spec.ts` and both `e2e/tier2-upload.spec.ts` cases, 5 of 5 ("E2E contract passed: 5 result(s), no skips, no retries").
+  - Earlier in the same session, with the slice in place: `e2e/observed-reference-calls.spec.ts`, `e2e/own-upload-positive.spec.ts` and both `e2e/tier2-upload.spec.ts` cases pass.
+  - One run found that Chromium does not hand a Blob request body to Playwright. The spec now observes the page's own `XMLHttpRequest.send`.
+
+### Not run locally, and why
+
+- "the report's source facts say plainly…" (`e2e/read-calls.spec.ts`, the second test). It needs `20261022110000` applied, and the shared local database is used by other sessions. Applying and restoring the patch for a browser run was refused by this session's permission system. Hosted CI applies every migration and runs it.
+- `gate:names` needs the private denylist (CI secret). `gate:catalog-drift` and `gate:schema-drift` need a deployed database URL.
+
 ## 2026-10-22 — The six embryo route states, named by the TEST-only producers (G1.7, G1.12, G2.2)
 
 Owner decision of 2026-10-22, "The six unproven embryo route states (G1.7, G1.12, G2.2)" (`docs/protocol/decisions.md`). `partial-coverage` and `not-covered` on `/embryos`, `/embryos/compare` and `/embryos/[embryoId]` are now named by browser steps driven by the two TEST-only synthetic producers that already run in `e2e/embryo-ingest-journey.spec.ts`. `UNPROVEN_ROUTE_STATE_PAIRS` goes from 6 to 0. No producer is approved, no seed or demo path is added, no migration is added, and production is unchanged: embryo analysis stays off.

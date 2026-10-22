@@ -8,10 +8,12 @@ import { REQUEST_DATA_BUTTON } from "@/copy/embryos/index";
 import { UPLOAD_H1 } from "@/copy/embryos/upload";
 import { INGEST_REFUSALS, SUBJECT_TARGET_REFUSALS } from "@/copy/upload/errors";
 import { OWN_UPLOAD_COPY } from "@/copy/upload/consent";
+import { READ_CALLING_COPY } from "@/copy/upload/read-calling";
 import { megabytesOf } from "@/lib/genome/ingest-limits";
 import { route } from "@/lib/primary-routes";
 import { remainingAccountBytes, uploadCeilingBytes, type OwnUploadLimits } from "@/lib/uploads/subject-upload-contract";
 import { BrowserPreparationError, BrowserUploadError, finishStagedUpload, prepareSubjectFile, uploadSubjectFile, type UploadProgress } from "@/lib/uploads/subject-upload-browser";
+import type { ReadCallSummary } from "@/lib/genome/reads/read-calls";
 import { AUTO_FINISH_DELAYS_MS } from "@/lib/uploads/finish-retry-policy";
 import { MAXIMUM_LOCAL_ZIP_BYTES } from "@/lib/uploads/own-upload-zip";
 import { PreparationRecovery } from "./preparation-recovery";
@@ -49,6 +51,7 @@ function uploadError(error: unknown, limits: OwnUploadLimits | null): Extract<Ph
     unauthorized: "You are signed out. Sign in before uploading.",
     uploads_paused: OWN_UPLOAD_COPY.uploadsPaused,
     unavailable: "The upload could not finish. Your existing files are unchanged. Please try again.",
+    ...READ_CALLING_COPY.refusals,
   };
   return { step: "error", message: messages[code], stagedUploadId };
 }
@@ -58,8 +61,11 @@ function uploadError(error: unknown, limits: OwnUploadLimits | null): Extract<Ph
  * head. Inside the consent plate it renders unframed: the dashed dropzone
  * and the progress panel only, with the heading inside the dropzone.
  */
-export function Uploader({ disabled = false, subjectId = "me", limits = null, framed = true }:
-  { disabled?: boolean; subjectId?: string; limits?: OwnUploadLimits | null; framed?: boolean }) {
+export function Uploader({ disabled = false, subjectId = "me", limits = null, framed = true, readCalling = false }:
+  { disabled?: boolean; subjectId?: string; limits?: OwnUploadLimits | null; framed?: boolean;
+    /** TEST-LOCAL only (ADR 0038), decided by the server page: BAM or CRAM
+     * reads are called on this device and only the resulting VCF is sent. */
+    readCalling?: boolean }) {
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const inFlight = useRef(false);
@@ -69,6 +75,8 @@ export function Uploader({ disabled = false, subjectId = "me", limits = null, fr
    * an attempt is still coming, and that has to be derived during render. */
   const [autoFinish, setAutoFinish] = useState<{ uploadId: string; spent: number }>({ uploadId: "", spent: 0 });
   const [phase, setPhase] = useState<Phase>({ step: "idle" });
+  /** What the read caller produced for the file in flight, when it ran. */
+  const [readCalls, setReadCalls] = useState<ReadCallSummary | null>(null);
   const busy = !["idle", "prepared", "results-ready", "preparation-error", "error"].includes(phase.step);
   /** The only phase an automatic attempt may act on: `stagedUploadId` is set
    * only where the bytes are still in private storage and one more
@@ -140,11 +148,13 @@ export function Uploader({ disabled = false, subjectId = "me", limits = null, fr
     inFlight.current = true;
     try { await prepare(fileId, reportsOnly); } finally { inFlight.current = false; }
   }
-  async function handleFile(file: File) {
+  async function handleFile(file: File, companions: File[] = []) {
     if (disabled || inFlight.current) return;
     inFlight.current = true;
+    setReadCalls(null);
     try {
-      const receipt = await uploadSubjectFile(file, subjectId, setPhase, limits);
+      const receipt = await uploadSubjectFile(file, subjectId, setPhase, limits,
+        { readCalling, companions, onReadCalls: setReadCalls });
       await prepare(receipt.fileId);
     } catch (error) { setPhase(uploadError(error, limits)); }
     finally {
@@ -157,8 +167,11 @@ export function Uploader({ disabled = false, subjectId = "me", limits = null, fr
   const heading = <h2 className={framed ? "eyebrow" : "title"}>Upload raw DNA data</h2>;
   const body = <>
     <input ref={inputRef} type="file" disabled={disabled || busy} className="sr-only"
-      aria-hidden tabIndex={-1} aria-label="Choose a raw DNA file"
-      onChange={event => { const file = event.target.files?.[0]; if (file) void handleFile(file); }} />
+      aria-hidden tabIndex={-1} aria-label="Choose a raw DNA file" multiple={readCalling}
+      onChange={event => {
+        const [file, ...companions] = Array.from(event.target.files ?? []);
+        if (file) void handleFile(file, companions);
+      }} />
     <div className="surface-dashed rec-dropzone">
       <div className="rec-dropzone-text">
         {framed ? null : heading}
@@ -167,8 +180,8 @@ export function Uploader({ disabled = false, subjectId = "me", limits = null, fr
           or a VCF, VCF.GZ or gVCF file. Files go directly to private storage.
           We check the complete file before saving it. You choose separately which results to make.
         </p>
-        <p className="text-sm text-ink-muted">
-          {OWN_UPLOAD_COPY.sequenceReadsUnavailable}
+        <p className="text-sm text-ink-muted" data-slot={readCalling ? "read-calling-available" : undefined}>
+          {readCalling ? READ_CALLING_COPY.available : OWN_UPLOAD_COPY.sequenceReadsUnavailable}
         </p>
         <p className="text-sm text-ink-muted">
           {OWN_UPLOAD_COPY.zipStatement(megabytesOf(MAXIMUM_LOCAL_ZIP_BYTES))}
@@ -188,6 +201,7 @@ export function Uploader({ disabled = false, subjectId = "me", limits = null, fr
         able to resolve to the other region, or to both. */}
     <div data-slot="upload-progress" aria-live="polite" className="rec-progress">
       {phase.step === "checking" ? <p>Checking the file format…</p>
+        : phase.step === "calling" ? <p>{READ_CALLING_COPY.calling(phase.pct)}</p>
         : phase.step === "hashing" ? <p>Checking your file locally… {phase.pct}%</p>
         : phase.step === "uploading" ? <p>Uploading to private storage… {phase.pct}%</p>
         : phase.step === "validating" ? <p>Verifying the complete uploaded file…</p>
@@ -213,6 +227,10 @@ export function Uploader({ disabled = false, subjectId = "me", limits = null, fr
           {phase.action ? <> <Link href={phase.action.href} className="underline underline-offset-2">{phase.action.label}</Link></> : null}
         </p> : null}
     </div>
+    {readCalls && phase.step !== "error" ? <div data-slot="read-calls-saved" role="status" className="rec-progress text-sm text-ink-muted">
+      <p>{READ_CALLING_COPY.saved(readCalls.called, readCalls.noCall)}</p>
+      <p>{READ_CALLING_COPY.unreviewed}</p>
+    </div> : null}
   </>;
   if (!framed) return <div>{body}</div>;
   return <section className="plate">

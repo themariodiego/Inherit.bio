@@ -3,6 +3,7 @@ import { readOwnUploadLimits } from "@/lib/uploads/own-upload-limits";
 import { canonicalUploadsPaused } from "@/lib/uploads/canonical-upload-pause";
 import { OWN_UPLOAD_COPY } from "@/copy/upload/consent";
 import { OwnUploadFlow } from "./own-upload-flow";
+import { readCallingBuilt } from "@/lib/uploads/read-calling-built";
 
 export async function OwnUploadEntry() {
   // A preparation outage must not take the existing file controls down with it,
@@ -15,5 +16,6 @@ export async function OwnUploadEntry() {
   if (canonicalUploadsPaused() && view.kind !== "unavailable" && view.kind !== "underage") {
     return <p role="status" className="surface-inset surface-pad-sm max-w-measure text-ink">{OWN_UPLOAD_COPY.uploadsPaused}</p>;
   }
-  return <OwnUploadFlow key={"token" in view ? view.token : view.kind} view={view} limits={limits} />;
+  return <OwnUploadFlow key={"token" in view ? view.token : view.kind} view={view} limits={limits}
+    readCalling={readCallingBuilt()} />;
 }

@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "classification": "htslib copies of invented reads; no person, sample or real genome",
+  "writer": {
+    "tool": "pysam 0.24.1 from PyPI",
+    "htslib": "1.24",
+    "samtools": "1.24",
+    "date": "2026-10-22",
+    "recipe": "recipe.py"
+  },
+  "source": [
+    "../synthetic-matrix.bam",
+    "../synthetic-reference.fa"
+  ],
+  "recordDump": "one line per record: name|flag|refId|0-based position|mapping quality|CIGAR|bases|qualities joined by commas; lines joined by a newline; SHA-256 of the UTF-8 text, computed by htslib's own reading",
+  "files": {
+    "htslib-matrix.bam": {
+      "format": "BAM",
+      "sha256": "7601c046bf554074640ae5b8c9207a8a387989ae0ed0b12e2a201952576e45f0",
+      "bytes": 3326,
+      "records": 167,
+      "recordDumpSha256": "74742fad29b03eb32186e237ebecbf3ec3ad6f8248692f85f9fb64e28e090ca3"
+    },
+    "htslib-matrix-3.0.cram": {
+      "format": "CRAM 3.0",
+      "sha256": "e65370d2ca2e755d527cbe4a2089a40a18d4f096efaa146d3c6d0352459db7f1",
+      "bytes": 3114,
+      "records": 167,
+      "recordDumpSha256": "74742fad29b03eb32186e237ebecbf3ec3ad6f8248692f85f9fb64e28e090ca3"
+    },
+    "htslib-matrix-3.1.cram": {
+      "format": "CRAM 3.1",
+      "sha256": "4496c30db8f27fadce418126e9f3cfd3cd0268db4fbdcecac329ed9f78998d97",
+      "bytes": 2812,
+      "records": 167,
+      "recordDumpSha256": "74742fad29b03eb32186e237ebecbf3ec3ad6f8248692f85f9fb64e28e090ca3"
+    },
+    "htslib-qualities-3.0.cram": {
+      "format": "CRAM 3.0",
+      "sha256": "92e9c6ee63b92d192b5975609f5f952cddb0bc8ed38244923d55474e287f2dce",
+      "bytes": 126335,
+      "records": 6000,
+      "recordDumpSha256": "d9005d00541bf7db855fc8f8e7513c792459152e971372f931a857f223a6cbf5"
+    }
+  }
+}

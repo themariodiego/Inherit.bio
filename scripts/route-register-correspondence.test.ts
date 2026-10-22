@@ -1072,7 +1072,11 @@ const CLIENT_FORM_REVIEW: ClientFormReview[] = [
   // same handler and target) and ConsentFields became an export. Still two
   // actionless forms whose onSubmit handlers cancel native submission.
   { file: "src/components/uploads/other-adult-upload-card.tsx", forms: 2, sha256: "024b7da96d938bfe4fdc5228b9ec65b4723dd551bf653677bfe6c22750c6896d" },
-  { file: "src/components/uploads/own-upload-flow.tsx", forms: 1, sha256: "f78a81339439a1b91840e7138ad560055d61d618f788715d1fb0651f73a7fede" },
+  // G7.4 (2026-10-22): re-reviewed after the flow gained the server-decided
+  // `readCalling` prop it passes to both Uploader renders (ADR 0038). Still one
+  // actionless account-completion form whose onSubmit handler cancels native
+  // submission; no handler, field or target changed.
+  { file: "src/components/uploads/own-upload-flow.tsx", forms: 1, sha256: "5a3b9baa85e6f6070b0aa90ea6ab599426ddec1107196f4a829fcfd5345aa41b" },
   // G5.4 (2026-10-16): re-reviewed after two copy lines (the 30/730-day keep
   // line and the contact of last resort). Still one actionless form whose
   // onSubmit handler cancels native submission; no handler, field or target changed.

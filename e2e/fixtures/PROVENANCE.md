@@ -28,6 +28,37 @@ data. Public benchmark genotypes are also excluded from current test inputs.
 | `path-b-reports-grch38-myheritage.csv` | `51219053ef8ace8b20558f4379f1feb622b8818beda5ddf9a24345483e1741c9` |
 | `path-b-reports-grch38-ftdna.csv` | `344ca41eaa96977968fdb5ef559b07c06c30a458b4ba3a535505ef71bd549e48` |
 
+## read-calls-product-grch38.bam
+
+- Classification: invented sequence reads, in a BAM file, at four report
+  positions. No read, flanking letter or name comes from a person, benchmark
+  sample or real genome. The sequence dictionary uses the GRCh38 names and
+  lengths from `public/genomes/hg38.chrom.sizes`, tagged `AS:GRCh38`, so the
+  caller treats it as GRCh38. The 200 letters around each position are seeded
+  pseudo-random letters; only the planted letter at each position matches the
+  report's stated reference or alternate.
+- Generator: `scripts/generate-read-calling-fixtures.ts` (`PRODUCT_PLAN`).
+  It writes 56 reads of 60 letters each, all base quality 35 and mapping
+  quality 60:
+  - rs4988235 chr2:135851076 G/A: 16 A reads, so 1/1;
+  - rs1815739 chr11:66560624 C/T: 2 C and 2 T reads, so too few and `./.`;
+  - rs671 chr12:111803962 G/A: 14 G reads, so 0/0;
+  - rs762551 chr15:74749576 C/A: 12 C and 10 A reads, so 0/1.
+
+  No read reaches any other panel position, so every other position is not
+  covered. BGZF uses stored DEFLATE blocks, so the bytes are deterministic.
+- Used by `e2e/read-calls.spec.ts` (TEST-LOCAL: called on the device, only the
+  VCF is uploaded, and the reports render it) and
+  `e2e/read-calls.nojurisdiction.spec.ts` (the production build refuses it
+  before any upload session). Its unit tests are
+  `src/lib/genome/reads/read-calls.test.ts`,
+  `src/lib/uploads/subject-upload-read-calls.test.ts` and
+  `src/lib/uploads/subject-normalization-read-calls.test.ts`.
+- `read-calls-product-grch38.receipt.json` pins the bytes and the plan. To
+  verify, run `corepack pnpm exec tsx scripts/generate-read-calling-fixtures.ts --check`.
+- Repository SHA-256, 10,747 bytes:
+  `a825dbab0ba9b08d4b795240138d90d4e79df5ac24e1017d383058b916367760`.
+
 ## synthetic-browser-grch38.vcf.gz
 
 - Classification: independently invented single-sample VCF. No genotype,

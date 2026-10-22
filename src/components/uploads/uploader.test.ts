@@ -3,6 +3,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import type { OwnUploadLimits } from "@/lib/uploads/subject-upload-contract";
 import { OWN_UPLOAD_COPY } from "@/copy/upload/consent";
+import { READ_CALLING_COPY } from "@/copy/upload/read-calling";
 import { Uploader } from "./uploader";
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
@@ -45,5 +46,22 @@ describe("uploader size disclosure", () => {
       limits: { ...limits, maximumGvcfBytes: undefined },
     }));
     expect(html).toContain("VCF or gVCF files up to 2147 MB");
+  });
+});
+
+// G7.4, ADR 0038: TEST-LOCAL read calling, decided by the server page.
+describe("uploader read-calling statement", () => {
+  it("keeps production's refusal sentence and single-file picker unless the server turns read calling on", () => {
+    const html = renderToStaticMarkup(createElement(Uploader, { readCalling: false }));
+    expect(html).toContain(OWN_UPLOAD_COPY.sequenceReadsUnavailable);
+    expect(html).not.toContain(READ_CALLING_COPY.available);
+    expect(html).not.toMatch(/<input[^>]*multiple/);
+  });
+  it("under TEST-LOCAL says what happens to the reads before a file is chosen, and lets a CRAM come with its reference", () => {
+    const html = renderToStaticMarkup(createElement(Uploader, { readCalling: true }));
+    expect(html).toContain(READ_CALLING_COPY.available);
+    expect(html).not.toContain(OWN_UPLOAD_COPY.sequenceReadsUnavailable);
+    expect(html).toMatch(/<input[^>]*multiple/);
+    expect(html.indexOf(READ_CALLING_COPY.available)).toBeLessThan(html.indexOf("Choose file</button>"));
   });
 });

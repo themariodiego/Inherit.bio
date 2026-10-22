@@ -1,5 +1,5 @@
 import { ClaimBlock } from "@/components/figures/claim-block";
-import { INPUT_PROVENANCE_COPY as COPY, inputLabel } from "@/copy/reports/input-provenance";
+import { INPUT_PROVENANCE_COPY as COPY, inputLabel, readCalledLabel, readCalledThresholds } from "@/copy/reports/input-provenance";
 import type { InputSourceView } from "@/lib/genome/input-sources";
 import type { ComputedModule, FigureProvenance, SubjectAttribution } from "@/lib/figures/contract";
 
@@ -32,10 +32,16 @@ export function InputProvenance({ sources, sourceLabels, subject, coverage, stat
   state?: "recorded" | "noCall" | "conflict" | "absent";
   nested?: boolean;
 }) {
+  // A TEST-LOCAL source called from reads (ADR 0038) is not a file Inherit
+  // did not create, so it never borrows that sentence; any other source keeps it.
+  const readCalled = sources.filter((source) => source.snapshot?.readCalls);
+  const external = sources.length === 0 || readCalled.length < sources.length;
   return <div data-slot="input-provenance" className="max-w-measure space-y-3 text-sm leading-relaxed text-ink-muted">
     {nested ? <p className="font-semibold text-ink">{COPY.heading}</p> : <h3 className="font-semibold text-ink">{COPY.heading}</h3>}
-    <p>{COPY.external}</p>
-    <p>{COPY.noImputation}</p>
+    {external ? <><p>{COPY.external}</p><p>{COPY.noImputation}</p></> : null}
+    {readCalled.length ? <div data-slot="read-called-provenance" className="space-y-3">
+      <p>{COPY.readCalled}</p><p>{COPY.readCalledNoGuess}</p>
+    </div> : null}
     <p>{sources.length ? COPY[state] : COPY.noFiles}</p>
     {sources.length > 0 && coverage && coverage.needed > 0 ? <ClaimBlock subject={subject} className="border-0 bg-transparent p-0" figures={[{
       kind: "coverage", class: "quality", basis: "observed", provenance: COVERAGE_PROVENANCE[coverage.module ?? "genome/reports"],
@@ -43,7 +49,10 @@ export function InputProvenance({ sources, sourceLabels, subject, coverage, stat
     }]} /> : null}
     {sources.map((source, index) => <div key={source.fileId} data-slot="input-source" className="space-y-2">
       {/* inherit-figure-exempt: a local source-record label and processing date are identity, not a result */}
-      <p className="font-medium text-ink">{`${sourceLabels?.[source.fileId] || `File ${index + 1}`} · ${inputLabel(source.fileType)}`}{source.processedAt ? ` · ${new Date(source.processedAt).toISOString().slice(0, 10)}` : ""}</p>
+      <p className="font-medium text-ink">{`${sourceLabels?.[source.fileId] || `File ${index + 1}`} · ${inputLabel(source.fileType)}`}{source.snapshot?.readCalls ? ` · ${readCalledLabel(source.snapshot.readCalls.input)}` : ""}{source.processedAt ? ` · ${new Date(source.processedAt).toISOString().slice(0, 10)}` : ""}</p>
+      {source.snapshot?.readCalls ? <div data-slot="read-called-thresholds" className="space-y-2">
+        <p>{readCalledThresholds(source.snapshot.readCalls)}</p><p>{COPY.readCalledUnreviewed}</p>
+      </div> : null}
       {source.hasResultRecord === false ? <p>{COPY.checkedAbsent}</p> : null}
       {source.snapshot ? <>
         <p>{source.snapshot.sourceBuild === "GRCh37" ? COPY.converted : COPY.sameBuild}</p>

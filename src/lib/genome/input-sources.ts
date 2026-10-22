@@ -2,6 +2,7 @@ import "server-only";
 import type { Db } from "./load";
 import { readInputSnapshot, type InputProvenanceSnapshot } from "./input-provenance";
 import { loadCanonicalInputSources, type InputSourceContext } from "./canonical-input-sources";
+import type { ReadCallsProvenance } from "./reads/provenance";
 
 /** Display facts only: never source paths, file names, hashes or raw headers. */
 export interface InputSourceView {
@@ -9,7 +10,9 @@ export interface InputSourceView {
   hasResultRecord?: boolean;
   fileType: string;
   processedAt: string | null;
-  snapshot: Pick<InputProvenanceSnapshot, "sourceBuild" | "buildBasis" | "targetBuild" | "variantRowsMapped" | "variantRowsUnmapped" | "counts"> | null;
+  snapshot: (Pick<InputProvenanceSnapshot, "sourceBuild" | "buildBasis" | "targetBuild" | "variantRowsMapped" | "variantRowsUnmapped" | "counts">
+    /** Present only for a TEST-LOCAL source Inherit called from reads (ADR 0038). */
+    & { readCalls?: ReadCallsProvenance }) | null;
 }
 
 /** The caller must authorize the subject and purpose before this admin query. */

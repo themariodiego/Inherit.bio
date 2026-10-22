@@ -6,12 +6,26 @@ import { sniffFileV2 } from "../genome/parsers/sniff-browser";
 import { hasZipMagic, openOwnUploadZip, OwnUploadZipError } from "./own-upload-zip";
 import { route } from "../primary-routes";
 import { heldFinalizationReceipt } from "./other-adult-upload";
+import type { ReadCallingRefusal } from "../genome/reads/browser-read-calls";
+import type { ReadCallSummary } from "../genome/reads/read-calls";
 import { declaredSubjectFormat, directUploadReceipt, subjectFinalizationReceipt, subjectFinalizationRetryBody, subjectNormalizationReceipt, subjectPreparationCapacityRefusal, subjectPreparationTooLargeRefusal, subjectProcessingReceipt, subjectReportGenerationFailure, uploadCeilingBytes, uploadSessionBody, type OwnUploadLimits } from "./subject-upload-contract";
 
-export type UploadProgress = { step: "checking" | "hashing" | "uploading" | "validating"; pct: number };
+export type UploadProgress = { step: "checking" | "calling" | "hashing" | "uploading" | "validating"; pct: number };
+/** Read calling's own refusals (TEST-LOCAL only, ADR 0038); a reads file that
+ * is not readable at all keeps the ordinary `unrecognised_format`. */
+export type ReadCallingFailureCode = Exclude<ReadCallingRefusal, "reads_unreadable">;
 export type UploadFailureCode = "pdf_not_data" | "subject_source_not_single_sample" | "unrecognised_format" | "archive_invalid" |
   "too_large" | "account_full" | "decompressed_too_large" | "upload_integrity_mismatch" | "unauthorized" |
-  "uploads_paused" | "unavailable";
+  "uploads_paused" | "unavailable" | ReadCallingFailureCode;
+/** What a TEST-LOCAL deployment adds to the own-DNA picker (ADR 0038). */
+export interface ReadCallingOptions {
+  /** Server-decided: true only where `readCallingBuilt()` is, never in production. */
+  readCalling?: boolean;
+  /** The other files chosen with this one (a CRAM's reference FASTA). */
+  companions?: readonly File[];
+  /** Told what was called, once the VCF is ready and before it is uploaded. */
+  onReadCalls?: (summary: ReadCallSummary) => void;
+}
 export class BrowserUploadError extends Error {
   /** `limitBytes` is set only where the refusing ceiling is known exactly at
    * the throw site. It never crosses the wire; the register forbids unknown
@@ -92,8 +106,8 @@ async function responseFailure(response: Response): Promise<never> {
 /** One ephemeral create-only bearer, no normal auth token, persisted resume
  * fingerprint, filename metadata, background retry or implicit analysis. */
 export async function uploadSubjectFile(file: File, subjectId: string, onProgress: (value: UploadProgress) => void,
-  limits?: OwnUploadLimits | null) {
-  const uploadId = await stageSubjectFile(file, subjectId, onProgress, limits);
+  limits?: OwnUploadLimits | null, readCalling: ReadCallingOptions = {}) {
+  const uploadId = await stageSubjectFile(file, subjectId, onProgress, limits, readCalling);
   onProgress({ step: "validating", pct: 0 });
   return finishStagedUpload(uploadId);
 }
@@ -110,8 +124,26 @@ export async function uploadHeldSubjectFile(file: File, subjectId: string, onPro
 
 /** Checks, hashes and sends the bytes to their one staging key; returns the upload. */
 async function stageSubjectFile(file: File, subjectId: string, onProgress: (value: UploadProgress) => void,
-  limits?: OwnUploadLimits | null): Promise<string> {
+  limits?: OwnUploadLimits | null, readCalling: ReadCallingOptions = {}): Promise<string> {
   onProgress({ step: "checking", pct: 0 });
+  // TEST-LOCAL read calling (ADR 0038): BAM or CRAM reads are called here, on
+  // the device, and only the VCF that results goes on through the unchanged
+  // path below. Production never takes this branch, so a reads file there
+  // still meets the ordinary refusal before any upload session is issued.
+  const companions = readCalling.companions ?? [];
+  if (readCalling.readCalling) {
+    const { readCallsFromChosenFiles, ReadCallingRefused } = await import("../genome/reads/browser-read-calls");
+    try {
+      const called = await readCallsFromChosenFiles([file, ...companions], pct => onProgress({ step: "calling", pct }));
+      if (called) { file = called.vcf; readCalling.onReadCalls?.(called.summary); }
+      else if (companions.length) throw new BrowserUploadError("unrecognised_format");
+    } catch (error) {
+      if (error instanceof ReadCallingRefused) {
+        throw new BrowserUploadError(error.code === "reads_unreadable" ? "unrecognised_format" : error.code);
+      }
+      throw error;
+    }
+  } else if (companions.length) throw new BrowserUploadError("unrecognised_format");
   // This upload-path bound is known even when deployment limits could not be
   // read. Refuse before hashing or sending bytes; an edge 413 may otherwise
   // arrive only as a closed connection minutes into the single POST.
