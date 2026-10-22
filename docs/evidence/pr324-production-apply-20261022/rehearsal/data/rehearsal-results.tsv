@@ -1,0 +1,32 @@
+pre	read-back of the mirror	EQUAL batch 1 pre-state summary 
+pre	prechecks	rc=0	must_be_zero nonzero: none guards ok 12 / 12
+all	dry run (statement_timeout 2min)	rc=3	1 ERROR line(s): ERROR:  DRY_RUN_COMPLETE_ALL_CHECKS_PASSED	1.898s	unchanged	EQUAL batch 1 pre-state summary 
+neg	batch-1 dry run without a session statement_timeout	rc=3	ERROR:  session: set statement_timeout to at most 180s for the session before this statement (a SET inside the block does not bound it)
+neg	batch-1 dry run with statement_timeout 190s	rc=3	ERROR:  session: set statement_timeout to at most 180s for the session before this statement (a SET inside the block does not bound it)
+neg	batch-2 dry run before batch 1	rc=3	ERROR:  predecessor: ledger has 248 rows, max 20261011010251; expected 253 rows, max 20261016175000
+neg	batch-4 apply before batch 1	rc=3	ERROR:  predecessor: ledger has 248 rows, max 20261011010251; expected 272 rows, max 20261016220000
+neg	state after the negative checks	unchanged
+b1	lock probe	rc=3	1 PROBE_LOCKS line	unchanged
+b1	dry run	rc=3	1 ERROR line(s): ERROR:  DRY_RUN_COMPLETE_ALL_CHECKS_PASSED	0.641s	unchanged	EQUAL batch 1 pre-state summary 
+b1	apply	rc=0	SET DO 	0.670s	EQUAL batch 1 post-state summary 
+b1	ledger	253 rows, max 20261016175000
+b1	main pgTAP suite on the post-state	Files=201, Tests=13549, 622 wallclock secs  Result: FAIL 	embryo_split_worker.sql:1 export_member_plan.sql:3 future_person_claim_contact_retention.sql:1 other_adult_held_upload.sql:1 	unchanged
+b1	re-apply	rc=3	ERROR:  predecessor: ledger has 253 rows, max 20261016175000; expected 248 rows, max 20261011010251	unchanged
+b2	lock probe	rc=3	1 PROBE_LOCKS line	unchanged
+b2	dry run	rc=3	1 ERROR line(s): ERROR:  DRY_RUN_COMPLETE_ALL_CHECKS_PASSED	0.776s	unchanged	EQUAL batch 2 pre-state summary 
+b2	apply	rc=0	SET DO 	0.739s	EQUAL batch 2 post-state summary 
+b2	ledger	259 rows, max 20261016196000
+b2	main pgTAP suite on the post-state	Files=201, Tests=13549, 583 wallclock secs  Result: FAIL 	drop_generated_artifacts_bucket.sql:1 drop_genomes_staging_bucket.sql:1 embryo_qc_precise_json.sql:2 embryo_split_worker.sql:1 export_member_plan.sql:3 future_person_claim_contact_retention.sql:1 other_adult_held_upload.sql:2 	unchanged
+b2	re-apply	rc=3	ERROR:  predecessor: ledger has 259 rows, max 20261016196000; expected 253 rows, max 20261016175000	unchanged
+b3	lock probe	rc=3	1 PROBE_LOCKS line	unchanged
+b3	dry run	rc=3	1 ERROR line(s): ERROR:  DRY_RUN_COMPLETE_ALL_CHECKS_PASSED	0.708s	unchanged	EQUAL batch 3 pre-state summary 
+b3	apply	rc=0	SET DO 	0.712s	EQUAL batch 3 post-state summary 
+b3	ledger	272 rows, max 20261016220000
+b3	main pgTAP suite on the post-state	Files=201, Tests=13549, 589 wallclock secs  Result: FAIL 	drop_generated_artifacts_bucket.sql:1 drop_genomes_staging_bucket.sql:1 embryo_qc_precise_json.sql:2 embryo_split_worker.sql:1 export_member_plan.sql:3 future_person_claim_contact_retention.sql:1 other_adult_held_upload.sql:3 	unchanged
+b3	re-apply	rc=3	ERROR:  predecessor: ledger has 272 rows, max 20261016220000; expected 259 rows, max 20261016196000	unchanged
+b4	lock probe	rc=3	1 PROBE_LOCKS line	unchanged
+b4	dry run	rc=3	1 ERROR line(s): ERROR:  DRY_RUN_COMPLETE_ALL_CHECKS_PASSED	0.770s	unchanged	EQUAL batch 4 pre-state summary 
+b4	apply	rc=0	SET DO 	0.790s	EQUAL batch 4 post-state summary 
+b4	ledger	273 rows, max 20261016221000
+b4	main pgTAP suite on the post-state	Files=201, Tests=13549, 591 wallclock secs  Result: FAIL 	drop_generated_artifacts_bucket.sql:1 drop_genomes_staging_bucket.sql:1 embryo_qc_precise_json.sql:2 embryo_split_worker.sql:1 export_member_plan.sql:5 future_person_claim_contact_retention.sql:1 other_adult_held_upload.sql:3 	unchanged
+b4	re-apply	rc=3	ERROR:  predecessor: ledger has 273 rows, max 20261016221000; expected 272 rows, max 20261016220000	unchanged

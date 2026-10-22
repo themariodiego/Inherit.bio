@@ -1,0 +1,25 @@
+# Order equivalence (LOCAL ONLY, stack rel324, 2026-10-22). Fingerprint = ../fingerprint.sql output; dumps = pg_dump 17.6 --schema-only, normalized by dropping the two random \restrict/\unrestrict key lines.
+
+sha256 (fingerprint JSON / normalized dump):
+  fp-fresh-main.json 8860eee482938e4792009efe5c20c6a6cc1e2b8937a2379659d7b30e9b5d35da 817839 bytes
+  fp-main-plus-25.json 03f6665174e86e28fc6294a4f9450679f41e546da6255318eca98893a392508f 898034 bytes
+  fp-fresh-head.json 03f6665174e86e28fc6294a4f9450679f41e546da6255318eca98893a392508f 898034 bytes
+  fp-fresh-head-drift.json 4d2a2747b665310617b958dce91438c8adb2d1de6262af3db58fbf307d264fa8 898099 bytes
+  fp-final.json 4d2a2747b665310617b958dce91438c8adb2d1de6262af3db58fbf307d264fa8 898099 bytes
+  fp-mirror4.json 681077f9e480dd58904582ae05c8afbe46381d873142661f90eef4f29803f3a5 817904 bytes
+  dump-main-plus-25.norm.sql d089784ebbd1c6a88d0d9315efd3b52039330c1a77199dce7336a9fb94bb934e 101195 lines
+  dump-fresh-head.norm.sql d089784ebbd1c6a88d0d9315efd3b52039330c1a77199dce7336a9fb94bb934e 101195 lines
+  dump-fresh-head-drift.norm.sql ae97d7c4d1ca107e4f611002cf3df603b8980ba1ca5973a669c14561db55b5bf 101273 lines
+  dump-final.norm.sql ae97d7c4d1ca107e4f611002cf3df603b8980ba1ca5973a669c14561db55b5bf 101273 lines
+
+(a) undrifted: fresh main 12f24475 (245) + the 25 (psql -1 -f each, 3.36 s) vs fresh 538dcee6 (270):
+  fingerprint byte-identical
+  normalized dump identical
+(b) drifted: rehearsed final mirror (production mirror + the 4 guarded batches) vs fresh 538dcee6 + the same drift (8 comment-stripped bodies, pg_cron):
+  fingerprint byte-identical
+  normalized dump identical
+(c) rehearsed final mirror vs plain fresh 538dcee6:
+  fingerprint: functions differ in exactly the 8 drifted def_md5 values; extensions differ in pg_cron only (fpcompare.py)
+  dump diff: 27 lines only in fresh 538dcee6, all full-line '--' comments of the 8 bodies (2+2+4+3+4+6+2+4); 105 lines only in the final mirror, all the pg_cron extension, its comment and its cron-schema grants
+
+rebuilds of the production mirror: 4, each fingerprint byte-identical; each equal object for object to production's 2026-10-22 read-back fp-after-merge.json (summary exact; sequence bounds compared after the API's float rendering)
