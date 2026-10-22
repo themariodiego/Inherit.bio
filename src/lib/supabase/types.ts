@@ -8906,6 +8906,17 @@ export type Database = {
         }
         Returns: Json
       }
+      consent_reaffirm_offer_v1: {
+        Args: { p_account_id: string; p_session_id: string; p_prior_grant_id: string }
+        Returns: Json
+      }
+      reaffirm_purpose_grant_v1: {
+        Args: {
+          p_account_id: string; p_session_id: string; p_prior_grant_id: string; p_offer: Json;
+          p_nonce: string; p_expires_at: string; p_test_jurisdiction: boolean
+        }
+        Returns: Json
+      }
       grant_own_report_purpose_v1: {
         Args: {
           p_account_id: string; p_session_id: string; p_subject_id: string; p_snapshot: Json;

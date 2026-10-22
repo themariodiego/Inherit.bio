@@ -30,6 +30,42 @@ Compared with and without the migration, in rolled-back transactions with the sa
 
 `/settings/consents` now renders the control for `api.consents-revoke-all`. Its visible label is exactly the owner's text, "Turn off every permission you have given. Results made under them are deleted. Your files stay." While it waits it shows the existing "Working…". On any failure it shows the existing deletion-control line "This confirmation expired. Please try again." Either way the page renders again with a fresh nonce. The coordinator confirmed option A, so no new words are introduced. The page mints the one-time `consents_revoke_all` account operation nonce (`src/lib/consents-revoke-all-control.ts`). The control posts `{confirmation: "consents.revoke-all.confirmation", nonce}` to the built route. The words live in the copy registry `src/copy/settings/consents.ts`, which `gate:readability` reads. New test `src/copy/settings/consents.test.ts` (4 cases) holds the exact text, the reuse of the two existing strings, the closed body and the page wiring. No existing assertion changes.
 
+### `api.consent-reaffirm`
+
+`POST /api/consents/reaffirm` (register `api.consent-reaffirm`). A signed-in person signs the current version of a consent text they signed before, for the same purpose grant. It is offered only when the prior row's artifact version has been superseded by a current version of the same key. It covers two kinds of prior row, and each is re-run through the grant function that wrote it, as `api.consents` dispatches it:
+
+- own-subject self grants, through `grant_own_report_purpose_v1`, and through `grant_path_b_purpose_v1` for an adult record bound to the account under Path B, TEST-LOCAL only;
+- adult directional grants under `consent.share-with-adult`:
+  - to a family member, through the family ancestry, report, portrait and health-picture wrappers or `grant_directional_purpose_v1`;
+  - from a Path B person with an account to their uploader, through `grant_path_b_purpose_v1`, which reruns the mitigation.
+
+These answer `resource-not-found-v1`: a donor-attribution or any other artifact signature, an embryo grant, an own Copilot grant, a Tier-2 signature, and a stale, foreign or mismatched prior row. Success is `consent-recorded-v1` 201. A body problem is `invalid-request-v1` 422, and so is a typed name, because no covered signature is Tier 2. A family purpose gets the same `familyCapability` checks `api.consents` makes before a grant. No page renders an offer yet, because its wording is not approved. The token minter `src/lib/consents/reaffirm-offer.ts` exists for that page.
+
+New migration `supabase/migrations/20261016205000_consent_reaffirm.sql`, headed PRODUCTION RELEASE: GUARDED, adds three functions:
+
+- `private.consent_reaffirm_offer_v1`, the exact binding, or null when nothing is offered;
+- `public.consent_reaffirm_offer_v1`, the service-role wrapper around it;
+- `public.reaffirm_purpose_grant_v1`.
+
+In one transaction `reaffirm_purpose_grant_v1` locks the account and the prior pair, recomputes the offer and requires it to equal the presented one exactly, supersedes the prior pair and re-runs the grant function with the presentation's single-use nonce. It then gives the new pair one identical grant revision, the prior revision plus one, and carries the family ancestry snapshot across that revision change. Nothing existing is changed. The presentation token is `src/lib/consents/reaffirm-presentation.ts`: nine minutes, server-signed, bound to the account and auth session.
+
+New test `supabase/tests/consent_reaffirm.sql`: 38 assertions, all new and all passing in one rolled-back transaction with the prep and migrations above. It uses a synthetic self record and a second account. New versions of the consent texts are published through `private.publish_consent_artifact_v1` inside the transaction only. The test proves:
+
+- nothing is offered while the signed text is current;
+- an own monogenic grant and a directional `raw.browse` grant to another adult are each reaffirmed into a fresh pair at revision 2, while the prior pair is superseded and exactly one pair stays current;
+- a tampered, cross-recipient, foreign-account, foreign-session, recipient, replayed-nonce, expired-ceiling or already-reaffirmed request writes nothing;
+- an artifact signature id is refused.
+
+Seven planted SQL defects: six failed named assertions. They were no offer match (2 failed, 27 errors), no supersession (10 errors), no revision bump (2), offering while the text is current (3), any account (2) and no ten-minute ceiling (1 failed, 10 errors). The seventh dropped the defensive successor-shape check and failed nothing, because no reachable state violates it. The family wrapper branches and the Path B branch are not exercised by this pgTAP, because their fixtures are not built here. Hosted CI runs the suite as written.
+
+Vitest: new `src/app/api/consents/reaffirm/route.test.ts` (8 cases). Six planted route defects each failed a case: no session binding, no statement check, no family capability check, no TEST-LOCAL check for Path B, a typed name admitted and an open body.
+
+### Jurisdiction classification of the closed no-account Record Key Card route
+
+`scripts/jurisdiction-enforcement.test.ts` "leaves no surface in scope both unguarded and unexplained" failed after this branch's first commit (dc1b952d). `src/app/api/rights/embryo-record-key-cards/route.ts` names the `rights` and `embryo` areas and calls no resolver. It now has a `WITHOUT_CHECK` entry with its reason: it is built closed, and once open its authority is a purpose-bound rights session on a cohort whose creation functions check jurisdiction. No assertion changes. The list is the test's own reviewable register of such surfaces.
+
+The census in `scripts/route-register-correspondence.test.ts` goes from 11 to 10 for `api.consent-reaffirm`, with a comment.
+
 ## 2026-10-16 — Consent and rights endpoints (G2.1, "Build all 24"): `api.consents-revoke-all`, `api.embryo-record-key-cards-rights`, `api.consent-revoke-rights` and `api.consent-grant-rights`
 
 Owner decision 2026-10-16 ("Unbuilt registered endpoints (G2.1)", `docs/protocol/decisions.md`): every registered endpoint gets built, and an endpoint whose contract depends on unbuilt pieces or open design questions is raised with the owner first. This slice covers the eight consent and rights endpoints. The questions it raised are reported back. This entry records each test change the slice makes.

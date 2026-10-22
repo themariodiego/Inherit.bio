@@ -88,6 +88,8 @@ export const WITHOUT_CHECK: Record<string, string> = {
     "Export right for one own record (api.subject-export, owner decision 2026-10-16, two steps): self, or an adult record whose own account is the caller. The register binds it to jurisdictionBypass because export is a right nothing may block; every embryo case answers resource-not-found-v1 and the database authority rechecks the live session and the record before every step. It opens no restricted capability.",
   "src/app/api/embryo-cohorts/[id]/record-key-cards/route.ts":
     "Delivery of Record Key cards under an operation token, on a cohort that exists only through the database functions that check jurisdiction at creation, invitation, acceptance and grant; it opens no analysis.",
+  "src/app/api/rights/embryo-record-key-cards/route.ts":
+    "The no-account twin of the Record Key card door (api.embryo-record-key-cards-rights), built closed: no issuer registers its session purpose, so it answers resource-not-found-v1. Once open, its authority is a purpose-bound rights session on a cohort that exists only through the database functions that check jurisdiction at creation, invitation, acceptance and grant; it opens no analysis.",
 };
 
 const posix = (file: string) => file.split(path.sep).join("/");
