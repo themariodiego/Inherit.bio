@@ -5017,6 +5017,10 @@ Owner decisions (clickable chat answers) on questions raised while building
   is narrowed. It refuses only a family pair that is still pending or current,
   or one that still has joint results. The same change applies to
   `api.file-delete`.
+- **Subject export with joint results:** built in two steps. The one-subject
+  export ships first and refuses, with a stated reason, while the subject has
+  live joint results. The next slice adds the live-permission joint-result
+  projection and lifts that refusal.
 
 ## 2026-10-16 — Stated behaviour change: `api.file-delete` after an ended family pair
 
@@ -5043,3 +5047,33 @@ transfer: four further cases"); it is not a new decision.
   ended pair with nothing left (now prepared), and the self-record emptying
   over a current pair. `e2e/file-deletion.spec.ts` checks the same four states
   through the real route in a browser. Recorded in `docs/test-diff-register.md`.
+
+## 2026-10-22 — Consent, rights and claim endpoints (G2.1)
+
+Owner decisions (clickable chat answers):
+
+- **Routes that need unapproved mail or notice text:** they are built closed
+  and send nothing. That covers the adult-subject-control link, the no-account
+  Record Key delivery, rights recovery, reaffirmation, claimant correction
+  outcomes and the account-binding notice. Each route and its database door
+  answer `resource-not-found-v1` until the owner approves the wording. Nothing
+  invents notice text.
+  - The correction review records coded outcomes without mailing anyone.
+  - Its "approve" decision stays refused until the owner defines what an
+    approved correction changes.
+  - Rights recovery uses the forgot-password rate limits: 3 an hour per
+    contact and 10 an hour per network. It also keeps one live candidate per
+    principal and a global cap of 1000 an hour.
+- **Uploader gate for a person who confirmed with no account:**
+  `private.other_adult_mitigation_v1` allows the uploader-direction grant while
+  the 730-day clock is live and before the 30-day re-notice point. This mirrors
+  the account case, and it applies to TEST-LOCAL only.
+- **Bound-only endpoints while claimant binding is closed:**
+  `api.claimed-subject-analysis-stop` and `api.claimed-subject-correction`
+  answer `resource-not-found-v1` until the binding release, the same rule as
+  subject-delete's bound case. `api.third-party-subject-export` answers
+  `resource-not-found-v1` until its issuer and the cohort projection exist.
+- **Revoke-all control:** /settings/consents gets a control posting to
+  `api.consents-revoke-all`, with exactly this text: "Turn off every
+  permission you have given. Results made under them are deleted. Your files
+  stay."

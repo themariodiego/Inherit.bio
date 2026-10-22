@@ -76,6 +76,84 @@ export function isPathBDraftPayload(value: unknown): boolean {
     && "adultFlow" in value && value.adultFlow === "path-b-subject-esignature";
 }
 
+/**
+ * The register's third closed-subject-draft-create-v1 body,
+ * path-b-reviewed-document (owner decision 2026-10-16, "The subjects
+ * endpoints (G2.1)"): the same person fields, and evidence that a named
+ * human reviews instead of the person's e-signature request. The request id
+ * keeps a retried click to one draft, as for the e-signature body.
+ */
+export const pathBReviewedDocumentDraftBody = z.object({
+  kind: z.literal("adult"),
+  adultFlow: z.literal("path-b-reviewed-document"),
+  displayName,
+  dateOfBirth: z.iso.date(),
+  contactEmail,
+  requestId: uuid,
+}).strict();
+export type PathBReviewedDocumentDraftRequest = z.infer<typeof pathBReviewedDocumentDraftBody>;
+
+export function isPathBReviewedDocumentDraftPayload(value: unknown): boolean {
+  return typeof value === "object" && value !== null
+    && "adultFlow" in value && value.adultFlow === "path-b-reviewed-document";
+}
+
+/** closed-subject-finalize-v1 (POST /api/subjects). */
+export const subjectFinalizeBody = z.object({
+  subjectDraftId: uuid,
+  permissionEvidenceDocumentId: uuid,
+  legalReviewId: uuid,
+  nonce: z.string().min(1).max(2_048),
+}).strict();
+export type SubjectFinalizeRequest = z.infer<typeof subjectFinalizeBody>;
+
+/** subject-created-v1: the one receipt every eligible or barred request gets. */
+export const subjectCreatedReceipt = z.object({
+  status: z.literal("received"),
+  next: z.literal("awaiting_subject_confirmation"),
+}).strict();
+
+const documentMediaType = z.enum(["application/pdf", "image/jpeg", "image/png"]);
+const documentSize = z.number().int().min(1).max(20_000_000);
+/**
+ * api.legal-evidence-upload-session's three closed bodies. Only the
+ * adult-signed-permission body has a built target; the two embryo-basis
+ * kinds are recognised and refused as an unknown resource.
+ */
+export const legalEvidenceSessionBody = z.discriminatedUnion("documentKind", [
+  z.object({ documentKind: z.literal("adult-signed-permission"), subjectDraftId: uuid, mediaType: documentMediaType,
+    sizeBytes: documentSize, sha256 }).strict(),
+  z.object({ documentKind: z.literal("parent-death-certificate"), cohortDraftId: uuid, mediaType: documentMediaType,
+    sizeBytes: documentSize, sha256 }).strict(),
+  z.object({ documentKind: z.literal("sole-disposition-authority"), cohortDraftId: uuid, mediaType: documentMediaType,
+    sizeBytes: documentSize, sha256 }).strict(),
+]);
+export type LegalEvidenceSessionRequest = z.infer<typeof legalEvidenceSessionBody>;
+
+/** One reviewed-document person before activation, as the uploader sees them. */
+export const reviewedDocumentTargetState = z.object({
+  subjectId: uuid,
+  label: z.string().min(1).max(200),
+  requestedAt: z.string(),
+  answerBy: z.string(),
+  signed: z.boolean(),
+  state: z.enum(["awaiting-document", "document-review", "awaiting-request", "awaiting-signature", "document-refused"]),
+  documentId: uuid.nullable(),
+  legalReviewId: uuid.nullable(),
+}).strict().refine((value) => (value.state === "awaiting-request") === (value.documentId !== null && value.legalReviewId !== null));
+export type ReviewedDocumentTargetState = z.infer<typeof reviewedDocumentTargetState>;
+
+export type ReviewedDocumentTarget = ReviewedDocumentTargetState & {
+  /** Present while the uploader still has to sign for this person. */
+  consent?: OtherAdultConsentView;
+  /** Sealed one-time token for opening the permission document session. */
+  documentToken?: string;
+  /** The one-time api.subjects nonce and its session CSRF, once a named human approved. */
+  finalize?: { nonce: string; csrf: string };
+  /** Why the uploader cannot sign for this person now (the database's answer). */
+  blockedBy?: "account-completion" | "unavailable";
+};
+
 /** subject-draft-created-v1. */
 export const pathBDraftReceipt = z.object({
   subjectDraftId: uuid,

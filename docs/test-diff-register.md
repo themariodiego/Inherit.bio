@@ -40,7 +40,7 @@ Planted defects, each failing named assertions:
 
 Changed existing tests. None is weakened.
 
-- `scripts/route-register-correspondence.test.ts`: the exact unbuilt census goes from 21 to 20 for `api.subject-delete`, with a comment, and the header sentence names the route.
+- `scripts/route-register-correspondence.test.ts`: the exact unbuilt census goes down by one for `api.subject-delete`, with a comment, and the header sentence names the route. Before the merge of the integration branch at 5c735b39 that was 21 to 20. That branch counts its own subjects endpoints and the redirects `next.config.ts` serves, and leaves 16, so after the merge it is 16 to 15.
 - `supabase/tests/other_adult_held_upload.sql`, "the held table is named only by the exact reviewed lifecycle functions": the exact list gains `private.delete_path_b_subject_for_route_v1` and `private.purge_path_a_subject_v1`. Each is conditional on its own presence, as earlier additions to this census are. Every other name is unchanged, and it passes 173/173 with and without the migration.
 - `src/lib/subject-endpoints/operation-nonce.test.ts`, "names one registered route per operation": the expected map gains `subject_delete: "api.subject-delete"`.
 - `scripts/jurisdiction-enforcement.test.ts`: `WITHOUT_CHECK` lists the new route with its reason. The register sets `jurisdictionBypass`: deletion is a right that answers in every jurisdiction and opens no analysis, as `api.cohort-restrict` and the withdrawal routes are listed.
@@ -60,6 +60,172 @@ Not built, or left as it is:
 - No page renders the `subject_delete` code yet. The register names a confirmation page that does not exist, so no browser path reaches this route, and no browser test covers it.
 - A self record with a subject export, or one whose file is an embryo source, refuses with 404 until those dispositions are defined.
 - An `other_adult` record that is neither a confirmed Path B record nor a Path A record, such as an unconfirmed draft, is not found here. Its existing withdrawal flows are unchanged.
+
+## 2026-10-17 — Links to an auth form page do not prefetch
+
+Hosted CI run 39010790879 ("browser (2)", commit b5143dc0) failed `e2e/future-person-claim.spec.ts` "/future-person/claim complete: …". The claim page's visitor held a `__Host-inherit-auth-form` cookie besides the claim form pair. The proxy (`src/proxy.ts`) already refuses that cookie to a prefetch that carries `next-router-prefetch` or `next-router-segment-prefetch`. But this Next.js version also prefetches a linked page's head with only `rsc` and the router state tree: `pingRuntimeHead` turns a `LoadingBoundary` prefetch into `Full` (`node_modules/next/dist/client/components/segment-cache/scheduler.js`), and `Full` sets no prefetch header (`segment-cache/cache.js`). That request has the same shape as a real navigation, so the proxy cannot tell them apart, and the leak depends on timing. On ffa538ab the same test passed.
+
+Product change: the four links to an auth form page now set `prefetch={false}`. They are the header's "Get started", the home page's "Start with your raw data", and the sign-in page's "Forgot your password?" and "Create an account". A navigation still mints the form pair as before.
+
+New test `src/lib/auth/auth-form-links.test.ts`. It scans `src/**/*.tsx` for `<Link>` tags whose href is a key of `AUTH_FORM_PAGES`, requires at least four, and requires `prefetch={false}` on each. Without the header change it fails on that link. No existing assertion changes. Locally, `e2e/future-person-claim.spec.ts` passed. `e2e/auth-processing.spec.ts` "/auth/reset-password processing" fails on the shared local database with or without this change, because that database lacks the auth migration 20261016151200 and no recovery mail is sent. It passes in hosted CI.
+
+## 2026-10-16 — Refused-invitation cleanup e2e: synthetic evidence uses the registered bucket's content type
+
+Hosted CI run 38966526629 ("browser (2)", commit ffa538ab) failed `e2e/refused-invitation-cleanup.spec.ts` "jobs.retention: physically delete refused-draft evidence without deleting another draft" at its own setup upload: `StorageApiError: mime type text/plain is not supported`. Migration `20261016190000_path_b_reviewed_document.sql` creates the registered `legal-evidence` bucket with `allowed_mime_types = {application/octet-stream}`. Before that migration, the spec created the bucket itself with no restriction. The product writes only opaque `application/octet-stream` objects there (`src/lib/future-person/claim-objects.ts`).
+
+Test change, no assertion changed: the spec's synthetic evidence upload now declares `application/octet-stream`. A throwaway local bucket with the migration's exact limits refused `text/plain` with the same message and accepted `application/octet-stream`; it was deleted afterwards.
+
+## 2026-10-16 — Route census: a redirect served by `next.config.ts` counts as built
+
+`scripts/route-register-correspondence.test.ts` "leaves the unbuilt half of the register alone, but still measures it" walks only `src/app`. `legacy.signup` (`/signup`) and `legacy.login` (`/login`) are served by unconditional permanent redirects in `next.config.ts`, which run before the App Router. `scripts/route-gate.ts` already checks their emitted 308 against the register, and `scripts/canonical-host.test.ts` checks the query is kept. They were built, but the census counted them as unbuilt.
+
+Test change: the test now loads `next.config.ts` redirects. An entry counts as built through one only when the entry's kind is `redirect` and the redirect is unconditional (no `has`) from the exact registered path. The exact census goes from 18 to 16, with a comment. No other assertion changes. Planted defect: deleting the `/signup` redirect from `next.config.ts` makes the test fail with 17 instead of 16.
+
+## 2026-10-16 — A laboratory-table source could never publish: the call fence could not hash a call with no reference allele
+
+Hosted failure: PR 324, CI run 38943838371, job "browser (5)", commit 58922301. In `e2e/embryo-ingest-journey.spec.ts:46`, the step "a laboratory table answers its column and build questions and reaches native publication" failed in `runtime.runWorker` (`e2e/participant-c-journey.ts:194`) with "Embryo journey fixed local command failed; diagnostics withheld". That was the step's first hosted run. The SQL precondition before the worker had passed.
+
+Root cause, reproduced on the shared database in a rolled-back transaction:
+
+- A table call is staged with no reference allele. `20261016120000_embryo_table_mapping_route.sql:477` drops NOT NULL, and its stage door requires the null (`:593`, ADR 0037).
+- `publish_embryo_split_v1` copies each staged call into `public.embryo_variants` (`20261016120000:766`). The insert trigger `zz_embryo_canonical_calls_fence` (`20260930243000_future_person_export_members.sql:70`) runs `private.guard_immutable_embryo_calls_v1` (`20260930245000_future_person_claimant_erasure.sql:1093-1121`). For a source the running worker publishes, it admits a call only when `private.embryo_call_value_hash_v1` of a staged call equals the new call's hash.
+- That hash (`20260930243000:27-33`) length-prefixes the reference allele with `private.length_prefix_utf8`, which is STRICT (`20260831224034_worker_jobs_v2.sql:3-7`). A NULL reference made the whole hash NULL. NULL never equals NULL, so the fence raised 42501 `embryo_source_unavailable` on the first table call. The publication rolled back.
+- The worker then failed closed. The RPC error became `unavailable` (`src/lib/embryos/split-worker.ts:141`, `:325`), the loop printed `split_failed` and exited 1 (`split-worker-loop.ts:61-62`, `scripts/embryo-split-worker.run.mts:17`), and the CI entry refused anything but `split_published` (`scripts/ci-embryo-journey.ts:91`).
+- Every table source fails this way. A VCF call always has a reference allele, so the VCF journeys pass.
+
+The in-memory half is correct. A scratch harness took the real fixture `e2e/fixtures/embryo-pair-table-unstated-build.csv` through the browser rewrite (answer `Bases` = genotype, GRCh38), the chunk route's table validation and per-embryo split, and `analyseEmbryoTableFragment` and `embryoOrdinalOutcome`. It gave one 2,400-record chunk and one fragment per embryo. Embryo 1 had 1200/1200 calls and embryo 2 had 1188/1200, and both passed QC. That is the same as `e2e/fixtures/embryo-pair-grch38.vcf` through the VCF path, down to the QC receipt.
+
+Why no test caught it. The table probe in `supabase/tests/embryo_canonical_sources.sql:246-254` publishes a table session, but its staged calls are the VCF-shaped calls of that suite, with a reference allele. `supabase/tests/embryo_split_worker.sql` stages table calls but never publishes them. The vitest fake database does not model the fence.
+
+The fix is new migration `supabase/migrations/20261016195000_embryo_table_call_hash.sql`, flagged: TEST-LOCAL, and it needs a later guarded release. `20261016120000` is not edited. It patches `private.embryo_call_value_hash_v1` in place with the same guard pattern as earlier patches: the exact predecessor body md5, one anchor, the pinned successor md5 and unchanged privileges. It also checks that a call with a reference allele hashes exactly as before.
+
+- A NULL reference is now encoded as the bytes `ff ff ff ff`, which is `int4send(-1)`. A length prefix can never be negative, so the encoding stays unambiguous.
+- Every non-NULL reference is encoded byte for byte as before. Every VCF hash, every existing index entry and the fence's exact row comparison are unchanged, and the fence admits only an exact staged call, as before.
+- It rebuilds `private.embryo_split_exact_call_lookup`, the fence's index, because the function's answer for NULL changed.
+
+There is no code-only fix. The stage door requires a NULL reference for a table (ADR 0037), and the fence requires a non-NULL hash. No TypeScript changes.
+
+Changed existing tests: none.
+
+New test `supabase/tests/embryo_table_call_hash.sql` has 24 assertions, 66 with the completed-upload fixture. It covers:
+
+- two frozen hash vectors for calls with a reference allele;
+- a NULL reference that hashes, never as `''` and never as a stated allele;
+- the hash staying closed to every API role, and the index being valid;
+- the fence's indexed lookup of a staged table call;
+- a table attempt through the worker's own doors (claim, stage, parts, finish, publish) that publishes two `pgt_table` sources and one QC failure, fenced as `exact-staged-calls-v1`;
+- published calls that are exactly the staged called bases, with no reference or alternate allele, each bound to its own source and digest;
+- no further call accepted after publication.
+
+Without the migration, two assertions fail ("a table call with no reference allele has a hash" and "the fence finds a staged table call by its hash"), and `publish_embryo_split_v1` raises `embryo_source_unavailable`, which ends the run. With it, 66/66 pass. Both planted defects failed named assertions:
+
+- A symmetric `00`/`01` reference marker, like the alternate allele's, changed every existing hash and failed both frozen vectors.
+- Encoding NULL as an empty reference failed "a missing reference allele never hashes as an empty one".
+
+Applying the migration twice stops at "embryo call hash predecessor differs".
+
+Local results:
+
+- `pnpm typecheck` and `pnpm lint` exit 0. `gate:secrets`, `gate:env`, `gate:routes`, `gate:sql-includes` and `gate:readability` exit 0.
+- Vitest: `scripts/ci-embryo-journey.test.ts`, `src/lib/embryos/split-worker.test.ts`, `upload-transport.test.ts`, `table-transport.test.ts`, `ingest-chunk.test.ts` and `scripts/embryo-pair-fixture.test.ts` pass, 222 tests. The full `pnpm test`, with `PLAYWRIGHT_BROWSERS_PATH` set for the browser-backed files, leaves six owned-runtime files failing. They are the same 40 tests that fail without this change, because they refuse to run as root.
+- pgTAP ran each suite in its own rolled-back transaction on the shared database, with and without the migration. The 36 existing `embryo_*` suites give identical results. So do nine future-person, archive, deletion, export and copilot suites that publish, export or erase embryo calls. For those nine, the one leftover quarantined claim document from browser runs was leased for one hour inside the same transaction, as before.
+- Pre-existing shared-database results are the same on both sides. `embryo_authority` stops at a fixture error, `embryo_ingest_session_configuration` fails one assertion, `embryo_ingest_sessions` fails two and `export_member_plan` fails three.
+- No other suite can see the change. Outside the two table suites, no test stages or fences a call with no reference allele.
+- The shared database was left as found: 246 ledger rows, the predecessor hash body and no pgtap extension.
+
+The full browser journey was not run locally. Its admission installer (`scripts/embryo-test-statistical-admission.ts`) refuses a database that holds accounts, and requires the ledger to equal every migration file. The shared database has 39 accounts and lacks five later migrations of this tree. `withEmbryoJourney` is bound to project `sequence` on port 54321, so a second stack cannot stand in for it. The hosted "browser (5)" run is the proof that the table step now reaches publication.
+
+## 2026-10-16 — G2.1 subjects endpoints: the reviewed-document Path B (api.subjects, api.legal-evidence-upload-session) and api.subject-download
+
+Owner decisions 2026-10-16, "The subjects endpoints (G2.1)" (`docs/protocol/decisions.md`). Everything here is TEST-LOCAL, production off, synthetic data only. Every route answers only when `INHERIT_TEST_JURISDICTION=1`, and every database entry point requires its own flag again.
+
+Two new migrations, both headed **PRODUCTION RELEASE: GUARDED**. No existing migration is changed.
+
+- `supabase/migrations/20261016190000_path_b_reviewed_document.sql`. It adds the reviewed-document branch of Path B as one unit:
+  - the `path-b-reviewed-document` draft flow and the `uploaded_document` evidence kind;
+  - the private `legal-evidence` bucket, with the declared limits and no policies;
+  - nine private, RLS-on, fully revoked tables for permission document sessions, fragments, documents, review assignments, review downloads and reads, immutable review decisions, request bindings and spent nonces;
+  - the permission branch of the four evidence dispatchers, the scan lease, and object disposal;
+  - named-human review: owner-only assignment, never to the uploader; the same MFA step-up as claim reviewers; every chunk read before a decision;
+  - `finalize_path_b_reviewed_document_v1` behind `POST /api/subjects`, with the global contact bar. A barred and an eligible address both move the draft to `invited` and get the same receipt. Only the eligible one gets an invitation, a token and mail;
+  - recipient activation, through the existing Path B confirmation functions widened to both flows. They recheck the approved basis and fix `retain_until` at activation plus 730 days;
+  - the retention sweep `expire_due_path_b_reviewed_documents_v1`.
+  `rejected-documentary-conflict` is refused with no record, because contradiction-v1 has no producer yet.
+- `supabase/migrations/20261016191000_subject_original_download.sql`. It adds the revocable chunk session for `GET /api/subjects/[id]/download`. It reuses `public.download_sessions` with new nullable columns and a shape check for purpose `subject-original-download`. The open function revokes the caller's earlier session for the same file. Every chunk re-authorizes through `own_export_source_v1`, the appeal hold, Path B mitigation, file deletion and retirement, object version, and the session's auth revisions. The session lasts at most 1 hour, with a 5-minute idle limit. Ended sessions are purged by `jobs.retention`. No URL is ever signed.
+
+`api.subject-export` is not built. It is reported back to the owner with a recommendation, see "Not built" below.
+
+### Changed existing tests
+
+No assertion was removed, skipped or relaxed.
+
+- `src/lib/uploads/other-adult-upload.test.ts:150`, the pinned refusal of `adultFlow: "path-b-reviewed-document"`. The refusal stays: `pathBDraftBody` is still the e-signature body only. A comment now records that the flow is built under its own closed body. A new case accepts it under `pathBReviewedDocumentDraftBody` and refuses ten variants, including `evidenceKind`, `documentId` and `approved` fields. Two more new cases pin `closed-subject-finalize-v1`, `subject-created-v1` and the three closed `api.legal-evidence-upload-session` bodies.
+- `scripts/route-register-correspondence.test.ts`:
+  - The unbuilt census goes from 22 to 19, because `api.subjects`, `api.legal-evidence-upload-session` and `api.subject-download` are now built. `api.subject-export` stays unbuilt.
+  - The reviewed client-form pin for `src/components/uploads/other-adult-upload-card.tsx` gets the new source hash after a re-review. The new-person form gained two radio inputs inside the same form, and `ConsentFields` became an export. It still has two actionless forms whose handlers cancel native submission. The new card `reviewed-document-card.tsx` has no native form.
+- `supabase/tests/other_adult_held_upload.sql`: the md5 pin of `private.assert_account_path_b_deletion_supported_v1` goes from `6382fbb0…` to `cd6a5921924d50f1857ac8d8b545b30d`. Account deletion now also fails closed for reviewed-document drafts and open permission document sessions.
+- `supabase/tests/drop_generated_artifacts_bucket.sql` and `drop_genomes_staging_bucket.sql`: the exact set of buckets the migrations leave now includes `legal-evidence`.
+- `supabase/tests/export_member_plan.sql`: regenerated by `scripts/export-member-plan.ts` from `docs/export-member-plan.json`. The plan adds the nine new tables, each classified like its claim or appeal analog.
+- `scripts/account-future-source-union.test.ts`: the plan census goes from 253 to 262. The test now pins each of the nine new dispositions exactly.
+- `docs/proposals/requester-statement-export-member-plan.provenance.json`: the active plan's bytes and SHA-256 are updated. The proposal file and its own provenance are unchanged.
+- `scripts/route-gate.test.ts`: two storage cases planted `legal-evidence` as a bucket declared but never created. A migration now creates it. The cases now plant a copy of its prefix over a bucket that nothing creates (`planted-uncreated`). The same two failures are asserted, naming the planted bucket. The exports half of the second case is unchanged.
+- `scripts/path-b-future-rights-bridge.test.ts`: both exact replacement inventories add the `20261016190000` replacements of `confirm_path_b_subject_v1`, `other_adult_upload_targets_v1`, `path_b_signing_target_v1` and `path_b_subject_v1`. The six-stage inventory also adds `confirm_path_b_subject_account_core_v1`.
+- `scripts/jurisdiction-enforcement.test.ts`: `WITHOUT_CHECK` adds `src/app/api/subjects/[id]/download/route.ts` with its reason: own data only, under `adult_self_analysis`, the one unrestricted capability. `src/app/api/subjects/route.ts` now calls `accountCapability(…, "third_party_adult_analysis")` itself, so it is enforced and is not listed.
+- `src/app/api/jobs/retention/route.test.ts`: new cases only, five of them.
+- The appeal document scan worker became one pass over a ledger of three RPC names, shared by appeal and permission documents. `appeal-document-scan-worker.test.ts` is unchanged and passes.
+
+Ledgers:
+
+- `docs/route-divergence.json`: the `legal-evidence` declared-not-created `storageBucketDivergence` row is removed, as the owner asked. The migration now creates the bucket.
+- `docs/register-contract-divergence.json`: both `legal-evidence` `liveCallSiteOnUncreatedBucket` rows are closed, as their own closing condition says. The bucket census now observes the bucket. The new Storage call site `genomes src/lib/uploads/subject-original-download.ts` is recorded, and two call-site texts are updated.
+
+### New tests
+
+- pgTAP, run in rolled-back transactions with the migrations applied first:
+  - `supabase/tests/path_b_reviewed_document.sql`: 76 assertions. The review step uses a real reviewer principal through the existing claim-reviewer fixtures, with an aal2 TOTP claim. Nothing is auto-approved.
+  - `supabase/tests/subject_original_download.sql`: 47 assertions.
+- Vitest:
+  - `src/lib/uploads/path-b-reviewed-document-server.test.ts`: 17 cases;
+  - `src/lib/uploads/permission-document-review.test.ts`: 6;
+  - `src/lib/uploads/permission-document-routes.test.ts`: 7;
+  - `src/lib/uploads/subject-original-download.test.ts`: 27;
+  - `src/lib/future-person/permission-document-scan-worker.test.ts`: 5;
+  - `src/proxy.test.ts`: 6 new cases. They check `no-referrer` on the download shapes only, and that the download and `api.subjects` are held during the deletion notice period;
+  - `src/app/api/jobs/retention/route.test.ts`: 5.
+- E2E `e2e/function-payload.spec.ts`. This is the register's `payloadBoundaryContract.verification` file, so far for the two journeys this change adds. Every `/api/**` request and response body in every context is measured, and any body over 4,500,000 bytes fails the journey. The brief's array, 200 MB VCF and 8-sample cohort journeys are not in it yet.
+  1. A 9 MB signed permission crosses `api.legal-evidence-upload-session` and three bounded chunks. The registered TEST-LOCAL scanner scans the stored bytes. A real stepped-up reviewer is named and assigned only by the owner-only fixture (`grant_claim_reviewer_v1`, `assign_permission_document_review_v1`); assigning the uploader is refused. The reviewer reads every chunk, checks the SHA-256 and approves. `POST /api/subjects` returns `subject-created-v1` with no address in its body. The person then confirms with their own signature and no account. The activated basis is kept for 730 days.
+  2. The same reviewer rejects a second document. A second decision is refused, nothing is mailed, the key is erased and the subject is the purged tombstone.
+  3. `api.subject-download` returns a byte-identical copy of the caller's own 9 MB original in bounded chunks. It answers `invalid-request-v1` for an unknown query field and `resource-not-found-v1` for a foreign subject. A second open revokes the first session. Each chunk read is recorded once.
+
+### Not built, reported back
+
+- **`api.subject-export`.** The request and authority layer already accepts a subject target: `export_archive_request_v1` routes it to `api.subject-export` and `subject-export-v1`, requires `subject_account_id` to be the caller, and leaves the legal audit out.
+  - The producer does not accept one. Eleven member and due functions (`export_archive_account_*_v1`) refuse any target other than an account, the complete-capture layer is account-wide, and about 25 TypeScript readers assert `targetKind === "account"`.
+  - The account producer has no joint-result member to narrow. It refuses any account with a live family pair (`export_partition_projection_unavailable`). So "joint results only while the other contributor's permission is live" needs a portrait projection that does not exist yet.
+  - The TEST R2 pipeline needs the private HTTPS gateway and a real R2 bucket. That is an external provider, so a subject export cannot reach `ready` here.
+  - Recommended (option A): build it as its own slice. Widen those functions through `export_account_owned_capture_v1(origin, 'subject', id)`. Keep failing closed on any live joint artifact until the owner approves the portrait projection. Verify it with doubles and pgTAP, and run the R2 leg only in provider-qualified CI.
+- **`rejected-documentary-conflict`** is refused with no record. contradiction-v1 needs owner-approved notice texts.
+- After activation, a reviewed-document subject is held by the e-signature-keyed reading layer, mitigation, report reader and account archive. Each of these denies it, so they fail closed. No reviewer page exists for permission documents; reviewers use the API, as the e2e does.
+
+### Local results
+
+- `pnpm typecheck` and `pnpm lint` exit 0. `gate:secrets`, `gate:env`, `gate:routes`, `gate:sql-includes`, `gate:readability` and `gate:legal` all exit 0. `gate:readability` failed first on short status, label and button lines with unregistered words, such as "document", "signed" and "viruses". They were rewritten in registered words; no word was added to the vocabulary.
+- Full Vitest, run as root with `PLAYWRIGHT_BROWSERS_PATH` set: 745 of 751 files pass (13,042 tests). The 6 failing files are the known environment-only ones: `scripts/ci-browser-runtime.test.ts`, `scripts/owned-linux-runtime.test.ts`, `scripts/account-archive-root/checkpoint.test.ts`, `scripts/ci-browser/owned-control-close.test.ts`, `scripts/comprehension/manual-reconciliation.test.ts` and `scripts/comprehension/owned-lifecycle.test.ts`. After that run, the speculative export rule was taken out of `src/proxy.ts`, because export is not built. `src/proxy.test.ts` was rerun: 92/92.
+- pgTAP: 55 Path B, account, archive, export, deletion, evidence and RLS suites ran in rolled-back transactions on the shared database, once with both migrations applied first and once without. The results are identical except in five suites:
+  - The two new suites pass only with the migrations: `path_b_reviewed_document` 76/76 and `subject_original_download` 47/47.
+  - The three re-pinned suites, `other_adult_held_upload` (173/173), `drop_generated_artifacts_bucket` and `drop_genomes_staging_bucket`, pass with the migrations and fail their one pin without them.
+  - The failures on both sides are pre-existing on this shared database. They come from tree migrations it lacks (`20261016151200`, `153100`, `170000`), for example in `export_member_plan`, `account_deletion` and `path_b_confirmed_file_retention`, and from earlier fixture leftovers.
+- E2E: `flock /tmp/inherit-e2e.lock` ran the whole window. The command was `PLAYWRIGHT_BROWSERS_PATH=/home/inheritsmoke/.cache/ms-playwright node --import tsx scripts/run-upload-browser.mts --full -- e2e/function-payload.spec.ts --project=chromium`, with the shared `node_modules` bind-mounted for the build and the symlink restored afterwards.
+  - Result: 3 passed in 4.2 minutes. "E2E contract passed: 3 result(s), no skips, no retries." One browser upload crossed the provider proxy. Exit 0.
+  - Three earlier windows failed on the spec's own measurement, never on the product. First, Playwright waited forever for the body of a 201 the page never reads; the spec now reads such bodies through the repository's native response observer. Second, two responses never reported a finished size; the reviewed-document card now reads every response to the end, a 204 counts as empty, and a CDP byte count is the last measurement source. No assertion was relaxed: a body that is still unmeasured fails the journey.
+  - In each window both migrations were applied with psql, with no ledger row; the ledger stayed at 246 rows. Afterwards the `legal-evidence` objects were removed and the bucket deleted through the Storage API. The catalog was then restored to the snapshot taken before the window: functions with their exact ACLs, relations, columns, constraints, triggers, indexes, policies, types and buckets. Each window ended with the check "catalog identical to the snapshot".
+  - The synthetic accounts, subjects and invitations from the journeys stay, as other e2e runs leave theirs. The reviewed-document drafts and the subject-download sessions were deleted by the restore, because the restored constraints do not admit them.
+
+## 2026-10-16 — Laboratory-table transport test: the fake server's random tokens no longer spell a withheld value
+
+Hosted CI run 38943838371 (`repository-checks`, commit 58922301) failed `src/lib/embryos/upload-transport.test.ts` "drops a forbidden column, and every label and note, before any byte leaves this browser". The chunk body it reported held no file value. The fake server's random sample handle `S-69UrXOTyxYcCPozqVQwklJuS4njIcDwXXjWiVT87M` contains `XX`, one of the withheld Sex values. Every handle, the transport challenge and each question id are 43 random base64url characters, so the test failed at random. Locally the unchanged file failed this test in 5 of 40 runs.
+
+Test change, assertion unchanged: `tableServer` now draws its handles, transport challenge and question ids from `serverToken()`. It redraws any token that contains a withheld value, so they keep their shape and randomness. The withheld list moves to one `WITHHELD` constant with the same seven values, and the no-leak loop iterates it. The loop still asserts that no request body contains any of them. After the change, the test failed in 0 of 40 runs. A planted defect, where `serverToken()` returns a token starting `XX`, fails the test, so a server token that spells a withheld value is still caught.
 
 ## 2026-10-16 — G5.4: the claimant's temporary contact is exactly 730 days, and the claimant page states it
 

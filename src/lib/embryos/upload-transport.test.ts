@@ -168,9 +168,23 @@ const TABLE = [
   "PRIVATE_B,2,2000,CC,XY,", "PRIVATE_A,X,30,A,XX,", "",
 ].join("\n");
 
+// Values from the file that must never leave the browser. Sex is a forbidden
+// column, XX and XY are its values, and the rest are labels and notes.
+const WITHHELD = ["Sex", "XX", "XY", "PRIVATE_A", "PRIVATE_B", "PRIVATE_NOTE", "PRIVATE_LAB"];
+
+// A random handle or challenge from the fake server is base64url, so by chance
+// it can contain "XX" or "XY". The no-leak test would then report the server's
+// own token as a leak. Draw again until the token contains no withheld value.
+function serverToken() {
+  for (;;) {
+    const token = crypto.randomBytes(32).toString("base64url");
+    if (!WITHHELD.some((withheld) => token.includes(withheld))) return token;
+  }
+}
+
 function tableServer(options: { build?: "GRCh37" | "GRCh38" | null; mappingStatus?: number; tamperQuestion?: boolean } = {}) {
-  const handles = [0, 1].map(() => crypto.randomBytes(32).toString("base64url"));
-  const transportChallenge = crypto.randomBytes(32).toString("base64url");
+  const handles = [0, 1].map(() => serverToken());
+  const transportChallenge = serverToken();
   const log: { method: string; url: string; body: string }[] = [];
   const stored: { ordinals: number[]; text: string }[] = [];
   let build: "GRCh37" | "GRCh38" | null = null;
@@ -186,7 +200,7 @@ function tableServer(options: { build?: "GRCh37" | "GRCh38" | null; mappingStatu
   const transport = () => Response.json({ kind: "transport", build, challenge: transportChallenge, revision: 4_243,
     completionNonce: "synthetic-completion", csrfToken: "synthetic-csrf" });
   const ask = (kind: "columns" | "build", body: Record<string, unknown>) => {
-    pending = { kind, id: crypto.randomBytes(32).toString("base64url"), nonce: `synthetic-decide-${kind}` };
+    pending = { kind, id: serverToken(), nonce: `synthetic-decide-${kind}` };
     return Response.json({ kind, challengeId: pending.id, ...body, expiresAt: "2026-10-16T12:00:00.000Z", nonce: pending.nonce });
   };
   const buildQuestion = () => ask("build", { questionCopyId: "upload.build.question", options: [
@@ -318,7 +332,7 @@ describe("sendEmbryoFile, laboratory table", () => {
     const inspected = JSON.parse(fake.log[1].body);
     expect(inspected.headerColumns).toEqual(["Embryo", "Chromosome", "Position", "Genotype", "Note"]);
     for (const entry of fake.log) {
-      for (const withheld of ["Sex", "XX", "XY", "PRIVATE_A", "PRIVATE_B", "PRIVATE_NOTE", "PRIVATE_LAB"]) {
+      for (const withheld of WITHHELD) {
         expect(entry.body, `${entry.method} ${entry.url}`).not.toContain(withheld);
       }
     }

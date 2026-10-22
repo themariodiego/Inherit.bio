@@ -58,6 +58,46 @@ export const OTHER_ADULT_UPLOAD_COPY = {
 } as const;
 
 /**
+ * The reviewed-document branch of Path B (owner decision 2026-10-16, "The
+ * subjects endpoints (G2.1)"), TEST-LOCAL only: the uploader sends a
+ * permission document the person signed, a named person at Inherit reviews
+ * it, and only then is the person asked to confirm. Nothing here says the
+ * document is approved until a reviewer has decided.
+ */
+export const REVIEWED_DOCUMENT_COPY = {
+  flowLegend: "How they give permission",
+  flowEsignature: "They sign online. We email them a link.",
+  flowDocument: "They signed a permission document. I will send it.",
+  documentHeading: "Send their written permission",
+  documentDetail:
+    "Send the permission document they signed, as a PDF, JPEG or PNG of at most 20 MB. A person at Inherit reads it. Nothing is sent to them until it is approved.",
+  documentLabel: "Choose their written permission",
+  documentButton: "Send the file",
+  documentStatus: {
+    working: "Saving the file…",
+    scanning: "Checking the file for a virus…",
+    received: "We have the file.",
+    oversize: "Choose a file under 20 MB.",
+    type: "This file is not a PDF, JPEG or PNG.",
+    limited: "You cannot send another file for this person now.",
+    expired: "This page has expired. Open the page again.",
+    integrity: "The file changed as it was sent. Try again.",
+    malware: "This file did not pass the virus check.",
+    unscannable: "This file could not be checked for a virus. Try another copy.",
+    failed: "The file could not be sent. Try again.",
+  },
+  reviewStatus: (label: string) =>
+    `A person at Inherit is reading the document for ${label}. Nothing has been sent to them yet.`,
+  refusedStatus: (label: string) =>
+    `The document for ${label} was not approved. Nothing was sent to them, and their details are deleted.`,
+  requestDetail: (label: string) =>
+    `The document was approved. Send ${label} the request to confirm. Nothing is added until they confirm it.`,
+  requestButton: "Send the request",
+  requestFailed: "We could not send the request. Reload the page to try again.",
+  requestEnds: (date: string) => `This request ends on ${date}.`,
+} as const;
+
+/**
  * The person's side on `/withdraw/session`: the request to sign, then one
  * screen per file added for them.
  */

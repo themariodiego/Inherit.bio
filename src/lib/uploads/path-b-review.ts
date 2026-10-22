@@ -127,7 +127,10 @@ export async function loadPathBRequestReview(request: Request, now = Date.now())
   const nowIso = new Date(now).toISOString();
   const { data: draftData } = await looseAdmin(admin).from("adult_subject_drafts")
     .select("adult_flow, state, fixed_expires_at, owner_account_id").eq("subject_id", session.data.target_id).maybeSingle();
-  const draft = z.object({ adult_flow: z.literal("path-b-subject-esignature"), state: z.literal("invited"),
+  // Both Path B branches end in the person's own signature on this page: the
+  // reviewed-document branch (20261016190000) only adds the named-human
+  // document review before the request is sent. The database rechecks which.
+  const draft = z.object({ adult_flow: z.enum(["path-b-subject-esignature", "path-b-reviewed-document"]), state: z.literal("invited"),
     fixed_expires_at: z.string(), owner_account_id: z.uuid() }).safeParse(draftData);
   if (!draft.success || !(Date.parse(draft.data.fixed_expires_at) > now)) return null;
   const [{ data: subject }, { data: invitation }] = await Promise.all([

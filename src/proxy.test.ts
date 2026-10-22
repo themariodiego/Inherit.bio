@@ -454,3 +454,38 @@ describe("legal-evidence review-download response privacy", () => {
     }
   });
 });
+
+describe("subject download response privacy (sensitiveResponseHeaderBindings.downloadOrExport)", () => {
+  const subject = "12345678-1234-4234-8234-000000000004";
+  const strict = (response: Response) => {
+    for (const [name, value] of Object.entries(SENSITIVE_RESPONSE_HEADERS)) {
+      expect(response.headers.get(name)).toBe(name === "Referrer-Policy" ? "no-referrer" : value);
+    }
+  };
+
+  it.each([`/api/subjects/${subject}/download`, "/api/downloads/12345678-1234-4234-8234-000000000005/chunks/0"])(
+    "keeps no-referrer with every other strict header on %s", async path => {
+      const response = await visit(path);
+      expect(response.status).toBe(200); strict(response);
+    },
+  );
+
+  it.each([`/api/subjects/${subject}/download/extra`, `/api/subjects/${subject}/sharing`, "/api/subjects"])(
+    "leaves the ordinary sensitive policy outside the exact download shape: %s", async path => {
+      const response = await visit(path);
+      expect(response.status).toBe(200);
+      for (const [name, value] of Object.entries(SENSITIVE_RESPONSE_HEADERS)) {
+        expect(response.headers.get(name)).toBe(value);
+      }
+    },
+  );
+
+  it("holds the subject download and api.subjects during the deletion notice period, like every non-rights route", async () => {
+    mocks.profile = { deletion_requested_at: "2026-10-16T00:00:00Z", jurisdiction_code: "GB" };
+    const download = await visit(`/api/subjects/${subject}/download`);
+    expect(download.status).toBe(423);
+    expect(await download.json()).toEqual({ error: "account_deletion_notice_period" });
+    const drafts = await visit("/api/subjects");
+    expect(drafts.status).toBe(423);
+  });
+});

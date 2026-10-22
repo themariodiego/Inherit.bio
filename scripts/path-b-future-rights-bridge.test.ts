@@ -212,6 +212,12 @@ it("closes the complete later Path B replacement inventory, including dynamic re
     `${appealInformationFile}|public.activate_rights_session_v1`,
     "20261010063629_adult_upload_notice_context.sql|private.complete_own_upload_finalization_v1",
     "20261010063629_adult_upload_notice_context.sql|public.read_adult_upload_revision_v1",
+    // 20261016190000 (owner decision 2026-10-16, G2.1): the reviewed-document
+    // flow joins the e-signature flow in these four. Each is the generated
+    // current body with only the flow predicate widened and the reviewed
+    // document's basis recheck added; pgTAP pins both flows.
+    ...["private.confirm_path_b_subject_v1", "private.other_adult_upload_targets_v1", "private.path_b_signing_target_v1",
+      "private.path_b_subject_v1"].map(name => `20261016190000_path_b_reviewed_document.sql|${name}`),
   ].sort());
   expect(patches).toEqual(["20260930231000_path_b_normalization.sql|public.respond_adult_upload_revision_v1"]);
 });
@@ -242,6 +248,11 @@ it("reviews shared replacements across all six authored Path B migration stages"
     `${appealInformationFile}|public.activate_rights_session_v1`,
     "20261010063629_adult_upload_notice_context.sql|private.complete_own_upload_finalization_v1",
     "20261010063629_adult_upload_notice_context.sql|public.read_adult_upload_revision_v1",
+    // 20261016190000 (G2.1): the same reviewed-document widening, plus the
+    // account-branch core the six stages first defined.
+    ...["private.confirm_path_b_subject_account_core_v1", "private.confirm_path_b_subject_v1",
+      "private.other_adult_upload_targets_v1", "private.path_b_signing_target_v1", "private.path_b_subject_v1"]
+      .map(name => `20261016190000_path_b_reviewed_document.sql|${name}`),
   ].sort());
   expect(allPatches).toEqual([
     "20260930231000_path_b_normalization.sql|public.respond_adult_upload_revision_v1",
