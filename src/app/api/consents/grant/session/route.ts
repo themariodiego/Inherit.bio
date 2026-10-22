@@ -33,10 +33,12 @@ import { isExactKeys, otherAdultTypedNameIsValid } from "@/lib/uploads/other-adu
  *
  * Every failure is the same resource-not-found-v1, and so is any request
  * outside the test jurisdiction (Path B is TEST-LOCAL). The database refuses
- * every request until an adult-subject-control issuer exists, and while
- * other-adult-mitigation-state-v1 denies the uploader of a no-account
- * subject, which it does today. copilot.local is accepted by the closed body
- * and refused by the database: Path B has no Copilot scope.
+ * every request until an adult-subject-control issuer exists. It also runs
+ * other-adult-mitigation-state-v1 at purpose-grant-create, which allows the
+ * uploader of a no-account subject only while a 730-day clock is live and
+ * before the 30-day re-notice boundary (owner decision 2026-10-22,
+ * 20261016204000). copilot.local is accepted by the closed body and refused
+ * by the database until a Path B Copilot scope exists.
  */
 
 const body = z.object({

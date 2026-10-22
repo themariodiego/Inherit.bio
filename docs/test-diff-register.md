@@ -1,3 +1,35 @@
+## 2026-10-22 — Consent and rights endpoints, continued (G2.1, "Build all 24"): the no-account uploader gate, the revoke-all control and the remaining consent and rights routes
+
+Owner decisions of 2026-10-22 ("Consent, rights and claim endpoints (G2.1)", `docs/protocol/decisions.md`). This entry records each test change of the slice's second half. The census starts from the integration value 15, after `api.subject-export`.
+
+### Stated privacy-control change: the uploader gate for a person who confirmed with no account
+
+This is the one sanctioned privacy-control change, decided by the owner. New migration `supabase/migrations/20261016204000_path_b_no_account_uploader_gate.sql`, headed PRODUCTION RELEASE: GUARDED, TEST-LOCAL only. It patches the no-account branch of other-adult-mitigation-state-v1 in place. That branch lives in `private.other_adult_mitigation_before_public_appeal_v1`, which `private.other_adult_mitigation_v1` calls after its appeal hold. The patch uses the guard pattern of `20261016195000`: predecessor body md5 `a877304153a110c6710edf20019cb647`, one anchor, successor md5 `29c74c79cb3eeedbbdac44273a6f4de3`, and unchanged privileges, volatility and owner.
+
+- Before, the uploader of a person with no account was denied `adult.non-account-holder-24mo` at every checkpoint.
+- Now the uploader is allowed while three things hold: the subject's `non_account_subject` principal is active, at least one of its other-adult-held upload sessions has a live `adult.non-account-holder-24mo` clock (scheduled or active, with its fixed deadline ahead), and the request was accepted less than 30 days ago.
+- From accepted+30 days the uploader is denied `adult.re-notice-30d`, exactly as in the account case.
+- With no live clock or no active principal, the uploader is denied `adult.non-account-holder-24mo` as before. That covers the time before any file is confirmed and the time after every clock has ended.
+- The account case, the subject's own right, the 72-hour hold, every other recipient and the checkpoint list are unchanged.
+- The clock is read through its upload session, never through `other_adult_held_uploads`. `20261016170000` cancels a clock in the same statement that ends its confirmed file. So the reviewed census in `supabase/tests/other_adult_held_upload.sql` ("the held table is named only by the exact reviewed lifecycle functions") is unchanged. A first draft read the held table, and that census failed on it.
+- Every reader still needs the person's own uploader-direction grant. The only door that writes one for a person with no account, `grant_purpose_rights_v1`, stays closed until an adult-subject-control issuer exists.
+
+New test `supabase/tests/path_b_no_account_uploader_gate.sql`: 37 assertions, all passing in one rolled-back transaction on the shared database. The run applied the scan-lease prep, then migrations 151200, 170000, 175000, 180000, 190000, 191000, 195000 and 196000, then this migration. Without the migration, 8 fail. The assertions cover:
+
+- denied with no confirmed file, and with a held file that has no yes yet;
+- allowed at all eleven checkpoints inside the window, and still allowed at 29 days;
+- denied `adult.re-notice-30d` at 31 days while the clock is still live;
+- denied once the deadline has passed (before the sweep), once the clock is cancelled while the file is still confirmed, once the principal is no longer active, and once the person refuses the file;
+- the account case unchanged: subject-own-right-only, allow inside 30 days, deny at 31 days, the 72-hour hold, anyone else not found, and the closed checkpoint list.
+
+Six planted defects each failed named assertions besides the md5 pin: no clock check (8), no 30-day boundary (3), no deadline check (2), no principal check (2), any clock state (4) and a clock of any subject (8).
+
+Compared with and without the migration, in rolled-back transactions with the same prep and this branch's migrations 200000 to 203000, every suite that names `other_adult`, `path_b` or `path-b` gave identical results: 29 suites. Five of them have the same failures or errors with and without the migration. These come from rows already on the shared database, not from the migration: a duplicate `worker_jobs_idempotency_idx` key in `account_archive_readable_graph` and `path_b_queued_reports`, a subquery that returns more than one row in `account_deletion_purge`, and pre-existing claimable jobs in `declared_chromosomal_sex` and `path_b_confirmed_array_normalization`. Hosted CI runs them on a fresh database. `supabase/tests/path_b_reading_layer.sql` keeps its assertion that a no-account person's uploader is denied `adult.non-account-holder-24mo`, because its person has no confirmed file there. No existing assertion changes.
+
+### The revoke-all control on /settings/consents
+
+`/settings/consents` now renders the control for `api.consents-revoke-all`. Its visible label is exactly the owner's text, "Turn off every permission you have given. Results made under them are deleted. Your files stay." While it waits it shows the existing "Working…". On any failure it shows the existing deletion-control line "This confirmation expired. Please try again." Either way the page renders again with a fresh nonce. The coordinator confirmed option A, so no new words are introduced. The page mints the one-time `consents_revoke_all` account operation nonce (`src/lib/consents-revoke-all-control.ts`). The control posts `{confirmation: "consents.revoke-all.confirmation", nonce}` to the built route. The words live in the copy registry `src/copy/settings/consents.ts`, which `gate:readability` reads. New test `src/copy/settings/consents.test.ts` (4 cases) holds the exact text, the reuse of the two existing strings, the closed body and the page wiring. No existing assertion changes.
+
 ## 2026-10-16 — Consent and rights endpoints (G2.1, "Build all 24"): `api.consents-revoke-all`, `api.embryo-record-key-cards-rights`, `api.consent-revoke-rights` and `api.consent-grant-rights`
 
 Owner decision 2026-10-16 ("Unbuilt registered endpoints (G2.1)", `docs/protocol/decisions.md`): every registered endpoint gets built, and an endpoint whose contract depends on unbuilt pieces or open design questions is raised with the owner first. This slice covers the eight consent and rights endpoints. The questions it raised are reported back. This entry records each test change the slice makes.
