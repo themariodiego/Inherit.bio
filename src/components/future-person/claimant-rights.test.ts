@@ -4,6 +4,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { CLAIMANT_CONTACT_KEEP_DAYS, CLAIMANT_DELETION_DAYS, CLAIMANT_RIGHTS_COPY as COPY } from "@/copy/rights/claimant-rights";
 import { ClaimantRights } from "./claimant-rights";
+import { CLAIMANT_DELETE_CONTROL, CLAIMANT_PAGE } from "../../../e2e/fixtures/claimant-record-page-text";
 
 /**
  * G5.4 for the future adult: the claimed record's page states its retention
@@ -93,5 +94,25 @@ describe("the claimed record's rights page", () => {
     // The label is the only text the action adds; the nonce never renders.
     expect(text(withExport).replace(COPY.exportLabel, "").replace(/\s+/g, " ").trim()).toBe(text(without).trim());
     expect(withExport).not.toContain("x".repeat(40));
+  });
+  it("renders exactly the words the claimed-record browser journey asserts, and no delete words without a delete control", () => {
+    // e2e/future-person-claimed-record-journey.spec.ts asserts these strings
+    // on /withdraw/session; this holds the rendered component to the same text,
+    // so a copy change fails here before it reaches a hosted browser run.
+    const slot = (html: string, name: string) => text(html.match(new RegExp(`data-slot="${name}">([^<]*)</p>`, "u"))?.[1] ?? "").trim();
+    const closed = render(null), open = render({ csrf: "d".repeat(64), nonce: "n".repeat(40) });
+    for (const html of [closed, open]) {
+      expect(slot(html, "claimant-retention")).toBe(CLAIMANT_PAGE.retention);
+      expect(slot(html, "claimant-contact")).toBe(CLAIMANT_PAGE.contact);
+      expect(html).toMatch(new RegExp(`<h1[^>]*>${CLAIMANT_PAGE.heading}</h1>`, "u"));
+      for (const value of [CLAIMANT_PAGE.intro, CLAIMANT_PAGE.recoveryLegend, CLAIMANT_PAGE.recoveryAcknowledgement, CLAIMANT_PAGE.recoveryButton])
+        expect(text(html)).toContain(value);
+    }
+    // Owner decision 2026-10-22, "How G5.4's claimant delete is proven": the
+    // standard app presents no delete control, so none of its words render.
+    for (const value of Object.values(CLAIMANT_DELETE_CONTROL)) {
+      expect(text(closed)).not.toContain(value);
+      expect(text(open)).toContain(value);
+    }
   });
 });

@@ -43,6 +43,20 @@ describe("registered one-use claimant DELETE and presentation",()=>{
  it.each([request({},"/api/future-person/claim/session?subjectId=forbidden"),request({},undefined,"{}"),request({"content-length":"1"}),request({"transfer-encoding":"chunked"})])("refuses query/body/declared bytes/transfer encoding without any deletion work",async r=>{
   expect((await DELETE(r)).status).toBe(404);expect(service.configured).not.toHaveBeenCalled();expect(service.complete).not.toHaveBeenCalled();
  });
+ it("refuses the page's own CSRF without a delete nonce before service discovery, as the standard browser app sends it",async()=>{
+  // e2e/future-person-claimed-record-journey.spec.ts step 5: the standard app
+  // mints no delete nonce, so the page's same-origin DELETE carries only its CSRF.
+  const r=new Request("https://example.test/api/future-person/claim/session",{method:"DELETE",
+   headers:{cookie,origin:"https://example.test","sec-fetch-site":"same-origin","x-inherit-csrf":claimantCsrf(hash)}});
+  const response=await DELETE(r);expect(response.status).toBe(404);expect(await response.json()).toEqual({error:"not_found"});
+  expect(response.headers.get("cache-control")).toBe("private, no-store");expect(response.headers.get("referrer-policy")).toBe("no-referrer");
+  expect(service.configured).not.toHaveBeenCalled();expect(service.complete).not.toHaveBeenCalled();
+ });
+ it("presents no delete control where the TEST deletion executor is not configured",async()=>{
+  service.configured.mockReturnValue(null);
+  expect(await presentClaimantDeletion(new Request("https://example.test/withdraw/session",{headers:{cookie}}))).toBeNull();
+  expect(service.rpc).not.toHaveBeenCalled();expect(service.ready).not.toHaveBeenCalled();expect(service.complete).not.toHaveBeenCalled();
+ });
  it("closed capability never prepares or accepts",async()=>{
   service.configured.mockReturnValue(null);expect((await DELETE(request())).status).toBe(404);expect(service.complete).not.toHaveBeenCalled();
  });
