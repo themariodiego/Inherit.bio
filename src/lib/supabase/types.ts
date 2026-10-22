@@ -8910,6 +8910,13 @@ export type Database = {
         Args: { p_account_id: string; p_session_id: string; p_prior_grant_id: string }
         Returns: Json
       }
+      reaffirm_purpose_rights_v1: {
+        Args: {
+          p_session_hash: string; p_nonce: string; p_presentation: Json; p_statement_keys: string[];
+          p_signing_name_ciphertext: string; p_jurisdiction_code: string; p_test_jurisdiction: boolean
+        }
+        Returns: Json
+      }
       reaffirm_purpose_grant_v1: {
         Args: {
           p_account_id: string; p_session_id: string; p_prior_grant_id: string; p_offer: Json;

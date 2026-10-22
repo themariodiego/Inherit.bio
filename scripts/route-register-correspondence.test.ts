@@ -24,10 +24,10 @@ import { storageBucketsInSource, UNRESOLVED_STORAGE_BUCKET } from "./storage-con
  *
  * Registered-but-unbuilt is deliberately not failed here. The register is
  * written from the brief and describes routes the product has not reached
- * yet; 10 of them remain unbuilt after the native appeal review, notice, auth,
+ * yet; 9 of them remain unbuilt after the native appeal review, notice, auth,
  * mapping, subject-sharing and subjects (G2.1) routes, the one-record
  * subject export, and the consent and rights routes (consents revoke-all,
- * no-account Record Key Card, no-account grant and revoke, and reaffirm). A
+ * no-account Record Key Card, no-account grant and revoke, and both reaffirm routes). A
  * redirect that `next.config.ts` serves counts as built.
  * The exact current count prevents a broken walker from passing silently.
  *
@@ -246,9 +246,11 @@ describe("the route register and the App Router describe the same surface", () =
     // api.consent-revoke-rights and api.consent-grant-rights, closed until an
     // adult-subject-control issuer exists, to 12 and 11. api.consent-reaffirm,
     // which re-runs an own-subject self grant or an adult directional grant
-    // whose text was superseded, reduces it to 10.
+    // whose text was superseded, reduces it to 10, and its no-account twin
+    // api.consent-reaffirm-rights, built closed until its session issuer and
+    // notice wording exist, to 9.
     // Keep the exact census: new implementations require an explicit review.
-    expect(unbuilt.length).toBe(10);
+    expect(unbuilt.length).toBe(9);
     expect(unbuilt.length).toBeLessThan(entries.length);
   });
 });

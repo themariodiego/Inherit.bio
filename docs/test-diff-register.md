@@ -66,6 +66,39 @@ Vitest: new `src/app/api/consents/reaffirm/route.test.ts` (8 cases). Six planted
 
 The census in `scripts/route-register-correspondence.test.ts` goes from 11 to 10 for `api.consent-reaffirm`, with a comment.
 
+### `api.consent-reaffirm-rights`, built closed
+
+`POST /api/consents/reaffirm/session` (register `api.consent-reaffirm-rights`) is the no-account twin of `api.consent-reaffirm`. A person who confirmed a Path B request with no account signs the current `consent.share-with-adult` for the uploader-direction grant they signed before. They do it through a `consent-reaffirm` rights session bound to that prior grant and its revision. The route is built closed. The credential that would open such a session is a mailed notice whose wording is not approved, so no issuer exists and `private.rights_session_purposes` has no `consent-reaffirm` row. The migration refuses to apply if one exists. Every failure answers `resource-not-found-v1`, and so does every request outside TEST-LOCAL. Nothing is mailed.
+
+- The closed body serves `jurisdictionCode`, not the attestation fields, per the recorded divergence in `docs/route-divergence.json`.
+- The body nonce is a sealed form token bound to sha256 of the rights cookie (new public form id `consent-reaffirm-rights`).
+- The presentation token (`src/lib/consents/reaffirm-rights.ts`) binds twelve values, and the database rechecks each one and consumes its nonce.
+
+New migration `supabase/migrations/20261016206000_consent_reaffirm_rights.sql`, headed PRODUCTION RELEASE: GUARDED, adds `public.reaffirm_purpose_rights_v1`. In one transaction it:
+
+1. checks the TEST flag, locks the session, consumes its nonce and rechecks the purpose matrix;
+2. locks the prior pair at the session's bound revision. The signer must be the session's active non-account principal, with no account, as its own data subject, on an active `other_adult` subject that has no account and a confirmed Path B draft. The recipient must be the subject's current uploader principal over a current uploader relationship at the bound revision. The prior text must be superseded;
+3. requires the twelve presented values and the current text, and consumes the presentation nonce;
+4. runs other-adult-mitigation-state-v1 at purpose-grant-create;
+5. requires the exact statements, a ciphertext typed name and a well-formed code;
+6. supersedes the prior pair, writes a fresh no-account signature and one pair at the prior revision plus one over the same relationship, consumes the session and audits.
+
+Nothing existing is changed.
+
+New test `supabase/tests/consent_reaffirm_rights.sql`: 33 assertions, all new and all passing in one rolled-back transaction. The run used the prep and migrations above, plus `20261016204000` and `20261016206000`. The test proves:
+
+- Block 1, the route is closed: no registered purpose, the matrix answers false, a session insert is refused, and the door refuses.
+- Block 2, inside the transaction only, the purpose is registered and a new text version is published:
+  - the door refuses while the text is current, and while the real mitigation denies, because no 730-day clock exists;
+  - with the mitigation replaced by an allow, it refuses the wrong flag, purpose, recipient, prior revision, superseded text, an extra key, statements, name, code, a stale-revision session and a removed matrix row;
+  - it then reaffirms once and refuses the consumed session.
+
+Eight planted SQL defects each failed named assertions: no TEST flag, no presentation match, the old text admitted, no mitigation, no revision bump, the session kept, no matrix recheck and no typed name.
+
+Vitest: new `src/app/api/consents/reaffirm/session/route.test.ts` (5 cases). Six planted route defects each failed a case: no TEST-LOCAL check, a presentation not bound to the session, an open body, a plaintext name, no statement check and an unchecked receipt.
+
+The census goes from 10 to 9 for `api.consent-reaffirm-rights`, with a comment.
+
 ## 2026-10-16 — Consent and rights endpoints (G2.1, "Build all 24"): `api.consents-revoke-all`, `api.embryo-record-key-cards-rights`, `api.consent-revoke-rights` and `api.consent-grant-rights`
 
 Owner decision 2026-10-16 ("Unbuilt registered endpoints (G2.1)", `docs/protocol/decisions.md`): every registered endpoint gets built, and an endpoint whose contract depends on unbuilt pieces or open design questions is raised with the owner first. This slice covers the eight consent and rights endpoints. The questions it raised are reported back. This entry records each test change the slice makes.
