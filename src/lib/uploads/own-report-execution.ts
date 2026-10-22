@@ -18,6 +18,9 @@ import { lineageLoci } from "../ancestry/lineage-panel";
 import type { OwnAncestryCall } from "./own-ancestry-content";
 import { SEVEN_OWN_ANCESTRY_PANEL } from "./own-ancestry-content-v3";
 import { computeOwnAncestryContentV4 } from "./own-ancestry-content-v4";
+import { computeOwnAncestryContentV5 } from "./own-ancestry-content-v5";
+import { estimateNeanderthal, neanderthalLoci } from "../genome/neanderthal";
+import { neanderthalEstimateBuilt } from "../genome/neanderthal-availability";
 
 const REPORT_PURPOSES = ["reports.monogenic", "reports.polygenic"] as const;
 const PURPOSES = [...REPORT_PURPOSES, "ancestry"] as const;
@@ -160,12 +163,48 @@ export async function generateOwnReportResults({ actor, fileId, signal, readyMai
             if (rows.data.length < 1000) break;
           }
         }
+        // The Neanderthal estimate reads a separate licence-checked panel and
+        // is TEST-LOCAL only (owner decision 2026-10-16, G7.4). Production
+        // computes, stores and shows nothing of it: the capability is OFF, so
+        // the panel is not even read there, and the stored content stays
+        // revision 4. Under TEST-LOCAL the autosomal panel sites are read with
+        // the same encoding-appropriate operation the AIMs panel uses.
+        const neanderthalBuilt = neanderthalEstimateBuilt();
+        const neanderthalCalls: OwnAncestryCall[] = [];
+        if (neanderthalBuilt) {
+          const neanderthalPoints = neanderthalLoci();
+          for (let index = 0; index < neanderthalPoints.length; index += 200) {
+            const loci = neanderthalPoints.slice(index, index + 200);
+            const requested = new Set(loci.map(point => `${point.chrom}:${point.pos}`));
+            if (preparedSource) {
+              if (encoding !== "vcf-literal") throw new Error("unavailable");
+              for await (const page of preparedPages(loci)) {
+                neanderthalCalls.push(...page.observations.map(({ call: row }) => ({ file_id: row.file_id,
+                  chrom: row.chrom, pos: row.pos, ref: row.ref, alt: row.alt, genotype: row.genotype, usable: row.usable! })));
+              }
+              continue;
+            }
+            for (let offset = 0; ; offset += 1000) {
+              const response = await call(operation, { loci, offset });
+              const rows = z.array(callSchema).max(1000).safeParse(response.data);
+              if (response.error || !rows.success || rows.data.some(row => row.file_id !== fileId
+                || !requested.has(`${row.chrom}:${row.pos}`) || (encoding === "vcf-literal" && typeof row.usable !== "boolean")))
+                throw new Error("unavailable");
+              neanderthalCalls.push(...rows.data.map(row => ({ file_id: row.file_id, chrom: row.chrom, pos: row.pos,
+                ref: row.ref, alt: row.alt, genotype: row.genotype, usable: row.usable ?? true })));
+              if (rows.data.length < 1000) break;
+            }
+          }
+        }
         const checked = await call("check"), same = claimSchema.safeParse(checked.data);
         if (checked.error || !same.success || JSON.stringify(same.data) !== JSON.stringify(claim)) throw new Error("unavailable");
-        const ancestry = computeOwnAncestryContentV4({ source: { fileId, subjectId: claim.authorization.subjectId,
+        const computed = computeOwnAncestryContentV4({ source: { fileId, subjectId: claim.authorization.subjectId,
           normalizedBuild: source.normalizedBuild, callEncoding: encoding, sourceRevision: claim.authorization.sourceRevision,
           sourceSha256: claim.authorization.sourceSha256, normalizedAt: claim.authorization.normalizedAt },
           calls, lineageCalls, panel: SEVEN_OWN_ANCESTRY_PANEL });
+        const ancestry = neanderthalBuilt
+          ? computeOwnAncestryContentV5(computed, estimateNeanderthal(neanderthalCalls, encoding))
+          : computed;
         const finished = await call("complete", { ancestry, readyMail: await envelope() });
         const done = doneSchema.safeParse(finished.data);
         if (finished.error || !done.success || done.data.purpose !== purpose) throw new Error("unavailable");

@@ -8,6 +8,9 @@ import { reportCatalogTemplateSchema } from "../genome/report-catalog-snapshot";
 import { REPORT_SCIENTIFIC_CORRECTION_NOTICE } from "../genome/report-scientific-corrections";
 import { computeOwnAncestryContent, CURRENT_OWN_ANCESTRY_PANEL } from "../uploads/own-ancestry-content";
 import { computeOwnAncestryContentV3, SEVEN_OWN_ANCESTRY_PANEL } from "../uploads/own-ancestry-content-v3";
+import { computeOwnAncestryContentV4 } from "../uploads/own-ancestry-content-v4";
+import { computeOwnAncestryContentV5 } from "../uploads/own-ancestry-content-v5";
+import { NEANDERTHAL_PANEL } from "../genome/neanderthal-panel";
 import { REGIONAL_AIMS, REGIONAL_CAVEAT } from "../genome/regional-admixture";
 const preparedExport = vi.hoisted(() => vi.fn());
 vi.mock("../genome/prepared-source/export-source", () => ({ exportOwnPreparedRecords: preparedExport }));
@@ -98,6 +101,18 @@ describe("own-subject export content", () => {
     let reads = 0;
     const revoked = db(a => a.p_operation === "check" ? source : ++reads === 1 ? [row] : []);
     await expect(ownSubjectExportContent(revoked, actor).ancestry(source)).rejects.toThrow("export unavailable");
+  });
+
+  it("exports a revision-5 capture exactly, Neanderthal block included, as the person's own stored result", async () => {
+    const previous = ancestryResult();
+    const v4 = computeOwnAncestryContentV4({ source: previous.result.source, calls: [], lineageCalls: [], panel: SEVEN_OWN_ANCESTRY_PANEL });
+    const result = computeOwnAncestryContentV5(v4, { panelSites: NEANDERTHAL_PANEL.siteCount, coveredSites: 4, archaicSites: 1,
+      estimate: 0.25, interval: { low: 0.1, high: 0.5 }, resamples: 200 });
+    const row = { ...previous, result };
+    const exported = await ownSubjectExportContent(db(a => a.p_operation === "check" ? source : [row]), actor).ancestry(source);
+    expect(exported).toEqual([{ file_id: source.file.id, subject_id: source.file.subject_id,
+      purpose: "ancestry", completed_at: row.completed_at, result }]);
+    expect(exported[0].result).toMatchObject({ schemaVersion: 5, neanderthal: { coveredSites: 4, basis: "modelled" } });
   });
 
   it("exports exact stored ancestry with source binding and preserves the unavailable coverage state", async () => {

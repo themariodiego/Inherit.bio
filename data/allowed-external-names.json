@@ -1180,6 +1180,33 @@
         ".github/workflows/claim-scanner-real-proof.yml",
         "scripts/claim-scanner-real-proof.run.mts"
       ]
+    },
+    {
+      "name": "Creative Commons",
+      "category": "cited-organisation",
+      "aliases": [
+        "creative commons",
+        "creativecommons.org"
+      ],
+      "reason": "Publisher of the CC BY 4.0 licence that governs the shipped Neanderthal marker panel; cited by URL in its licence record.",
+      "evidence": [
+        "data/ref/neanderthal/PROVENANCE.md",
+        "docs/dataset-licenses.md"
+      ]
+    },
+    {
+      "name": "Mendeley Data",
+      "category": "public-reference-dataset",
+      "aliases": [
+        "mendeley",
+        "mendeley data",
+        "data.mendeley.com"
+      ],
+      "reason": "Repository of the CC BY 4.0 Sprime results the Neanderthal panel is derived from; its deposit record was read for the licence.",
+      "evidence": [
+        "data/ref/neanderthal/PROVENANCE.md",
+        "docs/dataset-licenses.md"
+      ]
     }
   ]
 }

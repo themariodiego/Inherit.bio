@@ -489,16 +489,77 @@ describe("LineageCard", () => {
 });
 
 describe("NeanderthalCard", () => {
-  it("renders #neanderthal with the mandated heading and Denisovan sentence, and never the archaic-hominin string", () => {
-    const html = renderToStaticMarkup(h(NeanderthalCard));
+  const ESTIMATE = {
+    subjectId: "00000000-0000-4000-8000-000000000000",
+    share: 0.406, interval: { low: 0.333, high: 0.461 },
+    coveredSites: 180, panelSites: 3110, panelVersion: "browning2018-sprime-ceu-chb-gih-grch38-2026-10-22",
+  };
+
+  it("production (capability off): the heading, the Denisovan sentence, the production body, no figure, no percent, no archaic-hominin", () => {
+    const html = renderToStaticMarkup(h(NeanderthalCard, { built: false }));
     expect(html).toContain('id="neanderthal"');
     expect(html).toMatch(new RegExp(`<h2[^>]*>${NEANDERTHAL_HEADING}</h2>`));
     expect(html).toContain(DENISOVAN);
+    // The production body no longer claims the marker list is unbuilt (it is
+    // built and licence-checked now); it says the estimate is not switched on
+    // here. See docs/test-diff-register.md.
     expect(html).toContain(NEANDERTHAL_BODY);
+    expect(NEANDERTHAL_BODY).toContain("built and licence-checked");
+    // The old sentence ("has not yet built and licence-checked the marker
+    // list") became false once the list shipped; it must not come back.
+    expect(NEANDERTHAL_BODY).not.toContain("not yet built");
     expect(NEANDERTHAL_BODY.trim().split(/\s+/).length).toBeLessThanOrEqual(40);
     expect(html).not.toContain("data-figure-kind");
     expect(html).not.toContain("%");
     expect(html).not.toContain("archaic-hominin");
     expect(openingTags(html).filter((tag) => /^h[1-6]$/.test(tag.tag))).toHaveLength(1);
+  });
+
+  it("TEST-LOCAL, file covers no panel sites: the not-covered sentence, still no figure or percent", () => {
+    const html = renderToStaticMarkup(h(NeanderthalCard, {
+      built: true,
+      estimate: { ...ESTIMATE, share: 0, interval: null, coveredSites: 0 },
+    }));
+    expect(html).toContain("does not cover the markers this estimate needs");
+    expect(html).toContain(DENISOVAN);
+    expect(html).not.toContain("data-figure-kind");
+    // No number is shown, so no percent sign and not the 0%-from-array caveat.
+    expect(html).not.toContain("%");
+    expect(html).not.toContain(NEANDERTHAL_BODY);
+  });
+
+  it("TEST-LOCAL, covered: the estimate as a modelled ancestry share with its range, the covered count, panel/version and resolution limit", () => {
+    const html = renderToStaticMarkup(h(NeanderthalCard, { built: true, estimate: ESTIMATE }));
+    // The estimate is a modelled ancestry-share figure, not a region share.
+    expect(html).toContain('data-figure-kind="ancestry-share"');
+    expect(html).toContain('data-figure-basis="modelled"');
+    expect(html).toContain("computed:src/lib/genome/neanderthal.ts");
+    expect(html).toContain("40.6%");
+    expect(html).toContain("(33.3–46.1%)");
+    // The covered-site count renders as an observed coverage figure.
+    expect(html).toContain('data-figure-kind="coverage"');
+    expect(html).toContain("180");
+    expect(html).toContain("3110");
+    // G4.4 provenance beside it, and the plain limits.
+    expect(html).toContain(ESTIMATE.panelVersion);
+    expect(html).toContain("says nothing about Neanderthal DNA anywhere else");
+    expect(html).toContain("not your whole-genome Neanderthal ancestry");
+    expect(html).toContain(MODELLED_MARKER);
+    expect(html).toContain(DENISOVAN);
+  });
+
+  it("the comparison figure stays hidden: no comparator slot renders while the review flag is off", () => {
+    const html = renderToStaticMarkup(h(NeanderthalCard, { built: true, estimate: ESTIMATE }));
+    expect(html).not.toContain("neanderthal-comparator");
+    // No reviewed comparison sentence is shipped, so none of the brief's
+    // comparator wording can appear.
+    expect(html).not.toMatch(/a little under 2%/i);
+    expect(html).not.toContain("archaic-hominin");
+  });
+
+  it("TEST-LOCAL, no result generated yet: the plain nothing-read line, no figure", () => {
+    const html = renderToStaticMarkup(h(NeanderthalCard, { built: true, estimate: null, absence: "nothing-read" }));
+    expect(html).toContain(NOTHING_READ);
+    expect(html).not.toContain("data-figure-kind");
   });
 });

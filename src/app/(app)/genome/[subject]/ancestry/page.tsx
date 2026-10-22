@@ -54,7 +54,8 @@ import { resolveSubjectRoute } from "@/lib/family/subject-route";
 import { route } from "@/lib/primary-routes";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
-import { loadAncestryResultSnapshot } from "@/lib/ancestry/own-results";
+import { loadAncestryResultSnapshot, type NeanderthalEstimateRow } from "@/lib/ancestry/own-results";
+import { neanderthalEstimateBuilt } from "@/lib/genome/neanderthal-availability";
 import { ancestryAbsence, type AncestryAbsence } from "@/lib/ancestry/absence";
 import { loadOwnReportChoicesPanel } from "@/lib/uploads/prepare-own-report-choices";
 
@@ -173,6 +174,12 @@ export default async function AncestryPage(
   let regionInputs: InputSourceView[], maternalInputs: InputSourceView[], paternalInputs: InputSourceView[];
   let confirmationRequired = false, preparedUnavailable = false;
   let absence: AncestryAbsence = "nothing-read";
+  // The Neanderthal estimate is a TEST-LOCAL capability (owner decision
+  // 2026-10-16, G7.4) and is read only for the account's own records; it is
+  // not shared in Family (`capturedAncestryRows` never surfaces it), so the
+  // family branch leaves it null.
+  const neanderthalBuilt = neanderthalEstimateBuilt();
+  let neanderthalEstimate: NeanderthalEstimateRow | null = null;
   if (person) {
     const captured = await loadSharedAncestrySnapshot(admin, {
       subjectId: dataSubjectId, counterpartAccountId: person.counterpartAccountId,
@@ -200,6 +207,12 @@ export default async function AncestryPage(
     const current = new Set(await captured.confirm());
     rows = selectedRows.filter((row): row is AncestryResultRow => row !== undefined && current.has(row));
     fileCount = count; preparing = inPreparation;
+    // Show the estimate only for a file whose ancestry rows are confirmed in
+    // this same read: a withdrawn or superseded source withholds it too.
+    if (neanderthalBuilt) {
+      const confirmedFiles = new Set(rows.map(row => row.file_id));
+      neanderthalEstimate = captured.neanderthal.find(estimate => confirmedFiles.has(estimate.file_id)) ?? null;
+    }
     // Only a page with nothing to show asks why. The answer is the Reports
     // page's own "Choose your reports" section: "off" when that section is
     // there and reads "Ancestry · Off", "not generated" when it reads "On".
@@ -320,7 +333,21 @@ export default async function AncestryPage(
       {lineageCall(y?.result)?.haplogroup != null
         ? <div data-slot="paternal-input-provenance"><InputProvenance nested sources={paternalInputs} subject={{ subjectId: dataSubjectId }} /></div> : null}
 
-      <NeanderthalCard />
+      <NeanderthalCard
+        built={neanderthalBuilt}
+        estimate={neanderthalEstimate
+          ? {
+              subjectId: dataSubjectId,
+              share: neanderthalEstimate.estimate ?? 0,
+              interval: neanderthalEstimate.interval,
+              coveredSites: neanderthalEstimate.coveredSites,
+              panelSites: neanderthalEstimate.panelSites,
+              panelVersion: neanderthalEstimate.panelVersion,
+            }
+          : null}
+        absence={absence}
+        reportsHref={reportsHref}
+      />
 
       <section aria-labelledby="sources-heading" className="space-y-3">
         <h2 id="sources-heading" className="title text-ink">
