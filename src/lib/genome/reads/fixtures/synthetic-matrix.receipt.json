@@ -1,0 +1,240 @@
+{
+  "schemaVersion": 1,
+  "generator": "scripts/generate-read-calling-fixtures.ts",
+  "classification": "invented reads from an invented reference; no person, sample or real genome",
+  "thresholds": {
+    "version": "inherit-read-calls-v1",
+    "minimumDepth": 10,
+    "minimumBaseQuality": 20,
+    "minimumMappingQuality": 20,
+    "heterozygousLow": 0.25,
+    "heterozygousHigh": 0.75,
+    "homozygousMinimum": 0.9,
+    "reviewed": false
+  },
+  "files": {
+    "synthetic-reference.fa": {
+      "sha256": "814d31e22890d516d78a1ef1e1b0fce07d5f3554bc38f1c6029a8e098cab20db",
+      "bytes": 4692
+    },
+    "synthetic-matrix.bam": {
+      "sha256": "4859afb0f1d6c81756d127c95dbefcc207dab0f76e6471ad4816b87d61820180",
+      "bytes": 25040
+    },
+    "synthetic-matrix.cram": {
+      "sha256": "47454f71f8d1a7f7ff8b6448f51a9335a463af78a9115d3e95824febfdee5867",
+      "bytes": 18047
+    }
+  },
+  "contigs": [
+    {
+      "name": "chr20",
+      "length": 1500,
+      "md5": "b0b6ee245c2e198e1b4e258269e83a82"
+    },
+    {
+      "name": "chr21",
+      "length": 1500,
+      "md5": "a94902e90ee4433690360a7e169f312b"
+    },
+    {
+      "name": "chr22",
+      "length": 1500,
+      "md5": "266c72fcd203b06dd3f6211f8bc3a203"
+    }
+  ],
+  "reads": 167,
+  "truth": [
+    {
+      "state": "called",
+      "genotype": "0/0",
+      "depth": 20,
+      "refCount": 20,
+      "altCount": 0,
+      "otherCount": 0,
+      "overlapping": 20,
+      "reason": null,
+      "alt": "G",
+      "id": "hom_ref",
+      "contig": "chr20",
+      "position": 250,
+      "ref": "A",
+      "alts": [
+        "G"
+      ],
+      "rsid": 900001
+    },
+    {
+      "state": "called",
+      "genotype": "0/1",
+      "depth": 20,
+      "refCount": 10,
+      "altCount": 10,
+      "otherCount": 0,
+      "overlapping": 20,
+      "reason": null,
+      "alt": "G",
+      "id": "second_alternate",
+      "contig": "chr20",
+      "position": 450,
+      "ref": "A",
+      "alts": [
+        "C",
+        "G"
+      ],
+      "rsid": 900002
+    },
+    {
+      "state": "called",
+      "genotype": "0/1",
+      "depth": 24,
+      "refCount": 12,
+      "altCount": 12,
+      "otherCount": 0,
+      "overlapping": 24,
+      "reason": null,
+      "alt": "G",
+      "id": "het",
+      "contig": "chr20",
+      "position": 700,
+      "ref": "C",
+      "alts": [
+        "G"
+      ],
+      "rsid": 900003
+    },
+    {
+      "state": "called",
+      "genotype": "1/1",
+      "depth": 18,
+      "refCount": 0,
+      "altCount": 18,
+      "otherCount": 0,
+      "overlapping": 18,
+      "reason": null,
+      "alt": "G",
+      "id": "hom_alt",
+      "contig": "chr20",
+      "position": 1150,
+      "ref": "C",
+      "alts": [
+        "G"
+      ],
+      "rsid": 900004
+    },
+    {
+      "state": "no_call",
+      "genotype": "./.",
+      "depth": 6,
+      "refCount": 3,
+      "altCount": 3,
+      "otherCount": 0,
+      "overlapping": 6,
+      "reason": "low_depth",
+      "alt": "A",
+      "id": "low_depth",
+      "contig": "chr21",
+      "position": 300,
+      "ref": "G",
+      "alts": [
+        "A"
+      ],
+      "rsid": 900005
+    },
+    {
+      "state": "called",
+      "genotype": "0/0",
+      "depth": 14,
+      "refCount": 14,
+      "altCount": 0,
+      "otherCount": 0,
+      "overlapping": 25,
+      "reason": null,
+      "alt": "T",
+      "id": "low_quality_filtered",
+      "contig": "chr21",
+      "position": 800,
+      "ref": "G",
+      "alts": [
+        "T"
+      ],
+      "rsid": 900006
+    },
+    {
+      "state": "not_covered",
+      "genotype": "./.",
+      "depth": 0,
+      "refCount": 0,
+      "altCount": 0,
+      "otherCount": 0,
+      "overlapping": 0,
+      "reason": null,
+      "alt": "G",
+      "id": "no_reads",
+      "contig": "chr21",
+      "position": 1300,
+      "ref": "C",
+      "alts": [
+        "G"
+      ],
+      "rsid": 900007
+    },
+    {
+      "state": "no_call",
+      "genotype": "./.",
+      "depth": 6,
+      "refCount": 3,
+      "altCount": 3,
+      "otherCount": 0,
+      "overlapping": 14,
+      "reason": "low_depth",
+      "alt": "G",
+      "id": "paired_fragments",
+      "contig": "chr22",
+      "position": 400,
+      "ref": "A",
+      "alts": [
+        "G"
+      ],
+      "rsid": 900008
+    },
+    {
+      "state": "no_call",
+      "genotype": "./.",
+      "depth": 20,
+      "refCount": 10,
+      "altCount": 0,
+      "otherCount": 10,
+      "overlapping": 20,
+      "reason": "other_letters",
+      "alt": "C",
+      "id": "deletion_across",
+      "contig": "chr22",
+      "position": 900,
+      "ref": "A",
+      "alts": [
+        "C"
+      ],
+      "rsid": null
+    },
+    {
+      "state": "no_call",
+      "genotype": "./.",
+      "depth": 20,
+      "refCount": 17,
+      "altCount": 3,
+      "otherCount": 0,
+      "overlapping": 20,
+      "reason": "between_bands",
+      "alt": "C",
+      "id": "between_bands",
+      "contig": "chr22",
+      "position": 1300,
+      "ref": "G",
+      "alts": [
+        "C"
+      ],
+      "rsid": 900010
+    }
+  ]
+}

@@ -1,0 +1,61 @@
+{
+  "schemaVersion": 1,
+  "generator": "scripts/generate-read-calling-fixtures.ts",
+  "classification": "invented reads at four report positions; no person, sample or real genome",
+  "file": {
+    "name": "read-calls-product-grch38.bam",
+    "sha256": "a825dbab0ba9b08d4b795240138d90d4e79df5ac24e1017d383058b916367760",
+    "bytes": 10747
+  },
+  "reads": 56,
+  "planted": [
+    {
+      "slug": "lactase-persistence-lct-rs4988235",
+      "chrom": "chr2",
+      "position": 135851076,
+      "rsid": 4988235,
+      "ref": "G",
+      "alt": "A",
+      "ref_reads": 0,
+      "alt_reads": 16,
+      "state": "called",
+      "genotype": "1/1"
+    },
+    {
+      "slug": "muscle-composition-actn3-rs1815739",
+      "chrom": "chr11",
+      "position": 66560624,
+      "rsid": 1815739,
+      "ref": "C",
+      "alt": "T",
+      "ref_reads": 2,
+      "alt_reads": 2,
+      "state": "no_call",
+      "genotype": "./."
+    },
+    {
+      "slug": "alcohol-flush-aldh2-rs671",
+      "chrom": "chr12",
+      "position": 111803962,
+      "rsid": 671,
+      "ref": "G",
+      "alt": "A",
+      "ref_reads": 14,
+      "alt_reads": 0,
+      "state": "called",
+      "genotype": "0/0"
+    },
+    {
+      "slug": "caffeine-metabolism-cyp1a2-rs762551",
+      "chrom": "chr15",
+      "position": 74749576,
+      "rsid": 762551,
+      "ref": "C",
+      "alt": "A",
+      "ref_reads": 12,
+      "alt_reads": 10,
+      "state": "called",
+      "genotype": "0/1"
+    }
+  ]
+}

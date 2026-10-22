@@ -29,7 +29,27 @@ export const INPUT_PROVENANCE_COPY = {
   runsInputs: "Files checked for the stored long-run measure",
   noRunsInputs: "No file supplied a stored long-run check.",
   noRelatedness: "The two adults were not compared for relatedness.",
+  // TEST-LOCAL read calling (ADR 0038). Shown only for a source the server
+  // recorded as called from reads; production never records one.
+  readCalled: "Inherit called these genotypes on your device from sequencing reads it did not create. It cannot verify where the reads came from or whose sample they describe.",
+  readCalledNoGuess: "Where the reads were too few or unclear, Inherit made no call and did not guess. A position with no reads is not listed.",
+  readCalledUnreviewed: "These thresholds are engineering defaults. No scientist has reviewed them yet.",
 } as const;
+
+/** The thresholds a read-called source was called under, as plain sentences. */
+export function readCalledThresholds(thresholds: {
+  minimumDepth: number; minimumBaseQuality: number; minimumMappingQuality: number;
+  heterozygousLow: number; heterozygousHigh: number; homozygousMinimum: number;
+}): string {
+  const percent = (value: number) => Math.round(value * 100);
+  return `Each position needed at least ${thresholds.minimumDepth} counted reads. A read counted only with base quality ${thresholds.minimumBaseQuality} and mapping quality ${thresholds.minimumMappingQuality} or more. `
+    + `One changed copy needed ${percent(thresholds.heterozygousLow)} to ${percent(thresholds.heterozygousHigh)} percent of the counted reads. Two changed copies, or none, needed ${percent(thresholds.homozygousMinimum)} percent.`;
+}
+
+/** The label beside a read-called source. */
+export function readCalledLabel(input: "BAM" | "CRAM"): string {
+  return `made by Inherit from ${input} sequencing data`;
+}
 
 export function inputLabel(type: string): string {
   return type.startsWith("array_") ? "Array file" : type === "vcf" || type === "gvcf" ? "VCF file" : "Source file";

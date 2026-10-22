@@ -57,3 +57,35 @@ describe("always-visible input provenance", () => {
     expect(html).not.toContain("<details");
   });
 });
+
+// G7.4, ADR 0038: a TEST-LOCAL source Inherit called from reads.
+describe("input provenance for a source called from reads", () => {
+  const readCalls = { version: "inherit-read-calls-v1", input: "BAM", minimumDepth: 10, minimumBaseQuality: 20,
+    minimumMappingQuality: 20, heterozygousLow: 0.25, heterozygousHigh: 0.75, homozygousMinimum: 0.9, reviewed: false } as const;
+  const snapshot = { sourceBuild: "GRCh38", targetBuild: "GRCh38", buildBasis: "source-declared", variantRowsMapped: 2,
+    variantRowsUnmapped: 0, counts: { ...emptyReadCounts(), called: 3, noCall: 1, singleSample: true, buildClaim: true } } as const;
+  const render = (sources: Parameters<typeof InputProvenance>[0]["sources"]) =>
+    renderToStaticMarkup(h(InputProvenance, { subject: { subjectId: "subject" }, sources }));
+
+  it("says plainly that Inherit called it from reads it did not create, with the thresholds, unreviewed", () => {
+    const html = render([{ fileId: "read-called", fileType: "vcf", processedAt: null, snapshot: { ...snapshot, readCalls } }]);
+    expect(html).toContain('data-slot="read-called-provenance"');
+    expect(html).toContain("Inherit called these genotypes on your device from sequencing reads it did not create.");
+    expect(html).toContain("VCF file · made by Inherit from BAM sequencing data");
+    expect(html).toContain("Each position needed at least 10 counted reads. A read counted only with base quality 20 and mapping quality 20 or more.");
+    expect(html).toContain("One changed copy needed 25 to 75 percent of the counted reads. Two changed copies, or none, needed 90 percent.");
+    expect(html).toContain("These thresholds are engineering defaults. No scientist has reviewed them yet.");
+    expect(html).not.toContain("Inherit did not create these files");
+  });
+
+  it("keeps the ordinary sentence for every other source beside it, and adds nothing to an ordinary source alone", () => {
+    const mixed = render([{ fileId: "read-called", fileType: "vcf", processedAt: null, snapshot: { ...snapshot, readCalls } },
+      { fileId: "ordinary", fileType: "vcf", processedAt: null, snapshot }]);
+    expect(mixed).toContain("Inherit did not create these files");
+    expect(mixed).toContain("Inherit called these genotypes on your device");
+    expect(mixed.match(/data-slot="read-called-thresholds"/g)).toHaveLength(1);
+    const ordinary = render([{ fileId: "ordinary", fileType: "vcf", processedAt: null, snapshot }]);
+    expect(ordinary).toContain("Inherit did not create these files");
+    expect(ordinary).not.toMatch(/read-called|made by Inherit|engineering defaults/);
+  });
+});
