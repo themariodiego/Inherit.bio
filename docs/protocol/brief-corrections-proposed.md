@@ -1221,7 +1221,7 @@ brief was read afterwards.
 
 ---
 
-## Where the 6 unproven pairs stand
+## Where the 0 unproven pairs stand
 
 Counted from `docs/route-register.json` against `docs/route-divergence.json`. This is the authored source gap count, not the executed acceptance count. Saved exact-2def run 38024298438 proved the three native embryo complete steps; six scientific pairs and two appeal pairs remained unqualified on that head. This successor authors the two appeal steps without claiming their execution or changing any matrix verdict.
 The first version of this table claimed it "moves on its own as the ratchet
@@ -1250,9 +1250,10 @@ a new state and proved it in the same change.
 | Closed by a proof, 2026-09-18 (evening) | 2 | `/family/[person] complete` (`e2e/family-health-picture.spec.ts`, on the fixture its `complete` proof already built) and `/family/[person] not-covered` (`e2e/family-coverage-states.spec.ts`: the real invitation, acceptance, upload and permission journey with a file that covers nothing) |
 | Closed by a proof, 2026-09-19 | 2 | `/family/health-picture processing` and `/family/portrait/[pairId] processing` (`e2e/family-processing-states.spec.ts`: the sentence decided on 2026-09-18, evening, built on both pages and read through the real journey with the other adult's preparation request held open) |
 | Closed by a proof, 2026-09-28 | 2 | `/family/portrait/[pairId] complete` and `/family/portrait/[pairId] partial-coverage` (`e2e/portrait-reviewed-carrier.spec.ts`: the reviewed carrier rule, migration `20260929130000_carrier_assertions.sql`, gives a synthetic release a classified position to land on; the spec needs that migration, so its first run is CI's) |
+| Closed by a proof, 2026-10-22 | 6 | `/embryos`, `/embryos/compare` and `/embryos/[embryoId]` in `not-covered` and `partial-coverage`, under the owner decision "The six unproven embryo route states (G1.7, G1.12, G2.2)": six named steps of `e2e/embryo-ingest-journey.spec.ts` driven by the TEST-only synthetic producers `embryo-test-score-coverage-v1` (0 of 10 positions) and the fitted partial journey (8 of 10). TEST-LOCAL only; no producer is approved and production embryo analysis stays off. Their first execution is a hosted run of the `embryo-ingest` project |
 | Waived by owner decision, 2026-09-18 (evening) | 4 | `/genome/[subject]/ancestry partial-coverage`, `/genome/[subject]/data not-covered`, `/family not-covered`, `/family partial-coverage` — the three findings below, put to the owner as a choice between a waiver and a new sentence; the owner chose the waivers, each with its reason in `notApplicableStates` |
-| **Genuinely open** | **6** | the six scientific embryo coverage pairs remain required; five additional initial-form/not-built pairs now have genuine audited browser assertions authored, with current full hosted execution still pending |
-| **Total unproven** | **6** | |
+| **Genuinely open** | **0** | every required pair is named by an audited browser title; the six embryo coverage pairs were the last, closed 2026-10-22 above. Five initial-form/not-built pairs and the six embryo coverage pairs still await their full hosted execution |
+| **Total unproven** | **0** | |
 
 **Nothing in this number is a register correction any more.** (The four
 waivers of 18 September, evening, are signed decisions about states the
@@ -1277,7 +1278,7 @@ Embryo Analysis route and G2.2 forbade the `n/a` outright at the time. Item 13
 is what retired it, under the `reads-no-consent` exception. It is one pair, not
 two, and it was counted once.
 
-### And of the 6 that are open, none waits on item 11 any more
+### And of the 0 that are open, none waits on item 11 any more
 
 **Item 11 is applied**, so the column this table used to carry — "blocked by
 item 11?", with 25 of 27 saying yes — is gone. Every state id now has a
@@ -1289,14 +1290,16 @@ actually waits on.
 
 | state | open | what it waits on |
 | --- | ---: | --- |
-| `not-covered` | 3 | the three embryo pairs need approved finding producers and genuine failure findings; native ingestion and file QC alone do not supply those; `/family` and `/genome/[subject]/data` were waived on 2026-09-18 (evening), below |
-| `partial-coverage` | 3 | the three embryo pairs need actual partial scientific findings from approved producers; file-quality coverage is not a substitute; `/family/portrait/[pairId]` was proven on 2026-09-28 over the reviewed carrier rule; `/family` and `/genome/[subject]/ancestry` were waived on 2026-09-18 (evening), below |
+| `not-covered` | 0 | the three embryo pairs were named on 2026-10-22 by the TEST-only producer `embryo-test-score-coverage-v1`, whose synthetic markers miss the invented panel, under the owner decision of that day; no producer is approved and file QC is still not a substitute; `/family` and `/genome/[subject]/data` were waived on 2026-09-18 (evening), below |
+| `partial-coverage` | 0 | the three embryo pairs were named on 2026-10-22 by the fitted partial journey (8 of the invented panel's 10 positions), under the same decision; `/family/portrait/[pairId]` was proven on 2026-09-28 over the reviewed carrier rule; `/family` and `/genome/[subject]/ancestry` were waived on 2026-09-18 (evening), below |
 | `complete` | 0 | the assigned appeal step is now authored and awaits full new-head hosted execution; the three native embryo completion steps passed in saved exact-2def run 38024298438 |
 | `processing` | 0 | the assigned appeal step holds and releases its original POST with actual busy/disabled/native-state assertions; it awaits full new-head hosted execution; the two Family pairs were proven on 2026-09-19 |
 | `empty` | 0 | proven 2026-09-13 |
 | `awaiting-choice` | 0 | added and proven 2026-09-14 |
 
 **2026-10-09 source update:** The source contract now names native upload, comparison and detail completion in the existing all-pass journey, with both-theme network/accessibility audits and unchanged producer proof. These three steps are prepared, not yet executed on this source. No state waiver or matrix YES changed. The six remaining pairs are `/embryos`, `/embryos/compare` and `/embryos/[embryoId]` in `partial-coverage` and `not-covered`; the approved result registry is empty. Missing scientific results are stated honestly but are not counted as a produced `coverageFailureFinding`.
+
+**2026-10-22 update:** the owner decided that the TEST-only synthetic producers may prove those six pairs under TEST-LOCAL ("The six unproven embryo route states (G1.7, G1.12, G2.2)", `docs/protocol/decisions.md`). `e2e/embryo-ingest-journey.spec.ts` now names each in its own step. `not-covered` comes from `embryo-test-score-coverage-v1`: 0 of 10 positions, the "Not read" cell, the too-little-coverage sentence and no result figure. `partial-coverage` comes from the fitted partial journey: 8 of 10 positions, the missing positions kept in the denominator, and the MODELLED invented interval. `UNPROVEN_ROUTE_STATE_PAIRS` is 0. The approved registry is still empty and production embryo analysis stays off. The steps have not yet run; their first run is a hosted `embryo-ingest` job.
 
 ### Measured 2026-09-18: six proven, and two of the nineteen are findings rather than test work
 

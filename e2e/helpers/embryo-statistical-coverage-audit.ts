@@ -1,17 +1,34 @@
 import { expect, type Page } from "@playwright/test";
 import { auditContext, watchContext } from "../audited-test";
 import { axeViolations } from "../helpers";
-import { INSUFFICIENT_COVERAGE_INTRO } from "@/copy/embryos/compare";
+import { CELL_WORDS, INSUFFICIENT_COVERAGE_INTRO } from "@/copy/embryos/compare";
 import { NO_RANKING_STATEMENT } from "@/copy/embryos/tradeoffs";
 import { TEST_STATISTICAL_SCORE_PANEL } from "@/lib/embryos/statistical-coverage";
 import { FITTED_JOURNEY_CALL_RATES } from "../../scripts/ci-embryo-journey";
 import type { StatisticalCoverageMeasurement } from "@/lib/embryos/statistical-coverage";
 
+/** The three cohort result routes, in the order every audit below visits
+ * them. A spec names each (route, state) pair in a step of its own by auditing
+ * one route at a time; `finish` refuses a route left out, repeated or moved. */
+export const EMBRYO_RESULT_ROUTES = ["/embryos", "/embryos/compare", "/embryos/[embryoId]"] as const;
+export type EmbryoResultRoute = typeof EMBRYO_RESULT_ROUTES[number];
+type AuditedEmbryo = { id: string; subject_id: string; sample_ordinal: number };
+type AuditInput = { page: Page; cohortId: string; embryos: AuditedEmbryo[]; proof: () => Promise<unknown> };
+
 /** Supplemental audits in the already genuine two-parent upload journey.
  * The actual second native worker must finish before any state is asserted;
  * no route/response, result row, reference grant or parent consent is mocked. */
-export async function auditNativeStatisticalCoverage(input: { page: Page; cohortId: string;
-  embryos: { id: string; sample_ordinal: number }[]; proof: () => Promise<unknown> }) {
+export async function auditNativeStatisticalCoverage(input: AuditInput) {
+  const audit = await openNativeStatisticalCoverageAudit(input);
+  for (const route of EMBRYO_RESULT_ROUTES) await audit.route(route);
+  return await audit.finish();
+}
+
+/** `not-covered` on the three result routes, from `embryo-test-score-coverage-v1`:
+ * the synthetic file's markers miss the invented ten-position TEST panel, so
+ * every embryo reads 0 of 10. One current read is taken first and every later
+ * read must equal it, across all three routes. */
+export async function openNativeStatisticalCoverageAudit(input: AuditInput) {
   const read = async () => {
     const value = await input.proof() as { jobs: Record<string, unknown>[]; scores: {
       embryo_id: string; condition_id: string; finding: Record<string, unknown>; computation_receipt: {
@@ -33,28 +50,57 @@ export async function auditNativeStatisticalCoverage(input: { page: Page; cohort
   const targets = [{ route: "/embryos", url: "/embryos" },
     { route: "/embryos/compare", url: `/embryos/compare?cohort=${input.cohortId}` },
     { route: "/embryos/[embryoId]", url: `/embryos/${input.embryos[0].id}` }];
-  for (const target of targets) for (const theme of ["light", "dark"] as const) {
-    expect(await read()).toEqual(original);
-    await input.page.emulateMedia({ colorScheme: theme });observed.origins.clear();observed.urls.length = 0;
-    const response = await input.page.goto(target.url);expect(response?.status()).toBe(200);
-    await expect(input.page).toHaveURL(url => url.pathname + url.search === target.url);
-    const coverage = input.page.locator(`[data-slot="test-statistical-coverage"][data-cohort-id="${input.cohortId}"]`);
-    await expect(coverage).toHaveCount(1);await expect(coverage).toHaveAttribute("data-interpretation", "held");
-    await expect(coverage).toContainText("Synthetic TEST score coverage");
-    await expect(coverage.locator('[data-finding-kind="coverage_failure"]')).toHaveCount(target.route === "/embryos/[embryoId]" ? 1 : input.embryos.length);
-    await expect(coverage.locator('[data-slot="coverage-failure"]')).toHaveText(Array(target.route === "/embryos/[embryoId]" ? 1 : input.embryos.length).fill(INSUFFICIENT_COVERAGE_INTRO));
-    await expect(coverage.locator('[data-figure-kind="absolute"], [data-figure-kind="interval"], [data-modelled-marker]')).toHaveCount(0);
-    await expect(input.page.locator('[data-slot="blocking-state"], [data-slot="result-gate"], [data-slot="cohort-permission"]')).toHaveCount(0);
-    if (target.route === "/embryos/compare") await expect(input.page.locator('[data-slot="no-ranking-statement"]')).toHaveText(NO_RANKING_STATEMENT);
-    await input.page.waitForLoadState("networkidle");
-    expect(await axeViolations(input.page, theme), `${target.route} not-covered (${theme})`).toEqual([]);
-    await auditContext(input.page.context(), observed, `${target.route} not-covered (${theme})`);
-    expect(await read()).toEqual(original);
-  }
-  await input.page.emulateMedia({ colorScheme: "light" });
-  return { producer: "embryo-test-score-coverage-v1", cohortId: input.cohortId,
-    surfaces: targets.map(target => target.route), themes: ["light", "dark"], matched: 0, required: 10,
-    interpretation: "held", source: "actual-native-parent-upload-split-statistical-worker-current-read" };
+  const audited: string[] = [];
+  const route = async (name: EmbryoResultRoute) => {
+    const target = targets.find(candidate => candidate.route === name)!;
+    expect(audited, `${name} not-covered is audited once`).not.toContain(name);
+    for (const theme of ["light", "dark"] as const) {
+      expect(await read()).toEqual(original);
+      await input.page.emulateMedia({ colorScheme: theme });observed.origins.clear();observed.urls.length = 0;
+      const response = await input.page.goto(target.url);expect(response?.status()).toBe(200);
+      await expect(input.page).toHaveURL(url => url.pathname + url.search === target.url);
+      const coverage = input.page.locator(`[data-slot="test-statistical-coverage"][data-cohort-id="${input.cohortId}"]`);
+      await expect(coverage).toHaveCount(1);await expect(coverage).toHaveAttribute("data-interpretation", "held");
+      await expect(coverage).toContainText("Synthetic TEST score coverage");
+      await expect(coverage.locator('[data-finding-kind="coverage_failure"]')).toHaveCount(target.route === "/embryos/[embryoId]" ? 1 : input.embryos.length);
+      await expect(coverage.locator('[data-slot="coverage-failure"]')).toHaveText(Array(target.route === "/embryos/[embryoId]" ? 1 : input.embryos.length).fill(INSUFFICIENT_COVERAGE_INTRO));
+      await expect(coverage.locator('[data-figure-kind="absolute"], [data-figure-kind="interval"], [data-modelled-marker]')).toHaveCount(0);
+      await expect(input.page.locator('[data-slot="blocking-state"], [data-slot="result-gate"], [data-slot="cohort-permission"]')).toHaveCount(0);
+      if (target.route === "/embryos/compare") await expect(input.page.locator('[data-slot="no-ranking-statement"]')).toHaveText(NO_RANKING_STATEMENT);
+      // What makes this not-covered rather than any other state: each embryo
+      // shown is its own entry, its cell says "Not read" for the insufficient-
+      // coverage reason, the shortfall is the observed figure "read 0 of the 10",
+      // and nothing the partial-coverage state renders appears at all.
+      const shown = target.route === "/embryos/[embryoId]" ? [input.embryos[0]] : input.embryos;
+      await expect(coverage).toContainText("This invented reference tests file coverage. It gives no medical interpretation.");
+      await expect(coverage.locator("li[data-embryo-id]")).toHaveCount(shown.length);
+      for (const embryo of shown) {
+        const entry = coverage.locator(`li[data-embryo-id="${embryo.id}"]`);
+        await expect(entry).toHaveCount(1);await expect(entry).toHaveAttribute("data-coverage-state", "not_covered");
+        await expect(entry).toHaveAttribute("data-finding-kind", "coverage_failure");
+        await expect(entry).toContainText(`Embryo ${embryo.sample_ordinal + 1}`);
+        for (const block of await entry.locator("[data-claim-block]").all()) await expect(block).toHaveAttribute("data-subject-id", embryo.subject_id);
+      }
+      await expect(coverage.locator('[data-slot="cell-word"][data-reason="insufficient_coverage"]')).toHaveText(Array(shown.length).fill(CELL_WORDS.notRead));
+      await expect(coverage.locator('[data-figure-kind="coverage"][data-figure-basis="observed"] [data-slot="figure-value"]'))
+        .toHaveText(Array(shown.length).fill("read 0 of the 10 positions this needs"));
+      await expect(coverage.locator('[data-test-result], [data-slot="observed-test-coverage"], [data-slot="modelled-test-interval"], [data-within-family]')).toHaveCount(0);
+      await expect(coverage.locator('[data-figure-kind="relative"], [data-figure-kind="percentile"], [aria-sort]')).toHaveCount(0);
+      await input.page.waitForLoadState("networkidle");
+      expect(await axeViolations(input.page, theme), `${target.route} not-covered (${theme})`).toEqual([]);
+      await auditContext(input.page.context(), observed, `${target.route} not-covered (${theme})`);
+      expect(await read()).toEqual(original);
+    }
+    audited.push(name);
+  };
+  const finish = async () => {
+    expect(audited, "not-covered is audited on every embryo result route, in order").toEqual(targets.map(target => target.route));
+    await input.page.emulateMedia({ colorScheme: "light" });
+    return { producer: "embryo-test-score-coverage-v1", cohortId: input.cohortId,
+      surfaces: targets.map(target => target.route), themes: ["light", "dark"], matched: 0, required: 10,
+      interpretation: "held", source: "actual-native-parent-upload-split-statistical-worker-current-read" };
+  };
+  return { route, finish };
 }
 
 import { statisticalFitResultSchema, evaluateStatisticalFitResult, canonicalStatisticalFitPackage,
@@ -65,8 +111,17 @@ import { WITHIN_FAMILY_NOT_TESTED } from "@/copy/embryos/compare";
 /** An additional genuine signed-parent upload and native fitted worker. The
  * full native rows are hashed before only repeated fixed artifacts are removed
  * from the bounded proof; all metadata/result/currentness checks remain. */
-export async function auditNativeFittedStatisticalCoverage(input: { page: Page; cohortId: string;
-  embryos: { id: string; sample_ordinal: number }[]; proof: () => Promise<unknown> }) {
+export async function auditNativeFittedStatisticalCoverage(input: AuditInput) {
+  const audit = await openNativeFittedStatisticalCoverageAudit(input);
+  for (const route of EMBRYO_RESULT_ROUTES) await audit.route(route);
+  return await audit.finish();
+}
+
+/** `partial-coverage` on the three result routes, from the fitted partial
+ * journey: the fitted synthetic file carries 8 of the panel's 10 positions, so
+ * each embryo shows its observed 8 of 10 beside the invented MODELLED TEST
+ * interval and says the missing positions stay in the denominator. */
+export async function openNativeFittedStatisticalCoverageAudit(input: AuditInput) {
   const read = async () => {
     const value = await input.proof() as { bindingsCurrent: boolean; fitPackage: unknown;
       wholeRowHashes: { jobs: { id: string; sha256: string }[]; scores: { id: string; sha256: string }[] };
@@ -122,35 +177,67 @@ export async function auditNativeFittedStatisticalCoverage(input: { page: Page; 
   const targets = [{ route: "/embryos", url: "/embryos" },
     { route: "/embryos/compare", url: `/embryos/compare?cohort=${input.cohortId}` },
     { route: "/embryos/[embryoId]", url: `/embryos/${input.embryos[0].id}` }];
-  for (const target of targets) for (const theme of ["light", "dark"] as const) {
-    expect(await read()).toEqual(original);
-    await input.page.emulateMedia({ colorScheme: theme });observed.origins.clear();observed.urls.length = 0;
-    const response = await input.page.goto(target.url);expect(response?.status()).toBe(200);
-    await expect(input.page).toHaveURL(url => url.pathname + url.search === target.url);
-    const coverage = input.page.locator(`[data-slot="test-statistical-coverage"][data-cohort-id="${input.cohortId}"]`);
-    const count = target.route === "/embryos/[embryoId]" ? 1 : input.embryos.length;
-    await expect(coverage).toHaveCount(1);await expect(coverage).toHaveAttribute("data-interpretation", "held");
-    await expect(coverage).toHaveAttribute("data-publication", "synthetic-fitted-test-only");
-    await expect(coverage).toContainText("Invented fitted TEST model");
-    await expect(coverage).toContainText("Every reference observation is invented.");
-    await expect(coverage.locator('[data-test-result="fitted"]')).toHaveCount(count);
-    await expect(coverage.locator('[data-figure-kind="coverage"][data-figure-basis="observed"]')).toHaveCount(count);
-    await expect(coverage.locator('[data-figure-kind="interval"][data-figure-basis="modelled"]')).toHaveCount(count);
-    await expect(coverage.locator('[data-claim-block]')).toHaveCount(count * 2);
-    await expect(coverage.locator('[data-modelled-marker]')).toHaveText(Array(count).fill(MODELLED_MARKER));
-    await expect(coverage.locator('[data-within-family="not_measured"]')).toHaveText(Array(count).fill(WITHIN_FAMILY_NOT_TESTED));
-    await expect(coverage.locator('[data-figure-kind="absolute"], [data-figure-kind="relative"], [data-figure-kind="percentile"], [aria-sort]')).toHaveCount(0);
-    await expect(input.page.locator('[data-slot="blocking-state"], [data-slot="result-gate"], [data-slot="cohort-permission"]')).toHaveCount(0);
-    if (target.route === "/embryos/compare") await expect(input.page.locator('[data-slot="no-ranking-statement"]')).toHaveText(NO_RANKING_STATEMENT);
-    await input.page.waitForLoadState("networkidle");
-    expect(await axeViolations(input.page, theme), `${target.route} fitted TEST partial (${theme})`).toEqual([]);
-    await auditContext(input.page.context(), observed, `${target.route} fitted TEST partial (${theme})`);
-    expect(await read()).toEqual(original);
-  }
-  await input.page.emulateMedia({ colorScheme: "light" });
-  return { producer: "embryo-test-statistical-fit-v1", cohortId: input.cohortId,
-    surfaces: targets.map(target => target.route), themes: ["light", "dark"], matched: 8, required: 10,
-    publication: "synthetic-fitted-test-only", interpretation: "held", clinicalPublication: false,
-    withinFamily: "not_measured", source: "actual-native-signed-parent-upload-fitted-worker-current-read",
-    wholeRowHashes: original.wholeRowHashes };
+  const audited: string[] = [];
+  const route = async (name: EmbryoResultRoute) => {
+    const target = targets.find(candidate => candidate.route === name)!;
+    expect(audited, `${name} partial-coverage is audited once`).not.toContain(name);
+    for (const theme of ["light", "dark"] as const) {
+      expect(await read()).toEqual(original);
+      await input.page.emulateMedia({ colorScheme: theme });observed.origins.clear();observed.urls.length = 0;
+      const response = await input.page.goto(target.url);expect(response?.status()).toBe(200);
+      await expect(input.page).toHaveURL(url => url.pathname + url.search === target.url);
+      const coverage = input.page.locator(`[data-slot="test-statistical-coverage"][data-cohort-id="${input.cohortId}"]`);
+      const count = target.route === "/embryos/[embryoId]" ? 1 : input.embryos.length;
+      await expect(coverage).toHaveCount(1);await expect(coverage).toHaveAttribute("data-interpretation", "held");
+      await expect(coverage).toHaveAttribute("data-publication", "synthetic-fitted-test-only");
+      await expect(coverage).toContainText("Invented fitted TEST model");
+      await expect(coverage).toContainText("Every reference observation is invented.");
+      await expect(coverage.locator('[data-test-result="fitted"]')).toHaveCount(count);
+      await expect(coverage.locator('[data-figure-kind="coverage"][data-figure-basis="observed"]')).toHaveCount(count);
+      await expect(coverage.locator('[data-figure-kind="interval"][data-figure-basis="modelled"]')).toHaveCount(count);
+      await expect(coverage.locator('[data-claim-block]')).toHaveCount(count * 2);
+      await expect(coverage.locator('[data-modelled-marker]')).toHaveText(Array(count).fill(MODELLED_MARKER));
+      await expect(coverage.locator('[data-within-family="not_measured"]')).toHaveText(Array(count).fill(WITHIN_FAMILY_NOT_TESTED));
+      await expect(coverage.locator('[data-figure-kind="absolute"], [data-figure-kind="relative"], [data-figure-kind="percentile"], [aria-sort]')).toHaveCount(0);
+      await expect(input.page.locator('[data-slot="blocking-state"], [data-slot="result-gate"], [data-slot="cohort-permission"]')).toHaveCount(0);
+      if (target.route === "/embryos/compare") await expect(input.page.locator('[data-slot="no-ranking-statement"]')).toHaveText(NO_RANKING_STATEMENT);
+      // What makes this partial-coverage rather than not-covered: each embryo
+      // shown carries its own fitted result, the observed figure names the
+      // part that is present ("read 8 of the 10"), the coverage statement says
+      // the two missing positions stay in the denominator, and neither the
+      // not-covered sentence nor the "Not read" cell appears anywhere.
+      const shown = target.route === "/embryos/[embryoId]" ? [input.embryos[0]] : input.embryos;
+      await expect(coverage.locator("li[data-embryo-id]")).toHaveCount(shown.length);
+      for (const embryo of shown) {
+        const entry = coverage.locator(`li[data-embryo-id="${embryo.id}"]`);
+        await expect(entry).toHaveCount(1);await expect(entry).toHaveAttribute("data-test-result", "fitted");
+        await expect(entry).toHaveAttribute("data-finding-kind", "none");
+        await expect(entry).toContainText(`Embryo ${embryo.sample_ordinal + 1}`);
+        for (const block of await entry.locator("[data-claim-block]").all()) await expect(block).toHaveAttribute("data-subject-id", embryo.subject_id);
+      }
+      await expect(coverage.locator('[data-figure-kind="coverage"][data-figure-basis="observed"] [data-slot="figure-value"]'))
+        .toHaveText(Array(count).fill("read 8 of the 10 positions this needs"));
+      await expect(coverage.locator('[data-slot="observed-test-coverage"]'))
+        .toHaveText(Array(count).fill("OBSERVED own-file coverage. Missing positions remain in the full score denominator."));
+      await expect(coverage.locator('[data-slot="modelled-test-interval"]'))
+        .toHaveText(Array(count).fill("MODELLED invented-control probability and range. This is not a clinical result."));
+      await expect(coverage.locator('[data-slot="coverage-failure"], [data-finding-kind="coverage_failure"], [data-slot="cell-word"]')).toHaveCount(0);
+      await expect(coverage).not.toContainText(INSUFFICIENT_COVERAGE_INTRO);
+      await input.page.waitForLoadState("networkidle");
+      expect(await axeViolations(input.page, theme), `${target.route} fitted TEST partial (${theme})`).toEqual([]);
+      await auditContext(input.page.context(), observed, `${target.route} fitted TEST partial (${theme})`);
+      expect(await read()).toEqual(original);
+    }
+    audited.push(name);
+  };
+  const finish = async () => {
+    expect(audited, "partial-coverage is audited on every embryo result route, in order").toEqual(targets.map(target => target.route));
+    await input.page.emulateMedia({ colorScheme: "light" });
+    return { producer: "embryo-test-statistical-fit-v1", cohortId: input.cohortId,
+      surfaces: targets.map(target => target.route), themes: ["light", "dark"], matched: 8, required: 10,
+      publication: "synthetic-fitted-test-only", interpretation: "held", clinicalPublication: false,
+      withinFamily: "not_measured", source: "actual-native-signed-parent-upload-fitted-worker-current-read",
+      wholeRowHashes: original.wholeRowHashes };
+  };
+  return { route, finish };
 }
