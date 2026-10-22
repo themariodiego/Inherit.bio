@@ -198,6 +198,59 @@ test("foreign account, active processing and another adult cannot use the self-f
   expect((await admin.from("genome_files").select("id").eq("id", fileId)).data).toHaveLength(0);
 });
 
+// Owner decision 2026-10-16, Q6 (docs/protocol/decisions.md): a family pair
+// blocks the self-file shortcut only while it is pending or current, or while
+// it still holds joint results. An ended pair with nothing left on it no
+// longer strands the owner's files. Synthetic accounts; the pair row is the
+// seeded fixture and is removed at the end.
+test("an ended family pair with nothing left on it no longer blocks the owner's file delete (Q6)", async ({ page }) => {
+  const password = "synthetic-delete-password";
+  const email = `file-q6-${randomUUID()}@e2e.local`;
+  const ownerId = await createConfirmedUser(email, password);
+  const otherId = await createConfirmedUser(`file-q6-other-${randomUUID()}@e2e.local`, password);
+  await signIn(page, email, password);
+  const fileId = await uploadOwnFilePrepared(page, path.join(process.cwd(), "e2e/fixtures/tiny-grch38.vcf"), { fileType: "vcf" });
+  const admin = adminClient();
+  const selfOf = async (accountId: string) => {
+    const row = await admin.from("subjects").select("id").eq("subject_account_id", accountId).eq("subject_class", "self").single();
+    expect(row.error).toBeNull();
+    return row.data!.id as string;
+  };
+  const [ownerSubject, otherSubject] = [await selfOf(ownerId), await selfOf(otherId)];
+  const source = await admin.from("genome_files").select("bucket_path").eq("id", fileId).single();
+  expect(source.error).toBeNull();
+  const remove = () => page.evaluate(async (id) => {
+    const response = await fetch(`/api/files/${id}`, { method: "DELETE" });
+    return { status: response.status, body: response.status === 204 ? null : await response.json() };
+  }, fileId);
+  const pair = await admin.from("family_pairs").insert({ subject_a_id: ownerSubject, subject_b_id: otherSubject, status: "current" })
+    .select("id").single();
+  expect(pair.error).toBeNull();
+  const pairId = pair.data!.id as string;
+  try {
+    const blocked = { status: 409, body: { error: "file_delete_subject_unavailable" } };
+    expect(await remove()).toEqual(blocked);
+    expect((await admin.from("family_pairs").update({ status: "pending" }).eq("id", pairId)).error).toBeNull();
+    expect(await remove()).toEqual(blocked);
+    expect((await admin.from("family_pairs").update({ status: "revoked" }).eq("id", pairId)).error).toBeNull();
+    const joint = await admin.from("portrait_results").insert({ owner_account_id: ownerId, parent_a_subject_id: ownerSubject,
+      parent_b_subject_id: otherSubject, family_pair_id: pairId, kind: "carrier_pair", trait_key: "abo", result: {},
+      coverage: 1, method_version: "synthetic-q6", source_binding_fingerprint: "7".repeat(64), computation_revision: 1 });
+    expect(joint.error).toBeNull();
+    expect(await remove()).toEqual(blocked);
+    expect((await admin.from("genome_files").select("id").eq("id", fileId)).data).toHaveLength(1);
+    expect((await admin.from("portrait_results").delete().eq("family_pair_id", pairId)).error).toBeNull();
+    // The ended pair with nothing left on it: the owner's own delete now succeeds.
+    expect(await remove()).toEqual({ status: 204, body: null });
+    expect((await admin.from("genome_files").select("id").eq("id", fileId)).data).toHaveLength(0);
+    expect((await admin.storage.from("genomes").download(source.data!.bucket_path)).error).not.toBeNull();
+    expect((await admin.from("family_pairs").select("status").eq("id", pairId).single()).data).toEqual({ status: "revoked" });
+  } finally {
+    expect((await admin.from("portrait_results").delete().eq("family_pair_id", pairId)).error).toBeNull();
+    expect((await admin.from("family_pairs").delete().eq("id", pairId)).error).toBeNull();
+  }
+});
+
 // source.revocation-7d (D-126): the seven-day backstop. A deletion the owner
 // started but never retried is finished by the unattended retention job from
 // every bucket, with no owner session. The composite worker selects multiple

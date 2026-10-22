@@ -24,11 +24,12 @@ import { storageBucketsInSource, UNRESOLVED_STORAGE_BUCKET } from "./storage-con
  *
  * Registered-but-unbuilt is deliberately not failed here. The register is
  * written from the brief and describes routes the product has not reached
- * yet; 10 of them remain unbuilt after the native appeal review, notice, auth,
+ * yet; 8 of them remain unbuilt after the native appeal review, notice, auth,
  * mapping, subject-sharing and subjects (G2.1) routes, the one-record
  * subject export, the correction-review and claimant export (G2.1) routes,
- * the two bound-claimant routes and the rights-session export. A redirect
- * that `next.config.ts` serves counts as built.
+ * the two bound-claimant routes, the rights-session export, the subject
+ * delete door and the subject transfer route. A redirect that
+ * `next.config.ts` serves counts as built.
  * The exact current count prevents a broken walker from passing silently.
  *
  * Known divergences live in `docs/route-divergence.json` and are checked in
@@ -248,9 +249,13 @@ describe("the route register and the App Router describe the same surface", () =
     // 2026-10-22, "Consent, rights and claim endpoints (G2.1)"), and the
     // rights-session export api.third-party-subject-export is built to answer
     // resource-not-found-v1 in both its subject and cohort cases until their
-    // producers exist (the same decision), so 10 remain.
+    // producers exist (the same decision), so 10 remain. The subject delete
+    // door (api.subject-delete, the decisions "The subjects endpoints (G2.1)"
+    // and Q6) reduces it to 9, and the transfer route (api.subject-transfer,
+    // the same decision and "Subjects delete and transfer: four further
+    // cases"; its door is built closed) reduces it to 8.
     // Keep the exact census: new implementations require an explicit review.
-    expect(unbuilt.length).toBe(10);
+    expect(unbuilt.length).toBe(8);
     expect(unbuilt.length).toBeLessThan(entries.length);
   });
 });
