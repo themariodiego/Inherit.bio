@@ -24,6 +24,7 @@ describe("the subject-route operation nonce", () => {
     expect(SUBJECT_OPERATION_ROUTES).toEqual({
       subject_sharing_stop: "api.subject-sharing",
       subject_delete: "api.subject-delete",
+      subject_transfer: "api.subject-transfer",
     });
   });
 
@@ -44,6 +45,15 @@ describe("the subject-route operation nonce", () => {
     expect(verifySubjectOperationNonce(stop, { ...STOP, operation: "subject_delete" }, NOW)).toBeNull();
     expect(verifySubjectOperationNonce(remove, STOP, NOW)).toBeNull();
     expect(verifySubjectOperationNonce(remove, { ...STOP, operation: "subject_delete" }, NOW)).not.toBeNull();
+  });
+
+  it("is bound to its operation: a transfer code never deletes and a delete code never transfers", () => {
+    const transfer = mintSubjectOperationNonce({ ...STOP, operation: "subject_transfer" }, NOW);
+    const remove = mintSubjectOperationNonce({ ...STOP, operation: "subject_delete" }, NOW);
+    expect(verifySubjectOperationNonce(transfer, { ...STOP, operation: "subject_delete" }, NOW)).toBeNull();
+    expect(verifySubjectOperationNonce(transfer, STOP, NOW)).toBeNull();
+    expect(verifySubjectOperationNonce(remove, { ...STOP, operation: "subject_transfer" }, NOW)).toBeNull();
+    expect(verifySubjectOperationNonce(transfer, { ...STOP, operation: "subject_transfer" }, NOW)).not.toBeNull();
   });
 
   it("carries no identity: the account, session and subject appear nowhere in it", () => {

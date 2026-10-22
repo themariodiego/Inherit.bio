@@ -443,7 +443,10 @@ select is((select count(*) from public.purpose_grants where target_id=pg_temp.si
 -- normalization/read gates inspect current source evidence without granting
 -- browser access to the held table or returning its raw descriptor. The
 -- one-record class inventory (20261016196000_subject_export.sql) counts the
--- record's own held uploads the way the account inventory counts them.
+-- record's own held uploads the way the account inventory counts them. The
+-- subject transfer (20261016221000_subject_transfer.sql) detaches each
+-- confirmed revision into the person's file, and its relocation retirement
+-- marks the revision's held working row deleted once the old object is gone.
 select is((select string_agg(n.nspname||'.'||p.proname,', ' order by n.nspname,p.proname)
  from pg_proc p join pg_namespace n on n.oid=p.pronamespace
  where n.nspname in ('public','private') and p.prosrc like '%other_adult_held_uploads%'),
@@ -454,10 +457,12 @@ select is((select string_agg(n.nspname||'.'||p.proname,', ' order by n.nspname,p
    then '' else 'private.delete_path_b_subject_for_route_v1, ' end || 'private.delete_path_b_subject_v1, private.end_other_adult_held_upload_v1, private.enqueue_path_b_normalization_v1, ' || case when to_regprocedure('private.export_account_class_inventory_v1(uuid,jsonb)') is null
    then '' else 'private.export_account_class_inventory_v1, ' end || case when to_regprocedure('private.export_account_path_b_snapshot_v1(jsonb,uuid)') is null then '' else 'private.export_account_path_b_snapshot_v1, ' end || case when to_regprocedure('private.export_subject_class_inventory_v1(uuid,jsonb)') is null
    then '' else 'private.export_subject_class_inventory_v1, ' end || 'private.issue_other_adult_held_upload_v1, private.other_adult_upload_targets_v1, private.own_upload_finalization_v1, private.path_b_normalization_authority_v1, private.path_b_normalization_v1, private.path_b_result_read_v1, ' || case when to_regprocedure('private.purge_path_a_subject_v1(uuid,uuid)') is null
-   then '' else 'private.purge_path_a_subject_v1, ' end || 'private.subject_held_files_v1, ' || case when to_regprocedure('public.activate_rights_session_before_keyless_objection_v1(text,text,text)') is null
+   then '' else 'private.purge_path_a_subject_v1, ' end || 'private.subject_held_files_v1, ' || case when to_regprocedure('private.transfer_subject_v1(uuid,uuid,uuid,text,timestamptz)') is null
+   then '' else 'private.transfer_subject_v1, ' end || case when to_regprocedure('public.activate_rights_session_before_keyless_objection_v1(text,text,text)') is null
    then 'public.activate_rights_session_v1' else 'public.activate_rights_session_before_keyless_objection_v1' end || case when to_regprocedure('public.adult_upload_revision_retention_v1(text)') is null
    then '' else ', public.adult_upload_revision_retention_v1' end || ', public.expire_due_other_adult_held_uploads_v1' || case when to_regprocedure('public.expire_due_path_b_confirmed_files_v1()') is null
-   then '' else ', public.expire_due_path_b_confirmed_files_v1' end || ', public.read_adult_upload_revision_v1, public.respond_adult_upload_revision_v1','the held table is named only by the exact reviewed lifecycle functions');
+   then '' else ', public.expire_due_path_b_confirmed_files_v1' end || case when to_regprocedure('public.finish_subject_transfer_retirement_v1(uuid,text,boolean)') is null
+   then '' else ', public.finish_subject_transfer_retirement_v1' end || ', public.read_adult_upload_revision_v1, public.respond_adult_upload_revision_v1','the held table is named only by the exact reviewed lifecycle functions');
 -- Four reviewed complete-account helpers inspect the held source only for
 -- internal whole-source comparison/excluded census. No API may execute them.
 select ok(to_regprocedure(x.signature) is null or (select md5(p.prosrc)=x.body_md5

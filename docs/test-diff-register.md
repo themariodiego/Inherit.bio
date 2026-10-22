@@ -1,3 +1,67 @@
+## 2026-10-22 — `api.subject-transfer` (G2.1): built closed, with the transfer, the relocation branch and reading and deletion after it
+
+Owner decisions 2026-10-16 ("The subjects endpoints (G2.1)" and "Subjects delete and transfer: four further cases", `docs/protocol/decisions.md`). Built closed under the 2026-10-22 unapproved-text rule: the contract names three notices (to the new owner, the former owning account and every principal whose access is revoked), and none has approved wording. So `public.transfer_subject_v1` and `POST /api/subjects/[id]/transfer` answer `resource-not-found-v1` and write nothing. One function, `private.subject_transfer_open_v1()`, returns false until that wording is approved. Nothing is mailed. Everything behind the door is built and is tested directly.
+
+New migration `supabase/migrations/20261016221000_subject_transfer.sql`, headed PRODUCTION RELEASE: GUARDED. No existing migration is edited. What a transfer does, in one transaction, for a confirmed Path B record (either flow) whose verified person account is the caller:
+
+- **Ownership.** The record stays a separate `other_adult` record, now owned by the person. The ownership check `subjects_self_or_claimant_owner_shape` is widened for exactly that shape, marked by the new column `subjects.ownership_transferred_at` (and while the record is not purged). The record's binding revision is kept, so the person's own grants stay valid. Consents, signatures, drafts and the audit trail are kept, and nothing is merged into the person's own record.
+- **Files.** The transfer is refused, with nothing written, while any Path B file on the record is pending, or while an upload into it is being validated. Each confirmed revision is detached into a person-owned file: its `genome_files` row (normalization made it with the revision's id) is rebound to the person with its variant rows, or one is made. The revision ends as the new terminal state `transferred`. One idempotent row per object in `private.subject_transfer_relocations` records its id, version, size, SHA-256 and both owners, under one immutable `private.subject_ownership_transfers` row.
+- **Results.** Only the person's own completed saved results stay. Every other saved result, queued or running report and former-owner job is deleted or cancelled. No new analysis runs, because every Path B analysis door requires the uploader to own the record.
+- **The uploader loses all access** in the same transaction. Every grant or relationship naming another recipient is revoked (`revocation_reason` `subject_transferred`). Upload, download, rights and export credentials end, and the revision notices are invalidated. Chats are never reassigned: every chat about the record that the person does not own is deleted with its model working state, and every other turn that retrieved the record is removed through `delete_pair_derived_rows_v1`.
+- **Audit:** one `subject.ownership_transferred` event, with no contact or token.
+
+Existing functions patched with the md5-guarded pattern (predecessor and successor md5 and ACL checked):
+
+- `private.record_subject_operation_nonce_v1` accepts `subject_transfer`, and `account_operation_nonces_operation_check` gains it while keeping every earlier value.
+- `private.guard_structural_file_identity_v1` admits two more transitions, each only in the transaction that recorded it: the transfer's own rebind (only `user_id`, from the transfer's former owner to its new owner), and the worker's swap (only `bucket_path` and `storage_object_id`, from the old key to the verified new key and object). Every other change is still `immutable_file_identity`.
+- `private.end_path_b_normalized_revision_v1` no longer deletes the file of a `transferred` revision, because the person owns it.
+- `private.path_b_result_read_v1`, `private.path_b_report_results_v1` and `private.path_b_report_read_ready_v1` read a transferred record through `private.transferred_report_binding_current_v1`. A saved result is served only to the record's new owner, and only while the grant that produced it is current: not revoked or expired, the same grant and binding revisions, the self direction, the person's principal active, their account current, and the grant's own signing session still live, as the Path B reader already requires. The uploader-dependent evidence (the uploader's insurance signature, the 30-day acceptance clock and the held session) is no longer part of it. Every other record keeps the full existing authority comparison.
+- `public.delete_subject_v1`, on the `20261016220000` body: a transferred record is deleted only by its new owner, through `private.purge_transferred_adult_subject_v1`. Waiting relocations are cancelled and any attempt in flight is fenced. Each person-owned file is prepared for the file deletion pipeline under the key it names, as the per-file guard prepares one, and the backstop finishes it. Saved results go at once. The rest is the existing Path B delete by the person, with the refusal bar.
+
+The relocation branch of `workerExecutionBindings.subject-object-relocation` (owner decision: a fresh flat `<uuid>` key, as live code uses), service role and TEST-LOCAL only:
+
+- Database doors `subject_transfer_relocation_work_v1`, `claim_` / `check_` / `swap_` / `fence_subject_transfer_relocation_v1`, `claim_` / `finish_subject_transfer_retirement_v1` and `claim_` / `finish_subject_transfer_disposal_v1`.
+- A copy claims one row, with a five-minute lease and its own fresh key. It rechecks before and after the copy and after the full read-back, then swaps the file's reference in one transaction that rechecks every revision, the exact size and hash, and the new object. The old object is deleted only after a committed swap, and the database then proves it is gone. A failed or expired attempt is fenced, so only its own new key is ever disposed of.
+- TypeScript: `src/lib/subject-endpoints/transfer-relocation-worker.ts`. `runNextSubjectObjectRelocation` lets the claimant-bind branch and this one take turns going first, so a failing item on one side never starves the other. `scripts/future-person-relocation-worker.run.mts` (`pnpm worker:subject-relocation`) now runs both branches. The Storage adapter reads every byte back in 8 MiB ranges over the authenticated path.
+
+The route is `src/app/api/subjects/[id]/transfer/route.ts`. It checks the record against the session's own person account before the body, as `invalid-request-v1`'s authorizationPrecedence requires. The body is exactly `{"nonce": "..."}`, and the code comes from a new `subject_transfer` operation bound to `api.subject-transfer`. On success it answers `subject-transfer-v1` exactly; a refusal is the opaque 404, and a bad body or code is 422. `src/lib/supabase/types.ts` gains the door.
+
+New tests:
+
+- pgTAP `supabase/tests/subject_transfer.sql`, 114 assertions over the real Path B doors: the person confirms with their own account, a file is held, confirmed and normalized, and two results are completed, one for the person and one shared with the uploader. The suite covers privileges and the closed door (which writes nothing), refusals that write nothing (outsider, uploader, a record not bound to the caller, a pending file, a crossed session, a code living past ten minutes) and the transfer in full. It shows the person still reading, the uploader reading, capturing and adding nothing, and no new analysis. A served result needs a current grant: revoked, expired, a different binding revision or an ended signing session each serve nothing. The rebind and swap cannot be borrowed. A delete before relocation hands the old key to the file pipeline. The worker's doors are covered: copy, a failed attempt fenced and disposed of, an expired lease, wrong hash, size or token, a committed swap that cannot be fenced, retirement, and the staging row. A delete after relocation is refused to the former uploader, and for the person it purges, hands the new key to the pipeline and writes the refusal bar. Deferred constraints pass.
+- Vitest: `src/app/api/subjects/[id]/transfer/route.test.ts` (9 cases), `src/lib/subject-endpoints/transfer-relocation-worker.test.ts` (12 cases), and a new case in `operation-nonce.test.ts`: a transfer code never deletes, and a delete code never transfers.
+
+Changed existing tests. None is weakened.
+
+- `scripts/route-register-correspondence.test.ts`: the exact unbuilt census goes from 14 to 13 for `api.subject-transfer`, with a comment, and the header sentence names the route.
+- `supabase/tests/other_adult_held_upload.sql`, "the held table is named only by the exact reviewed lifecycle functions": the exact list gains `private.transfer_subject_v1` and `public.finish_subject_transfer_retirement_v1`, each conditional on its own presence. Every other name is unchanged, and it passes 174/174 with and without the migration.
+- `docs/export-member-plan.json`, and its generated block in `supabase/tests/export_member_plan.sql` (regenerated by `scripts/export-member-plan.ts`): the three new private tables are classified (the transfer row `excluded-internal`, the relocation and attempt rows `excluded-credential`), and `public.subjects` withholds `ownership_transferred_at`, with the reason sentence naming it. With the migration it passes 38/38. Without it, the four catalog checks fail, because the plan now names the new tables, which is the plan's purpose.
+- `docs/proposals/requester-statement-export-member-plan.provenance.json`: the active plan's bytes and SHA-256 are updated, as earlier plan changes did. The proposal and its own provenance are unchanged.
+- `src/lib/subject-endpoints/operation-nonce.test.ts`, "names one registered route per operation": the expected map gains `subject_transfer: "api.subject-transfer"`.
+- `scripts/jurisdiction-enforcement.test.ts`: `WITHOUT_CHECK` lists the new route with its reason. The register sets `jurisdictionBypass`, and the route starts no analysis.
+- `docs/register-contract-divergence.json` records the worker's `genomes` Storage call site.
+
+Planted defects:
+
+- SQL, thirteen:
+  - Ten fail named assertions: no pending check (2, then an exception), the uploader's grants kept (2), a reader that ignores the signing session (1), a swap without the hash check (2, then an exception), a retirement without the absence check (1, then an exception), the door opened (5, then an exception), a rebind matcher for any new owner (1), no transferred branch in the delete door (3), no code record (2, then an exception), and an owner switch left out (an exception at the transfer).
+  - Three are already caught by another mechanism. A transfer that keeps the uploader's saved result is caught by the existing revocation trigger, which deletes it with the grant. A reader that ignores a revoked grant is caught the same way. A fence that skips its state check is still refused, because the swap clears the attempt's token.
+- Route and worker, eleven:
+  - Ten fail named cases: no record check before the body, accepting a delete code, a 55000 answered as 503, success for another record, any account targeting the record, a swap without comparing the read-back, no recheck before the swap, a retirement without the remove, disposal of any key, and the worker deleting a new key itself after an uncertain swap.
+  - An unbounded range body is still refused at the range's end (an equivalent mutant).
+
+Local results, in rolled-back transactions on the shared database over every tree migration it lacks except `20261016153100` (whose guard refuses there because a function body has drifted; hosted CI applies the full chain):
+
+- `subject_transfer` 114/114.
+- The worker's Storage adapter was also run against the local Storage API with synthetic bytes. It covered copy, full ranged read-back of 9 MiB plus 17 bytes, object id, a wrong length refused, a copy onto an existing key refused, an idempotent remove and the old object gone. Every object it wrote was removed, and the bucket's object count was unchanged.
+
+Not built, or left as it is:
+
+- The door is closed. The three notices need approved wording, and opening the door is the change that queues them.
+- No page renders the `subject_transfer` code, as no page renders `subject_delete`'s. No browser path reaches either route, and no browser test covers them.
+- The register's storage text says the new owner's canonical prefix. The owner's decision uses a fresh flat `<uuid>` key, and the `storage.subject-v2` prefix stays undecided.
+- A transferred record has no new analysis path until a person-owned analysis path is decided.
+
 ## 2026-10-22 — `api.subject-delete`: the reviewed-document branch of Path B is an adult case too
 
 Owner decision 2026-10-16 ("The subjects endpoints (G2.1)": all five delete cases, `docs/protocol/decisions.md`). `20261016181000` chose the adult Path B case by a confirmed draft of the e-signature flow only. The integration branch then added the second Path B flow, `path-b-reviewed-document` (`20261016190000`). Its confirmed record is the same uploader-owned `other_adult` record, but `DELETE /api/subjects/[id]` answered 404 for it, so neither its uploader nor the person could delete it there.

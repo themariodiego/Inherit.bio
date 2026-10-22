@@ -80,6 +80,8 @@ export const WITHOUT_CHECK: Record<string, string> = {
     "Withdrawal-class cohort restriction under an operation token bound to the account, session, operation and target. A cohort exists only through create_embryo_cohort_draft_v1, create_embryo_draft_invitation_v1, accept_embryo_co_parent_invitation_v1 and grant_cohort_purpose_v1, each of which checks jurisdiction in the database, and restriction must work in every jurisdiction.",
   "src/app/api/subjects/[id]/route.ts":
     "Subject deletion (api.subject-delete; the register sets jurisdictionBypass) under a single-use code bound to the account, session, operation, route and subject. One database transaction rechecks the caller's authority over the exact record, or the parents' current authority for an embryo, before it empties, purges or restricts. Deletion is a right that must answer in every jurisdiction, and it opens no analysis.",
+  "src/app/api/subjects/[id]/transfer/route.ts":
+    "Subject ownership transfer (api.subject-transfer; the register sets jurisdictionBypass) under a single-use code bound to the account, session, operation, route and subject. One database transaction rechecks that the caller is the record's own verified person account before the record becomes theirs. It is a right that must answer in every jurisdiction, it starts no analysis, and its door is built closed until its notices' wording is approved.",
   "src/app/api/embryos/[id]/disposition/route.ts":
     "Future-person disposition under an operation token bound to the account, session, operation and target, on a cohort that exists only through the database functions that check jurisdiction at creation, invitation, acceptance and grant.",
   "src/app/api/embryos/[id]/future-person-identity/route.ts":

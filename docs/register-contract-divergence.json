@@ -98,6 +98,10 @@
       "why": "Removes objects a retention drain selected in the database."
     },
     {
+      "site": "genomes src/lib/subject-endpoints/transfer-relocation-worker.ts",
+      "why": "The subject-transfer branch of workerExecutionBindings.subject-object-relocation (owner decisions 2026-10-16, api.subject-transfer; TEST-LOCAL only). For one exact database row it copies the old object to the fresh flat <uuid> key the database chose, reads every byte back over the authenticated range path to hash it, reads the new object's id, and removes the old object only after the committed swap, or a fenced attempt's own new key. No key comes from anywhere but the claimed row."
+    },
+    {
       "site": "genomes src/lib/uploads/subject-finalization.ts",
       "why": "Copies the staging object to its final key, verifies it, and removes both on failure."
     },
