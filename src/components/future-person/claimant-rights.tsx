@@ -5,10 +5,11 @@ import {CLAIMANT_CONTACT_KEEP_DAYS as CONTACT_DAYS,CLAIMANT_DELETION_DAYS as DAY
 const recoveryReceipt=z.object({recoveryKey:z.string().regex(/^[0-9A-HJKMNP-TV-Z]{20}$/u),contactMaterialExpiresOn:z.string().regex(/^\d{4}-\d{2}-\d{2}$/u),
   reverificationBinding:z.literal("retained-until-account-binding-key-rotation-or-claimant-deletion"),
   recordRetention:z.literal("claimed-record-is-not-deleted-by-temporary-contact-expiry")}).strict();
-export function ClaimantRights({csrf,recoveryNonce,analysisNonce,deletion}:{csrf:string;recoveryNonce:string;analysisNonce:string;deletion?:{csrf:string;nonce:string}|null}) {
+export function ClaimantRights({csrf,recoveryNonce,analysisNonce,deletion,exportAction}:{csrf:string;recoveryNonce:string;analysisNonce:string;deletion?:{csrf:string;nonce:string}|null;exportAction?:{csrf:string;nonce:string}|null}) {
   const [acknowledged,setAcknowledged]=useState(false);const [recoveryKey,setRecoveryKey]=useState<string|null>(null);
   const [busy,setBusy]=useState(false);const [message,setMessage]=useState("");
   const deleteSubmitted=useRef(false);const [deleteAcknowledged,setDeleteAcknowledged]=useState(false);const [deleteAttempted,setDeleteAttempted]=useState(false);
+  const [exportAttempted,setExportAttempted]=useState(false);
   async function recover(){
     if(busy||!acknowledged||recoveryKey)return;setBusy(true);setMessage("");
     try {
@@ -27,6 +28,16 @@ export function ClaimantRights({csrf,recoveryNonce,analysisNonce,deletion}:{csrf
       const parsed=z.object({status:z.literal("analysis_stopped"),effectiveAt:z.iso.datetime()}).strict().safeParse(await response.json());
       if(response.status!==200||!parsed.success)throw new Error("unavailable");setMessage("Future analysis has stopped. Your record is still retained.");
     }catch{setMessage("This session could not stop analysis. Start a new claim if your session has ended.");}finally{setBusy(false);}
+  }
+  // The export's one-time create (register api.future-person-export). The
+  // nonce is used once, so the button is spent after one attempt. Without a
+  // TEST R2 generation capability the route answers 503 and writes nothing.
+  async function exportRecord(){
+    if(!exportAction||busy||exportAttempted)return;setExportAttempted(true);setBusy(true);
+    try{
+      await fetch("/api/future-person/claim/session/export",{method:"POST",credentials:"same-origin",cache:"no-store",
+        headers:{"Content-Type":"application/json","X-Inherit-CSRF":exportAction.csrf},body:JSON.stringify({operation:"create",nonce:exportAction.nonce})});
+    }catch{/* No notice text is approved for an export outcome. */}finally{setBusy(false);}
   }
   async function deleteRecord(){
     if(!deletion||busy||!deleteAcknowledged||deleteSubmitted.current)return;
@@ -54,6 +65,8 @@ export function ClaimantRights({csrf,recoveryNonce,analysisNonce,deletion}:{csrf
     {recoveryKey&&<div className="mt-6"><p className="font-mono text-xl tracking-wider">{recoveryKey}</p>
       <button className="mt-4 rounded-full border px-6 py-3" onClick={()=>window.print()}>Print this page</button></div>}
     <button className="mt-8 rounded-full border px-6 py-3 disabled:opacity-50" disabled={busy} onClick={stop}>Stop future work</button>
+    {exportAction?<button className="mt-8 ml-4 rounded-full border px-6 py-3 disabled:opacity-50" data-slot="claimant-export"
+      disabled={busy||exportAttempted} onClick={exportRecord}>{COPY.exportLabel}</button>:null}
     {deletion?<fieldset className="mt-8" disabled={busy||deleteAttempted}>
       <legend className="font-semibold">Delete this claimed record</legend>
       <p className="mt-4 max-w-prose text-ink-muted">This removes only your claimed record. It does not delete parental or sibling records. This cannot be undone.</p>

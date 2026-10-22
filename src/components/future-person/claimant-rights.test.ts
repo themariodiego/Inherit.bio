@@ -80,4 +80,18 @@ describe("the claimed record's rights page", () => {
     expect(html).toMatch(/within 30 days/);
     expect(html).toMatch(/within 7 days/);
   });
+  it("shows the export button only when the server presents its TEST-LOCAL action, with the plain registered label", () => {
+    // Owner decision 2026-10-22: a plain label only, with no new notice text.
+    expect(COPY.exportLabel).toBe("Export my claimed record");
+    const without = render(null);
+    expect(without).not.toContain('data-slot="claimant-export"');
+    expect(text(without)).not.toContain(COPY.exportLabel);
+    const withExport = renderToStaticMarkup(createElement(ClaimantRights, { csrf: "c".repeat(64), recoveryNonce: "r".repeat(40),
+      analysisNonce: "a".repeat(40), deletion: null, exportAction: { csrf: "e".repeat(64), nonce: "x".repeat(40) } }));
+    expect(withExport.match(/data-slot="claimant-export"/g)).toHaveLength(1);
+    expect(withExport).toMatch(/<button[^>]*data-slot="claimant-export"[^>]*>Export my claimed record<\/button>/u);
+    // The label is the only text the action adds; the nonce never renders.
+    expect(text(withExport).replace(COPY.exportLabel, "").replace(/\s+/g, " ").trim()).toBe(text(without).trim());
+    expect(withExport).not.toContain("x".repeat(40));
+  });
 });

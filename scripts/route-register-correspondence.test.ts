@@ -24,10 +24,12 @@ import { storageBucketsInSource, UNRESOLVED_STORAGE_BUCKET } from "./storage-con
  *
  * Registered-but-unbuilt is deliberately not failed here. The register is
  * written from the brief and describes routes the product has not reached
- * yet; 13 of them remain unbuilt after the native appeal review, notice, auth,
+ * yet; 8 of them remain unbuilt after the native appeal review, notice, auth,
  * mapping, subject-sharing and subjects (G2.1) routes, the one-record
- * subject export, the subject delete door and the subject transfer route. A
- * redirect that `next.config.ts` serves counts as built.
+ * subject export, the correction-review and claimant export (G2.1) routes,
+ * the two bound-claimant routes, the rights-session export, the subject
+ * delete door and the subject transfer route. A redirect that
+ * `next.config.ts` serves counts as built.
  * The exact current count prevents a broken walker from passing silently.
  *
  * Known divergences live in `docs/route-divergence.json` and are checked in
@@ -237,12 +239,23 @@ describe("the route register and the App Router describe the same surface", () =
     // decision 2026-10-16, "Subject export with joint results: built in two
     // steps") reduces it to 15: the one-record export ships first and refuses,
     // with the stated reason jointResults, while the record has live joint
-    // results. The subject delete door (api.subject-delete, the decisions "The
-    // subjects endpoints (G2.1)" and Q6) reduces it to 14, and the transfer
-    // route (api.subject-transfer, the same decision and "Subjects delete and
-    // transfer: four further cases"; its door is built closed) reduces it to 13.
+    // results. The named correction review
+    // (api.future-person-correction-review) and the claimant export
+    // (api.future-person-export; owner decision 2026-10-16, "Unbuilt
+    // registered endpoints (G2.1)") reduce it to 13. The two bound-claimant
+    // endpoints, api.claimed-subject-analysis-stop and
+    // api.claimed-subject-correction, are built to answer
+    // resource-not-found-v1 until the binding release (owner decision
+    // 2026-10-22, "Consent, rights and claim endpoints (G2.1)"), and the
+    // rights-session export api.third-party-subject-export is built to answer
+    // resource-not-found-v1 in both its subject and cohort cases until their
+    // producers exist (the same decision), so 10 remain. The subject delete
+    // door (api.subject-delete, the decisions "The subjects endpoints (G2.1)"
+    // and Q6) reduces it to 9, and the transfer route (api.subject-transfer,
+    // the same decision and "Subjects delete and transfer: four further
+    // cases"; its door is built closed) reduces it to 8.
     // Keep the exact census: new implementations require an explicit review.
-    expect(unbuilt.length).toBe(13);
+    expect(unbuilt.length).toBe(8);
     expect(unbuilt.length).toBeLessThan(entries.length);
   });
 });
