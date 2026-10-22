@@ -1,6 +1,7 @@
 import "server-only";
 import {z} from "zod";
 import {accountArchiveContextSchema} from "./bound-account-archive-worker";
+import {accountArchiveScope} from "./account-archive-scope";
 import {ACCOUNT_HISTORY_KINDS,type AccountHistoryKind,type prepareAccountHistoryInventory} from "./account-history-inventory";
 import {accountClassRowSchemas,type AccountProjectedClass,type prepareAccountClassInventory} from "./account-class-inventory";
 import type {prepareAccountArchiveMetadata} from "./account-member-metadata";
@@ -29,7 +30,7 @@ const unavailable=()=>new Error("account_archive_partition_unavailable"),encoder
 export async function prepareAccountPartitionMembers(options:{context:Context;history:History;classes:Classes;metadata:Metadata;
  signal:AbortSignal;check:(signal:AbortSignal)=>Promise<unknown>}){
  const context=accountArchiveContextSchema.parse(options.context);
- if(context.targetKind!=="account"||context.targetId!==context.actor.accountId)throw unavailable();
+ const scope=accountArchiveScope(context);if(scope===null)throw unavailable();
  const selected=new Set(context.partitions.map(p=>p.subjectId));
  const subjects=new Map<string,{id:string;subject_class:string}>();
  async function currentAuthority(signal:AbortSignal){
@@ -51,7 +52,10 @@ export async function prepareAccountPartitionMembers(options:{context:Context;hi
   if(!selected.has(row.id)||subjects.has(row.id))throw unavailable();subjects.set(row.id,row);
  }
  if(subjects.size!==selected.size)throw unavailable();
- const self=[...subjects.values()].filter(row=>row.subject_class==="self");
+ // A subject export's one ordinary subject is its own anchor: the
+ // requester's account-level rows (the profile) are filed under it.
+ const self=scope==="subject"?[...subjects.values()].filter(row=>row.id===context.targetId&&["self","other_adult"].includes(row.subject_class))
+  :[...subjects.values()].filter(row=>row.subject_class==="self");
  if(self.length!==1||!context.partitions.some(p=>p.subjectId===self[0].id&&p.class==="ordinary"))throw unavailable();
  const anchor=self[0].id;
  const location=(subject:string|null|undefined)=>subject&&selected.has(subject)?{subjectId:subject,scope:"subject" as const}:

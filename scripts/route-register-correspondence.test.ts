@@ -24,10 +24,11 @@ import { storageBucketsInSource, UNRESOLVED_STORAGE_BUCKET } from "./storage-con
  *
  * Registered-but-unbuilt is deliberately not failed here. The register is
  * written from the brief and describes routes the product has not reached
- * yet; 12 of them remain unbuilt after the native appeal review, notice, auth,
- * mapping, subject-sharing, subjects (G2.1), consents revoke-all, no-account
- * Record Key Card and no-account grant and revoke routes. A redirect that
- * `next.config.ts` serves counts as built.
+ * yet; 11 of them remain unbuilt after the native appeal review, notice, auth,
+ * mapping, subject-sharing and subjects (G2.1) routes, the one-record
+ * subject export, and the consent and rights routes (consents revoke-all,
+ * no-account Record Key Card and no-account grant and revoke). A redirect
+ * that `next.config.ts` serves counts as built.
  * The exact current count prevents a broken walker from passing silently.
  *
  * Known divergences live in `docs/route-divergence.json` and are checked in
@@ -231,18 +232,21 @@ describe("the route register and the App Router describe the same surface", () =
     // The UUID-addressed sharing twin (api.subject-sharing; owner decision
     // 2026-10-16, "The subjects endpoints (G2.1)") reduces it to 21, and three
     // more subjects endpoints, api.subjects, api.legal-evidence-upload-session
-    // and api.subject-download, reduce it to 18. api.subject-export stays
-    // unbuilt (its joint-result projection and TEST R2 run are reported back
-    // undecided). Counting the redirects `next.config.ts` serves as built
-    // removes legacy.signup and legacy.login, which were always built there,
-    // so 16 remain. api.consents-revoke-all (G2.1, "Build all 24") reduces it
-    // to 15, and api.embryo-record-key-cards-rights, built closed until its
-    // session issuer exists, to 14. api.consent-revoke-rights, closed the same
-    // way until an adult-subject-control issuer exists, reduces it to 13, and
-    // api.consent-grant-rights, closed by the same issuer and by the
-    // unchanged other-adult mitigation, to 12.
+    // and api.subject-download, reduce it to 18. Counting the redirects
+    // `next.config.ts` serves as built removes legacy.signup and legacy.login,
+    // which were always built there, so 16 remain. api.subject-export (owner
+    // decision 2026-10-16, "Subject export with joint results: built in two
+    // steps") reduces it to 15: the one-record export ships first and refuses,
+    // with the stated reason jointResults, while the record has live joint
+    // results.
+    // The consent and rights endpoints (G2.1, "Build all 24"; owner decision
+    // 2026-10-22) lower it from 15, one for each endpoint this slice builds:
+    // api.consents-revoke-all to 14; api.embryo-record-key-cards-rights,
+    // built closed until its session issuer exists, to 13; and
+    // api.consent-revoke-rights and api.consent-grant-rights, closed until an
+    // adult-subject-control issuer exists, to 12 and 11.
     // Keep the exact census: new implementations require an explicit review.
-    expect(unbuilt.length).toBe(12);
+    expect(unbuilt.length).toBe(11);
     expect(unbuilt.length).toBeLessThan(entries.length);
   });
 });

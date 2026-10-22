@@ -1,6 +1,7 @@
 import {randomUUID} from "node:crypto";
 import {afterEach,describe,expect,it,vi} from "vitest";
-import {approvedAccountArchiveGeneration,runAccountArchiveGeneration,type AccountArchiveGenerationCapability,type AccountArchiveDueRpc} from "./account-archive-generation";
+import {approvedAccountArchiveGeneration,runAccountArchiveGeneration,runSubjectArchiveGeneration,type AccountArchiveGenerationCapability,type AccountArchiveDueRpc,
+ type SubjectArchiveDueRpc} from "./account-archive-generation";
 const execute=vi.hoisted(()=>vi.fn());
 // These tests prove scheduling/closed discovery only. Complete actual ZIP64
 // generation is independently exercised in account-archive-worker.test.ts.
@@ -85,3 +86,23 @@ describe("exact account-origin worker scheduling",()=>{
   await expect(runAccountArchiveGeneration({...f.options,capability:{...f.capability,completeBytes}})).rejects.toBe(failure);
   expect(execute).toHaveBeenCalledTimes(1);expect(completeBytes).toHaveBeenCalledTimes(1);expect(f.rpc).toHaveBeenCalledTimes(1);
  });
+describe("one-record (api.subject-export) worker scheduling",()=>{
+ function subjectFixture(count=2){
+  const f=fixture(count),rpc=vi.fn<SubjectArchiveDueRpc>(async()=>({data:structuredClone(f.jobs),error:null})),factory=vi.fn(()=>rpc);
+  return {...f,rpc,factory,options:{...f.options,rpc:factory}};
+ }
+ it("reads only the subject due reader and builds every job in its subject scope",async()=>{
+  const f=subjectFixture(3);expect(await runSubjectArchiveGeneration(f.options)).toEqual({completed:3});
+  expect(f.rpc).toHaveBeenCalledTimes(1);expect(f.rpc.mock.calls[0].slice(0,2)).toEqual(["export_archive_subject_due_v1",{p_after:null}]);
+  expect(execute.mock.calls.map(([options])=>options.job)).toEqual(f.jobs);
+  for(const [options]of execute.mock.calls)expect(Object.keys(options).sort()).toEqual(["job","scope","signal"]);
+  expect(execute.mock.calls.every(([options])=>options.scope==="subject")).toBe(true);
+  expect(f.capability.assertReady).toHaveBeenCalledTimes(4);
+ });
+ it("defaults closed and refuses malformed discovery exactly as the account worker does",async()=>{
+  const f=subjectFixture();
+  await expect(runSubjectArchiveGeneration({...f.options,capability:approvedAccountArchiveGeneration()})).rejects.toThrow();
+  expect(f.factory).not.toHaveBeenCalled();
+  f.jobs.reverse();await expect(runSubjectArchiveGeneration(f.options)).rejects.toThrow();expect(execute).not.toHaveBeenCalled();
+ });
+});

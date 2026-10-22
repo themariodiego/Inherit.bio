@@ -84,6 +84,8 @@ export const WITHOUT_CHECK: Record<string, string> = {
     "Optional parent matching-data save/delete under own recent Auth, exact current evidenced parent/recipient authority, account/session/operation/target proof and a subject-first database recheck. It opens no analytical capability. Saving requires the current signed upload artifact; the parent's deletion right remains independent of a new upload consent and embryo_analysis.",
   "src/app/api/subjects/[id]/download/route.ts":
     "Own original only (api.subject-download, owner decision 2026-10-16): self, or an adult record whose own account is the caller, under adult_self_analysis, the one unrestricted capability. The uploader, grantee and embryo cases answer resource-not-found-v1; the database own-right authority rechecks the live session and file before every chunk. It opens no restricted capability.",
+  "src/app/api/subjects/[id]/export/route.ts":
+    "Export right for one own record (api.subject-export, owner decision 2026-10-16, two steps): self, or an adult record whose own account is the caller. The register binds it to jurisdictionBypass because export is a right nothing may block; every embryo case answers resource-not-found-v1 and the database authority rechecks the live session and the record before every step. It opens no restricted capability.",
   "src/app/api/embryo-cohorts/[id]/record-key-cards/route.ts":
     "Delivery of Record Key cards under an operation token, on a cohort that exists only through the database functions that check jurisdiction at creation, invitation, acceptance and grant; it opens no analysis.",
 };

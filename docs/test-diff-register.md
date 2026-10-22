@@ -36,8 +36,72 @@ Vitest: new `src/app/api/consents/grant/session/route.test.ts` (5 cases). Six pl
 
 Test changes, none weakened:
 
-- `scripts/route-register-correspondence.test.ts`: the exact unbuilt census goes from 16 to 12 for `api.consents-revoke-all`, `api.embryo-record-key-cards-rights`, `api.consent-revoke-rights` and `api.consent-grant-rights`, with a comment. The header sentence now reads 12.
+- `scripts/route-register-correspondence.test.ts`: the exact unbuilt census goes from the integration value 15 (after `api.subject-export`) to 11 for `api.consents-revoke-all`, `api.embryo-record-key-cards-rights`, `api.consent-revoke-rights` and `api.consent-grant-rights`, with a comment. The header sentence now reads 11.
 - `src/lib/account-operation-nonce.test.ts` "verifies for exactly the account, session and operation it was minted for" gains one assertion: a delete nonce does not verify as `consents_revoke_all`. Every existing assertion is unchanged.
+
+## 2026-10-16 — api.subject-export: the one-record export on the account producer, refused with a stated reason while joint results are live
+
+Owner decision 2026-10-16, "Subject export with joint results: built in two steps" (`docs/protocol/decisions.md`, 6c1fdcd1). This is the first step. The one-subject export ships and refuses, with a stated reason, while the subject has live joint results. The next slice adds the live-permission joint-result projection and lifts the refusal; nothing here builds it. Everything is TEST-LOCAL with production off. No provider is called anywhere.
+
+New migration `supabase/migrations/20261016196000_subject_export.sql`, headed **PRODUCTION RELEASE: GUARDED**. No existing migration is changed.
+
+- **Scope.** `public.subject_export_request_v1` (service role only) admits only the register's self-or-adult case: the caller's self record, or an adult record whose `subject_account_id` is the caller, active or restricted. It hands that case to the unchanged `export_archive_request_v1` with target `subject`, so the job records `api.subject-export` and `subject-export-v1`. A claimed embryo, an unclaimed embryo, another person's record and an unknown id all answer 42501, which the route returns as resource-not-found-v1. The claimed-bound subject capture itself is unchanged.
+- **Refusal.** `private.export_subject_scope_v1` raises 0A000 `export_joint_results_pending` while the record has live joint results: a family pair that is not purged, a Portrait result naming it as a parent, or a role in an embryo cohort that is not purged. The authority is recomputed on every request step and every worker read, so a pair that appears after the request fails the job at its next read. A role in a purged cohort is refused as the account export already refuses it (`export_partition_projection_unavailable`). The route maps only the joint-results code to the closed issue `jointResults` (invalid-request-v1, 422).
+- **Capture.** The owned capture chain already accepted target `subject` at its member frame. It now continues for one ordinary subject instead of returning early at each layer:
+  - its own history inventory, with no account-level legacy consents or recipient grants (subject-export-v1 alwaysExcluded: unrelated-account-legacy-consents);
+  - its own original frames;
+  - its own Path B results;
+  - a graph anchored on the record that routes only its own pair history (any cohort role has already been refused);
+  - its own class inventory: the same 29 kinds and modes, every count the record's own;
+  - its own statements.
+  
+  A Path B record is captured through its confirmation receipt for a subject target, as it already was for the account. For the account target every layer takes the same branch as before.
+- **Doors.** Nine member doors accept one ordinary subject job and capture that target: content, metadata, history inventory, classes, originals, graph rows v1 and v2, Path B results and own statements. Two doors stay account only. The audit door stays account only because an audit event records no subject, so a record export cannot select its own events. The worker writes the stated reason in place of the log, and the audit schema is unchanged. The complete-capture door also stays account only; a subject job never reads it.
+- **Worker and TEST R2.** `public.export_archive_subject_due_v1` lists queued ordinary subject jobs; the account due reader is unchanged and still never lists one. One closed predicate, `private.account_archive_job_scope_v1`, admits an ordinary subject job in the TEST R2 path: write context, completion, READY, delivery, cleanup, disposal and the publication guard.
+
+TypeScript:
+
+- `src/lib/exports/account-archive-scope.ts` names the producer's two scopes. The whole account, or one ordinary subject whose only partition is the target. Eleven readers that refused anything but the account now refuse anything but these two scopes.
+- The partition members file account-level rows (the profile) under the record itself. The audit members write `subjects/<id>/audit-log.json` and `legal-audit.json` with the stated exclusion, `SUBJECT_EXPORT_AUDIT_NOTE`, and read no audit door. The manifest names `exportContract: subject-export-v1` and `excludedClasses: [{class: legal-audit, reasonCode: audit-events-record-no-subject}]`.
+- `buildAccountArchive` takes the job's `scope`. A subject job never reads the complete account capture, and a context that is not the selected scope is refused before any reservation. `runSubjectArchiveGeneration` drains the subject due reader. The TEST worker door takes the operation `subject-generation`, and the worker script takes `--test-r2-subject-once`.
+- Route `src/app/api/subjects/[id]/export/route.ts`, via `src/lib/exports/subject-export-http.ts`. It answers the record door first (an opaque 404 before field validation), then the stated refusal, then the request fields, the CSRF proof and the one-time nonce bound to `api.subject-export`. The cookie is the registered `__Host-inherit-export`, hashed in its own context (`subject-export-cookie-v1`) over the actor and the record. So it cannot poll or open the account export or another record's export.
+- The proxy treats the route as a right (no jurisdiction or deletion-notice hold, like `/api/export`) and sends `no-referrer`.
+- Settings → Your data lists the caller's own records with each one's action, its stated refusal or "cannot be prepared", only when a generation capability is configured, as for the account export. Locally none is, so nothing new renders.
+
+Moved pins, none weakened:
+
+- `scripts/route-register-correspondence.test.ts`: the unbuilt census goes from 18 to 17.
+- `supabase/tests/embryo_qc_precise_json.sql`: the body pin of `public.export_archive_account_members_v1` moves from `1b91b51e…` to `018fd08f…`. The inverse check now first inverts the two counted subject-export edits (the scope helper once, the permit-target capture twice). It asserts that the result is exactly the prior body `1b91b51e…`, then applies the original partition-guard inverse to it, unchanged.
+- `supabase/tests/other_adult_held_upload.sql`: the held-table naming census admits `private.export_subject_class_inventory_v1`, conditionally, as it already admits the account inventory. A new exact pin covers that function: body md5 `355f4194…`, definer, owner `postgres`, the same configuration and no API execution.
+- Extended, not weakened: `src/proxy.test.ts` (the export route joins the rights, no-referrer and outside-the-shape lists, plus a deletion-notice case), `scripts/jurisdiction-enforcement.test.ts` (one WITHOUT_CHECK entry with its reason: export is a right under the register's jurisdictionBypass), and `src/app/api/jobs/account-export/route.test.ts` (the mock factory gains the subject runner; every existing assertion is unchanged).
+
+New tests:
+
+- `supabase/tests/subject_export.sql`: 152 assertions, 287 with the ordinary, binding-lifecycle and relocation fixtures. It covers the record door and every 42501 case, including a claimed embryo; the stable capture and its delegation; the job tuple and both due readers; and all nine doors on one subject job, including legacy-consent exclusion, principal and signature filtering, 29 classes, originals and variants. It checks that the audit and complete doors refuse, and covers the job predicate, including a composite probe for a claimed or foreign target. It checks the joint-results refusal for a pending pair, a revoked pair, a pair that appears after the request and a Portrait result, and that a purged pair is history routed to the record. It checks that every new function is owner-only or service-only. It runs a full TEST R2 completion of a subject job on the same synthetic owner callback metadata as `account_archive_test_completion.sql`: reservation, provider identity, ACK, manifest page, byte counters, a refused status-only publication, READY, the READY poll, open-ready through the route door, the shared chunk door, issue and ACK, and a foreign-account refusal.
+- Vitest: `subject-export-http.test.ts` (10), `subject-export-controls.test.ts` (3), `account-archive-scope.test.ts` (1), `subject-exports.test.ts` (1). There are also new cases in `account-archive-worker.test.ts` (4, including the full TEST flow through `runTestSubjectArchiveFlow` with the gateway double, from the subject due reader to READY and the sequential download), `account-archive-generation.test.ts` (2), `account-export-control.test.ts` (1), the jobs route (1) and the proxy (1 plus list entries).
+- E2E `e2e/subject-export.spec.ts` (TEST-LOCAL, no generation capability, so no job is ever created). It runs the record door, opaque not-found, the stated refusal for both contributors while a synthetic pair is live, the record passing again once the pair is removed, no export row, and no one-record action on the settings page.
+
+Planted defects, each run in a rolled-back transaction or reverted:
+
+- SQL: a joint-results predicate that is always false fails 5 refusal assertions.
+- SQL: a history projection that keeps account rows fails the 2 legacy-consent assertions.
+- SQL: an ordinary-target predicate that admits any subject fails the claimed-embryo door and both job-predicate probes.
+- SQL: a route door with no target check fails the claimed-embryo assertion.
+- SQL: a door scope that refuses subjects stops the suite at the first door.
+- TypeScript: dropping the audit exclusion, mapping the refusal to 503, letting a subject job read the complete capture, swapping the due reader or sharing the account cookie context each fail named tests.
+
+Local results:
+
+- `pnpm typecheck` and `pnpm lint` exit 0. `gate:secrets`, `gate:env`, `gate:routes`, `gate:sql-includes`, `gate:readability` and `gate:legal` exit 0.
+- Full Vitest with `PLAYWRIGHT_BROWSERS_PATH` set: 751 of 757 files pass and 13,106 tests pass. The six failing files are the known environment-only owned-runtime files (40 tests), which refuse to run as root.
+- pgTAP, each suite in its own rolled-back transaction on the shared database. `subject_export` passes 287/287. 78 related suites (every export/archive suite and every catalog-inventory suite) were run with and without the migration. For the suites using the custody fixture, the one leftover quarantined claim document from browser runs was leased for one hour inside the same transaction, as before.
+  - The results are identical except `embryo_qc_precise_json`, whose moved pins pass only with the migration.
+  - The pre-existing shared-database failures are the same on both sides: `account_archive_readable_graph` (a leftover worker-job idempotency key), `drop_generated_artifacts_bucket`, `drop_genomes_staging_bucket`, `embryo_ingest_session_configuration`, `embryo_ingest_sessions`, `export_member_plan`, `historical_account_request`, `other_adult_held_upload` test 69, and `future_person_claimant_contact_730_days` and `path_b_confirmed_file_retention`, which need migrations this database lacks.
+- E2E: `flock /tmp/inherit-e2e.lock` around `PLAYWRIGHT_BROWSERS_PATH=/home/inheritsmoke/.cache/ms-playwright node --import tsx scripts/run-upload-browser.mts --full -- e2e/subject-export.spec.ts --project=chromium`, with migrations 190000, 191000 and 200000 applied by psql and no schema_migrations row. Result: 1 passed, "E2E contract passed: 1 result(s), no skips, no retries". With the joint-results predicate planted false, the spec fails at the refusal assertion.
+  - The first run's spec passed, but the runner refused it because no upload crossed the Storage proxy, so the spec now uploads the owner's file first.
+  - After each run the catalog was restored exactly ("catalog identical to the snapshot"), the ledger stayed at 246 rows, and no pair or export row is left. The synthetic accounts and the uploaded file are left in place, as other e2e runs leave theirs.
+
+Not run here: the real TEST R2 step. It needs the owner's Cloudflare TEST credentials and runs only in provider-qualified CI.
 
 ## 2026-10-17 — Links to an auth form page do not prefetch
 

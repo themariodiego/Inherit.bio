@@ -20,6 +20,14 @@ describe("settings complete export transport",()=>{
   expect(transport.mock.calls[1][1]).toMatchObject({method:"GET",cache:"no-store",credentials:"same-origin",redirect:"error"});
   expect(Object.keys(transport.mock.calls[1][1]).sort()).toEqual(["cache","credentials","method","redirect","signal"]);
  });
+ it("addresses one record's own export route, and only the two registered export routes",async()=>{
+  const exportId=randomUUID(),record=randomUUID(),transport=vi.fn<(url:string,init:RequestInit)=>Promise<Response>>(async()=>Response.json({status:"preparing",exportId},{status:202}));
+  await requestAccountExport({operation:"create",control,expectedExportId:null,signal:signal(),transport,route:`/api/subjects/${record}/export`});
+  expect(transport.mock.calls[0][0]).toBe(`/api/subjects/${record}/export`);
+  for(const route of ["/api/subjects/../export","https://foreign.e2e.local/api/export",`/api/subjects/${record}/download`,`/api/subjects/${record}/export?x=1`,"/api/exports"])
+   await expect(requestAccountExport({operation:"check",control,expectedExportId:exportId,signal:signal(),transport,route})).rejects.toThrow();
+  expect(transport).toHaveBeenCalledTimes(1);
+ });
  it("refuses a closed or canceled create without a request",async()=>{
   const transport=vi.fn(),cancel=new AbortController();cancel.abort();
   await expect(requestAccountExport({operation:"create",control:{available:false},expectedExportId:null,signal:signal(),transport})).rejects.toThrow();
