@@ -13,6 +13,8 @@ The claimant export button, from the same decision: the claimant page under TEST
 
 The two bound-claimant endpoints, from the same decision: `api.claimed-subject-analysis-stop` (`src/app/api/subjects/[id]/analysis/route.ts`) and `api.claimed-subject-correction` (`src/app/api/subjects/[id]/corrections/route.ts`) answer `resource-not-found-v1` until the binding release, before any body is read. Pin moved: `scripts/route-register-correspondence.test.ts` "leaves the unbuilt half of the register alone, but still measures it" goes from 13 to 11, with a comment naming both. New test: `src/lib/subject-endpoints/claimed-subject-routes.test.ts`. Planted defect: removing either route file makes the census test fail with 12.
 
+The rights-session export, from the same decision: `api.third-party-subject-export` (`src/app/api/withdraw/session/export/route.ts`) validates a POST in full, including its rights-session-bound one-time nonce, and polls by GET. Both resolver cases answer `resource-not-found-v1` until their producers exist. The withdraw page stays refuse/delete only. Pin moved: the census goes from 11 to 10, with a comment. New tests: `src/lib/exports/third-party-export-http.test.ts`, and two additive cases in `src/proxy.test.ts` that let this path through without reading an account, as `/api/withdraw/session` already is. Planted defects: removing the route file makes the census test fail with 11; dropping the session binding from the nonce, answering a valid request with 202, and removing the proxy pass-through each fail a test.
+
 No frozen baseline, privacy control or waiting period changes.
 
 ## 2026-10-16 — Future-person and claim endpoints (G2.1): the route census moves
