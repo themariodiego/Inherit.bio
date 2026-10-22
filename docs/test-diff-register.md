@@ -55,12 +55,16 @@ Planted defects:
 Local results, in rolled-back transactions on the shared database over every tree migration it lacks except `20261016153100` (whose guard refuses there because a function body has drifted; hosted CI applies the full chain):
 
 - `subject_transfer` 114/114.
+- Regression: all 219 pgTAP suites of the merged tree ran twice, over every migration the shared database lacks except `20261016153100`, once with `20261016220000` and this migration and once without. 199 pass completely both ways, and 17 fail identically both ways on the shared database: leftover rows from earlier runs, for example `family_sharing`'s 6 global counts and a `directional_grants` foreign key in `embryo_authority`, `mail_outbox` and `v2_backfill`. Three differ, each as expected: `export_member_plan` fails its four catalog checks without the migration, because the plan names the new tables, and the two new suites need their own migrations.
+- Vitest, the full run on the merged tree: 13,218 tests. Every failing file fails for the environment only: the six known files, the files that cannot launch the missing headless Chromium, and the `account-archive-worker` five-second timeout under load, which also fails on the base. The two census tests above failed until their pins moved, and now pass.
+- `pnpm typecheck` (with a 6 GiB heap), `pnpm lint` and the seven gates (`secrets`, `env`, `routes`, `sql-includes`, `readability`, `legal`, `claims`) exit 0.
 - The worker's Storage adapter was also run against the local Storage API with synthetic bytes. It covered copy, full ranged read-back of 9 MiB plus 17 bytes, object id, a wrong length refused, a copy onto an existing key refused, an idempotent remove and the old object gone. Every object it wrote was removed, and the bucket's object count was unchanged.
 
 Not built, or left as it is:
 
 - The door is closed. The three notices need approved wording, and opening the door is the change that queues them.
 - No page renders the `subject_transfer` code, as no page renders `subject_delete`'s. No browser path reaches either route, and no browser test covers them.
+- The suite builds an e-signature record. A reviewed-document record goes through the same code, but no test here builds one bound to a person's account.
 - The register's storage text says the new owner's canonical prefix. The owner's decision uses a fresh flat `<uuid>` key, and the `storage.subject-v2` prefix stays undecided.
 - A transferred record has no new analysis path until a person-owned analysis path is decided.
 
