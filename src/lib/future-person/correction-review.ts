@@ -28,15 +28,30 @@ const revision = z.number().int().positive().safe();
 const count = z.number().int().nonnegative().safe();
 const clock = z.iso.datetime({ offset: true });
 
-/** responseContracts.future-person-correction-review-case-v1.currentProvenance */
+/**
+ * The database's provenance row (20261016212000). It holds no HMAC key, so
+ * it hands over an unkeyed `sourceDigest` of the subject, the field and its
+ * current source row; only the keyed reference below is ever published.
+ */
 export const correctionProvenance = z.object({
   fieldVersion: revision,
   sourceKind: z.enum(["neutral-display-label", "disposition-event", "identity-profile", "report-result", "imported-variant-source"]),
-  sourceReference: z.string().regex(/^[0-9a-f]{64}$/u),
+  sourceDigest: z.string().regex(/^[0-9a-f]{64}$/u),
   provenanceRevision: revision,
   affectedResultCount: count,
   analysisStopped: z.boolean(),
 }).strict();
+
+/**
+ * responseContracts.future-person-correction-review-case-v1.currentProvenance
+ * .sourceReference: "opaque-current-subject-scoped-reference". A keyed HMAC
+ * of the database's subject-scoped source digest (owner decision 2026-10-22),
+ * so it is stable while the source row is, and nobody without the server key
+ * can test a guessed subject or source against it.
+ */
+export function correctionSourceReference(sourceDigest: string): string {
+  return hmacSecret(sourceDigest, "future-person-correction-source-reference-v1");
+}
 
 const SOURCE_KIND = {
   "display-label": "neutral-display-label",
@@ -105,7 +120,14 @@ export function correctionReviewCaseBody(row: CorrectionReviewCase) {
     field: row.field,
     statement,
     correctionRevision: row.correctionRevision,
-    currentProvenance: row.provenance,
+    currentProvenance: {
+      fieldVersion: row.provenance.fieldVersion,
+      sourceKind: row.provenance.sourceKind,
+      sourceReference: correctionSourceReference(row.provenance.sourceDigest),
+      provenanceRevision: row.provenance.provenanceRevision,
+      affectedResultCount: row.provenance.affectedResultCount,
+      analysisStopped: row.provenance.analysisStopped,
+    },
   };
 }
 

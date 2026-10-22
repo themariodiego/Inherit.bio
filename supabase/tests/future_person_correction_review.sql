@@ -74,10 +74,10 @@ select is((select value->>'correctionId' from review_read),(select id::text from
 select is((select value->>'field' from review_read),'display-label','the requested field is returned');
 select is((select (value->>'correctionRevision')::int from review_read),1,'the correction revision is current');
 select is((select (value->>'reviewRevision')::int from review_read),0,'no decision exists yet');
-select is((select (value->'provenance')-'sourceReference' from review_read),
+select is((select (value->'provenance')-'sourceDigest' from review_read),
  '{"fieldVersion":1,"sourceKind":"neutral-display-label","provenanceRevision":1,"affectedResultCount":0,"analysisStopped":false}'::jsonb,
  'a label correction affects no result and nothing has been approved');
-select ok((select value#>>'{provenance,sourceReference}' ~ '^[0-9a-f]{64}$' from review_read),'the source reference is opaque');
+select ok((select value#>>'{provenance,sourceDigest}' ~ '^[0-9a-f]{64}$' from review_read),'the source digest is opaque');
 select is((select value#>>'{envelope,statementCiphertextHex}' from review_read),repeat('ab',48),
  'the sealed original statement is handed only to the named reviewer');
 select is((select value#>>'{binding,actor,accountId}' from review_read),'7a000000-0000-0000-0000-000000000001',
@@ -87,11 +87,13 @@ select ok(public.check_future_person_correction_review_v1((select id from review
 select ok(not public.check_future_person_correction_review_v1((select id from review_case),
  (select jsonb_set(value->'binding','{sourceHash}',to_jsonb(repeat('0',64))) from review_read)),
  'the recheck refuses a different source');
-select is((select value-'sourceReference'-'sourceKind'-'fieldVersion'-'provenanceRevision' from (
+select is((select value-'sourceDigest'-'sourceKind'-'fieldVersion'-'provenanceRevision' from (
  select private.correction_review_provenance_v1((select subject from custody_ids),'variant-call-source') value)x),
- jsonb_build_object('affectedResultCount',(select count(*) from public.report_artifacts where subject_id=(select subject from custody_ids))
-  +(select count(*) from public.embryo_scores s join public.embryos e on e.id=s.embryo_id where e.subject_id=(select subject from custody_ids)),
-  'analysisStopped',false),'a disputed source call counts every result bound to the subject');
+ jsonb_build_object('affectedResultCount',(select count(*) from public.report_artifacts r join private.future_person_custody_slices x
+   on x.subject_id=r.subject_id and x.source_sha256=r.source_binding_fingerprint where r.subject_id=(select subject from custody_ids))
+  +(select count(*) from public.embryo_scores s join public.embryos e on e.id=s.embryo_id join private.future_person_custody_slices x
+   on x.subject_id=e.subject_id and x.source_sha256=s.source_binding_fingerprint where e.subject_id=(select subject from custody_ids)),
+  'analysisStopped',false),'a disputed source call counts every result bound to the canonical source');
 select is(private.correction_review_provenance_v1((select subject from custody_ids),'variant-call-source')->>'sourceKind',
  'imported-variant-source','the source call field is the imported variant source');
 -- Decisions.

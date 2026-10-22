@@ -1,3 +1,16 @@
+## 2026-10-22 — Future-person and claim endpoints (G2.1), continued: correction provenance
+
+Owner decision 2026-10-22 ("Consent, rights and claim endpoints (G2.1)") fixes how the named correction review computes `currentProvenance`. Two points differed from it in the 2026-10-16 slice: `sourceReference` was an unkeyed digest, and `affectedResultCount` counted every report and score row of the subject rather than those bound to the canonical source. The new guarded migration `supabase/migrations/20261016212000_future_person_correction_provenance.sql` patches `private.correction_review_provenance_v1` (md5-pinned predecessor and successor). The database now hands over an unkeyed `sourceDigest`, and the route publishes only a keyed HMAC of it as `sourceReference`.
+
+Pins moved, all in tests this branch added on 2026-10-16 and none yet on the integration branch:
+
+- `supabase/tests/future_person_correction_review.sql`: the two provenance checks name `sourceDigest` instead of `sourceReference`. The disputed-source count expects only rows whose `source_binding_fingerprint` is the custody slice's `source_sha256`, which is a stricter expectation than before.
+- `src/lib/future-person/correction-review-route.test.ts`: the database row carries `sourceDigest`, and the GET body must carry the keyed HMAC of it, never the digest itself.
+
+New tests: `supabase/tests/future_person_correction_provenance.sql`, which seeds synthetic results on and off the canonical source. Planted defects: without the new migration, 10 of its assertions fail; counting every score again fails 3; publishing the digest unkeyed fails the route test.
+
+No frozen baseline, privacy control or waiting period changes.
+
 ## 2026-10-16 — Future-person and claim endpoints (G2.1): the route census moves
 
 The owner's G2.1 decision ("Build all 24") builds the registered but unbuilt endpoints. This slice builds `api.future-person-correction-review` (`src/app/api/reviews/future-person/corrections/[id]/route.ts`) and `api.future-person-export` (`src/app/api/future-person/claim/session/export/route.ts`).

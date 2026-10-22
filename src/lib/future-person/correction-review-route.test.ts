@@ -11,6 +11,7 @@ const { GET, POST } = await import("@/app/api/reviews/future-person/corrections/
 const { sealNewCorrection, readCorrectionReviewNonce, mintCorrectionReviewNonce } = await import("./correction-case-envelope");
 const { correctionReviewCsrf } = await import("./correction-review");
 const { unwrapNewCaseKey, openNewCaseBytes } = await import("./new-case-envelope-crypto");
+const { hmacSecret } = await import("@/lib/crypto");
 afterAll(() => vi.unstubAllEnvs());
 
 const id = (n: number) => `86000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
@@ -25,7 +26,11 @@ const envelope = sealNewCorrection(scope, statement);
 const binding = { actor: { accountId: ACCOUNT, sessionId: SESSION, principalId: REVIEWER, principalRevision: 1,
   live: { authorized: true as const, account_auth_session_revision: 1, session_revision: 1 } },
   assignmentRevision: 1, sourceHash: "c".repeat(64) };
-const provenance = { fieldVersion: 1, sourceKind: "neutral-display-label", sourceReference: "d".repeat(64),
+const provenance = { fieldVersion: 1, sourceKind: "neutral-display-label", sourceDigest: "d".repeat(64),
+  provenanceRevision: 1, affectedResultCount: 0, analysisStopped: false };
+// Owner decision 2026-10-22: only a keyed HMAC of the database's digest is published.
+const currentProvenance = { fieldVersion: 1, sourceKind: "neutral-display-label",
+  sourceReference: hmacSecret("d".repeat(64), "future-person-correction-source-reference-v1"),
   provenanceRevision: 1, affectedResultCount: 0, analysisStopped: false };
 const caseRow = { correctionId: CASE, field: "display-label", correctionRevision: 1, reviewRevision: 0,
   deadline: deadlineIso, scope, provenance, binding, envelope };
@@ -69,7 +74,9 @@ describe("GET /api/reviews/future-person/corrections/[id]", () => {
       ["read_future_person_correction_review_v1", { p_correction: CASE }],
       ["check_future_person_correction_review_v1", { p_correction: CASE, p_expected: binding }]]);
     const result = await response.json();
-    expect(result).toEqual({ correctionId: CASE, field: "display-label", statement, correctionRevision: 1, currentProvenance: provenance });
+    expect(result).toEqual({ correctionId: CASE, field: "display-label", statement, correctionRevision: 1, currentProvenance });
+    expect(currentProvenance.sourceReference).toMatch(/^[0-9a-f]{64}$/u);
+    expect(JSON.stringify(result)).not.toContain("d".repeat(64));
     expect(JSON.stringify(result)).not.toMatch(/wrapped|ciphertext|contact|parent|rawGenotype|objectPath|bucket|credential|correctedValue/iu);
     expect(readCorrectionReviewNonce(response.headers.get("x-inherit-review-nonce") ?? "", CASE, binding, deadlineIso)).toBeTruthy();
     expect(response.headers.get("x-inherit-csrf")).toBe(correctionReviewCsrf(CASE, ACCOUNT, SESSION));
