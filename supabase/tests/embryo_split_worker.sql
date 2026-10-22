@@ -151,22 +151,33 @@ select is(pg_temp.probe($$select private.enqueue_worker_job_v2('7a000000-0000-00
   $$select coalesce(public.claim_embryo_split_job_v1(pg_temp.token('a'),'synthetic-worker')::text,'none')$$,
   $$select string_agg(status,',') from public.worker_jobs where kind='score_embryo' and source_binding_id=(select id from live)$$),
   'none / queued','no other job kind is ever claimed, cancelled or changed by the embryo worker');
--- A legitimately completed table attempt has no fragment reader yet.
-select is(pg_temp.probe($$set constraints all immediate;
+-- A legitimately completed attempt of another recorded format, with its
+-- manifest recomputed so only the format differs.
+create function pg_temp.as_format(p_format text) returns text language sql as $$
+  select format($f$set constraints all immediate;
     alter table public.embryo_ingest_sessions disable trigger embryo_configuration_immutable;
     alter table public.embryo_ingest_sessions disable trigger embryo_ingest_manifest_immutable;
     alter table public.worker_jobs disable trigger worker_jobs_binding_immutable;
-    update public.embryo_ingest_sessions set source_format='pgt_table' where id=(select id from live);
+    update public.embryo_ingest_sessions set source_format=%L where id=(select id from live);
     update public.embryo_ingest_sessions set manifest_sha256=private.embryo_ingest_manifest_sha256_v1(id) where id=(select id from live);
     update public.worker_jobs set file_sha256=(select manifest_sha256 from public.embryo_ingest_sessions
       where id=(select id from live)) where id=(select id from job);
     alter table public.worker_jobs enable trigger worker_jobs_binding_immutable;
     alter table public.embryo_ingest_sessions enable trigger embryo_ingest_manifest_immutable;
-    alter table public.embryo_ingest_sessions enable trigger embryo_configuration_immutable$$,
+    alter table public.embryo_ingest_sessions enable trigger embryo_configuration_immutable$f$, p_format);
+$$;
+-- ADR 0037: a laboratory-table attempt is claimed for its fragment reader;
+-- every other format still ends with the closed format code.
+select is(pg_temp.probe(pg_temp.as_format('pgt_table'),
+  $$select coalesce(public.claim_embryo_split_job_v1(pg_temp.token('a'),'synthetic-worker')->>'format','none')$$,
+  $$select coalesce(failure_code,'none')||':'||(select status from public.worker_jobs where id=(select id from job))
+    from public.embryo_ingest_sessions where id=(select id from live)$$),
+  'pgt_table / none:running','a laboratory-table attempt is claimed, and its receipt names the table format');
+select is(pg_temp.probe(pg_temp.as_format('gvcf'),
   $$select coalesce(public.claim_embryo_split_job_v1(pg_temp.token('a'),'synthetic-worker')::text,'none')$$,
   $$select failure_code||':'||(select status from public.worker_jobs where id=(select id from job))
     from public.embryo_ingest_sessions where id=(select id from live)$$),
-  'none / format:failed','a laboratory-table attempt ends with the closed format code');
+  'none / format:failed','a format with no fragment reader still ends with the closed format code');
 
 -- ---------------------------------------------------------------------------
 -- A live claim
@@ -297,6 +308,28 @@ select throws_ok($$select pg_temp.stage(0,0,'[[1,5,"A",null,"A/G"]]')$$,'22023',
   'a reference call cannot carry an alternate genotype');
 select throws_ok($$select pg_temp.stage(0,0,'[[23,5,"A","G","A/G"]]')$$,'22023','invalid split batch',
   'a sex chromosome is never stored');
+-- ADR 0037: a laboratory table names called alleles only. Its rows carry no
+-- reference or alternate allele; a VCF row still must.
+select throws_ok($$select pg_temp.stage(0,0,'[[1,5,null,null,"A/G"]]')$$,'22023','invalid split batch',
+  'a VCF row without a reference allele is never stored');
+select is(pg_temp.probe(pg_temp.as_format('pgt_table'),
+  $$select pg_temp.stage(0,0,'[[1,5,null,null,"A/G"],[2,9,null,null,"T"]]')->>'rows'$$,
+  $$select string_agg(coalesce(reference_allele,'none')||':'||coalesce(alternate_allele,'none')||':'||genotype,',' order by id)
+    from private.embryo_split_variants where session_id=(select id from live)$$),
+  '2 / none:none:A/G,none:none:T','a table row is stored with its called alleles and no reference or alternate allele');
+select throws_ok($$select pg_temp.probe(pg_temp.as_format('pgt_table'),
+  $q$select pg_temp.stage(0,0,'[[1,5,"A","G","A/G"]]')::text$q$)$$,'22023','invalid split batch',
+  'a table row cannot claim a reference allele the table never stated');
+select throws_ok($$select pg_temp.probe(pg_temp.as_format('pgt_table'),
+  $q$select pg_temp.stage(0,0,'[[1,5,null,null,"A/."]]')::text$q$)$$,'22023','invalid split batch',
+  'a partial table call is never stored');
+select throws_ok($$select pg_temp.probe(pg_temp.as_format('pgt_table'),
+  $q$select pg_temp.stage(0,0,'[[1,5,null,null,"N/A"]]')::text$q$)$$,'22023','invalid split batch',
+  'a table call is called bases only');
+select throws_ok($$insert into private.embryo_split_variants(session_id,sample_ordinal,worker_job_id,attempt,batch,
+    chromosome,position,reference_allele,alternate_allele,genotype)
+  values((select id from live),0,(select id from job),1,99,1,5,null,'G','G/G')$$,'23514',null,
+  'no stored row may name an alternate allele without a reference allele');
 select throws_ok($$select pg_temp.stage(0,0,'[[1,5,"A","G","A/G","extra"]]')$$,'22023','invalid split batch',
   'a row carries exactly five fields');
 select throws_ok($$select pg_temp.stage(0,1,pg_temp.rows())$$,'22023','invalid split batch','batches arrive in order');

@@ -89,6 +89,14 @@ The next source-accepting work must supply all of the following:
      fixed deadline (`mintIngestSessionOperation`).
    - `POST /api/embryo-cohorts` now returns `operationNonce`, `configureRoute`
      and `expiresAt`. `chunkRoute` and `completeRoute` wait for their routes.
+   **Built for tables on 16 October, TEST-LOCAL only (ADR 0037).** The
+   configure route records a table as `pgt_table` from its own `##reference`
+   and `##contig` lines and answers only the mapping-inspection nonce
+   (`embryo-table-configuration-v1`). Following the owner's token-rotation
+   decision, every answer of `api.embryo-ingest-mapping` carries the next
+   nonce. The answer that leaves nothing to decide carries the transport
+   challenge, revision, completion nonce and CSRF token, stored as digests
+   only (migration `20261016120000_embryo_table_mapping_route.sql`).
 2. The bounded mapping endpoint and client orchestration, including independent
    parser/header validation before these private writes. The handler must also
    validate the offered candidates in memory: persisted canonical index pairs
@@ -96,6 +104,17 @@ The next source-accepting work must supply all of the following:
    A protocol for that validation must respect the ban on persisting source
    headers and their derivatives. The VCF/table sanitizer
    generators already exist; their existence is not a complete upload flow.
+   **Built 16 October, TEST-LOCAL only (ADR 0037).** The browser sends the
+   bounded header copy once, with every forbidden column already dropped. The
+   handler repeats header detection and the mapping plan in memory, checks
+   each offered candidate there, and stores only the canonical locus kind,
+   never header text. Each decision is resolved through
+   `private.resolve_embryo_mapping_challenge_v1`. Challenges are issued by the
+   new `private.issue_embryo_table_challenge_v1`, because
+   `private.create_embryo_mapping_challenge_v1` consumes the inspection nonce
+   itself. It therefore cannot issue the build question that follows a column
+   decision in the same transaction, and it stays uncalled. `unknown` ends
+   the upload.
 3. The physical-write fence, Storage acknowledgements and terminal unwind.
    `prepare_embryo_ingest_unwind_v1` only prepares a manifest. Its final comment
    explicitly says no Storage ACK or terminal graph-purge RPC exists. Its

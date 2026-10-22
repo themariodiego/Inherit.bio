@@ -68,18 +68,14 @@ export function requestFence() {
       // The first sign-in declares where the person lives once (G5.1a).
       if (method === "PUT" && url.pathname === "/api/settings/jurisdiction" && !url.search) return once("jurisdiction", 1);
       requireProof(method === "POST" && !url.search);
+      // Sign-up posts to its own endpoint; the browser never calls the auth service's signup (owner decision 2026-10-16).
+      if (url.pathname === "/api/auth/sign-up") return once("signup", 1);
       if (url.pathname === "/api/account/completion") return once("completion", 1);
       if (url.pathname === "/api/consents") return once("consents", 4);
       if (url.pathname === "/api/files/upload-session") return once("issuance", 1);
       if (new RegExp(`^/api/files/${UUID}/finalize$`).test(url.pathname)) return once("finalize", 1);
       if (new RegExp(`^/api/files/${UUID}/process$`).test(url.pathname)) return once("process", 2);
       throw new Error("first_run_mutation_refused");
-    }
-    if (url.pathname === "/auth/v1/signup" && ["OPTIONS", "POST"].includes(method)) {
-      requireProof([...url.searchParams.keys()].join(",") === "redirect_to"
-        && url.searchParams.get("redirect_to") === `${LOCAL.app}/auth/callback?next=/overview&flow=signup`);
-      if (method === "OPTIONS") return;
-      return once("signup", 1);
     }
     if (url.pathname === "/auth/v1/token" && ["OPTIONS", "POST"].includes(method)) {
       requireProof([...url.searchParams.keys()].join(",") === "grant_type"
@@ -106,7 +102,10 @@ export function confirmationLink(body: unknown): string {
   const url = new URL(first.replaceAll("&amp;", "&"));
   requireProof(url.origin === LOCAL.origin && url.pathname === "/auth/v1/verify" && !url.username && !url.password
     && !url.hash && url.searchParams.get("type") === "signup"
-    && url.searchParams.get("redirect_to") === `${LOCAL.app}/auth/callback?next=/overview&flow=signup`
+    // The server-started flow adds its PKCE state (auth.callback queryContract.closed.state).
+    && /^[A-Za-z0-9_-]{43}$/u.test((url.searchParams.get("redirect_to") ?? "")
+      .slice(`${LOCAL.app}/auth/callback?next=/overview&flow=signup&state=`.length))
+    && (url.searchParams.get("redirect_to") ?? "").startsWith(`${LOCAL.app}/auth/callback?next=/overview&flow=signup&state=`)
     && Boolean(url.searchParams.get("token") || url.searchParams.get("token_hash")));
   return url.href;
 }
@@ -246,8 +245,8 @@ export async function runFirstRunSmoke(): Promise<void> {
     await step("signup", async () => {
       await page.goto(`${LOCAL.app}/auth/sign-up`);
       await page.getByLabel("Email", { exact: true }).fill(address); await page.getByLabel("Password", { exact: true }).fill(password);
-      const signed = observe(page, /^http:\/\/127\.0\.0\.1:54321\/auth\/v1\/signup(?:\?|$)/);
-      await page.getByRole("button", { name: "Sign up", exact: true }).click(); requireProof((await signed).status() === 200);
+      const signed = observe(page, `${LOCAL.app}/api/auth/sign-up`);
+      await page.getByRole("button", { name: "Sign up", exact: true }).click(); requireProof((await signed).status() === 202);
       await expect(page.getByRole("heading", { name: "Check your email", exact: true })).toBeVisible();
     });
     await step("emailConfirmation", async () => {

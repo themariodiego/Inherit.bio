@@ -2,6 +2,7 @@ import "server-only";
 import {createHash} from "node:crypto";
 import {z} from "zod";
 import {accountArchiveContextSchema} from "./bound-account-archive-worker";
+import {accountArchiveScope} from "./account-archive-scope";
 import {reportScientificCorrections,reportOutcomeScientificCorrections,REPORT_SCIENTIFIC_CORRECTION_NOTICE} from "@/lib/genome/report-scientific-corrections";
 import {reportCatalogSnapshotSchema} from "@/lib/genome/report-catalog-snapshot";
 import type {FuturePersonMemberFactory} from "./future-person-member-plan";
@@ -55,7 +56,7 @@ export async function prepareAccountPathBMembers(options:{context:z.infer<typeof
  reference:{exportId:string;attemptId:string;authorityReceipt:string};rpc:AccountPathBRpc;signal:AbortSignal;
  check:(signal:AbortSignal)=>Promise<unknown>}){
  const context=accountArchiveContextSchema.parse(options.context),subjects=new Set(context.partitions.map(p=>p.subjectId));
- if(context.targetKind!=="account"||context.targetId!==context.actor.accountId||context.authorityReceipt!==options.reference.authorityReceipt)throw unavailable();
+ if(accountArchiveScope(context)===null||context.authorityReceipt!==options.reference.authorityReceipt)throw unavailable();
  const selected=context.partitions.filter(p=>p.class==="ordinary"),captured=new Map<string,z.infer<typeof snapshot>>();
  async function bounded<T>(signal:AbortSignal,operation:(signal:AbortSignal)=>PromiseLike<T>){
   const remaining=Date.parse(context.deadline)-Date.now();if(signal.aborted||options.signal.aborted||remaining<=0)throw unavailable();

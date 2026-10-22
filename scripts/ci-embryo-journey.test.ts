@@ -305,6 +305,117 @@ describe("additive fitted journey after the unchanged original publication", () 
   });
 });
 
+import type { TableEmbryoJourney } from "./ci-embryo-journey";
+
+const tableCohort = "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee";
+function tableHarness() {
+  const base = fittedHarness(), native = base.io.execute;
+  let queue = true, fresh = true, settled = true;
+  const io: EmbryoJourneyIo = { ...base.io, execute: async (args, input, timeout) => {
+    if (args.includes("psql") && input!.startsWith("-- embryo-table-")) {
+      base.commands.push({ args, input, timeout });base.statements.push(input!);
+      if (input!.startsWith("-- embryo-table-empty-queue")) return String(queue);
+      if (input!.startsWith("-- embryo-table-fresh-cohort")) return String(fresh);
+      if (input!.startsWith("-- embryo-table-settled-queue")) return String(settled);
+      throw new Error("Unexpected SQL");
+    }
+    return native(args, input, timeout);
+  } };
+  return { ...base, io, denyQueue: () => { queue = false; }, denyFresh: () => { fresh = false; },
+    unsettle: () => { settled = false; } };
+}
+async function originalThenTable(h: ReturnType<typeof tableHarness>, work: (fixture: TableEmbryoJourney) => Promise<void>) {
+  await withEmbryoJourney(env, async runtime => {
+    await runtime.runWorker(cohort);await runtime.runStatisticalWorker(cohort);
+    await runtime.withTableJourney(cohort, work);
+  }, h.io, "linux");
+}
+const splitLaunches = (h: ReturnType<typeof tableHarness>) =>
+  h.commands.filter(row => row.args.includes("/app/scripts/ci-browser/embryo-worker.mts"));
+
+describe("additive laboratory-table journey after the unchanged original publication (ADR 0037)", () => {
+  it("runs one untouched table cohort through the production split entry and restores both original configuration rows", async () => {
+    const h = tableHarness();
+    await originalThenTable(h, async table => {
+      await table.runWorker(tableCohort);
+      expect(await table.proof(tableCohort)).toEqual({ jobs: 1, sources: 2 });
+      await expect(table.runWorker(tableCohort)).rejects.toThrow("One distinct fresh table cohort");
+      await expect(table.proof(cohort)).rejects.toThrow("Exact table publication");
+    });
+    expect(h.current()).toEqual(original);
+    expect(splitLaunches(h)).toEqual([0, 1].map(() => ({ args: ["exec", "-i", "--user", "1001:1001", "inherit-ci-browser-runtime",
+      "node", "--import", "tsx", "/app/scripts/ci-browser/embryo-worker.mts"], input: JSON.stringify(worker) + "\n", timeout: 110_000 })));
+    const freshSql = h.statements.find(row => row.startsWith("-- embryo-table-fresh-cohort"))!;
+    for (const clause of ["i.source_format='pgt_table'", "i.build_evidence='decision-required'", "i.configured_build is null",
+      "i.reference_build='GRCh38'", "i.table_locus='chrom-pos'", "u.email='table-test@e2e.local'",
+      "w.status='queued' and w.attempts=0", `and (select count(*) from public.worker_jobs where cohort_id='${tableCohort}'::uuid)=1`,
+      `cohort_id is distinct from '${tableCohort}'::uuid`, "private.embryo_canonical_sources"]) expect(freshSql).toContain(clause);
+    const queueSql = h.statements.find(row => row.startsWith("-- embryo-table-empty-queue"))!;
+    for (const clause of ["private.embryo_split_ordinals", "private.embryo_split_variants",
+      "private.embryo_ingest_write_intents where state<>'landed'", "private.embryo_canonical_parts where state<>'landed'",
+      "status in('queued','running')"]) expect(queueSql).toContain(clause);
+    expect(queueSql).not.toContain("is distinct from");
+    expect(h.statements.filter(row => row.startsWith("-- embryo-first-completed-history")).length).toBeGreaterThanOrEqual(4);
+    expect(h.statements.filter(row => /update /i.test(row))).toHaveLength(2);
+  });
+  it("refuses to start before the original split and coverage attempts", async () => {
+    const h = tableHarness(), work = vi.fn();
+    await expect(withEmbryoJourney(env, async runtime => {
+      await runtime.runWorker(cohort);
+      await runtime.withTableJourney(cohort, async () => { work(); });
+    }, h.io, "linux")).rejects.toThrow("Table journey requires");
+    expect(work).not.toHaveBeenCalled();
+    expect(h.current()).toEqual(original);
+  });
+  it.each(["incomplete", "history-drift", "pending-queue"])("refuses %s before starting the table cohort and still restores configuration", async fault => {
+    const h = tableHarness(), work = vi.fn();
+    if (fault === "incomplete") h.incomplete();
+    if (fault === "history-drift") h.drift(2);
+    if (fault === "pending-queue") h.denyQueue();
+    await expect(originalThenTable(h, async table => {
+      work();await table.runWorker(tableCohort);
+    })).rejects.toThrow();
+    if (fault !== "history-drift") expect(work).not.toHaveBeenCalled();
+    expect(splitLaunches(h)).toHaveLength(1);
+    expect(h.current()).toEqual(original);
+  });
+  it("refuses a foreign, touched or VCF cohort without a table worker attempt", async () => {
+    const h = tableHarness();h.denyFresh();
+    await expect(originalThenTable(h, async table => {
+      await expect(table.runWorker(tableCohort)).rejects.toThrow("untouched laboratory-table cohort");
+      await expect(table.proof(tableCohort)).rejects.toThrow("Exact table publication");
+      throw new Error("Refused table work");
+    })).rejects.toThrow();
+    expect(splitLaunches(h)).toHaveLength(1);
+    expect(h.current()).toEqual(original);
+  });
+  it("refuses an incomplete table journey or an unsettled final queue instead of adopting prior work", async () => {
+    const missing = tableHarness();
+    await expect(originalThenTable(missing, async () => {})).rejects.toThrow("complete its actual worker attempt");
+    expect(missing.current()).toEqual(original);
+    const pending = tableHarness();
+    await expect(originalThenTable(pending, async table => {
+      await table.runWorker(tableCohort);pending.unsettle();
+    })).rejects.toThrow("left pending fragment work");
+    expect(pending.current()).toEqual(original);
+    const drift = tableHarness();
+    await expect(originalThenTable(drift, async table => {
+      await table.runWorker(tableCohort);drift.drift(4);
+    })).rejects.toThrow("Original whole journey history changed");
+    expect(drift.current()).toEqual(original);
+  });
+  it("runs the table journey once per callback", async () => {
+    const h = tableHarness();
+    await expect(withEmbryoJourney(env, async runtime => {
+      await runtime.runWorker(cohort);await runtime.runStatisticalWorker(cohort);
+      await runtime.withTableJourney(cohort, async table => { await table.runWorker(tableCohort); });
+      await runtime.withTableJourney(cohort, async () => {});
+    }, h.io, "linux")).rejects.toThrow("Table journey requires");
+    expect(splitLaunches(h)).toHaveLength(2);
+    expect(h.current()).toEqual(original);
+  });
+});
+
 describe("fixed fitted worker terminal and limits", () => {
   afterEach(() => vi.useRealTimers());
   function childFixture() {

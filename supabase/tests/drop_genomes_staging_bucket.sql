@@ -7,8 +7,10 @@ select no_plan();
 -- bucket holds anything, so on a fresh database this is its whole effect.
 
 select is((select count(*) from storage.buckets where id='genomes-staging'),0::bigint,'the genomes-staging bucket is gone');
-select set_eq('select id from storage.buckets',array['genomes','exports','future-person-identity'],
- 'the exact surviving buckets are genomes, exports and private claim identity');
+-- 20261016190000_path_b_reviewed_document.sql creates the declared private
+-- legal-evidence bucket (storage.legal-evidence-v1); it is the one addition.
+select set_eq('select id from storage.buckets',array['genomes','exports','future-person-identity','legal-evidence'],
+ 'the exact surviving buckets are genomes, exports, private claim identity and private legal evidence');
 select is((select column_default from information_schema.columns where table_schema='public' and table_name='upload_sessions'
  and column_name='storage_bucket'),'''genomes''::text','a session that omits its bucket names genomes, which exists');
 select ok((select allowed_mime_types is null and not public from storage.buckets where id='genomes'),'genomes is unchanged');

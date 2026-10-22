@@ -2724,5 +2724,137 @@
     "net_impression_note": "Agent abstract-only review; no allele-specific, clinical, licence or human approval. Unregistered genotype prose remains unreviewed. Exact source and implementation boundaries: docs/sources/reviews/primary-source-tranche-20261002.json.",
     "reviewed_on": "2026-10-02",
     "reviewer": "Codex agent release_recovery, actual primary author-abstract review (not human signoff)"
+  },
+  {
+    "claim_id": "copilot.own.informational",
+    "text_verbatim": "You are informational, never diagnostic. Never tell the user they have, will get, or are protected from any disease. Frame everything as association and probability shift, with effect sizes where available.",
+    "surfaces": [
+      "copilot:own.informational"
+    ],
+    "claim_type": "objective",
+    "evidence": [],
+    "net_impression_note": "Presupposes that what Inherit reports from a person's genome is information, not a diagnosis, framed as an association and a shift in probability, with effect sizes where a source gives them. Copilot system prompt rule: model input, never shown to a reader. Registered under the owner's 16 October 2026 decision (G1.11, docs/protocol/decisions.md). Pending the owner's scientific source review: no citation is attached or claimed, and reviewed_on and reviewer stay null until that review.",
+    "reviewed_on": null,
+    "reviewer": null
+  },
+  {
+    "claim_id": "copilot.own.grounding",
+    "text_verbatim": "Ground every substantive claim in the user's own data via the tools, and cite which report or variant it came from (e.g. \"your Caffeine metabolism report (rs762551, genotype A/A)\"). If a report exists on the topic, call get_report and cite it by title.",
+    "surfaces": [
+      "copilot:own.grounding"
+    ],
+    "claim_type": "objective",
+    "evidence": [],
+    "net_impression_note": "Its example presupposes that rs762551 is the variant Inherit's Caffeine metabolism report reads (template caffeine-metabolism-cyp1a2-rs762551), and that A/A is a genotype that report can show. Copilot system prompt rule: model input, never shown to a reader. Registered under the owner's 16 October 2026 decision (G1.11, docs/protocol/decisions.md). Pending the owner's scientific source review: no citation is attached or claimed, and reviewed_on and reviewer stay null until that review.",
+    "reviewed_on": null,
+    "reviewer": null
+  },
+  {
+    "claim_id": "copilot.own.coverage",
+    "text_verbatim": "Be candid about uncertainty and coverage: if the user's file does not cover a variant, say so plainly; array data covers a fixed set of positions. Never invent genotypes — only report what tools return.",
+    "surfaces": [
+      "copilot:own.coverage"
+    ],
+    "claim_type": "objective",
+    "evidence": [],
+    "net_impression_note": "Presupposes that array data tests a fixed set of positions, so a position the file does not cover is unknown rather than absent. Copilot system prompt rule: model input, never shown to a reader. Registered under the owner's 16 October 2026 decision (G1.11, docs/protocol/decisions.md). Pending the owner's scientific source review: no citation is attached or claimed, and reviewed_on and reviewer stay null until that review.",
+    "reviewed_on": null,
+    "reviewer": null
+  },
+  {
+    "claim_id": "copilot.own.sensitive-topics",
+    "text_verbatim": "Sensitive topics (cancer, neurodegeneration, mental health, reproductive decisions): extra care, remind the user this is one small factor, and suggest a clinician or genetic counselor for decisions.",
+    "surfaces": [
+      "copilot:own.sensitive-topics"
+    ],
+    "claim_type": "objective",
+    "evidence": [],
+    "net_impression_note": "Presupposes that, for cancer, neurodegeneration, mental health and reproductive decisions, a result Inherit reports is one small factor. Copilot system prompt rule: model input, never shown to a reader. Registered under the owner's 16 October 2026 decision (G1.11, docs/protocol/decisions.md). Pending the owner's scientific source review: no citation is attached or claimed, and reviewed_on and reviewer stay null until that review.",
+    "reviewed_on": null,
+    "reviewer": null
+  },
+  {
+    "claim_id": "copilot.own.unavailable-scores",
+    "text_verbatim": "A score marked unavailable cannot support a percentile, rank, high/low tendency or personal risk. Coverage counts are not risk; do not turn them into one.",
+    "surfaces": [
+      "copilot:own.unavailable-scores"
+    ],
+    "claim_type": "objective",
+    "evidence": [],
+    "net_impression_note": "Presupposes that a score marked unavailable cannot support a percentile, rank, tendency or personal risk, and that coverage counts are not a measure of risk. Copilot system prompt rule: model input, never shown to a reader. Registered under the owner's 16 October 2026 decision (G1.11, docs/protocol/decisions.md). Pending the owner's scientific source review: no citation is attached or claimed, and reviewed_on and reviewer stay null until that review.",
+    "reviewed_on": null,
+    "reviewer": null
+  },
+  {
+    "claim_id": "copilot.own.unavailable-sources",
+    "text_verbatim": "Tools read only existing allowed sources. Never treat missing, ungenerated or unavailable sources as a negative result.",
+    "surfaces": [
+      "copilot:own.unavailable-sources"
+    ],
+    "claim_type": "objective",
+    "evidence": [],
+    "net_impression_note": "Presupposes that a missing, ungenerated or unavailable source says nothing about the person, so it is not a negative result. Copilot system prompt rule: model input, never shown to a reader. Registered under the owner's 16 October 2026 decision (G1.11, docs/protocol/decisions.md). Pending the owner's scientific source review: no citation is attached or claimed, and reviewed_on and reviewer stay null until that review.",
+    "reviewed_on": null,
+    "reviewer": null
+  },
+  {
+    "claim_id": "copilot.family.informational",
+    "text_verbatim": "You are informational, never diagnostic. Never tell anyone they have, will get, or are protected from any disease. Never give treatment, medicine, diet or supplement advice.",
+    "surfaces": [
+      "copilot:family.informational"
+    ],
+    "claim_type": "objective",
+    "evidence": [],
+    "net_impression_note": "Presupposes that a shared result is information, not a diagnosis, and cannot say that anyone has, will get or is protected from a disease. Copilot system prompt rule: model input, never shown to a reader. Registered under the owner's 16 October 2026 decision (G1.11, docs/protocol/decisions.md). Pending the owner's scientific source review: no citation is attached or claimed, and reviewed_on and reviewer stay null until that review.",
+    "reviewed_on": null,
+    "reviewer": null
+  },
+  {
+    "claim_id": "copilot.family.unshared-reports",
+    "text_verbatim": "You cannot read anyone's whole file or any single position outside a shared report. A report type a person did not share is not a result about them.",
+    "surfaces": [
+      "copilot:family.unshared-reports"
+    ],
+    "claim_type": "objective",
+    "evidence": [],
+    "net_impression_note": "Presupposes that a report type a person did not share says nothing about them, so it is not a result about them. Copilot system prompt rule: model input, never shown to a reader. Registered under the owner's 16 October 2026 decision (G1.11, docs/protocol/decisions.md). Pending the owner's scientific source review: no citation is attached or claimed, and reviewed_on and reviewer stay null until that review.",
+    "reviewed_on": null,
+    "reviewer": null
+  },
+  {
+    "claim_id": "copilot.cohort.informational",
+    "text_verbatim": "You are informational, never diagnostic. Never say an embryo or a future child has, will get, or is protected from any condition. Never give medical, treatment or clinic advice.",
+    "surfaces": [
+      "copilot:cohort.informational"
+    ],
+    "claim_type": "objective",
+    "evidence": [],
+    "net_impression_note": "Presupposes that an embryo's file results are information, not a diagnosis, and cannot say that an embryo or a future child has, will get or is protected from a condition. Copilot system prompt rule: model input, never shown to a reader. Registered under the owner's 16 October 2026 decision (G1.11, docs/protocol/decisions.md). Pending the owner's scientific source review: no citation is attached or claimed, and reviewed_on and reviewer stay null until that review.",
+    "reviewed_on": null,
+    "reviewer": null
+  },
+  {
+    "claim_id": "copilot.cohort.no-condition-results",
+    "text_verbatim": "There are no condition results or scores for these embryos. Say so if asked. Estimates built from many small genetic effects are for research only and Inherit does not offer them.",
+    "surfaces": [
+      "copilot:cohort.no-condition-results"
+    ],
+    "claim_type": "objective",
+    "evidence": [],
+    "net_impression_note": "Presupposes that no condition results or scores exist for these embryos, and that estimates built from many small genetic effects are for research only (ADR 0034). Copilot system prompt rule: model input, never shown to a reader. Registered under the owner's 16 October 2026 decision (G1.11, docs/protocol/decisions.md). Pending the owner's scientific source review: no citation is attached or claimed, and reviewed_on and reviewer stay null until that review.",
+    "reviewed_on": null,
+    "reviewer": null
+  },
+  {
+    "claim_id": "copilot.cohort.standing-statement",
+    "text_verbatim": "Always keep the standing statement true: no child has been born and followed up after embryos were compared this way.",
+    "surfaces": [
+      "copilot:cohort.standing-statement"
+    ],
+    "claim_type": "objective",
+    "evidence": [],
+    "net_impression_note": "Asserts the standing statement that no child has been born and followed up after embryos were compared this way. The embryo comparison's own standing statement is unregistered for the same reason (docs/claims-divergence.json). Copilot system prompt rule: model input, never shown to a reader. Registered under the owner's 16 October 2026 decision (G1.11, docs/protocol/decisions.md). Pending the owner's scientific source review: no citation is attached or claimed, and reviewed_on and reviewer stay null until that review.",
+    "reviewed_on": null,
+    "reviewer": null
   }
 ]

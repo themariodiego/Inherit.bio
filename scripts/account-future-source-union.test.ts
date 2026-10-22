@@ -81,11 +81,40 @@ describe("the complete account and Future source union", () => {
     expect(read("supabase/tests/v2_contracts.sql")).toContain("174::bigint");
   });
 
-  it("preserves protected/withheld Future classifications and the account provenance exclusions in the 251-table plan", () => {
+  it("preserves protected/withheld Future classifications and the account provenance exclusions in the 267-table plan", () => {
     const plan = JSON.parse(read("docs/export-member-plan.json")) as {
       tables: Record<string, { disposition: string; withheld?: string[]; scope?: string }>;
     };
-    expect(Object.keys(plan.tables)).toHaveLength(251);
+    // 251 plus the two auth credential stores (private.auth_form_nonces,
+    // private.auth_recovery_sessions; 20261016151200_auth_public_endpoints),
+    // plus the nine reviewed-document Path B stores
+    // (20261016190000_path_b_reviewed_document), each classified like its
+    // claim/appeal evidence analog, plus the three subject-transfer stores
+    // (20261016221000_subject_transfer), classified like the claimant
+    // relocation rows, plus the two rights-recovery credential stores
+    // (private.rights_recovery_candidates, private.rights_reissue_form_nonces;
+    // 20261016208000_rights_reissue), classified like the auth form nonces.
+    expect(Object.keys(plan.tables)).toHaveLength(267);
+    for (const [name, disposition] of Object.entries({
+      "private.subject_ownership_transfers": "excluded-internal",
+      "private.subject_transfer_relocations": "excluded-credential",
+      "private.subject_transfer_relocation_attempts": "excluded-credential",
+      "private.rights_recovery_candidates": "excluded-credential",
+      "private.rights_reissue_form_nonces": "excluded-credential",
+    })) expect(plan.tables[name]?.disposition, name).toBe(disposition);
+    for (const [name, disposition] of Object.entries({
+      "private.permission_document_sessions": "excluded-credential",
+      "private.permission_document_fragments": "excluded-protected",
+      "private.permission_documents": "excluded-protected",
+      "private.permission_document_assignments": "out-of-scope",
+      "private.permission_document_review_downloads": "excluded-credential",
+      "private.permission_document_review_reads": "excluded-internal",
+      "private.permission_document_reviews": "excluded-protected",
+      "private.path_b_reviewed_document_requests": "excluded-internal",
+      "private.path_b_reviewed_document_nonces": "excluded-credential",
+    })) expect(plan.tables[name]?.disposition, name).toBe(disposition);
+    for (const name of ["private.auth_form_nonces", "private.auth_recovery_sessions"])
+      expect(plan.tables[name]?.disposition).toBe("excluded-credential");
     expect(plan.tables["private.embryo_test_statistical_admission"]?.disposition).toBe("excluded-protected");
     for (const name of ["private.public_appeal_case_decisions", "private.public_appeal_information_requests"])
       expect(plan.tables[name]?.disposition).toBe("excluded-protected");

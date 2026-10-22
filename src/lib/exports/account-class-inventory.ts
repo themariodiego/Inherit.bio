@@ -4,6 +4,7 @@ import {requesterStatementsOpen} from "@/lib/future-person/requester-statement";
 import {createHash} from "node:crypto";
 import {z} from "zod";
 import {accountArchiveContextSchema} from "./bound-account-archive-worker";
+import {accountArchiveScope} from "./account-archive-scope";
 import {ACCOUNT_GRAPH_CLASSES,type AccountGraphClass} from "./account-graph-projection";
 import {futurePersonExportSnapshot} from "./future-person-content";
 import {anySignal} from "./abort-signals";
@@ -63,7 +64,7 @@ export async function prepareAccountClassInventory(options:{reference:{exportId:
  context:z.infer<typeof accountArchiveContextSchema>;rpc:AccountClassRpc;signal:AbortSignal;
  check:(signal:AbortSignal)=>Promise<unknown>}){
  const context=accountArchiveContextSchema.parse(options.context),subjects=new Set(context.partitions.map(p=>p.subjectId));
- if(context.targetKind!=="account"||context.targetId!==context.actor.accountId||context.authorityReceipt!==options.reference.authorityReceipt)throw unavailable();
+ if(accountArchiveScope(context)===null||context.authorityReceipt!==options.reference.authorityReceipt)throw unavailable();
  async function bounded<T>(signal:AbortSignal,operation:(current:AbortSignal)=>PromiseLike<T>){
   if(signal.aborted||Date.now()>=Date.parse(context.deadline))throw unavailable();
   const controller=new AbortController(),current=anySignal([signal,controller.signal]);let stop=()=>{};

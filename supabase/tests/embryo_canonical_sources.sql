@@ -237,6 +237,21 @@ create temporary table digests as select o.sample_ordinal,o.source_sha256 from p
   where o.session_id=(select id from live);
 create temporary table stats_before as select coalesce(sum(n),0) n from public.processing_time_stats();
 create temporary table files_before as select count(*) n from public.genome_files;
+-- ADR 0037: a laboratory-table source is named and typed as the table it
+-- is, never as a VCF. Probed with only the recorded format changed, and
+-- rolled back, so the VCF publication below is the real one.
+-- Deferred events are pending here, so the write-once triggers are bypassed
+-- for these three writes only by the replication role, not by ALTER TABLE.
+select is(pg_temp.probe(format($f$set local session_replication_role=replica;
+    update public.embryo_ingest_sessions set source_format='pgt_table' where id=(select id from live);
+    update public.embryo_ingest_sessions set manifest_sha256=private.embryo_ingest_manifest_sha256_v1(id) where id=(select id from live);
+    update public.worker_jobs set file_sha256=(select manifest_sha256 from public.embryo_ingest_sessions
+      where id=(select id from live)) where id=(select id from job);
+    set local session_replication_role=origin$f$),
+  $$select pg_temp.publish('b',2)->>'status'$$,
+  $$select string_agg(distinct f.file_type||':'||f.original_name,',') from public.genome_files f
+    join public.embryos e on e.subject_id=f.subject_id where e.cohort_id=(select cohort_id from live)$$),
+  'published / pgt_table:embryo-autosomal-source.tsv','a laboratory-table source is published as a neutral table, not a VCF');
 create temporary table published as select pg_temp.publish('b',2) as body;
 select is((select body from published),'{"status":"published","publicationRevision":1,"published":2,"qcFailed":1}'::jsonb,
   'the cohort publishes two sources and one QC failure');

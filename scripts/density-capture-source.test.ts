@@ -39,10 +39,13 @@ describe("current density preserves the frozen pixel and real state producers", 
   });
   it("uses genuine existing auth/session and legal URL helpers without synthetic responses or HTML", () => {
     const fixtures = read("e2e/helpers/density-real-state-fixtures.ts");
-    expect(fixtures).toContain('import { createConfirmedUser, signIn } from "../helpers"');
+    expect(fixtures).toContain('import { createConfirmedUser } from "../helpers"');
     expect(fixtures).toContain('import { DOCUMENTS } from "../accessibility-sweeps"');
     expect(fixtures).toContain("await createConfirmedUser(address, password)");
-    expect(fixtures).toContain("await signIn(page, address, password)");
+    // A reset session comes only from the real mailed recovery link (owner decision 2026-10-16).
+    expect(fixtures).toContain("const recovery = await latestEmailTo(address)");
+    expect(fixtures).toContain('assert(link, "Actual original recovery mail required")');
+    expect(fixtures).toContain("await page.waitForURL(/\\/auth\\/reset-password$/u)");
     expect(fixtures).toContain("await request.continue()");
     expect(fixtures).toContain("const response = await request.request().response()");
     expect(fixtures).toContain("await response.finished() === null");
@@ -72,7 +75,8 @@ describe("current density preserves the frozen pixel and real state producers", 
       '["initial-form", "processing", "complete"].includes(row.state)', 'expect(row.state).toBe("initial-form")',
       'for (const field of await actual.locator("input").all()) await expect(field).toHaveValue("")',
       'authForm && row.state === "complete"', 'reply.request().method() === "POST"',
-      '"/auth/v1/signup" : "/auth/v1/recover"', 'expect(reply.ok()).toBe(true)', 'expect(await reply.finished()).toBeNull()',
+      '"/api/auth/sign-up" : "/api/auth/forgot-password"', 'expect(reply.ok()).toBe(true)', 'expect(await reply.finished()).toBeNull()',
+      'form.endpoint ? `**${form.endpoint}` : "**/auth/v1/**"',
       'const mail = await latestEmailTo(address)', 'Actual original auth mail required', 'Actual auth receipt mail changed',
       'await capture({ page, observe }); await observe()']) expect(provider).toContain(text);
     const outcome = provider.slice(provider.indexOf('} else if (authForm && row.state === "complete")'),

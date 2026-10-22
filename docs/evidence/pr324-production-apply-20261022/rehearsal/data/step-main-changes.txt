@@ -1,0 +1,107 @@
+#01 20261016120000_embryo_table_mapping_route.sql: +13 functions, +0 tables, 12 changes to main objects
+     function private.claim_embryo_split_job_v1(p_claim_token_hash text, p_worker_id text) :: def_md5
+     function private.freeze_embryo_mapping_challenge_v1() :: def_md5
+     function private.publish_embryo_split_v1(p_job_id uuid, p_attempt integer, p_claim_token_hash text) :: def_md5
+     function private.stage_embryo_split_variants_v1(p_job_id uuid, p_attempt integer, p_claim_token_hash text, p_ordinal integer, p_batch integer, p_rows jsonb) :: def_md5
+     table private.embryo_split_variants :: columns: ~reference_allele
+     table private.embryo_split_variants :: constraints: +embryo_split_variants_table_alleles
+     table public.embryo_ingest_sessions :: columns: +issued_mapping_nonce_hash,table_locus
+     table public.embryo_ingest_sessions :: constraints: +embryo_ingest_sessions_issued_mapping_nonce_hash_check,embryo_ingest_sessions_table_locus_check,embryo_ingest_table_mapping_shape
+     table public.embryo_ingest_sessions :: triggers: +embryo_table_mapping_immutable
+     table public.embryo_mapping_challenges :: columns: +decision_nonce_hash
+     table public.embryo_mapping_challenges :: constraints: +embryo_mapping_challenges_decision_nonce_hash_check,embryo_mapping_challenges_decision_nonce_hash_key
+     table public.embryo_mapping_challenges :: indexes: +embryo_mapping_challenges_decision_nonce_hash_key
+#02 20261016151200_auth_public_endpoints.sql: +8 functions, +2 tables, 0 changes to main objects
+#03 20261016153100_future_person_claimant_erasure_completion.sql: +3 functions, +0 tables, 1 changes to main objects
+     function private.confirm_claim_document_objects_deleted_v1(p_object_keys text[], p_route_id text) :: def_md5
+#04 20261016170000_path_b_confirmed_file_retention.sql: +4 functions, +0 tables, 1 changes to main objects
+     table public.other_adult_held_uploads :: triggers: +path_b_confirmed_file_retention
+#05 20261016175000_future_person_claimant_contact_730_days.sql: +1 functions, +0 tables, 2 changes to main objects
+     function private.purge_future_person_contact_phase_v1(p_row uuid, p_now timestamp with time zone) :: def_md5
+     function private.queue_future_person_release_v1(p_claim uuid, p_contact uuid, p_cipher bytea, p_contact_set jsonb) :: def_md5
+#06 20261016180000_subject_sharing_stop.sql: +2 functions, +0 tables, 1 changes to main objects
+     table public.account_operation_nonces :: constraints: ~account_operation_nonces_operation_check
+#07 20261016181000_subject_delete.sql: +6 functions, +0 tables, 2 changes to main objects
+     function private.prepare_genome_file_deletion_body_v1(p_account_id uuid, p_file_id uuid) :: def_md5
+     table public.account_operation_nonces :: constraints: ~account_operation_nonces_operation_check
+#08 20261016190000_path_b_reviewed_document.sql: +47 functions, +9 tables, 18 changes to main objects
+     function private.assert_account_path_b_deletion_supported_v1(p_account_id uuid) :: def_md5
+     function private.confirm_path_b_subject_account_core_v1(p_session_hash text, p_nonce text, p_artifact_version integer, p_artifact_body_sha256 text, p_statement_keys text[], p_signing_name_ciphertext bytea, p_account_id uuid, p_auth_session_id uuid, p_account_email_hmac text, p_test_jurisdiction boolean) :: def_md5
+     function private.confirm_path_b_subject_v1(p_session_hash text, p_nonce text, p_artifact_version integer, p_artifact_body_sha256 text, p_statement_keys text[], p_signing_name_ciphertext bytea, p_jurisdiction_code text, p_test_jurisdiction boolean) :: def_md5
+     function private.other_adult_upload_targets_v1(p_account_id uuid, p_session_id uuid, p_test_jurisdiction boolean) :: def_md5
+     function private.path_b_signing_target_v1(p_account_id uuid, p_subject_id uuid) :: def_md5
+     function private.path_b_subject_v1(p_account_id uuid, p_subject_id uuid) :: def_md5
+     function public.authorize_claim_review_chunk_v1(p_session_id uuid, p_cookie_hash text, p_sequence integer) :: def_md5
+     function public.begin_claim_document_completion_v1(p_session_id uuid, p_cookie_hash text, p_complete_nonce_hash text, p_chunk_count integer) :: def_md5
+     function public.finish_claim_document_completion_v1(p_session_id uuid, p_cookie_hash text, p_complete_nonce_hash text, p_outcome text, p_object_key text) :: def_md5
+     function public.open_claim_review_download_v1(p_document_id uuid, p_cookie_hash text) :: def_md5
+     function public.reserve_claim_document_chunk_v1(p_session_id uuid, p_cookie_hash text, p_sequence integer, p_byte_count integer, p_sha256 text) :: def_md5
+     function public.review_document_domain_v1(p_document uuid) :: def_md5
+     function public.settle_claim_document_chunk_v1(p_session_id uuid, p_cookie_hash text, p_sequence integer, p_written boolean) :: def_md5
+     table public.adult_subject_drafts :: constraints: +permission_documents_draft_state ~adult_subject_drafts_adult_flow_check,adult_subject_drafts_evidence_kind_check,adult_subject_drafts_flow_check
+     table public.adult_subject_drafts :: triggers: +permission_documents_draft_state
+     table public.subjects :: constraints: +permission_documents_subject_lifecycle
+     table public.subjects :: triggers: +permission_documents_subject_lifecycle
+     storage_buckets  :: +1 -0 {"allowed_mime_types": ["application/octet-stream"], "file_size_limit": 20000028, "id": "legal-evidence", "public": false}
+#09 20261016191000_subject_original_download.sql: +7 functions, +0 tables, 3 changes to main objects
+     table public.download_sessions :: columns: +account_auth_session_revision,chunk_count,cookie_hash,file_id,last_activity_at,object_version,originating_session_revision,sha256
+     table public.download_sessions :: constraints: +download_sessions_account_auth_session_revision_check,download_sessions_chunk_count_check,download_sessions_cookie_hash_check,download_sessions_cookie_hash_key,download_sessions_file_id_fkey,download_sessions_originating_session_revision_check,download_sessions_sha256_check,download_se
+     table public.download_sessions :: indexes: +download_sessions_cookie_hash_key,download_sessions_subject_original_idx
+#10 20261016195000_embryo_table_call_hash.sql: +0 functions, +0 tables, 1 changes to main objects
+     function private.embryo_call_value_hash_v1(p_chr integer, p_position bigint, p_ref text, p_alt text, p_genotype text) :: def_md5
+#11 20261016196000_subject_export.sql: +18 functions, +0 tables, 24 changes to main objects
+     function private.account_archive_r2_completed_context_v1(p_attempt uuid, p_receipt text, p_ready boolean) :: def_md5
+     function private.account_archive_r2_disposal_frame_v1(p_attempt uuid, p_ordinal bigint, p_claim text) :: def_md5
+     function private.account_archive_r2_write_context_v1(p_attempt uuid, p_receipt text) :: def_md5
+     function private.account_archive_test_cleanup_due_v1() :: def_md5
+     function private.account_archive_test_delivery_context_v1(p_download_id uuid, p_download_hash text, p_origin jsonb) :: def_md5
+     function private.account_archive_test_disposal_due_v1() :: def_md5
+     function private.claim_account_archive_r2_disposal_v1(p_attempt uuid, p_ordinal bigint, p_claim text) :: def_md5
+     function private.export_account_owned_capture_pre_classes_v1(p_origin jsonb, p_target_kind text, p_target_id uuid) :: def_md5
+     function private.export_account_owned_capture_pre_complete_v1(p_origin jsonb, p_target_kind text, p_target_id uuid) :: def_md5
+     function private.export_account_owned_capture_pre_member_frame_v1(p_origin jsonb, p_target_kind text, p_target_id uuid) :: def_md5
+     function private.export_account_owned_capture_pre_original_v1(p_origin jsonb, p_target_kind text, p_target_id uuid) :: def_md5
+     function private.export_account_owned_capture_pre_readable_graph_v1(p_origin jsonb, p_target_kind text, p_target_id uuid) :: def_md5
+     function private.export_account_owned_capture_pre_requester_v1(p_origin jsonb, p_target_kind text, p_target_id uuid) :: def_md5
+     function private.export_archive_account_authority_v1(p_origin jsonb, p_target_kind text, p_target_id uuid) :: def_md5
+     function private.guard_segmented_export_publication_v1() :: def_md5
+     function public.export_archive_account_classes_v1(p_operation text, p_export_id uuid, p_attempt_id uuid, p_authority_receipt text, p_kind text, p_after_id uuid) :: def_md5
+     function public.export_archive_account_content_v1(p_operation text, p_export_id uuid, p_attempt_id uuid, p_authority_receipt text, p_payload jsonb) :: def_md5
+     function public.export_archive_account_graph_rows_v1(p_export_id uuid, p_attempt_id uuid, p_authority_receipt text, p_kind text, p_after_key jsonb) :: def_md5
+     function public.export_archive_account_graph_rows_v2(p_export_id uuid, p_attempt_id uuid, p_authority_receipt text, p_kind text, p_after_key jsonb) :: def_md5
+     function public.export_archive_account_inventory_v1(p_operation text, p_export_id uuid, p_attempt_id uuid, p_authority_receipt text, p_kind text, p_after_id uuid) :: def_md5
+     function public.export_archive_account_members_v1(p_operation text, p_export_id uuid, p_attempt_id uuid, p_authority_receipt text, p_subject_id uuid, p_after_id text) :: def_md5
+     function public.export_archive_account_metadata_v1(p_operation text, p_export_id uuid, p_attempt_id uuid, p_authority_receipt text, p_after_id uuid) :: def_md5
+     function public.export_archive_account_original_v1(p_operation text, p_export_id uuid, p_attempt_id uuid, p_authority_receipt text, p_file_id uuid, p_expected jsonb) :: def_md5
+     function public.export_archive_account_path_b_v1(p_export_id uuid, p_attempt_id uuid, p_authority_receipt text, p_subject_id uuid) :: def_md5
+#12 20261016200000_consents_revoke_all.sql: +1 functions, +0 tables, 1 changes to main objects
+     table public.account_operation_nonces :: constraints: ~account_operation_nonces_operation_check
+#13 20261016201000_embryo_record_key_cards_rights.sql: +2 functions, +0 tables, 0 changes to main objects
+#14 20261016202000_consent_revoke_rights.sql: +2 functions, +0 tables, 0 changes to main objects
+#15 20261016203000_consent_grant_rights.sql: +1 functions, +0 tables, 0 changes to main objects
+#16 20261016204000_path_b_no_account_uploader_gate.sql: +0 functions, +0 tables, 1 changes to main objects
+     function private.other_adult_mitigation_before_public_appeal_v1(p_subject_id uuid, p_account_id uuid, p_checkpoint text) :: def_md5
+#17 20261016205000_consent_reaffirm.sql: +3 functions, +0 tables, 0 changes to main objects
+#18 20261016206000_consent_reaffirm_rights.sql: +1 functions, +0 tables, 0 changes to main objects
+#19 20261016207000_adult_subject_bind.sql: +1 functions, +0 tables, 0 changes to main objects
+#20 20261016208000_rights_reissue.sql: +3 functions, +2 tables, 1 changes to main objects
+     function public.activate_rights_session_v1(p_token_hash text, p_session_hash text, p_form_nonce text) :: def_md5
+#21 20261016210000_future_person_correction_review.sql: +7 functions, +0 tables, 4 changes to main objects
+     table private.new_correction_intakes :: triggers: +shred_correction_review_reasons
+     table public.correction_assignments :: columns: +nonce_hash,reason_ciphertext
+     table public.correction_assignments :: constraints: +correction_assignments_nonce_hash_check,correction_assignments_reason_ciphertext_check ~correction_assignments_decision_check
+     table public.correction_assignments :: indexes: +correction_assignments_nonce_once
+#22 20261016211000_future_person_export_open_ready.sql: +3 functions, +0 tables, 0 changes to main objects
+#23 20261016212000_future_person_correction_provenance.sql: +0 functions, +0 tables, 0 changes to main objects
+#24 20261016220000_subject_delete_reviewed_document.sql: +0 functions, +0 tables, 0 changes to main objects
+#25 20261016221000_subject_transfer.sql: +19 functions, +3 tables, 10 changes to main objects
+     function private.end_path_b_normalized_revision_v1() :: def_md5
+     function private.guard_structural_file_identity_v1() :: def_md5
+     function private.path_b_report_read_ready_v1(p_account_id uuid, p_subject_id uuid, p_purpose text) :: def_md5
+     function private.path_b_report_results_v1(p_account_id uuid, p_session_id uuid, p_subject_id uuid, p_purpose text, p_test_jurisdiction boolean) :: def_md5
+     function private.path_b_result_read_v1(p_account_id uuid, p_subject_id uuid, p_purpose text) :: def_md5
+     table public.account_operation_nonces :: constraints: ~account_operation_nonces_operation_check
+     table public.other_adult_held_uploads :: constraints: ~other_adult_held_uploads_state_check
+     table public.subjects :: columns: +ownership_transferred_at
+     table public.subjects :: constraints: +subjects_ownership_transfer_shape ~subjects_self_or_claimant_owner_shape
+     sequences  :: +1 -0 {"cache": 1, "cycle": false, "increment": 1, "max": 9223372036854775807, "min": 1, "name": "subject_ownership_transfers_transfer_revision_seq", "owned_by": "subject_ownership_transfers.transfer_revision:i", "relacl": null, "schema": "private", "start": 1, "type": "bigint"}

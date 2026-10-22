@@ -116,6 +116,7 @@
         "minimumUsableMapping": "one-transient-sample-or-embryo-identifier-plus-genotype-and-a-server-resolvable-locus-from-rsid-or-chrom-plus-pos",
         "ambiguity": "when-browser-preflight-finds-a-required-field-missing-or-ambiguous-api.embryo-ingest-mapping-inspects-only-the-bounded-header-copy-in-memory-rejects-every-sex-gender-karyotype-proxy-header-before-any-write-and-issues-a-closed-session-bound-random-challenge-with-at-most-four-neutral-column-index-decisions-and-no-source-example-values; the-browser-submits-at-most-four-column-index-to-canonical-field-decisions-then-rewrites-every-chunk-to-the-sanitized-canonical-header-drops-all-unselected-source-columns-and-replaces-sample-values-with-issued-random-handles; the-server-revalidates-that-sanitized-form-on-every-chunk-and-any-terminal-mismatch-dispatches-policyResolvers.embryo-ingest-session-v1.attemptFailure-before-any-session-due-target-or-fragment-delete; otherwise-zero-decisions",
         "serverAuthority": "server-repeats-header-detection-mapping-locus-validation-build-inference-and-record-parsing; browser-mapping-is-never-trusted",
+        "inspection": "ADR-0037: after-api.embryo-ingest-configure-records-a-table-the-browser-sends-api.embryo-ingest-mapping-the-bounded-header-copy-exactly-once-with-every-forbidden-column-already-dropped-so-the-server-repeats-header-detection-and-the-mapping-plan-in-memory-and-records-only-the-canonical-locus-kind-rsid-or-chrom-pos; zero-decisions-issues-no-column-challenge",
         "identity": "source-sample-and-embryo-column-values-are-used-only-to-build-the-transient-stable-ordinal-map-and-never-persisted"
       },
       "browserPreflight": "inspect-magic-bytes-before-the-first-direct-upload-or-ingest-chunk-and-refuse-%PDF-",
@@ -244,6 +245,7 @@
         "decision-required"
       ],
       "decisionRequired": "only-the-authoritative-algorithm-may-reach-this-outcome; issue-one-random-session-bound-build-challenge-with-exactly-GRCh37-GRCh38-and-unknown-options",
+      "tableReleaseScope": "owner-decision-2026-10-16-genome-build-for-laboratory-table-embryo-sessions-ADR-0037: no-position-based-inference-for-pgt_table-inputs-in-this-release; api.embryo-ingest-configure-records-a-table-build-from-its-own-##reference-or-##contig-header-lines-through-the-product-header-rule-as-explicit-header-when-they-state-exactly-one-build-and-otherwise-records-decision-required-which-alone-issues-the-build-challenge-before-any-chunk; this-algorithm-its-reference-data-and-its-thresholds-are-unchanged-and-no-ingest-route-calls-it",
       "unknownOption": "write-no-canonical-source-genetic-row-analysis-row-or-job-mark-the-attempt-failure-pending-and-dispatch-policyResolvers.embryo-ingest-session-v1.attemptFailure-before-any-session-due-target-or-fragment-delete-then-direct-to-embryos.request-data",
       "liftover": "GRCh37-is-converted-to-GRCh38-only-through-genome-liftover-v1-and-its-strict-loss-rule-is-the-sole-authority-for-liftover_loss",
       "unsolicitedClientBuildDeclarationOrThresholdOverride": "forbidden; only-a-response-to-the-current-server-issued-session-and-ingest-revision-bound-build-challenge-is-accepted"
@@ -3155,7 +3157,7 @@
         },
         "publishedSourceFence": "exact completed publication or exact immutable account235 receipt plus current approved detached custody; original still-live create-only capabilities are permanently fenced by verified empty markers",
         "auditSelector": "new approved custody receives one random immutable audit principal through the closed issuer; existing NULL selectors remain NULL with no historical backfill; erase only matching current subject linkage and preserve the append-only chain",
-        "availability": "public claimant DELETE and deletion_accepted remain closed until complete registered-store graph cleanup and actual provider ACKs are proved"
+        "availability": "TEST-LOCAL only, behind the default-OFF INHERIT_TEST_CLAIMANT_RIGHTS door and the enabled native TEST configuration: the claimant DELETE answers deletion_accepted only after every source marker, the plan's own identity-object and original-upload-copy disposal under the same live lease, and the complete graph transaction have committed; production remains closed until a guarded production release and hosted provider ACKs are proved"
       }
     },
     "claim-review-receipt-v1": {
@@ -3617,6 +3619,7 @@
         "binding": "every-chunk-repeats-the-regenerated-header-with-server-resolved-reference-build-random-challenge-and-positive-revision; every-sample-handle-must-resolve-to-this-live-session-reserved-ordinal; no-source-derived-hash-or-label-in-the-header",
         "vcf": "regenerated-VCFv4.5-header-and-exact-FORMAT-GT:DP:GQ:AD:FT:LEN; autosomal-loci-only; ID-is-rsIDs-or-dot; QUAL-is-dot; FILTER-and-FT-are-PASS-FAIL-or-dot-with-FAIL-carrying-the-original-failed-state-without-the-original-filter-name; INFO-is-only-END-or-dot; literal-ACGTN-alleles-NON_REF-unspecified-alternate-and-spanning-deletion-alleles-only; source-ploidy-partial-no-calls-and-reference-block-lengths-preserved-with-END-regenerated-per-sample-when-LEN-is-present; lowercase-sequence-alleles-normalized-to-uppercase; phase-separators-become-unphased-because-source-phase-set-metadata-is-not-retained; no-symbolic-structural-or-breakend-allele-text",
         "table": "inheritTable=1-header-with-the-same-build-challenge-and-revision; exact-columns-sample-rsid-genotype-or-sample-chrom-pos-genotype-selected-by-the-stored-mapping; source-label-to-ordinal-map-is-browser-memory-only-in-first-appearance-order; rsID-loci-resolved-from-the-server-reference-store-in-the-current-build-before-retaining-any-row",
+        "tableStoredMapping": "ADR-0037: the-stored-mapping-is-the-canonical-locus-kind-rsid-or-chrom-pos-api.embryo-ingest-mapping-recorded-and-public.embryo_ingest_table_locus_v1-reads-only-after-the-transport-is-issued; the-server-reference-store-is-data/ref/build-discriminating-sites.json-and-an-rsID-outside-it-refuses-the-chunk-closed-rather-than-guess-a-locus; each-embryo-with-a-retained-row-gets-one-neutral-##inheritTableFragment=1-fragment-of-chrom-pos-rsid-genotype-rows-in-the-resolved-build",
         "serverBoundary": "validate-the-whole-bounded-chunk-before-returning-any-fragment-or-row-to-a-writer; VCF-fragments-have-one-neutral-ordinal-sample-and-no-challenge-or-handle; table-rows-have-only-ordinal-chrom-pos-rsid-genotype; returned-data-is-attempt-owned-pending-input-and-never-a-publication-decision",
         "lifecycleBoundary": "pure-transport-functions-do-not-authorize-requests-or-write-storage; the-route-must-authenticate-recheck-revisions-reserve-sequence-and-cumulative-quotas-and-dispatch-attemptFailure-on-terminal-errors-before-enabling-the-upload-flow",
         "verification": "src/lib/embryos/vcf-transport.test.ts; src/lib/embryos/table-transport.test.ts"
@@ -3667,7 +3670,8 @@
         "embryo-basis-authority-v1",
         "embryo-donor-attribution-v1"
       ],
-      "vcfConfiguration": "ADR-0035: a-VCF-session-is-configured-once-through-api.embryo-ingest-configure-from-the-sources-##fileformat-##reference-and-##contig-lines-and-its-sample-count-only; the-server-derives-the-build-with-the-product-parsers-header-rule-records-it-through-private.configure_embryo_ingest_session_v1-and-returns-the-transport-challenge-revision-completion-nonce-and-CSRF-token-in-embryo-vcf-transport-v1"
+      "vcfConfiguration": "ADR-0035: a-VCF-session-is-configured-once-through-api.embryo-ingest-configure-from-the-sources-##fileformat-##reference-and-##contig-lines-and-its-sample-count-only; the-server-derives-the-build-with-the-product-parsers-header-rule-records-it-through-private.configure_embryo_ingest_session_v1-and-returns-the-transport-challenge-revision-completion-nonce-and-CSRF-token-in-embryo-vcf-transport-v1",
+      "tableConfiguration": "ADR-0037-owner-decisions-2026-10-16: a-laboratory-table-session-is-configured-once-through-api.embryo-ingest-configure-as-pgt_table-from-its-own-##reference-and-##contig-header-lines-only; the-product-header-rule-records-explicit-header-when-they-state-exactly-one-build-and-otherwise-decision-required-with-no-position-based-inference; the-answer-embryo-table-configuration-v1-carries-only-the-one-mapping-inspection-nonce; api.embryo-ingest-mapping-then-inspects-the-header-copy-once-records-the-canonical-locus-kind-asks-at-most-one-column-question-and-for-a-decision-required-build-GRCh37-GRCh38-or-unknown-before-any-chunk-with-unknown-terminal-and-issues-the-transport-challenge-revision-completion-nonce-and-CSRF-token-in-the-response-that-leaves-nothing-to-decide; table-chunks-answer-embryo-ingest-chunk-v1.mappingRequired-until-then"
     },
     "own-report-synchronous-v1": {
       "decision": "docs/adr/0024-own-report-synchronous-generation.md",
@@ -8239,6 +8243,12 @@
         "operation": "ancestry-read",
         "resolver": "subject-route-v1"
       },
+      "genome.carrier": {
+        "targetSource": "route-subject",
+        "operation": "own-carrier-status-read",
+        "resolver": "subject-route-v1",
+        "ownSelfOnly": "a Family handle, an other-adult record and a Path B record answer resource-not-found-page-v1, exactly like an unknown record"
+      },
       "genome.data": {
         "targetSource": "route-subject",
         "operation": "data-metadata-read",
@@ -8772,6 +8782,7 @@
         "const": "embryo-ingest-fragment-set"
       },
       "contract": "policyResolvers.embryo-ingest-session-v1.workerCompletion",
+      "formats": "ADR-0037: the-job-kind-keeps-its-name-and-claims-vcf-and-pgt_table-attempts; a-table-fragment-is-revalidated-byte-for-byte-by-the-closed-table-record-rule-and-stages-called-bases-with-no-reference-or-alternate-allele-and-a-table-source-is-published-as-the-neutral-embryo-autosomal-source.tsv-of-type-pgt_table; any-other-format-ends-the-attempt-with-the-closed-format-code",
       "canonicalSourcePublicationInvariant": "policyContracts.canonical-source-publication-v1",
       "normalizationAuthorization": {
         "matrixRow": "policyResolvers.analysis-eligibility-v1.jobKindPurposeCapabilityMatrix.ingest.normalize",
@@ -11892,6 +11903,7 @@
           }
         },
         "sideEffects": "write-no-fragment-canonical-source-genetic-row-or-job-and-direct-the-client-to-api.embryo-ingest-mapping",
+        "when": "ADR-0037: a-pgt_table-session-whose-build-is-unresolved-whose-transport-is-not-yet-issued-or-whose-canonical-locus-kind-is-not-recorded; answered-before-the-body-is-read-and-without-marking-the-attempt",
         "contentType": "application/json",
         "unknownFields": "forbidden"
       },
@@ -11929,40 +11941,131 @@
       "sideEffectsOnFailure": "every-terminal-format-header-mapping-chunk-quota-limit-cancel-or-abort-response-dispatches-policyResolvers.embryo-ingest-session-v1.attemptFailure-preserves-the-session-and-exact-due-target-until-that-idempotent-unwind-commits-and-writes-no-canonical-source-genetic-row-or-job; mappingRequired-is-nonterminal-and-preserves-the-live-session-and-fixed-due-target"
     },
     "pgt-mapping-challenge-v1": {
-      "status": 200,
-      "contentType": "application/json",
-      "body": {
-        "challengeId": "opaque-random-session-bound-id-and-revision",
-        "decisions": [
-          {
-            "sourceColumn": "neutral-Column-N-label-only",
-            "columnIndex": "zero-based-safe-integer",
-            "candidateFields": "one-through-four-values-from-sample-embryo-rsid-genotype-chrom-pos"
-          }
-        ],
-        "maximumDecisions": {
-          "const": 4
+      "columns": {
+        "status": 200,
+        "contentType": "application/json",
+        "when": "the-server-derived-plan-needs-one-through-four-column-decisions",
+        "body": {
+          "kind": {
+            "const": "columns"
+          },
+          "challengeId": "opaque-random-session-bound-id-and-revision",
+          "decisions": [
+            {
+              "sourceColumn": "neutral-Column-N-label-only",
+              "columnIndex": "zero-based-safe-integer",
+              "candidateFields": "one-through-four-values-from-sample-embryo-rsid-genotype-chrom-pos"
+            }
+          ],
+          "maximumDecisions": {
+            "const": 4
+          },
+          "expiresAt": "no-later-than-the-embryo-ingest-session",
+          "nonce": "the-next-operation-nonce: one-time-nonce-bound-to-this-upload-session-and-stored-as-a-digest-on-this-challenge-for-exactly-one-api.embryo-ingest-mapping-PUT-decision-on-it"
         },
-        "expiresAt": "no-later-than-the-embryo-ingest-session"
+        "unknownFields": "forbidden"
       },
-      "unknownFields": "forbidden",
+      "build": {
+        "status": 200,
+        "contentType": "application/json",
+        "when": "the-header-resolves-the-mapping-and-api.embryo-ingest-configure-recorded-the-build-as-decision-required",
+        "body": {
+          "kind": {
+            "const": "build"
+          },
+          "challengeId": "opaque-random-current-session-and-ingest-revision-bound-build-challenge-id",
+          "questionCopyId": {
+            "const": "upload.build.question"
+          },
+          "options": [
+            {
+              "value": {
+                "const": "GRCh37"
+              },
+              "labelCopyId": {
+                "const": "upload.build.grch37"
+              }
+            },
+            {
+              "value": {
+                "const": "GRCh38"
+              },
+              "labelCopyId": {
+                "const": "upload.build.grch38"
+              }
+            },
+            {
+              "value": {
+                "const": "unknown"
+              },
+              "labelCopyId": {
+                "const": "upload.build.unknown"
+              },
+              "route": {
+                "routeFrom": "embryos.request-data"
+              }
+            }
+          ],
+          "expiresAt": "no-later-than-the-embryo-ingest-session",
+          "nonce": "the-next-operation-nonce: one-time-nonce-bound-to-this-upload-session-and-stored-as-a-digest-on-this-build-challenge-for-exactly-one-api.embryo-ingest-mapping-PUT-decision-on-it"
+        },
+        "unknownFields": "forbidden"
+      },
+      "transport": {
+        "status": 200,
+        "contentType": "application/json",
+        "when": "nothing-is-left-to-decide: the-header-resolves-the-mapping-and-api.embryo-ingest-configure-recorded-an-explicit-header-build",
+        "body": {
+          "kind": {
+            "const": "transport"
+          },
+          "build": {
+            "enum": [
+              "GRCh37",
+              "GRCh38"
+            ]
+          },
+          "challenge": "one-CSPRNG-at-least-128-bit-base64url-transport-challenge-bound-to-this-session-and-ingest-revision-and-stored-hash-only",
+          "revision": "positive-random-safe-integer-stored-with-the-challenge",
+          "completionNonce": "the-next-operation-nonce: one-time-nonce-bound-to-this-upload-session-for-exactly-one-api.embryo-ingest-complete-request",
+          "csrfToken": "the-X-Inherit-CSRF-value-bound-to-this-upload-session-that-api.embryo-ingest-complete-requires"
+        },
+        "unknownFields": "forbidden",
+        "use": "the-browser-writes-build-challenge-and-revision-into-the-regenerated-##inheritTable=1-header-of-every-chunk-through-src/lib/embryos/table-transport.ts"
+      },
+      "pattern": "owner-decision-2026-10-16-token-rotation-in-the-embryo-mapping-responses: every-branch-carries-the-next-operation-nonce-and-the-branch-that-leaves-nothing-to-decide-carries-the-transport-challenge-as-embryo-vcf-transport-v1.configured-does-for-a-VCF; the-session-CSRF-header-rule-is-unchanged",
+      "selection": "the-in-memory-plan-over-the-bounded-header-copy-and-the-recorded-build-evidence-select-exactly-one-branch; a-forbidden-header-a-header-that-is-not-a-table-or-a-plan-with-no-column-left-is-terminal-and-answers-resource-not-found-v1-after-the-attemptFailure-dispatch",
+      "headers": "private-no-store-no-referrer",
       "rawHeaderExampleValueSampleEmbryoLabSexHealthOrGeneticIdentifier": "never-returned"
     },
     "embryo-ingest-decision-v1": {
       "columnMappingAccepted": {
-        "status": 204,
-        "contentType": "empty",
-        "body": "empty",
+        "status": 200,
+        "contentType": "application/json",
+        "oneOfBodies": [
+          {
+            "when": "the-recorded-build-is-decision-required",
+            "schemaFrom": "responseContracts.pgt-mapping-challenge-v1.build.body"
+          },
+          {
+            "when": "the-recorded-build-is-explicit-header",
+            "schemaFrom": "responseContracts.pgt-mapping-challenge-v1.transport.body"
+          }
+        ],
+        "unknownFields": "forbidden",
         "when": "the-current-server-stored-challenge-kind-is-column-mapping",
         "stored": "challenge-id-column-index-and-canonical-field-only; raw-header-example-label-and-source-identifier-forbidden"
       },
       "buildAccepted": {
-        "status": 204,
-        "contentType": "empty",
-        "body": "empty",
+        "status": 200,
+        "contentType": "application/json",
+        "schemaFrom": "responseContracts.pgt-mapping-challenge-v1.transport.body",
+        "unknownFields": "forbidden",
         "when": "the-current-server-stored-challenge-kind-is-build-and-the-answer-is-GRCh37-or-GRCh38",
         "stored": "canonical-build-plus-random-ingest-revision-only"
       },
+      "rotation": "owner-decision-2026-10-16-token-rotation-in-the-embryo-mapping-responses: every-nonterminal-decision-answers-200-with-the-next-challenge-and-its-one-decision-nonce-or-with-the-transport-challenge-revision-completion-nonce-and-CSRF-token-instead-of-an-empty-204; the-session-CSRF-header-rule-is-unchanged; an-exact-replay-of-a-recorded-decision-answers-resource-not-found-v1-because-what-the-first-answer-issued-exists-only-as-digests",
+      "headers": "private-no-store-no-referrer",
       "buildUnknown": {
         "status": 422,
         "contentType": "application/json",
@@ -12081,7 +12184,8 @@
           "expiresAt": "no-later-than-the-embryo-ingest-session"
         },
         "unknownFields": "forbidden",
-        "effects": "retain-only-the-already-sanitized-session-fragments-until-decision-or-session-expiry-and-write-no-canonical-source-genetic-row-result-or-analysis-job"
+        "effects": "retain-only-the-already-sanitized-session-fragments-until-decision-or-session-expiry-and-write-no-canonical-source-genetic-row-result-or-analysis-job",
+        "reachability": "ADR-0037: unreachable-since-the-owner-decision-of-2026-10-16-asks-a-table-build-through-api.embryo-ingest-mapping-before-any-chunk; a-table-session-holds-no-completion-nonce-until-its-build-is-resolved-and-a-VCF-build-is-fixed-at-configure"
       },
       "rejections": [
         {
@@ -12396,7 +12500,7 @@
             }
           },
           "expiresAt": "ISO-8601-UTC-from-embryo.ingest-session-24h",
-          "operationNonce": "one-time-nonce-bound-to-this-upload-session-for-exactly-one-api.embryo-ingest-configure-request-for-a-VCF-or-one-api.embryo-ingest-mapping-inspection-for-a-table; every-later-nonce-arrives-in-the-response-it-follows",
+          "operationNonce": "one-time-nonce-bound-to-this-upload-session-for-exactly-one-api.embryo-ingest-configure-request-for-a-VCF-or-a-laboratory-table-ADR-0037; every-later-nonce-arrives-in-the-response-it-follows",
           "configureRoute": {
             "routeFrom": "api.embryo-ingest-configure",
             "params": {
@@ -13197,20 +13301,7 @@
       },
       "unknownFieldsRecursively": "forbidden",
       "newEligibleAndExistingIdentity": "identical-status-body-header-shape-and-bounded-timing-with-no-user-id-session-or-existence-indicator",
-      "under18": {
-        "status": 422,
-        "contentType": "application/json",
-        "body": {
-          "error": {
-            "const": "age_requirement"
-          },
-          "message": "resolved-user-facing-copy"
-        },
-        "messageSource": "src/copy/upload/errors.ts#livingMinor",
-        "unknownFieldsRecursively": "forbidden",
-        "authUserWrites": 0
-      },
-      "transaction": "server-calculates-age-at-the-current-UTC-calendar-date-before-any-Supabase-Auth-call-then-for-a-new-identity-atomically-creates-the-auth-user-profile-declared-jurisdiction-and-one-self-subject-or-compensates-by-deleting-the-new-auth-user-on-failure"
+      "transaction": "for-a-new-identity-the-Supabase-Auth-user-insert-and-its-trigger-create-the-auth-user-profile-and-one-self-subject-atomically; an-existing-identity-receives-no-write; age-is-attested-at-account-completion-and-jurisdiction-at-first-sign-in-owner-decision-2026-10-16"
     },
     "auth-opaque-request-v1": {
       "status": 202,
@@ -13228,7 +13319,7 @@
       "status": 204,
       "contentType": "empty",
       "body": "empty",
-      "effects": "atomically-change-the-password-revoke-every-other-auth-session-and-consume-the-recovery-session"
+      "effects": "atomically-change-the-password-revoke-every-auth-session-of-the-account-and-consume-the-recovery-session; the-response-clears-every-auth-cookie-and-the-person-signs-in-again"
     },
     "raw-region-v1": {
       "status": 200,
@@ -13600,6 +13691,19 @@
       "messageSource": "src/copy/api/errors.ts#goneSuccessor",
       "requires": "superseding-ADR"
     },
+    "embryo-table-configuration-v1": {
+      "configured": {
+        "status": 200,
+        "contentType": "application/json",
+        "body": {
+          "nonce": "one-time-mapping-inspection-nonce-bound-to-this-upload-session-and-stored-as-a-digest-for-exactly-one-api.embryo-ingest-mapping-POST"
+        },
+        "unknownFields": "forbidden",
+        "headers": "private-no-store-no-referrer",
+        "use": "ADR-0037: the-build-question-the-transport-challenge-and-the-completion-credentials-of-a-laboratory-table-come-from-api.embryo-ingest-mapping-responses"
+      },
+      "selection": "a-pgt_table-configure-request-answers-only-this-branch; a-recorded-failure-pending-attempt-answers-resource-not-found-v1-after-the-attemptFailure-dispatch"
+    },
     "embryo-vcf-transport-v1": {
       "configured": {
         "status": 200,
@@ -13799,6 +13903,7 @@
       ],
       "auth.reset-password-submit": [
         "resource-not-found-v1",
+        "invalid-request-v1",
         "password-reset-v1"
       ],
       "api.account-delete": [
@@ -13866,6 +13971,7 @@
       ],
       "api.embryo-ingest-configure": [
         "embryo-vcf-transport-v1",
+        "embryo-table-configuration-v1",
         "invalid-request-v1",
         "resource-not-found-v1"
       ],
@@ -15228,7 +15334,7 @@
       "width": "64rem",
       "stateProfile": "auth-density-flow",
       "notApplicableStates": {
-        "complete": "Success calls router.push() to /overview (reset-password/page.tsx:30) and the route renders no outcome of its own. Same shape as /auth/sign-in. Corrections item 10, signed 2026-09-13."
+        "complete": "Success calls router.push() to the sign-in route with notice=password_changed (src/components/auth/reset-password-form.tsx:37) and the route renders no outcome of its own: a reset revokes every session, so the reader signs in again with the new password (owner decision 2026-10-16, Auth endpoints). Same shape as /auth/sign-in. Corrections item 10, signed 2026-09-13."
       },
       "disposition": "kept",
       "expectedStatus": 200
@@ -15332,6 +15438,26 @@
       "notApplicableStates": {
         "awaiting-choice": "This route shows what a subject's file already produced. The invitation to choose an analysis renders on /overview alone, and its link points at /genome/[subject]/reports.",
         "partial-coverage": "Not a state this page can render, measured 2026-09-18 (corrections document, ‘Measured 2026-09-18’). The seven-region panel's minimum is its whole panel (SEVEN_ANCESTRY_PANEL.minimumMarkers = 168), so any shortfall, one marker or 147, is the grey state already proven as /genome/[subject]/ancestry not-covered; the capture distinguishes result_state partial from not_covered, but the page says the same sentence for both and draws no map for either. The owner chose on 2026-09-18 to waive the state here rather than add a sentence saying shares were computed from a partial panel and withheld. Reopens if the page ever renders a partial panel differently from none."
+      },
+      "policy": {
+        "mode": "resolved",
+        "resolver": "subject-route-v1"
+      },
+      "disposition": "kept",
+      "expectedStatus": 200
+    },
+    {
+      "id": "genome.carrier",
+      "path": "/genome/[subject]/carrier",
+      "kind": "page",
+      "domain": "genome",
+      "auth": "authenticated",
+      "surface": "standard",
+      "width": "64rem",
+      "stateProfile": "product-result",
+      "notApplicableStates": {
+        "awaiting-choice": "This route shows what the reader's own prepared file supports under the reviewed carrier rule. The invitation to choose an analysis renders on /overview alone; a prepared file whose Observed genetic variants choice is off is this route's consent-required state, which names the choice and links to /genome/[subject]/reports where it is made.",
+        "jurisdiction-unavailable": "Own self records only: a Family handle, a record held for another adult and a Path B record answer notFound() before anything is read, so no restricted capability is ever reached here. One person's own carrier status is a My Genome reading under adult_self_analysis (X12.3), not carrier_match, which governs the two-person arithmetic on /family/health-picture, /family/portrait/[pairId] and /overview and is enforced there. Owner decision of 22 October 2026 (G7.4): production is unchanged and states that the check is unavailable until the owner approves the starter list, the guarded import runs and a named reviewer activates each condition. Whether an activated own carrier result should also be jurisdiction-gated is an open question for the owner and counsel before that activation, and this waiver must be revisited then."
       },
       "policy": {
         "mode": "resolved",
@@ -16391,15 +16517,7 @@
         "contentType": "application/json",
         "closedBody": {
           "email": "normalized-valid-address-at-most-254-bytes",
-          "password": "12-through-1024-Unicode-characters",
-          "displayName": "two-through-120-Unicode-characters",
-          "dateOfBirth": "valid-ISO-calendar-date",
-          "jurisdictionCode": "normalized-code-valid-under-data/jurisdictions.json-determination.resolutionGrammar",
-          "jurisdictionAttestationVersion": "current-server-published-version",
-          "jurisdictionAttestationHash": "lowercase-sha256-of-current-artifact",
-          "jurisdictionAffirmed": {
-            "const": true
-          }
+          "password": "12-through-72-Unicode-characters-and-at-most-72-UTF-8-bytes"
         },
         "requiredSignals": [
           "Origin-exactly-canonical-origin",
@@ -16407,14 +16525,27 @@
           "X-Inherit-CSRF-header-with-one-time-public-form-token-bound-to-the-host-only-cookie"
         ],
         "unknownMissingInvalidStaleOrAmbiguous": "invalid-request-v1",
-        "passwordBodyLogAnalyticsAudit": "forbidden"
+        "passwordOutsideLimits": "invalid-request-v1-issue-password-before-any-Supabase-Auth-call",
+        "passwordBodyLogAnalyticsAudit": "forbidden",
+        "ownerDecision": "docs/protocol/decisions.md#2026-10-16-auth-endpoints-jurisdiction-date-of-birth-reset-and-limits-g21: jurisdiction-is-declared-at-first-sign-in-date-of-birth-at-account-completion-and-no-display-name-is-collected"
       },
       "stateProfile": "endpoint",
       "policy": {
         "mode": "pre-auth-eligibility",
-        "ageCalculation": "server-calculates-completed-years-on-the-current-UTC-calendar-date-before-the-first-Supabase-Auth-create-call",
-        "under18": "signup-v1.under18",
-        "transaction": "after-age-and-jurisdiction-validation-create-the-Supabase-Auth-user-profile-one-self-subject-and-jurisdiction-attestation-as-one-compensated-operation; any-follow-on-failure-deletes-the-new-auth-user-before-return",
+        "rateLimits": {
+          "contract": "securityRateLimitContract",
+          "normalized-identifier": {
+            "windowSeconds": 3600,
+            "limit": 5
+          },
+          "source-network": {
+            "windowSeconds": 3600,
+            "limit": 20
+          },
+          "limited": "the-identical-signup-v1-answer-with-no-Supabase-Auth-call-and-the-form-nonce-spent"
+        },
+        "transaction": "after-validation-and-the-rate-limit-buckets-create-the-Supabase-Auth-user-whose-insert-trigger-creates-the-profile-and-one-self-subject-in-the-same-transaction; an-existing-confirmed-or-unconfirmed-identity-receives-no-follow-on-write-and-nothing-is-compensated",
+        "delivery": "the-confirmation-link-returns-through-auth.callback-with-a-PKCE-state-whose-hash-and-verifier-only-the-host-only-state-cookie-holds-and-never-puts-a-token-in-an-Inherit-URL",
         "selfSubject": "server-owned-kind-self-upload_class-self-is_self-true-owner_account_id-equals-subject_account_id-equals-the-new-auth-user-and-exactly-one-current-self-subject-per-account; the-same-invariant-is-required-by-the-ordered-legacy-self-subject-backfill-before-own-subject-routes-enable",
         "retentionAssignment": {
           "creationRouteSource": "retentionAssignmentBindings.creationRoutes",
@@ -16453,7 +16584,20 @@
       "policy": {
         "mode": "public-auth-recovery",
         "enumeration": "call-the-opaque-Supabase-recovery-path-and-normalize-existing-missing-disabled-and-rate-limited-identities-to-the-same-bounded-response",
-        "delivery": "callback-uses-auth.callback-PKCE-state-and-never-puts-an-access-token-in-an-Inherit-URL"
+        "delivery": "callback-uses-auth.callback-PKCE-state-and-never-puts-an-access-token-in-an-Inherit-URL",
+        "rateLimits": {
+          "contract": "securityRateLimitContract",
+          "normalized-identifier": {
+            "windowSeconds": 3600,
+            "limit": 3
+          },
+          "source-network": {
+            "windowSeconds": 3600,
+            "limit": 10
+          },
+          "limited": "the-identical-auth-opaque-request-v1-answer-with-no-Supabase-Auth-call-and-the-form-nonce-spent"
+        },
+        "ownerDecision": "docs/protocol/decisions.md#2026-10-16-auth-endpoints-jurisdiction-date-of-birth-reset-and-limits-g21"
       },
       "successResponseContract": "auth-opaque-request-v1",
       "disposition": "kept"
@@ -16470,7 +16614,7 @@
       "requestContract": {
         "contentType": "application/json",
         "closedBody": {
-          "password": "12-through-1024-Unicode-characters"
+          "password": "12-through-72-Unicode-characters-and-at-most-72-UTF-8-bytes"
         },
         "requiredSignals": [
           "Origin-exactly-canonical-origin",
@@ -16478,6 +16622,7 @@
           "X-Inherit-CSRF-header-bound-to-the-reset-session"
         ],
         "unknownMissingOrInvalid": "resource-not-found-v1",
+        "passwordOutsideLimits": "invalid-request-v1-issue-password-only-after-the-reset-session-and-CSRF-authorize-and-before-any-password-write",
         "passwordBodyLogAnalyticsAudit": "forbidden"
       },
       "stateProfile": "endpoint",
@@ -16486,7 +16631,10 @@
         "operation": "password-reset",
         "sessionInvalidationContract": "authContracts.authenticated-session-v1",
         "transaction": "atomically-set-the-password-revoke-every-pre-reset-auth.sessions-row-including-the-recovery-origin-invalidate-every-authenticatedDerivedCapability-row-increment-the-account-auth-session-revision-consume-the-recovery-session-and-CSRF-token-clear-every-auth-cookie-and-require-a-fresh-sign-in; no-stolen-pre-reset-access-JWT-upload-bearer-ingest-export-or-download-capability-remains-valid-after-success",
-        "identityExistenceOrUserId": "never-returned"
+        "identityExistenceOrUserId": "never-returned",
+        "rateLimits": "one-use-per-reset-session-with-the-15-minute-hard-absolute-expiry-of-authContracts.reset-session-api-v1",
+        "afterSuccess": "every-session-is-revoked-and-the-person-signs-in-again-with-the-new-password",
+        "ownerDecision": "docs/protocol/decisions.md#2026-10-16-auth-endpoints-jurisdiction-date-of-birth-reset-and-limits-g21"
       },
       "successResponseContract": "password-reset-v1",
       "disposition": "kept"
@@ -17278,8 +17426,16 @@
             },
             "buildEvidence": "zero-through-64-source-meta-lines-each-at-most-512-characters-copied-verbatim-and-restricted-to-##fileformat-##reference-and-##contig-lines",
             "sampleCount": "positive-safe-integer-count-of-the-source-VCF-sample-columns-never-their-names",
-            "nonce": "required-upload-session-bound-one-time-configure-or-mapping-inspection-nonce"
+            "nonce": "required-upload-session-bound-one-time-configure-nonce"
           },
+          "tableClosedBody": {
+            "format": {
+              "const": "pgt_table"
+            },
+            "buildEvidence": "zero-through-64-of-the-laboratory-tables-own-header-lines-each-at-most-512-characters-copied-verbatim-and-restricted-to-##reference-and-##contig-lines",
+            "nonce": "required-upload-session-bound-one-time-configure-nonce"
+          },
+          "bodySelection": "ADR-0037: format-pgt_table-selects-tableClosedBody-and-every-other-value-is-read-against-closedBody; a-table-body-carries-no-sample-count-because-a-tables-samples-are-a-row-property-that-the-browser-transport-and-the-completion-transaction-enforce",
           "unknownMissingOrInvalid": "invalid-request-v1",
           "bodyLogAnalyticsAuditOrError": "forbidden",
           "forbiddenFields": [
@@ -17297,7 +17453,8 @@
             "inferenceMatchCount",
             "inferenceAgreement"
           ],
-          "forbiddenLines": "any-buildEvidence-line-other-than-##fileformat-##reference-or-##contig-including-##SAMPLE-##PEDIGREE-##source-and-the-#CHROM-column-line-is-invalid-request-v1-before-any-row-audit-log-or-object-write"
+          "forbiddenLines": "any-buildEvidence-line-other-than-##fileformat-##reference-or-##contig-including-##SAMPLE-##PEDIGREE-##source-and-the-#CHROM-column-line-is-invalid-request-v1-before-any-row-audit-log-or-object-write",
+          "tableForbiddenLines": "any-table-buildEvidence-line-other-than-##reference-or-##contig-including-##fileformat-##source-a-#-comment-and-the-column-row-is-invalid-request-v1-before-any-row-audit-log-or-object-write"
         }
       },
       "stateProfile": "endpoint",
@@ -17310,6 +17467,8 @@
         "sampleCount": "one-sample-answers-embryo-vcf-transport-v1.cohortSingleSample-and-any-other-mismatch-with-the-immutable-embryoCount-answers-embryo-vcf-transport-v1.sampleCountMismatch; sample-names-are-never-compared-because-they-never-cross-the-request-boundary",
         "terminalFailure": "every-terminal-build-or-sample-count-branch-invokes-the-identical-policyResolvers.embryo-ingest-session-v1.attemptFailure-unwind; a-retryable-invalid-request-is-nonterminal-and-preserves-the-live-session-and-fixed-due-target",
         "buildOrder": "ADR-0035-point-7: built-with-api.embryo-ingest-chunk-and-api.embryo-ingest-complete-only-after-the-Storage-write-fence-deletion-acknowledgement-and-terminal-purge-that-ADR-0020-requires-before-any-route-accepts-embryo-bytes",
+        "pgtTable": "ADR-0037-owner-decision-2026-10-16: validate-the-table-body-in-memory-derive-the-build-only-through-the-product-header-rule-from-##reference-and-##contig-lines-record-format-pgt_table-with-explicit-header-evidence-and-that-build-when-the-lines-state-exactly-one-build-and-otherwise-decision-required-with-no-build-and-no-position-based-inference-through-private.configure_embryo_ingest_session_v1-in-public.configure_embryo_table_ingest_v1-store-the-digest-of-one-mapping-inspection-nonce-and-answer-embryo-table-configuration-v1; no-transport-challenge-or-completion-credential-is-issued-here-and-no-source-line-or-derivative-is-persisted-hashed-HMACed-or-logged",
+        "tableSuccessResponseContract": "embryo-table-configuration-v1",
         "contracts": [
           "genetic-file-ingest-v1",
           "genome-build-inference-v1",
@@ -17340,8 +17499,9 @@
           "contentType": "application/json",
           "closedBody": {
             "headerColumns": "one-through-128-UTF-8-strings-each-one-through-80-characters",
-            "nonce": "required-upload-session-bound-one-time-mapping-inspection-nonce"
+            "nonce": "required-upload-session-bound-one-time-mapping-inspection-nonce-issued-by-embryo-table-configuration-v1"
           },
+          "browserCopy": "ADR-0037: the-browser-drops-every-forbidden-sex-gender-karyotype-or-proxy-column-before-the-copy-leaves-it-sends-an-empty-cell-as-a-dash-and-maps-each-copy-position-back-to-its-own-source-column-in-memory",
           "unknownMissingOrInvalid": "invalid-request-v1",
           "bodyLogAnalyticsAuditOrError": "forbidden"
         },
@@ -17395,6 +17555,8 @@
         "operation": "pgt-column-mapping-or-server-issued-build-decision",
         "POST": "normalize-and-exact-match-the-bounded-header-copy-in-memory-first-reject-any-normalized-header-for-sex-gender-karyotype-biological-sex-male-female-X-Y-M-MT-or-a-registered-proxy-before-any-row-audit-log-or-object-write-derive-at-most-four-ambiguous-required-fields-render-only-neutral-column-indices-and-canonical-candidates-store-only-a-CSPRNG-challenge-id-hash-random-revision-column-count-and-expiry-and-zeroize-the-submitted-copy; raw-header-strings-candidate-sets-examples-and-any-keyed-or-unkeyed-derivative-of-source-text-are-never-persisted",
         "PUT": "server-stored-challenge-kind-selects-exactly-one-request-shape; a-column-decision-stores-only-sanitized-column-index-and-canonical-field-plus-column-count-and-random-revision; a-build-decision-is-accepted-only-after-genome-build-inference-v1-returned-decision-required-for-this-exact-ingest-revision-and-stores-only-GRCh37-or-GRCh38-plus-random-revision-while-unknown-marks-failure-pending-and-dispatches-policyResolvers.embryo-ingest-session-v1.attemptFailure-before-any-session-due-target-or-fragment-delete; rotate-the-challenge-and-nonce-in-every-nonterminal-branch",
+        "tableRelease": "ADR-0037-owner-decisions-2026-10-16: decision-required-is-the-build-evidence-api.embryo-ingest-configure-recorded-for-this-exact-ingest-revision-because-no-position-based-inference-runs-for-tables-in-this-release; POST-consumes-the-one-inspection-nonce-configure-issued-records-the-canonical-locus-kind-and-answers-a-column-challenge-the-build-challenge-or-the-transport; PUT-resolves-the-current-challenge-through-private.resolve_embryo_mapping_challenge_v1-and-in-the-same-transaction-issues-the-build-challenge-or-the-transport; every-issued-decision-nonce-is-stored-as-a-digest-on-the-challenge-it-answers; every-nonterminal-answer-is-200-and-carries-the-next-operation-nonce-and-the-answer-that-leaves-nothing-to-decide-carries-the-transport-challenge-revision-completion-nonce-and-CSRF-token-never-an-empty-204; the-session-CSRF-header-rule-is-unchanged-and-only-api.embryo-ingest-complete-requires-it",
+        "databaseDoors": "public.inspect_embryo_table_mapping_v1-and-public.decide_embryo_table_mapping_v1-in-supabase/migrations/20261016120000_embryo_table_mapping_route.sql",
         "serverRevalidation": "the-first-and-every-later-chunk-requires-the-exact-sanitized-canonical-header-column-count-and-stored-canonical-field-index-decisions-rejects-any-extra-unselected-or-forbidden-header-requires-every-sample-identifier-to-be-one-issued-random-handle-and-independently-revalidates-locus-format-and-record-parse; no-source-header-HMAC-hash-ciphertext-or-label-derivative-is-computed-and-any-terminal-mismatch-marks-failure-pending-and-dispatches-policyResolvers.embryo-ingest-session-v1.attemptFailure-before-any-session-due-target-or-fragment-delete",
         "terminalFailure": "every-terminal-header-build-or-mapping-branch-including-a-forbidden-header-unknown-build-expired-or-cross-kind-challenge-and-a-server-revalidation-mismatch-invokes-the-identical-policyResolvers.embryo-ingest-session-v1.attemptFailure-unwind; a-retryable-invalid-request-or-issued-mapping-or-build-challenge-is-nonterminal-and-preserves-the-live-session-and-fixed-due-target",
         "contracts": [

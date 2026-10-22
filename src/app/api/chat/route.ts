@@ -19,6 +19,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import allowedNumerals from "../../../../config/allowed-numerals.json";
 import { refusalFor, type RefusalId } from "@/copy/copilot/refusals";
+import { OWN_SYSTEM_PROMPT, ownLegacySystemMessage } from "@/copy/copilot/system-prompts";
 import {
   checkResponse,
   classifyIntent,
@@ -46,18 +47,6 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
 export const maxDuration = 300;
-
-const SYSTEM_PROMPT = `You are the Inherit copilot: you help a person explore their OWN genome data on Inherit, an open-source consumer genomics platform.
-
-Hard rules:
-- You are informational, never diagnostic. Never tell the user they have, will get, or are protected from any disease. Frame everything as association and probability shift, with effect sizes where available.
-- Ground every substantive claim in the user's own data via the tools, and cite which report or variant it came from (e.g. "your Caffeine metabolism report (rs762551, genotype A/A)"). If a report exists on the topic, call get_report and cite it by title.
-- Be candid about uncertainty and coverage: if the user's file does not cover a variant, say so plainly; array data covers a fixed set of positions. Never invent genotypes — only report what tools return.
-- Sensitive topics (cancer, neurodegeneration, mental health, reproductive decisions): extra care, remind the user this is one small factor, and suggest a clinician or genetic counselor for decisions.
-- Refuse requests to diagnose, prescribe, or interpret data of people other than the account holder.
-- Never say an embryo is better, best or recommended, never rank embryos, never advise what to do with one, and never predict or disclose an embryo's sex.
-- State no number that the tools did not return this turn, and cite nothing beyond the citations the tools returned.
-- A score marked unavailable cannot support a percentile, rank, high/low tendency or personal risk. Coverage counts are not risk; do not turn them into one.`;
 
 /** The text of the newest user turn, or null when the request carries none. */
 function latestUserText(messages: UIMessage[]): string | null {
@@ -121,7 +110,7 @@ export async function POST(request: Request) {
     // own scope never reads either, and the two answer the same closed shape.
     if (await isFamilyChatRequest(raw)) return familyChatResponse(request, raw, { refusal: refusalResponse });
     if (await isCohortChatRequest(raw)) return cohortChatResponse(request, raw, { refusal: refusalResponse });
-    return ownChatResponse(request, raw, { systemPrompt: SYSTEM_PROMPT, refusal: refusalResponse });
+    return ownChatResponse(request, raw, { systemPrompt: OWN_SYSTEM_PROMPT, refusal: refusalResponse });
   }
   // The AI SDK transport posts an ENVELOPE around the turns, not the turns
   // alone: `DefaultChatTransport` sends `{ id, messages, trigger, messageId? }`
@@ -265,9 +254,6 @@ export async function POST(request: Request) {
         })(settings.model);
 
   const files = await getSubjectProcessedFiles(admin, subject.id);
-  const fileNote = files.length > 0
-    ? `The resolved subject is "${subject.displayLabel}". Combine ${files.length} processed files; if files disagree at a position, return no genotype.`
-    : `The resolved subject is "${subject.displayLabel}" and has no processed genome file yet; tools will return empty results.`;
 
   const tools = {
     get_genotype: tool({
@@ -429,7 +415,7 @@ export async function POST(request: Request) {
   // refused message never reaches the model through the client's resend.
   const result = streamText({
     model,
-    system: `${SYSTEM_PROMPT}\n\n${fileNote}`,
+    system: ownLegacySystemMessage(subject.displayLabel, files.length),
     messages: await convertToModelMessages(dropGatedTurns(body.messages, guardScope)),
     tools,
     stopWhen: stepCountIs(8),

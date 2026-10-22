@@ -1,8 +1,11 @@
 # Claimant deletion implementation
 
-This checkpoint supplies a private sealed source-disposal prerequisite. The
-registered `DELETE /api/future-person/claim/session` remains closed; there is
-no `deletion_accepted` response or new browser control yet. G8 remains NO.
+This checkpoint supplies the sealed claimed-subject deletion executor. Under
+TEST-LOCAL only, behind the default-OFF `INHERIT_TEST_CLAIMANT_RIGHTS` door and
+the enabled native TEST configuration, the registered
+`DELETE /api/future-person/claim/session` answers 202 `deletion_accepted` only
+after the whole deletion below has committed; any refusal answers 404 and sends
+no success notice. Production stays OFF. G8 remains NO.
 
 The real approved unbound rights session, its one-time nonce and exact detached
 subject/custody/canonical tuple select one source. Existing retention stores
@@ -24,21 +27,52 @@ receipt. The marker is permanent and prevents late create-only writes. A lost,
 malformed or expired ACK stays pending. `source_tombstoned` proves source-part
 payload disposal only; it does not mean the subject has been deleted.
 
-Remaining implementation before opening the registered action:
+Status, 16 October 2026, of the items once listed as remaining before the
+registered action could open:
 
-- Complete immediate derived/cached/body revocation and the exact registered
-  subject/contact/review/delivery graph cleanup, with missing-contact refusal
-  and atomic rollback evidence through genuine approval and release fixtures.
-- Remove canonical and custody rows only under this exact sealed plan after
-  all part ACKs, preserving account235 provenance guards and sibling sources.
-- Destroy every applicable subject identity link after complete cleanup,
-  preserving the registered terminal control receipts and append-only audit
-  chain. The deletion event must remain anonymous and unlinkable.
-- Include actual independent-rights export jobs, downloads and all durable
-  attempts/reservations. Any archive attempt currently refuses preparation;
-  an uncertain provider write has no proved cleanup-completion door yet.
-- Add the registered authenticated claimant UI/API response only when that
-  entire executor is complete; bound-account authority remains separate.
+- Derived, cached and body revocation and the registered subject, contact,
+  review and delivery graph cleanup are built (graph, controls and derived
+  continuations below). A claimant whose rights contact is gone cannot create
+  a plan, and that refusal leaves nothing behind.
+- Canonical and custody rows go only under this exact sealed plan, after every
+  part ACK, with account235 provenance guards and sibling sources preserved.
+- Subject identity links are destroyed after complete cleanup. Terminal
+  control receipts and the append-only audit chain stay; the retained deletion
+  event has no remaining link to the claimant.
+- A queued byte-free independent-rights export and its job and nonce rows are
+  deleted in the request. Any archive attempt or reservation still refuses
+  preparation: an uncertain provider write has no proved cleanup door.
+- The claimant page control and the 202 response are built for TEST only.
+  Bound-account authority remains separate.
+
+The request continuation was the gap. The final transaction refuses while the
+plan's ended-claim identity documents are still in Storage, or while the
+original upload session's planned published cleanup is outstanding. Nothing in
+the request or its retention maintenance could clear the second: no route or
+scheduler drives a published cleanup except account deletion. A genuine
+approved claimant therefore could never be deleted, and the request answered
+404 after its revocation had committed.
+`20261016153100_future_person_claimant_erasure_completion.sql` adds one closed
+service door, `future_person_deletion_objects_v1`, reachable only by the live
+source-disposal lease holder after every source part has its permanent marker.
+It lists the exact ended-claim identity keys the plan sealed (never one an
+open review still holds), accepts their confirmation only after the actual
+Storage removal has deleted the metadata, and then runs the existing document
+callback under the claimant route. It also names that one source session's
+outstanding published cleanup, which the existing unwind doors then drain and
+complete. `src/lib/future-person/claimant-object-cleanup.ts` runs both inside
+the same lease, before the final transaction; anything unresolved refuses
+before it. Retention maintenance runs the same continuation for a sealed plan.
+`supabase/tests/future_person_claimant_erasure_completion.sql` proves the
+whole order on the genuine approval fixture.
+
+Still required before a production release: the guarded production
+application of that migration; hosted R2 and Storage provider proof (local
+answers are SQL protocol fixtures and the in-memory gateway); an approved
+claimant's browser journey, which needs the shared account archive TEST
+configuration enabled and is not authored; and doors for the stores that
+still refuse (archive attempts, report artifacts, model-provider calls,
+legal-evidence objects, upload staging objects, legacy NULL audit selectors).
 
 Keyless unclaimed notice/release remains closed pending actual provider
 delivery, the original full thirty-day owner objection period and separate

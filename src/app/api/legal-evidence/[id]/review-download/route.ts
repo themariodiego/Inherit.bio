@@ -5,8 +5,9 @@ import { closedResponse } from "@/lib/embryos/guards";
 import { sha256Hex } from "@/lib/future-person/claim-session";
 import { testAppealIntakeOpen } from "@/lib/future-person/appeals-open";
 import { futurePersonClaimsOpen } from "@/lib/future-person/claims-open";
-import { CHUNK_BYTES, downloadCookie, isCanonicalId } from "@/lib/future-person/review";
+import { CHUNK_BYTES, downloadCookie, isCanonicalId, mintReviewNonce, reviewCsrf } from "@/lib/future-person/review";
 import { createClient } from "@/lib/supabase/server";
+import { permissionDocumentsOpen } from "@/lib/uploads/permission-document-open";
 
 /**
  * `GET /api/legal-evidence/[id]/review-download` (register
@@ -16,11 +17,22 @@ import { createClient } from "@/lib/supabase/server";
  * one hour absolute, five minutes idle, bound to this reviewer and this auth
  * session, with only a 256-bit cookie's SHA-256 stored. The body is
  * download-session-v1 and names no bucket, key or URL.
+ *
+ * For a reviewed-document Path B permission document (the subject-draft
+ * target case), the same session response also carries the next decision
+ * nonce, its CSRF and the current review revision for api.legal-evidence-review
+ * (mutationSecurityBindings.operationNonceIssuance: a registered session
+ * response issuing the next nonce). It stores nothing.
  */
 
 const SESSION_KEYS = ["session", "filename", "sizeBytes", "sha256", "chunkBytes", "chunkCount", "chunkRoute"] as const;
 const EXTENSIONS: Record<string, string> = { "application/pdf": "pdf", "image/jpeg": "jpg", "image/png": "png" };
-const NAMES: Record<string, string> = { "future-photo-identity": "photo-identity", "future-birth-record": "birth-record", "appeal-photo-identity": "photo-identity", "appeal-subject-source-control": "source-control", "appeal-genetic-parent-authority": "parent-authority", "appeal-decision-notice": "decision-notice" };
+const NAMES: Record<string, string> = { "future-photo-identity": "photo-identity", "future-birth-record": "birth-record", "appeal-photo-identity": "photo-identity", "appeal-subject-source-control": "source-control", "appeal-genetic-parent-authority": "parent-authority", "appeal-decision-notice": "decision-notice", "adult-signed-permission": "signed-permission" };
+type Domain = "claim" | "appeal" | "permission";
+const domainOpen = (domain: Domain) => domain === "claim" ? futurePersonClaimsOpen()
+  : domain === "appeal" ? testAppealIntakeOpen() : permissionDocumentsOpen();
+const kindDomain = (kind: string): Domain => kind.startsWith("appeal-") ? "appeal"
+  : kind === "adult-signed-permission" ? "permission" : "claim";
 
 function withoutReferrer(response: Response): Response {
   response.headers.set("Referrer-Policy", "no-referrer");
@@ -33,7 +45,7 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
 }
 
 async function open(request: Request, id: string): Promise<Response> {
-  if (!(futurePersonClaimsOpen() || testAppealIntakeOpen()) || !isCanonicalId(id) || new URL(request.url).search !== ""
+  if (!(futurePersonClaimsOpen() || testAppealIntakeOpen() || permissionDocumentsOpen()) || !isCanonicalId(id) || new URL(request.url).search !== ""
     || request.headers.get("sec-fetch-site") !== "same-origin") {
     return notFound();
   }
@@ -43,7 +55,7 @@ async function open(request: Request, id: string): Promise<Response> {
   const domainResult = await supabase.rpc("review_document_domain_v1", { p_document: id }).retry(false).abortSignal(request.signal);
   if (domainResult.error) return domainResult.error.code === "42501" ? notFound() : unavailable();
   const domain = domainResult.data;
-  if ((domain !== "claim" && domain !== "appeal") || (domain === "claim" ? !futurePersonClaimsOpen() : !testAppealIntakeOpen())) return notFound();
+  if ((domain !== "claim" && domain !== "appeal" && domain !== "permission") || !domainOpen(domain)) return notFound();
   const secret = crypto.randomBytes(32).toString("base64url");
   const { data, error } = await supabase.rpc("open_claim_review_download_v1", {
     p_document_id: id, p_cookie_hash: sha256Hex(secret),
@@ -57,8 +69,16 @@ async function open(request: Request, id: string): Promise<Response> {
   ) {
     return unavailable();
   }
-  if (String(value.documentKind).startsWith("appeal-") !== (domain === "appeal")
-    || (domain === "appeal" ? !testAppealIntakeOpen() : !futurePersonClaimsOpen())) return notFound();
+  if (kindDomain(String(value.documentKind)) !== domain || !domainOpen(domain)) return notFound();
+  const permissionHeaders: Record<string, string> = {};
+  if (domain === "permission") {
+    if (typeof value.reviewRevision !== "number" || !Number.isSafeInteger(value.reviewRevision) || value.reviewRevision < 1) {
+      return unavailable();
+    }
+    permissionHeaders["x-inherit-csrf"] = reviewCsrf(id, account.user.id, account.sessionId);
+    permissionHeaders["x-inherit-review-nonce"] = mintReviewNonce(id, account.user.id, account.sessionId);
+    permissionHeaders["x-inherit-review-revision"] = String(value.reviewRevision);
+  }
   const response = await closedResponse("api.legal-evidence-review-download", SESSION_KEYS, {
     session: value.session,
     filename: `${NAMES[String(value.documentKind)]}.${EXTENSIONS[String(value.mediaType)]}`,
@@ -67,7 +87,7 @@ async function open(request: Request, id: string): Promise<Response> {
     chunkBytes: CHUNK_BYTES,
     chunkCount: value.chunkCount,
     chunkRoute: `/api/downloads/${value.session}/chunks/{sequence}`,
-  }, 200);
+  }, 200, permissionHeaders);
   if (response.status === 200) response.headers.append("Set-Cookie", downloadCookie(secret));
   return response;
 }

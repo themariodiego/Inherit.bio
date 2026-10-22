@@ -26,6 +26,7 @@ import { GATE_BUTTON, GATE_CHECKBOX_LABEL } from "../src/copy/family/person";
 import { EMAIL_LABEL, REQUESTED_HEADING, SEND_BUTTON } from "../src/copy/family/invite";
 import { JURISDICTION_AFFIRM, JURISDICTION_SELECT_LABEL } from "../src/copy/settings/jurisdiction";
 import {
+  ADULT_UPLOAD_DERIVED_LIST as DERIVED,
   ADULT_UPLOAD_REVISION_COPY as REVISION,
   HELD_FOR_YOU_COPY as HELD,
   OTHER_ADULT_UPLOAD_COPY as COPY,
@@ -35,7 +36,7 @@ import { day } from "../src/components/uploads/other-adult-lines";
 import { observeNativeResponses } from "./helpers/native-response-observer";
 import { PATH_B_CHOICES_COPY as CHOICES } from "../src/copy/upload/other-adult";
 import { parseArtifactFile } from "../src/lib/legal/artifact-file";
-import { artifactStatements, heldFinalizationReceipt } from "../src/lib/uploads/other-adult-upload";
+import { ADULT_NON_ACCOUNT_HOLDER_KEEP_DAYS, artifactStatements, heldFinalizationReceipt } from "../src/lib/uploads/other-adult-upload";
 import { directUploadReceipt } from "../src/lib/uploads/subject-upload-contract";
 import { localE2eProject } from "../scripts/local-e2e-project";
 
@@ -77,6 +78,9 @@ const REFUSER = { email: `path-b-refuser-${randomUUID()}@e2e.local`, name: "Synt
 const ACCOUNT_PERSON = { email: `path-b-account-${randomUUID()}@e2e.local`, name: "Synthetic Accountholder",
   password: PASSWORD };
 const ORIGIN = "http://localhost:3100";
+/** adult.non-account-holder-24mo, exactly 730 days (owner decision 2026-10-16). */
+const KEEP_DAYS = ADULT_NON_ACCOUNT_HOLDER_KEEP_DAYS;
+const DAY_MS = 24 * 60 * 60 * 1_000;
 
 interface CapturedEmail { to: string[] | string; subject: string; html?: string }
 const captured: CapturedEmail[] = [];
@@ -194,6 +198,11 @@ async function pathBPerson(page: Page, request: APIRequestContext,
   const review = page.locator('[data-slot="path-b-request"]');
   await expect(review.getByRole("heading", { name: REQUEST.heading })).toBeVisible();
   await expect(review.getByText(REQUEST.detail(person.name), { exact: true })).toBeVisible();
+  // G5.4 on the first page the person signs: the contact of last resort, and
+  // with no account the 30-day and 730-day maxima in days.
+  await expect(review.getByText(REQUEST.contact, { exact: true })).toBeVisible();
+  if (person.password) await expect(review.locator('[data-slot="path-b-request-keep"]')).toHaveCount(0);
+  else await expect(review.locator('[data-slot="path-b-request-keep"]')).toHaveText(REQUEST.keep(KEEP_DAYS));
   expect(PERSON_STATEMENTS).toHaveLength(4);
   const sign = review.getByRole("button", { name: REQUEST.signButton, exact: true });
   for (const statement of PERSON_STATEMENTS) {
@@ -309,6 +318,22 @@ async function derivedRows(accountId: string) {
 }
 const NONE = { genome_files: 0, user_variants: 0, report_observed_calls: 0, user_prs: 0, ancestry_results: 0, worker_jobs: 0 };
 
+/** The one 730-day clock of a confirmed file, with its one registered due phase. */
+async function keepClock(uploadSessionId: string) {
+  const admin = adminClient();
+  const row = await admin.from("retention_rows").select("id,fixed_deadline,state")
+    .eq("retention_id", "adult.non-account-holder-24mo").eq("target_kind", "upload_session").eq("target_id", uploadSessionId)
+    .single();
+  expect(row.error).toBeNull();
+  const phase = await admin.from("retention_due_phases")
+    .select("phase_id,phase_kind,phase_deadline,recipient_authority_kind,status")
+    .eq("retention_row_id", row.data!.id).single();
+  expect(phase.error).toBeNull();
+  expect(phase.data).toEqual({ phase_id: "adult-non-account-holder-expiry", phase_kind: "compound-atomic",
+    phase_deadline: row.data!.fixed_deadline, recipient_authority_kind: "service-retention", status: "pending" });
+  return row.data as { id: string; fixed_deadline: string; state: string };
+}
+
 test("another adult's file under Path B: signed without an account, held unreadable with its notice, then confirmed file by file", async ({ page, request }) => {
   test.setTimeout(360_000);
   const admin = adminClient();
@@ -360,16 +385,40 @@ test("another adult's file under Path B: signed without an account, held unreada
   expect(noticeMail.html).toContain("If you do nothing, it is deleted on");
   expect(toPlainText(noticeMail.html!)).toContain(`Who added it: ${UPLOADER_NAME}.`);
   expect(noticeMail.html).toContain("write to privacy@inherit.bio.");
+  expect(toPlainText(noticeMail.html!)).toContain(REVISION.noticeKeep(KEEP_DAYS));
+  // The register's closed list of what can be made from the file, from the
+  // one server list the review page renders too, and no other list item.
+  const noticeText = toPlainText(noticeMail.html!);
+  expect(noticeText).toContain(DERIVED.heading);
+  for (const item of DERIVED.items) expect(noticeText).toContain(item.text);
+  expect(noticeText).toContain(DERIVED.closing);
+  expect(noticeMail.html!.match(/<li\b/g)).toHaveLength(DERIVED.items.length);
   await signOut(page);
   await openRightsLink(page, noticeMail.html);
   const screen = page.locator('[data-slot="adult-upload-revision"]');
   await expect(screen.getByRole("heading", { name: REVISION.heading })).toBeVisible();
   await expect(screen.getByText(REVISION.see(CONFIRMER.name), { exact: true })).toBeVisible();
   await expect(screen.getByText(REVISION.nothingYet, { exact: true })).toBeVisible();
+  const derived = screen.locator('[data-slot="adult-upload-derived"]');
+  await expect(derived.getByRole("heading", { name: DERIVED.heading, exact: true })).toBeVisible();
+  await expect(derived.getByRole("listitem")).toHaveText(DERIVED.items.map(item => item.text));
+  await expect(derived.getByText(DERIVED.closing, { exact: true })).toBeVisible();
   await expect(screen.getByText(REVISION.uploader(UPLOADER_NAME), { exact: true })).toBeVisible();
   await expect(screen.getByText(REVISION.contact, { exact: true })).toBeVisible();
+  await expect(screen.locator('[data-slot="adult-upload-keep"]')).toHaveText(REVISION.keepIfYes(KEEP_DAYS));
   await screen.getByRole("button", { name: REVISION.confirmButton, exact: true }).click();
   await expect(page.getByRole("heading", { name: REVISION.receipts.confirm.title })).toBeVisible();
+
+  // The yes starts this file's one 730-day clock (adult.non-account-holder-24mo),
+  // in the confirming transaction, and the review now states its fixed end.
+  const clock = await keepClock(held.upload_session_id);
+  expect(clock.state).toBe("scheduled");
+  const yes = await admin.from("other_adult_held_uploads").select("confirmed_at").eq("id", held.id).single();
+  expect(yes.error).toBeNull();
+  expect(Date.parse(clock.fixed_deadline) - Date.parse(yes.data!.confirmed_at as string)).toBe(KEEP_DAYS * DAY_MS);
+  await page.reload();
+  await expect(screen.locator('[data-slot="adult-upload-keep"]'))
+    .toHaveText(REVISION.keptUntil(KEEP_DAYS, day(clock.fixed_deadline)));
 
   // Confirmed, and the quarantine is lifted only for this revision. The
   // no-account mitigation remains closed, so the register's
@@ -479,6 +528,9 @@ test("another adult's file under Path B: confirmed into the person's own account
     `the upload-time notice to ${ACCOUNT_PERSON.email}`);
   await openRightsLink(page, noticeMail.html);
   const screen = page.locator('[data-slot="adult-upload-revision"]');
+  // Bound to their own account: no 730-day clock applies, and none is stated.
+  await expect(screen.getByText(REVISION.contact, { exact: true })).toBeVisible();
+  await expect(screen.locator('[data-slot="adult-upload-keep"]')).toHaveCount(0);
   const confirmation = await observeNativeResponses(page, { confirm: "^/api/withdraw/session$" });
   try {
     await screen.getByRole("button", { name: REVISION.confirmButton, exact: true }).click();
@@ -488,6 +540,10 @@ test("another adult's file under Path B: confirmed into the person's own account
   } finally { await confirmation.dispose(); }
   const confirmed = await admin.from("other_adult_held_uploads").select("state, analysis_state").eq("id", held.id).single();
   expect(confirmed.data).toEqual({ state: "confirmed", analysis_state: "confirmed_awaiting_purpose" });
+  const noClock = await admin.from("retention_rows").select("id", { count: "exact", head: true })
+    .eq("retention_id", "adult.non-account-holder-24mo").eq("target_id", held.upload_session_id);
+  expect(noClock.error).toBeNull();
+  expect(noClock.count, "a subject bound to its own account has no 730-day clock (the register's cancelWhen)").toBe(0);
 
   await page.goto("/files");
   await expect(page.locator('[data-slot="held-for-you"]').getByRole("status")).toHaveText(HELD.confirmed(added, "vcf"));
@@ -992,6 +1048,160 @@ test("another adult's file under Path B: fixed 30-day expiry removes only the du
     .select("id,upload_session_id,state,analysis_state,held_at,fixed_deadline,object_name,raw_sha256,notice_outbox_id,terminal_at")
     .eq("id", survivor.id).single();
   expect(survivorAfter.error).toBeNull(); expect(survivorAfter.data).toEqual(survivorBefore.data);
+  const survivingObject = await admin.storage.from("genomes").download(survivor.object_name);
+  expect(survivingObject.error).toBeNull(); expect(Buffer.from(await survivingObject.data!.arrayBuffer())).toEqual(BYTES);
+});
+
+test("another adult's file under Path B: a file confirmed with no account is deleted by the retention job after exactly 730 days, and only that file", async ({ page, request }) => {
+  test.setTimeout(420_000);
+  const admin = adminClient();
+  // Its own uploader, so the serial journeys' invitation allowance is untouched.
+  const uploader = { email: `path-b-keep-uploader-${randomUUID()}@e2e.local`, password: PASSWORD };
+  await createConfirmedUser(uploader.email, uploader.password);
+  await signIn(page, uploader.email, uploader.password);
+  await completeOwnUploadConsent(page);
+  const survivingPerson = { email: `path-b-kept-${randomUUID()}@e2e.local`, name: "Synthetic Kept" };
+  const expiringPerson = { email: `path-b-keep-${randomUUID()}@e2e.local`, name: "Synthetic Keeper" };
+  const heldFiles: Awaited<ReturnType<typeof addFile>>[] = [];
+  for (const person of [survivingPerson, expiringPerson]) {
+    await signIn(page, uploader.email, uploader.password);
+    await pathBPerson(page, request, person, uploader);
+    await signOut(page);
+    await signIn(page, uploader.email, uploader.password);
+    heldFiles.push(await addFile(page, person));
+  }
+  const [survivor, held] = heldFiles;
+
+  // Each person says yes from their own notice, with no account. The notice
+  // and the review state the 730 days before the yes.
+  for (const [person, file] of [[survivingPerson, survivor], [expiringPerson, held]] as const) {
+    const notice = await drainMailUntil(request, mailTo(person.email, "A DNA file was added for you on Inherit"),
+      `the upload-time notice to ${person.email}`);
+    expect(toPlainText(notice.html!)).toContain(REVISION.noticeKeep(KEEP_DAYS));
+    await signOut(page);
+    await openRightsLink(page, notice.html);
+    const answer = page.locator('[data-slot="adult-upload-revision"]');
+    await expect(answer.locator('[data-slot="adult-upload-keep"]')).toHaveText(REVISION.keepIfYes(KEEP_DAYS));
+    await answer.getByRole("button", { name: REVISION.confirmButton, exact: true }).click();
+    await expect(page.getByRole("heading", { name: REVISION.receipts.confirm.title })).toBeVisible();
+    const confirmed = await admin.from("other_adult_held_uploads").select("state").eq("id", file.id).single();
+    expect(confirmed.error).toBeNull(); expect(confirmed.data?.state).toBe("confirmed");
+  }
+  const clock = await keepClock(held.upload_session_id);
+  const before = await admin.from("other_adult_held_uploads").select("held_at,fixed_deadline,confirmed_at,state")
+    .eq("id", held.id).single();
+  expect(before.error).toBeNull();
+  expect(Date.parse(clock.fixed_deadline) - Date.parse(before.data!.confirmed_at as string)).toBe(KEEP_DAYS * DAY_MS);
+  expect(Date.parse(clock.fixed_deadline)).toBeGreaterThan(Date.now() + (KEEP_DAYS - 1) * DAY_MS);
+  // The last link opened is the expiring person's: their review states the fixed end.
+  await page.reload();
+  const screen = page.locator('[data-slot="adult-upload-revision"]');
+  await expect(screen.locator('[data-slot="adult-upload-keep"]'))
+    .toHaveText(REVISION.keptUntil(KEEP_DAYS, day(clock.fixed_deadline)));
+  const survivorClock = await keepClock(survivor.upload_session_id);
+  const survivorRow = () => admin.from("other_adult_held_uploads")
+    .select("id,upload_session_id,state,analysis_state,held_at,fixed_deadline,confirmed_at,object_name,raw_sha256,notice_outbox_id,terminal_at")
+    .eq("id", survivor.id).single();
+  const survivorBefore = await survivorRow();
+  expect(survivorBefore.error).toBeNull();
+  expect(survivorBefore.data?.state).toBe("confirmed");
+
+  await jobRan(await request.post("/api/jobs/retention", { headers: { authorization: `Bearer ${JOBS_SECRET}` } }),
+    "retention before either confirmed file is due");
+  const stillKept = await admin.from("other_adult_held_uploads").select("state").eq("id", held.id).single();
+  expect(stillKept.error).toBeNull(); expect(stillKept.data?.state).toBe("confirmed");
+  expect((await keepClock(held.upload_session_id)).state).toBe("scheduled");
+  const upload = await admin.from("upload_sessions").select("staging_object_name").eq("id", held.upload_session_id).single();
+  expect(upload.error).toBeNull();
+  const objectNames = [held.object_name, upload.data!.staging_object_name as string];
+  const heldObject = await admin.storage.from("genomes").download(held.object_name);
+  expect(heldObject.error, "the actual confirmed source exists before its deadline").toBeNull();
+  expect(Buffer.from(await heldObject.data!.arrayBuffer())).toEqual(BYTES);
+  const candidate = await admin.from("token_candidates").select("id,state").eq("outbox_id", held.notice_outbox_id).single();
+  expect(candidate.error).toBeNull();
+  const rights = await admin.from("rights_sessions").select("id,status")
+    .eq("purpose", "adult-upload-confirmation").eq("target_id", held.id).single();
+  expect(rights.error).toBeNull(); expect(rights.data?.status).toBe("active");
+
+  // The existing local temporal-fixture convention (the 30-day journey above)
+  // ages only this synthetic file's clock records together, by 731 days, so
+  // every interval is kept. The production executor is unchanged, and
+  // service_role still cannot UPDATE the held table.
+  for (const id of [held.id, held.upload_session_id, clock.id]) expect(id).toMatch(/^[0-9a-f-]{36}$/);
+  const shifted = await promisify(execFile)("docker", ["exec", localE2eProject(process.env).dbContainer,
+    "psql", "-U", "postgres", "-d", "postgres", "-XAtq", "--set=ON_ERROR_STOP=1", "--command", `
+      with held as (
+        update public.other_adult_held_uploads
+        set held_at=held_at-interval '731 days', fixed_deadline=fixed_deadline-interval '731 days',
+          confirmed_at=confirmed_at-interval '731 days'
+        where id='${held.id}'::uuid and state='confirmed' returning id
+      ), retention as (
+        update public.retention_rows r set fixed_deadline=r.fixed_deadline-interval '731 days'
+        where r.id='${clock.id}'::uuid and r.retention_id='adult.non-account-holder-24mo'
+          and r.target_id='${held.upload_session_id}'::uuid and r.state='scheduled' returning r.id
+      ), phase as (
+        update public.retention_due_phases p set phase_deadline=p.phase_deadline-interval '731 days'
+        where p.retention_row_id='${clock.id}'::uuid and p.retention_id='adult.non-account-holder-24mo'
+          and p.phase_id='adult-non-account-holder-expiry' and p.status='pending' returning p.retention_row_id
+      ) select json_build_object('held',(select count(*) from held),
+        'retention',(select count(*) from retention),'phase',(select count(*) from phase));
+    `], { timeout: 10_000, maxBuffer: 8192 });
+  expect(JSON.parse(shifted.stdout.trim())).toEqual({ held: 1, retention: 1, phase: 1 });
+  const aged = await admin.from("other_adult_held_uploads").select("held_at,fixed_deadline,confirmed_at,state")
+    .eq("id", held.id).single();
+  expect(aged.error).toBeNull();
+  const agedClock = await keepClock(held.upload_session_id);
+  expect(Date.parse(agedClock.fixed_deadline)).toBeLessThan(Date.now());
+  expect(Date.parse(agedClock.fixed_deadline) - Date.parse(aged.data!.confirmed_at as string)).toBe(KEEP_DAYS * DAY_MS);
+  expect(Date.parse(aged.data!.fixed_deadline as string) - Date.parse(aged.data!.held_at as string)).toBe(30 * DAY_MS);
+
+  for (let run = 0; run < 10; run++) {
+    const remaining = await admin.from("upload_sessions").select("id", { count: "exact", head: true })
+      .eq("id", held.upload_session_id);
+    expect(remaining.error).toBeNull();
+    if (remaining.count === 0) break;
+    await jobRan(await request.post("/api/jobs/retention", { headers: { authorization: `Bearer ${JOBS_SECRET}` } }),
+      `the 730-day sweep and the unchanged upload cleanup executor, drain ${run + 1}`);
+  }
+  const completed = await admin.from("retention_due_phases").select("status,terminal_outcome_code,phase_deadline")
+    .eq("retention_row_id", clock.id).eq("phase_id", "adult-non-account-holder-expiry").single();
+  expect(completed.error).toBeNull();
+  expect(completed.data).toEqual({ status: "succeeded", terminal_outcome_code: "adult_non_account_holder_expired",
+    phase_deadline: agedClock.fixed_deadline });
+  const endedClock = await admin.from("retention_rows").select("state,fixed_deadline").eq("id", clock.id).single();
+  expect(endedClock.error).toBeNull();
+  expect(endedClock.data).toEqual({ state: "complete", fixed_deadline: agedClock.fixed_deadline });
+  const invalidated = await admin.from("token_candidates").select("state").eq("id", candidate.data!.id).single();
+  expect(invalidated.error).toBeNull(); expect(invalidated.data?.state).toBe("invalidated");
+  const revoked = await admin.from("rights_sessions").select("status").eq("id", rights.data!.id).single();
+  expect(revoked.error).toBeNull(); expect(revoked.data?.status).toBe("revoked");
+  expect((await page.request.get("/withdraw/session")).status()).toBe(404);
+  for (const [table, column, value] of [
+    ["upload_sessions", "id", held.upload_session_id], ["upload_staging_objects", "upload_session_id", held.upload_session_id],
+    ["other_adult_held_uploads", "id", held.id], ["genome_files", "bucket_path", held.object_name],
+    ["worker_jobs", "subject_id", held.subject_id],
+  ] as const) {
+    const result = await admin.from(table).select("*", { count: "exact", head: true }).eq(column, value);
+    expect(result.error, table).toBeNull(); expect(result.count, `${table} after the 730-day expiry`).toBe(0);
+  }
+  for (const name of objectNames) {
+    const listing = await admin.storage.from("genomes").list("", { search: name });
+    expect(listing.error).toBeNull(); expect(listing.data?.filter(object => object.name === name)).toEqual([]);
+    expect((await admin.storage.from("genomes").download(name)).error).not.toBeNull();
+  }
+  // G5.4's retention-job test: after the job runs, no confirmed file older than
+  // its class maximum exists, and no running 730-day clock is past its deadline.
+  const tooOld = await admin.from("other_adult_held_uploads").select("id", { count: "exact", head: true })
+    .eq("state", "confirmed").lte("confirmed_at", new Date(Date.now() - KEEP_DAYS * DAY_MS).toISOString());
+  expect(tooOld.error).toBeNull(); expect(tooOld.count).toBe(0);
+  const overdue = await admin.from("retention_rows").select("id", { count: "exact", head: true })
+    .eq("retention_id", "adult.non-account-holder-24mo").in("state", ["scheduled", "active"])
+    .lte("fixed_deadline", new Date().toISOString());
+  expect(overdue.error).toBeNull(); expect(overdue.count).toBe(0);
+  // The other confirmed file, inside its 730 days, is untouched: row, clock and bytes.
+  const survivorAfter = await survivorRow();
+  expect(survivorAfter.error).toBeNull(); expect(survivorAfter.data).toEqual(survivorBefore.data);
+  expect(await keepClock(survivor.upload_session_id)).toEqual(survivorClock);
   const survivingObject = await admin.storage.from("genomes").download(survivor.object_name);
   expect(survivingObject.error).toBeNull(); expect(Buffer.from(await survivingObject.data!.arrayBuffer())).toEqual(BYTES);
 });

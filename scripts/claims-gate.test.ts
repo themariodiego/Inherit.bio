@@ -171,7 +171,11 @@ describe("the claims gate holds the registers to the product", () => {
     const result = runClaimsGate(REPOSITORY_ROOT);
     expect(result.citationCount).toBe(53);
     expect(result.archivedSourceCount).toBe(11);
-    expect(result.claimCount).toBe(120);
+    // 120 report and export claims, and since 2026-10-16 the eleven Copilot
+    // system prompt rules classed as claims, out of the module's 22 rules.
+    expect(result.claimCount).toBe(131);
+    expect(result.copilotRuleCount).toBe(22);
+    expect(result.copilotClaimRuleCount).toBe(11);
     expect(result.claimEvidenceCount).toBeGreaterThan(50);
     expect(result.reportTemplateCount).toBe(162);
     expect(result.reportProseCount).toBe(750);
@@ -226,18 +230,174 @@ describe("the claims gate holds the registers to the product", () => {
     expect(entries[0].closing).toMatch(/Nothing to close in src\//);
   });
 
-  it("records every divergence the ten checks report, and nothing else", () => {
+  it("records every divergence the eleven checks report, and nothing else", () => {
     const ledger = readClaimsLedger(REPOSITORY_ROOT);
     // 640 unregistered prose blocks are 16 entries, one per template file
     // carrying its counts; 185 unregistered template citations are 16 more.
     expect(ledger["report body registration"]).toHaveLength(16);
     expect(ledger["template citation registration"]).toHaveLength(16);
-    expect(ledger["designated surface"]).toHaveLength(9);
-    // The seven checks with nothing to record are recorded as having nothing,
+    // Eight since 2026-10-16: the Copilot system prompts are bound through
+    // copilot:<id> locators, so their `unbound` entry left the ledger.
+    expect(ledger["designated surface"]).toHaveLength(8);
+    expect(ledger["designated surface"].join("\n")).not.toContain("Copilot system prompts:");
+    // Claim evidence records exactly the eleven Copilot prompt claims, which
+    // carry no citation until the owner's source review supplies one. No
+    // report or export claim may join them.
+    expect(ledger["claim evidence"]).toEqual([
+      "copilot.cohort.informational carries no citation",
+      "copilot.cohort.no-condition-results carries no citation",
+      "copilot.cohort.standing-statement carries no citation",
+      "copilot.family.informational carries no citation",
+      "copilot.family.unshared-reports carries no citation",
+      "copilot.own.coverage carries no citation",
+      "copilot.own.grounding carries no citation",
+      "copilot.own.informational carries no citation",
+      "copilot.own.sensitive-topics carries no citation",
+      "copilot.own.unavailable-scores carries no citation",
+      "copilot.own.unavailable-sources carries no citation",
+    ]);
+    const evidenceEntries = JSON.parse(readFileSync(path.join(REPOSITORY_ROOT, LEDGER), "utf8"))
+      .claimEvidence as { blocker: string }[];
+    for (const entry of evidenceEntries) expect(entry.blocker).toMatch(/^review — the owner's scientific source review/);
+    // The checks with nothing to record are recorded as having nothing,
     // which is what makes a regression in them fail.
-    for (const label of ["citation schema", "source snapshot", "claim evidence", "claim surface", "claim attribute", "exempt numeral"]) {
+    for (const label of ["citation schema", "source snapshot", "claim surface", "claim attribute", "exempt numeral", "copilot prompt"]) {
       expect(ledger[label]).toEqual([]);
     }
+  });
+
+  it("records no review on a Copilot prompt claim that carries no citation", () => {
+    // Registration is not review (owner decision, 2026-10-16): a pending
+    // prompt claim keeps a null reviewer and review date until it has a source.
+    const pending = realClaims().filter((claim) => claim.claim_id.startsWith("copilot."));
+    expect(pending).toHaveLength(11);
+    for (const claim of pending) {
+      expect(claim.evidence).toEqual([]);
+      expect(claim.reviewed_on).toBeNull();
+      expect(claim.reviewer).toBeNull();
+      expect(claim.surfaces).toEqual([`copilot:${claim.claim_id.slice("copilot.".length)}`]);
+    }
+    const root = plant({
+      claims: (claims) => {
+        const claim = claims.find((entry) => entry.claim_id === "copilot.own.coverage")!;
+        claim.reviewed_on = "2026-10-16";
+        claim.reviewer = "Planted reviewer";
+      },
+    });
+    expect(runClaimsGate(root).failures).toContain(
+      unrecorded("claim evidence", "copilot.own.coverage records a review without any citation to have reviewed"),
+    );
+  });
+
+  it("fails when a Copilot prompt claim's text drifts from its rule", () => {
+    const root = plant({
+      claims: (claims) => {
+        const claim = claims.find((entry) => entry.claim_id === "copilot.own.coverage")!;
+        claim.text_verbatim = `${claim.text_verbatim} And one more sentence nobody wrote into the prompt.`;
+      },
+    });
+    const { failures } = runClaimsGate(root);
+    expect(failures).toContain(
+      unrecorded("claim surface", "copilot.own.coverage names copilot:own.coverage, and its text is not that rule's exact text"),
+    );
+    expect(failures).toContain(
+      unrecorded(
+        "copilot prompt",
+        "copilot:own.coverage is a factual rule of OWN_SYSTEM_PROMPT with no claim in data/claims.json registering its exact text",
+      ),
+    );
+  });
+
+  it("fails when a factual prompt rule loses its claim, and when a locator names no rule or an instruction", () => {
+    const root = plant({
+      claims: (claims) => {
+        const at = claims.findIndex((entry) => entry.claim_id === "copilot.cohort.standing-statement");
+        claims.splice(at, 1);
+        claims.push({ ...claims[0], claim_id: "copilot.own.invented", surfaces: ["copilot:own.invented"] });
+        claims.push({ ...claims[0], claim_id: "copilot.own.refusals", surfaces: ["copilot:own.refusals"] });
+      },
+    });
+    const { failures } = runClaimsGate(root);
+    expect(failures).toContain(
+      unrecorded(
+        "copilot prompt",
+        "copilot:cohort.standing-statement is a factual rule of COHORT_SYSTEM_PROMPT with no claim in data/claims.json registering its exact text",
+      ),
+    );
+    expect(failures).toContain(
+      unrecorded("claim surface", "copilot.own.invented names copilot:own.invented, which no rule in src/copy/copilot/system-prompts.ts declares"),
+    );
+    expect(failures).toContain(
+      unrecorded(
+        "claim surface",
+        "copilot.own.refusals names copilot:own.refusals, which src/copy/copilot/system-prompts.ts classifies as instruction, not as a factual rule",
+      ),
+    );
+    // The surface itself stays bound by the other ten claims.
+    expect(failures.join("\n")).not.toContain("Copilot system prompts: no claim");
+  });
+
+  it("fails when the prompt module and its rule list disagree, or a constant goes unclassified", () => {
+    const root = plant({
+      source: (sourceRoot) => {
+        const file = path.join(sourceRoot, "copy/copilot/system-prompts.ts");
+        const source = readFileSync(file, "utf8")
+          .replace(
+            "- Never state, guess or discuss an embryo's sex, and never mention sex chromosomes.",
+            "- Never state, guess or discuss an embryo's sex, and never mention sex chromosomes.\n- A planted rule nobody classified.",
+          )
+          .replace(
+            "export type CopilotPromptRuleKind",
+            'export const PLANTED_PROMPT_LINE = "A planted line sent to a model.";\n\nexport type CopilotPromptRuleKind',
+          );
+        writeFileSync(file, source);
+      },
+    });
+    const { failures } = runClaimsGate(root);
+    expect(failures).toContain(
+      unrecorded(
+        "copilot prompt",
+        "src/copy/copilot/system-prompts.ts: COHORT_SYSTEM_PROMPT holds 8 rules and COPILOT_PROMPT_RULES names 7",
+      ),
+    );
+    expect(failures).toContain(
+      unrecorded(
+        "copilot prompt",
+        "src/copy/copilot/system-prompts.ts: PLANTED_PROMPT_LINE is prompt text and COPILOT_PROMPT_RULES does not classify its rules",
+      ),
+    );
+    // A misaligned constant binds none of its rules, so its three claims fail too.
+    expect(failures).toContain(
+      unrecorded("claim surface", "copilot.cohort.informational names copilot:cohort.informational, and its text is not that rule's exact text"),
+    );
+  });
+
+  it("fails when system prompt text is written outside the prompt module", () => {
+    const root = plant({
+      source: (sourceRoot) => {
+        writeFileSync(
+          path.join(sourceRoot, "lib/copilot/planted-prompt.ts"),
+          'export const PLANTED_SYSTEM_PROMPT = `You are a planted copilot.`;\n' +
+            "export const flow = (label: string) => ({ system: `${label}\\nNever mention a planted rule.` });\n" +
+            'export const allowed = (prompt: string) => ({ system: `${prompt}\\n\\n${prompt}`, systemPrompt: prompt });\n',
+        );
+      },
+    });
+    const { failures } = runClaimsGate(root);
+    expect(failures).toContain(
+      unrecorded(
+        "copilot prompt",
+        "src/lib/copilot/planted-prompt.ts:1 defines PLANTED_SYSTEM_PROMPT outside src/copy/copilot/system-prompts.ts",
+      ),
+    );
+    expect(failures).toContain(
+      unrecorded(
+        "copilot prompt",
+        "src/lib/copilot/planted-prompt.ts:2 gives a model literal system text outside src/copy/copilot/system-prompts.ts",
+      ),
+    );
+    // Slots and separators alone are not prompt text.
+    expect(failures.join("\n")).not.toContain("planted-prompt.ts:3");
   });
 
   it("fails when a citation quote runs past the 25-word limit", () => {

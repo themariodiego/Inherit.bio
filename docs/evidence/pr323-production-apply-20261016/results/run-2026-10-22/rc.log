@@ -1,0 +1,37 @@
+2026-10-22T14:27:11Z production-readonly-prechecks.sql ../results/run/prechecks --json-column prechecks rc=0
+2026-10-22T14:27:11Z fingerprint.sql ../results/run/fp-pre --json-column fp rc=0
+2026-10-22T14:27:53Z ../results/run/p-session.sql ../results/run/p-session rc=0
+2026-10-22T14:27:53Z ../results/run/p-error.sql ../results/run/p-error rc=3
+2026-10-22T14:27:54Z ../results/run/p-size.sql ../results/run/p-size rc=0
+2026-10-22T14:28:15Z all-batches-dry-run.sql ../results/run/dry-all rc=3
+2026-10-22T14:28:15Z fingerprint.sql ../results/run/fp-after-dry-all --json-column fp rc=0
+2026-10-22T14:28:46Z batch-1-dry-run.sql ../results/run/dry-1 rc=3
+2026-10-22T14:28:46Z fingerprint.sql ../results/run/fp-1-after-dry --json-column fp rc=0
+EQUAL batch 1 pre-state summary
+2026-10-22T14:28:47Z batch-1-apply.sql ../results/run/apply-1 rc=0
+2026-10-22T14:28:48Z fingerprint.sql ../results/run/fp-1-post --json-column fp rc=0
+EQUAL batch 1 post-state summary
+2026-10-22T14:28:48Z ../results/run/ledger.sql ../results/run/ledger-1 rc=0
+2026-10-22T14:28:57Z batch-2-dry-run.sql ../results/run/dry-2 rc=3
+2026-10-22T14:28:58Z fingerprint.sql ../results/run/fp-2-after-dry --json-column fp rc=0
+EQUAL batch 2 pre-state summary
+2026-10-22T14:28:59Z batch-2-apply.sql ../results/run/apply-2 rc=0
+2026-10-22T14:29:00Z fingerprint.sql ../results/run/fp-2-post --json-column fp rc=0
+EQUAL batch 2 post-state summary
+2026-10-22T14:29:01Z ../results/run/ledger.sql ../results/run/ledger-2 rc=0
+2026-10-22T14:29:11Z batch-3-dry-run.sql ../results/run/dry-3 rc=3
+2026-10-22T14:29:12Z fingerprint.sql ../results/run/fp-3-after-dry --json-column fp rc=0
+EQUAL batch 3 pre-state summary
+2026-10-22T14:29:14Z batch-3-apply.sql ../results/run/apply-3 rc=0
+2026-10-22T14:29:15Z fingerprint.sql ../results/run/fp-3-post --json-column fp rc=0
+EQUAL batch 3 post-state summary
+2026-10-22T14:29:16Z ../results/run/ledger.sql ../results/run/ledger-3 rc=0
+2026-10-22T14:29:17Z batch-4-dry-run.sql ../results/run/dry-4 rc=3
+2026-10-22T14:29:17Z fingerprint.sql ../results/run/fp-4-after-dry --json-column fp rc=0
+EQUAL batch 4 pre-state summary
+2026-10-22T14:29:18Z batch-4-apply.sql ../results/run/apply-4 rc=0
+2026-10-22T14:29:19Z fingerprint.sql ../results/run/fp-4-post --json-column fp rc=0
+EQUAL batch 4 post-state summary
+2026-10-22T14:29:19Z ../results/run/ledger.sql ../results/run/ledger-4 rc=0
+2026-10-22T14:29:53Z fingerprint.sql fp-after-merge rc=0
+EQUAL batch 4 post-state summary

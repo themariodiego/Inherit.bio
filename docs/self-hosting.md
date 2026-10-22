@@ -480,7 +480,7 @@ are `INHERIT_TEST_STATEMENT_GATEWAY_URL`, `INHERIT_TEST_STATEMENT_GATEWAY_KEY`,
 deployments. A URL, key or configuration digest is not provider qualification.
 See `docs/requester-statement-archive-service.md` for the exact service contract.
 
-The separate claimant DELETE candidate uses `INHERIT_TEST_CLAIMANT_RIGHTS` only in private TEST qualification, alongside the enabled native TEST store and the existing transport settings below. Leave it empty in ordinary deployments. It presents no deletion acceptance until actual source disposal ACKs, full native graph deletion and actual connection closure have all completed. Sealed retention cleanup remains available after the request flag is revoked; this never renews the original clocks or supplies a new request. Claimant archive READY, delivery and disposal remain unimplemented and OFF.
+The separate claimant DELETE candidate uses `INHERIT_TEST_CLAIMANT_RIGHTS` only in private TEST qualification, alongside the enabled native TEST store and the existing transport settings below. Leave it empty in ordinary deployments. It presents no deletion acceptance until actual source disposal ACKs, removal of the plan's own ended-claim identity objects and original upload copies, full native graph deletion and actual connection closure have all completed. Sealed retention cleanup remains available after the request flag is revoked; this never renews the original clocks or supplies a new request. Claimant archive READY, delivery and disposal remain unimplemented and OFF.
 
 The separate account archive writer uses `INHERIT_TEST_ACCOUNT_ARCHIVE_R2`,
 `INHERIT_TEST_ACCOUNT_ARCHIVE_R2_DATABASE` and the optional public trust anchor

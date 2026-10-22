@@ -167,10 +167,19 @@ describe("the route gate holds the register to the code", () => {
     // Source census is exact; the controlled browser cases are UI-only and unrun here.
     // 161 -> 163: the appeal reviewer adds complete and processing obligations;
     // their original native journey now authors both without removing any previous proof.
-    expect(result.requiredStateCount).toBe(168);
+    // 168 -> 174 on 2026-10-22 (G7.4): `/genome/[subject]/carrier` adds six
+    // product-result obligations (awaiting-choice and jurisdiction-unavailable
+    // waived with their reasons) and e2e/own-carrier-status.spec.ts authors a
+    // proof of each, so the unproven count does not move.
+    expect(result.requiredStateCount).toBe(174);
     // Three native complete steps passed on 2def; two appeal steps are authored here;
     // all six scientific partial/not-covered gaps remain required.
-    expect(result.provenStateCount).toBe(162);
+    // 162 -> 168 on 2026-10-22: the six are named by steps driven by the
+    // TEST-only synthetic producers (owner decision, G1.7, G1.12, G2.2), and
+    // still required, so the required count above does not move.
+    // 168 -> 174 on 2026-10-22 (G7.4): the six carrier-page pairs above, each
+    // proven by e2e/own-carrier-status.spec.ts, so nothing is left unproven.
+    expect(result.provenStateCount).toBe(174);
     expect(result.browserTestTitleCount).toBeGreaterThan(100);
     // The 34 routes src/app served at the baseline commit, measured by git
     // ls-tree and recorded in docs/route-dispositions.json: 27 kept, 7
@@ -478,17 +487,23 @@ describe("the route gate holds the register to the code", () => {
     );
   });
 
+  /**
+   * 16 Oct 2026: 20261016190000 creates legal-evidence, the last declared
+   * bucket no migration created, and its row is closed. The declaration is
+   * planted instead: a copy of the legal-evidence prefix over a bucket that
+   * nothing creates, with no ledger row for it.
+   */
+  const plantUncreatedPrefix = (register: Record<string, unknown>) => {
+    const prefixes = register.storagePrefixes as { id: string; bucket: string }[];
+    const template = prefixes.find((prefix) => prefix.bucket === "legal-evidence")!;
+    prefixes.push({ ...template, id: "storage.planted-uncreated-v1", bucket: "planted-uncreated" });
+  };
+
   it("fails when a declared bucket that no migration creates is not recorded", async () => {
-    const root = plant({
-      ledger: (ledger) => {
-        ledger.storageBucketDivergence = (
-          ledger.storageBucketDivergence as { bucket: string }[]
-        ).filter((known) => known.bucket !== "legal-evidence");
-      },
-    });
+    const root = plant({ register: plantUncreatedPrefix });
     const { failures } = await runRouteGate(root);
     expect(failures).toContain(
-      "storage bucket: not recorded in docs/route-divergence.json: declared-not-created legal-evidence",
+      "storage bucket: not recorded in docs/route-divergence.json: declared-not-created planted-uncreated",
     );
   });
 
@@ -520,15 +535,17 @@ describe("the route gate holds the register to the code", () => {
    * names first the wrong migration, then the right one as the control.
    */
   it("fails when a storage row's evidence no longer says what the row says", async () => {
+    // The declared-not-created half uses the planted uncreated bucket (see
+    // plantUncreatedPrefix): its row names a prefix that is not over it.
     const plantExportsRow = (createdBy: string) => plant({
       register: (register) => {
         register.storagePrefixes = (register.storagePrefixes as { bucket: string }[])
           .filter((prefix) => prefix.bucket !== "exports");
+        plantUncreatedPrefix(register);
       },
       ledger: (ledger) => {
-        for (const known of ledger.storageBucketDivergence as Record<string, unknown>[]) {
-          if (known.bucket === "legal-evidence") known.declaredBy = "storage.subject-v2";
-        }
+        (ledger.storageBucketDivergence as Record<string, unknown>[]).push({ bucket: "planted-uncreated",
+          direction: "declared-not-created", declaredBy: "storage.subject-v2" });
         (ledger.storageBucketDivergence as Record<string, unknown>[]).push({ bucket: "exports",
           direction: "created-not-declared", createdBy });
       },
@@ -536,7 +553,7 @@ describe("the route gate holds the register to the code", () => {
     const wrong = await runRouteGate(plantExportsRow("supabase/migrations/20260831224054_storage_and_download_sessions.sql"));
     expect(wrong.failures).toContain("storage bucket: exports names createdBy "
       + "supabase/migrations/20260831224054_storage_and_download_sessions.sql, which does not create it");
-    expect(wrong.failures).toContain("storage bucket: legal-evidence names declaredBy storage.subject-v2, which is not a prefix over it");
+    expect(wrong.failures).toContain("storage bucket: planted-uncreated names declaredBy storage.subject-v2, which is not a prefix over it");
     const right = await runRouteGate(plantExportsRow("supabase/migrations/20260923123240_export_archive_persistence.sql"));
     expect(right.failures.filter((failure) => failure.startsWith("storage bucket: exports names createdBy"))).toEqual([]);
   });
@@ -824,14 +841,21 @@ describe("the corrections table agrees with the register it claims to be counted
   /** The same arithmetic the gate does, from the same two files. */
   const proven = new Set(ledger.provenRouteStates ?? []);
   let unproven = 0;
+  let required = 0;
   for (const route of register.routes) {
     for (const state of register.stateProfiles[route.stateProfile ?? ""]?.supported ?? []) {
       if (state in (route.notApplicableStates ?? {})) continue;
+      required += 1;
       if (!proven.has(`${route.path} ${state}`)) unproven += 1;
     }
   }
   it("states the current total in its heading and its total row", () => {
-    expect(unproven, "the register must hold at least one unproven pair for this to mean anything").toBeGreaterThan(0);
+    // Until 2026-10-22 this guard was "at least one unproven pair". The six
+    // embryo coverage proofs of that day took the total to zero, which is the
+    // ratchet's goal rather than an empty read, so the guard now holds the
+    // register itself to being read: a broken read requires nothing.
+    expect(required, "the register must require pairs for this count to mean anything").toBeGreaterThan(100);
+    expect(unproven).toBeLessThanOrEqual(required);
     expect(document).toContain(`## Where the ${unproven} unproven pairs stand`);
     expect(document).toContain(`| **Total unproven** | **${unproven}** | |`);
   });
@@ -1154,8 +1178,8 @@ describe("the current rights session processing contract", () => {
       };
     } });
     const result = await runRouteGate(root);
-    // Exact current168 minus only the deliberately waived /withdraw/[token] processing pair.
-    expect(result.requiredStateCount).toBe(167);
+    // Exact current 174 minus only the deliberately waived /withdraw/[token] processing pair.
+    expect(result.requiredStateCount).toBe(173);
     expect(result.failures).toEqual([
       "proven route state: recorded in docs/route-divergence.json but no longer present: /withdraw/[token] processing",
     ]);
@@ -1164,7 +1188,7 @@ describe("the current rights session processing contract", () => {
 
 
 describe("native embryo completion leaves scientific coverage obligations intact", () => {
-  it("names only the three completed native surfaces and still requires the exact six scientific pairs", () => {
+  it("names only the three completed native surfaces and leaves none of the six scientific pairs pending", () => {
     const spec = readFileSync(path.join(REPOSITORY_ROOT, "e2e/embryo-ingest-journey.spec.ts"), "utf8");
     const step = "/embryos/upload complete; /embryos/compare complete; /embryos/[embryoId] complete from native parent-authorized publication";
     expect(spec).toContain(`test.step("${step}"`);
@@ -1178,7 +1202,68 @@ describe("native embryo completion leaves scientific coverage obligations intact
     for (const entry of register.routes) for (const state of register.stateProfiles[entry.stateProfile]?.supported ?? []) {
       if (!(state in (entry.notApplicableStates ?? {})) && !authored.has(`${entry.path} ${state}`)) pending.push(`${entry.path} ${state}`);
     }
-    expect(pending.sort()).toEqual(["/embryos not-covered", "/embryos partial-coverage", "/embryos/[embryoId] not-covered", "/embryos/[embryoId] partial-coverage", "/embryos/compare not-covered", "/embryos/compare partial-coverage"]);
+    // 2026-10-22, owner decision "The six unproven embryo route states (G1.7,
+    // G1.12, G2.2)": the six are still required, and the TEST-only producers'
+    // own steps now name them, so none is left pending (the next case).
+    expect(pending.sort()).toEqual([]);
     for (const state of ["not-covered", "partial-coverage"]) expect(titleProves(step, "/embryos/compare", state)).toBe(false);
+  });
+
+  /**
+   * The six pairs may be proven only by the two TEST-only synthetic producers
+   * the owner named, each route in a step of its own that runs that route's
+   * audit after that producer's worker. A step naming two pairs, a pair named
+   * by the QC step, or a step whose body audits another route would each make
+   * the ledger say something the browser never checked.
+   */
+  it("names each of the six coverage pairs in exactly one step, run by its own producer's audit of that route", () => {
+    const spec = readFileSync(path.join(REPOSITORY_ROOT, "e2e/embryo-ingest-journey.spec.ts"), "utf8");
+    const register = JSON.parse(readFileSync(path.join(REPOSITORY_ROOT, "docs/route-register.json"), "utf8")) as {
+      routes: { path: string; stateProfile: string; notApplicableStates?: Record<string, string> }[];
+      stateProfiles: Record<string, { supported?: string[] }>;
+    };
+    const required: [string, string][] = register.routes.flatMap(entry =>
+      (register.stateProfiles[entry.stateProfile]?.supported ?? [])
+        .filter(state => !(state in (entry.notApplicableStates ?? {}))).map(state => [entry.path, state] as [string, string]));
+    const steps = [...spec.matchAll(/test\.step\(\s*"((?:\\.|[^"\\])*)"/g)].map(match => match[1]);
+    const producers = [
+      { state: "not-covered", worker: "await runtime.runStatisticalWorker(cohortId);", audit: "notCovered",
+        open: "await openNativeStatisticalCoverageAudit({ page, cohortId, embryos, proof: () => runtime.statisticalProof(cohortId) })" },
+      { state: "partial-coverage", worker: "await fitted.runStatisticalWorker(second.cohortId);", audit: "partial",
+        open: "await openNativeFittedStatisticalCoverageAudit({ page, cohortId: second.cohortId, embryos: second.embryos," },
+    ];
+    for (const producer of producers) {
+      expect(spec.split(producer.open)).toHaveLength(2);
+      expect(spec.indexOf(producer.worker)).toBeGreaterThan(0);
+      expect(spec.indexOf(producer.open)).toBeGreaterThan(spec.indexOf(producer.worker));
+      for (const route of ["/embryos", "/embryos/compare", "/embryos/[embryoId]"]) {
+        const proving = steps.filter(title => titleProves(title, route, producer.state));
+        expect(proving, `${route} ${producer.state}`).toHaveLength(1);
+        const title = proving[0];
+        // It names no other registered pair.
+        expect(required.filter(([path_, state]) => titleProves(title, path_, state)), title).toEqual([[route, producer.state]]);
+        // Its body is this producer's audit of this route, opened before it.
+        const at = spec.indexOf(`test.step("${title}"`);
+        expect(at).toBeGreaterThan(spec.indexOf(producer.open));
+        expect(spec.slice(at).match(/\b(notCovered|partial)\.route\("([^"]+)"\)/)?.slice(1)).toEqual([producer.audit, route]);
+      }
+      expect(spec).toContain(`return await ${producer.audit}.finish();`);
+    }
+  });
+
+  it("fails the ledger and the ratchet when a coverage step stops naming its pair", async () => {
+    const root = plant({
+      browserSpec: { file: "embryo-ingest-journey.spec.ts", source: source => {
+        expect(source.match(/"\/embryos\/compare not-covered: /g)).toHaveLength(1);
+        return source.replace('"/embryos/compare not-covered: ', '"/embryos/compare uncovered: ');
+      } },
+    });
+    const { failures } = await runRouteGate(root);
+    expect(failures).toContain(
+      "proven route state: recorded in docs/route-divergence.json but no longer present: /embryos/compare not-covered",
+    );
+    expect(failures.join("\n")).toMatch(
+      /route state ratchet: 1 of \d+ required \(route, state\) pairs are unproven, and UNPROVEN_ROUTE_STATE_PAIRS in scripts\/route-gate\.ts says 0\./,
+    );
   });
 });

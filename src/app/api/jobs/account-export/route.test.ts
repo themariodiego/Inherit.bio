@@ -2,10 +2,10 @@ import {afterEach,beforeEach,describe,expect,it,vi} from "vitest";
 import {POST,maxDuration} from "./route";
 import type {AccountArchiveDueRpc} from "@/lib/exports/account-archive-generation";
 const f=vi.hoisted(()=>({enabled:true,events:[] as string[],readyFail:false,generationFail:false,disposalFail:false,
- ready:vi.fn(),generation:vi.fn(),disposal:vi.fn(),rpc:vi.fn(),admin:vi.fn()}));
+ ready:vi.fn(),generation:vi.fn(),subjectGeneration:vi.fn(),disposal:vi.fn(),rpc:vi.fn(),admin:vi.fn()}));
 vi.mock("@/lib/exports/account-archive-test-capabilities",()=>({configuredTestAccountArchive:()=>f.enabled?{
  generation:{assertReady:f.ready},delivery:{}}:null}));
-vi.mock("@/lib/exports/account-archive-generation",()=>({runAccountArchiveGeneration:f.generation}));
+vi.mock("@/lib/exports/account-archive-generation",()=>({runAccountArchiveGeneration:f.generation,runSubjectArchiveGeneration:f.subjectGeneration}));
 vi.mock("@/lib/exports/account-archive-test-disposal",()=>({runTestAccountArchiveDisposal:f.disposal}));
 vi.mock("@/lib/supabase/admin",()=>({createAdminClient:f.admin}));
 const placeholder="unit-test-operator-placeholder";
@@ -27,6 +27,10 @@ beforeEach(()=>{
   const rpc=options.rpc();await rpc("export_archive_account_due_v1",{p_after:null},options.signal);
   if(f.generationFail)throw new Error("synthetic provider output");return {completed:0};
  });
+ f.subjectGeneration.mockImplementation(async(options:{capability:unknown;rpc:()=>(name:string,args:unknown,signal:AbortSignal)=>unknown;signal:AbortSignal})=>{
+  f.events.push("actual-subject-generation");expect(options.capability).toEqual({assertReady:f.ready});
+  const rpc=options.rpc();await rpc("export_archive_subject_due_v1",{p_after:null},options.signal);return {completed:0};
+ });
  f.disposal.mockImplementation(async(options:{signal:AbortSignal})=>{
   f.events.push("actual-disposal");expect(options.signal.aborted).toBe(false);
   if(f.disposalFail)throw new Error("synthetic provider output");return {completed:0};
@@ -39,6 +43,14 @@ describe("closed TEST account export worker route",()=>{
   expect(response.headers.get("cache-control")).toBe("no-store");expect(f.events).toEqual(["actual-ready","actual-generation"]);
   expect(f.rpc).toHaveBeenCalledWith("export_archive_account_due_v1",{p_after:null},{get:false,head:false});
   expect(f.disposal).not.toHaveBeenCalled();expect(maxDuration).toBe(300);
+ });
+ it("drains one-record jobs only through their own fixed selector, after the same TEST configuration gate",async()=>{
+  const response=await POST(request("subject-generation"));expect(response.status).toBe(204);
+  expect(f.events).toEqual(["actual-ready","actual-subject-generation"]);
+  expect(f.rpc).toHaveBeenCalledWith("export_archive_subject_due_v1",{p_after:null},{get:false,head:false});
+  expect(f.generation).not.toHaveBeenCalled();expect(f.disposal).not.toHaveBeenCalled();
+  f.events=[];expect((await POST(request("generation"))).status).toBe(204);expect(f.events).toEqual(["actual-ready","actual-generation"]);
+  expect(f.subjectGeneration).toHaveBeenCalledTimes(1);
  });
  it("dispatches only the fixed disposal worker after the same actual TEST configuration gate",async()=>{
   expect((await POST(request("disposal"))).status).toBe(204);expect(f.events).toEqual(["actual-ready","actual-disposal"]);

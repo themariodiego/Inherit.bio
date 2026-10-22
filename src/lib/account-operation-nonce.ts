@@ -5,8 +5,9 @@ import { hashOperationNonce } from "@/lib/account-deletion";
 import { hmacSecret } from "@/lib/crypto";
 
 /**
- * The one-time operation nonce for account deletion and its cancellation,
- * under brief X1.5: the page that offers the operation renders it, nothing
+ * The one-time operation nonce for account deletion, its cancellation and
+ * turning every permission off at once (api.consents-revoke-all), under
+ * brief X1.5: the page that offers the operation renders it, nothing
  * stores it, and only the explicit POST consumes it.
  *
  * The nonce is `<expiresAt>.<random>.<mac>`. The MAC binds it to the account,
@@ -19,7 +20,8 @@ import { hmacSecret } from "@/lib/crypto";
  * the same transaction as the operation, which is what makes it one-time.
  */
 
-export type AccountOperation = "account_delete" | "account_delete_cancel";
+export type AccountOperation = "account_delete" | "account_delete_cancel" | "consents_revoke_all";
+const ACCOUNT_OPERATIONS: readonly AccountOperation[] = ["account_delete", "account_delete_cancel", "consents_revoke_all"];
 export const ACCOUNT_OPERATION_NONCE_LIFETIME_MS = 10 * 60 * 1000;
 export const ACCOUNT_OPERATION_NONCE_MAX_LENGTH = 128;
 
@@ -41,7 +43,7 @@ export type VerifiedAccountOperationNonce = Readonly<{
 
 function validContext(context: AccountOperationContext): boolean {
   return UUID.test(context.accountId) && UUID.test(context.sessionId)
-    && (context.operation === "account_delete" || context.operation === "account_delete_cancel");
+    && ACCOUNT_OPERATIONS.includes(context.operation);
 }
 
 function mac(context: AccountOperationContext, expiresAt: number, random: string): string {

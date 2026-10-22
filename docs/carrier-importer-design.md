@@ -195,6 +195,18 @@ The proposal above, point by point, with every difference named.
      review status and the date as text, with the brief's laboratory line and
      the ClinVar and ClinGen attribution
      (`src/components/family/assertion-notes.tsx`).
+   - One person's own genome, since 22 October 2026 (owner decision,
+     "Carrier status and carrier-pair arithmetic (G7.4)"):
+     `/genome/[subject]/carrier` reads the account's own `self` record. It
+     asks the rule first, so production, where the rule admits nothing, shows
+     only "This check is unavailable. Inherit cannot yet verify the evidence
+     for each gene change. This is not a negative carrier screen." and reads
+     no file. Outside the TEST-LOCAL build it also refuses every synthetic
+     row. Otherwise it reads the person's own calls at the rule's loci only,
+     from the files `filterOwnAnalysisFiles` admits for `reports.monogenic`,
+     and checks that authority again after the read
+     (`src/lib/family/own-carrier-read.ts`, `src/lib/family/own-carrier-status.ts`).
+     No migration was added.
 9. **Verification.**
    - pgTAP: `supabase/tests/carrier_assertions.sql` (51) and
      `supabase/tests/carrier_portrait_reader.sql` (23).
@@ -204,6 +216,14 @@ The proposal above, point by point, with every difference named.
      `/family/portrait/[pairId]` `complete` and `partial-coverage` with a
      synthetic release imported and reviewed through the same doors. It needs
      the unmerged migration, so its first run is CI's.
+   - Own genome, 22 October 2026: `e2e/own-carrier-status.spec.ts` proves
+     `/genome/[subject]/carrier` in six states with synthetic conditions
+     activated through the same doors; `e2e/own-carrier-status.nojurisdiction.spec.ts`
+     proves the production build stays unavailable with one active;
+     `supabase/tests/own_carrier_status.sql` (17) pins the doors it reads.
+     The same day `e2e/portrait-reviewed-carrier.spec.ts` passed in full on
+     the shared local stack, with one new last test tying each adult's own
+     page to the reading its pair block used.
 
 **The production path**, in this order:
 

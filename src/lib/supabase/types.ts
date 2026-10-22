@@ -1549,6 +1549,8 @@ export type Database = {
           decided_at: string
           decision: string
           id: string
+          nonce_hash: string | null
+          reason_ciphertext: string | null
           reason_code: string
           review_revision: number
           reviewed_evidence_id: string | null
@@ -1559,6 +1561,8 @@ export type Database = {
           decided_at?: string
           decision: string
           id?: string
+          nonce_hash?: string | null
+          reason_ciphertext?: string | null
           reason_code: string
           review_revision: number
           reviewed_evidence_id?: string | null
@@ -1569,6 +1573,8 @@ export type Database = {
           decided_at?: string
           decision?: string
           id?: string
+          nonce_hash?: string | null
+          reason_ciphertext?: string | null
           reason_code?: string
           review_revision?: number
           reviewed_evidence_id?: string | null
@@ -7668,6 +7674,12 @@ export type Database = {
       record_appeal_document_scan_v1: { Args: { p_document_id:string; p_lease_hash:string; p_outcome:string; p_scanned_sha256:string|null; p_scan_engine:string|null; p_signature_version:number|null; p_signature_at:string|null }; Returns: string };
       appeal_document_objects_due_v1: { Args: { p_limit:number }; Returns: { object_key:string }[] };
       confirm_appeal_document_objects_deleted_v1: { Args: { p_object_keys:string[]; p_route_id:string }; Returns: number };
+      claim_next_permission_document_scan_v1: { Args: { p_lease_hash:string }; Returns: Json };
+      record_permission_document_scan_v1: { Args: { p_document_id:string; p_lease_hash:string; p_outcome:string; p_scanned_sha256:string|null; p_scan_engine:string|null; p_signature_version:number|null; p_signature_at:string|null }; Returns: string };
+      permission_document_objects_due_v1: { Args: { p_limit:number }; Returns: { object_key:string }[] };
+      confirm_permission_document_objects_deleted_v1: { Args: { p_object_keys:string[]; p_route_id:string }; Returns: number };
+      expire_due_path_b_reviewed_documents_v1: { Args: Record<PropertyKey, never>; Returns: number };
+      purge_ended_subject_original_downloads_v1: { Args: Record<PropertyKey, never>; Returns: number };
       read_new_public_appeal_mail_contact_v1: {
         Args: { p_outbox_id: string; p_attempt_ordinal: number };
         Returns: Json;
@@ -7719,6 +7731,14 @@ export type Database = {
       purge_due_future_person_profiles_v1: { Args: Record<PropertyKey, never>; Returns: number }
       future_person_export_request_v1: {
         Args: { p_operation: string; p_session_hash: string; p_payload?: Json; p_csrf_binding?: string }
+        Returns: Json
+      }
+      future_person_export_ready_v1: {
+        Args: { p_session_hash: string; p_payload: Json }
+        Returns: Json
+      }
+      future_person_export_open_ready_v1: {
+        Args: { p_session_hash: string; p_payload: Json; p_csrf_binding: string }
         Returns: Json
       }
       future_person_export_members_v1: {
@@ -7923,6 +7943,31 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: number
       }
+      purge_expired_auth_credentials_v1: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
+      admit_auth_public_request_v1: {
+        Args: {
+          p_form_nonce_hash: string
+          p_identifier_digests: Json
+          p_network_digests: Json
+          p_route_id: string
+        }
+        Returns: string
+      }
+      issue_auth_recovery_session_v1: {
+        Args: {
+          p_account_id: string
+          p_origin_session_id: string
+          p_session_hash: string
+        }
+        Returns: string
+      }
+      reset_password_with_recovery_v1: {
+        Args: { p_password_hash: string; p_session_hash: string }
+        Returns: string
+      }
       purge_future_person_claim_intakes_v1: {
         Args: Record<PropertyKey, never>
         Returns: number
@@ -8024,6 +8069,11 @@ export type Database = {
       future_person_rights_view_v1:{Args:{p_session_hash:string};Returns:Json}
       issue_future_person_recovery_key_v1:{Args:{p_session_hash:string;p_nonce:string;p_key_hash:string};Returns:string}
       stop_future_person_analysis_v1:{Args:{p_session_hash:string;p_nonce:string};Returns:string}
+      read_future_person_correction_review_v1:{Args:{p_correction:string};Returns:Json}
+      check_future_person_correction_review_v1:{Args:{p_correction:string;p_expected:Json};Returns:boolean}
+      future_person_correction_decision_context_v1:{Args:{p_correction:string};Returns:Json}
+      decide_future_person_correction_review_v1:{Args:{p_correction:string;p_decision:string;p_correction_revision:number;
+        p_expected:Json;p_nonce_hash:string;p_reason_ciphertext:string};Returns:Json}
       purge_due_future_person_contacts_v1:{Args:Record<PropertyKey,never>;Returns:number}
       shred_due_claim_working_keys_v1:{Args:Record<PropertyKey,never>;Returns:number}
       decide_claim_review_attested_v1: {
@@ -8204,6 +8254,75 @@ export type Database = {
         }
         Returns: Json
       }
+      configure_embryo_table_ingest_v1: {
+        Args: {
+          p_account_id: string
+          p_auth_session_id: string
+          p_ingest_session_id: string
+          p_cookie_hash: string
+          p_origin: string
+          p_cohort_id: string
+          p_ingest_revision: number
+          p_build: string | null
+          p_nonce: string
+          p_mapping_nonce: string
+          p_test_jurisdiction?: boolean
+        }
+        Returns: Json
+      }
+      inspect_embryo_table_mapping_v1: {
+        Args: {
+          p_account_id: string
+          p_auth_session_id: string
+          p_ingest_session_id: string
+          p_cookie_hash: string
+          p_origin: string
+          p_cohort_id: string
+          p_ingest_revision: number
+          p_outcome: string
+          p_column_count: number | null
+          p_locus: string | null
+          p_nonce: string
+          p_challenge: string | null
+          p_next_nonce: string | null
+          p_completion_nonce: string | null
+          p_csrf_nonce: string | null
+          p_test_jurisdiction?: boolean
+        }
+        Returns: Json
+      }
+      decide_embryo_table_mapping_v1: {
+        Args: {
+          p_account_id: string
+          p_auth_session_id: string
+          p_ingest_session_id: string
+          p_cookie_hash: string
+          p_origin: string
+          p_cohort_id: string
+          p_ingest_revision: number
+          p_challenge: string
+          p_resolution: Json
+          p_nonce: string
+          p_build_challenge: string | null
+          p_build_nonce: string | null
+          p_transport_challenge: string | null
+          p_completion_nonce: string | null
+          p_csrf_nonce: string | null
+          p_test_jurisdiction?: boolean
+        }
+        Returns: Json
+      }
+      embryo_ingest_table_locus_v1: {
+        Args: {
+          p_account_id: string
+          p_auth_session_id: string
+          p_ingest_session_id: string
+          p_cookie_hash: string
+          p_origin: string
+          p_test_jurisdiction?: boolean
+        }
+        Returns: string | null
+      }
       embryo_ingest_issued_tokens_match_v1: {
         Args: {
           p_account_id: string
@@ -8358,6 +8477,15 @@ export type Database = {
         Returns: {
           expires_at: string
           invitation_id: string | null
+        }[]
+      }
+      deliver_embryo_record_key_cards_rights_v1: {
+        Args: { p_nonce: string; p_session_hash: string }
+        Returns: {
+          cards: Json
+          cohort_id: string
+          key_revision: number
+          recipient_set_revision: number
         }[]
       }
       deliver_embryo_record_key_cards_v1: {
@@ -8668,12 +8796,30 @@ export type Database = {
         Args: { p_account_id: string; p_counterpart_account_id: string }
         Returns: number
       }
+      revoke_all_own_consents_v1: {
+        Args: {
+          p_account_id: string
+          p_nonce_expires_at: string
+          p_nonce_hash: string
+          p_session_id: string
+        }
+        Returns: number
+      }
       revoke_cloud_model_consent: {
         Args: { p_account_id: string; p_grant_id: string }
         Returns: boolean
       }
       revoke_directional_purpose_v1: {
         Args: { p_account_id: string; p_grant_id: string }
+        Returns: string
+      }
+      revoke_purpose_rights_v1: {
+        Args: {
+          p_nonce: string
+          p_purpose: string
+          p_session_hash: string
+          p_test_jurisdiction: boolean
+        }
         Returns: string
       }
       run_due_embryo_retention_phases_v1: {
@@ -8764,6 +8910,50 @@ export type Database = {
         Args: {
           p_account_id: string; p_session_id: string; p_file_id: string; p_purpose: string;
           p_rsids: number[]; p_offset: number
+        }
+        Returns: Json
+      }
+      grant_purpose_rights_v1: {
+        Args: {
+          p_jurisdiction_code: string
+          p_nonce: string
+          p_presentation: Json
+          p_session_hash: string
+          p_signing_name_ciphertext: string
+          p_statement_keys: string[]
+          p_test_jurisdiction: boolean
+        }
+        Returns: Json
+      }
+      consent_reaffirm_offer_v1: {
+        Args: { p_account_id: string; p_session_id: string; p_prior_grant_id: string }
+        Returns: Json
+      }
+      request_rights_reissue_v1: {
+        Args: {
+          p_form_nonce_hash: string; p_contact_digests: Json; p_identifier_digests: Json; p_network_digests: Json;
+          p_global_digests: Json; p_test_jurisdiction: boolean
+        }
+        Returns: string
+      }
+      bind_adult_subject_account_v1: {
+        Args: {
+          p_session_hash: string; p_nonce: string; p_account_id: string; p_auth_session_id: string;
+          p_test_jurisdiction: boolean
+        }
+        Returns: Json
+      }
+      reaffirm_purpose_rights_v1: {
+        Args: {
+          p_session_hash: string; p_nonce: string; p_presentation: Json; p_statement_keys: string[];
+          p_signing_name_ciphertext: string; p_jurisdiction_code: string; p_test_jurisdiction: boolean
+        }
+        Returns: Json
+      }
+      reaffirm_purpose_grant_v1: {
+        Args: {
+          p_account_id: string; p_session_id: string; p_prior_grant_id: string; p_offer: Json;
+          p_nonce: string; p_expires_at: string; p_test_jurisdiction: boolean
         }
         Returns: Json
       }
@@ -8923,6 +9113,40 @@ export type Database = {
           deleted_counts: Json
           ended_at: string
         }[]
+      }
+      stop_subject_sharing_v1: {
+        Args: {
+          p_account_id: string
+          p_counterpart_account_id: string
+          p_nonce_expires_at: string
+          p_nonce_hash: string
+          p_session_id: string
+          p_subject_id: string
+        }
+        Returns: {
+          deleted_counts: Json
+          ended_at: string
+        }[]
+      }
+      delete_subject_v1: {
+        Args: {
+          p_account_id: string
+          p_nonce_expires_at: string
+          p_nonce_hash: string
+          p_session_id: string
+          p_subject_id: string
+        }
+        Returns: Json
+      }
+      transfer_subject_v1: {
+        Args: {
+          p_account_id: string
+          p_nonce_expires_at: string
+          p_nonce_hash: string
+          p_session_id: string
+          p_subject_id: string
+        }
+        Returns: Json
       }
     }
     Enums: {

@@ -577,6 +577,53 @@ export function extractCopyRegistryBlocksFromSource(relativePath: string, source
 
 const COPY_REGISTRY_ROOTS = ["src/copy", "src/emails"];
 
+/**
+ * Copy modules whose strings are sent to a model and never shown to a
+ * person, by exact path. G1.10 scores user-facing string blocks, and a
+ * Copilot system prompt is not one. Before 16 October 2026 the prompts lived
+ * in `src/app/api/chat/route.ts` and `src/lib/copilot/`, which no scan here
+ * reads. The owner's G1.11 decision moved them into `src/copy/copilot` so
+ * their factual rules can be registered as claims, and that move must not
+ * change what this gate scores. The exemption holds only while no rendered
+ * `.tsx` file imports the module; `runReadabilityGate` fails otherwise, and
+ * fails if a listed module no longer exists.
+ */
+export const MODEL_FACING_COPY: readonly string[] = ["src/copy/copilot/system-prompts.ts"];
+
+/** Rendered `.tsx` files under `src/` that import a model-facing copy module, as failure lines. */
+export function modelFacingCopyFindings(repositoryRoot: string): string[] {
+  const findings: string[] = [];
+  for (const listed of MODEL_FACING_COPY) {
+    if (!fs.existsSync(path.join(repositoryRoot, listed))) {
+      findings.push(`${listed}: listed as model-facing copy but does not exist`);
+    }
+  }
+  const specifiers = MODEL_FACING_COPY.map((listed) => listed.replace(/^src\//, "").replace(/\.ts$/, ""));
+  const visit = (directory: string) => {
+    for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+      const absolute = path.join(directory, entry.name);
+      if (entry.isDirectory()) {
+        visit(absolute);
+        continue;
+      }
+      if (!entry.name.endsWith(".tsx") || entry.name.endsWith(".test.tsx")) continue;
+      const source = fs.readFileSync(absolute, "utf8");
+      for (const match of source.matchAll(/(?:from|import)\s*\(?\s*["']([^"']+)["']/g)) {
+        const specifier = match[1]!.replace(/\.tsx?$/, "");
+        const imported = specifiers.find((listed) => specifier === `@/${listed}` || specifier.endsWith(`/${listed}`));
+        if (imported) {
+          findings.push(
+            `${path.relative(repositoryRoot, absolute).split(path.sep).join("/")}: a rendered file imports model-facing copy src/${imported}.ts, which the readability gate does not score`,
+          );
+        }
+      }
+    }
+  };
+  const sourceRoot = path.join(repositoryRoot, "src");
+  if (fs.existsSync(sourceRoot)) visit(sourceRoot);
+  return findings;
+}
+
 export function extractCopyRegistryBlocks(repositoryRoot: string): CopyBlock[] {
   const blocks: CopyBlock[] = [];
   const visitDirectory = (directory: string) => {
@@ -594,6 +641,7 @@ export function extractCopyRegistryBlocks(repositoryRoot: string): CopyBlock[] {
         continue;
       }
       const relativePath = path.relative(repositoryRoot, absolute);
+      if (MODEL_FACING_COPY.includes(relativePath.split(path.sep).join("/"))) continue;
       blocks.push(
         ...extractCopyRegistryBlocksFromSource(relativePath, fs.readFileSync(absolute, "utf8")),
       );
@@ -807,6 +855,7 @@ export function runReadabilityGate(repositoryRoot: string) {
     fs.readFileSync(path.join(repositoryRoot, "data/jargon.json"), "utf8"),
   ) as JargonFile;
   const failures = runSelfTest(repositoryRoot);
+  failures.push(...modelFacingCopyFindings(repositoryRoot));
   if (vocabulary.schemaVersion !== 1) failures.push("plain vocabulary schemaVersion must be 1");
   if (jargon.schemaVersion !== 1) failures.push("jargon schemaVersion must be 1");
   const sortedWords = [...new Set(vocabulary.words.map((word) => word.toLowerCase()))].sort();

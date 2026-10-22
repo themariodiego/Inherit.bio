@@ -1,0 +1,472 @@
+[
+ {
+  "index": 1,
+  "file": "20261016120000_embryo_table_mapping_route.sql",
+  "local_seconds_psql": 0.135,
+  "guards": []
+ },
+ {
+  "index": 2,
+  "file": "20261016151200_auth_public_endpoints.sql",
+  "local_seconds_psql": 0.151,
+  "guards": []
+ },
+ {
+  "index": 3,
+  "file": "20261016153100_future_person_claimant_erasure_completion.sql",
+  "local_seconds_psql": 0.112,
+  "guards": [
+   {
+    "line": 25,
+    "md5": "997f8d07edb464cf2999af1b408cb5ca",
+    "role": "predecessor",
+    "functions": [
+     "private.confirm_claim_document_objects_deleted_v1(p_object_keys text[], p_route_id text)"
+    ],
+    "origin": [
+     "production"
+    ]
+   },
+   {
+    "line": 244,
+    "md5": "8d6cab2cfbc1f24a89602a4a05ca82f0",
+    "role": "successor",
+    "functions": [
+     "private.confirm_claim_document_objects_deleted_v1(p_object_keys text[], p_route_id text)"
+    ],
+    "origin": null
+   }
+  ]
+ },
+ {
+  "index": 4,
+  "file": "20261016170000_path_b_confirmed_file_retention.sql",
+  "local_seconds_psql": 0.105,
+  "guards": []
+ },
+ {
+  "index": 5,
+  "file": "20261016175000_future_person_claimant_contact_730_days.sql",
+  "local_seconds_psql": 0.097,
+  "guards": [
+   {
+    "line": 55,
+    "md5": "f1f5e9786d47a0a6102b43276012ae31",
+    "role": "predecessor",
+    "functions": [
+     "private.queue_future_person_release_v1(p_claim uuid, p_contact uuid, p_cipher bytea, p_contact_set jsonb)"
+    ],
+    "origin": [
+     "production"
+    ]
+   },
+   {
+    "line": 60,
+    "md5": "4bf007b76ff40b3f55247b91e05f4343",
+    "role": "successor",
+    "functions": [
+     "private.queue_future_person_release_v1(p_claim uuid, p_contact uuid, p_cipher bytea, p_contact_set jsonb)"
+    ],
+    "origin": null
+   },
+   {
+    "line": 74,
+    "md5": "7d06d5f13edc7882cfe4d5a4a73f1922",
+    "role": "predecessor",
+    "functions": [
+     "private.purge_future_person_contact_phase_v1(p_row uuid, p_now timestamp with time zone)"
+    ],
+    "origin": [
+     "production"
+    ]
+   },
+   {
+    "line": 79,
+    "md5": "3ead230272e5cba98bbd45075a3a3bbd",
+    "role": "successor",
+    "functions": [
+     "private.purge_future_person_contact_phase_v1(p_row uuid, p_now timestamp with time zone)"
+    ],
+    "origin": null
+   }
+  ]
+ },
+ {
+  "index": 6,
+  "file": "20261016180000_subject_sharing_stop.sql",
+  "local_seconds_psql": 0.085,
+  "guards": []
+ },
+ {
+  "index": 7,
+  "file": "20261016181000_subject_delete.sql",
+  "local_seconds_psql": 0.108,
+  "guards": [
+   {
+    "line": 43,
+    "md5": "687df80d56b38d2aabeacd4bc1350154",
+    "role": "predecessor",
+    "functions": [
+     "private.prepare_genome_file_deletion_body_v1(p_account_id uuid, p_file_id uuid)"
+    ],
+    "origin": [
+     "production"
+    ]
+   }
+  ]
+ },
+ {
+  "index": 8,
+  "file": "20261016190000_path_b_reviewed_document.sql",
+  "local_seconds_psql": 0.252,
+  "guards": []
+ },
+ {
+  "index": 9,
+  "file": "20261016191000_subject_original_download.sql",
+  "local_seconds_psql": 0.117,
+  "guards": []
+ },
+ {
+  "index": 10,
+  "file": "20261016195000_embryo_table_call_hash.sql",
+  "local_seconds_psql": 0.074,
+  "guards": [
+   {
+    "line": 44,
+    "md5": "4d2c2b593507c9770df523fca19a93e6",
+    "role": "predecessor",
+    "functions": [
+     "private.embryo_call_value_hash_v1(p_chr integer, p_position bigint, p_ref text, p_alt text, p_genotype text)"
+    ],
+    "origin": [
+     "production"
+    ]
+   },
+   {
+    "line": 50,
+    "md5": "2286a0c4efaaf66e19c60e4fcfdcd7a1",
+    "role": "successor",
+    "functions": [
+     "private.embryo_call_value_hash_v1(p_chr integer, p_position bigint, p_ref text, p_alt text, p_genotype text)"
+    ],
+    "origin": null
+   }
+  ]
+ },
+ {
+  "index": 11,
+  "file": "20261016196000_subject_export.sql",
+  "local_seconds_psql": 0.179,
+  "guards": []
+ },
+ {
+  "index": 12,
+  "file": "20261016200000_consents_revoke_all.sql",
+  "local_seconds_psql": 0.102,
+  "guards": []
+ },
+ {
+  "index": 13,
+  "file": "20261016201000_embryo_record_key_cards_rights.sql",
+  "local_seconds_psql": 0.085,
+  "guards": []
+ },
+ {
+  "index": 14,
+  "file": "20261016202000_consent_revoke_rights.sql",
+  "local_seconds_psql": 0.087,
+  "guards": []
+ },
+ {
+  "index": 15,
+  "file": "20261016203000_consent_grant_rights.sql",
+  "local_seconds_psql": 0.085,
+  "guards": []
+ },
+ {
+  "index": 16,
+  "file": "20261016204000_path_b_no_account_uploader_gate.sql",
+  "local_seconds_psql": 0.1,
+  "guards": [
+   {
+    "line": 85,
+    "md5": "a877304153a110c6710edf20019cb647",
+    "role": "predecessor",
+    "functions": [
+     "private.other_adult_mitigation_before_public_appeal_v1(p_subject_id uuid, p_account_id uuid, p_checkpoint text)"
+    ],
+    "origin": [
+     "production"
+    ]
+   },
+   {
+    "line": 90,
+    "md5": "29c74c79cb3eeedbbdac44273a6f4de3",
+    "role": "successor",
+    "functions": [
+     "private.other_adult_mitigation_before_public_appeal_v1(p_subject_id uuid, p_account_id uuid, p_checkpoint text)"
+    ],
+    "origin": null
+   }
+  ]
+ },
+ {
+  "index": 17,
+  "file": "20261016205000_consent_reaffirm.sql",
+  "local_seconds_psql": 0.09,
+  "guards": []
+ },
+ {
+  "index": 18,
+  "file": "20261016206000_consent_reaffirm_rights.sql",
+  "local_seconds_psql": 0.087,
+  "guards": []
+ },
+ {
+  "index": 19,
+  "file": "20261016207000_adult_subject_bind.sql",
+  "local_seconds_psql": 0.088,
+  "guards": []
+ },
+ {
+  "index": 20,
+  "file": "20261016208000_rights_reissue.sql",
+  "local_seconds_psql": 0.123,
+  "guards": [
+   {
+    "line": 260,
+    "md5": "b9dcb56fbe06146e7b55e98f5f68a25b",
+    "role": "predecessor",
+    "functions": [
+     "public.activate_rights_session_v1(p_token_hash text, p_session_hash text, p_form_nonce text)"
+    ],
+    "origin": [
+     "production"
+    ]
+   },
+   {
+    "line": 265,
+    "md5": "f4c47723ec1c65454514a5b8d08ec0e0",
+    "role": "successor",
+    "functions": [
+     "public.activate_rights_session_v1(p_token_hash text, p_session_hash text, p_form_nonce text)"
+    ],
+    "origin": null
+   }
+  ]
+ },
+ {
+  "index": 21,
+  "file": "20261016210000_future_person_correction_review.sql",
+  "local_seconds_psql": 0.144,
+  "guards": []
+ },
+ {
+  "index": 22,
+  "file": "20261016211000_future_person_export_open_ready.sql",
+  "local_seconds_psql": 0.089,
+  "guards": []
+ },
+ {
+  "index": 23,
+  "file": "20261016212000_future_person_correction_provenance.sql",
+  "local_seconds_psql": 0.093,
+  "guards": [
+   {
+    "line": 58,
+    "md5": "f1e03b8db0a2966c0969d461fcfb5f10",
+    "role": "predecessor",
+    "functions": [
+     "private.correction_review_provenance_v1(p_subject uuid, p_field text)"
+    ],
+    "origin": [
+     "in-release"
+    ]
+   },
+   {
+    "line": 64,
+    "md5": "c971b5e0d2baf6404045a4cca2fec331",
+    "role": "successor",
+    "functions": [
+     "private.correction_review_provenance_v1(p_subject uuid, p_field text)"
+    ],
+    "origin": null
+   }
+  ]
+ },
+ {
+  "index": 24,
+  "file": "20261016220000_subject_delete_reviewed_document.sql",
+  "local_seconds_psql": 0.098,
+  "guards": [
+   {
+    "line": 40,
+    "md5": "39abbfe9f403ac173f1b56b38494b66f",
+    "role": "predecessor",
+    "functions": [
+     "public.delete_subject_v1(p_account_id uuid, p_session_id uuid, p_subject_id uuid, p_nonce_hash text, p_nonce_expires_at timestamp with time zone)"
+    ],
+    "origin": [
+     "in-release"
+    ]
+   },
+   {
+    "line": 45,
+    "md5": "09f00c92c9b1016ef554a297d02b632d",
+    "role": "successor",
+    "functions": [
+     "public.delete_subject_v1(p_account_id uuid, p_session_id uuid, p_subject_id uuid, p_nonce_hash text, p_nonce_expires_at timestamp with time zone)"
+    ],
+    "origin": null
+   }
+  ]
+ },
+ {
+  "index": 25,
+  "file": "20261016221000_subject_transfer.sql",
+  "local_seconds_psql": 0.223,
+  "guards": [
+   {
+    "line": 133,
+    "md5": "8ca7925a33003ca56d0d96921ee35693",
+    "role": "predecessor",
+    "functions": [
+     "private.record_subject_operation_nonce_v1(p_account_id uuid, p_session_id uuid, p_operation text, p_subject_id uuid, p_nonce_hash text, p_expires_at timestamp with time zone)"
+    ],
+    "origin": [
+     "in-release"
+    ]
+   },
+   {
+    "line": 138,
+    "md5": "846078adb108ca24b140cc2f9febc627",
+    "role": "successor",
+    "functions": [
+     "private.record_subject_operation_nonce_v1(p_account_id uuid, p_session_id uuid, p_operation text, p_subject_id uuid, p_nonce_hash text, p_expires_at timestamp with time zone)"
+    ],
+    "origin": null
+   },
+   {
+    "line": 264,
+    "md5": "1081b5ccc70375acffe4f9d61bbce652",
+    "role": "predecessor",
+    "functions": [
+     "private.guard_structural_file_identity_v1()"
+    ],
+    "origin": [
+     "production"
+    ]
+   },
+   {
+    "line": 296,
+    "md5": "2639f2ffdb7ec97d02a7375f483943d6",
+    "role": "successor",
+    "functions": [
+     "private.guard_structural_file_identity_v1()"
+    ],
+    "origin": null
+   },
+   {
+    "line": 307,
+    "md5": "c363f202cabc481aa74f270ebaff56de",
+    "role": "predecessor",
+    "functions": [
+     "private.end_path_b_normalized_revision_v1()"
+    ],
+    "origin": [
+     "production"
+    ]
+   },
+   {
+    "line": 323,
+    "md5": "64fe2b4578fc5df789c4671a3eab1359",
+    "role": "successor",
+    "functions": [
+     "private.end_path_b_normalized_revision_v1()"
+    ],
+    "origin": null
+   },
+   {
+    "line": 592,
+    "md5": "6a11b090fe19408849eef67b55e456e6",
+    "role": "predecessor",
+    "functions": [
+     "private.path_b_result_read_v1(p_account_id uuid, p_subject_id uuid, p_purpose text)"
+    ],
+    "origin": [
+     "production"
+    ]
+   },
+   {
+    "line": 597,
+    "md5": "d229cc3de2fe8973525b75d06a8f0af7",
+    "role": "successor",
+    "functions": [
+     "private.path_b_result_read_v1(p_account_id uuid, p_subject_id uuid, p_purpose text)"
+    ],
+    "origin": null
+   },
+   {
+    "line": 610,
+    "md5": "15fba855b30040199449da320428e26c",
+    "role": "predecessor",
+    "functions": [
+     "private.path_b_report_results_v1(p_account_id uuid, p_session_id uuid, p_subject_id uuid, p_purpose text, p_test_jurisdiction boolean)"
+    ],
+    "origin": [
+     "production"
+    ]
+   },
+   {
+    "line": 667,
+    "md5": "58217447bdf3de92e315e3cee03fb4f0",
+    "role": "successor",
+    "functions": [
+     "private.path_b_report_results_v1(p_account_id uuid, p_session_id uuid, p_subject_id uuid, p_purpose text, p_test_jurisdiction boolean)"
+    ],
+    "origin": null
+   },
+   {
+    "line": 677,
+    "md5": "ae73cb79432cb38b5db4b575c08a0a0b",
+    "role": "predecessor",
+    "functions": [
+     "private.path_b_report_read_ready_v1(p_account_id uuid, p_subject_id uuid, p_purpose text)"
+    ],
+    "origin": [
+     "production"
+    ]
+   },
+   {
+    "line": 702,
+    "md5": "53d9878b9f36ec14daed247b141fd573",
+    "role": "successor",
+    "functions": [
+     "private.path_b_report_read_ready_v1(p_account_id uuid, p_subject_id uuid, p_purpose text)"
+    ],
+    "origin": null
+   },
+   {
+    "line": 992,
+    "md5": "09f00c92c9b1016ef554a297d02b632d",
+    "role": "predecessor",
+    "functions": [
+     "public.delete_subject_v1(p_account_id uuid, p_session_id uuid, p_subject_id uuid, p_nonce_hash text, p_nonce_expires_at timestamp with time zone)"
+    ],
+    "origin": [
+     "in-release"
+    ]
+   },
+   {
+    "line": 997,
+    "md5": "3dd7e58c3170b28435c1b2dac7866ea7",
+    "role": "successor",
+    "functions": [
+     "public.delete_subject_v1(p_account_id uuid, p_session_id uuid, p_subject_id uuid, p_nonce_hash text, p_nonce_expires_at timestamp with time zone)"
+    ],
+    "origin": null
+   }
+  ]
+ }
+]
