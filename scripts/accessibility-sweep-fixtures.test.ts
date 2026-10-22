@@ -2,7 +2,14 @@ import { expect, it, vi } from "vitest";
 
 vi.mock("../e2e/helpers", () => ({ signIn: vi.fn() }));
 
-import { createAccessibilitySweep } from "../e2e/accessibility-sweeps";
+import { CHECKED_ELSEWHERE, DOCUMENTS, PUBLIC_ROUTES, VISIT, createAccessibilitySweep, registeredPages } from "../e2e/accessibility-sweeps";
+
+it("names an accessibility audit for every kept page without stale coverage entries", () => {
+  const pages = registeredPages().map(route => route.path);
+  const named = [...PUBLIC_ROUTES, ...Object.keys(DOCUMENTS), ...Object.keys(VISIT), ...Object.keys(CHECKED_ELSEWHERE)];
+  expect(pages.filter(page => !named.includes(page))).toEqual([]);
+  expect(named.filter(page => !pages.includes(page))).toEqual([]);
+});
 
 it("gives each complete measurement a distinct account and authentication closure", () => {
   const sweeps = Array.from({ length: 4 }, () => createAccessibilitySweep());

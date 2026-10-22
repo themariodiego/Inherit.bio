@@ -5,27 +5,30 @@ import { browserManifest, browserReportCases, browserShardReceipt, ciBrowserShar
 import { hostedWorkflowContract } from "./hosted-ci-result";
 
 const source = { head: "a".repeat(40), runId: "12345", runAttempt: "2" };
-const projects = ["chromium", "jurisdiction-off", "copilot-local", "prepared-source"];
+const projects = ["chromium", "jurisdiction-off", "copilot-local", "prepared-source", "embryo-ingest", "embryo-mixed-qc"];
 function id(n: number) { return `${n.toString(16).padStart(20, "0")}-${n.toString(16).padStart(20, "0")}`; }
-const tracked = [1,2,3,4,5,6].map(n => `e2e/synthetic-${n}.spec.ts`);
+const fileFor = (n: number) => n === 5 ? "embryo-ingest-journey.spec.ts" : n === 6 ? "embryo-mixed-qc-journey.spec.ts" : n === 7 ? "embryo-qc-second-seed-journey.spec.ts" : n === 8 ? "reviews-keyless-owner-notice-journey.spec.ts" : n === 9 ? "embryo-third-party-journey.spec.ts" : `synthetic-${n}.spec.ts`;
+const tracked = [1,2,3,4,5,6,7,8,9].map(n => `e2e/${fileFor(n)}`);
+const projectFor = (n: number) => n >= 7 ? "chromium" : projects[n - 1];
+const assignedFor = (index: number) => index === 1 ? [1, 7] : index === 2 ? [2, 9] : index === 4 ? [4, 8] : [index];
 const timings = { setupMs: 100, buildMs: 200, bootstrapMs: 300, browserMs: 400 };
 function report(cases: number[], shard: number | null = null, executed = false) {
   return { config: { workers: 1, fullyParallel: false, shard: shard === null ? null : { current: shard, total: 6 },
     projects: projects.map(name => ({ name, retries: 0, repeatEach: 1 })), webServer: { env: { PRIVATE_FIXTURE: "must not be copied" } } },
-  suites: [{ suites: [{ specs: cases.map(n => ({ id: id(n), file: `synthetic-${n}.spec.ts`, tests: [{ projectName: projects[(n-1)%4], expectedStatus: "passed",
+  suites: [{ suites: [{ specs: cases.map(n => ({ id: id(n), file: fileFor(n), tests: [{ projectName: projectFor(n), expectedStatus: "passed",
     results: executed ? [{ status: "passed", retry: 0, duration: 10, stdout: ["private fixture"], attachments: ["private fixture"] }] : [] }] })) }] }],
   errors: [], stats: { expected: executed ? cases.length : 0,
     unexpected: 0, flaky: 0, skipped: executed ? 0 : cases.length } };
 }
 function evidence() {
-  const full = report([1, 2, 3, 4, 5, 6]);
+  const full = report([1, 2, 3, 4, 5, 6, 7, 8, 9]);
   return { manifest: browserManifest(full, source, tracked), receipts: [1, 2, 3, 4, 5, 6].map(index =>
-    browserShardReceipt(full, report([index], index), report([index], index, true), source, index, index, timings, tracked)) };
+    browserShardReceipt(full, report(assignedFor(index), index), report(assignedFor(index), index, true), source, index, index, timings, tracked)) };
 }
 describe("mandatory browser coverage across isolated jobs", () => {
   it("requires the real native listing statistics and refuses declared skips or discovery executions", () => {
-    const cases = [1, 2, 3, 4, 5, 6];
-    expect(browserReportCases(report(cases), null, false)).toHaveLength(6);
+    const cases = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+    expect(browserReportCases(report(cases), null, false)).toHaveLength(9);
     for (const stats of [{ expected: 0, skipped: 0 }, { expected: 0, skipped: 5 },
       { expected: 1, skipped: 6 }]) {
       const value = report(cases); Object.assign(value.stats, stats);
@@ -46,7 +49,7 @@ describe("mandatory browser coverage across isolated jobs", () => {
   });
   it("accepts exactly-once complete discovery/execution and copies no raw configuration or private evidence", () => {
     const { manifest, receipts } = evidence();
-    expect(verifyBrowserShards(manifest, receipts, source)).toBe(6);
+    expect(verifyBrowserShards(manifest, receipts, source)).toBe(9);
     const serialized = JSON.stringify({ manifest, receipts });
     expect(serialized).not.toMatch(/PRIVATE_FIXTURE|private fixture|webServer|stdout|attachments/);
   });
@@ -90,14 +93,14 @@ describe("mandatory browser coverage across isolated jobs", () => {
     }
   });
   it("refuses narrowed, mismatched or additional executed cases and negative provider receipt", () => {
-    const full = report([1, 2, 3, 4, 5, 6]);
+    const full = report([1, 2, 3, 4, 5, 6, 7, 8, 9]);
     for (const executed of [report([2], 1, true), report([1, 2], 1, true), report([1], 2, true)])
       expect(() => browserShardReceipt(full, report([1], 1), executed, source, 1, 1, timings, tracked)).toThrow();
     expect(() => browserShardReceipt(full, report([1], 1), report([1], 1, true), source, 1, -1, timings, tracked)).toThrow();
   });
   it("keeps the whole-suite provider upload invariant with a legitimately upload-free shard", () => {
     const { manifest, receipts } = evidence();
-    expect(verifyBrowserShards(manifest, [{ ...receipts[0], providerUploads: 0 }, ...receipts.slice(1)], source)).toBe(6);
+    expect(verifyBrowserShards(manifest, [{ ...receipts[0], providerUploads: 0 }, ...receipts.slice(1)], source)).toBe(9);
     expect(() => verifyBrowserShards(manifest, receipts.map(r => ({ ...r, providerUploads: 0 })), source)).toThrow();
     expect(() => verifyBrowserShards(manifest, [{ ...receipts[0], providerUploads: -1 }, ...receipts.slice(1)], source)).toThrow();
   });
@@ -109,8 +112,8 @@ describe("mandatory browser coverage across isolated jobs", () => {
     expect(() => verifyBrowserSourceCensus([...tracked, "e2e/comprehension-run.spec.ts"], tracked)).toThrow();
   });
   it("refuses a registered project that discovers no case and an unregistered project", () => {
-    expect(() => browserReportCases(report([1, 2, 3]), null, false)).toThrow("Standard browser projects differ");
-    const value = report([1, 2, 3, 4]); value.config.projects[3].name = "unregistered";
+    expect(() => browserReportCases(report([1, 2, 3, 4]), null, false)).toThrow("Standard browser projects differ");
+    const value = report([1, 2, 3, 4, 5]); value.config.projects[4].name = "unregistered";
     expect(() => browserReportCases(value, null, false)).toThrow("Standard browser projects differ");
   });
   it("refuses fractional, negative, nonfinite or over-job-budget timing receipts", () => {
@@ -133,8 +136,9 @@ describe("mandatory browser coverage across isolated jobs", () => {
   it("keeps the default workflow's release check dependent on every job and sanitized coverage", () => {
     const workflow = readFileSync(".github/workflows/ci.yml", "utf8");
     const aggregate = workflow.slice(workflow.indexOf("\n  checks:"));
-    expect(aggregate).toContain("    if: always()\n    needs: [repository-checks, browser]");
+    expect(aggregate).toContain("    if: always()\n    needs: [repository-checks, database-tests, browser, owned-keyfree-smoke]");
     expect(aggregate).toContain('test "$REPOSITORY_RESULT" = success');
+    expect(aggregate).toContain('test "$DATABASE_RESULT" = success');
     expect(aggregate).toContain('test "$BROWSER_RESULT" = success');
     expect(aggregate).toContain("scripts/ci-browser-shards.run.mts aggregate ci-browser-coverage");
     expect(workflow).toContain("shard: [1, 2, 3, 4, 5, 6]");
@@ -155,10 +159,11 @@ describe("mandatory browser coverage across isolated jobs", () => {
     const doc = yaml.load(readFileSync(".github/workflows/ci.yml", "utf8")) as { jobs: Record<string, {
       if?: string; needs?: string[]; strategy?: { "fail-fast": boolean; "max-parallel": number; matrix: { shard: number[] } };
       "continue-on-error"?: boolean; steps: { uses?: string; run?: string; with?: Record<string, unknown> }[] }>; concurrency: Record<string, string> };
-    expect(Object.keys(doc.jobs).sort()).toEqual(["browser", "checks", "repository-checks"]);
-    expect(doc.jobs.checks.needs).toEqual(["repository-checks", "browser"]); expect(doc.jobs.checks.if).toBe("always()");
+    expect(Object.keys(doc.jobs).sort()).toEqual(["browser", "checks", "database-tests", "owned-keyfree-smoke", "repository-checks"]);
+    expect(doc.jobs.checks.needs).toEqual(["repository-checks", "database-tests", "browser", "owned-keyfree-smoke"]); expect(doc.jobs.checks.if).toBe("always()");
     expect(doc.jobs.browser.strategy).toEqual({ "fail-fast": false, "max-parallel": 6, matrix: { shard: [1, 2, 3, 4, 5, 6] } });
     expect(doc.jobs.browser.if).toBeUndefined(); expect(doc.jobs["repository-checks"].if).toBeUndefined();
+    expect(doc.jobs["database-tests"].if).toBeUndefined(); expect(doc.jobs["database-tests"].needs).toBeUndefined();
     const browserCommands = doc.jobs.browser.steps.flatMap(step => step.run ?? []).join("\n");
     expect(browserCommands).toContain('scripts/ci-browser-setup-timings.run.mts "$build_start" "${{ matrix.shard }}"');
     expect(browserCommands).toContain('process.env.RUNNER_TEMP+"/inherit-ci-setup-start-"');
@@ -173,9 +178,11 @@ describe("mandatory browser coverage across isolated jobs", () => {
       expect(checkout.with).toEqual({ "fetch-depth": 0, "persist-credentials": false });
     }
     const foundation = doc.jobs["repository-checks"].steps.flatMap(step => step.run ?? []).join("\n");
-    for (const command of ["pnpm typecheck", "pnpm lint", "pnpm test", "pnpm exec supabase test db", "pnpm test:invitation-locks",
+    for (const command of ["pnpm typecheck", "pnpm lint", "pnpm test", "pnpm test:invitation-locks",
       "pnpm gate:catalog-drift", "SERVER_URL=http://127.0.0.1:3199 pnpm gate:legal", "pnpm e2e:lighthouse"])
       expect(foundation).toContain(command);
+    expect(doc.jobs["repository-checks"].steps.filter(step => step.run === "pnpm exec supabase test db")).toEqual([]);
+    expect(doc.jobs["database-tests"].steps.filter(step => step.run === "pnpm exec supabase test db")).toHaveLength(1);
     for (const gate of ["legal", "first-glance", "names", "templates", "readability", "secrets", "routes", "claims", "env", "jurisdictions"])
       expect(foundation).toContain(`pnpm gate:${gate}`);
   });

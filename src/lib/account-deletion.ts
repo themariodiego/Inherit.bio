@@ -30,6 +30,15 @@ export async function getSensitiveAccountContext(): Promise<
   SensitiveAccountContext | null
 > {
   const supabase = await createClient();
+  return getSensitiveAccountContextFromClient(supabase);
+}
+
+/** Share the exact ordinary parallel SDK calls with an owner-operated check.
+ * The caller must supply an actual SDK client; this does not grant authority,
+ * check MFA or replace the consuming SQL's real sensitive-session checks. */
+export async function getSensitiveAccountContextFromClient(
+  supabase: Pick<Awaited<ReturnType<typeof createClient>>, "auth">,
+): Promise<SensitiveAccountContext | null> {
   const [userResult, sessionResult] = await Promise.all([
     supabase.auth.getUser(),
     supabase.auth.getSession(),

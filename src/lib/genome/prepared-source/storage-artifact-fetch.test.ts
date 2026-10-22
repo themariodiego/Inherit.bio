@@ -4,6 +4,7 @@ import { createPreparedArtifactFetch } from "./storage-artifact-fetch";
 import type { PreparedStoredArtifact } from "./storage-writer";
 import { readVerifiedPreparedArtifact } from "./verified-artifact-reader";
 import { PreparationMetrics } from "../../uploads/preparation-metrics";
+import { createRequesterStatementRuntime } from "../../exports/requester-statement-runtime";
 
 const bytes = new TextEncoder().encode("synthetic prepared root");
 const sha = (value: Uint8Array) => createHash("sha256").update(value).digest("hex");
@@ -24,6 +25,70 @@ function streaming(chunks: Uint8Array[] = [bytes], headers: HeadersInit = {}, st
 beforeEach(() => {
   vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "http://127.0.0.1:55321");
   vi.stubEnv("SUPABASE_SERVICE_ROLE_KEY", "synthetic-local-fixture");
+});
+
+describe("explicit runtime-owned prepared transport cancellation",()=>{
+ it("awaits the real delayed body cancellation before return and proves owned bytes only after settlement",async()=>{
+  const entered=Promise.withResolvers<void>(),finish=Promise.withResolvers<void>(),runtime=createRequesterStatementRuntime();
+  const owned=bytes.slice();let sent=false;
+  const cancel=vi.fn(async()=>{entered.resolve();await finish.promise;});
+  vi.stubGlobal("fetch",vi.fn(async()=>new Response(new ReadableStream<Uint8Array>({
+   pull(controller){if(!sent){sent=true;controller.enqueue(owned);}},cancel
+  },{highWaterMark:0}))));
+  const source=await createPreparedArtifactFetch(undefined,runtime)(artifact(),new AbortController().signal);
+  const iterator=source[Symbol.asyncIterator]();expect((await iterator.next()).value).toEqual(bytes);
+  let completed=false;const closing=iterator.return!().then(value=>{completed=true;return value;});
+  await entered.promise;expect(completed).toBe(false);expect(owned).toEqual(bytes);expect(()=>runtime.assertSettled()).toThrow();
+  finish.resolve();expect(await closing).toMatchObject({done:true});
+  await runtime.settle(Date.now()+5_000);runtime.assertSettled();expect(owned.every(byte=>byte===0)).toBe(true);
+  expect(cancel).toHaveBeenCalledOnce();
+ });
+ it("retains cancellation refusal as an unresolved runtime instead of a successful cleanup",async()=>{
+  const runtime=createRequesterStatementRuntime(),cancel=vi.fn(async()=>{throw new Error("private cancellation payload");});
+  vi.stubGlobal("fetch",vi.fn(async()=>new Response(new ReadableStream({cancel}))));
+  const source=await createPreparedArtifactFetch(undefined,runtime)(artifact(),new AbortController().signal);
+  await expect(source[Symbol.asyncIterator]().return!()).rejects.toMatchObject({code:"unavailable",message:"unavailable"});
+  await expect(runtime.settle(Date.now()+5_000)).rejects.toThrow("statement_runtime_disposition_held");
+  expect(()=>runtime.assertSettled()).toThrow();expect(cancel).toHaveBeenCalledOnce();
+ });
+ it("preserves the original safe operation refusal while recording failed physical cleanup",async()=>{
+  const runtime=createRequesterStatementRuntime(),cancel=vi.fn(async()=>{throw new Error("private cancellation payload");});
+  vi.stubGlobal("fetch",vi.fn(async()=>new Response(new ReadableStream({cancel}),{status:206})));
+  await expect(createPreparedArtifactFetch(undefined,runtime)(artifact(),new AbortController().signal))
+   .rejects.toMatchObject({code:"integrity_mismatch",message:"integrity_mismatch"});
+  await expect(runtime.settle(Date.now()+5_000)).rejects.toThrow("statement_runtime_disposition_held");
+  expect(cancel).toHaveBeenCalledOnce();
+ });
+ it("uses one real cancellation task across concurrent and repeated returns",async()=>{
+  const entered=Promise.withResolvers<void>(),finish=Promise.withResolvers<void>(),runtime=createRequesterStatementRuntime();
+  const cancel=vi.fn(async()=>{entered.resolve();await finish.promise;});
+  vi.stubGlobal("fetch",vi.fn(async()=>new Response(new ReadableStream({cancel}))));
+  const source=await createPreparedArtifactFetch(undefined,runtime)(artifact(),new AbortController().signal),iterator=source[Symbol.asyncIterator]();
+  const first=iterator.return!(),second=iterator.return!();await entered.promise;expect(cancel).toHaveBeenCalledOnce();
+  finish.resolve();await first;await second;await runtime.settle(Date.now()+5_000);runtime.assertSettled();
+  expect(await iterator.return!()).toMatchObject({done:true});expect(cancel).toHaveBeenCalledOnce();
+ });
+ it("keeps a late response and its cancellation tracked even after the caller has already refused",async()=>{
+  const fetched=Promise.withResolvers<Response>(),entered=Promise.withResolvers<void>(),finish=Promise.withResolvers<void>();
+  const runtime=createRequesterStatementRuntime(),controller=new AbortController();
+  const cancel=vi.fn(async()=>{entered.resolve();await finish.promise;});
+  vi.stubGlobal("fetch",vi.fn(()=>fetched.promise));
+  const pending=createPreparedArtifactFetch(undefined,runtime)(artifact(),controller.signal);
+  // Wait until the owned acquire task has actually invoked the public adapter.
+  await Promise.resolve();controller.abort();await expect(pending).rejects.toMatchObject({code:"aborted",message:"aborted"});
+  let settled=false;const settlement=runtime.settle(Date.now()+5_000).then(()=>{settled=true;});
+  fetched.resolve(new Response(new ReadableStream({cancel})));await entered.promise;
+  expect(settled).toBe(false);expect(()=>runtime.assertSettled()).toThrow();
+  finish.resolve();await settlement;runtime.assertSettled();expect(cancel).toHaveBeenCalledOnce();
+ });
+ it("retains the original default's best-effort return instead of silently opting all callers into the runtime mode",async()=>{
+  const entered=Promise.withResolvers<void>(),finish=Promise.withResolvers<void>();
+  const cancel=vi.fn(async()=>{entered.resolve();await finish.promise;});
+  vi.stubGlobal("fetch",vi.fn(async()=>new Response(new ReadableStream({cancel}))));
+  const source=await createPreparedArtifactFetch()(artifact(),new AbortController().signal);
+  expect(await source[Symbol.asyncIterator]().return!()).toMatchObject({done:true});await entered.promise;
+  expect(cancel).toHaveBeenCalledOnce();finish.resolve();
+ });
 });
 afterEach(() => { vi.unstubAllEnvs(); vi.unstubAllGlobals(); });
 

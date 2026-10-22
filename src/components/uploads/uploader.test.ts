@@ -2,6 +2,7 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import type { OwnUploadLimits } from "@/lib/uploads/subject-upload-contract";
+import { OWN_UPLOAD_COPY } from "@/copy/upload/consent";
 import { Uploader } from "./uploader";
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
@@ -13,6 +14,15 @@ const limits: OwnUploadLimits = {
 };
 
 describe("uploader size disclosure", () => {
+  it("states the unsupported read formats before choosing a file, including without deployment limits", () => {
+    const html = renderToStaticMarkup(createElement(Uploader));
+    expect(html).toContain(OWN_UPLOAD_COPY.sequenceReadsUnavailable);
+    expect(html).toContain("Choose file</button>");
+    expect(OWN_UPLOAD_COPY.sequenceReadsUnavailable.trim().split(/\s+/).length).toBeLessThanOrEqual(40);
+    expect(html.indexOf(OWN_UPLOAD_COPY.sequenceReadsUnavailable)).toBeLessThan(html.indexOf("Choose file</button>"));
+    expect(html).not.toContain("Stored (Tier 2)");
+  });
+
   it("renders the distinct gVCF ceiling supplied by the deployment", () => {
     const html = renderToStaticMarkup(createElement(Uploader, { limits }));
     expect(html).toContain("genotype table files up to 52 MB");

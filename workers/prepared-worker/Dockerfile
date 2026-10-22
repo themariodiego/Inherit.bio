@@ -4,7 +4,8 @@
 # .dockerignore, so only what is COPYed below reaches the image.
 #
 # Node 24 matches the production Vercel runtime, not the CI runner.
-FROM node:24-bookworm-slim
+# Docker Official Images mirror; the digest fixes the same verified image bytes.
+FROM public.ecr.aws/docker/library/node:24-bookworm-slim@sha256:d6aa754f16b3197301076f047b5def2f02ea1dbbc2ca920407d46d7ec7f87b20
 
 # Corepack downloads the pnpm pinned by package.json#packageManager on first
 # use; without a terminal it must not stop to ask.

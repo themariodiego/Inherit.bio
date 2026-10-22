@@ -11,5 +11,17 @@
       "denylistParts": ["outside", "genome"],
       "textParts": ["const product = outside", "Genome;"]
     }
+  ],
+  "externalHostFixtures": [
+    {
+      "path": "scripts/keyless-review-origin-audit.test.ts",
+      "url": "https://www.google-analytics.com/collect",
+      "reason": "Synthetic negative fixture: the independent tracker-host check must reject this exact literal without any request."
+    },
+    {
+      "path": "scripts/keyless-review-origin-audit.test.ts",
+      "url": "https://checkout.stripe.com/pay",
+      "reason": "Synthetic negative fixture: the rendered payment-origin check must reject this exact form action without any request."
+    }
   ]
 }

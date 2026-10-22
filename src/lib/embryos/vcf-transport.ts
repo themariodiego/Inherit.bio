@@ -186,6 +186,53 @@ export interface EmbryoVcfFragment {
   vcf: string;
 }
 
+/** The exact header every stored fragment of this ordinal and build starts with. */
+export function embryoVcfFragmentHeader(ordinal: number, build: EmbryoTransportBinding["build"]): string[] {
+  if (!Number.isInteger(ordinal) || ordinal < 0 || ordinal >= LIMITS.maximumSampleColumns) {
+    throw new EmbryoTransportError("invalid_session");
+  }
+  return [VERSION, `##reference=${build}`, ...DEFINITIONS, `${COLUMNS}\tEmbryo_${ordinal + 1}`];
+}
+
+/**
+ * Revalidate one stored single-embryo fragment before the worker reads a
+ * genotype from it: exactly the regenerated header for this ordinal and
+ * build, then records that re-serialize byte for byte through the same
+ * closed record rule the chunk route applied. Returns the fragment's lines,
+ * header included, for the product parser. A fragment that fails here was
+ * changed after it was written and is never partly used.
+ */
+export function validateEmbryoVcfFragment(bytes: Uint8Array, ordinal: number,
+  build: EmbryoTransportBinding["build"]): string[] {
+  if (!["GRCh37", "GRCh38"].includes(build)) throw new EmbryoTransportError("invalid_session");
+  if (!bytes.length || bytes.length > INGEST_CHUNK_MAXIMUM_BYTES + 4096) throw new EmbryoTransportError("too_large");
+  if (bytes[bytes.length - 1] !== 10) throw new EmbryoTransportError("invalid_chunk");
+  let text: string;
+  try {
+    text = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(bytes);
+  } catch {
+    throw new EmbryoTransportError("invalid_chunk");
+  }
+  const lines = text.split("\n");
+  lines.pop();
+  const expected = embryoVcfFragmentHeader(ordinal, build);
+  if (lines.length <= expected.length || expected.some((line, index) => lines[index] !== line)) {
+    if (lines.slice(0, expected.length).some((line) => line.startsWith("##reference=") && line !== expected[1])) {
+      throw new EmbryoTransportError("build_unknown");
+    }
+    throw new EmbryoTransportError("invalid_chunk");
+  }
+  const records = lines.slice(expected.length);
+  if (records.length > LIMITS.maximumLogicalRecords) throw new EmbryoTransportError("too_large");
+  for (const line of records) {
+    if (encoder.encode(line).byteLength + 1 > LIMITS.maximumLogicalLineBytes) throw new EmbryoTransportError("too_large");
+    if (/[\u0000-\u0008\u000b-\u001f\u007f]/.test(line)) throw new EmbryoTransportError("invalid_chunk");
+    // A stored fragment never carries a discarded contig, so null is invalid.
+    if (cleanRecord(line, 1) !== line) throw new EmbryoTransportError("invalid_chunk");
+  }
+  return lines;
+}
+
 /**
  * Validate the entire bounded chunk before returning anything to a storage
  * caller. Authentication, hash matching, sequence/quota reservation and

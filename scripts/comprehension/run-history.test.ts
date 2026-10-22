@@ -93,6 +93,34 @@ describe("chronological instrument history", () => {
     expect(() => history.apply({ kind: "close-revision", revision: pinned.revision })).toThrow("closure refused");
   });
 
+  it("replays explicit manual key-free closure without rewriting a failed run or reusing a session", () => {
+    const history = new RunHistory();
+    const pinned = createLiveManifest(inputs, { kind: "smoke", runId: "failed-native", revision: "a".repeat(40),
+      samplingSeed: "b".repeat(64), settings, taskIds: ["T6", "T7"], personaIds: [inputs.personas[0].id],
+      inference: { label: "local/deterministic-stub", provider: "local-deterministic-stub" }, modelIdentity: "local-deterministic-stub",
+      build: { baseUrl: "http://localhost:3100", buildId: "synthetic-build", jurisdiction: "TEST-LOCAL" }, skipped: [], blockers: [] });
+    history.apply({ kind: "start", manifest: pinned });
+    history.apply({ kind: "session-open", runId: pinned.runId, sessionId: "failed-session", personaId: pinned.personaIds[0], taskId: "T6" });
+    history.apply({ kind: "resource-unresolved", runId: pinned.runId, id: "failed-session", resource: "browser" });
+    history.apply({ kind: "trace", runId: pinned.runId, sessionId: "failed-session", phase: "ended", value: { closed: false } });
+    history.apply({ kind: "finish", runId: pinned.runId, status: "stopped", instrumentClean: false, failure: "resource-unresolved" });
+    const prefix = history.events;
+    const closure = { kind: "resource-reconciled", runId: pinned.runId, id: "failed-session", resource: "browser",
+      reason: "manual-key-free-native-cleanup", historyPrefixSha256: "1".repeat(64), previousOwnerSha256: "2".repeat(64),
+      publicCleanupSha256: "3".repeat(64), ownerNonce: "00000000-0000-4000-8000-000000000001",
+      bootId: "00000000-0000-4000-8000-000000000002", daemonId: "synthetic-empty-daemon" };
+    expect(() => history.apply({ ...closure, id: "foreign-session" })).toThrow();
+    history.apply(closure);
+    expect(history.events.slice(0, prefix.length)).toEqual(prefix);
+    expect(history.resourceStopRequired).toBe(false);
+    expect(() => history.apply(closure)).toThrow();
+    const replay = new RunHistory(); history.events.forEach(event => replay.apply(event));
+    expect(replay.resourceStopRequired).toBe(false);
+    replay.apply({ kind: "start", manifest: { ...pinned, runId: "new-native" } });
+    expect(() => replay.apply({ kind: "session-open", runId: "new-native", sessionId: "failed-session",
+      personaId: pinned.personaIds[0], taskId: "T6" })).toThrow("reuse");
+  });
+
   it("keeps calibration and smoke runs out of revision tracking and records only declared skips", () => {
     const partial = (runId: string, revision: string) => createLiveManifest(inputs, { kind: "calibration", runId, revision,
       samplingSeed: "b".repeat(64), settings, taskIds: ["T1", "T6"], personaIds: [inputs.personas[0].id],
@@ -125,5 +153,21 @@ describe("chronological instrument history", () => {
     expect(() => (snapshot as unknown[]).pop()).toThrow();
     expect(() => { (snapshot[0] as { kind: string }).kind = "finish"; }).toThrow();
     expect(history.events).toHaveLength(1);
+  });
+});
+
+
+describe("manual ownership digest distinction", () => {
+  it("requires exactly one full-proof or retained-challenge digest without relabeling old records", async () => {
+    const { historyEventSchema } = await import("./run-history");
+    const base = { kind: "resource-reconciled", runId: "unit-run", id: "unit-session", resource: "browser",
+      reason: "manual-key-free-native-cleanup", historyPrefixSha256: "1".repeat(64), publicCleanupSha256: "3".repeat(64),
+      ownerNonce: "00000000-0000-4000-8000-000000000001", bootId: "00000000-0000-4000-8000-000000000002", daemonId: "unit" };
+    const old = { ...base, previousOwnerSha256: "2".repeat(64) };
+    expect(historyEventSchema.parse(old)).toEqual(old);
+    const legacy = { ...base, previousChallengeSha256: "4".repeat(64) };
+    expect(historyEventSchema.parse(legacy)).toEqual(legacy);
+    expect(() => historyEventSchema.parse(base)).toThrow();
+    expect(() => historyEventSchema.parse({ ...old, previousChallengeSha256: "4".repeat(64) })).toThrow();
   });
 });

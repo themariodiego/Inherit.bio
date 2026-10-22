@@ -20,9 +20,13 @@ import {
 } from "@/copy/embryos/index";
 import { cohortScopeSegment, copilotGroupScopes } from "@/lib/copilot/group-scopes";
 import { EMBRYO_ANALYSIS, cohortCapability, permits } from "@/lib/embryos/access";
+import { EmbryoReadError } from "@/lib/embryos/cohorts";
+import { loadSavedCarrierLibraryCoverage, type CarrierLibraryCoverageRow } from "@/lib/embryos/carrier-library-read";
 import { route } from "@/lib/primary-routes";
 import { cn } from "@/lib/utils";
 import { loadCohorts, loadViewer } from "./context";
+import { acknowledged } from "@/lib/embryos/tier2";
+import { loadSavedEmbryoStatisticalCoverage } from "@/lib/embryos/statistical-read";
 
 export const metadata: Metadata = { title: EMBRYOS_H1 };
 
@@ -53,6 +57,24 @@ export default async function EmbryosPage() {
   );
   // The newest cohort the viewer may actually open.
   const newest = cohorts.find((cohort) => permits(cohortDecisions.get(cohort.id)!)) ?? null;
+  const tier2 = allowed && await acknowledged(user);
+  const statisticalCoverage = new Map(await Promise.all(cohorts.map(async cohort => [cohort.id,
+    tier2 && cohort.status === "active" && permits(cohortDecisions.get(cohort.id)!)
+      ? await loadSavedEmbryoStatisticalCoverage(user.id, cohort.id, cohort.embryos.map(embryo => embryo.id)) : null,
+  ] as const)));
+  // The reader independently requires current analysis and the same session's
+  // Tier-2 acknowledgement; the hub cannot reveal derived coverage early.
+  const coverage = new Map<string, { rows: CarrierLibraryCoverageRow[] | null; failed: boolean }>(
+    await Promise.all(cohorts.map(async cohort => {
+    try {
+      const rows = permits(cohortDecisions.get(cohort.id)!)
+        ? await loadSavedCarrierLibraryCoverage(user.id, cohort) : null;
+      return [cohort.id, { rows, failed: false }] as const;
+    } catch (error) {
+      if (!(error instanceof EmbryoReadError)) throw error;
+      return [cohort.id, { rows: null, failed: true }] as const;
+    }
+  })));
 
   const tileHref: Record<(typeof HUB_TILES)[number]["id"], string | null> = {
     upload: allowed ? route("embryos.upload") : null,
@@ -95,13 +117,17 @@ export default async function EmbryosPage() {
         <section data-density-top-level-section className="space-y-6">
           <h2 className="display">{YOUR_EMBRYOS_HEADING}</h2>
           <ul data-slot="cohort-list" className="space-y-4">
-            {cohorts.map((cohort) => {
+            {cohorts.map((cohort, cohortIndex) => {
               const cohortDecision = cohortDecisions.get(cohort.id)!;
               return (
                 <CohortCard
                   key={cohort.id}
                   cohort={cohort}
+                  cohortNumber={cohortIndex + 1}
                   jurisdictionCopy={permits(cohortDecision) ? null : cohortDecision.userFacingCopy}
+                  statisticalCoverage={statisticalCoverage.get(cohort.id)}
+                  coverage={coverage.get(cohort.id)?.rows}
+                  coverageReadFailed={coverage.get(cohort.id)?.failed}
                 />
               );
             })}

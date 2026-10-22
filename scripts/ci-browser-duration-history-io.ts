@@ -22,7 +22,7 @@ function readBounded(file: string): Buffer {
     return bytes;
   } finally { closeSync(fd); }
 }
-export function decodeHistoricalZip(bytes: Buffer, member: "ci-browser-manifest.json" | "ci-browser-shard.json"): unknown {
+export function decodeHistoricalZip(bytes: Buffer, member: "ci-browser-manifest.json" | "ci-browser-shard.json" | "owned-keyfree-smoke.json"): unknown {
   assert(Number(process.versions.node.split(".")[0]) === 22, "Reviewed Node22 bounded inflater required");
   assert(bytes.length > 0 && bytes.length <= maxInputBytes, "ZIP size is outside its bound");
   const entries = new AdmZip(bytes).getEntries(); assert(entries.length === 1, "Exactly one approved JSON member required");

@@ -9,6 +9,7 @@ import {
 } from "@/lib/legal/jurisdictions";
 import type { EmbryoCohortView } from "./cohorts";
 import type { EmbryoStatus } from "./policy";
+import { isUntouchedPendingInput, type PendingEmbryoInput } from "./pending-input";
 
 /**
  * What an Embryo surface may show, and to whom (design §1.4).
@@ -100,6 +101,11 @@ export interface SurfaceStateInput {
   cohort: EmbryoCohortView | null;
   /** The one embryo the detail page names; the compare page passes none. */
   embryoStatus?: EmbryoStatus;
+  /** Optional detail-only native snapshot; other surfaces retain their exact order. */
+  embryoId?: string;
+  subjectId?: string;
+  accountId?: string;
+  pendingInput?: PendingEmbryoInput;
   acknowledged: boolean;
 }
 
@@ -114,6 +120,10 @@ export interface SurfaceStateInput {
 export function resolveResultSurfaceState(input: SurfaceStateInput): ResultSurfaceState {
   if (input.decision.status !== "permitted") return "jurisdiction-unavailable";
   if (!input.cohort) return "empty";
+  if (input.cohort.status === "upload_pending" && input.embryoStatus === "pending"
+    && input.pendingInput?.cohortId === input.cohort.id && input.pendingInput.embryoId === input.embryoId
+    && input.pendingInput.subjectId === input.subjectId && input.pendingInput.accountId === input.accountId
+    && isUntouchedPendingInput(input.pendingInput)) return "empty";
   if (input.cohort.status === "ingesting" || input.embryoStatus === "pending") return "processing";
   if (input.cohort.status === "upload_pending") return "empty";
   if (!input.cohort.analysisGranted) return "consent-required";

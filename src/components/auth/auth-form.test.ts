@@ -39,3 +39,16 @@ describe("auth forms before hydration", () => {
     expect(onSubmit).not.toHaveBeenCalled();
   });
 });
+
+describe("auth action density without smaller targets", () => {
+  it.each(forms)("keeps the $name submit target 44px tall at content width", ({ fields, submitLabel }) => {
+    const html = renderToStaticMarkup(createElement(AuthForm, { fields, submitLabel, onSubmit: vi.fn() }));
+    const button = html.match(/<button\b[^>]*>/u)?.[0];
+    expect(button).toBeDefined();
+    expect(button).toContain("h-11");
+    expect(button).toContain("w-fit");
+    expect(button).not.toContain("w-full");
+    expect(button).toContain('disabled=""');
+    expect(html).toContain(submitLabel);
+  });
+});

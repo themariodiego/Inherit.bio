@@ -127,6 +127,11 @@ export interface SessionDiagnostics {
   refusedValues: number;
   typedEmails: string[];
 }
+export type LiveSessionSetupStage = "read-browser-context" | "read-browser-route" | "read-browser-prepare"
+  | "read-browser-prepare-close" | "read-browser-init-script" | "read-browser-page-open"
+  | "read-browser-start-page" | "read-browser-context-cleanup";
+export type LiveSessionSetupDiagnostic = (stage: LiveSessionSetupStage, error: unknown,
+  cleanup: "unreturned" | "uncertain") => void;
 export interface LiveSessionOptions {
   browser: Browser;
   sessionId: string;
@@ -138,6 +143,8 @@ export interface LiveSessionOptions {
   actionTimeoutMs: number;
   /** Runs before counting starts, in its own tab: signing in is not the task. */
   prepare?: (page: Page) => Promise<void>;
+  /** Supplemental fixed metadata only; it cannot change setup or cleanup. */
+  setupDiagnostic?: LiveSessionSetupDiagnostic;
   inbox?: readonly InboxMessage[];
   /** Decides completion after the session, from the path and any database fact. */
   complete: (state: { paths: readonly string[]; context: BrowserContext; diagnostics: SessionDiagnostics }) => Promise<boolean>;
@@ -147,7 +154,12 @@ export type LiveSession = Omit<BrowserAdapter, "record"> & { record(): Promise<B
 
 export async function openLiveSession(options: LiveSessionOptions): Promise<LiveSession> {
   const allowed = new Set(options.allowedOrigins.map(origin => new URL(origin).origin));
-  const context = await options.browser.newContext({ baseURL: options.baseURL, serviceWorkers: "block" });
+  const report: LiveSessionSetupDiagnostic = (stage, error, cleanup) => {
+    try { options.setupDiagnostic?.(stage, error, cleanup); } catch { /* Original refusal remains. */ }
+  };
+  const context = await options.browser.newContext({ baseURL: options.baseURL, serviceWorkers: "block" })
+    .catch(error => { report("read-browser-context", error, "unreturned"); throw error; });
+  let stage: LiveSessionSetupStage = "read-browser-route";
   try {
     await context.route("**/*", route => {
       const url = new URL(route.request().url());
@@ -155,10 +167,13 @@ export async function openLiveSession(options: LiveSessionOptions): Promise<Live
         ? route.abort("blockedbyclient") : route.continue();
     });
     if (options.prepare) {
+      stage = "read-browser-prepare";
       const setup = await context.newPage();
       await options.prepare(setup);
+      stage = "read-browser-prepare-close";
       await setup.close();
     }
+    stage = "read-browser-init-script";
     await context.addInitScript(key => {
       const bump = () => {
         // A refused storage reads back as zero actions, which can only fail a
@@ -167,6 +182,7 @@ export async function openLiveSession(options: LiveSessionOptions): Promise<Live
       };
       for (const name of ["click", "submit"]) window.addEventListener(name, bump, true);
     }, COUNTER_KEY);
+    stage = "read-browser-page-open";
     let page = await context.newPage();
     context.on("page", opened => { page = opened; });
     const paths: string[] = [];
@@ -177,6 +193,7 @@ export async function openLiveSession(options: LiveSessionOptions): Promise<Live
       } catch { /* about:blank */ }
     };
     page.on("framenavigated", frame => { if (frame === page.mainFrame()) track(); });
+    stage = "read-browser-start-page";
     await page.goto(options.startPath, { waitUntil: "domcontentloaded" });
     track();
     const inboxLinks = new Map((options.inbox ?? []).flatMap(message => message.links.map(link => [link.id, link.url] as const)));
@@ -275,7 +292,8 @@ export async function openLiveSession(options: LiveSessionOptions): Promise<Live
     };
     return session;
   } catch (error) {
-    await context.close().catch(() => {});
+    report(stage, error, "unreturned");
+    await context.close().catch(cleanupError => { report("read-browser-context-cleanup", cleanupError, "uncertain"); });
     throw error;
   }
 }

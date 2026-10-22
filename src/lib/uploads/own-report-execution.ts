@@ -16,7 +16,8 @@ import type { ownReportReadyEnvelope } from "./own-report-ready-envelope";
 import { reportCatalogTemplateSchema } from "../genome/report-catalog-snapshot";
 import { lineageLoci } from "../ancestry/lineage-panel";
 import type { OwnAncestryCall } from "./own-ancestry-content";
-import { computeOwnAncestryContentV3, SEVEN_OWN_ANCESTRY_PANEL } from "./own-ancestry-content-v3";
+import { SEVEN_OWN_ANCESTRY_PANEL } from "./own-ancestry-content-v3";
+import { computeOwnAncestryContentV4 } from "./own-ancestry-content-v4";
 
 const REPORT_PURPOSES = ["reports.monogenic", "reports.polygenic"] as const;
 const PURPOSES = [...REPORT_PURPOSES, "ancestry"] as const;
@@ -161,7 +162,7 @@ export async function generateOwnReportResults({ actor, fileId, signal, readyMai
         }
         const checked = await call("check"), same = claimSchema.safeParse(checked.data);
         if (checked.error || !same.success || JSON.stringify(same.data) !== JSON.stringify(claim)) throw new Error("unavailable");
-        const ancestry = computeOwnAncestryContentV3({ source: { fileId, subjectId: claim.authorization.subjectId,
+        const ancestry = computeOwnAncestryContentV4({ source: { fileId, subjectId: claim.authorization.subjectId,
           normalizedBuild: source.normalizedBuild, callEncoding: encoding, sourceRevision: claim.authorization.sourceRevision,
           sourceSha256: claim.authorization.sourceSha256, normalizedAt: claim.authorization.normalizedAt },
           calls, lineageCalls, panel: SEVEN_OWN_ANCESTRY_PANEL });

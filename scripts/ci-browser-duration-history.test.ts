@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { historicalDurationSource, multiRunDurationEstimator, multiRunHistoryFromCaptures, parseMultiRunBrowserDurationProfile,
   type HistoricalCaptureInput, type MultiRunDurationHistory } from "./ci-browser-duration-history";
-import { parseBrowserDurationProfile, selectBrowserDurationProfile } from "./ci-browser-duration-plan";
+import { DEFAULT_BROWSER_ALLOCATION_SHA256, parseBrowserDurationProfile, selectBrowserDurationProfile } from "./ci-browser-duration-plan";
 
 const rawV1 = () => readFileSync("data/ci/browser-duration-profile.json", "utf8");
 const rawV2 = () => readFileSync("data/ci/browser-duration-profile-v2.json", "utf8");
@@ -14,7 +14,7 @@ const json = (value: unknown) => Buffer.from(JSON.stringify(value));
 const names = ["accessible-authenticated-pages.spec.ts", "control-target-size.spec.ts", "figure-text-alternatives.spec.ts",
   "page-reflow-accessibility.spec.ts", "public-pages-session-accessibility.spec.ts", "viewport-keyboard-accessibility.spec.ts"];
 /** Synthetic decoded receipts test the pure validator; they are never saved-history authentication evidence. */
-function fixture(runId = 1): HistoricalCaptureInput {
+function fixture(runId = 1, independentDatabase = false, ownedSmoke = false): HistoricalCaptureInput {
   const head = "a".repeat(40), workflowHead = "b".repeat(40), tree = "c".repeat(40);
   const identity = { head, runId: String(runId), runAttempt: "1", schemaVersion: 1, total: 6 };
   const cases = names.map((_, index) => `${String(index + 1).padStart(20, "0")}-${"1".repeat(20)}:chromium`);
@@ -25,10 +25,10 @@ function fixture(runId = 1): HistoricalCaptureInput {
     timings: { setupMs: 1, buildMs: 1, bootstrapMs: 1, browserMs: 100 }, providerUploads: 1,
     files: [{ file, project: "chromium", cases: [cases[index]], durationMs: 100 }] } }));
   const run = json({ id: runId, run_attempt: 1, head_sha: workflowHead, status: "completed", conclusion: "success", event: "pull_request", path: ".github/workflows/ci.yml" });
-  const jobs = json({ total_count: 8, jobs: ["repository-checks", "checks", ...names.map((_, index) => `browser (${index + 1})`)].map((name, index) => ({
+  const jobs = json({ total_count: ownedSmoke ? 10 : independentDatabase ? 9 : 8, jobs: ["repository-checks", "checks", ...(independentDatabase ? ["database-tests"] : []), ...(ownedSmoke ? ["owned-keyfree-smoke"] : []), ...names.map((_, index) => `browser (${index + 1})`)].map((name, index) => ({
     id: index + 1, name, run_id: runId, run_attempt: 1, head_sha: workflowHead, status: "completed", conclusion: "success", steps: [{ status: "completed", conclusion: "success" }] })) });
-  const artifacts = json({ total_count: 7, artifacts: [manifest, ...shards].map((zip, index) => ({
-    id: index + 1, name: `browser-case-1-${index ? `shard-${index}` : "manifest"}`, size_in_bytes: zip.bytes.length, digest: `sha256:${hash(zip.bytes)}`,
+  const artifacts = json({ total_count: ownedSmoke ? 8 : 7, artifacts: [manifest, ...shards, ...(ownedSmoke ? [{ bytes: Buffer.from("synthetic-owned") }] : [])].map((zip, index) => ({
+    id: index + 1, name: index === 7 ? "owned-keyfree-smoke-1" : `browser-case-1-${index ? `shard-${index}` : "manifest"}`, size_in_bytes: zip.bytes.length, digest: `sha256:${hash(zip.bytes)}`,
     expired: false, workflow_run: { id: runId, head_sha: workflowHead } })) });
   const testedCommit = json({ sha: head, tree: { sha: tree } });
   const captureReceipt = json({ runId, runAttempt: 1, prHead: workflowHead, testedMerge: head,
@@ -145,6 +145,37 @@ describe("pure captured historical source contract", () => {
     expect(source.files).toHaveLength(6); expect(source.projects).toEqual(["chromium"]);
     expect(multiRunHistoryFromCaptures([fixture(2), fixture(1)]).sources.map(source => source.runId)).toEqual(["1", "2"]);
   });
+  it("retains eight-job historical originals and accepts only a complete successful nine-job source", () => {
+    expect(historicalDurationSource(fixture()).files).toHaveLength(6);
+    expect(historicalDurationSource(fixture(2, true)).files).toHaveLength(6);
+    for (const mode of ["missing", "foreign", "skipped", "failed", "incomplete-count"]) {
+      const input = fixture(3, true);
+      mutateJson(input, "jobs", value => {
+        const jobs = value.jobs as { name: string; conclusion: string }[];
+        const database = jobs.find(job => job.name === "database-tests")!;
+        if (mode === "missing") value.jobs = jobs.filter(job => job !== database);
+        if (mode === "foreign") database.name = "optional-probe";
+        if (mode === "skipped" || mode === "failed") database.conclusion = mode;
+        if (mode === "incomplete-count") value.total_count = 8;
+      });
+      expect(() => historicalDurationSource(input)).toThrow();
+    }
+  });
+  it.each(["duration-v1", "queue-v1"])("retains actual measured timings from complete %s receipts", mode => {
+    const input = fixture();
+    const parts = input.shards.map((zip, index) => ({ index: index + 1,
+      cases: (zip.value as { assignedCases: string[] }).assignedCases }));
+    const profileSha256 = mode === "queue-v1" ? DEFAULT_BROWSER_ALLOCATION_SHA256 : "d".repeat(64);
+    const identity = { mode, profileSha256, planSha256: hash(JSON.stringify({ profileSha256, parts })) };
+    Object.assign(input.manifest.value as object, { allocation: { ...identity, parts } });
+    input.shards.forEach(zip => Object.assign(zip.value as object, { allocation: identity }));
+    const source = historicalDurationSource(input);
+    expect(source.files).toHaveLength(6);
+    expect(source.files.every(file => file.durationMs === 100 && file.baselineCaseCount === 1)).toBe(true);
+    Object.assign(input.shards[0].value as object, { allocation: { ...identity,
+      mode: mode === "queue-v1" ? "duration-v1" : "queue-v1" } });
+    expect(() => historicalDurationSource(input)).toThrow("allocation identity");
+  });
   it.each(["failed-run", "failed-step", "missing-job", "changed-api-artifact", "changed-zip", "mixed-head", "duplicate-case", "split-file", "missing-upload", "missing-sweep"])("rejects historical proof defect: %s", mode => {
     const input = fixture();
     if (mode === "failed-run") mutateJson(input, "run", value => { value.conclusion = "failure"; });
@@ -169,4 +200,19 @@ describe("pure captured historical source contract", () => {
     }
     expect(() => historicalDurationSource(input)).toThrow();
   });
+});
+
+it("retains a complete ten-job historical source and refuses missing, foreign or failed owned smoke", () => {
+  expect(historicalDurationSource(fixture(10, true, true)).files).toHaveLength(6);
+  for (const mode of ["missing", "foreign", "failed", "skipped"]) {
+    const input = fixture(10, true, true);
+    mutateJson(input, "jobs", value => {
+      const jobs = value.jobs as { name: string; conclusion: string }[];
+      const owned = jobs.find(job => job.name === "owned-keyfree-smoke")!;
+      if (mode === "missing") value.jobs = jobs.filter(job => job !== owned);
+      if (mode === "foreign") owned.name = "optional-probe";
+      if (mode === "failed" || mode === "skipped") owned.conclusion = mode;
+    });
+    expect(() => historicalDurationSource(input)).toThrow();
+  }
 });

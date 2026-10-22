@@ -1,0 +1,39 @@
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import { describe, expect, it, vi } from "vitest";
+vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
+import { PublicAppealDocuments } from "./public-appeal-documents";
+import type { PublicAppealView } from "@/lib/future-person/public-appeal-session";
+const view: PublicAppealView = { caseKind: "subject-objection", deadline: "2026-11-01T00:00:00Z",
+ documentKinds: ["appeal-photo-identity", "appeal-subject-source-control"], evidenceState: "collecting", completionAvailable: true, documents: [] };
+const render = (overrides: Partial<PublicAppealView> = {}) => renderToStaticMarkup(createElement(PublicAppealDocuments, {
+ view: { ...view, ...overrides }, documentNonce: "synthetic-document-form", completeNonce: "synthetic-complete-form", documentCsrf: "a".repeat(64), completeCsrf: "b".repeat(64),
+}));
+describe("purpose-bound public appeal evidence page", () => {
+ it("presents only its two registered kind labels with accessible file controls and no target selector", () => {
+  const html = render();expect(html).toContain("Photo identity document");expect(html).toContain("Evidence that the source is yours");
+  expect(html).not.toContain("genetic parent role");expect(html.match(/type="file"/gu)).toHaveLength(2);
+  expect(html).toContain('for="appeal-appeal-photo-identity"');expect(html).toContain('aria-describedby="appeal-appeal-photo-identity-hint"');
+  expect(html).toContain("The original filename is not sent");expect(html).toContain("do not give you access");
+  expect(html).not.toMatch(/name="(?:subjectId|cohortId|accountId|reviewer)"/u);
+ });
+ it("keeps completion unavailable without both received documents and affirmation", () => {
+  expect(render()).toMatch(/disabled=""[^>]*>Send for review/u);
+ });
+ it("keeps a genuinely unbound access-review producer closed", () => {
+  const html = render({ caseKind: "access-or-review-appeal", documentKinds: ["appeal-photo-identity", "appeal-decision-notice"], completionAvailable: false });
+  expect(html).toContain("underlying decision must be identified");expect(html).not.toContain("Send for review");
+ });
+ it("uses the server-selected genetic-parent proof and never substitutes subject control", () => {
+  const html = render({ caseKind: "genetic-parent-objection", documentKinds: ["appeal-photo-identity", "appeal-genetic-parent-authority"] });
+  expect(html).toContain("Evidence of your genetic parent role");expect(html).not.toContain("Evidence that the source is yours");
+ });
+});
+
+it("continues the same requested evidence round without replacing kinds, identity or the original case deadline", () => {
+ const html = render({ informationRequested: true });
+ expect(html).toContain("You were asked for more files for this same request.");
+ expect(html).toContain("Its original deadline has not changed.");
+ expect(html.match(/type="file"/gu)).toHaveLength(2);
+ expect(html).not.toMatch(/name="(?:recipient|email|deadline|targetId)"/u);
+});

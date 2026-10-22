@@ -1,5 +1,4 @@
 import type { ReactNode } from "react";
-import { LegalTocRail } from "./toc-rail";
 
 export interface LegalSection {
   id: string;
@@ -11,10 +10,10 @@ export interface LegalSection {
 
 /**
  * Shared layout for legal and policy pages: a reading head (eyebrow, display
- * title, effective date, lede), two anchor tables of contents (a plate on
- * phones, a sticky rail on desktop) and ruled sections on the 68ch measure.
- * Prose styling lives in `src/app/styles/reading.css`. Server component; the
- * rail is the one client child, so it can mark the current section.
+ * title, effective date, lede), one native navigation disclosure and ruled
+ * sections on the 68ch measure. Only navigation is collapsed: every policy,
+ * consent and safety paragraph stays in the ordinary page flow.
+ * Prose styling lives in `src/app/styles/reading.css`. Server component.
  */
 export function LegalPage({
   eyebrow,
@@ -60,22 +59,20 @@ export function LegalPage({
         {intro && <div className="lede reading-intro">{intro}</div>}
       </header>
 
-      <details className="legal-toc-plate plate mt-block lg:hidden">
-        <summary className="eyebrow">On this page</summary>
+      <details className="mt-block">
+        <summary className="eyebrow min-h-11 w-fit cursor-pointer content-center">On this page</summary>
         <nav aria-label="On this page">
-          <ol>
+          <ol className="mt-2 flex flex-col gap-2">
             {sections.map((section) => (
               <li key={section.id}>
-                <a href={`#${section.id}`}>{section.heading}</a>
+                <a className="link-target" href={`#${section.id}`}>{section.heading}</a>
               </li>
             ))}
           </ol>
         </nav>
       </details>
 
-      <div className="mt-section lg:grid lg:grid-cols-[14rem_minmax(0,1fr)] lg:gap-16">
-        <LegalTocRail entries={sections.map(({ id, heading }) => ({ id, heading }))} />
-
+      <div className="mt-section">
         <div className="legal-sections min-w-0">
           {sections.map((s) => (
             <section key={s.id} id={s.id} className="legal-section">

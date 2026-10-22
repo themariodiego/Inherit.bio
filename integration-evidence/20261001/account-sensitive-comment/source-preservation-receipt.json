@@ -1,0 +1,37 @@
+{
+  "status": "PASS",
+  "parent": "4c52120c219b24d660d492f9a3a9c214e4367b08",
+  "scope": "comment-only wording correction; no runtime change",
+  "sourceFile": "src/lib/account-deletion.ts",
+  "exactSingleCommentReplacement": true,
+  "commentFreeSyntaxSha256": "6c44ae67d3565e1c388e867b00bb25edf292c374b2e65c2536d0f93e28be36f5",
+  "unchangedDetectorAndAllowlist": [
+    "scripts/mock-token-allowlist.test.ts",
+    "scripts/mock-token-allowlist.json"
+  ],
+  "allOtherTrackedPathsUnchanged": true,
+  "originalSupabasePathCount": 435,
+  "focusedTests": {
+    "files": 1,
+    "tests": 5,
+    "status": "PASS",
+    "log": "focused-token-inventory.log"
+  },
+  "preservedFailure": {
+    "path": "/Users/mariodiego/Documents/ChatGPT/Inherit Bio/integration-evidence/20261001/combined-4c52120c-clean-init-full-unit-linux.log",
+    "sha256": "36afb20b4a16ea0fc2b4664076a927ce69efb34d7a8e706d08e9610129044df7",
+    "passedTests": 9095,
+    "failedTests": 1
+  },
+  "sourceAuditInitialPathFailure": {
+    "error": "ENOENT data/mock-token-allowlist.json",
+    "correction": "Read actual unchanged import path scripts/mock-token-allowlist.json; no application/test change"
+  },
+  "noCompilerOrDatabaseRun": true,
+  "evidenceWhitespaceCorrection": {
+    "initialCommit": "90c33f24af4948d6242b60fc8218080002727199",
+    "initialCheck": "FAIL: extra log EOF blank and blank diff context lines",
+    "correction": "Remove only extra terminal blank log line; retain exact diff inside JSON string rather than whitespace-bearing raw context lines",
+    "runtimeSourceChange": false
+  }
+}
