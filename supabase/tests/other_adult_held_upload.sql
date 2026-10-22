@@ -442,7 +442,7 @@ select is((select count(*) from public.purpose_grants where target_id=pg_temp.si
 -- Only these reviewed lifecycle functions name the held table. The Path B
 -- normalization/read gates inspect current source evidence without granting
 -- browser access to the held table or returning its raw descriptor. The
--- one-record class inventory (20261016200000_subject_export.sql) counts the
+-- one-record class inventory (20261016196000_subject_export.sql) counts the
 -- record's own held uploads the way the account inventory counts them.
 select is((select string_agg(n.nspname||'.'||p.proname,', ' order by n.nspname,p.proname)
  from pg_proc p join pg_namespace n on n.oid=p.pronamespace

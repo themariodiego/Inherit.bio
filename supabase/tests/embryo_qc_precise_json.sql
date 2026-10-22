@@ -43,7 +43,7 @@ select ok((select p.prosecdef and pg_get_userbyid(p.proowner)='postgres' and md5
  ('public.future_person_export_members_v1(text,uuid,uuid,text,text)','8510090f140b1680cca24da74fdc48c5',true),
  ('public.export_archive_account_members_pre_requester_v1(text,uuid,uuid,text,uuid,text)','61796b5fc5f91b3e9a65a2697a5bbe31',false)
  )x(signature,body_md5,service_execute);
--- 20261016200000_subject_export.sql widened this wrapper's own-statements
+-- 20261016196000_subject_export.sql widened this wrapper's own-statements
 -- door to one ordinary subject job (api.subject-export). Its new exact body is
 -- pinned here; the inverse check below recovers the prior body exactly.
 select ok((select prosecdef and pg_get_userbyid(proowner)='postgres'

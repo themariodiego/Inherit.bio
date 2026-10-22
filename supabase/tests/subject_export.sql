@@ -2,7 +2,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path=public,extensions;
 select no_plan();
--- api.subject-export (20261016200000_subject_export.sql), owner decision of
+-- api.subject-export (20261016196000_subject_export.sql), owner decision of
 -- 16 October 2026: the one-record export on the account producer, refused
 -- with a stated reason while the record has live joint results. Every
 -- request, job, attempt, reservation and READY here is produced by the

@@ -392,7 +392,7 @@ describe("complete consumed-account unpublished archive executor",()=>{
 
 
 /** api.subject-export: the same fixture as one ordinary record job. The
- * database serves only the record's own rows (20261016200000_subject_export.sql,
+ * database serves only the record's own rows (20261016196000_subject_export.sql,
  * supabase/tests/subject_export.sql); the adult record, its consents and the
  * account-level legacy consents and recipient grants are not the record's. */
 function subjectScope(f:Awaited<ReturnType<typeof fixture>>){
