@@ -5077,3 +5077,19 @@ Owner decisions (clickable chat answers):
   `api.consents-revoke-all`, with exactly this text: "Turn off every
   permission you have given. Results made under them are deleted. Your files
   stay."
+
+## 2026-10-22 — Carrier status and carrier-pair arithmetic (G7.4)
+
+- Owner decision (clickable chat answer): both rows become `shipped-degraded`
+  once TEST-LOCAL proves them. Engineering builds the own-genome carrier
+  result surface over the reviewed assertion reader
+  (`src/lib/family/carrier-assertions.ts`, rule
+  `private.carrier_assertion_rule_v1`). TEST-LOCAL proves carrier status and
+  carrier-pair arithmetic with synthetic activated conditions.
+- Production is unchanged. Until the owner approves the starter list, the
+  release is imported in production through a guarded release, and a named
+  reviewer activates each condition, production says the check is unavailable
+  and that this is not a negative carrier screen.
+- The status is not clinical activation and closes no review. Report
+  templates still never carry carrier results (`gate:templates` keeps
+  refusing them).
