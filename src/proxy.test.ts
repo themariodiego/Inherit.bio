@@ -299,6 +299,15 @@ describe("the public Future Person claim (rights.future-person-claim)", () => {
     expect(mocks.selected).toEqual([]);
   });
 
+  it.each(["POST", "GET"])("lets the rights-session export %s through without reading an account", async (method) => {
+    // api.third-party-subject-export: the rights session is its only principal.
+    const response = await claimVisit(method, "/api/withdraw/session/export");
+    expect(response.status).toBe(200);
+    expect(response.headers.get("cache-control")).toBe("private, no-store");
+    expect(mocks.sessionReads).toBe(0);
+    expect(mocks.selected).toEqual([]);
+  });
+
   it("lets the claim start through without reading an account", async () => {
     openClaims();
     try {
