@@ -12,8 +12,8 @@ import { isTestJurisdictionEnabled } from "@/lib/legal/jurisdictions";
  * (Neanderthal is a Tier-0 surface); the flag is the release switch and
  * nothing more.
  */
-export function neanderthalEstimateBuilt(env: Readonly<Record<string, string | undefined>> = process.env): boolean {
-  return isTestJurisdictionEnabled(env);
+export function neanderthalEstimateBuilt(): boolean {
+  return isTestJurisdictionEnabled();
 }
 
 /**
