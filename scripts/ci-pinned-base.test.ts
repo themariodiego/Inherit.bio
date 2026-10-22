@@ -76,4 +76,69 @@ describe("pinned CI base images", () => {
       expect(workflow[index - 2]).toBe("run: pnpm exec tsx scripts/ci-pinned-base.run.mts scripts/ci-browser/Dockerfile");
     }
   });
+
+  // wrangler 4.134.0 runs WRANGLER_DOCKER_BIN for every docker command and
+  // builds with `build --load -t <tag> --platform linux/amd64
+  // --provenance=false -f - <context>`, the Dockerfile on stdin.
+  const WRANGLER_BUILD = ["build", "--load", "-t", "inherit-prepared-worker-preparationworker:wrangler-test",
+    "--platform", "linux/amd64", "--provenance=false", "-f", "-", "../.."];
+
+  it.each(["mirror", "primary"] as const)("lets wrangler build the deploy image from the same digest when the %s pull serves", source => {
+    const root = mkdtempSync(join(tmpdir(), "cloudflare-docker-shim-"));
+    try {
+      const calls = join(root, "calls"), stdin = join(root, "stdin");
+      const refuse = source === "mirror" ? 'case "$1:$2" in pull:public.ecr.aws/*) exit 1;; esac\n' : "";
+      writeFileSync(join(root, "docker"),
+        `#!/bin/sh\nprintf '%s\\n' "$*" >> "${calls}"\n${refuse}[ "$1" = build ] && cat > "${stdin}"\nexit 0\n`);
+      chmodSync(join(root, "docker"), 0o755);
+      const dockerfile = readFileSync("workers/prepared-worker/Dockerfile", "utf8");
+      const run = spawnSync("sh", ["scripts/cloudflare-docker-shim.sh", ...WRANGLER_BUILD], {
+        encoding: "utf8", input: dockerfile, env: { ...process.env, PATH: `${root}:${process.env.PATH}` },
+      });
+      expect(run.status, run.stderr).toBe(0);
+      expect(run.stdout).toBe("");
+      const base = pinnedBase(dockerfile);
+      expect(readFileSync(calls, "utf8").trim().split("\n")).toEqual([
+        `pull ${base.primary}`, ...(source === "mirror" ? [`pull ${base.mirror}`] : []),
+        `build --build-context ${pinnedBaseContext(base, source)} ${WRANGLER_BUILD.slice(1).join(" ")}`,
+      ]);
+      expect(readFileSync(stdin, "utf8")).toBe(dockerfile.endsWith("\n") ? dockerfile : `${dockerfile}\n`);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("passes every other docker command wrangler runs through unchanged, with no pull", () => {
+    const root = mkdtempSync(join(tmpdir(), "cloudflare-docker-shim-"));
+    try {
+      const calls = join(root, "calls");
+      writeFileSync(join(root, "docker"), `#!/bin/sh\nprintf '%s\\n' "$*" >> "${calls}"\nexit 7\n`);
+      chmodSync(join(root, "docker"), 0o755);
+      const run = spawnSync("sh", ["scripts/cloudflare-docker-shim.sh", "image", "inspect", "some:tag", "--format", "{{ .Id }}"], {
+        encoding: "utf8", env: { ...process.env, PATH: `${root}:${process.env.PATH}` },
+      });
+      expect(run.status).toBe(7);
+      expect(readFileSync(calls, "utf8")).toBe("image inspect some:tag --format {{ .Id }}\n");
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("refuses the deploy build when neither pull serves the digest, before any build", () => {
+    const root = mkdtempSync(join(tmpdir(), "cloudflare-docker-shim-"));
+    try {
+      const calls = join(root, "calls");
+      writeFileSync(join(root, "docker"), `#!/bin/sh\nprintf '%s\\n' "$*" >> "${calls}"\n[ "$1" = pull ] && exit 1\nexit 0\n`);
+      chmodSync(join(root, "docker"), 0o755);
+      const run = spawnSync("sh", ["scripts/cloudflare-docker-shim.sh", ...WRANGLER_BUILD], {
+        encoding: "utf8", input: readFileSync("workers/prepared-worker/Dockerfile", "utf8"),
+        env: { ...process.env, PATH: `${root}:${process.env.PATH}` },
+      });
+      expect(run.status).toBe(1);
+      expect(run.stderr).toContain("ci_pinned_base:unavailable");
+      expect(readFileSync(calls, "utf8")).not.toContain("build");
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
 });

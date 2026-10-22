@@ -1,3 +1,24 @@
+## 2026-10-22 — Deploy Cloudflare builds the container image through a docker shim that can use the base-image mirror
+
+Deploy Cloudflare run 39796150327 on main's PR 323 merge commit (97a13f10) failed in "Build the image and deploy the preparation container Worker". Both attempts failed the same way. wrangler's own `docker build` could not read the digest-pinned base's metadata from public.ecr.aws: `429 Too Many Requests - Server message: toomanyrequests: Data limit exceeded`. The gateway Worker step before it succeeded, and its code is unchanged since c993dea8. The container Worker never reached Cloudflare, so it stays on its previous revision. That revision is the main code the PR 323 compatibility analysis covered against the migrated schema.
+
+Workflow change: wrangler 4.134.0 runs `WRANGLER_DOCKER_BIN` (default `docker`) and builds with `build --load -t <tag> --platform linux/amd64 --provenance=false -f - <context>`, the Dockerfile on stdin (`constructBuildCommand` in the published `wrangler-dist/cli.js`). The container step now sets `WRANGLER_DOCKER_BIN` to the new `scripts/cloudflare-docker-shim.sh`, and the shim is added to the workflow's path triggers.
+
+The shim passes every other docker command through unchanged. For `build`, it:
+- reads the Dockerfile from stdin;
+- requires one digest-pinned official FROM;
+- pulls that exact digest from public.ecr.aws, then from mirror.gcr.io, with progress sent to stderr;
+- builds with `--build-context "<FROM>=docker-image://<pulled>"` and wrangler's own arguments, as `scripts/ci-prepared-worker-build.sh` does in CI.
+
+The Dockerfile and its pin are unchanged.
+
+New tests, no changed assertion:
+- `scripts/ci-pinned-base.test.ts`: the mirror and primary builds with wrangler's exact arguments and the Dockerfile on stdin, nothing on stdout, pass-through of other commands, and refusal before any build when neither pull serves.
+- `scripts/cloudflare-hosting-config.test.ts`: the container step sets the shim before its deploy command, the trigger is listed, and the shim is executable.
+
+Three planted defects each fail a test: dropping the build context, leaking pull output to stdout, and removing `WRANGLER_DOCKER_BIN`.
+
+
 ## 2026-10-16 — Fetch the digest-pinned runtime base before the unchanged image build
 
 Anonymous pulls from `public.ecr.aws` returned `429 Too Many Requests: Data limit exceeded` for the pinned `node` base-image manifests on some hosted-runner addresses. On 15 and 16 October this stopped five jobs across three runs (`browser (1)`, `browser (4)`, `browser (6)`, `owned-keyfree-smoke` and the separate prepared-worker `build`), each before any build or test step ran. Re-runs only move the failure, because the aggregate requires every job from one attempt.
