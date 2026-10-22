@@ -282,7 +282,11 @@ describe("the 2 October release integration preserves measured debt", () => {
     expect(result.failures).toEqual([]);
     // 119 since 2026-10-16: src/copy/copilot/system-prompts.ts holds the
     // Copilot system prompts that moved out of three files already scanned here.
-    expect(result.fileCount).toBe(119);
+    // 121 since 2026-10-22 (G7.4): the own carrier page adds
+    // src/copy/genome/carrier.ts and src/components/results/carrier/own-carrier-panel.tsx
+    // to the report-copy surface; neither carries a claim-marked sentence, so
+    // the 59 candidates below are unchanged.
+    expect(result.fileCount).toBe(121);
     expect(result.candidates).toHaveLength(59);
     expect(result).toMatchObject({ sourced: 0, open: 59, classified: 0 });
     const inputs = readRepositoryInputs(ROOT);
