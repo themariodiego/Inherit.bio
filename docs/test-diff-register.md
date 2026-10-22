@@ -1,3 +1,9 @@
+## 2026-10-22 — `subject_delete.sql` seeds its own score row
+
+Hosted CI run 39810581877 (`database-tests`, commit 97f5e595) failed `supabase/tests/subject_delete.sql` before any test ran. Line 65 inserted a `user_prs` row with `(select min(pgs_id) from public.prs_scores)`. A fresh database has no `prs_scores` rows, so that is NULL against the column's NOT NULL constraint. Locally it passed only because e2e runs had left score rows in the shared database.
+
+Test change, no assertion changed: the fixture now inserts its own `prs_scores` row, `SUBJECT-DELETE-FIXTURE`, the pattern other suites use, and references it. Locally, with `user_prs` and `prs_scores` emptied inside the rolled-back transaction to match a fresh database, the old fixture fails with the CI error and the new one passes 47/47. It also passes 47/47 against the shared database's existing rows.
+
 ## 2026-10-22 — `api.subject-transfer` (G2.1): built closed, with the transfer, the relocation branch and reading and deletion after it
 
 Owner decisions 2026-10-16 ("The subjects endpoints (G2.1)" and "Subjects delete and transfer: four further cases", `docs/protocol/decisions.md`). Built closed under the 2026-10-22 unapproved-text rule: the contract names three notices (to the new owner, the former owning account and every principal whose access is revoked), and none has approved wording. So `public.transfer_subject_v1` and `POST /api/subjects/[id]/transfer` answer `resource-not-found-v1` and write nothing. One function, `private.subject_transfer_open_v1()`, returns false until that wording is approved. Nothing is mailed. Everything behind the door is built and is tested directly.
