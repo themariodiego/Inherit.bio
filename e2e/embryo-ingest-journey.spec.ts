@@ -16,7 +16,7 @@ import { availabilityStatement, CANNOT_HAVE_BEST_OF_EACH, NO_RANKING_STATEMENT,
 import { openParticipantCReadSession } from "./participant-c-harness";
 import { seedParticipantC } from "./participant-c-journey";
 import { viewSchema } from "../scripts/comprehension/conductor-contract";
-import { auditNativeStatisticalCoverage, auditNativeFittedStatisticalCoverage } from "./helpers/embryo-statistical-coverage-audit";
+import { openNativeStatisticalCoverageAudit, openNativeFittedStatisticalCoverageAudit } from "./helpers/embryo-statistical-coverage-audit";
 import { EMBRYO_PAIR_TABLE_FIXTURE } from "../scripts/embryo-pair-table-fixture";
 
 /** No product handler, consent, worker or stored result is replaced here.
@@ -186,8 +186,19 @@ test("participant-c adds the bound embryo pair through both parents, upload and 
       await testInfo.attach("published-qc-cross-surface", { contentType: "application/json", body: JSON.stringify(repeatedQc) });
       saveQcSeedReceipt("a", testInfo, runtime.runtimeOwner, repeatedQc);
       await runtime.runStatisticalWorker(cohortId);
-      const statisticalAudits = await test.step("synthetic statistical coverage-failure audits on the hub, comparison and individual embryo views", async () =>
-        await auditNativeStatisticalCoverage({ page, cohortId, embryos, proof: () => runtime.statisticalProof(cohortId) }));
+      // Owner decision 2026-10-22 (G1.7, G1.12, G2.2): this TEST-only producer,
+      // whose synthetic markers miss the whole invented panel, proves the three
+      // not-covered pairs. One current read spans all three named steps.
+      const statisticalAudits = await test.step("synthetic statistical coverage-failure audits on the hub, comparison and individual embryo views", async () => {
+        const notCovered = await openNativeStatisticalCoverageAudit({ page, cohortId, embryos, proof: () => runtime.statisticalProof(cohortId) });
+        await test.step("/embryos not-covered: the hub reads each embryo's synthetic TEST score at 0 of its 10 positions, marks it Not read with the too-little-coverage sentence, and renders no result figure",
+          async () => await notCovered.route("/embryos"));
+        await test.step("/embryos/compare not-covered: both compared embryos read 0 of the TEST score's 10 positions, each cell says Not read with the too-little-coverage sentence, and no result figure renders",
+          async () => await notCovered.route("/embryos/compare"));
+        await test.step("/embryos/[embryoId] not-covered: the one embryo reads 0 of the TEST score's 10 positions, says Not read with the too-little-coverage sentence, and renders no result figure",
+          async () => await notCovered.route("/embryos/[embryoId]"));
+        return await notCovered.finish();
+      });
       await testInfo.attach("native-statistical-coverage-audits", { contentType: "application/json", body: JSON.stringify(statisticalAudits) });
       await proveNativeDispositionAndProfile({ owner: page, other, browser, cohortId,
         embryoId: embryos[0].id, siblingId: embryos[1].id });
@@ -196,9 +207,20 @@ test("participant-c adds the bound embryo pair through both parents, upload and 
           parentEmail: "fitted-test-parent@e2e.local", password, messages, runtime: fitted, fittedSeed: "partial" });
         try {
           await fitted.runStatisticalWorker(second.cohortId);
-          const fittedAudits = await test.step("invented fitted TEST partial coverage and MODELLED interval audits on the hub, comparison and individual embryo views", async () =>
-            await auditNativeFittedStatisticalCoverage({ page, cohortId: second.cohortId, embryos: second.embryos,
-              proof: () => fitted.statisticalProof(second.cohortId) }));
+          // The same decision: the fitted partial journey, whose synthetic file
+          // carries 8 of the panel's 10 positions, proves the three
+          // partial-coverage pairs. One current read spans all three steps.
+          const fittedAudits = await test.step("invented fitted TEST partial coverage and MODELLED interval audits on the hub, comparison and individual embryo views", async () => {
+            const partial = await openNativeFittedStatisticalCoverageAudit({ page, cohortId: second.cohortId, embryos: second.embryos,
+              proof: () => fitted.statisticalProof(second.cohortId) });
+            await test.step("/embryos partial-coverage: the hub reads each embryo's fitted TEST score at 8 of its 10 positions, says the missing positions stay in the denominator, and shows only the MODELLED invented interval",
+              async () => await partial.route("/embryos"));
+            await test.step("/embryos/compare partial-coverage: both compared embryos read 8 of the fitted TEST score's 10 positions, each says the missing positions stay in the denominator beside its MODELLED invented interval",
+              async () => await partial.route("/embryos/compare"));
+            await test.step("/embryos/[embryoId] partial-coverage: the one embryo reads 8 of the fitted TEST score's 10 positions, says the missing positions stay in the denominator, and shows its MODELLED invented interval",
+              async () => await partial.route("/embryos/[embryoId]"));
+            return await partial.finish();
+          });
           await testInfo.attach("native-fitted-test-statistical-audits", { contentType: "application/json",
             body: JSON.stringify(fittedAudits) });
         } finally { await second.closeCoParent(); }

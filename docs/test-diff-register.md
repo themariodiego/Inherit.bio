@@ -1,3 +1,52 @@
+## 2026-10-22 — The six embryo route states, named by the TEST-only producers (G1.7, G1.12, G2.2)
+
+Owner decision of 2026-10-22, "The six unproven embryo route states (G1.7, G1.12, G2.2)" (`docs/protocol/decisions.md`). `partial-coverage` and `not-covered` on `/embryos`, `/embryos/compare` and `/embryos/[embryoId]` are now named by browser steps driven by the two TEST-only synthetic producers that already run in `e2e/embryo-ingest-journey.spec.ts`. `UNPROVEN_ROUTE_STATE_PAIRS` goes from 6 to 0. No producer is approved, no seed or demo path is added, no migration is added, and production is unchanged: embryo analysis stays off.
+
+**`e2e/embryo-ingest-journey.spec.ts` (browser, `embryo-ingest` project).** The two existing audit steps keep their titles and now each hold three nested steps, one per route, so the expensive two-parent ingest and both workers are reused. The spec is still one test case, so the `embryo-ingest` partition (1 case) and the CI balance are unchanged. After `runtime.runStatisticalWorker(cohortId)` (`embryo-test-score-coverage-v1`; the participant-c file's markers miss the invented ten-position panel, 0 of 10):
+
+- "/embryos not-covered: the hub reads each embryo's synthetic TEST score at 0 of its 10 positions, marks it Not read with the too-little-coverage sentence, and renders no result figure"
+- "/embryos/compare not-covered: both compared embryos read 0 of the TEST score's 10 positions, each cell says Not read with the too-little-coverage sentence, and no result figure renders"
+- "/embryos/[embryoId] not-covered: the one embryo reads 0 of the TEST score's 10 positions, says Not read with the too-little-coverage sentence, and renders no result figure"
+
+After `fitted.runStatisticalWorker(second.cohortId)` (the fitted partial journey; `e2e/fixtures/embryo-pair-fitted-partial-grch38.vcf` carries 8 of the 10):
+
+- "/embryos partial-coverage: the hub reads each embryo's fitted TEST score at 8 of its 10 positions, says the missing positions stay in the denominator, and shows only the MODELLED invented interval"
+- "/embryos/compare partial-coverage: both compared embryos read 8 of the fitted TEST score's 10 positions, each says the missing positions stay in the denominator beside its MODELLED invented interval"
+- "/embryos/[embryoId] partial-coverage: the one embryo reads 8 of the fitted TEST score's 10 positions, says the missing positions stay in the denominator, and shows its MODELLED invented interval"
+
+**`e2e/helpers/embryo-statistical-coverage-audit.ts`.** Each audit is split into `openNative…Audit(input)`, which takes the one current producer read, and `route(name)`/`finish()`. `route` audits one route in both themes. `finish` asserts all three routes were audited once, in order, then returns the unchanged attachment. `auditNativeStatisticalCoverage` and `auditNativeFittedStatisticalCoverage` keep their names and run all three routes, so the density capture (`e2e/helpers/density-cohort-statistical-state-fixtures.ts`) calls them unchanged. Every existing assertion is kept as it was, inside `route`. Ignoring whitespace (`git diff -w`), the only lines removed are the import, the two signatures and the two loop headers. The input type now names `subject_id`, which both callers already pass. New assertions, per route and per theme:
+
+- `not-covered`: the invented-reference sentence; one `li[data-embryo-id]` per embryo shown, each `data-coverage-state="not_covered"` and `data-finding-kind="coverage_failure"`, named "Embryo n", every claim block attributed to that embryo's own subject; the cell word "Not read" (`data-reason="insufficient_coverage"`) once per embryo; the observed coverage figure reading "read 0 of the 10 positions this needs"; and none of `[data-test-result]`, `observed-test-coverage`, `modelled-test-interval`, `[data-within-family]`, or a relative or percentile figure or `aria-sort`. The existing checks already require the too-little-coverage sentence and refuse absolute, interval and MODELLED figures.
+- `partial-coverage`: one `li[data-embryo-id]` per embryo shown, each `data-test-result="fitted"` and `data-finding-kind="none"`, named "Embryo n", every claim block attributed to its own subject; the observed figure reading "read 8 of the 10 positions this needs"; the coverage statement "OBSERVED own-file coverage. Missing positions remain in the full score denominator."; the interval statement "MODELLED invented-control probability and range. This is not a clinical result."; and none of the not-covered sentence (`coverage-failure`, or the text anywhere in the section), a `coverage_failure` finding or a "Not read" cell.
+
+**`src/components/embryo/statistical-coverage.test.ts`.** New describe, "the two embryo route states the ingest journey names", with two cases. They render the component the three pages use, on the 0-of-10 coverage-only fixture and the 8-of-10 fitted fixture, and hold the same distinguishing markup the browser steps assert. No existing case changed.
+
+**`scripts/route-gate.test.ts`.**
+
+- "passes on this repository, having actually read all four inputs": `provenStateCount` goes from 162 to 168 (the six named), with a dated comment. `requiredStateCount` stays 168, because the six are still required.
+- "names only the three completed native surfaces and still requires the exact six scientific pairs" is renamed "…and leaves none of the six scientific pairs pending". Its `pending` expectation goes from the six pairs to `[]`. Every other assertion is unchanged, including that the QC `complete` step proves neither coverage state.
+- New: "names each of the six coverage pairs in exactly one step, run by its own producer's audit of that route". Each pair has exactly one step title. The title names no other registered pair. It sits after its producer's worker and its `open…Audit` call, and its body is that producer's `route("<that route>")`.
+- New planted defect: "fails the ledger and the ratchet when a coverage step stops naming its pair". It renames "/embryos/compare not-covered:" in a copied spec and expects the ledger failure, plus "route state ratchet: 1 of N required … says 0."
+- "the corrections table agrees with the register": the guard `unproven > 0` ("at least one unproven pair for this to mean anything") is replaced. Zero is now the ratchet's goal reached, not an empty read. The new guard requires that the register requires more than 100 pairs and that `unproven <= required`. The document assertions are unchanged, and `docs/protocol/brief-corrections-proposed.md` now states 0, with a dated note.
+
+**Ledger and docs.** `docs/route-divergence.json` records the six pairs in `provenRouteStates` and its note says why. The ratchet comment in `scripts/route-gate.ts` records 6 -> 0. The acceptance matrix is not changed: G1.7, G1.12 and G2.2 close on main CI.
+
+**Evidence, local (worktree `local/embryo-states`).**
+
+- `pnpm gate:routes`: "168 of 168 route states proven by 430 browser tests … and every one of the 45 proving specs runs the network audit". Before the change it was 162 of 168 by 424.
+- `scripts/route-gate.test.ts`: 71 of 71 pass.
+- `src/components/embryo/statistical-coverage.test.ts`: 31 of 31 pass.
+- The other unit files that read the spec, the helper or the ledger pass. Those are the ci-browser balance, partitions, Playwright config, shards and two-seed tests, comprehension bindings, density statistical states, figures census, register correspondence, the auth register contract and `src/components/embryo`. The two Chromium-backed ones pass with the machine's Playwright browsers path.
+- A throwaway real-Chromium check, not committed, ran the helper's new locators over the component's server-rendered markup: two embryos (hub and compare) and one (detail), in both states. All four passed. Dropping the "Not read" cell failed the not-covered locator, and dropping the observed-coverage statement failed the partial-coverage one.
+
+**Planted defects, all restored.**
+
+- Renaming "/embryos/[embryoId] partial-coverage:" to "partly covered:" fails `pnpm gate:routes` with "proven route state: recorded in docs/route-divergence.json but no longer present: /embryos/[embryoId] partial-coverage" and "route state ratchet: 1 of 168 required (route, state) pairs are unproven, and UNPROVEN_ROUTE_STATE_PAIRS in scripts/route-gate.ts says 0."
+- Removing the `CompareCell` ("Not read") from the coverage-only branch of `src/components/embryo/statistical-coverage.tsx` fails the new not-covered case.
+- Rendering the too-little-coverage sentence unconditionally in the fitted branch fails the new partial-coverage case, and no earlier case catches it.
+
+**Not run locally.** The `embryo-ingest` Playwright project, and so the six steps themselves. `playwright.config.ts` includes it only in the isolated CI runtime (`CI` and `INHERIT_CI_BROWSER_RUNTIME=ready`). `scripts/embryo-test-statistical-admission.ts` installs the TEST reference only in the GitHub-hosted `browser` job or an operator-authenticated owned-Linux runtime, and it refuses unless the database is empty and its migrations match the checkout exactly. The shared local stack has accounts and lacks PR 324's 25 newest migrations. The steps' first execution is a hosted `embryo-ingest` job (browser (5)) on main.
+
 ## 2026-10-22 — The three consent rights suites make their own token hash
 
 Hosted CI run 39819670513 (`database-tests`, commit 538dcee6) failed `supabase/tests/consent_grant_rights.sql`, `consent_reaffirm_rights.sql` and `consent_revoke_rights.sql`. In each, test 1 failed and the run then aborted. Each fixture borrowed `(select id from public.token_hashes order by created_at desc limit 1)` for `rights_sessions.token_hash_id`. A fresh database has no `token_hashes` rows, so the token was NULL, the fixture assertion failed, and every later session insert broke the foreign key. Locally they passed only because the shared database holds token rows from other runs.
