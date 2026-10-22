@@ -86,6 +86,12 @@ export const WITHOUT_CHECK: Record<string, string> = {
     "Own original only (api.subject-download, owner decision 2026-10-16): self, or an adult record whose own account is the caller, under adult_self_analysis, the one unrestricted capability. The uploader, grantee and embryo cases answer resource-not-found-v1; the database own-right authority rechecks the live session and file before every chunk. It opens no restricted capability.",
   "src/app/api/subjects/[id]/export/route.ts":
     "Export right for one own record (api.subject-export, owner decision 2026-10-16, two steps): self, or an adult record whose own account is the caller. The register binds it to jurisdictionBypass because export is a right nothing may block; every embryo case answers resource-not-found-v1 and the database authority rechecks the live session and the record before every step. It opens no restricted capability.",
+  "src/app/api/subjects/[id]/analysis/route.ts":
+    "Bound claimant's analysis-stop right (api.claimed-subject-analysis-stop, owner decision 2026-10-22). The register binds it to jurisdictionBypass because stopping analysis is a right. While claimant binding is closed it answers resource-not-found-v1 after the session and origin checks, before any body is read, and reads nothing else. It opens no capability.",
+  "src/app/api/subjects/[id]/corrections/route.ts":
+    "Bound claimant's correction right (api.claimed-subject-correction, owner decision 2026-10-22). The register binds it to jurisdictionBypass because asking for a correction is a right. While claimant binding is closed it answers resource-not-found-v1 after the session and origin checks, before any body is read, and reads nothing else. It opens no capability.",
+  "src/app/api/withdraw/session/export/route.ts":
+    "Rights-session export right (api.third-party-subject-export, owner decision 2026-10-22). The register binds it to jurisdictionBypass because export is a right. Its subject and cohort cases both answer resource-not-found-v1 until their producers exist; it reads and writes no database row and opens no capability.",
   "src/app/api/embryo-cohorts/[id]/record-key-cards/route.ts":
     "Delivery of Record Key cards under an operation token, on a cohort that exists only through the database functions that check jurisdiction at creation, invitation, acceptance and grant; it opens no analysis.",
 };

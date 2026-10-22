@@ -15,6 +15,8 @@ The two bound-claimant endpoints, from the same decision: `api.claimed-subject-a
 
 The rights-session export, from the same decision: `api.third-party-subject-export` (`src/app/api/withdraw/session/export/route.ts`) validates a POST in full, including its rights-session-bound one-time nonce, and polls by GET. Both resolver cases answer `resource-not-found-v1` until their producers exist. The withdraw page stays refuse/delete only. Pin moved: the census goes from 11 to 10, with a comment. New tests: `src/lib/exports/third-party-export-http.test.ts`, and two additive cases in `src/proxy.test.ts` that let this path through without reading an account, as `/api/withdraw/session` already is. Planted defects: removing the route file makes the census test fail with 11; dropping the session binding from the nonce, answering a valid request with 202, and removing the proxy pass-through each fail a test.
 
+Classification added in `scripts/jurisdiction-enforcement.test.ts`: the three new route files enter `WITHOUT_CHECK`, each with its stated reason. The register binds all three to `jurisdictionBypass: true` because each is a right, and each answers `resource-not-found-v1` and opens no capability. No assertion changes. Without the entries, "leaves no surface in scope both unguarded and unexplained" fails, naming exactly these three files.
+
 No frozen baseline, privacy control or waiting period changes.
 
 ## 2026-10-16 — Future-person and claim endpoints (G2.1): the route census moves
