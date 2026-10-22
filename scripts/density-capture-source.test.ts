@@ -114,3 +114,23 @@ describe("current density preserves the frozen pixel and real state producers", 
     }
   });
 });
+
+describe("the current driver takes the owner's corrected readings on the same capture (2026-10-22)", () => {
+  it("reads the pinned readings and text-only floor between the product PNG and the after-proof, and keeps both verdicts", () => {
+    const driver = read("e2e/helpers/density-current-capture.ts");
+    for (const text of ['await import("../../scripts/density-corrected-readings.mjs")',
+      "sha256(readingsBytes) === DENSITY_CORRECTED_READINGS_MODULE_SHA256",
+      "sha256(TEXT_ONLY_FLOOR_CSS) === TEXT_ONLY_FLOOR_VARIANT_SHA256",
+      "await readCorrectedDensity(page, contract.measurementSelectors)", "await captureTextOnlyFloor(page)",
+      "imageMetrics(floorPath, viewport.width, viewport.height, raw.pixelExclusionRects)",
+      "Exact saved text-only floor bytes required", "sha256(publicBytes(readingsPath)) === sha256(readingsBytes)",
+      "verifyCurrentDensity(packet, register, contract, source)",
+      'verifyCurrentDensity(packet, register, contract, source, "corrected-2026-10-22")']) expect(driver).toContain(text);
+    const product = driver.indexOf("Exact saved screenshot bytes required");
+    expect(product).toBeLessThan(driver.indexOf("await captureTextOnlyFloor(page)"));
+    expect(driver.indexOf("await captureTextOnlyFloor(page)")).toBeLessThan(driver.indexOf("const after = checkedDensityStateProof"));
+    const readings = read("scripts/density-corrected-readings.mjs");
+    expect(readings).toContain("await style.evaluate((element) => element.remove())");
+    expect(read("scripts/density-baseline/measure.mjs")).not.toContain("density-corrected-readings");
+  });
+});

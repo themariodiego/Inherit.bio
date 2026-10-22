@@ -1059,7 +1059,10 @@ const FUTURE_INTAKE_CLIENT_FORM_REVIEW: ClientFormReview[] = [
  * and dynamically rendered interiors still need their own runtime evidence.
  */
 const CLIENT_FORM_REVIEW: ClientFormReview[] = [
-  { file: "src/components/auth/auth-form.tsx", forms: 1, sha256: "52f7cf872d5f2bf3b53a3503bb92fbc8c540c1f09aba9d90de49d1922469c487" },
+  // G2.5 (2026-10-22): re-reviewed after the submit control became the forest
+  // outline variant at the same 44px and content width. One actionless form,
+  // the same fieldset, handler and preventDefault before any field is read.
+  { file: "src/components/auth/auth-form.tsx", forms: 1, sha256: "80e1bf6cabad3769c0613561fd8c942f417a024ae8e0f831402b023470f9e8a8" },
   { file: "src/components/chat/chat-panel.tsx", forms: 1, sha256: "77759a6b209673bef9ea9c5ca46e031a03e1cfb7a73f7e9e437ca519eb1dfdd1" },
   { file: "src/components/chat/own-chat-panel.tsx", forms: 1, sha256: "935d0925a414a1f377fbae00c6d06cccb6cc3817d02aa46d2d0972224b97f89c" },
   { file: "src/components/embryo/co-parent-review-form.tsx", forms: 1, sha256: "e37f7be36d8b6eed42a49a5c91a2d1d715f549881fd2dcae67b6eb5d77584675" },

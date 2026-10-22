@@ -15,10 +15,12 @@ export default async function ConsentArtifactDiffPage(props: PageProps<"/legal/c
     <div className="mx-auto max-w-6xl px-6 py-section">
       <header className="reading-head">
         <p className="eyebrow">Consent comparison</p>
-        <h1 className="display display-lg break-words">{artifactKey}: v{versions[0]} → v{versions[1]}</h1>
+        <h1 className="display break-words">{artifactKey}: v{versions[0]} → v{versions[1]}</h1>
         <p className="lede reading-intro">{to.summary_of_changes ?? "No change summary was recorded."}</p>
       </header>
-      <div className="mt-section grid gap-6 lg:grid-cols-2">
+      {/* Stacked below lg, the two versions are two top-level sections a
+          section rhythm apart; side by side, the 24px column gap stays (X6.3). */}
+      <div className="mt-section grid gap-x-6 gap-y-section lg:grid-cols-2">
         {[from, to].map((artifact) => (
           <section key={artifact.version} className="plate min-w-0">
             <div className="plate-head"><h2 className="label">Version {artifact.version}</h2></div>

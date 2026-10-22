@@ -38,11 +38,30 @@ const predecessorSchema = z.object({
   captureEnvironment: environmentSchema, screenshotSha256: sha256,
   inkCoverageRatio: fraction,
 }).strict();
+// Owner decision "2026-10-22 — Density rule corrections (G2.5)". Both fields
+// are optional and read only under the corrected rules; the contract rules
+// ignore them. They come from scripts/density-corrected-readings.mjs on the
+// same live page as the frozen measurement, never from the frozen modules.
+const textOnlyFloorSchema = z.object({
+  variantSha256: sha256, screenshotSha256: sha256,
+  screenshotWidthPx: count, screenshotHeightPx: count,
+  includedPixelCount: count.positive(), excludedPixelCount: count,
+  inkPixelCount: count, inkCoverageRatio: fraction,
+}).strict();
+const correctedReadingsSchema = z.object({
+  moduleSha256: sha256,
+  proseParagraphCount: count, excludedOneLineLinkParagraphCount: count,
+  minProseParagraphMeasureCh: dimension,
+  topLevelSectionRowCount: count, minimumVisualSectionGapPx: dimension,
+  aboveFoldTextCharacterCount: count,
+}).strict();
 const captureSchema = z.object({
   routeId: z.string().min(1), state: z.string().min(1),
   measurementPath: z.string().startsWith("/"),
   viewport: viewportSchema, metrics: metricsSchema,
   predecessor: predecessorSchema.nullable(),
+  textOnlyFloor: textOnlyFloorSchema.optional(),
+  correctedReadings: correctedReadingsSchema.optional(),
 }).strict();
 const packetSchema = z.object({
   version: z.literal(1), source: sourceSchema, captureEnvironment: environmentSchema,
@@ -73,6 +92,148 @@ const authFormHeadings: Record<string, string> = {
 };
 const viewports = viewportSchema.options;
 const key = (id: string, state: string, viewport: string) => JSON.stringify([id, state, viewport]);
+
+/**
+ * The two rule sets. `contract` is every budget exactly as
+ * docs/density-baseline.json and the brief state it, and is the default.
+ * `corrected-2026-10-22` is the owner's six readings of 22 October
+ * (docs/protocol/decisions.md, "Density rule corrections (G2.5)"): the same
+ * 0.6 ceiling, baseline and thresholds, read as follows.
+ *  1. A comparable row whose text-only floor is over 0.6 of its predecessor
+ *     passes the ink rule at most 0.05 of the predecessor above that floor.
+ *     Both inks come from the frozen pixel body on the same capture.
+ *  3. The 45ch floor reads prose paragraphs only (D-115).
+ *  4. Section gaps are read in visual order.
+ *  5. Signed legal documents count only characters visible above the fold.
+ *  6. Sign-in and sign-up may carry 10 interactive controls.
+ * (2, keeping the outlined primary actions, is a product decision with no
+ * evaluator reading.) Without its corrected reading a capture is judged on
+ * the contract basis, which is never more lenient.
+ */
+export type DensityRules = "contract" | "corrected-2026-10-22";
+export const TEXT_ONLY_FLOOR_VARIANT_SHA256 = "dd099009b40dccc61525264e9849fc8e5d51b84b62103f56f1a18bce5176a396";
+export const DENSITY_CORRECTED_READINGS_MODULE_SHA256 = "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64";
+export const TEXT_BOUND_ALLOWANCE_OF_PREDECESSOR = 0.05;
+export const SIGNED_LEGAL_DOCUMENT_ROUTE_IDS: readonly string[] = [
+  "legal.artifact", "legal.artifact-version", "legal.artifact-diff",
+  "legal.consent", "legal.consent-version", "legal.consent-diff",
+  "legal.insurance-and-discrimination",
+];
+export const AUTH_FLOW_TEN_CONTROL_ROUTE_IDS: readonly string[] = ["auth.sign-in", "auth.sign-up"];
+
+type Capture = z.infer<typeof captureSchema>;
+type RegisterRow = ReturnType<typeof requiredDensityCaptures>[number];
+export interface DensityRelativeVerdict {
+  baselineRoute: string; predecessorInk: number; ink: number; ratio: number;
+  floorInk: number | null; floorRatio: number | null; textBound: boolean; within: boolean;
+}
+export interface DensityCaptureVerdict {
+  routeId: string; state: string; viewport: string;
+  /** Short codes of every absolute budget the capture misses, in a fixed order. */
+  budgetBreaches: string[];
+  /** A predecessor refusal (missing, invented or a substituted auth receipt). */
+  predecessorError: string | null;
+  relative: DensityRelativeVerdict | null;
+}
+
+/**
+ * One capture against every budget. Structural inconsistency throws; budget
+ * misses are returned so a report can name all of them. `verifyCurrentDensity`
+ * turns the first miss into the refusal it always gave.
+ */
+export function evaluateDensityCapture(
+  row: RegisterRow, capture: Capture, contract: DensityContract,
+  captureEnvironment: z.infer<typeof environmentSchema>, rules: DensityRules = "contract",
+): DensityCaptureVerdict {
+  const m = capture.metrics;
+  const [width, height] = capture.viewport.split("x").map(Number);
+  if (m.screenshotWidthPx !== width || m.screenshotHeightPx !== height
+    || m.includedPixelCount + m.excludedPixelCount !== width * height
+    || m.inkPixelCount > m.includedPixelCount
+    || m.inkCoverageRatio !== Number((m.inkPixelCount / m.includedPixelCount).toFixed(6))
+    || m.whiteSpaceRatio !== Number((1 - m.inkCoverageRatio).toFixed(6))
+    || m.interactiveElementCount > m.rawInteractiveElementCount
+    || m.budgetedDecoratedElementCount > m.rawDecoratedElementCount) throw new Error("Inconsistent density measurements");
+  if ((m.proseElementCount === 0) !== (m.maxProseMeasureCh === null && m.minProseMeasureCh === null)
+    || (m.proseElementCount > 0 && (m.maxProseMeasureCh === null || m.minProseMeasureCh === null
+      || m.minProseMeasureCh > m.maxProseMeasureCh))
+    || (m.topLevelSectionCount < 2) !== (m.minimumAdjacentSectionGapPx === null)
+    || (m.primaryClaimTextElementCount === null) !== (m.primaryClaimFigureCount === null)) {
+    throw new Error("Missing density geometry");
+  }
+  const corrected = rules === "corrected-2026-10-22";
+  const readings = corrected ? capture.correctedReadings : undefined;
+  if (readings && (readings.moduleSha256 !== DENSITY_CORRECTED_READINGS_MODULE_SHA256
+    || (readings.proseParagraphCount === 0) !== (readings.minProseParagraphMeasureCh === null)
+    || (readings.topLevelSectionRowCount < 2) !== (readings.minimumVisualSectionGapPx === null))) {
+    throw new Error("Inconsistent corrected density readings");
+  }
+  const floor = corrected ? capture.textOnlyFloor : undefined;
+  if (floor && (floor.variantSha256 !== TEXT_ONLY_FLOOR_VARIANT_SHA256
+    || floor.screenshotWidthPx !== width || floor.screenshotHeightPx !== height
+    || floor.includedPixelCount !== m.includedPixelCount || floor.excludedPixelCount !== m.excludedPixelCount
+    || floor.inkPixelCount > floor.includedPixelCount
+    || floor.inkCoverageRatio !== Number((floor.inkPixelCount / floor.includedPixelCount).toFixed(6)))) {
+    throw new Error("Inconsistent text-only floor");
+  }
+  const route = row.route;
+  const breaches: string[] = [];
+  const floorWhite = route.surface === "wide-data" ? 0.45
+    : ["hub", "standard"].includes(route.surface) ? 0.62 : 0;
+  const actions = route.surface === "wide-data" ? 24
+    : corrected && AUTH_FLOW_TEN_CONTROL_ROUTE_IDS.includes(route.id) ? 10
+    : route.surface === "flow" || (route.id === "app.overview" && row.state === "empty") ? 7
+    : ["hub", "standard"].includes(route.surface) ? 12 : null;
+  const characters = readings && SIGNED_LEGAL_DOCUMENT_ROUTE_IDS.includes(route.id)
+    ? readings.aboveFoldTextCharacterCount : m.visibleTextCharacterCount;
+  const minimumProse = readings ? readings.minProseParagraphMeasureCh : m.minProseMeasureCh;
+  const gap = readings ? readings.minimumVisualSectionGapPx : m.minimumAdjacentSectionGapPx;
+  if (m.whiteSpaceRatio < floorWhite) breaches.push("whiteSpace");
+  if (actions !== null && m.interactiveElementCount > actions) breaches.push("interactive");
+  if (characters > (domainLandings.has(route.id) ? 480 : 700)) breaches.push("visibleCharacters");
+  if (m.budgetedDecoratedElementCount > (width === 390 ? 40 : 60)) breaches.push("decorated");
+  if (m.maxProseMeasureCh !== null && m.maxProseMeasureCh > 68) breaches.push("proseMax");
+  if (width >= 640 && minimumProse !== null && minimumProse < 45) breaches.push("proseMin");
+  if (gap !== null && gap < (width >= 1024 ? 96 : width >= 768 ? 80 : 64)) breaches.push("sectionGap");
+  if (width === 390 && m.primaryContentLeftPaddingPx < 24) breaches.push("leftPadding");
+  if (width === 390 && m.primaryClaimTextElementCount !== null && m.primaryClaimTextElementCount > 7) breaches.push("claimText");
+  if (width === 390 && m.primaryClaimFigureCount !== null && m.primaryClaimFigureCount > 1) breaches.push("claimFigures");
+
+  const predecessor = contract.relativeComparison.routes.find((entry) => entry.successorRouteId === route.id);
+  const baseline = contract.routes.find((entry) => entry.route === predecessor?.baselineRoute);
+  // Only the true initial form corresponds to the frozen auth empty form.
+  // Processing and completed receipts keep their own current states; the
+  // historical sign-in/reset outcome waivers never remove these four forms.
+  const initialAuthForm = route.stateProfile === "auth-density-flow" && row.state === "initial-form"
+    && route.auth === "public" && Object.hasOwn(authFormHeadings, route.id)
+    && route.path === `/auth/${route.id.slice("auth.".length)}`;
+  const matchingState = baseline?.state === row.state || (initialAuthForm && baseline?.state === "empty");
+  const comparable = predecessor && matchingState && !inventedPredecessors.has(predecessor.baselineRoute);
+  let predecessorError: string | null = null;
+  let relative: DensityRelativeVerdict | null = null;
+  if (comparable) {
+    const before = capture.predecessor;
+    if (!before || before.baselineRoute !== predecessor.baselineRoute || before.state !== baseline?.state
+      || !sameEnvironment(before.captureEnvironment, captureEnvironment)) predecessorError = "Missing comparable predecessor";
+    else if (initialAuthForm && m.statusView !== authFormHeadings[route.id]) {
+      predecessorError = "Auth receipt or loading view cannot replace the initial form";
+    } else {
+      // Compare unrounded values to the unchanged 60% ceiling. Rounding a
+      // displayed ratio must never turn an over-budget capture into a pass.
+      const ceiling = before.inkCoverageRatio * 0.6;
+      const textBound = Boolean(floor && floor.inkCoverageRatio > ceiling
+        && m.inkCoverageRatio <= floor.inkCoverageRatio + TEXT_BOUND_ALLOWANCE_OF_PREDECESSOR * before.inkCoverageRatio);
+      relative = { baselineRoute: predecessor.baselineRoute, predecessorInk: before.inkCoverageRatio,
+        ink: m.inkCoverageRatio, ratio: m.inkCoverageRatio / before.inkCoverageRatio,
+        floorInk: floor?.inkCoverageRatio ?? null,
+        floorRatio: floor ? floor.inkCoverageRatio / before.inkCoverageRatio : null,
+        textBound: m.inkCoverageRatio > ceiling && textBound,
+        within: m.inkCoverageRatio <= ceiling || textBound };
+    }
+  } else if (capture.predecessor !== null) predecessorError = "Invented density predecessor";
+  return { routeId: route.id, state: row.state, viewport: capture.viewport, budgetBreaches: breaches,
+    predecessorError, relative };
+}
 
 export function requiredDensityCaptures(register: DensityRegister) {
   const pages = register.routes.filter((route) => route.kind === "page");
@@ -113,10 +274,11 @@ function concretePathMatches(pattern: string, concrete: string) {
  * Refuses incomplete inventories and numerical budget breaches. A caller must
  * still recompute every PNG with the unchanged measurement modules and prove
  * fixture/current-source correspondence; this return is not G2.5 acceptance.
+ * `rules` defaults to the contract; the corrected rules are opt-in.
  */
 export function verifyCurrentDensity(
   input: unknown, register: DensityRegister, contract: DensityContract,
-  currentSource: z.infer<typeof sourceSchema>,
+  currentSource: z.infer<typeof sourceSchema>, rules: DensityRules = "contract",
 ) {
   const packet = packetSchema.parse(input);
   const source = sourceSchema.parse(currentSource);
@@ -134,69 +296,23 @@ export function verifyCurrentDensity(
   const expected = new Map(required.map((row) => [key(row.route.id, row.state, row.viewport), row]));
   const seen = new Set<string>();
   let relativeComparisons = 0;
+  let textBoundComparisons = 0;
   for (const capture of packet.captures) {
     const identity = key(capture.routeId, capture.state, capture.viewport);
     const row = expected.get(identity);
     if (!row || seen.has(identity)) throw new Error(`Unknown or duplicate density capture: ${identity}`);
     seen.add(identity);
     if (!concretePathMatches(row.route.path, capture.measurementPath)) throw new Error("Wrong density route");
-    const m = capture.metrics;
-    const [width, height] = capture.viewport.split("x").map(Number);
-    if (m.screenshotWidthPx !== width || m.screenshotHeightPx !== height
-      || m.includedPixelCount + m.excludedPixelCount !== width * height
-      || m.inkPixelCount > m.includedPixelCount
-      || m.inkCoverageRatio !== Number((m.inkPixelCount / m.includedPixelCount).toFixed(6))
-      || m.whiteSpaceRatio !== Number((1 - m.inkCoverageRatio).toFixed(6))
-      || m.interactiveElementCount > m.rawInteractiveElementCount
-      || m.budgetedDecoratedElementCount > m.rawDecoratedElementCount) throw new Error("Inconsistent density measurements");
-    if ((m.proseElementCount === 0) !== (m.maxProseMeasureCh === null && m.minProseMeasureCh === null)
-      || (m.proseElementCount > 0 && (m.maxProseMeasureCh === null || m.minProseMeasureCh === null
-        || m.minProseMeasureCh > m.maxProseMeasureCh))
-      || (m.topLevelSectionCount < 2) !== (m.minimumAdjacentSectionGapPx === null)
-      || (m.primaryClaimTextElementCount === null) !== (m.primaryClaimFigureCount === null)) {
-      throw new Error("Missing density geometry");
-    }
-    const floor = row.route.surface === "wide-data" ? 0.45
-      : ["hub", "standard"].includes(row.route.surface) ? 0.62 : 0;
-    const actions = row.route.surface === "wide-data" ? 24
-      : row.route.surface === "flow" || (row.route.id === "app.overview" && row.state === "empty") ? 7
-      : ["hub", "standard"].includes(row.route.surface) ? 12 : null;
-    if (m.whiteSpaceRatio < floor
-      || (actions !== null && m.interactiveElementCount > actions)
-      || m.visibleTextCharacterCount > (domainLandings.has(row.route.id) ? 480 : 700)
-      || m.budgetedDecoratedElementCount > (width === 390 ? 40 : 60)
-      || (m.maxProseMeasureCh !== null && m.maxProseMeasureCh > 68)
-      || (width >= 640 && m.minProseMeasureCh !== null && m.minProseMeasureCh < 45)
-      || (m.minimumAdjacentSectionGapPx !== null && m.minimumAdjacentSectionGapPx < (width >= 1024 ? 96 : width >= 768 ? 80 : 64))
-      || (width === 390 && (m.primaryContentLeftPaddingPx < 24
-        || (m.primaryClaimTextElementCount !== null && m.primaryClaimTextElementCount > 7)
-        || (m.primaryClaimFigureCount !== null && m.primaryClaimFigureCount > 1)))) {
-      throw new Error(`Density budget exceeded: ${identity}`);
-    }
-    const predecessor = contract.relativeComparison.routes.find((entry) => entry.successorRouteId === row.route.id);
-    const baseline = contract.routes.find((entry) => entry.route === predecessor?.baselineRoute);
-    // Only the true initial form corresponds to the frozen auth empty form.
-    // Processing and completed receipts keep their own current states; the
-    // historical sign-in/reset outcome waivers never remove these four forms.
-    const initialAuthForm = row.route.stateProfile === "auth-density-flow" && row.state === "initial-form"
-      && row.route.auth === "public" && Object.hasOwn(authFormHeadings, row.route.id)
-      && row.route.path === `/auth/${row.route.id.slice("auth.".length)}`;
-    const matchingState = baseline?.state === row.state || (initialAuthForm && baseline?.state === "empty");
-    const comparable = predecessor && matchingState && !inventedPredecessors.has(predecessor.baselineRoute);
-    if (comparable) {
-      const before = capture.predecessor;
-      if (!before || before.baselineRoute !== predecessor.baselineRoute || before.state !== baseline?.state
-        || !sameEnvironment(before.captureEnvironment, packet.captureEnvironment)) throw new Error("Missing comparable predecessor");
-      if (initialAuthForm && m.statusView !== authFormHeadings[row.route.id]) {
-        throw new Error("Auth receipt or loading view cannot replace the initial form");
-      }
-      // Compare unrounded values to the unchanged 60% ceiling. Rounding a
-      // displayed ratio must never turn an over-budget capture into a pass.
-      if (m.inkCoverageRatio > before.inkCoverageRatio * 0.6) throw new Error("Relative density budget exceeded");
+    const verdict = evaluateDensityCapture(row, capture, contract, packet.captureEnvironment, rules);
+    if (verdict.budgetBreaches.length) throw new Error(`Density budget exceeded: ${identity}`);
+    if (verdict.predecessorError) throw new Error(verdict.predecessorError);
+    if (verdict.relative) {
+      if (!verdict.relative.within) throw new Error("Relative density budget exceeded");
       relativeComparisons += 1;
-    } else if (capture.predecessor !== null) throw new Error("Invented density predecessor");
+      if (verdict.relative.textBound) textBoundComparisons += 1;
+    }
   }
   if (seen.size !== expected.size) throw new Error(`Missing density captures: ${expected.size - seen.size}`);
-  return { status: "WITHIN_NUMERIC_BUDGETS" as const, pageRoutes: new Set(required.map((row) => row.route.id)).size,
-    captures: seen.size, relativeComparisons, g2_5Acceptance: false as const };
+  return { status: "WITHIN_NUMERIC_BUDGETS" as const, rules, pageRoutes: new Set(required.map((row) => row.route.id)).size,
+    captures: seen.size, relativeComparisons, textBoundComparisons, g2_5Acceptance: false as const };
 }

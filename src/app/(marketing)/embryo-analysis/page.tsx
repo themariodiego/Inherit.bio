@@ -10,14 +10,15 @@ export default function EmbryoAnalysisPage() {
     <div className="mx-auto max-w-6xl px-6 py-section">
       <header className="reading-head">
         <p className="eyebrow">Embryo Analysis</p>
-        <h1 className="display display-lg">A bounded record, held for a future person.</h1>
+        <h1 className="display">A bounded record, held for a future person.</h1>
         <p className="lede reading-intro">
           Inherit can explain supported findings on non-sex chromosomes. It does
           not rank embryos, suggest which embryo to transfer, predict sex, or
           guess when data is missing.
         </p>
       </header>
-      <div className="mt-section max-w-3xl stack-blocks">
+      {/* Two top-level sections, a section rhythm apart (brief X6.3). */}
+      <div className="mt-section max-w-3xl stack-sections">
         <section className="surface surface-pad">
           <h2 className="title">Not available in any production jurisdiction yet</h2>
           <div className="legal-prose mt-4">
@@ -41,7 +42,7 @@ export default function EmbryoAnalysisPage() {
             <Link href={route("legal.future-person")} className="link-target quiet-link text-sm">Read the Future Person Charter</Link>
           </p>
         </section>
-        <p>
+        <p className="max-w-measure">
           <Button asChild variant="outline"><Link href={route("app.overview")}>Open Inherit</Link></Button>
         </p>
       </div>

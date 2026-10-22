@@ -3,9 +3,12 @@
    patterns, and Tailwind classes in JSX for one-offs. */
 
 /* ---------------------------------------------------------------------------
- * Reading page head: eyebrow, display-lg title, caption date, lede intro.
+ * Reading page head: eyebrow, display-1 title, caption date, lede intro.
  * ------------------------------------------------------------------------- */
 .reading-head { max-width: 56rem; }
+/* The eyebrow and the effective date are one short line each; their boxes
+   keep the prose measure rather than the head's 56rem (brief X6.3). */
+.reading-head > p { max-width: var(--measure); }
 .reading-head > .display { margin-top: 1rem; }
 .reading-head > .caption { margin-top: 1.25rem; }
 .reading-intro { margin-top: 1.5rem; }
@@ -79,10 +82,22 @@
  * Sections: the responsive rhythm split around a hairline. The h2 is the
  * display-2 size; the prose below it sits on the 68ch measure.
  * ------------------------------------------------------------------------- */
+/* The rhythm is the whole gap between two sections, with the hairline drawn
+   at its midpoint. The rule used to be the next section's own top border with
+   half the rhythm as padding inside it, which put the same 64/80/96px on the
+   page but measured as half of it between the two section boxes (brief X6.3,
+   G2.5). Drawing the hairline outside the box keeps every pixel where it was
+   (the extra 1px is the old border's own height) and makes the box gap the
+   gap a reader sees. */
 .legal-sections > .legal-section + .legal-section {
-  margin-top: calc(var(--rhythm-section) / 2);
-  padding-top: calc(var(--rhythm-section) / 2);
+  position: relative;
+  margin-top: calc(var(--rhythm-section) + 1px);
+}
+.legal-sections > .legal-section + .legal-section::before {
+  content: ""; position: absolute; left: 0; right: 0;
+  top: calc(var(--rhythm-section) / -2 - 1px);
   border-top: 1px solid var(--line);
+  pointer-events: none;
 }
 .legal-section > .display + .legal-prose { margin-top: 1.5rem; }
 

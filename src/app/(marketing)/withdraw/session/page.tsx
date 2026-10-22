@@ -69,7 +69,7 @@ export default async function RightsSessionPage() {
   if (!review || review.kind === "sign-in") return (
     <section className="mx-auto max-w-6xl px-6 py-section">
       <header className="reading-head">
-        <h1 className="display display-lg">Sign in to review this invitation</h1>
+        <h1 className="display">Sign in to review this invitation</h1>
         <p className="lede reading-intro">Use the email address that received the invitation. Signing in does not accept it.</p>
       </header>
       <p className="mt-8">

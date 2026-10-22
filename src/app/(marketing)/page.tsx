@@ -65,7 +65,7 @@ export default function LandingPage() {
           <p className="eyebrow rise" style={stagger(0)}>
             Open-source consumer genomics
           </p>
-          <h1 className="display display-hero rise mt-6" style={stagger(1)}>
+          <h1 className="display rise mt-6" style={stagger(1)}>
             Your genome, <span className="accent-italic">on your terms.</span>
           </h1>
           <p className="lede rise mt-8" style={stagger(2)}>
@@ -77,7 +77,9 @@ export default function LandingPage() {
             directly. Already have a DNA file? Everything here costs nothing.
           </p>
           <div className="rise mt-10 flex flex-wrap gap-3" style={stagger(4)}>
-            <Button asChild size="lg">
+            {/* The first action is the forest outline, the second the neutral
+                one: the same two 44px pills, with no filled shape (G2.5). */}
+            <Button asChild size="lg" variant="outline" className="border-forest text-forest">
               <Link href="/auth/sign-up" prefetch={false}>Start with your raw data</Link>
             </Button>
             <Button asChild variant="outline" size="lg">
@@ -122,7 +124,10 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-6xl px-6 py-section">
+      {/* The band above ends at its own border, so the space between the two
+          sections is this one's top margin rather than padding inside it: the
+          same 64/80/96px on the page, measured as the gap it is (brief X6.3). */}
+      <section className="mx-auto mt-section max-w-6xl px-6 pb-section">
         <div className="grid items-start gap-12 lg:grid-cols-2 lg:gap-16">
           <div>
             <p className="eyebrow">Plain terms</p>

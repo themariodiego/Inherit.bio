@@ -28,7 +28,7 @@ export function LegalArtifactDocument({
     <article className="mx-auto max-w-6xl px-6 py-section">
       <header className="reading-head">
         <p className="eyebrow">Versioned legal artifact</p>
-        <h1 className="display display-lg break-words">{artifact.artifact_key}</h1>
+        <h1 className="display break-words">{artifact.artifact_key}</h1>
         <p className="caption">
           Version {artifact.version} · effective <time dateTime={artifact.effective_on}>{artifact.effective_on}</time>
         </p>
@@ -49,8 +49,8 @@ export function LegalArtifactDocument({
         </section>
         <div className="legal-prose whitespace-pre-wrap">{artifact.body_markdown}</div>
         <footer className="border-t border-line pt-6">
-          <p className="caption mono break-all">sha256 {artifact.body_sha256}</p>
-          <p className="mt-2">
+          <p className="caption mono max-w-measure break-all">sha256 {artifact.body_sha256}</p>
+          <p className="mt-2 max-w-measure">
             <Link href={`${routeBase}/${versionPath}/${artifact.version}`} className="link-target quiet-link text-sm">
               Permanent link to this version
             </Link>

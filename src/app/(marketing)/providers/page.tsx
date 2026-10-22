@@ -31,7 +31,7 @@ export default async function ProvidersPage() {
         {/* "sequencing from" and "a real provider." each hold together, so a
             phone sets "Buy / sequencing from / a real provider." and no line
             is one word. */}
-        <h1 className="display display-lg">
+        <h1 className="display">
           Buy <span className="whitespace-nowrap">sequencing from</span>{" "}
           <span className="whitespace-nowrap">
             a <span className="accent">real provider.</span>

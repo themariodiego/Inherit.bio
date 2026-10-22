@@ -57,11 +57,14 @@ export async function SiteHeader() {
             </SiteNavLink>
           ))}
         </nav>
-        {/* 12px between the toggle and the pill: clear of the 8px floor at 320. */}
+        {/* 12px between the toggle and the pill: clear of the 8px floor at 320.
+            The pill is the forest outline rather than a filled one: the same
+            44px target and label, without a filled shape in the first viewport
+            of every public page (brief X6.2, G2.5). */}
         <div className="flex items-center gap-3 md:justify-self-end">
           <ThemeToggle />
           {user ? (
-            <Button asChild size="sm">
+            <Button asChild size="sm" variant="outline" className="border-forest text-forest">
               <Link href={route("app.overview")}>Overview</Link>
             </Button>
           ) : (
@@ -69,7 +72,7 @@ export async function SiteHeader() {
               <Button asChild variant="ghost" size="sm" className="hidden md:inline-flex">
                 <Link href={route("auth.sign-in")}>Sign in</Link>
               </Button>
-              <Button asChild size="sm">
+              <Button asChild size="sm" variant="outline" className="border-forest text-forest">
                 <Link href="/auth/sign-up" prefetch={false}>Get started</Link>
               </Button>
             </>

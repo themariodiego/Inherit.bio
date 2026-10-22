@@ -1,0 +1,3461 @@
+[
+ {
+  "routeId": "marketing.home",
+  "state": "complete",
+  "viewport": "390x844",
+  "measurementPath": "/",
+  "screenshotSha256": "961031506fb1d8b4d9894722c75e61a6790d4140979bdcce410dea38672cb509",
+  "floorScreenshotSha256": "9345557fa168a410dba267de142aa02d47d2c13e73eb0f99cd8ac14e48ef6680",
+  "ink": 0.105043,
+  "floorInk": 0.061341,
+  "predecessorInk": 0.104861,
+  "ratio": 1.001735630978152,
+  "floorRatio": 0.5849743946748553,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 23,
+   "excludedOneLineLinkParagraphCount": 0,
+   "minProseParagraphMeasureCh": 12.707,
+   "topLevelSectionRowCount": 3,
+   "minimumVisualSectionGapPx": 0,
+   "aboveFoldTextCharacterCount": 459
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 459,
+   "minProseMeasureCh": 12.707,
+   "minimumAdjacentSectionGapPx": 0,
+   "interactiveElementCount": 6
+  },
+  "contract": {
+   "misses": [
+    "sectionGap",
+    "relative"
+   ],
+   "relative": {
+    "baselineRoute": "/",
+    "predecessorInk": 0.104861,
+    "ink": 0.105043,
+    "ratio": 1.001735630978152,
+    "floorInk": null,
+    "floorRatio": null,
+    "textBound": false,
+    "within": false
+   }
+  },
+  "corrected": {
+   "misses": [
+    "sectionGap",
+    "relative"
+   ],
+   "relative": {
+    "baselineRoute": "/",
+    "predecessorInk": 0.104861,
+    "ink": 0.105043,
+    "ratio": 1.001735630978152,
+    "floorInk": 0.061341,
+    "floorRatio": 0.5849743946748553,
+    "textBound": false,
+    "within": false
+   }
+  }
+ },
+ {
+  "routeId": "marketing.home",
+  "state": "complete",
+  "viewport": "1280x800",
+  "measurementPath": "/",
+  "screenshotSha256": "57c6b700f4baee7acd8618250c74dddef6eb690f1ae7d2968f82e41b555d37ae",
+  "floorScreenshotSha256": "084cec374bea7a1e210007cb54caf61a21ab38a0ae733414b56f86d0579bea3f",
+  "ink": 0.053516,
+  "floorInk": 0.039291,
+  "predecessorInk": 0.038919,
+  "ratio": 1.3750610241784218,
+  "floorRatio": 1.0095583134201802,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 22,
+   "excludedOneLineLinkParagraphCount": 1,
+   "minProseParagraphMeasureCh": 12.707,
+   "topLevelSectionRowCount": 3,
+   "minimumVisualSectionGapPx": 0,
+   "aboveFoldTextCharacterCount": 744
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 744,
+   "minProseMeasureCh": 12.707,
+   "minimumAdjacentSectionGapPx": 0,
+   "interactiveElementCount": 6
+  },
+  "contract": {
+   "misses": [
+    "visibleCharacters",
+    "proseMax",
+    "proseMin",
+    "sectionGap",
+    "relative"
+   ],
+   "relative": {
+    "baselineRoute": "/",
+    "predecessorInk": 0.038919,
+    "ink": 0.053516,
+    "ratio": 1.3750610241784218,
+    "floorInk": null,
+    "floorRatio": null,
+    "textBound": false,
+    "within": false
+   }
+  },
+  "corrected": {
+   "misses": [
+    "visibleCharacters",
+    "proseMax",
+    "proseMin",
+    "sectionGap",
+    "relative"
+   ],
+   "relative": {
+    "baselineRoute": "/",
+    "predecessorInk": 0.038919,
+    "ink": 0.053516,
+    "ratio": 1.3750610241784218,
+    "floorInk": 0.039291,
+    "floorRatio": 1.0095583134201802,
+    "textBound": false,
+    "within": false
+   }
+  }
+ },
+ {
+  "routeId": "marketing.about",
+  "state": "complete",
+  "viewport": "390x844",
+  "measurementPath": "/about",
+  "screenshotSha256": "0771e37a48d4915e853887e333598333b17c96ef11d5dbb94218352f5961068e",
+  "floorScreenshotSha256": "68626765e1e39cf24af990f642b7ff7ff0ef3224caeac6b4788cd846d900560e",
+  "ink": 0.09019,
+  "floorInk": 0.077127,
+  "predecessorInk": 0.070886,
+  "ratio": 1.2723245774906187,
+  "floorRatio": 1.088042772902971,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 20,
+   "excludedOneLineLinkParagraphCount": 0,
+   "minProseParagraphMeasureCh": 31.888,
+   "topLevelSectionRowCount": 6,
+   "minimumVisualSectionGapPx": 32,
+   "aboveFoldTextCharacterCount": 725
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 949,
+   "minProseMeasureCh": 18.001,
+   "minimumAdjacentSectionGapPx": 32,
+   "interactiveElementCount": 5
+  },
+  "contract": {
+   "misses": [
+    "visibleCharacters",
+    "sectionGap",
+    "relative"
+   ],
+   "relative": {
+    "baselineRoute": "/about",
+    "predecessorInk": 0.070886,
+    "ink": 0.09019,
+    "ratio": 1.2723245774906187,
+    "floorInk": null,
+    "floorRatio": null,
+    "textBound": false,
+    "within": false
+   }
+  },
+  "corrected": {
+   "misses": [
+    "visibleCharacters",
+    "sectionGap",
+    "relative"
+   ],
+   "relative": {
+    "baselineRoute": "/about",
+    "predecessorInk": 0.070886,
+    "ink": 0.09019,
+    "ratio": 1.2723245774906187,
+    "floorInk": 0.077127,
+    "floorRatio": 1.088042772902971,
+    "textBound": false,
+    "within": false
+   }
+  }
+ },
+ {
+  "routeId": "marketing.about",
+  "state": "complete",
+  "viewport": "1280x800",
+  "measurementPath": "/about",
+  "screenshotSha256": "83af20d5e6b61d6eaf6dbb665d41f159e00f376c14879b441fffa9d12d7ff5fd",
+  "floorScreenshotSha256": "9d17ef6b01a3fe6740071a74c7d7072560f2643917e44f99f12ed512ff0d2669",
+  "ink": 0.041713,
+  "floorInk": 0.037514,
+  "predecessorInk": 0.054536,
+  "ratio": 0.7648709109578994,
+  "floorRatio": 0.6878758984890714,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 18,
+   "excludedOneLineLinkParagraphCount": 2,
+   "minProseParagraphMeasureCh": 45.117,
+   "topLevelSectionRowCount": 6,
+   "minimumVisualSectionGapPx": 48,
+   "aboveFoldTextCharacterCount": 988
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 988,
+   "minProseMeasureCh": 29.209,
+   "minimumAdjacentSectionGapPx": 48,
+   "interactiveElementCount": 5
+  },
+  "contract": {
+   "misses": [
+    "visibleCharacters",
+    "proseMax",
+    "proseMin",
+    "sectionGap",
+    "relative"
+   ],
+   "relative": {
+    "baselineRoute": "/about",
+    "predecessorInk": 0.054536,
+    "ink": 0.041713,
+    "ratio": 0.7648709109578994,
+    "floorInk": null,
+    "floorRatio": null,
+    "textBound": false,
+    "within": false
+   }
+  },
+  "corrected": {
+   "misses": [
+    "visibleCharacters",
+    "proseMax",
+    "sectionGap",
+    "relative"
+   ],
+   "relative": {
+    "baselineRoute": "/about",
+    "predecessorInk": 0.054536,
+    "ink": 0.041713,
+    "ratio": 0.7648709109578994,
+    "floorInk": 0.037514,
+    "floorRatio": 0.6878758984890714,
+    "textBound": false,
+    "within": false
+   }
+  }
+ },
+ {
+  "routeId": "auth.forgot-password",
+  "state": "initial-form",
+  "viewport": "390x844",
+  "measurementPath": "/auth/forgot-password",
+  "screenshotSha256": "c7843cabceabee1c45cc5990ff76af65b2ef1e2dfc41cfff12587779e174f5be",
+  "floorScreenshotSha256": "d5cd70946f837f1a25fa76369110d0e3df931799c70374b3e9e114cb0683c08d",
+  "ink": 0.03594,
+  "floorInk": 0.016308,
+  "predecessorInk": 0.044781,
+  "ratio": 0.802572519595364,
+  "floorRatio": 0.3641723052187311,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 2,
+   "excludedOneLineLinkParagraphCount": 1,
+   "minProseParagraphMeasureCh": 33.285,
+   "topLevelSectionRowCount": 0,
+   "minimumVisualSectionGapPx": null,
+   "aboveFoldTextCharacterCount": 158
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 158,
+   "minProseMeasureCh": 10.785,
+   "minimumAdjacentSectionGapPx": null,
+   "interactiveElementCount": 5
+  },
+  "contract": {
+   "misses": [
+    "relative"
+   ],
+   "relative": {
+    "baselineRoute": "/auth/forgot-password",
+    "predecessorInk": 0.044781,
+    "ink": 0.03594,
+    "ratio": 0.802572519595364,
+    "floorInk": null,
+    "floorRatio": null,
+    "textBound": false,
+    "within": false
+   }
+  },
+  "corrected": {
+   "misses": [
+    "relative"
+   ],
+   "relative": {
+    "baselineRoute": "/auth/forgot-password",
+    "predecessorInk": 0.044781,
+    "ink": 0.03594,
+    "ratio": 0.802572519595364,
+    "floorInk": 0.016308,
+    "floorRatio": 0.3641723052187311,
+    "textBound": false,
+    "within": false
+   }
+  }
+ },
+ {
+  "routeId": "auth.forgot-password",
+  "state": "initial-form",
+  "viewport": "1280x800",
+  "measurementPath": "/auth/forgot-password",
+  "screenshotSha256": "6f03ff1be5b8e99a89af0127a2310bbd3bbb422f2e90bda492f952dd6baffe70",
+  "floorScreenshotSha256": "1b55b4be17c82092385389048f7a92f758b26f63b07a2a7f1fcf4b65e7f19a6a",
+  "ink": 0.012026,
+  "floorInk": 0.005634,
+  "predecessorInk": 0.015888,
+  "ratio": 0.7569234642497483,
+  "floorRatio": 0.35460725075528704,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 1,
+   "excludedOneLineLinkParagraphCount": 2,
+   "minProseParagraphMeasureCh": 38.04,
+   "topLevelSectionRowCount": 0,
+   "minimumVisualSectionGapPx": null,
+   "aboveFoldTextCharacterCount": 158
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 158,
+   "minProseMeasureCh": 10.785,
+   "minimumAdjacentSectionGapPx": null,
+   "interactiveElementCount": 5
+  },
+  "contract": {
+   "misses": [
+    "proseMin",
+    "relative"
+   ],
+   "relative": {
+    "baselineRoute": "/auth/forgot-password",
+    "predecessorInk": 0.015888,
+    "ink": 0.012026,
+    "ratio": 0.7569234642497483,
+    "floorInk": null,
+    "floorRatio": null,
+    "textBound": false,
+    "within": false
+   }
+  },
+  "corrected": {
+   "misses": [
+    "proseMin",
+    "relative"
+   ],
+   "relative": {
+    "baselineRoute": "/auth/forgot-password",
+    "predecessorInk": 0.015888,
+    "ink": 0.012026,
+    "ratio": 0.7569234642497483,
+    "floorInk": 0.005634,
+    "floorRatio": 0.35460725075528704,
+    "textBound": false,
+    "within": false
+   }
+  }
+ },
+ {
+  "routeId": "auth.reset-password",
+  "state": "initial-form",
+  "viewport": "390x844",
+  "measurementPath": "/auth/reset-password",
+  "screenshotSha256": "75e616142013be5277c209ca2ac403a7ffb058df269b79a3c8dcd0d08adcccf7",
+  "floorScreenshotSha256": "3b82b03ad335a44f05d9345dd0a716a87c7d3c87cacee1a3f8a25c82201464d4",
+  "ink": 0.037675,
+  "floorInk": 0.015679,
+  "predecessorInk": 0.043805,
+  "ratio": 0.8600616367994521,
+  "floorRatio": 0.35792717726286954,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 1,
+   "excludedOneLineLinkParagraphCount": 1,
+   "minProseParagraphMeasureCh": 41.699,
+   "topLevelSectionRowCount": 0,
+   "minimumVisualSectionGapPx": null,
+   "aboveFoldTextCharacterCount": 138
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 138,
+   "minProseMeasureCh": 10.785,
+   "minimumAdjacentSectionGapPx": null,
+   "interactiveElementCount": 5
+  },
+  "contract": {
+   "misses": [
+    "relative"
+   ],
+   "relative": {
+    "baselineRoute": "/auth/reset-password",
+    "predecessorInk": 0.043805,
+    "ink": 0.037675,
+    "ratio": 0.8600616367994521,
+    "floorInk": null,
+    "floorRatio": null,
+    "textBound": false,
+    "within": false
+   }
+  },
+  "corrected": {
+   "misses": [
+    "relative"
+   ],
+   "relative": {
+    "baselineRoute": "/auth/reset-password",
+    "predecessorInk": 0.043805,
+    "ink": 0.037675,
+    "ratio": 0.8600616367994521,
+    "floorInk": 0.015679,
+    "floorRatio": 0.35792717726286954,
+    "textBound": false,
+    "within": false
+   }
+  }
+ },
+ {
+  "routeId": "auth.reset-password",
+  "state": "initial-form",
+  "viewport": "1280x800",
+  "measurementPath": "/auth/reset-password",
+  "screenshotSha256": "e4622e8f3a70881619581904aa3db34336dc3f74fd859c33cd442f781be17188",
+  "floorScreenshotSha256": "a8283f8e0791592e34f0dd33802a900e9a86c701a5ef09db3259f32cf321fa39",
+  "ink": 0.012633,
+  "floorInk": 0.00548,
+  "predecessorInk": 0.015574,
+  "ratio": 0.8111596250160524,
+  "floorRatio": 0.35186849878001797,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 0,
+   "excludedOneLineLinkParagraphCount": 2,
+   "minProseParagraphMeasureCh": null,
+   "topLevelSectionRowCount": 0,
+   "minimumVisualSectionGapPx": null,
+   "aboveFoldTextCharacterCount": 138
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 138,
+   "minProseMeasureCh": 10.785,
+   "minimumAdjacentSectionGapPx": null,
+   "interactiveElementCount": 5
+  },
+  "contract": {
+   "misses": [
+    "proseMin",
+    "relative"
+   ],
+   "relative": {
+    "baselineRoute": "/auth/reset-password",
+    "predecessorInk": 0.015574,
+    "ink": 0.012633,
+    "ratio": 0.8111596250160524,
+    "floorInk": null,
+    "floorRatio": null,
+    "textBound": false,
+    "within": false
+   }
+  },
+  "corrected": {
+   "misses": [
+    "relative"
+   ],
+   "relative": {
+    "baselineRoute": "/auth/reset-password",
+    "predecessorInk": 0.015574,
+    "ink": 0.012633,
+    "ratio": 0.8111596250160524,
+    "floorInk": 0.00548,
+    "floorRatio": 0.35186849878001797,
+    "textBound": false,
+    "within": false
+   }
+  }
+ },
+ {
+  "routeId": "auth.sign-in",
+  "state": "initial-form",
+  "viewport": "390x844",
+  "measurementPath": "/auth/sign-in",
+  "screenshotSha256": "a5029cedae833cbd8e81e764378d272ef31dfa210be9056ce381c6f167c451b7",
+  "floorScreenshotSha256": "4c585b7fe8b286d70a4dd11abcc4329088c6fc852c33fb04f1e5266d05b7d489",
+  "ink": 0.038708,
+  "floorInk": 0.020394,
+  "predecessorInk": 0.052148,
+  "ratio": 0.7422719950908951,
+  "floorRatio": 0.39107923602055683,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 1,
+   "excludedOneLineLinkParagraphCount": 3,
+   "minProseParagraphMeasureCh": 41.699,
+   "topLevelSectionRowCount": 0,
+   "minimumVisualSectionGapPx": null,
+   "aboveFoldTextCharacterCount": 189
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 189,
+   "minProseMeasureCh": 10.785,
+   "minimumAdjacentSectionGapPx": null,
+   "interactiveElementCount": 9
+  },
+  "contract": {
+   "misses": [
+    "interactive",
+    "relative"
+   ],
+   "relative": {
+    "baselineRoute": "/auth/sign-in",
+    "predecessorInk": 0.052148,
+    "ink": 0.038708,
+    "ratio": 0.7422719950908951,
+    "floorInk": null,
+    "floorRatio": null,
+    "textBound": false,
+    "within": false
+   }
+  },
+  "corrected": {
+   "misses": [
+    "relative"
+   ],
+   "relative": {
+    "baselineRoute": "/auth/sign-in",
+    "predecessorInk": 0.052148,
+    "ink": 0.038708,
+    "ratio": 0.7422719950908951,
+    "floorInk": 0.020394,
+    "floorRatio": 0.39107923602055683,
+    "textBound": false,
+    "within": false
+   }
+  }
+ },
+ {
+  "routeId": "auth.sign-in",
+  "state": "initial-form",
+  "viewport": "1280x800",
+  "measurementPath": "/auth/sign-in",
+  "screenshotSha256": "506dc17794f1e0097cc1d557dce4f08900414ea0dae60fed98fe80745915f8f8",
+  "floorScreenshotSha256": "6331ac8e4c6949aa16a8faeb51e686e9c49024b5c40707c38e766723fd0976f4",
+  "ink": 0.012979,
+  "floorInk": 0.006847,
+  "predecessorInk": 0.018338,
+  "ratio": 0.7077652961064456,
+  "floorRatio": 0.37337768568000873,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 0,
+   "excludedOneLineLinkParagraphCount": 4,
+   "minProseParagraphMeasureCh": null,
+   "topLevelSectionRowCount": 0,
+   "minimumVisualSectionGapPx": null,
+   "aboveFoldTextCharacterCount": 189
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 189,
+   "minProseMeasureCh": 10.785,
+   "minimumAdjacentSectionGapPx": null,
+   "interactiveElementCount": 9
+  },
+  "contract": {
+   "misses": [
+    "interactive",
+    "proseMin",
+    "relative"
+   ],
+   "relative": {
+    "baselineRoute": "/auth/sign-in",
+    "predecessorInk": 0.018338,
+    "ink": 0.012979,
+    "ratio": 0.7077652961064456,
+    "floorInk": null,
+    "floorRatio": null,
+    "textBound": false,
+    "within": false
+   }
+  },
+  "corrected": {
+   "misses": [
+    "relative"
+   ],
+   "relative": {
+    "baselineRoute": "/auth/sign-in",
+    "predecessorInk": 0.018338,
+    "ink": 0.012979,
+    "ratio": 0.7077652961064456,
+    "floorInk": 0.006847,
+    "floorRatio": 0.37337768568000873,
+    "textBound": false,
+    "within": false
+   }
+  }
+ },
+ {
+  "routeId": "auth.sign-up",
+  "state": "initial-form",
+  "viewport": "390x844",
+  "measurementPath": "/auth/sign-up",
+  "screenshotSha256": "a16f28137a796c7305d0799b3c17e0d3be5e2c17082eea3d99d5ccd013c243d5",
+  "floorScreenshotSha256": "a868d996124838282b52049475013519f165239806d89e366aee7d19ab073050",
+  "ink": 0.047646,
+  "floorInk": 0.031574,
+  "predecessorInk": 0.060196,
+  "ratio": 0.7915143863379627,
+  "floorRatio": 0.5245199016545949,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 3,
+   "excludedOneLineLinkParagraphCount": 2,
+   "minProseParagraphMeasureCh": 33.285,
+   "topLevelSectionRowCount": 0,
+   "minimumVisualSectionGapPx": null,
+   "aboveFoldTextCharacterCount": 353
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 353,
+   "minProseMeasureCh": 10.785,
+   "minimumAdjacentSectionGapPx": null,
+   "interactiveElementCount": 10
+  },
+  "contract": {
+   "misses": [
+    "interactive",
+    "relative"
+   ],
+   "relative": {
+    "baselineRoute": "/auth/sign-up",
+    "predecessorInk": 0.060196,
+    "ink": 0.047646,
+    "ratio": 0.7915143863379627,
+    "floorInk": null,
+    "floorRatio": null,
+    "textBound": false,
+    "within": false
+   }
+  },
+  "corrected": {
+   "misses": [
+    "relative"
+   ],
+   "relative": {
+    "baselineRoute": "/auth/sign-up",
+    "predecessorInk": 0.060196,
+    "ink": 0.047646,
+    "ratio": 0.7915143863379627,
+    "floorInk": 0.031574,
+    "floorRatio": 0.5245199016545949,
+    "textBound": false,
+    "within": false
+   }
+  }
+ },
+ {
+  "routeId": "auth.sign-up",
+  "state": "initial-form",
+  "viewport": "1280x800",
+  "measurementPath": "/auth/sign-up",
+  "screenshotSha256": "4503d2b1543f26cd32f26d7afeb4f2cf93c339a214136061dff31fe4c0f1c39f",
+  "floorScreenshotSha256": "bd9896663ae12a33e698dc5a399699444c8c851a8d5c91a013372ae7d1dc5a36",
+  "ink": 0.015267,
+  "floorInk": 0.010124,
+  "predecessorInk": 0.020807,
+  "ratio": 0.7337434517229778,
+  "floorRatio": 0.48656702071418273,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 2,
+   "excludedOneLineLinkParagraphCount": 3,
+   "minProseParagraphMeasureCh": 38.04,
+   "topLevelSectionRowCount": 0,
+   "minimumVisualSectionGapPx": null,
+   "aboveFoldTextCharacterCount": 353
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 353,
+   "minProseMeasureCh": 10.785,
+   "minimumAdjacentSectionGapPx": null,
+   "interactiveElementCount": 10
+  },
+  "contract": {
+   "misses": [
+    "interactive",
+    "proseMin",
+    "relative"
+   ],
+   "relative": {
+    "baselineRoute": "/auth/sign-up",
+    "predecessorInk": 0.020807,
+    "ink": 0.015267,
+    "ratio": 0.7337434517229778,
+    "floorInk": null,
+    "floorRatio": null,
+    "textBound": false,
+    "within": false
+   }
+  },
+  "corrected": {
+   "misses": [
+    "proseMin",
+    "relative"
+   ],
+   "relative": {
+    "baselineRoute": "/auth/sign-up",
+    "predecessorInk": 0.020807,
+    "ink": 0.015267,
+    "ratio": 0.7337434517229778,
+    "floorInk": 0.010124,
+    "floorRatio": 0.48656702071418273,
+    "textBound": false,
+    "within": false
+   }
+  }
+ },
+ {
+  "routeId": "marketing.changelog",
+  "state": "complete",
+  "viewport": "390x844",
+  "measurementPath": "/changelog",
+  "screenshotSha256": "3613d1890ab175597e7bc990cb0f72a2403d2dd13898343a19293d25fa2fc3a6",
+  "floorScreenshotSha256": "e704ec8e7d6803deec17ddcbb8e66d7f154323a9c1565036b65ee3c4301e8b50",
+  "ink": 0.072658,
+  "floorInk": 0.059041,
+  "predecessorInk": 0.067839,
+  "ratio": 1.0710358348442637,
+  "floorRatio": 0.8703105883046626,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 6,
+   "excludedOneLineLinkParagraphCount": 0,
+   "minProseParagraphMeasureCh": 31.888,
+   "topLevelSectionRowCount": 0,
+   "minimumVisualSectionGapPx": null,
+   "aboveFoldTextCharacterCount": 431
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 462,
+   "minProseMeasureCh": 18.001,
+   "minimumAdjacentSectionGapPx": null,
+   "interactiveElementCount": 5
+  },
+  "contract": {
+   "misses": [
+    "relative"
+   ],
+   "relative": {
+    "baselineRoute": "/changelog",
+    "predecessorInk": 0.067839,
+    "ink": 0.072658,
+    "ratio": 1.0710358348442637,
+    "floorInk": null,
+    "floorRatio": null,
+    "textBound": false,
+    "within": false
+   }
+  },
+  "corrected": {
+   "misses": [
+    "relative"
+   ],
+   "relative": {
+    "baselineRoute": "/changelog",
+    "predecessorInk": 0.067839,
+    "ink": 0.072658,
+    "ratio": 1.0710358348442637,
+    "floorInk": 0.059041,
+    "floorRatio": 0.8703105883046626,
+    "textBound": false,
+    "within": false
+   }
+  }
+ },
+ {
+  "routeId": "marketing.changelog",
+  "state": "complete",
+  "viewport": "1280x800",
+  "measurementPath": "/changelog",
+  "screenshotSha256": "979e6865ca0704e97141f21c0e870ad7e98bac000c7c153ce82ea38bae0b0461",
+  "floorScreenshotSha256": "c17a0c0e9ddb95b070818ab459ee2f14d11b6aa6f0b74b12c006610b1d778395",
+  "ink": 0.034729,
+  "floorInk": 0.030312,
+  "predecessorInk": 0.031785,
+  "ratio": 1.0926223061192386,
+  "floorRatio": 0.953657385559226,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 5,
+   "excludedOneLineLinkParagraphCount": 1,
+   "minProseParagraphMeasureCh": 45.117,
+   "topLevelSectionRowCount": 0,
+   "minimumVisualSectionGapPx": null,
+   "aboveFoldTextCharacterCount": 568
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 568,
+   "minProseMeasureCh": 29.209,
+   "minimumAdjacentSectionGapPx": null,
+   "interactiveElementCount": 6
+  },
+  "contract": {
+   "misses": [
+    "proseMax",
+    "proseMin",
+    "relative"
+   ],
+   "relative": {
+    "baselineRoute": "/changelog",
+    "predecessorInk": 0.031785,
+    "ink": 0.034729,
+    "ratio": 1.0926223061192386,
+    "floorInk": null,
+    "floorRatio": null,
+    "textBound": false,
+    "within": false
+   }
+  },
+  "corrected": {
+   "misses": [
+    "proseMax",
+    "relative"
+   ],
+   "relative": {
+    "baselineRoute": "/changelog",
+    "predecessorInk": 0.031785,
+    "ink": 0.034729,
+    "ratio": 1.0926223061192386,
+    "floorInk": 0.030312,
+    "floorRatio": 0.953657385559226,
+    "textBound": false,
+    "within": false
+   }
+  }
+ },
+ {
+  "routeId": "marketing.embryo-analysis",
+  "state": "jurisdiction-unavailable",
+  "viewport": "390x844",
+  "measurementPath": "/embryo-analysis",
+  "screenshotSha256": "176431cc521d3d9ae4fa1b41e8b5f556d3d01bf042f3f3cb7e908b6e7a63135e",
+  "floorScreenshotSha256": "d9df9e2f2899bcfc548fdfff1cd4b523066c12f51e36329fcd0d584b1a3295e6",
+  "ink": 0.088358,
+  "floorInk": 0.075826,
+  "predecessorInk": null,
+  "ratio": null,
+  "floorRatio": null,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 9,
+   "excludedOneLineLinkParagraphCount": 2,
+   "minProseParagraphMeasureCh": 27.226,
+   "topLevelSectionRowCount": 2,
+   "minimumVisualSectionGapPx": 48,
+   "aboveFoldTextCharacterCount": 526
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 574,
+   "minProseMeasureCh": 18.001,
+   "minimumAdjacentSectionGapPx": 48,
+   "interactiveElementCount": 4
+  },
+  "contract": {
+   "misses": [
+    "sectionGap"
+   ],
+   "relative": null
+  },
+  "corrected": {
+   "misses": [
+    "sectionGap"
+   ],
+   "relative": null
+  }
+ },
+ {
+  "routeId": "marketing.embryo-analysis",
+  "state": "jurisdiction-unavailable",
+  "viewport": "1280x800",
+  "measurementPath": "/embryo-analysis",
+  "screenshotSha256": "2ebb2d6a5f0b3d08d3fe306f8f44f673f0c464bbb7a8f059980339022be6477e",
+  "floorScreenshotSha256": "39d8efc79788f3f33d236d795e3d2074f32ab40a321b3aa406c8629426c80c8b",
+  "ink": 0.042903,
+  "floorInk": 0.038918,
+  "predecessorInk": null,
+  "ratio": null,
+  "floorRatio": null,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 8,
+   "excludedOneLineLinkParagraphCount": 3,
+   "minProseParagraphMeasureCh": 45.117,
+   "topLevelSectionRowCount": 2,
+   "minimumVisualSectionGapPx": 48,
+   "aboveFoldTextCharacterCount": 613
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 613,
+   "minProseMeasureCh": 29.209,
+   "minimumAdjacentSectionGapPx": 48,
+   "interactiveElementCount": 4
+  },
+  "contract": {
+   "misses": [
+    "proseMax",
+    "proseMin",
+    "sectionGap"
+   ],
+   "relative": null
+  },
+  "corrected": {
+   "misses": [
+    "proseMax",
+    "sectionGap"
+   ],
+   "relative": null
+  }
+ },
+ {
+  "routeId": "rights.future-person-claim",
+  "state": "complete",
+  "viewport": "390x844",
+  "measurementPath": "/future-person/claim",
+  "screenshotSha256": "a9bc73c0f17f79032f0f852e7f35eeedde3d54a938702c85d0cfd7304b7ab7b6",
+  "floorScreenshotSha256": "6e36b0390445848c8cfda9ec0e3f1769ade2e211a7ec33721f3e8751d4df2332",
+  "ink": 0.09304,
+  "floorInk": 0.080876,
+  "predecessorInk": null,
+  "ratio": null,
+  "floorRatio": null,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 10,
+   "excludedOneLineLinkParagraphCount": 0,
+   "minProseParagraphMeasureCh": 27.226,
+   "topLevelSectionRowCount": 2,
+   "minimumVisualSectionGapPx": 32,
+   "aboveFoldTextCharacterCount": 581
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 640,
+   "minProseMeasureCh": 18.001,
+   "minimumAdjacentSectionGapPx": 32,
+   "interactiveElementCount": 4
+  },
+  "contract": {
+   "misses": [
+    "sectionGap"
+   ],
+   "relative": null
+  },
+  "corrected": {
+   "misses": [
+    "sectionGap"
+   ],
+   "relative": null
+  }
+ },
+ {
+  "routeId": "rights.future-person-claim",
+  "state": "complete",
+  "viewport": "1280x800",
+  "measurementPath": "/future-person/claim",
+  "screenshotSha256": "cc748e430dfa9bdc71ea3e20520781c8b2ab2d2fcc876c206d4ea3002e4eb702",
+  "floorScreenshotSha256": "8635aaf45fd4d646e9bad0debeae0362aec70b3ce55aa6e3f477b7ea0028080d",
+  "ink": 0.048729,
+  "floorInk": 0.044925,
+  "predecessorInk": null,
+  "ratio": null,
+  "floorRatio": null,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 9,
+   "excludedOneLineLinkParagraphCount": 1,
+   "minProseParagraphMeasureCh": 45.117,
+   "topLevelSectionRowCount": 2,
+   "minimumVisualSectionGapPx": 32,
+   "aboveFoldTextCharacterCount": 767
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 767,
+   "minProseMeasureCh": 29.209,
+   "minimumAdjacentSectionGapPx": 32,
+   "interactiveElementCount": 4
+  },
+  "contract": {
+   "misses": [
+    "visibleCharacters",
+    "proseMax",
+    "proseMin",
+    "sectionGap"
+   ],
+   "relative": null
+  },
+  "corrected": {
+   "misses": [
+    "visibleCharacters",
+    "proseMax",
+    "sectionGap"
+   ],
+   "relative": null
+  }
+ },
+ {
+  "routeId": "legal.index",
+  "state": "complete",
+  "viewport": "390x844",
+  "measurementPath": "/legal",
+  "screenshotSha256": "7da7d56d0a808ecfbb77fe33d02b33f8876db5e138f7cc3a833de124a7dac7ef",
+  "floorScreenshotSha256": "173524ef42d06451fe3ee3f059dc72b547ec0ceb7dc415cd5dd4bc1a5cae30dc",
+  "ink": 0.043435,
+  "floorInk": 0.029982,
+  "predecessorInk": null,
+  "ratio": null,
+  "floorRatio": null,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 5,
+   "excludedOneLineLinkParagraphCount": 0,
+   "minProseParagraphMeasureCh": 31.888,
+   "topLevelSectionRowCount": 0,
+   "minimumVisualSectionGapPx": null,
+   "aboveFoldTextCharacterCount": 197
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 197,
+   "minProseMeasureCh": 18.001,
+   "minimumAdjacentSectionGapPx": null,
+   "interactiveElementCount": 11
+  },
+  "contract": {
+   "misses": [],
+   "relative": null
+  },
+  "corrected": {
+   "misses": [],
+   "relative": null
+  }
+ },
+ {
+  "routeId": "legal.index",
+  "state": "complete",
+  "viewport": "1280x800",
+  "measurementPath": "/legal",
+  "screenshotSha256": "f46e94ae7b20cecde2e7d1b2e9ab5f558c8060d295aa57c988f281c971d6cfe2",
+  "floorScreenshotSha256": "b8b83da4490fd1500c98a513b029829edd4209f43af44ae94ad1811e2bd48f3c",
+  "ink": 0.024273,
+  "floorInk": 0.019791,
+  "predecessorInk": null,
+  "ratio": null,
+  "floorRatio": null,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 4,
+   "excludedOneLineLinkParagraphCount": 1,
+   "minProseParagraphMeasureCh": 45.117,
+   "topLevelSectionRowCount": 0,
+   "minimumVisualSectionGapPx": null,
+   "aboveFoldTextCharacterCount": 316
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 316,
+   "minProseMeasureCh": 29.209,
+   "minimumAdjacentSectionGapPx": null,
+   "interactiveElementCount": 15
+  },
+  "contract": {
+   "misses": [
+    "proseMax",
+    "proseMin"
+   ],
+   "relative": null
+  },
+  "corrected": {
+   "misses": [
+    "proseMax"
+   ],
+   "relative": null
+  }
+ },
+ {
+  "routeId": "rights.subject-access",
+  "state": "complete",
+  "viewport": "390x844",
+  "measurementPath": "/legal/appeals",
+  "screenshotSha256": "3385b89c96a7647c9e814f2501673ebcb2c07d6d1dbf573d418c1fb2fb872183",
+  "floorScreenshotSha256": "0dd1192810369168fb446c1ceee4b2ea725f790043512d549844e3212355ff47",
+  "ink": 0.081432,
+  "floorInk": 0.068502,
+  "predecessorInk": null,
+  "ratio": null,
+  "floorRatio": null,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 15,
+   "excludedOneLineLinkParagraphCount": 0,
+   "minProseParagraphMeasureCh": 31.888,
+   "topLevelSectionRowCount": 5,
+   "minimumVisualSectionGapPx": 32,
+   "aboveFoldTextCharacterCount": 615
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 878,
+   "minProseMeasureCh": 18.001,
+   "minimumAdjacentSectionGapPx": 32,
+   "interactiveElementCount": 5
+  },
+  "contract": {
+   "misses": [
+    "visibleCharacters",
+    "sectionGap"
+   ],
+   "relative": null
+  },
+  "corrected": {
+   "misses": [
+    "visibleCharacters",
+    "sectionGap"
+   ],
+   "relative": null
+  }
+ },
+ {
+  "routeId": "rights.subject-access",
+  "state": "complete",
+  "viewport": "1280x800",
+  "measurementPath": "/legal/appeals",
+  "screenshotSha256": "df83ce3e9066378cf077480b3aa7c7e31990f1aa26265a0dcbe1b4a542af51a8",
+  "floorScreenshotSha256": "9a0563a3d75d14f78cd09d5e7727340a65be66d2007f7c493cab6dfa73b9a81b",
+  "ink": 0.043544,
+  "floorInk": 0.039388,
+  "predecessorInk": null,
+  "ratio": null,
+  "floorRatio": null,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 14,
+   "excludedOneLineLinkParagraphCount": 1,
+   "minProseParagraphMeasureCh": 45.117,
+   "topLevelSectionRowCount": 5,
+   "minimumVisualSectionGapPx": 48,
+   "aboveFoldTextCharacterCount": 954
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 1008,
+   "minProseMeasureCh": 29.209,
+   "minimumAdjacentSectionGapPx": 48,
+   "interactiveElementCount": 5
+  },
+  "contract": {
+   "misses": [
+    "visibleCharacters",
+    "proseMax",
+    "proseMin",
+    "sectionGap"
+   ],
+   "relative": null
+  },
+  "corrected": {
+   "misses": [
+    "visibleCharacters",
+    "proseMax",
+    "sectionGap"
+   ],
+   "relative": null
+  }
+ },
+ {
+  "routeId": "legal.artifact",
+  "state": "complete",
+  "viewport": "390x844",
+  "measurementPath": "/legal/consent.own-polygenic",
+  "screenshotSha256": "89c73d5d69845b48aa76f43fb4baa218b582492c95bb91686a36ea5a96a72636",
+  "floorScreenshotSha256": "9386eb151500c9b2f6e271c808d2693a0afb6b092811016214e4353590e53a5b",
+  "ink": 0.077531,
+  "floorInk": 0.065002,
+  "predecessorInk": null,
+  "ratio": null,
+  "floorRatio": null,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 9,
+   "excludedOneLineLinkParagraphCount": 1,
+   "minProseParagraphMeasureCh": 27.972,
+   "topLevelSectionRowCount": 1,
+   "minimumVisualSectionGapPx": null,
+   "aboveFoldTextCharacterCount": 519
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 931,
+   "minProseMeasureCh": 18.001,
+   "minimumAdjacentSectionGapPx": null,
+   "interactiveElementCount": 4
+  },
+  "contract": {
+   "misses": [
+    "visibleCharacters"
+   ],
+   "relative": null
+  },
+  "corrected": {
+   "misses": [],
+   "relative": null
+  }
+ },
+ {
+  "routeId": "legal.artifact",
+  "state": "complete",
+  "viewport": "1280x800",
+  "measurementPath": "/legal/consent.own-polygenic",
+  "screenshotSha256": "21b7da530eb38082c1ad9ea275356f584e0610561ff90df2f0290a2167daca5b",
+  "floorScreenshotSha256": "e8a2932050f4534719c978bb757fe6a77b2d496898f2d8d926d7e567e35ebbc8",
+  "ink": 0.035838,
+  "floorInk": 0.031798,
+  "predecessorInk": null,
+  "ratio": null,
+  "floorRatio": null,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 8,
+   "excludedOneLineLinkParagraphCount": 2,
+   "minProseParagraphMeasureCh": 45.117,
+   "topLevelSectionRowCount": 1,
+   "minimumVisualSectionGapPx": null,
+   "aboveFoldTextCharacterCount": 678
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 970,
+   "minProseMeasureCh": 29.209,
+   "minimumAdjacentSectionGapPx": null,
+   "interactiveElementCount": 4
+  },
+  "contract": {
+   "misses": [
+    "visibleCharacters",
+    "proseMax",
+    "proseMin"
+   ],
+   "relative": null
+  },
+  "corrected": {
+   "misses": [
+    "proseMax"
+   ],
+   "relative": null
+  }
+ },
+ {
+  "routeId": "legal.artifact-diff",
+  "state": "complete",
+  "viewport": "390x844",
+  "measurementPath": "/legal/consent.own-polygenic/diff/1/2",
+  "screenshotSha256": "d1d8084dad999c42ba152d7417289d35fca93253e846eda2d0df97e1cdaa8def",
+  "floorScreenshotSha256": "a4cb8a6bbd855be522c489a63dc17a7fd56d291de6c31383a3f48cdd588138d0",
+  "ink": 0.080976,
+  "floorInk": 0.068657,
+  "predecessorInk": null,
+  "ratio": null,
+  "floorRatio": null,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 6,
+   "excludedOneLineLinkParagraphCount": 0,
+   "minProseParagraphMeasureCh": 31.888,
+   "topLevelSectionRowCount": 2,
+   "minimumVisualSectionGapPx": 24,
+   "aboveFoldTextCharacterCount": 536
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 712,
+   "minProseMeasureCh": 18.001,
+   "minimumAdjacentSectionGapPx": 24,
+   "interactiveElementCount": 4
+  },
+  "contract": {
+   "misses": [
+    "visibleCharacters",
+    "sectionGap"
+   ],
+   "relative": null
+  },
+  "corrected": {
+   "misses": [
+    "sectionGap"
+   ],
+   "relative": null
+  }
+ },
+ {
+  "routeId": "legal.artifact-diff",
+  "state": "complete",
+  "viewport": "1280x800",
+  "measurementPath": "/legal/consent.own-polygenic/diff/1/2",
+  "screenshotSha256": "580f84427289d730429c8a9a9216712e8d772972ebf93b3262c7529788c85c8b",
+  "floorScreenshotSha256": "3135b810fa86250311f729b0997b3eb2c9630968564ff165339de5fffd28a82a",
+  "ink": 0.04701,
+  "floorInk": 0.043232,
+  "predecessorInk": null,
+  "ratio": null,
+  "floorRatio": null,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 5,
+   "excludedOneLineLinkParagraphCount": 1,
+   "minProseParagraphMeasureCh": 45.117,
+   "topLevelSectionRowCount": 1,
+   "minimumVisualSectionGapPx": null,
+   "aboveFoldTextCharacterCount": 891
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 1351,
+   "minProseMeasureCh": 29.209,
+   "minimumAdjacentSectionGapPx": -598.84,
+   "interactiveElementCount": 4
+  },
+  "contract": {
+   "misses": [
+    "visibleCharacters",
+    "proseMax",
+    "proseMin",
+    "sectionGap"
+   ],
+   "relative": null
+  },
+  "corrected": {
+   "misses": [
+    "visibleCharacters",
+    "proseMax"
+   ],
+   "relative": null
+  }
+ },
+ {
+  "routeId": "legal.artifact-version",
+  "state": "complete",
+  "viewport": "390x844",
+  "measurementPath": "/legal/consent.own-polygenic/versions/1",
+  "screenshotSha256": "8b64d2e40a92c485d96faa5c459afc8c0d094a3b44eafadc66a095098a477d26",
+  "floorScreenshotSha256": "02ea6ea487733e0d095a22995c2c362fb38b1c0f8a3e845cca03c25ed9fcbb9c",
+  "ink": 0.073657,
+  "floorInk": 0.060821,
+  "predecessorInk": null,
+  "ratio": null,
+  "floorRatio": null,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 8,
+   "excludedOneLineLinkParagraphCount": 1,
+   "minProseParagraphMeasureCh": 27.972,
+   "topLevelSectionRowCount": 1,
+   "minimumVisualSectionGapPx": null,
+   "aboveFoldTextCharacterCount": 495
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 746,
+   "minProseMeasureCh": 18.001,
+   "minimumAdjacentSectionGapPx": null,
+   "interactiveElementCount": 4
+  },
+  "contract": {
+   "misses": [
+    "visibleCharacters"
+   ],
+   "relative": null
+  },
+  "corrected": {
+   "misses": [],
+   "relative": null
+  }
+ },
+ {
+  "routeId": "legal.artifact-version",
+  "state": "complete",
+  "viewport": "1280x800",
+  "measurementPath": "/legal/consent.own-polygenic/versions/1",
+  "screenshotSha256": "955da82feb5ce3f81d4069f21bc24fcd42a61ee5edaaacf323e0b9608e4438c6",
+  "floorScreenshotSha256": "aa413319eae1c344ef0fe54a5abb3a0037baeca314c748f08581a8432ef08cfb",
+  "ink": 0.036021,
+  "floorInk": 0.031896,
+  "predecessorInk": null,
+  "ratio": null,
+  "floorRatio": null,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 7,
+   "excludedOneLineLinkParagraphCount": 2,
+   "minProseParagraphMeasureCh": 45.117,
+   "topLevelSectionRowCount": 1,
+   "minimumVisualSectionGapPx": null,
+   "aboveFoldTextCharacterCount": 642
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 785,
+   "minProseMeasureCh": 29.209,
+   "minimumAdjacentSectionGapPx": null,
+   "interactiveElementCount": 4
+  },
+  "contract": {
+   "misses": [
+    "visibleCharacters",
+    "proseMax",
+    "proseMin"
+   ],
+   "relative": null
+  },
+  "corrected": {
+   "misses": [
+    "proseMax"
+   ],
+   "relative": null
+  }
+ },
+ {
+  "routeId": "legal.consent",
+  "state": "complete",
+  "viewport": "390x844",
+  "measurementPath": "/legal/consent/consent.own-polygenic",
+  "screenshotSha256": "89c73d5d69845b48aa76f43fb4baa218b582492c95bb91686a36ea5a96a72636",
+  "floorScreenshotSha256": "9386eb151500c9b2f6e271c808d2693a0afb6b092811016214e4353590e53a5b",
+  "ink": 0.077531,
+  "floorInk": 0.065002,
+  "predecessorInk": null,
+  "ratio": null,
+  "floorRatio": null,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 9,
+   "excludedOneLineLinkParagraphCount": 1,
+   "minProseParagraphMeasureCh": 27.972,
+   "topLevelSectionRowCount": 1,
+   "minimumVisualSectionGapPx": null,
+   "aboveFoldTextCharacterCount": 519
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 931,
+   "minProseMeasureCh": 18.001,
+   "minimumAdjacentSectionGapPx": null,
+   "interactiveElementCount": 4
+  },
+  "contract": {
+   "misses": [
+    "visibleCharacters"
+   ],
+   "relative": null
+  },
+  "corrected": {
+   "misses": [],
+   "relative": null
+  }
+ },
+ {
+  "routeId": "legal.consent",
+  "state": "complete",
+  "viewport": "1280x800",
+  "measurementPath": "/legal/consent/consent.own-polygenic",
+  "screenshotSha256": "21b7da530eb38082c1ad9ea275356f584e0610561ff90df2f0290a2167daca5b",
+  "floorScreenshotSha256": "e8a2932050f4534719c978bb757fe6a77b2d496898f2d8d926d7e567e35ebbc8",
+  "ink": 0.035838,
+  "floorInk": 0.031798,
+  "predecessorInk": null,
+  "ratio": null,
+  "floorRatio": null,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 8,
+   "excludedOneLineLinkParagraphCount": 2,
+   "minProseParagraphMeasureCh": 45.117,
+   "topLevelSectionRowCount": 1,
+   "minimumVisualSectionGapPx": null,
+   "aboveFoldTextCharacterCount": 678
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 970,
+   "minProseMeasureCh": 29.209,
+   "minimumAdjacentSectionGapPx": null,
+   "interactiveElementCount": 4
+  },
+  "contract": {
+   "misses": [
+    "visibleCharacters",
+    "proseMax",
+    "proseMin"
+   ],
+   "relative": null
+  },
+  "corrected": {
+   "misses": [
+    "proseMax"
+   ],
+   "relative": null
+  }
+ },
+ {
+  "routeId": "legal.consent-diff",
+  "state": "complete",
+  "viewport": "390x844",
+  "measurementPath": "/legal/consent/consent.own-polygenic/diff/1/2",
+  "screenshotSha256": "6f93bd4b19f979cfe798d0fd3ce49d2dbaf8d30994c58cd7bab4fdc323591b1a",
+  "floorScreenshotSha256": "1b1eed0aa11cb5dc1aca7c4371758ac1bfa07ef75d594f81038eae3759445c6d",
+  "ink": 0.081018,
+  "floorInk": 0.068699,
+  "predecessorInk": null,
+  "ratio": null,
+  "floorRatio": null,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 6,
+   "excludedOneLineLinkParagraphCount": 0,
+   "minProseParagraphMeasureCh": 31.888,
+   "topLevelSectionRowCount": 2,
+   "minimumVisualSectionGapPx": 24,
+   "aboveFoldTextCharacterCount": 536
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 712,
+   "minProseMeasureCh": 18.001,
+   "minimumAdjacentSectionGapPx": 24,
+   "interactiveElementCount": 4
+  },
+  "contract": {
+   "misses": [
+    "visibleCharacters",
+    "sectionGap"
+   ],
+   "relative": null
+  },
+  "corrected": {
+   "misses": [
+    "sectionGap"
+   ],
+   "relative": null
+  }
+ },
+ {
+  "routeId": "legal.consent-diff",
+  "state": "complete",
+  "viewport": "1280x800",
+  "measurementPath": "/legal/consent/consent.own-polygenic/diff/1/2",
+  "screenshotSha256": "405f05207e8f152db66fe8a64a8daaf056b0f39d65a3fee7c274529a2c6e7739",
+  "floorScreenshotSha256": "f6816b04069eaa1a198ccb4ff07001a75c9d9ac58671b27bbf181c44f35e26b2",
+  "ink": 0.047023,
+  "floorInk": 0.043246,
+  "predecessorInk": null,
+  "ratio": null,
+  "floorRatio": null,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 5,
+   "excludedOneLineLinkParagraphCount": 1,
+   "minProseParagraphMeasureCh": 45.117,
+   "topLevelSectionRowCount": 1,
+   "minimumVisualSectionGapPx": null,
+   "aboveFoldTextCharacterCount": 891
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 1351,
+   "minProseMeasureCh": 29.209,
+   "minimumAdjacentSectionGapPx": -598.84,
+   "interactiveElementCount": 4
+  },
+  "contract": {
+   "misses": [
+    "visibleCharacters",
+    "proseMax",
+    "proseMin",
+    "sectionGap"
+   ],
+   "relative": null
+  },
+  "corrected": {
+   "misses": [
+    "visibleCharacters",
+    "proseMax"
+   ],
+   "relative": null
+  }
+ },
+ {
+  "routeId": "legal.consent-version",
+  "state": "complete",
+  "viewport": "390x844",
+  "measurementPath": "/legal/consent/consent.own-polygenic/v/1",
+  "screenshotSha256": "8b64d2e40a92c485d96faa5c459afc8c0d094a3b44eafadc66a095098a477d26",
+  "floorScreenshotSha256": "02ea6ea487733e0d095a22995c2c362fb38b1c0f8a3e845cca03c25ed9fcbb9c",
+  "ink": 0.073657,
+  "floorInk": 0.060821,
+  "predecessorInk": null,
+  "ratio": null,
+  "floorRatio": null,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 8,
+   "excludedOneLineLinkParagraphCount": 1,
+   "minProseParagraphMeasureCh": 27.972,
+   "topLevelSectionRowCount": 1,
+   "minimumVisualSectionGapPx": null,
+   "aboveFoldTextCharacterCount": 495
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 746,
+   "minProseMeasureCh": 18.001,
+   "minimumAdjacentSectionGapPx": null,
+   "interactiveElementCount": 4
+  },
+  "contract": {
+   "misses": [
+    "visibleCharacters"
+   ],
+   "relative": null
+  },
+  "corrected": {
+   "misses": [],
+   "relative": null
+  }
+ },
+ {
+  "routeId": "legal.consent-version",
+  "state": "complete",
+  "viewport": "1280x800",
+  "measurementPath": "/legal/consent/consent.own-polygenic/v/1",
+  "screenshotSha256": "955da82feb5ce3f81d4069f21bc24fcd42a61ee5edaaacf323e0b9608e4438c6",
+  "floorScreenshotSha256": "aa413319eae1c344ef0fe54a5abb3a0037baeca314c748f08581a8432ef08cfb",
+  "ink": 0.036021,
+  "floorInk": 0.031896,
+  "predecessorInk": null,
+  "ratio": null,
+  "floorRatio": null,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 7,
+   "excludedOneLineLinkParagraphCount": 2,
+   "minProseParagraphMeasureCh": 45.117,
+   "topLevelSectionRowCount": 1,
+   "minimumVisualSectionGapPx": null,
+   "aboveFoldTextCharacterCount": 642
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 785,
+   "minProseMeasureCh": 29.209,
+   "minimumAdjacentSectionGapPx": null,
+   "interactiveElementCount": 4
+  },
+  "contract": {
+   "misses": [
+    "visibleCharacters",
+    "proseMax",
+    "proseMin"
+   ],
+   "relative": null
+  },
+  "corrected": {
+   "misses": [
+    "proseMax"
+   ],
+   "relative": null
+  }
+ },
+ {
+  "routeId": "legal.consents",
+  "state": "complete",
+  "viewport": "390x844",
+  "measurementPath": "/legal/consents",
+  "screenshotSha256": "cfade67408887fc6691a2a925444a8e279dac9562b9665f7fbef413f77968285",
+  "floorScreenshotSha256": "43879797f128636cd99fe2c117e3249ba7c9af2ccf78b3f21b69c0ebc32ae44c",
+  "ink": 0.066129,
+  "floorInk": 0.053199,
+  "predecessorInk": null,
+  "ratio": null,
+  "floorRatio": null,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 10,
+   "excludedOneLineLinkParagraphCount": 0,
+   "minProseParagraphMeasureCh": 31.888,
+   "topLevelSectionRowCount": 3,
+   "minimumVisualSectionGapPx": 32,
+   "aboveFoldTextCharacterCount": 433
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 433,
+   "minProseMeasureCh": 18.001,
+   "minimumAdjacentSectionGapPx": 32,
+   "interactiveElementCount": 5
+  },
+  "contract": {
+   "misses": [
+    "sectionGap"
+   ],
+   "relative": null
+  },
+  "corrected": {
+   "misses": [
+    "sectionGap"
+   ],
+   "relative": null
+  }
+ },
+ {
+  "routeId": "legal.consents",
+  "state": "complete",
+  "viewport": "1280x800",
+  "measurementPath": "/legal/consents",
+  "screenshotSha256": "85aa07c74cf2a7f0ba3c65e723bca5ccd8890addcd9524b9f68d58408c0c5dcb",
+  "floorScreenshotSha256": "acf37174b6ec89ab0bad93fee96e4f783fdbd0618b289793ce553090068aad33",
+  "ink": 0.028484,
+  "floorInk": 0.024328,
+  "predecessorInk": null,
+  "ratio": null,
+  "floorRatio": null,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 9,
+   "excludedOneLineLinkParagraphCount": 1,
+   "minProseParagraphMeasureCh": 45.117,
+   "topLevelSectionRowCount": 3,
+   "minimumVisualSectionGapPx": 48,
+   "aboveFoldTextCharacterCount": 482
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 482,
+   "minProseMeasureCh": 29.209,
+   "minimumAdjacentSectionGapPx": 48,
+   "interactiveElementCount": 5
+  },
+  "contract": {
+   "misses": [
+    "proseMax",
+    "proseMin",
+    "sectionGap"
+   ],
+   "relative": null
+  },
+  "corrected": {
+   "misses": [
+    "proseMax",
+    "sectionGap"
+   ],
+   "relative": null
+  }
+ },
+ {
+  "routeId": "legal.deceased",
+  "state": "complete",
+  "viewport": "390x844",
+  "measurementPath": "/legal/deceased",
+  "screenshotSha256": "20f3311c867dfc7827ac112cdf7a8c74077dd27dab7c094a7b2488a052a1170c",
+  "floorScreenshotSha256": "9dc174af7e85a6952af8e65950b57aaed741bff6100918e70755ea12ede76fb1",
+  "ink": 0.076079,
+  "floorInk": 0.063149,
+  "predecessorInk": 0.086092,
+  "ratio": 0.8836941876132508,
+  "floorRatio": 0.7335060168192166,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 20,
+   "excludedOneLineLinkParagraphCount": 0,
+   "minProseParagraphMeasureCh": 31.888,
+   "topLevelSectionRowCount": 7,
+   "minimumVisualSectionGapPx": 32,
+   "aboveFoldTextCharacterCount": 673
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 685,
+   "minProseMeasureCh": 18.001,
+   "minimumAdjacentSectionGapPx": 32,
+   "interactiveElementCount": 5
+  },
+  "contract": {
+   "misses": [
+    "sectionGap",
+    "relative"
+   ],
+   "relative": {
+    "baselineRoute": "/legal/deceased",
+    "predecessorInk": 0.086092,
+    "ink": 0.076079,
+    "ratio": 0.8836941876132508,
+    "floorInk": null,
+    "floorRatio": null,
+    "textBound": false,
+    "within": false
+   }
+  },
+  "corrected": {
+   "misses": [
+    "sectionGap",
+    "relative"
+   ],
+   "relative": {
+    "baselineRoute": "/legal/deceased",
+    "predecessorInk": 0.086092,
+    "ink": 0.076079,
+    "ratio": 0.8836941876132508,
+    "floorInk": 0.063149,
+    "floorRatio": 0.7335060168192166,
+    "textBound": false,
+    "within": false
+   }
+  }
+ },
+ {
+  "routeId": "legal.deceased",
+  "state": "complete",
+  "viewport": "1280x800",
+  "measurementPath": "/legal/deceased",
+  "screenshotSha256": "60b45f28029dbcd0d437f1a2c30e9e983f4d6622c7b6c289fb560798f4e678bb",
+  "floorScreenshotSha256": "314328b0bc55f2ce4a9854f73e489ecb5331232f6b1cd8d80efdc34ff0c9b0fd",
+  "ink": 0.031272,
+  "floorInk": 0.027116,
+  "predecessorInk": 0.050349,
+  "ratio": 0.621104689268903,
+  "floorRatio": 0.5385608452998074,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 19,
+   "excludedOneLineLinkParagraphCount": 1,
+   "minProseParagraphMeasureCh": 45.117,
+   "topLevelSectionRowCount": 7,
+   "minimumVisualSectionGapPx": 48,
+   "aboveFoldTextCharacterCount": 724
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 724,
+   "minProseMeasureCh": 29.209,
+   "minimumAdjacentSectionGapPx": 48,
+   "interactiveElementCount": 5
+  },
+  "contract": {
+   "misses": [
+    "visibleCharacters",
+    "proseMax",
+    "proseMin",
+    "sectionGap",
+    "relative"
+   ],
+   "relative": {
+    "baselineRoute": "/legal/deceased",
+    "predecessorInk": 0.050349,
+    "ink": 0.031272,
+    "ratio": 0.621104689268903,
+    "floorInk": null,
+    "floorRatio": null,
+    "textBound": false,
+    "within": false
+   }
+  },
+  "corrected": {
+   "misses": [
+    "visibleCharacters",
+    "proseMax",
+    "sectionGap",
+    "relative"
+   ],
+   "relative": {
+    "baselineRoute": "/legal/deceased",
+    "predecessorInk": 0.050349,
+    "ink": 0.031272,
+    "ratio": 0.621104689268903,
+    "floorInk": 0.027116,
+    "floorRatio": 0.5385608452998074,
+    "textBound": false,
+    "within": false
+   }
+  }
+ },
+ {
+  "routeId": "legal.future-person",
+  "state": "complete",
+  "viewport": "390x844",
+  "measurementPath": "/legal/future-person",
+  "screenshotSha256": "576df8b73f004508f8ca723e16d4744c96ccc28a6ecb3a6ecdf8e5b273c48ea0",
+  "floorScreenshotSha256": "16ff6dc4784727a05433bc42a4d1e20ba3a895d6808d73600ee0fc9b38d99e2a",
+  "ink": 0.077063,
+  "floorInk": 0.064133,
+  "predecessorInk": null,
+  "ratio": null,
+  "floorRatio": null,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 11,
+   "excludedOneLineLinkParagraphCount": 0,
+   "minProseParagraphMeasureCh": 31.888,
+   "topLevelSectionRowCount": 5,
+   "minimumVisualSectionGapPx": 32,
+   "aboveFoldTextCharacterCount": 628
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 778,
+   "minProseMeasureCh": 18.001,
+   "minimumAdjacentSectionGapPx": 32,
+   "interactiveElementCount": 5
+  },
+  "contract": {
+   "misses": [
+    "visibleCharacters",
+    "sectionGap"
+   ],
+   "relative": null
+  },
+  "corrected": {
+   "misses": [
+    "visibleCharacters",
+    "sectionGap"
+   ],
+   "relative": null
+  }
+ },
+ {
+  "routeId": "legal.future-person",
+  "state": "complete",
+  "viewport": "1280x800",
+  "measurementPath": "/legal/future-person",
+  "screenshotSha256": "abcbfc064ebfdea86cdfdf6aad99950ce07561c90395079a3657bd45ada51f71",
+  "floorScreenshotSha256": "6e4a8ffb188c610e5aad6932eb4816a4b7b65dbbc9752520f9dd36ba7a9ba4ce",
+  "ink": 0.04084,
+  "floorInk": 0.036684,
+  "predecessorInk": null,
+  "ratio": null,
+  "floorRatio": null,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 10,
+   "excludedOneLineLinkParagraphCount": 1,
+   "minProseParagraphMeasureCh": 45.117,
+   "topLevelSectionRowCount": 5,
+   "minimumVisualSectionGapPx": 48,
+   "aboveFoldTextCharacterCount": 843
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 843,
+   "minProseMeasureCh": 29.209,
+   "minimumAdjacentSectionGapPx": 48,
+   "interactiveElementCount": 5
+  },
+  "contract": {
+   "misses": [
+    "visibleCharacters",
+    "proseMax",
+    "proseMin",
+    "sectionGap"
+   ],
+   "relative": null
+  },
+  "corrected": {
+   "misses": [
+    "visibleCharacters",
+    "proseMax",
+    "sectionGap"
+   ],
+   "relative": null
+  }
+ },
+ {
+  "routeId": "legal.gdpr",
+  "state": "complete",
+  "viewport": "390x844",
+  "measurementPath": "/legal/gdpr",
+  "screenshotSha256": "1082502c16649f1386028730c7ee6e4954dc2395c41db27233a5027cb569a5e9",
+  "floorScreenshotSha256": "9af0e5abfe1c3f4b6f9cc38124ffb9c1428cf6b5b5643c1f4226175789a6383b",
+  "ink": 0.087231,
+  "floorInk": 0.074301,
+  "predecessorInk": null,
+  "ratio": null,
+  "floorRatio": null,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 19,
+   "excludedOneLineLinkParagraphCount": 0,
+   "minProseParagraphMeasureCh": 31.888,
+   "topLevelSectionRowCount": 5,
+   "minimumVisualSectionGapPx": 32,
+   "aboveFoldTextCharacterCount": 708
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 808,
+   "minProseMeasureCh": 18.001,
+   "minimumAdjacentSectionGapPx": 32,
+   "interactiveElementCount": 5
+  },
+  "contract": {
+   "misses": [
+    "visibleCharacters",
+    "sectionGap"
+   ],
+   "relative": null
+  },
+  "corrected": {
+   "misses": [
+    "visibleCharacters",
+    "sectionGap"
+   ],
+   "relative": null
+  }
+ },
+ {
+  "routeId": "legal.gdpr",
+  "state": "complete",
+  "viewport": "1280x800",
+  "measurementPath": "/legal/gdpr",
+  "screenshotSha256": "0d57efe2268e5b34de5a9269b9ad33594a06b44a122a53f3804b59f42ea1368b",
+  "floorScreenshotSha256": "46f85ae82aa2203c625dac3b160543e046b57b076857979c9613d9c45ac6cf50",
+  "ink": 0.038083,
+  "floorInk": 0.033927,
+  "predecessorInk": null,
+  "ratio": null,
+  "floorRatio": null,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 18,
+   "excludedOneLineLinkParagraphCount": 1,
+   "minProseParagraphMeasureCh": 45.117,
+   "topLevelSectionRowCount": 5,
+   "minimumVisualSectionGapPx": 48,
+   "aboveFoldTextCharacterCount": 847
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 847,
+   "minProseMeasureCh": 29.209,
+   "minimumAdjacentSectionGapPx": 48,
+   "interactiveElementCount": 5
+  },
+  "contract": {
+   "misses": [
+    "visibleCharacters",
+    "proseMax",
+    "proseMin",
+    "sectionGap"
+   ],
+   "relative": null
+  },
+  "corrected": {
+   "misses": [
+    "visibleCharacters",
+    "proseMax",
+    "sectionGap"
+   ],
+   "relative": null
+  }
+ },
+ {
+  "routeId": "legal.gina",
+  "state": "complete",
+  "viewport": "390x844",
+  "measurementPath": "/legal/gina",
+  "screenshotSha256": "13babeb37c8fcf4f6673c0038d80f400c74b2703154c1f56e91c82761b020223",
+  "floorScreenshotSha256": "bddd51a7e0324d2481fec6578a5fd7ff2308595da2315d0b51d8fb429542533d",
+  "ink": 0.080426,
+  "floorInk": 0.067496,
+  "predecessorInk": 0.081826,
+  "ratio": 0.982890523794393,
+  "floorRatio": 0.8248722899811797,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 15,
+   "excludedOneLineLinkParagraphCount": 0,
+   "minProseParagraphMeasureCh": 31.888,
+   "topLevelSectionRowCount": 4,
+   "minimumVisualSectionGapPx": 32,
+   "aboveFoldTextCharacterCount": 570
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 570,
+   "minProseMeasureCh": 18.001,
+   "minimumAdjacentSectionGapPx": 32,
+   "interactiveElementCount": 5
+  },
+  "contract": {
+   "misses": [
+    "sectionGap",
+    "relative"
+   ],
+   "relative": {
+    "baselineRoute": "/legal/gina",
+    "predecessorInk": 0.081826,
+    "ink": 0.080426,
+    "ratio": 0.982890523794393,
+    "floorInk": null,
+    "floorRatio": null,
+    "textBound": false,
+    "within": false
+   }
+  },
+  "corrected": {
+   "misses": [
+    "sectionGap",
+    "relative"
+   ],
+   "relative": {
+    "baselineRoute": "/legal/gina",
+    "predecessorInk": 0.081826,
+    "ink": 0.080426,
+    "ratio": 0.982890523794393,
+    "floorInk": 0.067496,
+    "floorRatio": 0.8248722899811797,
+    "textBound": false,
+    "within": false
+   }
+  }
+ },
+ {
+  "routeId": "legal.gina",
+  "state": "complete",
+  "viewport": "1280x800",
+  "measurementPath": "/legal/gina",
+  "screenshotSha256": "5956bbb78f1a65d798317bbb37fbdbbca7f819bccb09ab45ec3be15c1dd249f5",
+  "floorScreenshotSha256": "003aacc88cedc00f9ae93eac94f3e9e2dfae863f7d4d5ec88c67204883004bce",
+  "ink": 0.03897,
+  "floorInk": 0.034813,
+  "predecessorInk": 0.057451,
+  "ratio": 0.6783171746357766,
+  "floorRatio": 0.6059598614471462,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 14,
+   "excludedOneLineLinkParagraphCount": 1,
+   "minProseParagraphMeasureCh": 45.117,
+   "topLevelSectionRowCount": 4,
+   "minimumVisualSectionGapPx": 48,
+   "aboveFoldTextCharacterCount": 836
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 999,
+   "minProseMeasureCh": 29.209,
+   "minimumAdjacentSectionGapPx": 48,
+   "interactiveElementCount": 5
+  },
+  "contract": {
+   "misses": [
+    "visibleCharacters",
+    "proseMax",
+    "proseMin",
+    "sectionGap",
+    "relative"
+   ],
+   "relative": {
+    "baselineRoute": "/legal/gina",
+    "predecessorInk": 0.057451,
+    "ink": 0.03897,
+    "ratio": 0.6783171746357766,
+    "floorInk": null,
+    "floorRatio": null,
+    "textBound": false,
+    "within": false
+   }
+  },
+  "corrected": {
+   "misses": [
+    "visibleCharacters",
+    "proseMax",
+    "sectionGap",
+    "relative"
+   ],
+   "relative": {
+    "baselineRoute": "/legal/gina",
+    "predecessorInk": 0.057451,
+    "ink": 0.03897,
+    "ratio": 0.6783171746357766,
+    "floorInk": 0.034813,
+    "floorRatio": 0.6059598614471462,
+    "textBound": false,
+    "within": false
+   }
+  }
+ },
+ {
+  "routeId": "legal.incident-response",
+  "state": "complete",
+  "viewport": "390x844",
+  "measurementPath": "/legal/incident-response",
+  "screenshotSha256": "2bfda0aef6a50e38c28575c186d3e03ba9647bfa8f9615d6d4f6c04d52c3bddd",
+  "floorScreenshotSha256": "b895e776ccdba1141552a097c70a8db797cdf1712863348d235c95172dd9ac13",
+  "ink": 0.079022,
+  "floorInk": 0.065743,
+  "predecessorInk": null,
+  "ratio": null,
+  "floorRatio": null,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 17,
+   "excludedOneLineLinkParagraphCount": 0,
+   "minProseParagraphMeasureCh": 31.888,
+   "topLevelSectionRowCount": 5,
+   "minimumVisualSectionGapPx": 32,
+   "aboveFoldTextCharacterCount": 578
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 641,
+   "minProseMeasureCh": 18.001,
+   "minimumAdjacentSectionGapPx": 32,
+   "interactiveElementCount": 6
+  },
+  "contract": {
+   "misses": [
+    "sectionGap"
+   ],
+   "relative": null
+  },
+  "corrected": {
+   "misses": [
+    "sectionGap"
+   ],
+   "relative": null
+  }
+ },
+ {
+  "routeId": "legal.incident-response",
+  "state": "complete",
+  "viewport": "1280x800",
+  "measurementPath": "/legal/incident-response",
+  "screenshotSha256": "20553df5e7595b3bc1c1f2ab1a7ab1e8b09f0426d31ac2a896e9a9e8cbc25c62",
+  "floorScreenshotSha256": "34f61501327880e7890f39ef0f04ed9c88a637075d15f58b332e4e7a10d640e2",
+  "ink": 0.034356,
+  "floorInk": 0.030088,
+  "predecessorInk": null,
+  "ratio": null,
+  "floorRatio": null,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 16,
+   "excludedOneLineLinkParagraphCount": 1,
+   "minProseParagraphMeasureCh": 45.117,
+   "topLevelSectionRowCount": 5,
+   "minimumVisualSectionGapPx": 48,
+   "aboveFoldTextCharacterCount": 696
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 696,
+   "minProseMeasureCh": 29.209,
+   "minimumAdjacentSectionGapPx": 48,
+   "interactiveElementCount": 6
+  },
+  "contract": {
+   "misses": [
+    "proseMax",
+    "proseMin",
+    "sectionGap"
+   ],
+   "relative": null
+  },
+  "corrected": {
+   "misses": [
+    "proseMax",
+    "sectionGap"
+   ],
+   "relative": null
+  }
+ },
+ {
+  "routeId": "legal.insurance-and-discrimination",
+  "state": "complete",
+  "viewport": "390x844",
+  "measurementPath": "/legal/insurance-and-discrimination",
+  "screenshotSha256": "3c1c75a3b2b27c5e9d53134ef08765fde34900eb1c9d6ec9ac34f08ced79d98b",
+  "floorScreenshotSha256": "e138e3403839a16b57aeb643e8f9fc339dc6e48f5516a6a81aee6287a02564e4",
+  "ink": 0.078588,
+  "floorInk": 0.065658,
+  "predecessorInk": null,
+  "ratio": null,
+  "floorRatio": null,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 10,
+   "excludedOneLineLinkParagraphCount": 1,
+   "minProseParagraphMeasureCh": 31.888,
+   "topLevelSectionRowCount": 3,
+   "minimumVisualSectionGapPx": 32,
+   "aboveFoldTextCharacterCount": 568
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 1913,
+   "minProseMeasureCh": 18.001,
+   "minimumAdjacentSectionGapPx": 32,
+   "interactiveElementCount": 5
+  },
+  "contract": {
+   "misses": [
+    "visibleCharacters",
+    "sectionGap"
+   ],
+   "relative": null
+  },
+  "corrected": {
+   "misses": [
+    "sectionGap"
+   ],
+   "relative": null
+  }
+ },
+ {
+  "routeId": "legal.insurance-and-discrimination",
+  "state": "complete",
+  "viewport": "1280x800",
+  "measurementPath": "/legal/insurance-and-discrimination",
+  "screenshotSha256": "c071ae12c65e8cfddd01ce013e4154b074a3d3690aa80a95dfcf46315a8362cb",
+  "floorScreenshotSha256": "fffb740a2dab23da650927fc198d03d5800bba316fdf361591a974c6809a705a",
+  "ink": 0.040227,
+  "floorInk": 0.03607,
+  "predecessorInk": null,
+  "ratio": null,
+  "floorRatio": null,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 9,
+   "excludedOneLineLinkParagraphCount": 2,
+   "minProseParagraphMeasureCh": 45.117,
+   "topLevelSectionRowCount": 3,
+   "minimumVisualSectionGapPx": 48,
+   "aboveFoldTextCharacterCount": 676
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 1952,
+   "minProseMeasureCh": 29.209,
+   "minimumAdjacentSectionGapPx": 48,
+   "interactiveElementCount": 5
+  },
+  "contract": {
+   "misses": [
+    "visibleCharacters",
+    "proseMax",
+    "proseMin",
+    "sectionGap"
+   ],
+   "relative": null
+  },
+  "corrected": {
+   "misses": [
+    "proseMax",
+    "sectionGap"
+   ],
+   "relative": null
+  }
+ },
+ {
+  "routeId": "legal.law-enforcement",
+  "state": "complete",
+  "viewport": "390x844",
+  "measurementPath": "/legal/law-enforcement",
+  "screenshotSha256": "309f4af31fbd068e430db257fb9f063ea425e7038b40e70d600d7fc1662941b2",
+  "floorScreenshotSha256": "a76cf94d7d1a43222cd122f652df8a8b162f9b97a34c25f33c7c1deb38ec0d89",
+  "ink": 0.082425,
+  "floorInk": 0.069495,
+  "predecessorInk": 0.079536,
+  "ratio": 1.0363231744115873,
+  "floorRatio": 0.8737552806276404,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 14,
+   "excludedOneLineLinkParagraphCount": 0,
+   "minProseParagraphMeasureCh": 31.888,
+   "topLevelSectionRowCount": 5,
+   "minimumVisualSectionGapPx": 32,
+   "aboveFoldTextCharacterCount": 614
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 614,
+   "minProseMeasureCh": 18.001,
+   "minimumAdjacentSectionGapPx": 32,
+   "interactiveElementCount": 5
+  },
+  "contract": {
+   "misses": [
+    "sectionGap",
+    "relative"
+   ],
+   "relative": {
+    "baselineRoute": "/legal/law-enforcement",
+    "predecessorInk": 0.079536,
+    "ink": 0.082425,
+    "ratio": 1.0363231744115873,
+    "floorInk": null,
+    "floorRatio": null,
+    "textBound": false,
+    "within": false
+   }
+  },
+  "corrected": {
+   "misses": [
+    "sectionGap",
+    "relative"
+   ],
+   "relative": {
+    "baselineRoute": "/legal/law-enforcement",
+    "predecessorInk": 0.079536,
+    "ink": 0.082425,
+    "ratio": 1.0363231744115873,
+    "floorInk": 0.069495,
+    "floorRatio": 0.8737552806276404,
+    "textBound": false,
+    "within": false
+   }
+  }
+ },
+ {
+  "routeId": "legal.law-enforcement",
+  "state": "complete",
+  "viewport": "1280x800",
+  "measurementPath": "/legal/law-enforcement",
+  "screenshotSha256": "65fb31c6de058a085b0bd79aae4f0ba2f7665b6e57d269659ee0644522d5780f",
+  "floorScreenshotSha256": "f3eab6c2f612e3028ae0d2ce4869ae6da8b72d4f422c130b7ca024e6b3fa4b64",
+  "ink": 0.03797,
+  "floorInk": 0.033813,
+  "predecessorInk": 0.061296,
+  "ratio": 0.6194531453928477,
+  "floorRatio": 0.5516346906812842,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 13,
+   "excludedOneLineLinkParagraphCount": 1,
+   "minProseParagraphMeasureCh": 45.117,
+   "topLevelSectionRowCount": 5,
+   "minimumVisualSectionGapPx": 48,
+   "aboveFoldTextCharacterCount": 653
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 653,
+   "minProseMeasureCh": 29.209,
+   "minimumAdjacentSectionGapPx": 48,
+   "interactiveElementCount": 5
+  },
+  "contract": {
+   "misses": [
+    "proseMax",
+    "proseMin",
+    "sectionGap",
+    "relative"
+   ],
+   "relative": {
+    "baselineRoute": "/legal/law-enforcement",
+    "predecessorInk": 0.061296,
+    "ink": 0.03797,
+    "ratio": 0.6194531453928477,
+    "floorInk": null,
+    "floorRatio": null,
+    "textBound": false,
+    "within": false
+   }
+  },
+  "corrected": {
+   "misses": [
+    "proseMax",
+    "sectionGap",
+    "relative"
+   ],
+   "relative": {
+    "baselineRoute": "/legal/law-enforcement",
+    "predecessorInk": 0.061296,
+    "ink": 0.03797,
+    "ratio": 0.6194531453928477,
+    "floorInk": 0.033813,
+    "floorRatio": 0.5516346906812842,
+    "textBound": false,
+    "within": false
+   }
+  }
+ },
+ {
+  "routeId": "legal.research-consent",
+  "state": "complete",
+  "viewport": "390x844",
+  "measurementPath": "/legal/research-consent",
+  "screenshotSha256": "bf2db6eeeb76c6c91bbc248fc53e5442bd4ad336331d9b2f7529ede2f52638cc",
+  "floorScreenshotSha256": "743a9c2911cec521b456bd9040cd8d1beb514bfb6b9c68799203d202d838ce7c",
+  "ink": 0.081271,
+  "floorInk": 0.068341,
+  "predecessorInk": 0.082398,
+  "ratio": 0.9863224835554261,
+  "floorRatio": 0.8294011990582296,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 14,
+   "excludedOneLineLinkParagraphCount": 0,
+   "minProseParagraphMeasureCh": 31.888,
+   "topLevelSectionRowCount": 4,
+   "minimumVisualSectionGapPx": 32,
+   "aboveFoldTextCharacterCount": 613
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 779,
+   "minProseMeasureCh": 18.001,
+   "minimumAdjacentSectionGapPx": 32,
+   "interactiveElementCount": 5
+  },
+  "contract": {
+   "misses": [
+    "visibleCharacters",
+    "sectionGap",
+    "relative"
+   ],
+   "relative": {
+    "baselineRoute": "/legal/research-consent",
+    "predecessorInk": 0.082398,
+    "ink": 0.081271,
+    "ratio": 0.9863224835554261,
+    "floorInk": null,
+    "floorRatio": null,
+    "textBound": false,
+    "within": false
+   }
+  },
+  "corrected": {
+   "misses": [
+    "visibleCharacters",
+    "sectionGap",
+    "relative"
+   ],
+   "relative": {
+    "baselineRoute": "/legal/research-consent",
+    "predecessorInk": 0.082398,
+    "ink": 0.081271,
+    "ratio": 0.9863224835554261,
+    "floorInk": 0.068341,
+    "floorRatio": 0.8294011990582296,
+    "textBound": false,
+    "within": false
+   }
+  }
+ },
+ {
+  "routeId": "legal.research-consent",
+  "state": "complete",
+  "viewport": "1280x800",
+  "measurementPath": "/legal/research-consent",
+  "screenshotSha256": "b44e1d068f62517fe260d03aefe14cdb35fde9c59b4bca3552593fdc99894c11",
+  "floorScreenshotSha256": "1c5cf63171a688f35e7187cd5da8b581b34cfe117224c7d34b40a5d0af9ae084",
+  "ink": 0.038388,
+  "floorInk": 0.034231,
+  "predecessorInk": 0.053738,
+  "ratio": 0.7143548327068369,
+  "floorRatio": 0.6369980274665972,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 13,
+   "excludedOneLineLinkParagraphCount": 1,
+   "minProseParagraphMeasureCh": 45.117,
+   "topLevelSectionRowCount": 4,
+   "minimumVisualSectionGapPx": 48,
+   "aboveFoldTextCharacterCount": 876
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 876,
+   "minProseMeasureCh": 29.209,
+   "minimumAdjacentSectionGapPx": 48,
+   "interactiveElementCount": 6
+  },
+  "contract": {
+   "misses": [
+    "visibleCharacters",
+    "proseMax",
+    "proseMin",
+    "sectionGap",
+    "relative"
+   ],
+   "relative": {
+    "baselineRoute": "/legal/research-consent",
+    "predecessorInk": 0.053738,
+    "ink": 0.038388,
+    "ratio": 0.7143548327068369,
+    "floorInk": null,
+    "floorRatio": null,
+    "textBound": false,
+    "within": false
+   }
+  },
+  "corrected": {
+   "misses": [
+    "visibleCharacters",
+    "proseMax",
+    "sectionGap",
+    "relative"
+   ],
+   "relative": {
+    "baselineRoute": "/legal/research-consent",
+    "predecessorInk": 0.053738,
+    "ink": 0.038388,
+    "ratio": 0.7143548327068369,
+    "floorInk": 0.034231,
+    "floorRatio": 0.6369980274665972,
+    "textBound": false,
+    "within": false
+   }
+  }
+ },
+ {
+  "routeId": "legal.self-hosting",
+  "state": "complete",
+  "viewport": "390x844",
+  "measurementPath": "/legal/self-hosting",
+  "screenshotSha256": "4fa240e4eaf4f71952c3625d87db590497d1def1b6168970055d312271a62b67",
+  "floorScreenshotSha256": "26891746c585027e7f2825a9e104c25ba98bfcd5f5af122780a2619187e70e00",
+  "ink": 0.072448,
+  "floorInk": 0.059518,
+  "predecessorInk": null,
+  "ratio": null,
+  "floorRatio": null,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 8,
+   "excludedOneLineLinkParagraphCount": 0,
+   "minProseParagraphMeasureCh": 31.888,
+   "topLevelSectionRowCount": 2,
+   "minimumVisualSectionGapPx": 32,
+   "aboveFoldTextCharacterCount": 526
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 663,
+   "minProseMeasureCh": 18.001,
+   "minimumAdjacentSectionGapPx": 32,
+   "interactiveElementCount": 5
+  },
+  "contract": {
+   "misses": [
+    "sectionGap"
+   ],
+   "relative": null
+  },
+  "corrected": {
+   "misses": [
+    "sectionGap"
+   ],
+   "relative": null
+  }
+ },
+ {
+  "routeId": "legal.self-hosting",
+  "state": "complete",
+  "viewport": "1280x800",
+  "measurementPath": "/legal/self-hosting",
+  "screenshotSha256": "a00cd809f490750b38daaf9e23189bae59a09c2bd57dd7ef95ef8fe9df65f02a",
+  "floorScreenshotSha256": "e17d2f5d003a9e346ef7ee2731891dc9e6dd60daf2a5c1502ad5ad82f634ca03",
+  "ink": 0.029851,
+  "floorInk": 0.025694,
+  "predecessorInk": null,
+  "ratio": null,
+  "floorRatio": null,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 7,
+   "excludedOneLineLinkParagraphCount": 1,
+   "minProseParagraphMeasureCh": 45.117,
+   "topLevelSectionRowCount": 2,
+   "minimumVisualSectionGapPx": 48,
+   "aboveFoldTextCharacterCount": 527
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 527,
+   "minProseMeasureCh": 29.209,
+   "minimumAdjacentSectionGapPx": 48,
+   "interactiveElementCount": 5
+  },
+  "contract": {
+   "misses": [
+    "proseMax",
+    "proseMin",
+    "sectionGap"
+   ],
+   "relative": null
+  },
+  "corrected": {
+   "misses": [
+    "proseMax",
+    "sectionGap"
+   ],
+   "relative": null
+  }
+ },
+ {
+  "routeId": "legal.state-genetic-privacy",
+  "state": "complete",
+  "viewport": "390x844",
+  "measurementPath": "/legal/state-genetic-privacy",
+  "screenshotSha256": "0b5c4cb73c8b5e2690c256d7893eab5f8a3789aeddb8cc9ebeba31f391fa8490",
+  "floorScreenshotSha256": "f0c34f06ce494489d5c289d3365bee8e526582e8ad3c9a9d873e70614fe08b3d",
+  "ink": 0.07442,
+  "floorInk": 0.06149,
+  "predecessorInk": null,
+  "ratio": null,
+  "floorRatio": null,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 9,
+   "excludedOneLineLinkParagraphCount": 0,
+   "minProseParagraphMeasureCh": 31.888,
+   "topLevelSectionRowCount": 2,
+   "minimumVisualSectionGapPx": 32,
+   "aboveFoldTextCharacterCount": 506
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 506,
+   "minProseMeasureCh": 18.001,
+   "minimumAdjacentSectionGapPx": 32,
+   "interactiveElementCount": 5
+  },
+  "contract": {
+   "misses": [
+    "sectionGap"
+   ],
+   "relative": null
+  },
+  "corrected": {
+   "misses": [
+    "sectionGap"
+   ],
+   "relative": null
+  }
+ },
+ {
+  "routeId": "legal.state-genetic-privacy",
+  "state": "complete",
+  "viewport": "1280x800",
+  "measurementPath": "/legal/state-genetic-privacy",
+  "screenshotSha256": "0b85f3ea510dc89be84fcd8dd385123a61dfe928333799c4c627e1e7f82f612a",
+  "floorScreenshotSha256": "be236e0233261adb3c4500fab1e0711bff3f443bdbdd478e1530227e25a483bb",
+  "ink": 0.030912,
+  "floorInk": 0.026756,
+  "predecessorInk": null,
+  "ratio": null,
+  "floorRatio": null,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 8,
+   "excludedOneLineLinkParagraphCount": 1,
+   "minProseParagraphMeasureCh": 45.117,
+   "topLevelSectionRowCount": 2,
+   "minimumVisualSectionGapPx": 48,
+   "aboveFoldTextCharacterCount": 545
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 545,
+   "minProseMeasureCh": 29.209,
+   "minimumAdjacentSectionGapPx": 48,
+   "interactiveElementCount": 5
+  },
+  "contract": {
+   "misses": [
+    "proseMax",
+    "proseMin",
+    "sectionGap"
+   ],
+   "relative": null
+  },
+  "corrected": {
+   "misses": [
+    "proseMax",
+    "sectionGap"
+   ],
+   "relative": null
+  }
+ },
+ {
+  "routeId": "legal.where-inherit-works",
+  "state": "complete",
+  "viewport": "390x844",
+  "measurementPath": "/legal/where-inherit-works",
+  "screenshotSha256": "de4e2663b107207dd2296356cf919bb7559a24be37b44a167e2f455cebc21d5c",
+  "floorScreenshotSha256": "c0749f57efc2fb313aeb16bdfd77f8ecf542e0e8f3a4a3d9ff1316004833fa2d",
+  "ink": 0.074957,
+  "floorInk": 0.062028,
+  "predecessorInk": null,
+  "ratio": null,
+  "floorRatio": null,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 13,
+   "excludedOneLineLinkParagraphCount": 0,
+   "minProseParagraphMeasureCh": 31.888,
+   "topLevelSectionRowCount": 4,
+   "minimumVisualSectionGapPx": 32,
+   "aboveFoldTextCharacterCount": 570
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 570,
+   "minProseMeasureCh": 18.001,
+   "minimumAdjacentSectionGapPx": 32,
+   "interactiveElementCount": 5
+  },
+  "contract": {
+   "misses": [
+    "sectionGap"
+   ],
+   "relative": null
+  },
+  "corrected": {
+   "misses": [
+    "sectionGap"
+   ],
+   "relative": null
+  }
+ },
+ {
+  "routeId": "legal.where-inherit-works",
+  "state": "complete",
+  "viewport": "1280x800",
+  "measurementPath": "/legal/where-inherit-works",
+  "screenshotSha256": "28e9e67df2001a42660fabbb0d3615493d93677c65cc05936624295c716defa6",
+  "floorScreenshotSha256": "e487228e9bec03c615dc835182e60154e12e75c76b915a2bc10bb9c2d08fd313",
+  "ink": 0.03199,
+  "floorInk": 0.027834,
+  "predecessorInk": null,
+  "ratio": null,
+  "floorRatio": null,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 12,
+   "excludedOneLineLinkParagraphCount": 1,
+   "minProseParagraphMeasureCh": 45.117,
+   "topLevelSectionRowCount": 4,
+   "minimumVisualSectionGapPx": 48,
+   "aboveFoldTextCharacterCount": 638
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 638,
+   "minProseMeasureCh": 29.209,
+   "minimumAdjacentSectionGapPx": 48,
+   "interactiveElementCount": 5
+  },
+  "contract": {
+   "misses": [
+    "proseMax",
+    "proseMin",
+    "sectionGap"
+   ],
+   "relative": null
+  },
+  "corrected": {
+   "misses": [
+    "proseMax",
+    "sectionGap"
+   ],
+   "relative": null
+  }
+ },
+ {
+  "routeId": "legal.privacy",
+  "state": "complete",
+  "viewport": "390x844",
+  "measurementPath": "/privacy",
+  "screenshotSha256": "04e8f6a28c907a8981b448868549f9a96a886390c0a6e709ff05fa96b248a551",
+  "floorScreenshotSha256": "4b3dc424cfa73307e5ca97d0d9edca0eb99ae78648812622b7a6c7ee76370573",
+  "ink": 0.094346,
+  "floorInk": 0.081034,
+  "predecessorInk": 0.087125,
+  "ratio": 1.082880918220947,
+  "floorRatio": 0.9300889526542324,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 28,
+   "excludedOneLineLinkParagraphCount": 0,
+   "minProseParagraphMeasureCh": 31.888,
+   "topLevelSectionRowCount": 13,
+   "minimumVisualSectionGapPx": 32,
+   "aboveFoldTextCharacterCount": 705
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 705,
+   "minProseMeasureCh": 18.001,
+   "minimumAdjacentSectionGapPx": 32,
+   "interactiveElementCount": 6
+  },
+  "contract": {
+   "misses": [
+    "visibleCharacters",
+    "sectionGap",
+    "relative"
+   ],
+   "relative": {
+    "baselineRoute": "/privacy",
+    "predecessorInk": 0.087125,
+    "ink": 0.094346,
+    "ratio": 1.082880918220947,
+    "floorInk": null,
+    "floorRatio": null,
+    "textBound": false,
+    "within": false
+   }
+  },
+  "corrected": {
+   "misses": [
+    "visibleCharacters",
+    "sectionGap",
+    "relative"
+   ],
+   "relative": {
+    "baselineRoute": "/privacy",
+    "predecessorInk": 0.087125,
+    "ink": 0.094346,
+    "ratio": 1.082880918220947,
+    "floorInk": 0.081034,
+    "floorRatio": 0.9300889526542324,
+    "textBound": false,
+    "within": false
+   }
+  }
+ },
+ {
+  "routeId": "legal.privacy",
+  "state": "complete",
+  "viewport": "1280x800",
+  "measurementPath": "/privacy",
+  "screenshotSha256": "4d830dd5b2a72cb50d497083f77f0926acd6d52068b2debc11e7a3e70bd8c4e1",
+  "floorScreenshotSha256": "fec7611dc6e030e2c43cb98706dc7ebf018ee92849f7a875552d1645c9f67142",
+  "ink": 0.037274,
+  "floorInk": 0.032994,
+  "predecessorInk": 0.058602,
+  "ratio": 0.6360533770178493,
+  "floorRatio": 0.5630183270195557,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 27,
+   "excludedOneLineLinkParagraphCount": 1,
+   "minProseParagraphMeasureCh": 45.117,
+   "topLevelSectionRowCount": 13,
+   "minimumVisualSectionGapPx": 48,
+   "aboveFoldTextCharacterCount": 819
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 819,
+   "minProseMeasureCh": 29.209,
+   "minimumAdjacentSectionGapPx": 48,
+   "interactiveElementCount": 6
+  },
+  "contract": {
+   "misses": [
+    "visibleCharacters",
+    "proseMax",
+    "proseMin",
+    "sectionGap",
+    "relative"
+   ],
+   "relative": {
+    "baselineRoute": "/privacy",
+    "predecessorInk": 0.058602,
+    "ink": 0.037274,
+    "ratio": 0.6360533770178493,
+    "floorInk": null,
+    "floorRatio": null,
+    "textBound": false,
+    "within": false
+   }
+  },
+  "corrected": {
+   "misses": [
+    "visibleCharacters",
+    "proseMax",
+    "sectionGap",
+    "relative"
+   ],
+   "relative": {
+    "baselineRoute": "/privacy",
+    "predecessorInk": 0.058602,
+    "ink": 0.037274,
+    "ratio": 0.6360533770178493,
+    "floorInk": 0.032994,
+    "floorRatio": 0.5630183270195557,
+    "textBound": false,
+    "within": false
+   }
+  }
+ },
+ {
+  "routeId": "marketing.providers",
+  "state": "complete",
+  "viewport": "390x844",
+  "measurementPath": "/providers",
+  "screenshotSha256": "081f496b3fc118660dcd78c626b966c14d3d96be8b409acba0881e45cdbe5eca",
+  "floorScreenshotSha256": "7cf2472956d61464dcad52c797d535d921a135aee82d6125257525cd42963400",
+  "ink": 0.079758,
+  "floorInk": 0.061174,
+  "predecessorInk": 0.091737,
+  "ratio": 0.8694201903266947,
+  "floorRatio": 0.6668410782999226,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 180,
+   "excludedOneLineLinkParagraphCount": 0,
+   "minProseParagraphMeasureCh": 16.274,
+   "topLevelSectionRowCount": 62,
+   "minimumVisualSectionGapPx": 16,
+   "aboveFoldTextCharacterCount": 433
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 433,
+   "minProseMeasureCh": 16.274,
+   "minimumAdjacentSectionGapPx": -34068.09,
+   "interactiveElementCount": 7
+  },
+  "contract": {
+   "misses": [
+    "sectionGap",
+    "relative"
+   ],
+   "relative": {
+    "baselineRoute": "/providers",
+    "predecessorInk": 0.091737,
+    "ink": 0.079758,
+    "ratio": 0.8694201903266947,
+    "floorInk": null,
+    "floorRatio": null,
+    "textBound": false,
+    "within": false
+   }
+  },
+  "corrected": {
+   "misses": [
+    "sectionGap",
+    "relative"
+   ],
+   "relative": {
+    "baselineRoute": "/providers",
+    "predecessorInk": 0.091737,
+    "ink": 0.079758,
+    "ratio": 0.8694201903266947,
+    "floorInk": 0.061174,
+    "floorRatio": 0.6668410782999226,
+    "textBound": false,
+    "within": false
+   }
+  }
+ },
+ {
+  "routeId": "marketing.providers",
+  "state": "complete",
+  "viewport": "1280x800",
+  "measurementPath": "/providers",
+  "screenshotSha256": "20bee54751dedda414435eb994eb73667d94a050992190ab9015a6826132be7f",
+  "floorScreenshotSha256": "ea65bf1f11b987420ee338a36a8c45132ecc685e85fb2e5836a89487a739cb4c",
+  "ink": 0.042393,
+  "floorInk": 0.035587,
+  "predecessorInk": 0.075202,
+  "ratio": 0.5637217095290018,
+  "floorRatio": 0.4732187973724103,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 41,
+   "excludedOneLineLinkParagraphCount": 17,
+   "minProseParagraphMeasureCh": 45.117,
+   "topLevelSectionRowCount": 1,
+   "minimumVisualSectionGapPx": null,
+   "aboveFoldTextCharacterCount": 676
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 676,
+   "minProseMeasureCh": 29.209,
+   "minimumAdjacentSectionGapPx": null,
+   "interactiveElementCount": 7
+  },
+  "contract": {
+   "misses": [
+    "proseMax",
+    "proseMin"
+   ],
+   "relative": {
+    "baselineRoute": "/providers",
+    "predecessorInk": 0.075202,
+    "ink": 0.042393,
+    "ratio": 0.5637217095290018,
+    "floorInk": null,
+    "floorRatio": null,
+    "textBound": false,
+    "within": true
+   }
+  },
+  "corrected": {
+   "misses": [
+    "proseMax"
+   ],
+   "relative": {
+    "baselineRoute": "/providers",
+    "predecessorInk": 0.075202,
+    "ink": 0.042393,
+    "ratio": 0.5637217095290018,
+    "floorInk": 0.035587,
+    "floorRatio": 0.4732187973724103,
+    "textBound": false,
+    "within": true
+   }
+  }
+ },
+ {
+  "routeId": "science.index",
+  "state": "complete",
+  "viewport": "390x844",
+  "measurementPath": "/science",
+  "screenshotSha256": "94a62410abd35dd433213dfa9e6a26e0e928e49c0ba543f5a6d146d6e68ec63a",
+  "floorScreenshotSha256": "33d400211403c17a4d66bf1f7349b6c5421cf40cc11812de5a8633fd759d679e",
+  "ink": 0.070051,
+  "floorInk": 0.057121,
+  "predecessorInk": null,
+  "ratio": null,
+  "floorRatio": null,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 67,
+   "excludedOneLineLinkParagraphCount": 0,
+   "minProseParagraphMeasureCh": 31.247,
+   "topLevelSectionRowCount": 4,
+   "minimumVisualSectionGapPx": 64,
+   "aboveFoldTextCharacterCount": 405
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 405,
+   "minProseMeasureCh": 18.001,
+   "minimumAdjacentSectionGapPx": 64,
+   "interactiveElementCount": 6
+  },
+  "contract": {
+   "misses": [],
+   "relative": null
+  },
+  "corrected": {
+   "misses": [],
+   "relative": null
+  }
+ },
+ {
+  "routeId": "science.index",
+  "state": "complete",
+  "viewport": "1280x800",
+  "measurementPath": "/science",
+  "screenshotSha256": "21015ce2c72df181fc3b8bead3c6093ed2ecbed1959ba32a7051887073247c9b",
+  "floorScreenshotSha256": "15355ec00199a61ad566a2b76be088a037381b41c331e64726286bb171b2c168",
+  "ink": 0.032169,
+  "floorInk": 0.028009,
+  "predecessorInk": null,
+  "ratio": null,
+  "floorRatio": null,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 66,
+   "excludedOneLineLinkParagraphCount": 1,
+   "minProseParagraphMeasureCh": 36.535,
+   "topLevelSectionRowCount": 4,
+   "minimumVisualSectionGapPx": 96,
+   "aboveFoldTextCharacterCount": 459
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 459,
+   "minProseMeasureCh": 29.209,
+   "minimumAdjacentSectionGapPx": 96,
+   "interactiveElementCount": 6
+  },
+  "contract": {
+   "misses": [
+    "proseMax",
+    "proseMin"
+   ],
+   "relative": null
+  },
+  "corrected": {
+   "misses": [
+    "proseMax",
+    "proseMin"
+   ],
+   "relative": null
+  }
+ },
+ {
+  "routeId": "science.limits",
+  "state": "complete",
+  "viewport": "390x844",
+  "measurementPath": "/science/limits",
+  "screenshotSha256": "f8dbbbe351c08577c7d4766d5e9763a4056f2741ed05ae2fdeda72129e03eaaa",
+  "floorScreenshotSha256": "3f7028c0cca881762290d7294b91f886404eadd3bc213612743cec57f595ff42",
+  "ink": 0.069243,
+  "floorInk": 0.056313,
+  "predecessorInk": null,
+  "ratio": null,
+  "floorRatio": null,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 10,
+   "excludedOneLineLinkParagraphCount": 0,
+   "minProseParagraphMeasureCh": 31.888,
+   "topLevelSectionRowCount": 3,
+   "minimumVisualSectionGapPx": 32,
+   "aboveFoldTextCharacterCount": 455
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 574,
+   "minProseMeasureCh": 18.001,
+   "minimumAdjacentSectionGapPx": 32,
+   "interactiveElementCount": 5
+  },
+  "contract": {
+   "misses": [
+    "sectionGap"
+   ],
+   "relative": null
+  },
+  "corrected": {
+   "misses": [
+    "sectionGap"
+   ],
+   "relative": null
+  }
+ },
+ {
+  "routeId": "science.limits",
+  "state": "complete",
+  "viewport": "1280x800",
+  "measurementPath": "/science/limits",
+  "screenshotSha256": "3eb54dd2ed19087cf63f7b647f80e431220940a55d9d8f01338c2bf3d2347fe6",
+  "floorScreenshotSha256": "a3c08bc84b0393a1e45551d7755362879e4813240c18353587396031a3cc3ce9",
+  "ink": 0.029669,
+  "floorInk": 0.025513,
+  "predecessorInk": null,
+  "ratio": null,
+  "floorRatio": null,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 9,
+   "excludedOneLineLinkParagraphCount": 1,
+   "minProseParagraphMeasureCh": 45.117,
+   "topLevelSectionRowCount": 3,
+   "minimumVisualSectionGapPx": 48,
+   "aboveFoldTextCharacterCount": 457
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 457,
+   "minProseMeasureCh": 29.209,
+   "minimumAdjacentSectionGapPx": 48,
+   "interactiveElementCount": 5
+  },
+  "contract": {
+   "misses": [
+    "proseMax",
+    "proseMin",
+    "sectionGap"
+   ],
+   "relative": null
+  },
+  "corrected": {
+   "misses": [
+    "proseMax",
+    "sectionGap"
+   ],
+   "relative": null
+  }
+ },
+ {
+  "routeId": "science.positions",
+  "state": "complete",
+  "viewport": "390x844",
+  "measurementPath": "/science/positions",
+  "screenshotSha256": "a5ec67646efdd4228f8153674b782fd2ce9b2ef991e35dc899a242ee72f5fcd6",
+  "floorScreenshotSha256": "f7a2a405607766fa82766d4eca043935d09b76f6a1d7331c227e97b56a56f45d",
+  "ink": 0.074237,
+  "floorInk": 0.061308,
+  "predecessorInk": null,
+  "ratio": null,
+  "floorRatio": null,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 9,
+   "excludedOneLineLinkParagraphCount": 0,
+   "minProseParagraphMeasureCh": 31.888,
+   "topLevelSectionRowCount": 3,
+   "minimumVisualSectionGapPx": 32,
+   "aboveFoldTextCharacterCount": 440
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 509,
+   "minProseMeasureCh": 18.001,
+   "minimumAdjacentSectionGapPx": 32,
+   "interactiveElementCount": 5
+  },
+  "contract": {
+   "misses": [
+    "sectionGap"
+   ],
+   "relative": null
+  },
+  "corrected": {
+   "misses": [
+    "sectionGap"
+   ],
+   "relative": null
+  }
+ },
+ {
+  "routeId": "science.positions",
+  "state": "complete",
+  "viewport": "1280x800",
+  "measurementPath": "/science/positions",
+  "screenshotSha256": "c79a5caa9db9c7713cd53f84aa4d2f11756ed2df2b86c62d3a402005e90ea055",
+  "floorScreenshotSha256": "7c61e80e34a22b78af59cc332d0509b1001f2297d991ddc5de7ef7e382d44821",
+  "ink": 0.034669,
+  "floorInk": 0.030513,
+  "predecessorInk": null,
+  "ratio": null,
+  "floorRatio": null,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 8,
+   "excludedOneLineLinkParagraphCount": 1,
+   "minProseParagraphMeasureCh": 45.117,
+   "topLevelSectionRowCount": 3,
+   "minimumVisualSectionGapPx": 48,
+   "aboveFoldTextCharacterCount": 491
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 548,
+   "minProseMeasureCh": 29.209,
+   "minimumAdjacentSectionGapPx": 48,
+   "interactiveElementCount": 5
+  },
+  "contract": {
+   "misses": [
+    "proseMax",
+    "proseMin",
+    "sectionGap"
+   ],
+   "relative": null
+  },
+  "corrected": {
+   "misses": [
+    "proseMax",
+    "sectionGap"
+   ],
+   "relative": null
+  }
+ },
+ {
+  "routeId": "legal.terms",
+  "state": "complete",
+  "viewport": "390x844",
+  "measurementPath": "/terms",
+  "screenshotSha256": "283eb77d8267c980155d923272dfb6c3cc1206e6e9788c817bf7c12248b12c33",
+  "floorScreenshotSha256": "b0211fb25f94202e9654f2d2af4ef4d5d2a709271760bf6ce9a86a200db270c2",
+  "ink": 0.083932,
+  "floorInk": 0.071002,
+  "predecessorInk": 0.07586,
+  "ratio": 1.1064065383601371,
+  "floorRatio": 0.9359609807540206,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 25,
+   "excludedOneLineLinkParagraphCount": 0,
+   "minProseParagraphMeasureCh": 31.888,
+   "topLevelSectionRowCount": 12,
+   "minimumVisualSectionGapPx": 32,
+   "aboveFoldTextCharacterCount": 688
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 939,
+   "minProseMeasureCh": 18.001,
+   "minimumAdjacentSectionGapPx": 32,
+   "interactiveElementCount": 5
+  },
+  "contract": {
+   "misses": [
+    "visibleCharacters",
+    "sectionGap",
+    "relative"
+   ],
+   "relative": {
+    "baselineRoute": "/terms",
+    "predecessorInk": 0.07586,
+    "ink": 0.083932,
+    "ratio": 1.1064065383601371,
+    "floorInk": null,
+    "floorRatio": null,
+    "textBound": false,
+    "within": false
+   }
+  },
+  "corrected": {
+   "misses": [
+    "visibleCharacters",
+    "sectionGap",
+    "relative"
+   ],
+   "relative": {
+    "baselineRoute": "/terms",
+    "predecessorInk": 0.07586,
+    "ink": 0.083932,
+    "ratio": 1.1064065383601371,
+    "floorInk": 0.071002,
+    "floorRatio": 0.9359609807540206,
+    "textBound": false,
+    "within": false
+   }
+  }
+ },
+ {
+  "routeId": "legal.terms",
+  "state": "complete",
+  "viewport": "1280x800",
+  "measurementPath": "/terms",
+  "screenshotSha256": "1464921c0ffe799c5960b679c00300c4f1cff6395a4320b7fc3243e19aeb05cc",
+  "floorScreenshotSha256": "bcd7406ee3c03af7eeb01c3ff0b0c55abdea8949a061c0bd34201e242e5aeb9e",
+  "ink": 0.041832,
+  "floorInk": 0.037676,
+  "predecessorInk": 0.056184,
+  "ratio": 0.7445536095685605,
+  "floorRatio": 0.6705823722056102,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 24,
+   "excludedOneLineLinkParagraphCount": 1,
+   "minProseParagraphMeasureCh": 45.117,
+   "topLevelSectionRowCount": 12,
+   "minimumVisualSectionGapPx": 48,
+   "aboveFoldTextCharacterCount": 986
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 1003,
+   "minProseMeasureCh": 29.209,
+   "minimumAdjacentSectionGapPx": 48,
+   "interactiveElementCount": 5
+  },
+  "contract": {
+   "misses": [
+    "visibleCharacters",
+    "proseMax",
+    "proseMin",
+    "sectionGap",
+    "relative"
+   ],
+   "relative": {
+    "baselineRoute": "/terms",
+    "predecessorInk": 0.056184,
+    "ink": 0.041832,
+    "ratio": 0.7445536095685605,
+    "floorInk": null,
+    "floorRatio": null,
+    "textBound": false,
+    "within": false
+   }
+  },
+  "corrected": {
+   "misses": [
+    "visibleCharacters",
+    "proseMax",
+    "sectionGap",
+    "relative"
+   ],
+   "relative": {
+    "baselineRoute": "/terms",
+    "predecessorInk": 0.056184,
+    "ink": 0.041832,
+    "ratio": 0.7445536095685605,
+    "floorInk": 0.037676,
+    "floorRatio": 0.6705823722056102,
+    "textBound": false,
+    "within": false
+   }
+  }
+ }
+]

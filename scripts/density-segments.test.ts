@@ -148,3 +148,42 @@ describe("explicit one-capture selection and whole source-bound union", () => {
     expect(driver).toContain("resumable: false, g2_5Acceptance: false");
   });
 });
+
+import { DENSITY_CORRECTED_READINGS_MODULE_SHA256, TEXT_ONLY_FLOOR_VARIANT_SHA256 } from "./density-current";
+
+describe("the corrected readings and text-only floor in the segment union (owner decision 2026-10-22)", () => {
+  function corrected(set: ReturnType<typeof originalSet>) {
+    for (const part of set.segments) {
+      const pixel = part.recomputedPixel;
+      const textOnlyFloor = { variantSha256: TEXT_ONLY_FLOOR_VARIANT_SHA256, screenshotSha256: hash(`floor ${part.screenshotSha256}`),
+        screenshotWidthPx: pixel.screenshotWidthPx, screenshotHeightPx: pixel.screenshotHeightPx,
+        includedPixelCount: pixel.includedPixelCount, excludedPixelCount: pixel.excludedPixelCount, inkPixelCount: 0, inkCoverageRatio: 0 };
+      const correctedReadings = { moduleSha256: DENSITY_CORRECTED_READINGS_MODULE_SHA256, proseParagraphCount: 0,
+        excludedOneLineLinkParagraphCount: 0, minProseParagraphMeasureCh: null, topLevelSectionRowCount: 0,
+        minimumVisualSectionGapPx: null, aboveFoldTextCharacterCount: 1 };
+      Object.assign(part.original, { textOnlyFloor, correctedReadings });
+      Object.assign(part.result.packet.captures[0], { textOnlyFloor: structuredClone(textOnlyFloor), correctedReadings: structuredClone(correctedReadings) });
+      Object.assign(part, { recomputedFloorPixel: { ...pixel, screenshotSha256: textOnlyFloor.screenshotSha256 } });
+      part.result.originalsSha256 = hash(JSON.stringify([part.original]));
+    }
+    return set;
+  }
+  it("binds the corrected verdict and keeps the contract verdict beside it", () => {
+    const result = check(corrected(originalSet()));
+    expect(result.numeric.rules).toBe("corrected-2026-10-22");
+    expect(result.contractNumeric).toMatchObject({ status: "WITHIN_NUMERIC_BUDGETS", rules: "contract" });
+    expect(result.g2_5Acceptance).toBe(false);
+  });
+  const plants: [string, (part: PurePart & { recomputedFloorPixel?: Record<string, unknown> }) => void][] = [
+    ["a floor without its readings", p => { Reflect.deleteProperty(p.original, "correctedReadings"); }],
+    ["a recomputed floor that differs from the original", p => { p.recomputedFloorPixel!.inkPixelCount = 1; }],
+    ["a floor from another variant", p => { (p.original as unknown as { textOnlyFloor: { variantSha256: string } }).textOnlyFloor.variantSha256 = "8".repeat(64); }],
+    ["readings in the packet that the original does not carry", p => {
+      Reflect.deleteProperty(p.original, "correctedReadings"); Reflect.deleteProperty(p.original, "textOnlyFloor");
+      Reflect.deleteProperty(p, "recomputedFloorPixel"); }],
+  ];
+  it.each(plants)("planted defect: refuses %s", (_, change) => {
+    const set = corrected(originalSet()); mutate(set, change as (part: PurePart) => void);
+    expect(() => check(set)).toThrow();
+  });
+});
