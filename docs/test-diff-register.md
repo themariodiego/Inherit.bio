@@ -1,3 +1,229 @@
+## 2026-10-22 — Consent and rights endpoints, continued (G2.1, "Build all 24"): the no-account uploader gate, the revoke-all control and the remaining consent and rights routes
+
+Owner decisions of 2026-10-22 ("Consent, rights and claim endpoints (G2.1)", `docs/protocol/decisions.md`). This entry records each test change of the slice's second half.
+
+Route census, `scripts/route-register-correspondence.test.ts` "leaves the unbuilt half of the register alone, but still measures it": it was lowered one step per endpoint as each was built, counted from the integration value of 15. The integration branch then moved twice. At 7852ef75 (the fpclaims slice) its census was 10, and at 97f5e595 (subject delete and transfer) it was 8. After merging 97f5e595, the census is 8 lowered by exactly the eight endpoints this branch builds. That gives 0, with a comment naming each step: every registered endpoint is built. The intermediate numbers below (11 to 7) are the pre-merge steps.
+
+Full-chain check of `supabase/tests/consents_revoke_all.sql`: after the merge of 97f5e595 it gave 59 ok, 2 not ok and 19 errors. `20261016221000_subject_transfer.sql` rebuilt `account_operation_nonces_operation_check` from a fixed list, which dropped the `consents_revoke_all` value that `20261016200000` adds. The coordinator fixed 221000 on the integration branch (f156bb89), so it now rebuilds the check from its current values. After merging f156bb89 the suite passes 79 of 79 on the full chain. No assertion of this branch changed for it. The assertion `expect(unbuilt.length).toBeLessThan(entries.length)` and the walker are unchanged. Planted defect: removing `src/app/api/rights/reissue/route.ts` makes the census test fail with 1 instead of 0.
+
+### Stated privacy-control change: the uploader gate for a person who confirmed with no account
+
+This is the one sanctioned privacy-control change, decided by the owner. New migration `supabase/migrations/20261016204000_path_b_no_account_uploader_gate.sql`, headed PRODUCTION RELEASE: GUARDED, TEST-LOCAL only. It patches the no-account branch of other-adult-mitigation-state-v1 in place. That branch lives in `private.other_adult_mitigation_before_public_appeal_v1`, which `private.other_adult_mitigation_v1` calls after its appeal hold. The patch uses the guard pattern of `20261016195000`: predecessor body md5 `a877304153a110c6710edf20019cb647`, one anchor, successor md5 `29c74c79cb3eeedbbdac44273a6f4de3`, and unchanged privileges, volatility and owner.
+
+- Before, the uploader of a person with no account was denied `adult.non-account-holder-24mo` at every checkpoint.
+- Now the uploader is allowed while three things hold: the subject's `non_account_subject` principal is active, at least one of its other-adult-held upload sessions has a live `adult.non-account-holder-24mo` clock (scheduled or active, with its fixed deadline ahead), and the request was accepted less than 30 days ago.
+- From accepted+30 days the uploader is denied `adult.re-notice-30d`, exactly as in the account case.
+- With no live clock or no active principal, the uploader is denied `adult.non-account-holder-24mo` as before. That covers the time before any file is confirmed and the time after every clock has ended.
+- The account case, the subject's own right, the 72-hour hold, every other recipient and the checkpoint list are unchanged.
+- The clock is read through its upload session, never through `other_adult_held_uploads`. `20261016170000` cancels a clock in the same statement that ends its confirmed file. So the reviewed census in `supabase/tests/other_adult_held_upload.sql` ("the held table is named only by the exact reviewed lifecycle functions") is unchanged. A first draft read the held table, and that census failed on it.
+- Every reader still needs the person's own uploader-direction grant. The only door that writes one for a person with no account, `grant_purpose_rights_v1`, stays closed until an adult-subject-control issuer exists.
+
+New test `supabase/tests/path_b_no_account_uploader_gate.sql`: 37 assertions, all passing in one rolled-back transaction on the shared database. The run applied the scan-lease prep, then migrations 151200, 170000, 175000, 180000, 190000, 191000, 195000 and 196000, then this migration. Without the migration, 8 fail. The assertions cover:
+
+- denied with no confirmed file, and with a held file that has no yes yet;
+- allowed at all eleven checkpoints inside the window, and still allowed at 29 days;
+- denied `adult.re-notice-30d` at 31 days while the clock is still live;
+- denied once the deadline has passed (before the sweep), once the clock is cancelled while the file is still confirmed, once the principal is no longer active, and once the person refuses the file;
+- the account case unchanged: subject-own-right-only, allow inside 30 days, deny at 31 days, the 72-hour hold, anyone else not found, and the closed checkpoint list.
+
+Six planted defects each failed named assertions besides the md5 pin: no clock check (8), no 30-day boundary (3), no deadline check (2), no principal check (2), any clock state (4) and a clock of any subject (8).
+
+Compared with and without the migration, in rolled-back transactions with the same prep and this branch's migrations 200000 to 203000, every suite that names `other_adult`, `path_b` or `path-b` gave identical results: 29 suites. Five of them have the same failures or errors with and without the migration. These come from rows already on the shared database, not from the migration: a duplicate `worker_jobs_idempotency_idx` key in `account_archive_readable_graph` and `path_b_queued_reports`, a subquery that returns more than one row in `account_deletion_purge`, and pre-existing claimable jobs in `declared_chromosomal_sex` and `path_b_confirmed_array_normalization`. Hosted CI runs them on a fresh database. `supabase/tests/path_b_reading_layer.sql` keeps its assertion that a no-account person's uploader is denied `adult.non-account-holder-24mo`, because its person has no confirmed file there. No existing assertion changes.
+
+### The revoke-all control on /settings/consents
+
+`/settings/consents` now renders the control for `api.consents-revoke-all`. Its visible label is exactly the owner's text, "Turn off every permission you have given. Results made under them are deleted. Your files stay." While it waits it shows the existing "Working…". On any failure it shows the existing deletion-control line "This confirmation expired. Please try again." Either way the page renders again with a fresh nonce. The coordinator confirmed option A, so no new words are introduced. The page mints the one-time `consents_revoke_all` account operation nonce (`src/lib/consents-revoke-all-control.ts`). The control posts `{confirmation: "consents.revoke-all.confirmation", nonce}` to the built route. The words live in the copy registry `src/copy/settings/consents.ts`, which `gate:readability` reads. New test `src/copy/settings/consents.test.ts` (4 cases) holds the exact text, the reuse of the two existing strings, the closed body and the page wiring. No existing assertion changes.
+
+### `api.consent-reaffirm`
+
+`POST /api/consents/reaffirm` (register `api.consent-reaffirm`). A signed-in person signs the current version of a consent text they signed before, for the same purpose grant. It is offered only when the prior row's artifact version has been superseded by a current version of the same key. It covers two kinds of prior row, and each is re-run through the grant function that wrote it, as `api.consents` dispatches it:
+
+- own-subject self grants, through `grant_own_report_purpose_v1`, and through `grant_path_b_purpose_v1` for an adult record bound to the account under Path B, TEST-LOCAL only;
+- adult directional grants under `consent.share-with-adult`:
+  - to a family member, through the family ancestry, report, portrait and health-picture wrappers or `grant_directional_purpose_v1`;
+  - from a Path B person with an account to their uploader, through `grant_path_b_purpose_v1`, which reruns the mitigation.
+
+These answer `resource-not-found-v1`: a donor-attribution or any other artifact signature, an embryo grant, an own Copilot grant, a Tier-2 signature, and a stale, foreign or mismatched prior row. Success is `consent-recorded-v1` 201. A body problem is `invalid-request-v1` 422, and so is a typed name, because no covered signature is Tier 2. A family purpose gets the same `familyCapability` checks `api.consents` makes before a grant. No page renders an offer yet, because its wording is not approved. The token minter `src/lib/consents/reaffirm-offer.ts` exists for that page.
+
+New migration `supabase/migrations/20261016205000_consent_reaffirm.sql`, headed PRODUCTION RELEASE: GUARDED, adds three functions:
+
+- `private.consent_reaffirm_offer_v1`, the exact binding, or null when nothing is offered;
+- `public.consent_reaffirm_offer_v1`, the service-role wrapper around it;
+- `public.reaffirm_purpose_grant_v1`.
+
+In one transaction `reaffirm_purpose_grant_v1` locks the account and the prior pair, recomputes the offer and requires it to equal the presented one exactly, supersedes the prior pair and re-runs the grant function with the presentation's single-use nonce. It then gives the new pair one identical grant revision, the prior revision plus one, and carries the family ancestry snapshot across that revision change. Nothing existing is changed. The presentation token is `src/lib/consents/reaffirm-presentation.ts`: nine minutes, server-signed, bound to the account and auth session.
+
+New test `supabase/tests/consent_reaffirm.sql`: 38 assertions, all new and all passing in one rolled-back transaction with the prep and migrations above. It uses a synthetic self record and a second account. New versions of the consent texts are published through `private.publish_consent_artifact_v1` inside the transaction only. The test proves:
+
+- nothing is offered while the signed text is current;
+- an own monogenic grant and a directional `raw.browse` grant to another adult are each reaffirmed into a fresh pair at revision 2, while the prior pair is superseded and exactly one pair stays current;
+- a tampered, cross-recipient, foreign-account, foreign-session, recipient, replayed-nonce, expired-ceiling or already-reaffirmed request writes nothing;
+- an artifact signature id is refused.
+
+Seven planted SQL defects: six failed named assertions. They were no offer match (2 failed, 27 errors), no supersession (10 errors), no revision bump (2), offering while the text is current (3), any account (2) and no ten-minute ceiling (1 failed, 10 errors). The seventh dropped the defensive successor-shape check and failed nothing, because no reachable state violates it. The family wrapper branches and the Path B branch are not exercised by this pgTAP, because their fixtures are not built here. Hosted CI runs the suite as written.
+
+Vitest: new `src/app/api/consents/reaffirm/route.test.ts` (8 cases). Six planted route defects each failed a case: no session binding, no statement check, no family capability check, no TEST-LOCAL check for Path B, a typed name admitted and an open body.
+
+### Jurisdiction classification of the closed no-account Record Key Card route
+
+`scripts/jurisdiction-enforcement.test.ts` "leaves no surface in scope both unguarded and unexplained" failed after this branch's first commit (dc1b952d). `src/app/api/rights/embryo-record-key-cards/route.ts` names the `rights` and `embryo` areas and calls no resolver. It now has a `WITHOUT_CHECK` entry with its reason: it is built closed, and once open its authority is a purpose-bound rights session on a cohort whose creation functions check jurisdiction. No assertion changes. The list is the test's own reviewable register of such surfaces.
+
+The census in `scripts/route-register-correspondence.test.ts` goes from 11 to 10 for `api.consent-reaffirm`, with a comment.
+
+### `api.consent-reaffirm-rights`, built closed
+
+`POST /api/consents/reaffirm/session` (register `api.consent-reaffirm-rights`) is the no-account twin of `api.consent-reaffirm`. A person who confirmed a Path B request with no account signs the current `consent.share-with-adult` for the uploader-direction grant they signed before. They do it through a `consent-reaffirm` rights session bound to that prior grant and its revision. The route is built closed. The credential that would open such a session is a mailed notice whose wording is not approved, so no issuer exists and `private.rights_session_purposes` has no `consent-reaffirm` row. The migration refuses to apply if one exists. Every failure answers `resource-not-found-v1`, and so does every request outside TEST-LOCAL. Nothing is mailed.
+
+- The closed body serves `jurisdictionCode`, not the attestation fields, per the recorded divergence in `docs/route-divergence.json`.
+- The body nonce is a sealed form token bound to sha256 of the rights cookie (new public form id `consent-reaffirm-rights`).
+- The presentation token (`src/lib/consents/reaffirm-rights.ts`) binds twelve values, and the database rechecks each one and consumes its nonce.
+
+New migration `supabase/migrations/20261016206000_consent_reaffirm_rights.sql`, headed PRODUCTION RELEASE: GUARDED, adds `public.reaffirm_purpose_rights_v1`. In one transaction it:
+
+1. checks the TEST flag, locks the session, consumes its nonce and rechecks the purpose matrix;
+2. locks the prior pair at the session's bound revision. The signer must be the session's active non-account principal, with no account, as its own data subject, on an active `other_adult` subject that has no account and a confirmed Path B draft. The recipient must be the subject's current uploader principal over a current uploader relationship at the bound revision. The prior text must be superseded;
+3. requires the twelve presented values and the current text, and consumes the presentation nonce;
+4. runs other-adult-mitigation-state-v1 at purpose-grant-create;
+5. requires the exact statements, a ciphertext typed name and a well-formed code;
+6. supersedes the prior pair, writes a fresh no-account signature and one pair at the prior revision plus one over the same relationship, consumes the session and audits.
+
+Nothing existing is changed.
+
+New test `supabase/tests/consent_reaffirm_rights.sql`: 33 assertions, all new and all passing in one rolled-back transaction. The run used the prep and migrations above, plus `20261016204000` and `20261016206000`. The test proves:
+
+- Block 1, the route is closed: no registered purpose, the matrix answers false, a session insert is refused, and the door refuses.
+- Block 2, inside the transaction only, the purpose is registered and a new text version is published:
+  - the door refuses while the text is current, and while the real mitigation denies, because no 730-day clock exists;
+  - with the mitigation replaced by an allow, it refuses the wrong flag, purpose, recipient, prior revision, superseded text, an extra key, statements, name, code, a stale-revision session and a removed matrix row;
+  - it then reaffirms once and refuses the consumed session.
+
+Eight planted SQL defects each failed named assertions: no TEST flag, no presentation match, the old text admitted, no mitigation, no revision bump, the session kept, no matrix recheck and no typed name.
+
+Vitest: new `src/app/api/consents/reaffirm/session/route.test.ts` (5 cases). Six planted route defects each failed a case: no TEST-LOCAL check, a presentation not bound to the session, an open body, a plaintext name, no statement check and an unchecked receipt.
+
+The census goes from 10 to 9 for `api.consent-reaffirm-rights`, with a comment.
+
+### `api.adult-subject-bind`, built closed
+
+`POST /api/subjects/bind/session` (register `api.adult-subject-bind`, adult-subject-account-binding-v1). A person who confirmed a Path B request with no account binds that record to the account they are signed in to, in the same browser as their adult-subject-control session. Ownership does not change and no object moves. The route is built closed. It needs an adult-subject-control session, which has no issuer, and the account-binding notice, whose wording is not approved. Every failure answers `resource-not-found-v1`, and so does every request outside TEST-LOCAL. Signed out it answers 401. It sends no notice. The closed body is the rights-session nonce alone.
+
+New migration `supabase/migrations/20261016207000_adult_subject_bind.sql`, headed PRODUCTION RELEASE: GUARDED, adds `public.bind_adult_subject_account_v1`. In one transaction:
+
+1. The account's auth session must be recent (15 minutes), and aal2 when MFA is enrolled, checked by `private.validate_sensitive_account_session_v1`.
+2. `private.adult_subject_control_v1` checks the session, nonce, matrix, subject and principal.
+3. The account must not be the uploader and must hold no principal on the subject. Its declared jurisdiction must equal the one the confirmation was signed under.
+4. The bind is refused while any file of the subject is pending (owner decision, as for transfer).
+5. No `pending_account_reaffirmation` status is added (owner decision). Each current grant the non-account principal signed ends as superseded, so the account must sign afresh.
+6. The principal is detached and a new account principal written. `subject_account_id` is set and the binding revision raised. Each confirmed file takes the new binding revision and keeps its confirming principal.
+7. The old principal's rights sessions are revoked, its unsent mail is invalidated and its contact copies are crypto-shredded. One audit event is written, and nothing is enqueued.
+
+Nothing existing is changed.
+
+New test `supabase/tests/adult_subject_bind.sql`: 25 assertions, all new and all passing in one rolled-back transaction. The run used the prep and migrations above, plus `20261016202000`, `20261016204000` and `20261016207000`. It uses the real Path B fixture (`fixtures/path_b_source_setup.inc`), in which a person confirms with no account. Block 1 proves the door is closed. Block 2 registers the purpose inside the transaction only, and proves:
+
+- the bind is refused while a file is pending;
+- once the file is confirmed, it refuses the wrong flag, the uploader, a 16-minute-old sign-in and another declared country;
+- then it binds, ends the directly written grant, detaches the principal, keeps ownership, re-binds the confirmed file, ends the sessions, shreds the contacts and enqueues no mail;
+- the ended session cannot bind again.
+
+Eight planted SQL defects each failed named assertions: a pending file admitted, any jurisdiction, the uploader admitted, grants kept, sessions kept, contacts kept, no re-authentication check and no file re-binding.
+
+Vitest: new `src/app/api/subjects/bind/session/route.test.ts` (5 cases). Five planted route defects each failed a case: no TEST-LOCAL check, an open body, an unchecked form, an unchecked response body and a signed-out request answered 404. A sixth plant was a no-op, so it was replaced by the unchecked-form plant above.
+
+`scripts/jurisdiction-enforcement.test.ts` gains a `WITHOUT_CHECK` entry for the route, with its reason: a right under jurisdictionBypass, built closed. The census goes from 9 to 8, with a comment.
+
+Pin move, required and not weakened: `supabase/tests/other_adult_held_upload.sql` "the held table is named only by the exact reviewed lifecycle functions" now also lists `public.bind_adult_subject_account_v1`, when that function exists, in its sorted place. The bind must name the held table: it refuses while a file is pending, and it moves confirmed files to the new binding revision. Every other name in the census is unchanged. Before the move, the comparison run of this suite failed only that assertion, with the bind migration applied. After the move it passes.
+
+### `api.rights-reissue`, closed under the 2026-10-22 unapproved-text rule
+
+`POST /api/rights/reissue` (register `api.rights-reissue`, rights-credential-reissue-v1) is closed. The owner's 2026-10-22 decision says each route that needs unapproved mail or notice text, and its database door, answers `resource-not-found-v1` until the owner approves the wording, and rights recovery is on that list. The coordinator confirmed option B: every request answers 404, TEST-LOCAL included, before anything is read, counted or written. The gate is the one-line `rightsReissueOpen()` in `src/lib/rights/reissue-gate.ts`. Behind it the route is ready:
+
+- the required signals: exact origin, same-origin fetch metadata, JSON, and `X-Inherit-CSRF` carrying a one-time public form token bound to the host-only form cookie (new form id `rights-reissue`);
+- the closed body `{email}`;
+- digest-only arguments, including the new `rightsReissueLimitDigests` in `src/lib/rate-limit-keys.ts`;
+- the identical opaque 202 `{"status":"received"}` for every outcome, after the same floor.
+
+New migration `supabase/migrations/20261016208000_rights_reissue.sql`, headed PRODUCTION RELEASE: GUARDED, builds the lookup, the limits, the candidate and the activation exchange. It enqueues no outbox row, because no template exists:
+
+- **Tables.** `private.rights_reissue_form_nonces` and `private.rights_recovery_candidates` are both API-denied. A candidate is hash-only and non-authorizing. A partial unique index allows at most one live candidate per principal. `token_hash_id` stays null until a mail issuer exists.
+- **`public.request_rights_reissue_v1`.** It is service-role and TEST-LOCAL only. It counts first: 3 an hour per contact, 10 an hour per network and 1000 an hour for the service (global-capacity). Then it spends the form nonce. It matches only current contact HMAC indexes of current references whose principal is active with `account_id` null, and whose record is current with a live 730-day clock (`private.rights_recovery_target_v1`). For each match it replaces that principal's live candidate, bound to the purpose, target, authority revision and existing deadline, and expiring within 24 hours and no later than that deadline. It touches no source credential, session or nonce.
+- **`public.activate_rights_session_v1`.** It is patched in place, md5-guarded with predecessor `b9dcb56fbe06146e7b55e98f5f68a25b` and successor `f4c47723ec1c65454514a5b8d08ec0e0`. A token hash that belongs to an issued recovery candidate goes to `private.activate_rights_recovery_v1`. That function rechecks the principal, target, revision and deadline, and requires the eventual session purpose to be registered. Only then does it spend the form nonce, consume the token and candidate, revoke other candidates and sessions, and mint one session clamped to an hour and the deadline. Every other token takes the unchanged existing path.
+
+New test `supabase/tests/rights_reissue.sql`: 39 assertions, all new and all passing in one rolled-back transaction. The run used the prep and migrations above, plus `20261016202000`, `20261016204000` and `20261016208000`. It uses the real Path B fixture and proves:
+
+- service role and TEST flag only, and the md5 pin;
+- no candidate before a confirmed file;
+- one bound candidate after a confirmed file, with no outbox row, token or session created or ended;
+- a replayed nonce is refused, and a repeat request replaces the live candidate;
+- an account-bound person and an unknown address write nothing;
+- each of the three limits writes nothing once reached, and every bucket carries the owner's ceiling;
+- a synthetic delivered token opens nothing and spends nothing while the adult-subject-control issuer does not exist, and opens nothing at a stale revision;
+- once the purpose is registered in the transaction only, the token is exchanged once, the session is clamped, and a reused token opens nothing.
+
+Ten planted SQL defects each failed named assertions or errored: no contact limit, no network limit, no global limit, a limited request proceeding, a reusable form nonce, no replacement (the unique index raises), no purpose check (the purpose trigger raises), no revision recheck, a reusable token and a missing deadline. The rule that only principals with no account are matched is held by three layers: the lookup, the target function and the bound record, which never has a 730-day clock. No single-layer plant can show it.
+
+Vitest: new `src/app/api/rights/reissue/route.test.ts` (5 cases). The first proves the door is shut: 404, with no database client created. The others run with the gate stubbed open and prove the handling behind it. Six planted defects each failed a case: the gate opened, no form check, no TEST-LOCAL check, a plaintext email, a distinct failure answer and no replay check.
+
+Pin moves, both required by this owner-ordered patch and neither weakened:
+
+- `supabase/tests/other_adult_held_upload.sql` "the exact held, keyless, evidence, notice and information bodies form the reviewed service door" now pins the activation wrapper at the exact successor md5 `f4c47723ec1c65454514a5b8d08ec0e0` instead of `b9dcb56fbe06146e7b55e98f5f68a25b`. Every other pinned body in that assertion is unchanged.
+- `scripts/path-b-future-rights-bridge.test.ts` "pins the native held activation check to the complete current information chain" now expects that successor pin in the native test. The successor is computed from the information wrapper's exact body and this migration's own fragments. A new case, "pins the in-place rights-recovery branch of 20261016208000 onto the exact information wrapper", proves:
+  - the predecessor and successor md5s;
+  - one insertion only, so every other byte of the wrapper is unchanged;
+  - no `create function public.activate_rights_session_v1` and no grant on the new function.
+
+`scripts/jurisdiction-enforcement.test.ts` gains a `WITHOUT_CHECK` entry for the route, with its reason: a right under jurisdictionBypass, closed. The census goes from 8 to 7, with a comment.
+
+Two more changes the full vitest run found after the merge:
+
+- `scripts/rights-purpose-matrix.test.ts` "are the purpose and target-kind pairs today's issuers write, and no others" required every literal session pair a migration writes to be a registered session purpose. The recovery branch is the adult-subject-control credential issuer, built closed by owner decision. It writes `adult-subject-control|subject` literally, and no migration registers that pair. The test now names the pair in a new explicit `CLOSED_ISSUERS` map, with its reason. The test requires each listed pair to be written by an issuer and absent from every registration, so an entry fails as stale once its purpose is registered. The issued set must still equal the registered pairs plus exactly those listed. Two planted defects each failed: an unlisted pair, and a non-literal purpose in the insert. The latter also failed "every insert into rights_sessions writes literal, checkable values". The first draft wrote the purpose from the candidate row, and that literal-values case failed on it. The insert is now literal, and the candidate table admits only `adult-subject-control` on a subject.
+- `src/lib/export/member-plan.test.ts` "classifies every newly declared requester and appeal table before native catalog qualification" failed for the two new tables. `docs/export-member-plan.json` now classes `private.rights_recovery_candidates` and `private.rights_reissue_form_nonces` as `excluded-credential`, with reasons. `supabase/tests/export_member_plan.sql` was regenerated by `scripts/export-member-plan.ts`. With this branch's migrations it passes 38 of 38. Without them it fails as expected: the plan names tables that do not exist yet.
+- After the merge of 97f5e595 the full vitest run found two more pins on that plan:
+  - `scripts/account-future-source-union.test.ts` now reads "... in the 267-table plan" instead of "265-table". Its count goes from 265 to 267, for exactly these two tables, with a comment, and it now asserts both are `excluded-credential`.
+  - `docs/proposals/requester-statement-export-member-plan.provenance.json` `active` now pins the plan's new bytes (76766) and sha256 (`10a14635…`), as the subjects slice did for its own three tables. `scripts/export-proposal-boundary.test.ts` (7 cases) passes with it.
+  - No other value changes.
+
+## 2026-10-16 — Consent and rights endpoints (G2.1, "Build all 24"): `api.consents-revoke-all`, `api.embryo-record-key-cards-rights`, `api.consent-revoke-rights` and `api.consent-grant-rights`
+
+Owner decision 2026-10-16 ("Unbuilt registered endpoints (G2.1)", `docs/protocol/decisions.md`): every registered endpoint gets built, and an endpoint whose contract depends on unbuilt pieces or open design questions is raised with the owner first. This slice covers the eight consent and rights endpoints. The questions it raised are reported back. This entry records each test change the slice makes.
+
+`POST /api/consents/revoke-all` (register `api.consents-revoke-all`) turns off every current purpose grant whose immutable signature principal is the acting account, and every cloud-model provider grant it holds. It is a right, so no jurisdiction gate applies. The body is closed: `confirmation: "consents.revoke-all.confirmation"` (the account-delete spelling of `exactResolvedCopyId`) and the one-time account operation nonce. That nonce is `src/lib/account-operation-nonce.ts` with a new operation, `consents_revoke_all`, which its MAC binds. Responses: `lifecycle-accepted-v1` 202 `{"status":"accepted"}`, also when nothing was left to revoke; `invalid-request-v1` 422 for the content type, the body, a nonce that does not verify, and a replay; `resource-not-found-v1` 404 when the database cannot dispatch a grant. No page offers the control yet. Its copy is an open owner question.
+
+New migration `supabase/migrations/20261016200000_consents_revoke_all.sql`, headed PRODUCTION RELEASE: GUARDED. It adds `public.revoke_all_own_consents_v1`, which only the service role can call, and widens `account_operation_nonces_operation_check` by one value. It rebuilds that check from its own current value list, so earlier widenings survive in any merge order. No existing function is changed. It selects every row in the database and dispatches each through the function the single-grant `api.consent-revoke` already uses: `revoke_directional_purpose_v1` for analytic, raw-export, pair and Portrait grants and for the parent's own `embryo.analysis`, after locking the cohort and requiring the signer to be a current `required_upload_principals` member; `revoke_own_copilot_v1` for a current own Copilot grant (a stale one is terminalized the same way); and `revoke_cloud_model_consent` plus the account's current `cloud_model` `subject_consents` rows. Any other shape fails the whole request (42501) and writes nothing. The nonce hash is recorded and consumed in the same transaction, and one `consents.revoked-all` audit event closes the batch.
+
+`supabase/tests/consents_revoke_all.sql`: 79 assertions, 34 of them new, all passing. The other 45 come from the published-cohort fixture it includes. They ran in one rolled-back transaction on the shared database, after the scan-lease prep and migrations 151200, 170000, 175000, 180000, 190000, 191000 and 195000. 153100 refuses on this database ("predecessor differs") and is not needed. The ledger stayed at 246 rows and no function or row remained. Six planted SQL defects each failed named assertions: dropping the signer filter (1 failed, 19 errors), admitting a replay (1), dropping the embryo membership check (7 failed, 5 errors), skipping the provider grants (3), dropping the ten-minute nonce ceiling (6) and dropping the session check (7).
+
+Vitest: new `src/app/api/consents/revoke-all/route.test.ts` (9 cases) and one new case in `src/lib/account-operation-nonce.test.ts`. Five planted route defects each failed cases: an unverified nonce (1), the wrong nonce operation (5), a 42501 mapped to 422 (1), no origin check (1) and an open body (1).
+
+`POST /api/rights/embryo-record-key-cards` (register `api.embryo-record-key-cards-rights`) is the no-account twin of `api.embryo-record-key-cards`. It is built closed. `private.rights_session_purposes` has no `embryo-record-key-card-delivery` row, because no issuer exists yet: the mail candidate at finalization or transfer rotation and its activation are an open owner question. Until that row exists, the purpose trigger refuses every such session and `private.rights_action_permitted_v1` answers false. The schema also has no active genetic-parent principal without an account (`subject_principals_identity_check`), so no recipient can use the route today. The route answers `resource-not-found-v1` for every failure, and also outside TEST-LOCAL. It requires exact Origin, same-origin fetch metadata, JSON, exactly one rights cookie, and a sealed form token bound to sha256 of that cookie (new public form id `embryo-record-key-cards-rights`), sent as the body nonce and again in `X-Inherit-CSRF`. The response is the account door's closed `record-key-card-delivery-v1` shape.
+
+New migration `supabase/migrations/20261016201000_embryo_record_key_cards_rights.sql`, headed PRODUCTION RELEASE: GUARDED. It adds `public.deliver_embryo_record_key_cards_rights_v1(session hash, nonce)`, which only the service role can call, and `private.embryo_record_key_card_principal_count_v1`. That is the account door's authority check, keyed by one principal that has no account. Nothing existing is changed. In one transaction it locks the session of exactly that purpose and target kind and consumes the session-bound nonce. It then rechecks the purpose matrix, the cohort's current `recipient_set_revision` and the full basis authority. It generates one key per covered embryo, stores only the hashes, consumes the print rights and the session, and writes one audit event.
+
+`supabase/tests/embryo_record_key_cards_rights.sql`: 70 assertions, 25 new, all passing in one rolled-back transaction, with the same prep and migrations as above. The first block proves the route is closed: no registered purpose, the matrix answers false, a session insert is refused, and the door refuses. The second block registers the purpose inside the transaction only and turns the fixture's second parent into a synthetic no-account principal. Five planted SQL defects each failed named assertions: admitting a recipient with an account (1), skipping the matrix recheck (1 failed, 13 errors), skipping the recipient-set revision (2 failed, 13 errors), not consuming the session (1) and not consuming the nonce (1).
+
+Vitest: new `src/app/api/rights/embryo-record-key-cards/route.test.ts` (6 cases). Five planted defects in the route or form reader each failed a case: no `X-Inherit-CSRF` match, no TEST-LOCAL check, ambiguous cookies admitted, cards serialized without the closed-shape parse, and a form not bound to the session.
+
+`POST /api/consents/revoke/session` (register `api.consent-revoke-rights`) is built closed in the same way. A person who confirmed a Path B request with no account turns off one purpose they granted the uploader, through an `adult-subject-control` rights session. That purpose has no issuer: `confirm_path_b_subject_v1` consumes the invitation session and issues no control credential, an open owner question. The closed body is `{purposeKey, nonce}`, and `purposeKey` is one of the four individual purposes. The nonce is a sealed form token bound to sha256 of the rights cookie (new public form id `adult-subject-control`). Every failure is `resource-not-found-v1`, and so is any request outside TEST-LOCAL. Success is `lifecycle-accepted-v1`.
+
+New migration `supabase/migrations/20261016202000_consent_revoke_rights.sql`, headed PRODUCTION RELEASE: GUARDED. It adds `private.adult_subject_control_v1`, the authority every adult-subject-control door will share. It refuses unless the TEST flag is set, locks the session of exactly that purpose and target kind, consumes the nonce for the action and rechecks the purpose matrix. It then locks the subject (active `other_adult`, no subject account, a confirmed Path B draft) and its active non-account principal at the session's bound revision, and resolves the uploader's account principal. It also adds `public.revoke_purpose_rights_v1`. That function ends only the current pair whose revision, signer, data subject, uploader recipient, recipient account, current uploader relationship and revision, purpose and subject binding all match. It deletes the uploader's derived rows for that subject and purpose, enqueues the `purpose.derived-60s` purge under the uploader's account and writes one audit event. The person's confirmation is preserved. Nothing existing is changed.
+
+`supabase/tests/consent_revoke_rights.sql`: 32 assertions, all new and all passing, in one rolled-back transaction with the same prep and migrations as above. It uses a synthetic confirmed no-account Path B subject and grant pairs inserted directly. The first block proves the door is closed. The second registers the purpose inside the transaction only. Seven planted SQL defects each failed named assertions: no TEST flag (3 failed, 12 errors), no principal revision (2 failed, 12 errors), any recipient admitted (3), no subject-binding revision (3), an ended relationship admitted (4 failed, 2 errors), no matrix recheck (1 failed, 12 errors) and no purge enqueued (1). The first runs of the recipient and matrix plants passed, which exposed two gaps in the test. Both gaps were closed by new assertions before these results: a pair to another recipient over its own relationship row, and a matrix row removed between requests.
+
+Vitest: new `src/app/api/consents/revoke/session/route.test.ts` (5 cases). Five planted defects each failed a case: an open body, no TEST-LOCAL check, a form not bound to the session, no origin check, and a wider purpose list.
+
+`POST /api/consents/grant/session` (register `api.consent-grant-rights`) is the grant twin, built closed twice over. It needs the same missing `adult-subject-control` issuer. It also keeps the unchanged `private.other_adult_mitigation_v1` decision at purpose-grant-create, which denies the uploader of a no-account Path B subject (`adult.non-account-holder-24mo`). Opening that is an owner question. The closed body is the register's. The presentation token (`src/lib/uploads/grant-rights-presentation.ts`) is server-signed, lasts nine minutes and is bound to sha256 of the session cookie, the signer, the uploader principal and account, the uploader relationship and its revision (or none yet), the subject binding revision, the purpose and the exact `consent.share-with-adult` version and body hash. The route requires exact statement keys, a typed name of two tokens and a catalogue country, and sends the typed name only as ciphertext. The register's `jurisdictionAttestationVersion` and `jurisdictionAttestationHash` are not taken. `docs/route-divergence.json` `unhashableAttestationFields` records this route as serving a plain `jurisdictionCode` (owner decisions of 2026-09-13 and 2026-10-16, D-083), so the closed body refuses those two fields. `copilot.local` passes the body and is refused by the database, because Path B has no Copilot scope. Success is `consent-recorded-v1` 201. Every failure is `resource-not-found-v1`.
+
+New migration `supabase/migrations/20261016203000_consent_grant_rights.sql`, headed PRODUCTION RELEASE: GUARDED. It adds `public.grant_purpose_rights_v1`, which only the service role can call and which runs over `private.adult_subject_control_v1`. The ten presentation values must equal current state, and the presentation's own nonce is consumed. The mitigation must allow, the artifact must be current, the statements exact, the typed name present and the code well formed, the uploader relationship is reused or created, and any current pair of the same purpose is superseded in the same statement. It writes one signature with no account, one base row and one direction row at revision 1, and one audit event. Nothing existing is changed.
+
+`supabase/tests/consent_grant_rights.sql`: 37 assertions, all new and all passing in one rolled-back transaction (prep, migrations, then 202000 and 203000). Block one proves the door is closed. Block two registers the purpose and keeps the real mitigation: the door refuses and writes nothing. Block three replaces the mitigation with an allow, inside the transaction only, then covers refusals, the grant, replay, supersession, and revocation through `revoke_purpose_rights_v1`. Seven planted SQL defects each failed named assertions: no mitigation check (5), `copilot.local` admitted (2), the recipient taken from the session instead of being checked against the token (3), no presentation nonce (1), no supersession (1), no country-code check (1) and a stale relationship admitted (1).
+
+Vitest: new `src/app/api/consents/grant/session/route.test.ts` (5 cases). Six planted route defects each failed a case: a presentation not bound to the session, no catalogue-country check, no typed-name check, a plaintext name, an unchecked receipt and an open body.
+
+Test changes, none weakened:
+
+- `scripts/route-register-correspondence.test.ts`: the exact unbuilt census goes from the integration value 15 (after `api.subject-export`) to 11 for `api.consents-revoke-all`, `api.embryo-record-key-cards-rights`, `api.consent-revoke-rights` and `api.consent-grant-rights`, with a comment. The header sentence now reads 11.
+- `src/lib/account-operation-nonce.test.ts` "verifies for exactly the account, session and operation it was minted for" gains one assertion: a delete nonce does not verify as `consents_revoke_all`. Every existing assertion is unchanged.
+
 ## 2026-10-22 — `subject_transfer.sql`: an expired grant that is always after its grant time; 221000 keeps the nonce operations it finds
 
 Hosted CI run 39812999763 (`database-tests`, commit a3635c23) failed `supabase/tests/subject_transfer.sql` at its expired-grant case. The fixture set the grant's `expires_at` to `clock_timestamp()-interval '1 second'`. `purpose_grants` requires `expires_at > granted_at`, so the update failed whenever the grant had been made less than a second before, as on a fast runner. Locally the fixture ran slower and passed.

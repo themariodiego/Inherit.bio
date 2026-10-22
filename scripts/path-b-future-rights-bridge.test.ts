@@ -24,6 +24,20 @@ const functionBody = (source: string, name: string): string => {
   return match![2]!;
 };
 const md5 = (value: string) => createHash("md5").update(value).digest("hex");
+const recoveryFile = "20261016208000_rights_reissue.sql";
+/** The one anchor and its replacement in 20261016208000's in-place activation patch. */
+const recoveryFragments = () => {
+  const source = readFileSync(path.join(directory, recoveryFile), "utf8");
+  const anchor = source.match(/old_fragment text:=\$old\$([\s\S]*?)\$old\$;/u)![1]!;
+  const replacement = source.match(/new_fragment text:=\$new\$([\s\S]*?)\$new\$;/u)![1]!;
+  expect(replacement.endsWith(anchor.slice("begin".length))).toBe(true);
+  return { anchor, replacement, inserted: replacement.slice("begin".length, replacement.length - anchor.length + "begin".length) };
+};
+const recoverySuccessor = (current: string) => {
+  const { anchor, replacement } = recoveryFragments();
+  expect(current.split(anchor)).toHaveLength(2);
+  return current.replace(anchor, replacement);
+};
 const body = current.match(/create or replace function public\.activate_rights_session_v1\([^;]+?as \$\$([\s\S]*?)\$\$;/u)![1]!;
 const anchor = "  if v_purpose is distinct from 'co-parent-invitation' then return; end if;";
 const declaration = "  v_expires_at timestamptz;";
@@ -85,13 +99,31 @@ describe("the exact Path B bridge across shared rights dispatchers", () => {
     const noticeHash = md5(functionBody(notice, "public.activate_rights_session_v1"));
     expect(currentHash).toBe("b9dcb56fbe06146e7b55e98f5f68a25b");
     expect(noticeHash).toBe("7549c495723f36b9cd684c4bff8876e1");
-    expect(native).toContain(`md5(prosrc)='${currentHash}'`);
+    // 20261016208000 (api.rights-reissue, owner decision 2026-10-22) patches
+    // the information wrapper in place with its rights-recovery branch, so the
+    // native check pins that exact successor (proven below).
+    expect(native).toContain(`md5(prosrc)='${md5(recoverySuccessor(functionBody(information, "public.activate_rights_session_v1")))}'`);
     expect(native).toContain(`md5(prosrc)='${noticeHash}'`);
     expect(native).toContain("where oid=coalesce(to_regprocedure('public.activate_rights_before_appeal_information_v1(text,text,text)'),\n        to_regprocedure('public.activate_rights_session_v1(text,text,text)')))");
     expect(native).toContain("where has_function_privilege(r,to_regprocedure('public.activate_rights_before_appeal_information_v1(text,text,text)'),'execute')");
     for (const hash of ["7c176e100123ecbdf9aedd8ee41b0539", "5f92f26f9e5f94f7593f833d17db7d6c", "3dfcbba9fe1f0cee01e1ae31390009e8"]) {
       expect(native).toContain(`md5(prosrc)='${hash}'`);
     }
+  });
+  it("pins the in-place rights-recovery branch of 20261016208000 onto the exact information wrapper", () => {
+    const information = readFileSync(path.join(directory, appealInformationFile), "utf8");
+    const recovery = readFileSync(path.join(directory, recoveryFile), "utf8");
+    const current = functionBody(information, "public.activate_rights_session_v1");
+    const successor = recoverySuccessor(current);
+    expect(md5(current)).toBe("b9dcb56fbe06146e7b55e98f5f68a25b");
+    expect(md5(successor)).toBe("f4c47723ec1c65454514a5b8d08ec0e0");
+    expect(recovery).toContain(`md5(prosrc)='${md5(current)}'`);
+    expect(recovery).toContain(`md5(prosrc)='${md5(successor)}'`);
+    // One insertion, before the information round's own first statement; every
+    // other token hash takes the unchanged existing path.
+    expect(successor.replace(recoveryFragments().inserted, "")).toBe(current);
+    expect(recoveryFragments().inserted).toContain("private.activate_rights_recovery_v1(p_token_hash,p_session_hash,p_form_nonce)");
+    expect(recovery).not.toMatch(/create (?:or replace )?function public\.activate_rights_session_v1\b|grant execute[^;]*activate_rights_recovery_v1/iu);
   });
   it("registers exactly the existing held-revision issuer without source grants or backfill", () => {
     expect(bridge).toContain("values('adult-upload-confirmation','adult-upload-confirmation',null,'adult_upload_revision')");

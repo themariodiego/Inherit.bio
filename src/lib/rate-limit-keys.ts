@@ -24,6 +24,7 @@ export type NetworkLimitedOperation =
   | "global-contact-refusal-bar-v1.invitation-attempt"
   | "api.future-person-claim"
   | "api.subject-access-request"
+  | typeof RIGHTS_REISSUE_OPERATION
   | AuthLimitedOperation;
 
 /**
@@ -32,6 +33,13 @@ export type NetworkLimitedOperation =
  * 10. The ceilings live in `private.admit_auth_public_request_v1`.
  */
 export type AuthLimitedOperation = "auth.sign-up-submit" | "auth.forgot-password-submit";
+
+/**
+ * api.rights-reissue (owner decision 2026-10-22): 3 an hour per contact, 10
+ * an hour per network and 1000 an hour for the whole service. The ceilings
+ * live in `public.request_rights_reissue_v1`.
+ */
+export const RIGHTS_REISSUE_OPERATION = "api.rights-reissue";
 
 export const INVITATION_ATTEMPT_OPERATION = "global-contact-refusal-bar-v1.invitation-attempt";
 export const CLAIM_START_OPERATION = "api.future-person-claim";
@@ -78,4 +86,16 @@ export function claimIdentifierDigests(mode: string, identifier: string): Digest
  */
 export function authIdentifierDigests(operation: AuthLimitedOperation, normalizedEmail: string): DigestSet {
   return keyedDigestSet("rate-limit", `${operation}|normalized-identifier|${normalizedEmail}`);
+}
+
+/**
+ * api.rights-reissue: the normalized email, namespaced by the operation, and
+ * the one service-wide global-capacity key, each under every rate-limit
+ * revision. The address itself is never stored or sent to the database.
+ */
+export function rightsReissueLimitDigests(normalizedEmail: string): { identifier: DigestSet; global: DigestSet } {
+  return {
+    identifier: keyedDigestSet("rate-limit", `${RIGHTS_REISSUE_OPERATION}|normalized-identifier|${normalizedEmail}`),
+    global: keyedDigestSet("rate-limit", `${RIGHTS_REISSUE_OPERATION}|global-capacity|service`),
+  };
 }

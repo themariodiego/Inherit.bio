@@ -444,6 +444,8 @@ select is((select count(*) from public.purpose_grants where target_id=pg_temp.si
 -- browser access to the held table or returning its raw descriptor. The
 -- one-record class inventory (20261016196000_subject_export.sql) counts the
 -- record's own held uploads the way the account inventory counts them. The
+-- closed account bind (20261016207000_adult_subject_bind.sql) refuses while a
+-- file is pending and moves confirmed files to the new binding revision. The
 -- subject transfer (20261016221000_subject_transfer.sql) detaches each
 -- confirmed revision into the person's file, and its relocation retirement
 -- marks the revision's held working row deleted once the old object is gone.
@@ -460,7 +462,8 @@ select is((select string_agg(n.nspname||'.'||p.proname,', ' order by n.nspname,p
    then '' else 'private.purge_path_a_subject_v1, ' end || 'private.subject_held_files_v1, ' || case when to_regprocedure('private.transfer_subject_v1(uuid,uuid,uuid,text,timestamptz)') is null
    then '' else 'private.transfer_subject_v1, ' end || case when to_regprocedure('public.activate_rights_session_before_keyless_objection_v1(text,text,text)') is null
    then 'public.activate_rights_session_v1' else 'public.activate_rights_session_before_keyless_objection_v1' end || case when to_regprocedure('public.adult_upload_revision_retention_v1(text)') is null
-   then '' else ', public.adult_upload_revision_retention_v1' end || ', public.expire_due_other_adult_held_uploads_v1' || case when to_regprocedure('public.expire_due_path_b_confirmed_files_v1()') is null
+   then '' else ', public.adult_upload_revision_retention_v1' end || case when to_regprocedure('public.bind_adult_subject_account_v1(text,text,uuid,uuid,boolean)') is null
+   then '' else ', public.bind_adult_subject_account_v1' end || ', public.expire_due_other_adult_held_uploads_v1' || case when to_regprocedure('public.expire_due_path_b_confirmed_files_v1()') is null
    then '' else ', public.expire_due_path_b_confirmed_files_v1' end || case when to_regprocedure('public.finish_subject_transfer_retirement_v1(uuid,text,boolean)') is null
    then '' else ', public.finish_subject_transfer_retirement_v1' end || ', public.read_adult_upload_revision_v1, public.respond_adult_upload_revision_v1','the held table is named only by the exact reviewed lifecycle functions');
 -- Four reviewed complete-account helpers inspect the held source only for
@@ -500,7 +503,7 @@ select ok((select md5(prosrc)='7c176e100123ecbdf9aedd8ee41b0539' from pg_proc
        where oid=coalesce(to_regprocedure('public.activate_rights_before_appeal_information_v1(text,text,text)'),
         to_regprocedure('public.activate_rights_session_v1(text,text,text)')))
       and (to_regprocedure('public.activate_rights_before_appeal_information_v1(text,text,text)') is null
-       or ((select md5(prosrc)='b9dcb56fbe06146e7b55e98f5f68a25b' from pg_proc
+       or ((select md5(prosrc)='f4c47723ec1c65454514a5b8d08ec0e0' from pg_proc
         where oid='public.activate_rights_session_v1(text,text,text)'::regprocedure)
         and not exists(select 1 from unnest(array['anon','authenticated','inherit_upload_only','service_role'])r
          where has_function_privilege(r,to_regprocedure('public.activate_rights_before_appeal_information_v1(text,text,text)'),'execute'))))

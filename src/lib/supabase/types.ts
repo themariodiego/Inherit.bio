@@ -8479,6 +8479,15 @@ export type Database = {
           invitation_id: string | null
         }[]
       }
+      deliver_embryo_record_key_cards_rights_v1: {
+        Args: { p_nonce: string; p_session_hash: string }
+        Returns: {
+          cards: Json
+          cohort_id: string
+          key_revision: number
+          recipient_set_revision: number
+        }[]
+      }
       deliver_embryo_record_key_cards_v1: {
         Args: {
           p_account_id: string
@@ -8787,12 +8796,30 @@ export type Database = {
         Args: { p_account_id: string; p_counterpart_account_id: string }
         Returns: number
       }
+      revoke_all_own_consents_v1: {
+        Args: {
+          p_account_id: string
+          p_nonce_expires_at: string
+          p_nonce_hash: string
+          p_session_id: string
+        }
+        Returns: number
+      }
       revoke_cloud_model_consent: {
         Args: { p_account_id: string; p_grant_id: string }
         Returns: boolean
       }
       revoke_directional_purpose_v1: {
         Args: { p_account_id: string; p_grant_id: string }
+        Returns: string
+      }
+      revoke_purpose_rights_v1: {
+        Args: {
+          p_nonce: string
+          p_purpose: string
+          p_session_hash: string
+          p_test_jurisdiction: boolean
+        }
         Returns: string
       }
       run_due_embryo_retention_phases_v1: {
@@ -8883,6 +8910,50 @@ export type Database = {
         Args: {
           p_account_id: string; p_session_id: string; p_file_id: string; p_purpose: string;
           p_rsids: number[]; p_offset: number
+        }
+        Returns: Json
+      }
+      grant_purpose_rights_v1: {
+        Args: {
+          p_jurisdiction_code: string
+          p_nonce: string
+          p_presentation: Json
+          p_session_hash: string
+          p_signing_name_ciphertext: string
+          p_statement_keys: string[]
+          p_test_jurisdiction: boolean
+        }
+        Returns: Json
+      }
+      consent_reaffirm_offer_v1: {
+        Args: { p_account_id: string; p_session_id: string; p_prior_grant_id: string }
+        Returns: Json
+      }
+      request_rights_reissue_v1: {
+        Args: {
+          p_form_nonce_hash: string; p_contact_digests: Json; p_identifier_digests: Json; p_network_digests: Json;
+          p_global_digests: Json; p_test_jurisdiction: boolean
+        }
+        Returns: string
+      }
+      bind_adult_subject_account_v1: {
+        Args: {
+          p_session_hash: string; p_nonce: string; p_account_id: string; p_auth_session_id: string;
+          p_test_jurisdiction: boolean
+        }
+        Returns: Json
+      }
+      reaffirm_purpose_rights_v1: {
+        Args: {
+          p_session_hash: string; p_nonce: string; p_presentation: Json; p_statement_keys: string[];
+          p_signing_name_ciphertext: string; p_jurisdiction_code: string; p_test_jurisdiction: boolean
+        }
+        Returns: Json
+      }
+      reaffirm_purpose_grant_v1: {
+        Args: {
+          p_account_id: string; p_session_id: string; p_prior_grant_id: string; p_offer: Json;
+          p_nonce: string; p_expires_at: string; p_test_jurisdiction: boolean
         }
         Returns: Json
       }
