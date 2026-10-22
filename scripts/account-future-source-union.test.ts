@@ -81,7 +81,7 @@ describe("the complete account and Future source union", () => {
     expect(read("supabase/tests/v2_contracts.sql")).toContain("174::bigint");
   });
 
-  it("preserves protected/withheld Future classifications and the account provenance exclusions in the 262-table plan", () => {
+  it("preserves protected/withheld Future classifications and the account provenance exclusions in the 265-table plan", () => {
     const plan = JSON.parse(read("docs/export-member-plan.json")) as {
       tables: Record<string, { disposition: string; withheld?: string[]; scope?: string }>;
     };
@@ -89,8 +89,15 @@ describe("the complete account and Future source union", () => {
     // private.auth_recovery_sessions; 20261016151200_auth_public_endpoints),
     // plus the nine reviewed-document Path B stores
     // (20261016190000_path_b_reviewed_document), each classified like its
-    // claim/appeal evidence analog.
-    expect(Object.keys(plan.tables)).toHaveLength(262);
+    // claim/appeal evidence analog, plus the three subject-transfer stores
+    // (20261016221000_subject_transfer), classified like the claimant
+    // relocation rows.
+    expect(Object.keys(plan.tables)).toHaveLength(265);
+    for (const [name, disposition] of Object.entries({
+      "private.subject_ownership_transfers": "excluded-internal",
+      "private.subject_transfer_relocations": "excluded-credential",
+      "private.subject_transfer_relocation_attempts": "excluded-credential",
+    })) expect(plan.tables[name]?.disposition, name).toBe(disposition);
     for (const [name, disposition] of Object.entries({
       "private.permission_document_sessions": "excluded-credential",
       "private.permission_document_fragments": "excluded-protected",

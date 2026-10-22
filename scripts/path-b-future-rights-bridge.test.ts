@@ -253,6 +253,12 @@ it("reviews shared replacements across all six authored Path B migration stages"
     ...["private.confirm_path_b_subject_account_core_v1", "private.confirm_path_b_subject_v1",
       "private.other_adult_upload_targets_v1", "private.path_b_signing_target_v1", "private.path_b_subject_v1"]
       .map(name => `20261016190000_path_b_reviewed_document.sql|${name}`),
+    // 20261016221000 (api.subject-transfer): a transferred revision keeps its
+    // person-owned file, and the saved-result reader and its readiness check
+    // read a transferred record through the person's own current grant. Each
+    // is md5-guarded on its predecessor and successor bodies.
+    ...["private.end_path_b_normalized_revision_v1", "private.path_b_report_read_ready_v1",
+      "private.path_b_report_results_v1"].map(name => `20261016221000_subject_transfer.sql|${name}`),
   ].sort());
   expect(allPatches).toEqual([
     "20260930231000_path_b_normalization.sql|public.respond_adult_upload_revision_v1",

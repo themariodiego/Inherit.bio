@@ -40,6 +40,8 @@ Changed existing tests. None is weakened.
 - `src/lib/subject-endpoints/operation-nonce.test.ts`, "names one registered route per operation": the expected map gains `subject_transfer: "api.subject-transfer"`.
 - `scripts/jurisdiction-enforcement.test.ts`: `WITHOUT_CHECK` lists the new route with its reason. The register sets `jurisdictionBypass`, and the route starts no analysis.
 - `docs/register-contract-divergence.json` records the worker's `genomes` Storage call site.
+- `scripts/account-future-source-union.test.ts`, "the 262-table plan": the exact plan size goes from 262 to 265 for the three new stores, with a comment. The test now also checks each of the three dispositions.
+- `scripts/path-b-future-rights-bridge.test.ts`, "reviews shared replacements across all six authored Path B migration stages": the exact list of later replacements of a stage's functions gains the three this migration makes, `private.end_path_b_normalized_revision_v1`, `private.path_b_report_read_ready_v1` and `private.path_b_report_results_v1`, with a comment. Each is md5-guarded. Every other entry is unchanged.
 
 Planted defects:
 
