@@ -5107,3 +5107,16 @@ Owner decisions (clickable chat answers):
   rows close on main CI.
 - No producer is approved by this decision, and production is unchanged:
   embryo analysis stays off.
+
+## 2026-10-22 — How G5.4's claimant delete is proven
+
+- Owner decision (clickable chat answer): the browser journey proves the
+  claim, the release, the captured release mail, and the claimant page on
+  `/withdraw/session` with its retention statement and contact. On the
+  standard app it also proves that the delete control is closed (no control
+  is offered, a DELETE answers the closed 404, and nothing is deleted).
+- The working claimant DELETE is proven by its pgTAP and route tests. Its
+  test-only executor needs a direct superuser database connection, and the
+  isolated CI browser runtime deliberately blocks database access. That
+  isolation is not widened for this.
+- G5.4 closes on this evidence once PR 324 merges and main CI passes.
