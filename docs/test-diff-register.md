@@ -99,6 +99,35 @@ Vitest: new `src/app/api/consents/reaffirm/session/route.test.ts` (5 cases). Six
 
 The census goes from 10 to 9 for `api.consent-reaffirm-rights`, with a comment.
 
+### `api.adult-subject-bind`, built closed
+
+`POST /api/subjects/bind/session` (register `api.adult-subject-bind`, adult-subject-account-binding-v1). A person who confirmed a Path B request with no account binds that record to the account they are signed in to, in the same browser as their adult-subject-control session. Ownership does not change and no object moves. The route is built closed. It needs an adult-subject-control session, which has no issuer, and the account-binding notice, whose wording is not approved. Every failure answers `resource-not-found-v1`, and so does every request outside TEST-LOCAL. Signed out it answers 401. It sends no notice. The closed body is the rights-session nonce alone.
+
+New migration `supabase/migrations/20261016207000_adult_subject_bind.sql`, headed PRODUCTION RELEASE: GUARDED, adds `public.bind_adult_subject_account_v1`. In one transaction:
+
+1. The account's auth session must be recent (15 minutes), and aal2 when MFA is enrolled, checked by `private.validate_sensitive_account_session_v1`.
+2. `private.adult_subject_control_v1` checks the session, nonce, matrix, subject and principal.
+3. The account must not be the uploader and must hold no principal on the subject. Its declared jurisdiction must equal the one the confirmation was signed under.
+4. The bind is refused while any file of the subject is pending (owner decision, as for transfer).
+5. No `pending_account_reaffirmation` status is added (owner decision). Each current grant the non-account principal signed ends as superseded, so the account must sign afresh.
+6. The principal is detached and a new account principal written. `subject_account_id` is set and the binding revision raised. Each confirmed file takes the new binding revision and keeps its confirming principal.
+7. The old principal's rights sessions are revoked, its unsent mail is invalidated and its contact copies are crypto-shredded. One audit event is written, and nothing is enqueued.
+
+Nothing existing is changed.
+
+New test `supabase/tests/adult_subject_bind.sql`: 25 assertions, all new and all passing in one rolled-back transaction. The run used the prep and migrations above, plus `20261016202000`, `20261016204000` and `20261016207000`. It uses the real Path B fixture (`fixtures/path_b_source_setup.inc`), in which a person confirms with no account. Block 1 proves the door is closed. Block 2 registers the purpose inside the transaction only, and proves:
+
+- the bind is refused while a file is pending;
+- once the file is confirmed, it refuses the wrong flag, the uploader, a 16-minute-old sign-in and another declared country;
+- then it binds, ends the directly written grant, detaches the principal, keeps ownership, re-binds the confirmed file, ends the sessions, shreds the contacts and enqueues no mail;
+- the ended session cannot bind again.
+
+Eight planted SQL defects each failed named assertions: a pending file admitted, any jurisdiction, the uploader admitted, grants kept, sessions kept, contacts kept, no re-authentication check and no file re-binding.
+
+Vitest: new `src/app/api/subjects/bind/session/route.test.ts` (5 cases). Five planted route defects each failed a case: no TEST-LOCAL check, an open body, an unchecked form, an unchecked response body and a signed-out request answered 404. A sixth plant was a no-op, so it was replaced by the unchecked-form plant above.
+
+`scripts/jurisdiction-enforcement.test.ts` gains a `WITHOUT_CHECK` entry for the route, with its reason: a right under jurisdictionBypass, built closed. The census goes from 9 to 8, with a comment.
+
 ## 2026-10-16 — Consent and rights endpoints (G2.1, "Build all 24"): `api.consents-revoke-all`, `api.embryo-record-key-cards-rights`, `api.consent-revoke-rights` and `api.consent-grant-rights`
 
 Owner decision 2026-10-16 ("Unbuilt registered endpoints (G2.1)", `docs/protocol/decisions.md`): every registered endpoint gets built, and an endpoint whose contract depends on unbuilt pieces or open design questions is raised with the owner first. This slice covers the eight consent and rights endpoints. The questions it raised are reported back. This entry records each test change the slice makes.
