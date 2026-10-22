@@ -54,7 +54,13 @@ No retries. Batches 3 and 4 ran back to back.
 - `fp-after-merge`: EQUAL batch 4 post.
 - Vercel production environment variable names (no values): `vercel-production-env-names.txt`.
   `INHERIT_TEST_JURISDICTION` is not set.
-- main CI run 39796150441 on the merge commit: in progress when this was committed.
+- main CI run 39796150441 on the merge commit: success, all 10 jobs (repository-checks,
+  database-tests, browser 1-6, owned-keyfree-smoke, checks).
+- Deploy Cloudflare run 39796150327 on the merge commit: failure. The prepared-artifact
+  gateway Worker deployed; the preparation container Worker step failed pulling its
+  base image from public.ecr.aws (`429 Too Many Requests - Data limit exceeded`), a
+  registry rate limit, not a code failure. Not re-run from this session: a re-run
+  deploys to production Cloudflare, which is outside this release's scope.
 - PR 324 retargeted to `main` (not merged).
 
 ## D-081 checks (step 8)
