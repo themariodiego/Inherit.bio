@@ -6,6 +6,20 @@ Pin moved: `scripts/route-register-correspondence.test.ts` "leaves the unbuilt h
 
 No other test assertion, frozen baseline, privacy control or waiting period changes. The new tests are additive: `supabase/tests/future_person_correction_review.sql`, `supabase/tests/future_person_export_open_ready.sql`, `src/lib/future-person/correction-review-route.test.ts` and `src/lib/exports/claimant-export-http.test.ts`.
 
+## 2026-10-17 — Links to an auth form page do not prefetch
+
+Hosted CI run 39010790879 ("browser (2)", commit b5143dc0) failed `e2e/future-person-claim.spec.ts` "/future-person/claim complete: …". The claim page's visitor held a `__Host-inherit-auth-form` cookie besides the claim form pair. The proxy (`src/proxy.ts`) already refuses that cookie to a prefetch that carries `next-router-prefetch` or `next-router-segment-prefetch`. But this Next.js version also prefetches a linked page's head with only `rsc` and the router state tree: `pingRuntimeHead` turns a `LoadingBoundary` prefetch into `Full` (`node_modules/next/dist/client/components/segment-cache/scheduler.js`), and `Full` sets no prefetch header (`segment-cache/cache.js`). That request has the same shape as a real navigation, so the proxy cannot tell them apart, and the leak depends on timing. On ffa538ab the same test passed.
+
+Product change: the four links to an auth form page now set `prefetch={false}`. They are the header's "Get started", the home page's "Start with your raw data", and the sign-in page's "Forgot your password?" and "Create an account". A navigation still mints the form pair as before.
+
+New test `src/lib/auth/auth-form-links.test.ts`. It scans `src/**/*.tsx` for `<Link>` tags whose href is a key of `AUTH_FORM_PAGES`, requires at least four, and requires `prefetch={false}` on each. Without the header change it fails on that link. No existing assertion changes. Locally, `e2e/future-person-claim.spec.ts` passed. `e2e/auth-processing.spec.ts` "/auth/reset-password processing" fails on the shared local database with or without this change, because that database lacks the auth migration 20261016151200 and no recovery mail is sent. It passes in hosted CI.
+
+## 2026-10-16 — Refused-invitation cleanup e2e: synthetic evidence uses the registered bucket's content type
+
+Hosted CI run 38966526629 ("browser (2)", commit ffa538ab) failed `e2e/refused-invitation-cleanup.spec.ts` "jobs.retention: physically delete refused-draft evidence without deleting another draft" at its own setup upload: `StorageApiError: mime type text/plain is not supported`. Migration `20261016190000_path_b_reviewed_document.sql` creates the registered `legal-evidence` bucket with `allowed_mime_types = {application/octet-stream}`. Before that migration, the spec created the bucket itself with no restriction. The product writes only opaque `application/octet-stream` objects there (`src/lib/future-person/claim-objects.ts`).
+
+Test change, no assertion changed: the spec's synthetic evidence upload now declares `application/octet-stream`. A throwaway local bucket with the migration's exact limits refused `text/plain` with the same message and accepted `application/octet-stream`; it was deleted afterwards.
+
 ## 2026-10-16 — Route census: a redirect served by `next.config.ts` counts as built
 
 `scripts/route-register-correspondence.test.ts` "leaves the unbuilt half of the register alone, but still measures it" walks only `src/app`. `legacy.signup` (`/signup`) and `legacy.login` (`/login`) are served by unconditional permanent redirects in `next.config.ts`, which run before the App Router. `scripts/route-gate.ts` already checks their emitted 308 against the register, and `scripts/canonical-host.test.ts` checks the query is kept. They were built, but the census counted them as unbuilt.
