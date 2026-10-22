@@ -49,8 +49,8 @@ export function LegalArtifactDocument({
         </section>
         <div className="legal-prose whitespace-pre-wrap">{artifact.body_markdown}</div>
         <footer className="border-t border-line pt-6">
-          <p className="caption mono break-all">sha256 {artifact.body_sha256}</p>
-          <p className="mt-2">
+          <p className="caption mono max-w-measure break-all">sha256 {artifact.body_sha256}</p>
+          <p className="mt-2 max-w-measure">
             <Link href={`${routeBase}/${versionPath}/${artifact.version}`} className="link-target quiet-link text-sm">
               Permanent link to this version
             </Link>
