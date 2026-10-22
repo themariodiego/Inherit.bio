@@ -5093,3 +5093,17 @@ Owner decisions (clickable chat answers):
 - The status is not clinical activation and closes no review. Report
   templates still never carry carrier results (`gate:templates` keeps
   refusing them).
+
+## 2026-10-22 — The six unproven embryo route states (G1.7, G1.12, G2.2)
+
+- Owner decision (clickable chat answer): the test-only synthetic result
+  producers may prove the six embryo route states under TEST-LOCAL. The
+  states are `partial-coverage` and `not-covered` on `/embryos`,
+  `/embryos/compare` and `/embryos/[embryoId]`. Those producers are
+  `embryo-test-score-coverage-v1` and the fitted partial journey, which
+  already pass on main in `e2e/embryo-ingest-journey.spec.ts`.
+- Engineering names the six states in browser tests driven by those
+  producers. It then lowers `UNPROVEN_ROUTE_STATE_PAIRS` from 6 to 0. The
+  rows close on main CI.
+- No producer is approved by this decision, and production is unchanged:
+  embryo analysis stays off.
