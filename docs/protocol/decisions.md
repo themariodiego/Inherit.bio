@@ -5120,3 +5120,32 @@ Owner decisions (clickable chat answers):
   isolated CI browser runtime deliberately blocks database access. That
   isolation is not widened for this.
 - G5.4 closes on this evidence once PR 324 merges and main CI passes.
+
+## 2026-10-22 — Density rule corrections (G2.5)
+
+Measured on 22 October: on 15 of the 28 public and auth rows, the required text
+alone already exceeds the 0.6 successor-ink ceiling. The text-only floor is a
+diagnostic capture with every border, fill, underline and icon removed and
+every glyph kept, and these floors range from 0.605 to 1.075. Owner decisions
+(clickable chat answers):
+
+- **Text-bound pages.** A row whose text-only floor exceeds 0.6 passes the
+  successor-ink rule if its ink is at most its floor + 0.05. Both values are
+  measured by the unchanged measurement modules on the same capture. The 0.6
+  ceiling, the frozen 31 August baseline and every other budget stay as they
+  are, and no required text may move or be hidden to pass.
+- **Outlined primary buttons.** The forest-outline primary actions stay: the
+  auth submit buttons, the header's Get started/Overview pill and the
+  landing page's first action. Targets stay 44px.
+- **45ch floor.** The floor applies to prose paragraphs, not to link lists or
+  one-line link paragraphs (D-115).
+- **Section gaps.** Gaps are measured in visual order, not DOM order, for
+  side-by-side panes and CSS-reordered sections.
+- **700-character cap.** On signed legal documents, only the characters
+  actually visible above the fold count, not a whole pre-formatted text node.
+- **Auth flows.** Sign-in and sign-up may carry up to 10 interactive controls,
+  against 7 elsewhere, because all of them are required.
+
+These readings change how budgets are evaluated, not the measurement modules
+or the baseline. G2.5 still needs every required capture, including the
+authenticated ones that run only on the owned-Linux runtime.
