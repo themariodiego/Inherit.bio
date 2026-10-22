@@ -9128,6 +9128,26 @@ export type Database = {
           ended_at: string
         }[]
       }
+      delete_subject_v1: {
+        Args: {
+          p_account_id: string
+          p_nonce_expires_at: string
+          p_nonce_hash: string
+          p_session_id: string
+          p_subject_id: string
+        }
+        Returns: Json
+      }
+      transfer_subject_v1: {
+        Args: {
+          p_account_id: string
+          p_nonce_expires_at: string
+          p_nonce_hash: string
+          p_session_id: string
+          p_subject_id: string
+        }
+        Returns: Json
+      }
     }
     Enums: {
       evidence_level:

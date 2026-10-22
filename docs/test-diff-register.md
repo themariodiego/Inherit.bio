@@ -2,7 +2,7 @@
 
 Owner decisions of 2026-10-22 ("Consent, rights and claim endpoints (G2.1)", `docs/protocol/decisions.md`). This entry records each test change of the slice's second half.
 
-Route census, `scripts/route-register-correspondence.test.ts` "leaves the unbuilt half of the register alone, but still measures it": it was lowered one step per endpoint as each was built, counted from the integration value of 15. After the merge of integration 7852ef75, which brought the fpclaims slice and a census of 10, it is 10 lowered by exactly the eight endpoints this branch builds. That gives 2, with a comment naming each step. The intermediate numbers below (11 to 7) are the pre-merge steps. The two left are not in this slice.
+Route census, `scripts/route-register-correspondence.test.ts` "leaves the unbuilt half of the register alone, but still measures it": it was lowered one step per endpoint as each was built, counted from the integration value of 15. The integration branch then moved twice. At 7852ef75 (the fpclaims slice) its census was 10, and at 97f5e595 (subject delete and transfer) it was 8. After merging 97f5e595, the census is 8 lowered by exactly the eight endpoints this branch builds. That gives 0, with a comment naming each step: every registered endpoint is built. The intermediate numbers below (11 to 7) are the pre-merge steps. The assertion `expect(unbuilt.length).toBeLessThan(entries.length)` and the walker are unchanged. Planted defect: removing `src/app/api/rights/reissue/route.ts` makes the census test fail with 1 instead of 0.
 
 ### Stated privacy-control change: the uploader gate for a person who confirmed with no account
 
@@ -217,6 +217,172 @@ Test changes, none weakened:
 
 - `scripts/route-register-correspondence.test.ts`: the exact unbuilt census goes from the integration value 15 (after `api.subject-export`) to 11 for `api.consents-revoke-all`, `api.embryo-record-key-cards-rights`, `api.consent-revoke-rights` and `api.consent-grant-rights`, with a comment. The header sentence now reads 11.
 - `src/lib/account-operation-nonce.test.ts` "verifies for exactly the account, session and operation it was minted for" gains one assertion: a delete nonce does not verify as `consents_revoke_all`. Every existing assertion is unchanged.
+
+## 2026-10-22 — `api.subject-transfer` (G2.1): built closed, with the transfer, the relocation branch and reading and deletion after it
+
+Owner decisions 2026-10-16 ("The subjects endpoints (G2.1)" and "Subjects delete and transfer: four further cases", `docs/protocol/decisions.md`). Built closed under the 2026-10-22 unapproved-text rule: the contract names three notices (to the new owner, the former owning account and every principal whose access is revoked), and none has approved wording. So `public.transfer_subject_v1` and `POST /api/subjects/[id]/transfer` answer `resource-not-found-v1` and write nothing. One function, `private.subject_transfer_open_v1()`, returns false until that wording is approved. Nothing is mailed. Everything behind the door is built and is tested directly.
+
+New migration `supabase/migrations/20261016221000_subject_transfer.sql`, headed PRODUCTION RELEASE: GUARDED. No existing migration is edited. What a transfer does, in one transaction, for a confirmed Path B record (either flow) whose verified person account is the caller:
+
+- **Ownership.** The record stays a separate `other_adult` record, now owned by the person. The ownership check `subjects_self_or_claimant_owner_shape` is widened for exactly that shape, marked by the new column `subjects.ownership_transferred_at` (and while the record is not purged). The record's binding revision is kept, so the person's own grants stay valid. Consents, signatures, drafts and the audit trail are kept, and nothing is merged into the person's own record.
+- **Files.** The transfer is refused, with nothing written, while any Path B file on the record is pending, or while an upload into it is being validated. Each confirmed revision is detached into a person-owned file: its `genome_files` row (normalization made it with the revision's id) is rebound to the person with its variant rows, or one is made. The revision ends as the new terminal state `transferred`. One idempotent row per object in `private.subject_transfer_relocations` records its id, version, size, SHA-256 and both owners, under one immutable `private.subject_ownership_transfers` row.
+- **Results.** Only the person's own completed saved results stay. Every other saved result, queued or running report and former-owner job is deleted or cancelled. No new analysis runs, because every Path B analysis door requires the uploader to own the record.
+- **The uploader loses all access** in the same transaction. Every grant or relationship naming another recipient is revoked (`revocation_reason` `subject_transferred`). Upload, download, rights and export credentials end, and the revision notices are invalidated. Chats are never reassigned: every chat about the record that the person does not own is deleted with its model working state, and every other turn that retrieved the record is removed through `delete_pair_derived_rows_v1`.
+- **Audit:** one `subject.ownership_transferred` event, with no contact or token.
+
+Existing functions patched with the md5-guarded pattern (predecessor and successor md5 and ACL checked):
+
+- `private.record_subject_operation_nonce_v1` accepts `subject_transfer`, and `account_operation_nonces_operation_check` gains it while keeping every earlier value.
+- `private.guard_structural_file_identity_v1` admits two more transitions, each only in the transaction that recorded it: the transfer's own rebind (only `user_id`, from the transfer's former owner to its new owner), and the worker's swap (only `bucket_path` and `storage_object_id`, from the old key to the verified new key and object). Every other change is still `immutable_file_identity`.
+- `private.end_path_b_normalized_revision_v1` no longer deletes the file of a `transferred` revision, because the person owns it.
+- `private.path_b_result_read_v1`, `private.path_b_report_results_v1` and `private.path_b_report_read_ready_v1` read a transferred record through `private.transferred_report_binding_current_v1`. A saved result is served only to the record's new owner, and only while the grant that produced it is current: not revoked or expired, the same grant and binding revisions, the self direction, the person's principal active, their account current, and the grant's own signing session still live, as the Path B reader already requires. The uploader-dependent evidence (the uploader's insurance signature, the 30-day acceptance clock and the held session) is no longer part of it. Every other record keeps the full existing authority comparison.
+- `public.delete_subject_v1`, on the `20261016220000` body: a transferred record is deleted only by its new owner, through `private.purge_transferred_adult_subject_v1`. Waiting relocations are cancelled and any attempt in flight is fenced. Each person-owned file is prepared for the file deletion pipeline under the key it names, as the per-file guard prepares one, and the backstop finishes it. Saved results go at once. The rest is the existing Path B delete by the person, with the refusal bar.
+
+The relocation branch of `workerExecutionBindings.subject-object-relocation` (owner decision: a fresh flat `<uuid>` key, as live code uses), service role and TEST-LOCAL only:
+
+- Database doors `subject_transfer_relocation_work_v1`, `claim_` / `check_` / `swap_` / `fence_subject_transfer_relocation_v1`, `claim_` / `finish_subject_transfer_retirement_v1` and `claim_` / `finish_subject_transfer_disposal_v1`.
+- A copy claims one row, with a five-minute lease and its own fresh key. It rechecks before and after the copy and after the full read-back, then swaps the file's reference in one transaction that rechecks every revision, the exact size and hash, and the new object. The old object is deleted only after a committed swap, and the database then proves it is gone. A failed or expired attempt is fenced, so only its own new key is ever disposed of.
+- TypeScript: `src/lib/subject-endpoints/transfer-relocation-worker.ts`. `runNextSubjectObjectRelocation` lets the claimant-bind branch and this one take turns going first, so a failing item on one side never starves the other. `scripts/future-person-relocation-worker.run.mts` (`pnpm worker:subject-relocation`) now runs both branches. The Storage adapter reads every byte back in 8 MiB ranges over the authenticated path.
+
+The route is `src/app/api/subjects/[id]/transfer/route.ts`. It checks the record against the session's own person account before the body, as `invalid-request-v1`'s authorizationPrecedence requires. The body is exactly `{"nonce": "..."}`, and the code comes from a new `subject_transfer` operation bound to `api.subject-transfer`. On success it answers `subject-transfer-v1` exactly; a refusal is the opaque 404, and a bad body or code is 422. `src/lib/supabase/types.ts` gains the door.
+
+New tests:
+
+- pgTAP `supabase/tests/subject_transfer.sql`, 114 assertions over the real Path B doors: the person confirms with their own account, a file is held, confirmed and normalized, and two results are completed, one for the person and one shared with the uploader. The suite covers privileges and the closed door (which writes nothing), refusals that write nothing (outsider, uploader, a record not bound to the caller, a pending file, a crossed session, a code living past ten minutes) and the transfer in full. It shows the person still reading, the uploader reading, capturing and adding nothing, and no new analysis. A served result needs a current grant: revoked, expired, a different binding revision or an ended signing session each serve nothing. The rebind and swap cannot be borrowed. A delete before relocation hands the old key to the file pipeline. The worker's doors are covered: copy, a failed attempt fenced and disposed of, an expired lease, wrong hash, size or token, a committed swap that cannot be fenced, retirement, and the staging row. A delete after relocation is refused to the former uploader, and for the person it purges, hands the new key to the pipeline and writes the refusal bar. Deferred constraints pass.
+- Vitest: `src/app/api/subjects/[id]/transfer/route.test.ts` (9 cases), `src/lib/subject-endpoints/transfer-relocation-worker.test.ts` (12 cases), and a new case in `operation-nonce.test.ts`: a transfer code never deletes, and a delete code never transfers.
+
+Changed existing tests. None is weakened.
+
+- `scripts/route-register-correspondence.test.ts`: the exact unbuilt census goes down by one for `api.subject-transfer`, with a comment, and the header sentence names the route. That was 14 to 13 before the merge of the integration branch at dc1375a8, which counts its own claims endpoints and leaves 10; after the merge, delete and transfer take it from 10 to 9 to 8.
+- `supabase/tests/other_adult_held_upload.sql`, "the held table is named only by the exact reviewed lifecycle functions": the exact list gains `private.transfer_subject_v1` and `public.finish_subject_transfer_retirement_v1`, each conditional on its own presence. Every other name is unchanged, and it passes 174/174 with and without the migration.
+- `docs/export-member-plan.json`, and its generated block in `supabase/tests/export_member_plan.sql` (regenerated by `scripts/export-member-plan.ts`): the three new private tables are classified (the transfer row `excluded-internal`, the relocation and attempt rows `excluded-credential`), and `public.subjects` withholds `ownership_transferred_at`, with the reason sentence naming it. With the migration it passes 38/38. Without it, the four catalog checks fail, because the plan now names the new tables, which is the plan's purpose.
+- `docs/proposals/requester-statement-export-member-plan.provenance.json`: the active plan's bytes and SHA-256 are updated, as earlier plan changes did. The proposal and its own provenance are unchanged.
+- `src/lib/subject-endpoints/operation-nonce.test.ts`, "names one registered route per operation": the expected map gains `subject_transfer: "api.subject-transfer"`.
+- `scripts/jurisdiction-enforcement.test.ts`: `WITHOUT_CHECK` lists the new route with its reason. The register sets `jurisdictionBypass`, and the route starts no analysis.
+- `docs/register-contract-divergence.json` records the worker's `genomes` Storage call site.
+- `scripts/account-future-source-union.test.ts`, "the 262-table plan": the exact plan size goes from 262 to 265 for the three new stores, with a comment. The test now also checks each of the three dispositions.
+- `scripts/path-b-future-rights-bridge.test.ts`, "reviews shared replacements across all six authored Path B migration stages": the exact list of later replacements of a stage's functions gains the three this migration makes, `private.end_path_b_normalized_revision_v1`, `private.path_b_report_read_ready_v1` and `private.path_b_report_results_v1`, with a comment. Each is md5-guarded. Every other entry is unchanged.
+
+Planted defects:
+
+- SQL, thirteen:
+  - Ten fail named assertions: no pending check (2, then an exception), the uploader's grants kept (2), a reader that ignores the signing session (1), a swap without the hash check (2, then an exception), a retirement without the absence check (1, then an exception), the door opened (5, then an exception), a rebind matcher for any new owner (1), no transferred branch in the delete door (3), no code record (2, then an exception), and an owner switch left out (an exception at the transfer).
+  - Three are already caught by another mechanism. A transfer that keeps the uploader's saved result is caught by the existing revocation trigger, which deletes it with the grant. A reader that ignores a revoked grant is caught the same way. A fence that skips its state check is still refused, because the swap clears the attempt's token.
+- Route and worker, eleven:
+  - Ten fail named cases: no record check before the body, accepting a delete code, a 55000 answered as 503, success for another record, any account targeting the record, a swap without comparing the read-back, no recheck before the swap, a retirement without the remove, disposal of any key, and the worker deleting a new key itself after an uncertain swap.
+  - An unbounded range body is still refused at the range's end (an equivalent mutant).
+
+Local results, in rolled-back transactions on the shared database over every tree migration it lacks except `20261016153100` (whose guard refuses there because a function body has drifted; hosted CI applies the full chain):
+
+- `subject_transfer` 114/114.
+- Regression: all 219 pgTAP suites of the merged tree ran twice, over every migration the shared database lacks except `20261016153100`, once with `20261016220000` and this migration and once without. 199 pass completely both ways, and 17 fail identically both ways on the shared database: leftover rows from earlier runs, for example `family_sharing`'s 6 global counts and a `directional_grants` foreign key in `embryo_authority`, `mail_outbox` and `v2_backfill`. Three differ, each as expected: `export_member_plan` fails its four catalog checks without the migration, because the plan names the new tables, and the two new suites need their own migrations.
+- Vitest, the full run on the merged tree: 13,218 tests. Every failing file fails for the environment only: the six known files, the files that cannot launch the missing headless Chromium, and the `account-archive-worker` five-second timeout under load, which also fails on the base. The two census tests above failed until their pins moved, and now pass.
+- `pnpm typecheck` (with a 6 GiB heap), `pnpm lint` and the seven gates (`secrets`, `env`, `routes`, `sql-includes`, `readability`, `legal`, `claims`) exit 0.
+- The worker's Storage adapter was also run against the local Storage API with synthetic bytes. It covered copy, full ranged read-back of 9 MiB plus 17 bytes, object id, a wrong length refused, a copy onto an existing key refused, an idempotent remove and the old object gone. Every object it wrote was removed, and the bucket's object count was unchanged.
+
+Not built, or left as it is:
+
+- The door is closed. The three notices need approved wording, and opening the door is the change that queues them.
+- No page renders the `subject_transfer` code, as no page renders `subject_delete`'s. No browser path reaches either route, and no browser test covers them.
+- The suite builds an e-signature record. A reviewed-document record goes through the same code, but no test here builds one bound to a person's account.
+- The register's storage text says the new owner's canonical prefix. The owner's decision uses a fresh flat `<uuid>` key, and the `storage.subject-v2` prefix stays undecided.
+- A transferred record has no new analysis path until a person-owned analysis path is decided.
+
+## 2026-10-22 — `api.subject-delete`: the reviewed-document branch of Path B is an adult case too
+
+Owner decision 2026-10-16 ("The subjects endpoints (G2.1)": all five delete cases, `docs/protocol/decisions.md`). `20261016181000` chose the adult Path B case by a confirmed draft of the e-signature flow only. The integration branch then added the second Path B flow, `path-b-reviewed-document` (`20261016190000`). Its confirmed record is the same uploader-owned `other_adult` record, but `DELETE /api/subjects/[id]` answered 404 for it, so neither its uploader nor the person could delete it there.
+
+New migration `supabase/migrations/20261016220000_subject_delete_reviewed_document.sql`, headed PRODUCTION RELEASE: GUARDED. It patches `public.delete_subject_v1` with the md5-guarded pattern (predecessor `39abbfe9…`, successor `09f00c92…`, ACL and definer settings checked). The one change is that the door's Path B test accepts a confirmed draft of either flow. Everything after it is the existing adult case. The flow's own constraint trigger disposes of its permission document stores when the record leaves `active`, as it does for every other ending. No existing migration is edited.
+
+New test `supabase/tests/subject_delete_reviewed_document.sql`, 18 assertions. It reuses the reviewed-document suite's own setup, up to the person's signature, then holds one file through the real upload doors. An outsider and the document's named reviewer are refused with nothing written. The uploader's delete is the adult case: the file ends as withdrawn, the session goes to the upload-working executor, the record is purged and its contact shredded, no bar is written, and the code is recorded once. A second delete is not found. No existing assertion changes.
+
+Local results, in rolled-back transactions on the shared database over every tree migration it lacks except `20261016153100` (its guard refuses there because a function body has drifted; hosted CI applies the full chain):
+
+- The new suite passes 18/18. Planted defect: without the migration, the uploader's delete raises `not_found` and the suite stops.
+- `subject_delete` 47/47, `subject_delete_adult` 30/30, `subject_delete_embryo` 91/91, `path_b_reviewed_document` 76/76 and `other_adult_held_upload` 174/174, identical with and without the migration.
+
+## 2026-10-16 — `api.subject-delete` (G2.1): all five cases through one door, and the narrowed per-file guard (Q6)
+
+Owner decisions 2026-10-16 ("The subjects endpoints (G2.1)" and "Subjects delete and transfer: four further cases", `docs/protocol/decisions.md`). `DELETE /api/subjects/[id]` takes no body and one single-use code in `X-Inherit-Operation-Nonce`. It calls one database door, `public.delete_subject_v1`, which chooses the case from server state after rechecking the caller's authority over the route subject. The register binds only `lifecycle-accepted-v1` (202 `{"status":"accepted"}`) and `resource-not-found-v1` here, so every refusal is the same opaque 404. That includes a body, a missing, foreign or spent code, an unknown or foreign record, a claimed record and a refused case. The 401 and 403 answers for a missing session or a cross-origin request are the shared authenticated-mutation answers.
+
+The five cases:
+
+- **self:** the owning account empties its own self record. Before anything is written, a file still uploading or being processed, a subject export or an embryo source built from the record's files refuses. Then the transaction cancels the record's queued and running jobs and open upload sessions. It removes every joint result and chat turn built from the record, whoever owns the chat, through the existing `delete_pair_derived_rows_v1`, and deletes every chat about the record with its model working state. It revokes every grant on the record or its principal, and every pair grant. It ends its relationships (not `self`) and pairs, and deletes its Portrait, ancestry, PRS, observed-call, analysis-run and report rows. It revokes every consent and every rights and download session, and invalidates its queued mail and the account's queued exports. Finally it prepares each file through the shared per-file pipeline, so each file is unreadable from that commit on. The record, its principal, binding and demographics stay, and its lifecycle revision moves. The route then finishes up to 16 files the way `api.file-delete` does (prepare, Storage remove, finish) within 40 seconds. Anything else is finished by the existing seven-day backstop (source.revocation-7d), and the answer is 202 either way.
+- **adult:** the owning account (a Path B uploader) or the verified subject account deletes an `other_adult` record. A Path B record runs the body of the existing `delete_path_b_subject_v1`. Every held file ends, the record is purged, and its contact is shredded. A delete by the person ends the files as `deleted` and first writes the subject-controlled refusal bar (`global-contact-refusal-bar-v1.adult-path-b-subject-revocation`) from every contact HMAC the record holds: a `contact_refusal_bars` row for the record and a year-long `invitation_refusal_hmacs` row. A delete by the uploader ends them as `withdrawn` and writes no bar. A Path A record (owner null, bound to the caller) ends its grants, relationships, binding, consents, principals and sessions and is purged.
+- **embryo, transferred and unclaimed (Q5):** `embryo_disposition_authority_v1` locks and rechecks the parents' current authority first, as the disposition route does, so it needs a recent sign-in. While a claim or a claim review of the embryo is open, the answer is 404 and nothing is written. Otherwise only that embryo is purged. Its record keys and print rights are revoked, rights and download sessions end, and mail and jobs stop. The `embryo.transferred-claim-window` row, its phases and manifests are cancelled, and its scores, figures, QC and variants are deleted. Its one canonical source goes through `plan_embryo_source_deletion_v1` (reason `withdrawal`), whose parts wait under a planned unwind. The existing trigger shreds the identity profile. Siblings and the cohort are untouched.
+- **embryo, claimed (Q1):** 404, while claimant binding is closed. A record whose claim is approved fails the authority recheck and is 404 too.
+- **embryo, any other:** after the same recheck, the whole cohort is restricted through `restrict_embryo_cohort_core_v1`, the mechanism `api.cohort-restrict` uses, and its audit names that route.
+
+New migration `supabase/migrations/20261016181000_subject_delete.sql`, flagged: it needs a later guarded release. It is guarded by the predecessor md5 of the per-file guard body and by its prerequisites, and it adds the door and five private case functions, all service role only. `account_operation_nonces_operation_check` gains `subject_delete` and keeps every earlier value. The recorder accepts it. The code's SHA-256 is recorded in the same transaction after the authority recheck, so a refused or failed delete writes no code and a replay is refused. For an adult record, the door takes the invitation-transition lock before any row lock, as every Path B writer does. Self follows the file pipeline's order: account, sessions, profile, subject.
+
+**Stated behaviour change on `api.file-delete` (Q6, recorded in `docs/protocol/decisions.md`).** The same migration replaces the shared guard body, `private.prepare_genome_file_deletion_body_v1`, which `api.file-delete`, the self case and the backstop share. Only one predicate changes. A family pair naming the record now blocks the per-file shortcut only while it is `pending` or `current`, or while it still holds a joint result (a Portrait row, or a message in one of its pair chats). Before, any pair row in any status blocked it, so an ended pair with nothing left on it stranded the owner's files. Every other refusal is unchanged.
+
+The route is `src/app/api/subjects/[id]/route.ts`. It is joined by `src/lib/subject-endpoints/file-drain.ts`, a new `subject_delete` operation in `src/lib/subject-endpoints/operation-nonce.ts` bound to `api.subject-delete`, and the `delete_subject_v1` entry in `src/lib/supabase/types.ts`.
+
+New tests:
+
+- pgTAP `supabase/tests/subject_delete.sql`, 47 assertions: privileges, the nonce constraint, refusals that write nothing, the self case in full, the replay, the file route's drain of an emptied file, and Q6 on the file route's own door. On that door a current, pending, and ended-with-a-joint-result pair still refuse, and an ended pair with nothing left now prepares.
+- pgTAP `supabase/tests/subject_delete_adult.sql`, 30 assertions, 6 of them fixture checks, over the existing Path B fixture: the person's delete with the bar, the uploader's withdrawal without one, Path A, and refusals for an outsider, another person and another account.
+- pgTAP `supabase/tests/subject_delete_embryo.sql`, 35 assertions plus the 56 of the custody publication fixture. It runs the native two-parent transfer and a saved identity profile. It covers the stranger, an older sign-in and a crossed session, then open-claim and open-review probes that roll back their own rows and report that nothing was written. Then come the transferred purge with its source, untouched siblings and cohort, the approved-claim refusal, and the cohort restriction through a stored record.
+- Vitest: `src/app/api/subjects/[id]/route.test.ts` (9 cases), `src/lib/subject-endpoints/file-drain.test.ts` (6 cases), and a new case in `operation-nonce.test.ts`: a stop code never deletes, and a delete code never stops.
+- `e2e/file-deletion.spec.ts`, new test "an ended family pair with nothing left on it no longer blocks the owner's file delete (Q6)". Through the real `DELETE /api/files/[id]` in a browser, a current pair, a pending pair and an ended pair with a Portrait row each answer 409 `file_delete_subject_unavailable`, and the ended pair with nothing left answers 204 and removes the file. The seeded pair row is removed at the end.
+
+Planted defects, each failing named assertions:
+
+- SQL, nine:
+  - The old any-pair guard: the self case's own prepare refuses, and the suite stops at that exception.
+  - A guard that ignores Portrait rows (2).
+  - No code record on the self case (3, then an exception).
+  - No reader-turn removal and no residual check (1).
+  - No bar on a person's delete (3).
+  - A bar on an uploader's delete too (2).
+  - No open-claim check (2).
+  - Purging the siblings as well (1, then an exception).
+  - Skipping the authority recheck (4, then an exception).
+- Route and drain, six, each failing one case: accepting a request without a valid code, a 55000 refusal answered as 503, draining for every case, allowing a body, finishing without a Storage acknowledgement, and an unbounded drain.
+
+Changed existing tests. None is weakened.
+
+- `scripts/route-register-correspondence.test.ts`: the exact unbuilt census goes down by one for `api.subject-delete`, with a comment, and the header sentence names the route. Before the merge of the integration branch at 13995c03 that was 21 to 20. That branch counts its own subjects endpoints, the subject export and the redirects `next.config.ts` serves, and leaves 15, so after that merge it is 15 to 14. After the later merge at dc1375a8, which leaves 10, it is 10 to 9.
+- `supabase/tests/other_adult_held_upload.sql`, "the held table is named only by the exact reviewed lifecycle functions": the exact list gains `private.delete_path_b_subject_for_route_v1` and `private.purge_path_a_subject_v1`. Each is conditional on its own presence, as earlier additions to this census are. Every other name is unchanged, and it passed 173/173 with and without the migration. After the merge with 13995c03, whose subject export adds its own conditional name to the same list, it passes 174/174 with and without the migration.
+- `src/lib/subject-endpoints/operation-nonce.test.ts`, "names one registered route per operation": the expected map gains `subject_delete: "api.subject-delete"`.
+- `scripts/jurisdiction-enforcement.test.ts`: `WITHOUT_CHECK` lists the new route with its reason. The register sets `jurisdictionBypass`: deletion is a right that answers in every jurisdiction and opens no analysis, as `api.cohort-restrict` and the withdrawal routes are listed.
+- `docs/register-contract-divergence.json` records the drain's database-selected Storage call, as it records the file route's and the backstop's.
+- `e2e/portrait-no-file.spec.ts`: a header comment that described the old any-pair guard now describes the narrowed one. No assertion changes.
+
+Local results:
+
+- pgTAP ran in rolled-back transactions on the shared database, which applied `20261016170000`, `20261016175000`, `20261016180000` and this migration first. Results: 47/47, 30/30 and 91/91.
+- Regression: all 207 other pgTAP suites ran twice, over the same three predecessors, once with this migration and once without, and gave identical results. 148 pass completely both ways. The other 59 fail identically both ways on the shared database, for example `family_sharing`'s 6 global counts from leftover browser rows. Then 45 of those stopped at an exception. They were rerun with the local claim-document scan-lease workaround inside the transaction, and 35 then pass completely both ways. The remaining 10 still stop identically both ways.
+- `e2e/file-deletion.spec.ts -g "Q6"` ran under `flock /tmp/inherit-e2e.lock`, with the shared `node_modules` bind-mounted for the build and the symlink restored. `20261016180000` and this migration were applied for the run with no ledger row. Afterwards their objects were dropped, and the guard body was restored from its saved definition (md5 `687df80d56b38d2aabeacd4bc1350154` checked). Result: 1 passed; "E2E contract passed: 1 result(s), no skips, no retries."
+- Full Vitest run as root: 42 failed and 12,846 passed. With this change unstaged, the same 26 environment-bound files fail (41 tests: browser executables missing, root-only paths, and the two known comprehension files). The 42nd was `jurisdiction-enforcement` before the route was listed, and it now passes.
+- Typecheck, lint, and `gate:secrets`, `gate:env`, `gate:sql-includes`, `gate:readability` and `gate:routes` all exit 0. Vitest: 47 files and 1,221 cases across the subjects routes, the file routes, the prepared-source cleanup, the Family components and the register correspondence all pass.
+
+Not built, or left as it is:
+
+- No page renders the `subject_delete` code yet. The register names a confirmation page that does not exist, so no browser path reaches this route, and no browser test covers it.
+- A self record with a subject export, or one whose file is an embryo source, refuses with 404 until those dispositions are defined.
+- An `other_adult` record that is neither a confirmed Path B record nor a Path A record, such as an unconfirmed draft, is not found here. Its existing withdrawal flows are unchanged.
+
+## 2026-10-22 — Deploy Cloudflare builds the container image through a docker shim that can use the base-image mirror
+
+Deploy Cloudflare run 39796150327 on main's PR 323 merge commit (97a13f10) failed in "Build the image and deploy the preparation container Worker". Both attempts failed the same way. wrangler's own `docker build` could not read the digest-pinned base's metadata from public.ecr.aws: `429 Too Many Requests - Server message: toomanyrequests: Data limit exceeded`. The gateway Worker step before it succeeded, and its code is unchanged since c993dea8. The container Worker never reached Cloudflare, so it stays on its previous revision. That revision is the main code the PR 323 compatibility analysis covered against the migrated schema.
+
+Workflow change: wrangler 4.134.0 runs `WRANGLER_DOCKER_BIN` (default `docker`) and builds with `build --load -t <tag> --platform linux/amd64 --provenance=false -f - <context>`, the Dockerfile on stdin (`constructBuildCommand` in the published `wrangler-dist/cli.js`). The container step now sets `WRANGLER_DOCKER_BIN` to the new `scripts/cloudflare-docker-shim.sh`, and the shim is added to the workflow's path triggers.
+
+The shim passes every other docker command through unchanged. For `build`, it:
+- reads the Dockerfile from stdin;
+- requires one digest-pinned official FROM;
+- pulls that exact digest from public.ecr.aws, then from mirror.gcr.io, with progress sent to stderr;
+- builds with `--build-context "<FROM>=docker-image://<pulled>"` and wrangler's own arguments, as `scripts/ci-prepared-worker-build.sh` does in CI.
+
+The Dockerfile and its pin are unchanged.
+
+New tests, no changed assertion:
+- `scripts/ci-pinned-base.test.ts`: the mirror and primary builds with wrangler's exact arguments and the Dockerfile on stdin, nothing on stdout, pass-through of other commands, and refusal before any build when neither pull serves.
+- `scripts/cloudflare-hosting-config.test.ts`: the container step sets the shim before its deploy command, the trigger is listed, and the shim is executable.
+
+Three planted defects each fail a test: dropping the build context, leaking pull output to stdout, and removing `WRANGLER_DOCKER_BIN`.
 
 ## 2026-10-22 — Future-person and claim endpoints (G2.1), continued: correction provenance
 

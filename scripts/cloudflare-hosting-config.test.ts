@@ -326,6 +326,14 @@ describe("the deploy workflow", () => {
     expect(workflow).toContain('if [ "$DEPLOY_TARGET" = preview ]; then\n            echo "WRANGLER_ENV=preview"');
   });
 
+  it("builds the container image through the docker shim that can serve the pinned base from the mirror", () => {
+    const step = workflow.slice(workflow.indexOf("- name: Build the image and deploy the preparation container Worker"));
+    expect(step).toContain("          WRANGLER_DOCKER_BIN: ${{ github.workspace }}/scripts/cloudflare-docker-shim.sh\n");
+    expect(step.indexOf("WRANGLER_DOCKER_BIN")).toBeLessThan(step.indexOf(`deploy --config ${CONTAINER}`));
+    expect(workflow).toContain('      - "scripts/cloudflare-docker-shim.sh"\n');
+    expect(statSync("scripts/cloudflare-docker-shim.sh").mode & 0o111).not.toBe(0);
+  });
+
   it("reads secrets only inside env blocks, each under its own name", () => {
     lines.forEach((line, index) => {
       if (!line.includes("${{ secrets.")) return;

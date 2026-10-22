@@ -490,6 +490,18 @@ create temporary table export_member_plan as select $plan$
       "disposition": "excluded-credential",
       "reason": "The purposes a rights session may be issued under, and the target kind each binds. It is rights-session credential machinery and holds no person's data."
     },
+    "private.subject_ownership_transfers": {
+      "disposition": "excluded-internal",
+      "reason": "The worker's authorization row for one subject transfer: its revision and both account ids. The transfer itself is recorded in the legal audit chain; this row is machinery, and it names another person's account."
+    },
+    "private.subject_transfer_relocation_attempts": {
+      "disposition": "excluded-credential",
+      "reason": "One subject-transfer relocation attempt each, with its worker claim token hash; excluded from person archives."
+    },
+    "private.subject_transfer_relocations": {
+      "disposition": "excluded-credential",
+      "reason": "Exact object relocation locators for a subject transfer, a worker claim token hash and source-version authority; excluded from person archives."
+    },
     "private.upload_authorization_config": {
       "disposition": "reference",
       "reason": "Service configuration. It holds no person's data."
@@ -1478,7 +1490,7 @@ create temporary table export_member_plan as select $plan$
     },
     "public.subjects": {
       "disposition": "exported",
-      "reason": "The subjects this account IS. A row never names the account that holds it or a cohort: for an adult held by another uploader, owner_account_id is that other person's account. Claimant authority, verified-age timing and the analysis-stop control are withheld until their separate typed Future Person projection is implemented.",
+      "reason": "The subjects this account IS. A row never names the account that holds it or a cohort: for an adult held by another uploader, owner_account_id is that other person's account. Claimant authority, verified-age timing, the analysis-stop control and when a record's holding passed to its person are withheld until their separate typed Future Person projection is implemented.",
       "scope": "subject_account_id = the requesting account (synchronous); the captured partitions, which are the same subjects (reader).",
       "members": [
         "archive:subject-record.json",
@@ -1503,7 +1515,8 @@ create temporary table export_member_plan as select $plan$
         "cohort_id",
         "claimant_principal_id",
         "earliest_claim_at",
-        "analysis_stopped_at"
+        "analysis_stopped_at",
+        "ownership_transferred_at"
       ]
     },
     "public.suppressions": {

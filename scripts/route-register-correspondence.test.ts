@@ -24,12 +24,13 @@ import { storageBucketsInSource, UNRESOLVED_STORAGE_BUCKET } from "./storage-con
  *
  * Registered-but-unbuilt is deliberately not failed here. The register is
  * written from the brief and describes routes the product has not reached
- * yet; 2 of them remain unbuilt after the native appeal review, notice, auth,
- * mapping, subject-sharing and subjects (G2.1) routes, the one-record
+ * yet; none of them remain unbuilt after the native appeal review, notice,
+ * auth, mapping, subject-sharing and subjects (G2.1) routes, the one-record
  * subject export, the correction-review and claimant export (G2.1) routes,
- * the two bound-claimant routes, the rights-session export, and the consent
- * and rights routes (G2.1, "Build all 24"). A redirect that `next.config.ts`
- * serves counts as built.
+ * the two bound-claimant routes, the rights-session export, the subject
+ * delete door and the subject transfer route, and the consent and rights
+ * routes (G2.1, "Build all 24"). A redirect that `next.config.ts` serves
+ * counts as built.
  * The exact current count prevents a broken walker from passing silently.
  *
  * Known divergences live in `docs/route-divergence.json` and are checked in
@@ -249,23 +250,27 @@ describe("the route register and the App Router describe the same surface", () =
     // 2026-10-22, "Consent, rights and claim endpoints (G2.1)"), and the
     // rights-session export api.third-party-subject-export is built to answer
     // resource-not-found-v1 in both its subject and cohort cases until their
-    // producers exist (the same decision), so 10 remain.
+    // producers exist (the same decision), so 10 remain. The subject delete
+    // door (api.subject-delete, the decisions "The subjects endpoints (G2.1)"
+    // and Q6) reduces it to 9, and the transfer route (api.subject-transfer,
+    // the same decision and "Subjects delete and transfer: four further
+    // cases"; its door is built closed) reduces it to 8.
     // The consent and rights endpoints (G2.1, "Build all 24"; owner decision
-    // 2026-10-22) lower it from 10, one for each endpoint this slice builds:
-    // api.consents-revoke-all to 9; api.embryo-record-key-cards-rights,
-    // built closed until its session issuer exists, to 8;
+    // 2026-10-22) lower it from 8, one for each endpoint this slice builds:
+    // api.consents-revoke-all to 7; api.embryo-record-key-cards-rights,
+    // built closed until its session issuer exists, to 6;
     // api.consent-revoke-rights and api.consent-grant-rights, closed until an
-    // adult-subject-control issuer exists, to 7 and 6; api.consent-reaffirm,
+    // adult-subject-control issuer exists, to 5 and 4; api.consent-reaffirm,
     // which re-runs an own-subject self grant or an adult directional grant
-    // whose text was superseded, to 5; its no-account twin
+    // whose text was superseded, to 3; its no-account twin
     // api.consent-reaffirm-rights, built closed until its session issuer and
-    // notice wording exist, to 4; api.adult-subject-bind, built closed until
+    // notice wording exist, to 2; api.adult-subject-bind, built closed until
     // an adult-subject-control issuer and the binding notice wording exist, to
-    // 3; and api.rights-reissue, whose lookup, limits, candidate and
+    // 1; and api.rights-reissue, whose lookup, limits, candidate and
     // activation exchange are built behind a door kept shut until the
-    // recovery mail wording is approved, to 2.
+    // recovery mail wording is approved, to 0.
     // Keep the exact census: new implementations require an explicit review.
-    expect(unbuilt.length).toBe(2);
+    expect(unbuilt.length).toBe(0);
     expect(unbuilt.length).toBeLessThan(entries.length);
   });
 });
