@@ -13,6 +13,7 @@ insert into auth.users (id, email, raw_user_meta_data) values
  ('7f600000-0000-4000-8000-000000000001', 'reaffirm-rights-uploader@example.invalid', '{}'),
  ('7f600000-0000-4000-8000-000000000002', 'reaffirm-rights-other@example.invalid', '{}');
 
+\ir fixtures/synthetic_rights_token.inc
 create temporary table fx as select
  '7f600000-0000-4000-8000-000000000001'::uuid uploader,
  '7f600000-0000-4000-8000-000000000002'::uuid other,
@@ -24,7 +25,7 @@ create temporary table fx as select
    and principal_kind='account_subject' and status='active') uploader_principal,
  (select id from public.subject_principals where account_id='7f600000-0000-4000-8000-000000000002'
    and principal_kind='account_subject' and status='active') other_principal,
- (select id from public.token_hashes order by created_at desc limit 1) token,
+ pg_temp.synthetic_rights_token('7f600000-0000-4000-8000-000000000001','consent-reaffirm','reaffirm-rights-test') token,
  (select version from public.consent_artifacts where artifact_key='consent.share-with-adult' and superseded_at is null) old_version;
 select is((select count(*) from fx where token is not null and uploader_principal is not null), 1::bigint,
  'fixture: the accounts have principals and a token hash exists for sessions to reference');
