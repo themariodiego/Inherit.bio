@@ -4,7 +4,10 @@ import {Button} from "@/components/ui/button";
 import {requestAccountExport,type AccountExportControl} from "@/lib/exports/account-export-control";
 import {chooseAccountArchiveSink,downloadAccountArchive,type AccountArchiveDownloadSink} from "@/lib/exports/account-archive-download";
 
-export function AccountExport({control}:{control:AccountExportControl}){
+/** `route` selects one record's export (api.subject-export); the account
+ * export is the default. The control and its proofs come from that route's
+ * own server presentation. */
+export function AccountExport({control,route}:{control:AccountExportControl;route?:string}){
  const open=control.available?control.open:undefined;
  const [busy,setBusy]=useState(false),[used,setUsed]=useState(!!open),[exportId,setExportId]=useState<string|null>(open?.exportId??null);
  const [message,setMessage]=useState<string|null>(null),active=useRef<AbortController|null>(null);
@@ -18,7 +21,7 @@ export function AccountExport({control}:{control:AccountExportControl}){
   if(busy||active.current||operation==="create"&&(attempted.current||!control.available))return;
   const stop=new AbortController();active.current=stop;setBusy(true);setMessage(null);
   if(operation==="create"){attempted.current=true;setUsed(true);}
-  try{const result=await requestAccountExport({operation,control,expectedExportId:exportId,signal:stop.signal});
+  try{const result=await requestAccountExport({operation,control,expectedExportId:exportId,signal:stop.signal,route});
    if(!stop.signal.aborted&&"exportId" in result){setExportId(result.exportId);setMessage(result.status==="ready"
     ?"Your export is ready. Reload this page to get its download action."
     :"Your export is being prepared. Check its status here.");}
@@ -35,7 +38,7 @@ export function AccountExport({control}:{control:AccountExportControl}){
   const selected=chooseAccountArchiveSink();
   try{
    sink=await selected;if(stop.signal.aborted)throw new Error("account_export_unavailable");
-   const result=await requestAccountExport({operation:"open-ready",control,expectedExportId:open.exportId,signal:stop.signal});
+   const result=await requestAccountExport({operation:"open-ready",control,expectedExportId:open.exportId,signal:stop.signal,route});
    if(!("session" in result))throw new Error("account_export_unavailable");
    handedToDownload=true;await downloadAccountArchive({download:result,sink,signal:stop.signal});
    if(!stop.signal.aborted)setMessage("Your complete export has been saved.");

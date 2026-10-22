@@ -3,7 +3,8 @@ import {isTestJurisdictionEnabled} from "@/lib/legal/jurisdictions";
 import {accountArchiveExecution} from "./account-archive-runtime";
 import {createAccountArchiveR2Writer} from "./account-archive-r2";
 import {createRequesterStatementRuntime,type RequesterStatementRuntime} from "./requester-statement-runtime";
-import {runAccountArchiveGeneration,type AccountArchiveGenerationCapability,type AccountArchiveDueRpc} from "./account-archive-generation";
+import {runAccountArchiveGeneration,runSubjectArchiveGeneration,type AccountArchiveGenerationCapability,type AccountArchiveDueRpc,
+ type SubjectArchiveDueRpc} from "./account-archive-generation";
 import {completeTestAccountArchive, type TestAccountArchiveReady} from "./account-archive-test-publication";
 import type {RequesterStatementR2Gateway} from "./requester-statement-r2";
 
@@ -13,13 +14,23 @@ const unavailable=()=>new Error("test_account_archive_unavailable");
  * account producer and account-native R2 writer. Every job gets its own tracked
  * runtime: the producer settles it permanently before completion starts.
  * The ordinary HTTP dependencies and approved generation remain closed. */
-export async function runTestAccountArchiveFlow(options:{
- env?:Environment;signal:AbortSignal;rpc:()=>AccountArchiveDueRpc;
+export async function runTestAccountArchiveFlow(options:FlowOptions&{rpc:()=>AccountArchiveDueRpc}){
+ return flow(options,capability=>runAccountArchiveGeneration({capability,rpc:options.rpc,signal:options.signal}));
+}
+/** The same closed TEST composition for queued one-record jobs
+ * (api.subject-export): the subject due reader, the same producer in its
+ * subject scope and the same account-native R2 writer and TEST completion. */
+export async function runTestSubjectArchiveFlow(options:FlowOptions&{rpc:()=>SubjectArchiveDueRpc}){
+ return flow(options,capability=>runSubjectArchiveGeneration({capability,rpc:options.rpc,signal:options.signal}));
+}
+type FlowOptions={
+ env?:Environment;signal:AbortSignal;
  assertReady:(signal:AbortSignal)=>Promise<void>;
  gateway:(runtime:RequesterStatementRuntime)=>RequesterStatementR2Gateway;
  /** Trusted synthetic reader fixture only; omitted uses actual service readers. */
  readers?:Omit<ReturnType<typeof accountArchiveExecution>,"write"|"statementRuntime">;
-}){
+};
+async function flow(options:FlowOptions,run:(capability:AccountArchiveGenerationCapability)=>Promise<{completed:number}>){
  const env=options.env??process.env;
  if(!isTestJurisdictionEnabled(env)||env.INHERIT_TEST_ACCOUNT_ARCHIVE_R2!=="1"||options.signal.aborted)throw unavailable();
  const ready:TestAccountArchiveReady[]=[];
@@ -43,7 +54,7 @@ export async function runTestAccountArchiveFlow(options:{
    finally{await runtime.settle(Date.parse(job.deadline));runtime.assertSettled();}
   },
  };
- const result=await runAccountArchiveGeneration({capability,rpc:options.rpc,signal:options.signal});
+ const result=await run(capability);
  if(result.completed!==ready.length)throw unavailable();
  return Object.freeze({completed:result.completed,ready:Object.freeze(ready)});
 }

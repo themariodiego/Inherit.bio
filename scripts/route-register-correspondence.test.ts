@@ -24,9 +24,10 @@ import { storageBucketsInSource, UNRESOLVED_STORAGE_BUCKET } from "./storage-con
  *
  * Registered-but-unbuilt is deliberately not failed here. The register is
  * written from the brief and describes routes the product has not reached
- * yet; 15 of them remain unbuilt after the native appeal review, notice, auth,
- * mapping, subject-sharing, subjects (G2.1) and subject-delete routes. A
- * redirect that `next.config.ts` serves counts as built.
+ * yet; 14 of them remain unbuilt after the native appeal review, notice, auth,
+ * mapping, subject-sharing and subjects (G2.1) routes, the one-record
+ * subject export and the subject delete door. A redirect that
+ * `next.config.ts` serves counts as built.
  * The exact current count prevents a broken walker from passing silently.
  *
  * Known divergences live in `docs/route-divergence.json` and are checked in
@@ -230,14 +231,16 @@ describe("the route register and the App Router describe the same surface", () =
     // The UUID-addressed sharing twin (api.subject-sharing; owner decision
     // 2026-10-16, "The subjects endpoints (G2.1)") reduces it to 21, and three
     // more subjects endpoints, api.subjects, api.legal-evidence-upload-session
-    // and api.subject-download, reduce it to 18. api.subject-export stays
-    // unbuilt (its joint-result projection and TEST R2 run are reported back
-    // undecided). Counting the redirects `next.config.ts` serves as built
-    // removes legacy.signup and legacy.login, which were always built there,
-    // so 16 remain. The subject delete door (api.subject-delete, the same
-    // decision and Q6) reduces it to 15.
+    // and api.subject-download, reduce it to 18. Counting the redirects
+    // `next.config.ts` serves as built removes legacy.signup and legacy.login,
+    // which were always built there, so 16 remain. api.subject-export (owner
+    // decision 2026-10-16, "Subject export with joint results: built in two
+    // steps") reduces it to 15: the one-record export ships first and refuses,
+    // with the stated reason jointResults, while the record has live joint
+    // results. The subject delete door (api.subject-delete, the decisions "The
+    // subjects endpoints (G2.1)" and Q6) reduces it to 14.
     // Keep the exact census: new implementations require an explicit review.
-    expect(unbuilt.length).toBe(15);
+    expect(unbuilt.length).toBe(14);
     expect(unbuilt.length).toBeLessThan(entries.length);
   });
 });
