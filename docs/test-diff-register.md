@@ -1,3 +1,115 @@
+## 2026-10-22 — G5.4: the claimed record in a browser — an approved Record Key claim, its release mail, the claimant page, and the delete closed on the standard app
+
+This entry follows the owner decisions recorded in `docs/protocol/decisions.md`:
+
+- 16 October: "G5.4 is judged on the brief's minimum under TEST-LOCAL" (local mail capture counts as delivery proof), "Claimant retention stated in days (G5.4)" and "Claimant deletion runs the planned raw-copy cleanup".
+- 22 October: "Consent, rights and claim endpoints (G2.1)" (a route that needs unapproved wording is built closed) and "How G5.4's claimant delete is proven".
+
+It closes the gap that the G5.4 checklist of 16 October (below) left open: "No e2e reaches the claimed-record page". It adds no migration and changes no product code. It adds no seed or demo path, and production is unchanged.
+
+**New browser journey: `e2e/future-person-claimed-record-journey.spec.ts`.** It runs on the isolated embryo app (3105) in the `chromium` project, as one test case: "Claimed record without an account: an approved Record Key claim, its captured release mail, the claimant page's retention in days and contact, and the delete closed on this app". It uses synthetic people, papers and DNA only. Like the keyless owner-notice journey, it runs its own mail mock on 127.0.0.1:8124. Its five steps:
+
+1. **"1. An approved claim: the parent's replacement Record Key Card, the claimant's real papers and a named reviewer's approval".**
+   - The two-parent participant C cohort is seeded through `seedParticipantC`. The TEST-only `syntheticHistoricalTransfer` producer then transfers embryo 1, 19½ years in the past.
+   - The proposing parent opens `/settings/data` and collects the replacement Card through the real "Show my cards" control. The step asserts exactly one `transfer_replacement` card for the record, the page showing the delivered key (compared as a boolean), and that key's SHA-256 being the record's only current key hash.
+   - `createReviewCase` makes a Record Key claim with real encrypted uploads of the two synthetic PDFs, the real scan worker and real completion. The case comes back `record-key`/`record_key`.
+   - A stepped-up reviewer is granted and assigned with the owner-only fixture SQL the review specs already use. The reviewer opens the case. The step asserts:
+     - `reviewPageCase` reads mode `record-key`, state `document_review_pending`, revision 1, the claimant's name and birth date, case `record_key` and notice `not_applicable`;
+     - the page shows "Recorded parent names: …" from that case;
+     - the choices are exactly "Refuse claim", "Ask for more information" and "Approve claim".
+   - The reviewer reads both PDFs to the end (`openSyntheticReviewPdf` twice), and `expectFullDocumentReceipts` holds the two full receipts.
+   - The reviewer approves with the documentary attestation. The step asserts that the POST answers 200 `{"claimId":…,"state":"release_queued","reviewRevision":2}`, that the page says "Decision saved.", and that no image or claimant name is left on the page.
+2. **"2. The release: the record leaves parental custody, and the claimant's contact is kept for exactly 730 days".** SQL reads:
+   - review `closed`, revision 2; claim `approved` and `record_key`;
+   - subject `claimed_unbound`, with no owner, subject account or cohort, bound to its one `current` claimant principal;
+   - exactly one `future-person.claimed-unbound-24mo` clock. Its fixed deadline is the contact reference's creation plus `interval '730 days'` and exactly 730 × 86400 seconds, created inside the decision's window. The row is `scheduled`, with its one `pending` phase on the same deadline. `contact_expires_at` is equal to the deadline. The release outbox row is `future-person-release` for this subject, with `expires_at = least(created + 7 days, deadline)`;
+   - one `release` notice;
+   - no `future-person.claimant-reverification-until-request` row: a claimed record has no deletion clock before the claimant asks.
+3. **"3. The release mail: captured by the local mail mock, sent only to the claimant's own address, with one link that works once".** `drainMailUntil` runs the real mail job. The step asserts:
+   - exactly one mail with the subject "Your Inherit request is ready", sent to the claimant's address alone;
+   - both release sentences in the HTML;
+   - exactly one distinct `http://localhost:3105/withdraw/request#<43>` fragment link;
+   - outbox `submitted`, delivery `accepted`.
+4. **"4. /withdraw/[token] complete: the release link opens the claimed record's page on /withdraw/session, with its retention in days and its contact, and no account".**
+   - In a fresh browser, the link goes through the real interstitial ("Open your request", then Continue) to `/withdraw/session`.
+   - The step asserts the h1 "Your claimed record" and the "You do not need an account." line. `[data-slot="claimant-retention"]` must be exactly "Your record stays until you ask to delete it. Once you ask, we delete it within 30 days, and its DNA data within 7 days. We keep the contact address you gave us for at most 730 days after your claim was approved. Deleting it does not delete your record. Keep a Recovery Key so you can start a new claim later with fresh identity documents." `[data-slot="claimant-contact"]` must be exactly "If this page does not work, or you need help with your rights, write to privacy@inherit.bio."
+   - The browser has no `sb-*` (account) cookie and one rights cookie. Its session is `approved-future-person-release`/`claimed-subject` on this subject, `active`.
+   - The page passes the axe audit in both themes and has no third-party origin.
+   - The same link opened in a second browser gets "This link is unavailable. It may have expired or already been used." and no rights cookie: the link works once, as the mail says.
+   - The real Recovery Key control answers 201 with exactly the four registered keys. Its `contactMaterialExpiresOn` is the contact clock's UTC deadline day, the 730th day. The page shows the key once, and its SHA-256 is the claimant's current recovery hash. A reload leaves no key in the page.
+   - The page's own CSRF is taken from that real request's `X-Inherit-CSRF` header.
+5. **"5. The claimant delete on this app: no delete control is offered, a DELETE with the page's own CSRF gets the closed 404, and nothing is deleted".** One call, `proveClaimantDeleteClosed` (new, `e2e/helpers/claimant-delete-closed.ts`):
+   - no "Delete this claimed record" group, button, warning or acknowledgement is on the page;
+   - before the probe, the subject is `claimed_unbound`, with zero deletion plans, zero until-request rows, a live rights view and one active session;
+   - the page's same-origin `DELETE /api/future-person/claim/session`, carrying only its CSRF, answers exactly 404 `{"error":"not_found"}`, `private, no-store`, `no-referrer`;
+   - a metadata digest is unchanged by the probe. It covers the subject, embryo, sibling, claim, claimant principal, identity HMACs, recovery hash, custody slices, every retention row, phase and manifest on the subject or the claimant, and the rights sessions. So does the cohort's canonical source proof (`keylessSourceProof`).
+
+   A reload still serves the page. The sibling embryo's row is byte-identical from before the transfer to the end.
+
+   The decision of 22 October says why this step proves only the closed door. The TEST claimant deletion executor needs a direct superuser database connection, which the isolated CI runtime blocks by design, and that isolation is not widened. Because step 5 is one call, a runtime that admits the executor can replace it without touching steps 1-4. **The browser has not run the real DELETE.** The working DELETE is proven by:
+   - `supabase/tests/future_person_claimant_erasure_completion.sql`:
+     - :93 "the request fixes the original seven-day source and thirty-day completion clocks"
+     - :211 "the original upload fragments are gone" (the raw-copy cleanup)
+     - :216 "the published cleanup leaves every sibling subject, embryo, source and part byte-identical"
+     - :221 "the registered request order completes the whole claimed-subject deletion inside its live lease"
+     - :231 "the subject, embryo, custody, canonical source, review and claimant principal are deleted"
+     - :239 "the whole deletion leaves the sibling records intact and byte-identical"
+     - :250 "the retained audit events lose every link back to the deleted claimant"
+     - :256 "the anonymous terminal receipt keeps the original seven-day and thirty-day clocks unchanged"
+   - `supabase/tests/future_person_claimant_erasure.sql`.
+   - `src/lib/future-person/claimant-deletion-route.test.ts`: "uses only the verified claimant hash/native nonce and waits for exact full executor completion", "closed capability never prepares or accepts", and the crossed-control and body refusals.
+   - `src/lib/future-person/claimant-deletion.test.ts`: "accepts only after real provider empty-marker/ACK and exact whole native terminal", "completes the source session's original published cleanup through the existing doors before the final transaction", and "sealed maintenance runs the same object cleanup without a new request or rights nonce".
+   - `src/lib/future-person/claimant-object-cleanup.test.ts` and `src/lib/future-person/claimant-retention-maintenance.test.ts`.
+
+**New exact-text fixture: `e2e/fixtures/claimant-record-page-text.ts`.** It has no imports. It holds the page, delete-control, release-mail and spent-link strings, written out rather than imported from `src/copy`, so that a copy change fails both the journey and the component test below.
+
+**Changed existing helper: `e2e/helpers/claim-review-fixture.ts` `createReviewCase`.** It gains an optional `recordKey: {key, contactEmail}`. When the option is given, the helper chooses "I have a Record Key", types the key and the given contact, skips the two keyless-only fields, and expects case `record-key`/`record_key`. Without it, every step, value and the `keyless`/`keyless_none` lookup are unchanged, so the existing callers are untouched (`future-person-review`, `future-person-keyless-review`, `reviews-keyless-owner-notice-journey` and the density fixtures). No assertion is removed or relaxed.
+
+**Changed existing tests and registries. All of them only add the sixth queue-exclusive embryo journey; nothing is weakened.**
+
+- `scripts/ci-browser-embryo-partitions.ts`:
+  - `EMBRYO_BROWSER_JOURNEYS` gains `future-person-claimed-record`, which is a `chromium` journey; "five" becomes "six".
+  - `assertEmbryoJourneyAudits` gains a source pin for the new spec, built on a new AST helper (`connectedJourneyCalls`). It requires one call each to the imported `seedParticipantC`, `withEmbryoJourney`, `syntheticHistoricalTransfer`, `createReviewCase`, `expectFullDocumentReceipts`, `drainMailUntil` and `proveClaimantDeleteClosed`, two calls to `openSyntheticReviewPdf`, and the one `test.use({baseURL:"http://localhost:3105"})`. The keyless journey's pin is unchanged.
+- `scripts/ci-browser-queue-isolation.ts`: `QUEUE_EXCLUSIVE_BROWSER_FILES` gains the file.
+- `playwright.config.ts`: `CLAIMED_RECORD_JOURNEY` joins the three embryo-app journeys that local `chromium` ignores outside the isolated runtime.
+- `scripts/ci-browser-embryo-partitions.test.ts`:
+  - the journey list gains the sixth row. New partition checks: five journeys are refused as a full set, the sixth journey on the wrong project is refused, and the sixth journey sharing a job with any earlier one is refused.
+  - New case: "requires the claimed-record journey's connected claim, review, release mail and closed delete". Each of the eight calls replaced by an unconnected lookalike throws, as do an extra `openSyntheticReviewPdf`, an aliased `proveClaimantDeleteClosed` import and the 3100 origin.
+- `scripts/ci-browser-balance.test.ts`: the listing gains the journey (case 125) in job 4, the one job without a journey.
+- `scripts/ci-browser-shards.test.ts`: file 10 is the journey, placed with case 3 in job 3. The full lists and the counts go from 9 to 10.
+- `scripts/ci-browser-duration-plan.test.ts`: "separates the three Chromium queue journeys…" is renamed "…the four…". Its expected placements go from 3 to 4, and its cost comment adds the 7 ms group (100+10+9+8+7 still below 200). The 601-case plan's exclusive count goes from 5 to 6.
+- `scripts/ci-browser-playwright-config.test.ts`: it also requires local `chromium` to ignore the new journey.
+
+**New unit tests.**
+
+- `src/components/future-person/claimant-rights.test.ts`, "renders exactly the words the claimed-record browser journey asserts, and no delete words without a delete control". The rendered retention and contact slots must equal the fixture strings, along with the h1, intro and Recovery Key words. Every delete-control string must be absent without a deletion control and present with one.
+- `src/lib/future-person/claimant-deletion-route.test.ts`:
+  - "refuses the page's own CSRF without a delete nonce before service discovery, as the standard browser app sends it": the exact 404 body and headers, with no executor lookup.
+  - "presents no delete control where the TEST deletion executor is not configured".
+
+**Route states.** Step 4's title names `/withdraw/[token] complete`, a pair that was already proven. `provenRouteStates` and the ratchet are unchanged. `gate:routes` now counts 46 proving specs, and every one runs the network audit.
+
+**Planted defects.** Each one was restored with `git checkout` and its file re-verified clean.
+
+- In the component and route layer that renders and serves what the browser asserts:
+  - `CLAIMANT_CONTACT_KEEP_DAYS = 731` failed 3 cases, including the new exact-text case;
+  - `CLAIMANT_DELETION_DAYS.complete = 31` failed 4;
+  - `help@inherit.bio` in place of `privacy@inherit.bio` failed 2;
+  - `presentClaimantDeletion` without its `if(!execution)return null` failed "presents no delete control where the TEST deletion executor is not configured";
+  - the DELETE route accepting a missing authority with 202 `deletion_accepted` failed 10 cases, including the new CSRF-only case.
+- In a rolled-back SQL rehearsal of the spec's own step 2-5 queries:
+  - a 731-day constant in a copy of `20261016175000` failed "step 2: the spec's contact clock query reads exactly 730 days";
+  - a real `prepare_future_person_deletion_v1` request made before the step 5 proof failed both step 5 checks. The proof read 1 plan, 1 until-request row, no live view, no active session and a changed digest.
+- The new partition case plants each unconnected or extra call permanently.
+
+**Local results.**
+
+- Vitest: the six CI-browser plumbing files (50 tests); the claimant component, route, deletion, object-cleanup, maintenance, executor and rights files (106 tests); and `route-gate`, `route-register-correspondence`, `density-claim-states`, `claim-document-read-proof-sql` and `keyless-review-origin-audit` (191 tests). All pass.
+- Gates: `gate:browser-discovery` reports "610 cases, 109 ordinary files, six complete isolated partitions". `gate:routes`, `gate:secrets`, `gate:env`, `gate:sql-includes`, `gate:readability`, `gate:legal` and `gate:claims` exit 0.
+- `pnpm lint` and `NODE_OPTIONS=--max-old-space-size=6144 pnpm typecheck` exit 0.
+- SQL rehearsal: one `begin … rollback` on the shared database, under `flock /tmp/inherit-e2e.lock`. It applied `20261016175000` and the existing `future_person_deletion_authority.inc` (real `decide_claim_review_attested_v1` approval, release mail claim and acceptance, `activate_rights_session_v1`). It then ran the spec's own SQL, extracted verbatim from its source: 8 of 8 checks pass, with the fixture's 56 checks also passing. Afterwards `private.future_person_claimed_unbound_days_v1()` is absent and no `future-person.*` retention row exists, so the database was restored.
+- **The browser journey has not run locally.** The embryo app and the five other embryo journeys exist only inside the isolated CI runtime, and the shared database lacks PR 324's 25 newest migrations. Its first run is hosted CI.
+
 ## 2026-10-22 — The six embryo route states, named by the TEST-only producers (G1.7, G1.12, G2.2)
 
 Owner decision of 2026-10-22, "The six unproven embryo route states (G1.7, G1.12, G2.2)" (`docs/protocol/decisions.md`). `partial-coverage` and `not-covered` on `/embryos`, `/embryos/compare` and `/embryos/[embryoId]` are now named by browser steps driven by the two TEST-only synthetic producers that already run in `e2e/embryo-ingest-journey.spec.ts`. `UNPROVEN_ROUTE_STATE_PAIRS` goes from 6 to 0. No producer is approved, no seed or demo path is added, no migration is added, and production is unchanged: embryo analysis stays off.

@@ -105,18 +105,26 @@ async function scanUntilSessionClean(session:string):Promise<void> {
 type ReviewEvidence={bytes:Buffer;extension:"png"|"pdf"|"jpg";mimeType:"image/png"|"application/pdf"|"image/jpeg"};
 /** Real claimant start, rotation, encrypted chunk upload, composition, scan and completion.
  * An optional explicitly synthetic paper changes only the actual uploaded bytes.
- * Original journeys retain their exact two-chunk picture and inert two-page PDF. */
+ * Original journeys retain their exact two-chunk picture and inert two-page PDF.
+ * An optional Record Key start types the Card a parent actually collected and a
+ * contact the caller can find the release mail by. It never selects a record:
+ * the database still matches the key, and the case must come back record_key. */
 export async function createReviewCase(page:Page,context:BrowserContext,evidence?:{photo:ReviewEvidence;birth:ReviewEvidence;
-  claimant?:{fullName:string;placeOfBirth:string;parentNames:string[];dateOfBirth?:string}}):Promise<string> {
+  claimant?:{fullName:string;placeOfBirth:string;parentNames:string[];dateOfBirth?:string};
+  recordKey?:{key:string;contactEmail:string}}):Promise<string> {
   const block=randomBytes(4).toString("hex");
   await context.setExtraHTTPHeaders({"x-real-ip":`2001:db8:${block.slice(0,4)}:${block.slice(4)}::1`});
   await page.goto("/future-person/claim");const form=page.locator("main form");
-  await form.getByRole("radio",{name:"I have no key",exact:true}).check();
+  const card=evidence?.recordKey;
+  await form.getByRole("radio",{name:card?"I have a Record Key":"I have no key",exact:true}).check();
+  if(card)await form.getByLabel("Record Key",{exact:true}).fill(card.key);
   await form.getByLabel("Your full name").fill(evidence?.claimant?.fullName??"Synthetic Claimant");
   await form.getByLabel("Your date of birth").fill(evidence?.claimant?.dateOfBirth??"2000-01-31");
-  await form.getByLabel("Where you were born").fill(evidence?.claimant?.placeOfBirth??"Synthetic Town");
-  await form.getByLabel("The name of each parent").fill(evidence?.claimant?.parentNames.join("\n")??"Synthetic Parent One\nSynthetic Parent Two");
-  await form.getByLabel("Your email address").fill(`review-claim-${randomBytes(8).toString("hex")}@e2e.local`);
+  if(!card){
+    await form.getByLabel("Where you were born").fill(evidence?.claimant?.placeOfBirth??"Synthetic Town");
+    await form.getByLabel("The name of each parent").fill(evidence?.claimant?.parentNames.join("\n")??"Synthetic Parent One\nSynthetic Parent Two");
+  }
+  await form.getByLabel("Your email address").fill(card?.contactEmail??`review-claim-${randomBytes(8).toString("hex")}@e2e.local`);
   await form.getByRole("checkbox").check();
   const started=page.waitForResponse(response=>new URL(response.url()).pathname==="/api/future-person/claim"&&response.request().method()==="POST");
   await form.getByRole("button",{name:"Start my claim",exact:true}).click();expect((await started).status()).toBe(202);
@@ -143,8 +151,9 @@ export async function createReviewCase(page:Page,context:BrowserContext,evidence
   const cookie=(await context.cookies()).filter(cookie=>/^(__Host-)?inherit-claim$/u.test(cookie.name));
   expect(cookie.length).toBe(1);
   const digest=createHash("sha256").update(cookie[0]!.value).digest("hex");
+  const kind=card?"r.mode='record-key' and r.case_kind='record_key'":"r.mode='keyless' and r.case_kind='keyless_none'";
   const id=await reviewFixtureSql(`select r.id from private.claim_reviews r join private.future_person_claim_intakes i on i.id=r.id
-    where i.session_hash='${digest}' and r.mode='keyless' and r.case_kind='keyless_none' and r.state='document_review_pending'`);
+    where i.session_hash='${digest}' and ${kind} and r.state='document_review_pending'`);
   expect(UUID.test(id),"the actual completed claim has one pending case").toBe(true);
   return id;
 }

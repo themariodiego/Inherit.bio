@@ -137,7 +137,7 @@ describe("duration history schedules the complete current browser suite", () => 
     const reversed = history(); reversed.files.reverse();
     expect(browserDurationPlan(listing(), parseBrowserDurationProfile(JSON.stringify(reversed))).allocation.parts).toEqual(original.allocation.parts);
   });
-  it("separates the three Chromium queue journeys even when all fit in the same least-loaded job", () => {
+  it("separates the four Chromium queue journeys even when all fit in the same least-loaded job", () => {
     const past = history();
     for (const file of past.files) {
       const sweep = ACCESSIBILITY_SWEEP_FILES.indexOf(file.file);
@@ -149,11 +149,11 @@ describe("duration history schedules the complete current browser suite", () => 
     const current = [...rows.filter(row => !queueFiles.some(([file]) => row.file === file)),
       ...queueFiles.map(([file, project], index) => ({ file, project, n: next + index }))];
     // In the original four-project fixture the six sweep costs are 600..100.
-    // All 10/9/8-ms queue groups precede ordinary 1-ms groups and choose job six
-    // without the isolation constraint: 100+10+9+8 remains below job five's 200.
+    // All 10/9/8/7-ms queue groups precede ordinary 1-ms groups and choose job six
+    // without the isolation constraint: 100+10+9+8+7 remains below job five's 200.
     const plan = browserDurationPlan(listing(current), parseBrowserDurationProfile(JSON.stringify(past)));
     const placements = plan.parts.filter(part => part.files.some(group => queueFiles.some(([file]) => group.file === file)));
-    expect(placements).toHaveLength(3);
+    expect(placements).toHaveLength(4);
     expect(plan.allocation.parts.flatMap(part => part.cases).sort()).toEqual(current.map(row => `${id(row.n)}:${row.project}`).sort());
     expect(() => verifyBrowserQueueIsolation(plan.parts)).not.toThrow();
     const selected = plan.parts.map(part => listing(current.filter(row => part.files.some(file => row.file === file.file && row.project === file.project))));
@@ -214,7 +214,7 @@ describe("duration history schedules the complete current browser suite", () => 
       group.file === row.file && group.project === row.project)));
     expect(() => verifyBrowserDurationListings(full, assignments.map(values => listing(values)), plan)).not.toThrow();
     const exclusive = plan.parts.map(part => part.files.filter(group => Object.hasOwn(QUEUE_EXCLUSIVE_BROWSER_FILES, group.file)));
-    expect(exclusive.flat()).toHaveLength(5);
+    expect(exclusive.flat()).toHaveLength(6);
     expect(exclusive.every(files => files.length <= 1)).toBe(true);
     const tracked = [...new Set(current.map(row => `e2e/${row.file}`))];
     const manifest = browserManifest(full, source, tracked, plan.allocation);
