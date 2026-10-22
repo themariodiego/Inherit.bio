@@ -61,8 +61,11 @@ insert into public.user_variants(user_id,subject_id,file_id,chrom,pos,genotype)
 select user_id,subject_id,id,1,100,'AG' from public.genome_files where id in ((select f1 from fx),(select f2 from fx));
 insert into public.ancestry_results(user_id,file_id,kind,result,support_note,subject_id)
 select alpha,f1,'admixture','{}'::jsonb,'synthetic',alpha_subject from fx;
+-- The fixture's own score row: a fresh database has no prs_scores rows.
+insert into public.prs_scores(pgs_id,name,trait,n_variants,citation,source_url,ancestry_note)
+ values('SUBJECT-DELETE-FIXTURE','Fixture','Fixture',1,'{}','https://example.invalid/fixture','Synthetic fixture only');
 insert into public.user_prs(user_id,file_id,pgs_id,raw_score,coverage,matched,subject_id)
-select alpha,f1,(select min(pgs_id) from public.prs_scores),0.1,0.5,10,alpha_subject from fx;
+select alpha,f1,'SUBJECT-DELETE-FIXTURE',0.1,0.5,10,alpha_subject from fx;
 insert into public.report_artifacts(subject_id,report_kind,report_revision,source_binding_fingerprint,artifact)
 select alpha_subject,'synthetic-subject-delete',1,repeat('a',64),'{}' from fx;
 insert into public.chats(id,user_id,title,scope_kind,subject_id,lifecycle_revision,

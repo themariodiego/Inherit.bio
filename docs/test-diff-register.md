@@ -2,7 +2,9 @@
 
 Owner decisions of 2026-10-22 ("Consent, rights and claim endpoints (G2.1)", `docs/protocol/decisions.md`). This entry records each test change of the slice's second half.
 
-Route census, `scripts/route-register-correspondence.test.ts` "leaves the unbuilt half of the register alone, but still measures it": it was lowered one step per endpoint as each was built, counted from the integration value of 15. The integration branch then moved twice. At 7852ef75 (the fpclaims slice) its census was 10, and at 97f5e595 (subject delete and transfer) it was 8. After merging 97f5e595, the census is 8 lowered by exactly the eight endpoints this branch builds. That gives 0, with a comment naming each step: every registered endpoint is built. The intermediate numbers below (11 to 7) are the pre-merge steps. The assertion `expect(unbuilt.length).toBeLessThan(entries.length)` and the walker are unchanged. Planted defect: removing `src/app/api/rights/reissue/route.ts` makes the census test fail with 1 instead of 0.
+Route census, `scripts/route-register-correspondence.test.ts` "leaves the unbuilt half of the register alone, but still measures it": it was lowered one step per endpoint as each was built, counted from the integration value of 15. The integration branch then moved twice. At 7852ef75 (the fpclaims slice) its census was 10, and at 97f5e595 (subject delete and transfer) it was 8. After merging 97f5e595, the census is 8 lowered by exactly the eight endpoints this branch builds. That gives 0, with a comment naming each step: every registered endpoint is built. The intermediate numbers below (11 to 7) are the pre-merge steps.
+
+Full-chain check of `supabase/tests/consents_revoke_all.sql`: after the merge of 97f5e595 it gave 59 ok, 2 not ok and 19 errors. `20261016221000_subject_transfer.sql` rebuilt `account_operation_nonces_operation_check` from a fixed list, which dropped the `consents_revoke_all` value that `20261016200000` adds. The coordinator fixed 221000 on the integration branch (f156bb89), so it now rebuilds the check from its current values. After merging f156bb89 the suite passes 79 of 79 on the full chain. No assertion of this branch changed for it. The assertion `expect(unbuilt.length).toBeLessThan(entries.length)` and the walker are unchanged. Planted defect: removing `src/app/api/rights/reissue/route.ts` makes the census test fail with 1 instead of 0.
 
 ### Stated privacy-control change: the uploader gate for a person who confirmed with no account
 
@@ -221,6 +223,20 @@ Test changes, none weakened:
 
 - `scripts/route-register-correspondence.test.ts`: the exact unbuilt census goes from the integration value 15 (after `api.subject-export`) to 11 for `api.consents-revoke-all`, `api.embryo-record-key-cards-rights`, `api.consent-revoke-rights` and `api.consent-grant-rights`, with a comment. The header sentence now reads 11.
 - `src/lib/account-operation-nonce.test.ts` "verifies for exactly the account, session and operation it was minted for" gains one assertion: a delete nonce does not verify as `consents_revoke_all`. Every existing assertion is unchanged.
+
+## 2026-10-22 — `subject_transfer.sql`: an expired grant that is always after its grant time; 221000 keeps the nonce operations it finds
+
+Hosted CI run 39812999763 (`database-tests`, commit a3635c23) failed `supabase/tests/subject_transfer.sql` at its expired-grant case. The fixture set the grant's `expires_at` to `clock_timestamp()-interval '1 second'`. `purpose_grants` requires `expires_at > granted_at`, so the update failed whenever the grant had been made less than a second before, as on a fast runner. Locally the fixture ran slower and passed.
+
+Test change, no assertion changed: the expiry is now `granted_at+interval '1 microsecond'`, which is always after the grant time and always in the past by the time the read runs. Evidence, each run in a rolled-back transaction over the integration migrations: making the grant "just now" right before that line reproduces the CI error with the old fixture and passes 114/114 with the new one. The suite unchanged passes 114/114. Planting an expiry a day after the grant fails "an expired grant serves nothing", so the case still bites.
+
+Migration change, `supabase/migrations/20261016221000_subject_transfer.sql` (unreleased, part of the second guarded release): it replaced `account_operation_nonces_operation_check` with a fixed list. The consents slice's `20261016200000_consents_revoke_all` sorts before it and adds `consents_revoke_all`, so in the full chain 221000 removed that value and `api.consents-revoke-all` failed with 23514. 221000 now rebuilds the check from the values it holds when it runs, plus the values it named before, in the `IN` form. It reads both renderings Postgres produces (an `IN` list and a `'{...}'::text[]` literal), and refuses with `55000` if it cannot read the check. With the consents migrations in the chain, the check after 221000 keeps `consents_revoke_all` and `consents_revoke_all.sql` passes 79/79. The old fixed list reproduces the defect (59 pass, 2 fail, 19 errors). `subject_transfer.sql` 114/114, `subject_delete.sql` 47/47 and `subject_sharing_stop.sql` 26/26 pass on the integration chain. No test changed for this; the suites check the constraint with `LIKE`.
+
+## 2026-10-22 — `subject_delete.sql` seeds its own score row
+
+Hosted CI run 39810581877 (`database-tests`, commit 97f5e595) failed `supabase/tests/subject_delete.sql` before any test ran. Line 65 inserted a `user_prs` row with `(select min(pgs_id) from public.prs_scores)`. A fresh database has no `prs_scores` rows, so that is NULL against the column's NOT NULL constraint. Locally it passed only because e2e runs had left score rows in the shared database.
+
+Test change, no assertion changed: the fixture now inserts its own `prs_scores` row, `SUBJECT-DELETE-FIXTURE`, the pattern other suites use, and references it. Locally, with `user_prs` and `prs_scores` emptied inside the rolled-back transaction to match a fresh database, the old fixture fails with the CI error and the new one passes 47/47. It also passes 47/47 against the shared database's existing rows.
 
 ## 2026-10-22 — `api.subject-transfer` (G2.1): built closed, with the transfer, the relocation branch and reading and deletion after it
 

@@ -377,7 +377,9 @@ select is(public.path_b_report_results_v1(pg_temp.a('2'),(select id from reading
 select is(private.path_b_result_read_v1(pg_temp.a('2'),pg_temp.sid('main'),'reports.monogenic')->>'gate','analysis-not-generated',
  '... and the read decision closes');
 rollback to grant_cases;
-update public.purpose_grants set expires_at=clock_timestamp()-interval '1 second' where grant_id=pg_temp.grant_id('self');
+-- Expired just after it was granted: always past, and always after granted_at
+-- as the table requires, however soon after the grant this runs.
+update public.purpose_grants set expires_at=granted_at+interval '1 microsecond' where grant_id=pg_temp.grant_id('self');
 select is(public.path_b_report_results_v1(pg_temp.a('2'),(select id from reading_session),pg_temp.sid('main'),'reports.monogenic',true),
  '[]'::jsonb,'an expired grant serves nothing');
 rollback to grant_cases;

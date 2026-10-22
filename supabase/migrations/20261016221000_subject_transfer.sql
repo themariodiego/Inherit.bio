@@ -99,12 +99,29 @@ alter table public.other_adult_held_uploads drop constraint other_adult_held_upl
 alter table public.other_adult_held_uploads add constraint other_adult_held_uploads_state_check
  check (state in ('pending','confirmed','refused','deleted','expired','withdrawn','transferred'));
 
--- The one-time code.
-alter table public.account_operation_nonces drop constraint account_operation_nonces_operation_check;
-alter table public.account_operation_nonces add constraint account_operation_nonces_operation_check
- check (operation in ('account_delete','account_delete_cancel','own_upload_artifact_sign',
-  'own_account_completion','other_adult_upload_artifact_sign','subject_sharing_stop','subject_delete',
-  'subject_transfer'));
+-- The one-time code. The operation check gains subject_transfer and keeps
+-- every value it holds now, so an operation an earlier migration added stays
+-- (20261016200000 adds consents_revoke_all). An IN list renders as
+-- ARRAY['a'::text, ...]; an array literal as '{a,...}'::text[]. Both are read.
+do $widen$
+declare v_def text; v_now text[]; v_values text[];
+begin
+ select pg_get_constraintdef(c.oid) into v_def from pg_constraint c
+ where c.conrelid='public.account_operation_nonces'::regclass and c.conname='account_operation_nonces_operation_check';
+ select array_agg(v) into v_now from (
+  select m[1] v from regexp_matches(v_def,'''([a-z_]+)''::text','g') m
+  union all
+  select unnest(string_to_array((regexp_match(v_def,'''\{([a-z_,]+)\}''::text\[\]'))[1],','))) s;
+ if v_now is null or not ('account_delete'=any(v_now)) then
+  raise exception using errcode='55000',message='account operation check unreadable'; end if;
+ select array_agg(distinct v order by v) into v_values from unnest(v_now||array['account_delete','account_delete_cancel',
+  'own_upload_artifact_sign','own_account_completion','other_adult_upload_artifact_sign','subject_sharing_stop',
+  'subject_delete','subject_transfer']) v;
+ alter table public.account_operation_nonces drop constraint account_operation_nonces_operation_check;
+ execute format('alter table public.account_operation_nonces add constraint account_operation_nonces_operation_check'
+  ' check (operation in (%s))',(select string_agg(quote_literal(v),',' order by v) from unnest(v_values) v));
+end;
+$widen$;
 
 do $patch_nonce$
 declare target regprocedure:='private.record_subject_operation_nonce_v1(uuid,uuid,text,uuid,text,timestamptz)'::regprocedure;
