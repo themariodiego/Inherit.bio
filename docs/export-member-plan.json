@@ -458,6 +458,14 @@
       "disposition": "reference",
       "reason": "The rights-purpose matrix the database enforces: purposes, actions and routes. It holds no person's data."
     },
+    "private.rights_recovery_candidates": {
+      "disposition": "excluded-credential",
+      "reason": "Hash-only rights-recovery delivery candidates (api.rights-reissue): the principal, eventual purpose, target, authority revision, fixed deadline and the token hash a future mail issuer would bind. Recovery credential machinery, never archive content."
+    },
+    "private.rights_reissue_form_nonces": {
+      "disposition": "excluded-credential",
+      "reason": "Spent rights-recovery form nonce hashes and their ten-minute expiry. They prevent replay and must never be archive content."
+    },
     "private.rights_session_purposes": {
       "disposition": "excluded-credential",
       "reason": "The purposes a rights session may be issued under, and the target kind each binds. It is rights-session credential machinery and holds no person's data."

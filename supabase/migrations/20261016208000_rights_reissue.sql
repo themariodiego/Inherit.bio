@@ -47,12 +47,15 @@
 --      nothing and revokes nothing. Every other token hash takes exactly the
 --      existing path.
 --
--- Today only one eventual purpose has live principals: adult-subject-control,
--- for a person who confirmed a Path B request with no account. Its issuer is
--- not built (20261016202000), so the activation would refuse even a
--- delivered candidate. The adult-withdrawal purpose has no registered session
+-- One eventual purpose has live principals: adult-subject-control, for a
+-- person who confirmed a Path B request with no account. The recovery branch
+-- is therefore that purpose's credential issuer, built closed (owner decision
+-- 2026-10-22): no rights_session_purposes row registers it (20261016202000),
+-- so the activation refuses even a delivered candidate and the purpose
+-- trigger would refuse its session. The register's other two eventual
+-- purposes are not matched: adult-withdrawal has no registered session
 -- purpose, and no genetic parent without an account can be active
--- (subject_principals_identity_check), so neither is matched.
+-- (subject_principals_identity_check). Their candidates are not admitted.
 
 do $predecessor$
 begin
@@ -81,8 +84,8 @@ create index rights_reissue_form_nonces_expiry_idx on private.rights_reissue_for
 create table private.rights_recovery_candidates (
  id uuid primary key default gen_random_uuid(),
  principal_id uuid not null references public.subject_principals(id) on delete cascade,
- eventual_purpose text not null check (eventual_purpose in ('adult-subject-control','adult-withdrawal','embryo-parent-withdrawal')),
- target_kind text not null check (target_kind in ('subject','cohort')),
+ eventual_purpose text not null check (eventual_purpose='adult-subject-control'),
+ target_kind text not null check (target_kind='subject'),
  target_id uuid not null,
  authority_revision bigint not null check (authority_revision > 0),
  fixed_deadline timestamptz not null,
@@ -218,19 +221,20 @@ begin
   or (t->>'deadline')::timestamptz<v_candidate.fixed_deadline then return; end if;
  -- The eventual session must be one this deployment can issue; until its
  -- issuer exists, nothing is spent or revoked.
+ if v_candidate.eventual_purpose<>'adult-subject-control' or v_candidate.target_kind<>'subject' then return; end if;
  if not exists(select 1 from private.rights_session_purposes rsp where rsp.session_purpose=v_candidate.eventual_purpose
    and rsp.target_kind=v_candidate.target_kind) then return; end if;
  perform private.consume_embryo_operation_nonce_v1(p_form_nonce,null,null,'rights_activate','form',null);
  v_expiry:=least(v_now+interval '60 minutes',v_candidate.expires_at,v_candidate.fixed_deadline);
  update public.rights_sessions rs set status='revoked',ended_at=v_now
-  where rs.principal_id=v_candidate.principal_id and rs.purpose=v_candidate.eventual_purpose and rs.status='active';
+  where rs.principal_id=v_candidate.principal_id and rs.purpose='adult-subject-control' and rs.status='active';
  update private.rights_recovery_candidates rc set status='revoked',ended_at=v_now
   where rc.principal_id=v_candidate.principal_id and rc.id<>v_candidate.id and rc.status in ('pending','issued');
  update private.rights_recovery_candidates rc set status='consumed',ended_at=v_now where rc.id=v_candidate.id;
  update public.token_hashes th set status='consumed',ended_at=v_now where th.id=v_token.id;
  insert into public.rights_sessions(token_hash_id,principal_id,purpose,target_kind,target_id,authority_revision,
   session_hash,status,expires_at,created_at,last_activity_at)
- values(v_token.id,v_candidate.principal_id,v_candidate.eventual_purpose,v_candidate.target_kind,v_candidate.target_id,
+ values(v_token.id,v_candidate.principal_id,'adult-subject-control','subject',v_candidate.target_id,
   v_candidate.authority_revision,p_session_hash,'active',v_expiry,v_now,v_now);
  perform private.append_legal_audit_event('rights.session.activated',null,'api.rights-activate','accepted',
   jsonb_build_object('purpose',v_candidate.eventual_purpose,'source','rights-recovery'));
