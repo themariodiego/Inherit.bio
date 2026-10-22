@@ -172,10 +172,27 @@ describe("GET poll", () => {
 });
 
 describe("presentation", () => {
-  it("renders no create action while no generation capability exists", async () => {
+  it("renders no create action outside TEST-LOCAL or without one rights session, and reads nothing", async () => {
     const request = new Request(url, { headers: { cookie: `${RIGHTS_COOKIE_NAME}=${secret}` } });
-    expect(await presentClaimantExportCreate(request, deps({ generation: null }))).toBeNull();
+    expect(await presentClaimantExportCreate(request, deps({ open: () => false }))).toBeNull();
+    expect(await presentClaimantExportCreate(new Request(url), deps())).toBeNull();
+    expect(await presentClaimantExportCreate(new Request(url, { headers: {
+      cookie: `${RIGHTS_COOKIE_NAME}=${secret}; ${RIGHTS_COOKIE_NAME}=${secret}` } }), deps())).toBeNull();
     expect(calls).toEqual([]);
+  });
+  it("presents the create action without a generation capability, and its create answers 503 before any write", async () => {
+    // Owner decision 2026-10-22: the claimant page shows the export button
+    // under TEST-LOCAL, and create answers 503 while no TEST R2 generation
+    // capability is configured.
+    const request = new Request(url, { headers: { cookie: `${RIGHTS_COOKIE_NAME}=${secret}` } });
+    const withoutGeneration = await presentClaimantExportCreate(request, deps({ generation: null }));
+    expect(withoutGeneration).toMatchObject({ operation: "create", csrf: claimantCsrf(session) });
+    expect(calls).toEqual([["capture", session, null, null]]);
+    calls = [];
+    const refused = await postClaimantExport(post({ operation: "create", nonce: withoutGeneration!.nonce }), deps({ generation: null }));
+    expect(refused.status).toBe(503);
+    expect(refused.headers.get("set-cookie")).toBeNull();
+    expect(calls.map(call => call[0])).toEqual(["capture"]);
     const presented = await presentClaimantExportCreate(request, deps());
     expect(presented).toMatchObject({ operation: "create", csrf: claimantCsrf(session) });
     expect((await postClaimantExport(post({ operation: "create", nonce: presented!.nonce }), deps())).status).toBe(202);

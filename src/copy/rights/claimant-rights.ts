@@ -33,4 +33,7 @@ export const CLAIMANT_RIGHTS_COPY = {
   retention: (complete: number, source: number, contact: number) =>
     `Your record stays until you ask to delete it. Once you ask, we delete it within ${complete} days, and its DNA data within ${source} days. We keep the contact address you gave us for at most ${contact} days after your claim was approved. Deleting it does not delete your record. Keep a Recovery Key so you can start a new claim later with fresh identity documents.`,
   contact: "If this page does not work, or you need help with your rights, write to privacy@inherit.bio.",
+  /** The export button (register api.future-person-export), TEST-LOCAL only.
+   * A plain label: no notice text goes with it (owner decision 2026-10-22). */
+  exportLabel: "Export my claimed record",
 } as const;

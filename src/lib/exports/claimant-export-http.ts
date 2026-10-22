@@ -151,10 +151,12 @@ function admitted(request: Request, deps: ClaimantExportDependencies): string | 
   return claimantSessionHash(request);
 }
 
-/** Explicit server-rendered presentation of the create action. Renders nothing
- * and writes nothing when no generation capability exists. */
+/** Explicit server-rendered presentation of the create action, for the
+ * claimant page under TEST-LOCAL only (deps.open). It reads the capture and
+ * writes nothing. As for api.export, the action is presented whether or not a
+ * generation capability exists: without one, its create answers 503 before
+ * any database write (owner decision 2026-10-22). */
 export async function presentClaimantExportCreate(request: Request, deps: ClaimantExportDependencies = claimantExportDependencies()) {
-  if (!deps.generation) return null;
   const sessionHash = admitted(request, deps);
   if (!sessionHash) return null;
   try {

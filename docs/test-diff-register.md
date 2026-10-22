@@ -9,6 +9,8 @@ Pins moved, all in tests this branch added on 2026-10-16 and none yet on the int
 
 New tests: `supabase/tests/future_person_correction_provenance.sql`, which seeds synthetic results on and off the canonical source. Planted defects: without the new migration, 10 of its assertions fail; counting every score again fails 3; publishing the digest unkeyed fails the route test.
 
+The claimant export button, from the same decision: the claimant page under TEST-LOCAL shows a button with the plain label "Export my claimed record", registered in `src/copy/rights/claimant-rights.ts`. Pin moved in `src/lib/exports/claimant-export-http.test.ts`, also a test this branch added: "renders no create action while no generation capability exists" asserted that the presenter returns nothing without a generation capability. The decision needs the button to reach the route's 503 instead. So that test is replaced by two. One shows the presenter still returns nothing, and reads nothing, outside TEST-LOCAL or without exactly one rights session. The other shows it presents the action without a generation capability, and that the action's create then answers 503 with no cookie and no write past the capture. New assertions in `src/components/future-person/claimant-rights.test.ts` show the button renders only when the server presents the action, and adds no text but its label. Planted defects: restoring the old presenter guard fails the new route test; always rendering the button fails the component test.
+
 No frozen baseline, privacy control or waiting period changes.
 
 ## 2026-10-16 — Future-person and claim endpoints (G2.1): the route census moves
