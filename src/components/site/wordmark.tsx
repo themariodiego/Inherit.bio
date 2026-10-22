@@ -32,7 +32,9 @@ export function Wordmark({ className }: { className?: string }) {
 
 export function Attribution({ className }: { className?: string }) {
   return (
-    <p className={cn("caption", className)}>
+    // One sentence, held to the prose measure: in the footer's wide column
+    // its box otherwise ran to 108ch with a one-line text (brief X6.3).
+    <p className={cn("caption max-w-measure", className)}>
       {/* "open-source" and "created by" never break at the hyphen or between
           their words in the 13rem rail (round-3 N14). */}
       Inherit · an <span className="whitespace-nowrap">open-source</span> project{" "}

@@ -28,7 +28,7 @@ export function LegalArtifactDocument({
     <article className="mx-auto max-w-6xl px-6 py-section">
       <header className="reading-head">
         <p className="eyebrow">Versioned legal artifact</p>
-        <h1 className="display display-lg break-words">{artifact.artifact_key}</h1>
+        <h1 className="display break-words">{artifact.artifact_key}</h1>
         <p className="caption">
           Version {artifact.version} · effective <time dateTime={artifact.effective_on}>{artifact.effective_on}</time>
         </p>

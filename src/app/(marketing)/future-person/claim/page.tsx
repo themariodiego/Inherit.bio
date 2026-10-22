@@ -70,7 +70,7 @@ export default async function FuturePersonClaimPage() {
     <div className="mx-auto max-w-6xl px-6 py-section">
       <header className="reading-head">
         <p className="eyebrow">{CLAIM_EYEBROW}</p>
-        <h1 className="display display-lg">{CLAIM_H1}</h1>
+        <h1 className="display">{CLAIM_H1}</h1>
       </header>
       <section aria-labelledby="refusal-standard" className="surface surface-pad mt-section max-w-3xl">
         <h2 id="refusal-standard" className="title">
@@ -83,29 +83,31 @@ export default async function FuturePersonClaimPage() {
         </div>
       </section>
       {claim?.status === "completed" ? (
-        <section role="status" className="mt-8 space-y-4 rounded-2xl border border-line bg-card p-6">
+        <section role="status" className="mt-section space-y-4 rounded-2xl border border-line bg-card p-6">
           <h2 className="font-medium">{SUBMITTED_HEADING}</h2>
-          <p className="text-sm leading-relaxed text-ink-muted">{SUBMITTED_BODY}</p>
+          <p className="max-w-measure text-sm leading-relaxed text-ink-muted">{SUBMITTED_BODY}</p>
         </section>
       ) : claim?.status === "live" ? (
         <div className="mt-8 space-y-4">
           <ClaimStartReceipt />
-          <p className="text-sm leading-relaxed text-ink-muted">{KEEP_LINE}</p>
+          <p className="max-w-measure text-sm leading-relaxed text-ink-muted">{KEEP_LINE}</p>
           <ClaimDocuments nonce={claim.documentNonce} completeNonce={claim.completeNonce} mode={claim.mode}
             documentCsrf={claim.documentCsrf} completeCsrf={claim.completeCsrf} />
         </div>
       ) : open && formToken ? (
         <div className="mt-8 space-y-4">
-          <p className="text-sm leading-relaxed text-ink-muted">{KEEP_LINE}</p>
+          <p className="max-w-measure text-sm leading-relaxed text-ink-muted">{KEEP_LINE}</p>
           <FuturePersonClaimForm formToken={formToken} />
         </div>
       ) : (
-        <section className="mt-8 space-y-4 rounded-2xl border border-line bg-card p-6">
+        <section className="mt-section space-y-4 rounded-2xl border border-line bg-card p-6">
           <h2 className="font-medium">{CLOSED_HEADING}</h2>
-          <p className="text-sm leading-relaxed text-ink-muted">{CLOSED_BODY}</p>
+          <p className="max-w-measure text-sm leading-relaxed text-ink-muted">{CLOSED_BODY}</p>
         </section>
       )}
-      <p className="mt-8 text-sm leading-relaxed text-ink-muted">{CONTACT_LINE}</p>
+      {/* Two top-level sections are a section rhythm apart, and every
+          paragraph here keeps the 68ch measure (brief X6.3). */}
+      <p className="mt-8 max-w-measure text-sm leading-relaxed text-ink-muted">{CONTACT_LINE}</p>
     </div>
   );
 }

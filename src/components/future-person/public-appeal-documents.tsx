@@ -88,7 +88,7 @@ export function PublicAppealDocuments({ view, documentNonce, completeNonce, docu
    setFinished(true);
   } catch { setFailure(true); } finally { setBusy(false); }
  }
- if (finished) return <section className="mx-auto max-w-3xl px-6 py-section"><h1 className="display display-lg">Your files were sent</h1>
+ if (finished) return <section className="mx-auto max-w-3xl px-6 py-section"><h1 className="display">Your files were sent</h1>
   <p className="mt-6">A named reviewer will review your request. This does not grant access or decide the outcome.</p>
   <p className="mt-4">Your request keeps its original deadline: {new Date(view.deadline).toLocaleDateString("en-GB", { timeZone: "UTC" })}.</p>
   <Button type="button" onClick={() => void readNotice()} disabled={busy}>Check review</Button>
@@ -97,7 +97,7 @@ export function PublicAppealDocuments({ view, documentNonce, completeNonce, docu
   </div>)}
   {failure && <p role="status">This link is not available. No new link or access has been created.</p>}
  </section>;
- return <section className="mx-auto max-w-3xl px-6 py-section"><h1 className="display display-lg">Files for your request</h1>
+ return <section className="mx-auto max-w-3xl px-6 py-section"><h1 className="display">Files for your request</h1>
   {view.informationRequested && <p className="mt-4">You were asked for more files for this same request. Its original deadline has not changed.</p>}
   <p className="mt-6">These documents are used only to review your request. They do not give you access to a record.</p>
   <p className="mt-3">Original deadline: {new Date(view.deadline).toLocaleDateString("en-GB", { timeZone: "UTC" })}.</p>

@@ -61,7 +61,7 @@ function PublicPanels() {
   return (
     <div className="mx-auto max-w-6xl px-6 py-section">
       <header className="reading-head space-y-5">
-        <h1 className="display display-lg">{FAMILY_H1}</h1>
+        <h1 className="display">{FAMILY_H1}</h1>
         <p className="lede">{FAMILY_LEDE}</p>
         <div className="pt-1">
           <Button asChild size="lg">
