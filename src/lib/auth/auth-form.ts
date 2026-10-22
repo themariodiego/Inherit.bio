@@ -19,7 +19,7 @@ import { AUTH_FORM_COOKIE, SECRET_SHAPE, readSingleCookie, setCookie } from "./a
  * nonce once (`private.auth_form_nonces`).
  */
 
-export type AuthForm = "auth-sign-up" | "auth-forgot-password";
+export type AuthForm = "auth-sign-up" | "auth-forgot-password" | "rights-reissue";
 
 /** Carries the page's form token from the proxy to the server render only. */
 export const AUTH_FORM_TOKEN_HEADER = "x-inherit-auth-form-token";

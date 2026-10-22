@@ -128,6 +128,48 @@ Vitest: new `src/app/api/subjects/bind/session/route.test.ts` (5 cases). Five pl
 
 `scripts/jurisdiction-enforcement.test.ts` gains a `WITHOUT_CHECK` entry for the route, with its reason: a right under jurisdictionBypass, built closed. The census goes from 9 to 8, with a comment.
 
+Pin move, required and not weakened: `supabase/tests/other_adult_held_upload.sql` "the held table is named only by the exact reviewed lifecycle functions" now also lists `public.bind_adult_subject_account_v1`, when that function exists, in its sorted place. The bind must name the held table: it refuses while a file is pending, and it moves confirmed files to the new binding revision. Every other name in the census is unchanged. Before the move, the comparison run of this suite failed only that assertion, with the bind migration applied. After the move it passes.
+
+### `api.rights-reissue`, closed under the 2026-10-22 unapproved-text rule
+
+`POST /api/rights/reissue` (register `api.rights-reissue`, rights-credential-reissue-v1) is closed. The owner's 2026-10-22 decision says each route that needs unapproved mail or notice text, and its database door, answers `resource-not-found-v1` until the owner approves the wording, and rights recovery is on that list. The coordinator confirmed option B: every request answers 404, TEST-LOCAL included, before anything is read, counted or written. The gate is the one-line `rightsReissueOpen()` in `src/lib/rights/reissue-gate.ts`. Behind it the route is ready:
+
+- the required signals: exact origin, same-origin fetch metadata, JSON, and `X-Inherit-CSRF` carrying a one-time public form token bound to the host-only form cookie (new form id `rights-reissue`);
+- the closed body `{email}`;
+- digest-only arguments, including the new `rightsReissueLimitDigests` in `src/lib/rate-limit-keys.ts`;
+- the identical opaque 202 `{"status":"received"}` for every outcome, after the same floor.
+
+New migration `supabase/migrations/20261016208000_rights_reissue.sql`, headed PRODUCTION RELEASE: GUARDED, builds the lookup, the limits, the candidate and the activation exchange. It enqueues no outbox row, because no template exists:
+
+- **Tables.** `private.rights_reissue_form_nonces` and `private.rights_recovery_candidates` are both API-denied. A candidate is hash-only and non-authorizing. A partial unique index allows at most one live candidate per principal. `token_hash_id` stays null until a mail issuer exists.
+- **`public.request_rights_reissue_v1`.** It is service-role and TEST-LOCAL only. It counts first: 3 an hour per contact, 10 an hour per network and 1000 an hour for the service (global-capacity). Then it spends the form nonce. It matches only current contact HMAC indexes of current references whose principal is active with `account_id` null, and whose record is current with a live 730-day clock (`private.rights_recovery_target_v1`). For each match it replaces that principal's live candidate, bound to the purpose, target, authority revision and existing deadline, and expiring within 24 hours and no later than that deadline. It touches no source credential, session or nonce.
+- **`public.activate_rights_session_v1`.** It is patched in place, md5-guarded with predecessor `b9dcb56fbe06146e7b55e98f5f68a25b` and successor `f4c47723ec1c65454514a5b8d08ec0e0`. A token hash that belongs to an issued recovery candidate goes to `private.activate_rights_recovery_v1`. That function rechecks the principal, target, revision and deadline, and requires the eventual session purpose to be registered. Only then does it spend the form nonce, consume the token and candidate, revoke other candidates and sessions, and mint one session clamped to an hour and the deadline. Every other token takes the unchanged existing path.
+
+New test `supabase/tests/rights_reissue.sql`: 39 assertions, all new and all passing in one rolled-back transaction. The run used the prep and migrations above, plus `20261016202000`, `20261016204000` and `20261016208000`. It uses the real Path B fixture and proves:
+
+- service role and TEST flag only, and the md5 pin;
+- no candidate before a confirmed file;
+- one bound candidate after a confirmed file, with no outbox row, token or session created or ended;
+- a replayed nonce is refused, and a repeat request replaces the live candidate;
+- an account-bound person and an unknown address write nothing;
+- each of the three limits writes nothing once reached, and every bucket carries the owner's ceiling;
+- a synthetic delivered token opens nothing and spends nothing while the adult-subject-control issuer does not exist, and opens nothing at a stale revision;
+- once the purpose is registered in the transaction only, the token is exchanged once, the session is clamped, and a reused token opens nothing.
+
+Ten planted SQL defects each failed named assertions or errored: no contact limit, no network limit, no global limit, a limited request proceeding, a reusable form nonce, no replacement (the unique index raises), no purpose check (the purpose trigger raises), no revision recheck, a reusable token and a missing deadline. The rule that only principals with no account are matched is held by three layers: the lookup, the target function and the bound record, which never has a 730-day clock. No single-layer plant can show it.
+
+Vitest: new `src/app/api/rights/reissue/route.test.ts` (5 cases). The first proves the door is shut: 404, with no database client created. The others run with the gate stubbed open and prove the handling behind it. Six planted defects each failed a case: the gate opened, no form check, no TEST-LOCAL check, a plaintext email, a distinct failure answer and no replay check.
+
+Pin moves, both required by this owner-ordered patch and neither weakened:
+
+- `supabase/tests/other_adult_held_upload.sql` "the exact held, keyless, evidence, notice and information bodies form the reviewed service door" now pins the activation wrapper at the exact successor md5 `f4c47723ec1c65454514a5b8d08ec0e0` instead of `b9dcb56fbe06146e7b55e98f5f68a25b`. Every other pinned body in that assertion is unchanged.
+- `scripts/path-b-future-rights-bridge.test.ts` "pins the native held activation check to the complete current information chain" now expects that successor pin in the native test. The successor is computed from the information wrapper's exact body and this migration's own fragments. A new case, "pins the in-place rights-recovery branch of 20261016208000 onto the exact information wrapper", proves:
+  - the predecessor and successor md5s;
+  - one insertion only, so every other byte of the wrapper is unchanged;
+  - no `create function public.activate_rights_session_v1` and no grant on the new function.
+
+`scripts/jurisdiction-enforcement.test.ts` gains a `WITHOUT_CHECK` entry for the route, with its reason: a right under jurisdictionBypass, closed. The census goes from 8 to 7, with a comment.
+
 ## 2026-10-16 — Consent and rights endpoints (G2.1, "Build all 24"): `api.consents-revoke-all`, `api.embryo-record-key-cards-rights`, `api.consent-revoke-rights` and `api.consent-grant-rights`
 
 Owner decision 2026-10-16 ("Unbuilt registered endpoints (G2.1)", `docs/protocol/decisions.md`): every registered endpoint gets built, and an endpoint whose contract depends on unbuilt pieces or open design questions is raised with the owner first. This slice covers the eight consent and rights endpoints. The questions it raised are reported back. This entry records each test change the slice makes.

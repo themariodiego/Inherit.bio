@@ -8910,6 +8910,13 @@ export type Database = {
         Args: { p_account_id: string; p_session_id: string; p_prior_grant_id: string }
         Returns: Json
       }
+      request_rights_reissue_v1: {
+        Args: {
+          p_form_nonce_hash: string; p_contact_digests: Json; p_identifier_digests: Json; p_network_digests: Json;
+          p_global_digests: Json; p_test_jurisdiction: boolean
+        }
+        Returns: string
+      }
       bind_adult_subject_account_v1: {
         Args: {
           p_session_hash: string; p_nonce: string; p_account_id: string; p_auth_session_id: string;

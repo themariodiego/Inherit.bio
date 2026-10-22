@@ -88,6 +88,8 @@ export const WITHOUT_CHECK: Record<string, string> = {
     "Export right for one own record (api.subject-export, owner decision 2026-10-16, two steps): self, or an adult record whose own account is the caller. The register binds it to jurisdictionBypass because export is a right nothing may block; every embryo case answers resource-not-found-v1 and the database authority rechecks the live session and the record before every step. It opens no restricted capability.",
   "src/app/api/embryo-cohorts/[id]/record-key-cards/route.ts":
     "Delivery of Record Key cards under an operation token, on a cohort that exists only through the database functions that check jurisdiction at creation, invitation, acceptance and grant; it opens no analysis.",
+  "src/app/api/rights/reissue/route.ts":
+    "Public rights recovery (api.rights-reissue, jurisdictionBypass): a right, not a restricted capability, and closed under the owner's 2026-10-22 rule for unapproved mail text, so it answers resource-not-found-v1 everywhere. Behind the door it only writes a non-authorizing recovery candidate and opens no analysis; any session it later leads to is rechecked by its own purpose.",
   "src/app/api/subjects/bind/session/route.ts":
     "Binding a confirmed Path B record to the person's own account (api.adult-subject-bind) is a right under jurisdictionBypass, not a restricted capability. It is built closed: no adult-subject-control issuer exists, so it answers resource-not-found-v1, and outside TEST-LOCAL always. It opens no analysis, and the account's declared jurisdiction must equal the one the confirmation was signed under, checked in the database.",
   "src/app/api/rights/embryo-record-key-cards/route.ts":
