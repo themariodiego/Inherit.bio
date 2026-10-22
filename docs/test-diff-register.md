@@ -1,3 +1,16 @@
+## 2026-10-22 — `api.subject-delete`: the reviewed-document branch of Path B is an adult case too
+
+Owner decision 2026-10-16 ("The subjects endpoints (G2.1)": all five delete cases, `docs/protocol/decisions.md`). `20261016181000` chose the adult Path B case by a confirmed draft of the e-signature flow only. The integration branch then added the second Path B flow, `path-b-reviewed-document` (`20261016190000`). Its confirmed record is the same uploader-owned `other_adult` record, but `DELETE /api/subjects/[id]` answered 404 for it, so neither its uploader nor the person could delete it there.
+
+New migration `supabase/migrations/20261016220000_subject_delete_reviewed_document.sql`, headed PRODUCTION RELEASE: GUARDED. It patches `public.delete_subject_v1` with the md5-guarded pattern (predecessor `39abbfe9…`, successor `09f00c92…`, ACL and definer settings checked). The one change is that the door's Path B test accepts a confirmed draft of either flow. Everything after it is the existing adult case. The flow's own constraint trigger disposes of its permission document stores when the record leaves `active`, as it does for every other ending. No existing migration is edited.
+
+New test `supabase/tests/subject_delete_reviewed_document.sql`, 18 assertions. It reuses the reviewed-document suite's own setup, up to the person's signature, then holds one file through the real upload doors. An outsider and the document's named reviewer are refused with nothing written. The uploader's delete is the adult case: the file ends as withdrawn, the session goes to the upload-working executor, the record is purged and its contact shredded, no bar is written, and the code is recorded once. A second delete is not found. No existing assertion changes.
+
+Local results, in rolled-back transactions on the shared database over every tree migration it lacks except `20261016153100` (its guard refuses there because a function body has drifted; hosted CI applies the full chain):
+
+- The new suite passes 18/18. Planted defect: without the migration, the uploader's delete raises `not_found` and the suite stops.
+- `subject_delete` 47/47, `subject_delete_adult` 30/30, `subject_delete_embryo` 91/91, `path_b_reviewed_document` 76/76 and `other_adult_held_upload` 174/174, identical with and without the migration.
+
 ## 2026-10-16 — `api.subject-delete` (G2.1): all five cases through one door, and the narrowed per-file guard (Q6)
 
 Owner decisions 2026-10-16 ("The subjects endpoints (G2.1)" and "Subjects delete and transfer: four further cases", `docs/protocol/decisions.md`). `DELETE /api/subjects/[id]` takes no body and one single-use code in `X-Inherit-Operation-Nonce`. It calls one database door, `public.delete_subject_v1`, which chooses the case from server state after rechecking the caller's authority over the route subject. The register binds only `lifecycle-accepted-v1` (202 `{"status":"accepted"}`) and `resource-not-found-v1` here, so every refusal is the same opaque 404. That includes a body, a missing, foreign or spent code, an unknown or foreign record, a claimed record and a refused case. The 401 and 403 answers for a missing session or a cross-origin request are the shared authenticated-mutation answers.
