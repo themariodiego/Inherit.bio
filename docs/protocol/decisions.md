@@ -5189,3 +5189,22 @@ live"). It is not a new decision.
   `src/lib/exports/account-archive-worker.test.ts`, and
   `e2e/subject-export.spec.ts`, which now plants a family conversation for
   the refusal. Recorded in `docs/test-diff-register.md`.
+
+## 2026-10-23 — Export completeness: family conversations, cohorts, empty classes (G5.6)
+
+Owner decisions (clickable chat answers):
+
+- **Family Copilot conversations in a one-record export.** The record's
+  conversation turns are exported as written, while every grant each turn used
+  is still current. Only structured identifiers (subject and account ids in
+  citations) are removed. While any grant a turn used has ended, that turn is
+  left out.
+- **Embryo cohorts in a parent's export.** A parent's export carries the
+  parent's own cohort records (roles, signatures and disposition proposals)
+  but no embryo results, until a reviewed consent covers exporting them. The
+  only cohort consent, `consent.upload-embryo` v1, covers analysis, not export.
+- **Classes with no production writer** (ancestry regions, attestation
+  contradictions, subject-control refusal authorities, suppressions, report
+  artifacts) count as complete. A pinned check refuses any export that finds a
+  row in one of them. The asynchronous archives already do this, and the
+  synchronous archive gets the same refusal.
