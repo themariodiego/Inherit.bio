@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useCsrf } from "@/components/security/csrf-provider";
 import { Button } from "@/components/ui/button";
 import {
   COUNSELLOR_NO_ROUTE,
@@ -26,6 +27,7 @@ import {
  */
 export function EmbryoResultGate() {
   const router = useRouter();
+  const csrf = useCsrf("api.embryo-acknowledge");
   const [understood, setUnderstood] = useState(false);
   const [pending, setPending] = useState(false);
   const [failed, setFailed] = useState(false);
@@ -70,9 +72,10 @@ export function EmbryoResultGate() {
           try {
             const response = await fetch("/api/embryos/acknowledge", {
               method: "POST",
-              headers: { "content-type": "application/json" },
+              headers: { "content-type": "application/json", "X-Inherit-CSRF": csrf.value() },
               body: JSON.stringify({ acknowledgement: "embryo-result-gate", affirmed: true }),
             });
+            csrf.accept(response);
             ok = response.ok;
           } catch {
             ok = false;

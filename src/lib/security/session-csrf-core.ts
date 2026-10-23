@@ -71,6 +71,7 @@ export const SESSION_CSRF_ROUTES = Object.freeze({
   "api.subject-sharing": "authenticated",
   "api.chromosomal-sex": "authenticated",
   "api.family-acknowledge": "authenticated",
+  "api.embryo-acknowledge": "authenticated",
   "api.family-sharing": "authenticated",
   "api.consents": "authenticated",
   "api.consent-reaffirm": "authenticated",

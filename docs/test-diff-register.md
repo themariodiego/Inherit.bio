@@ -1,3 +1,39 @@
+## 2026-10-23 — Merge of G8.5's form shapes and the session CSRF token
+
+The CSRF commit (`local/g85-csrf`, from `287a1408`) merged onto the follow-up, which already held D-103 and G8.5's form shapes. Each side's assertions are kept. These changes follow from the two meeting, and each is checked against the merged tree.
+
+**`scripts/form-register-correspondence.test.ts`, 36/36.**
+- **Form census counts:** 1 native form (sign-out is scripted now), 25 handler-submitted forms, 28 requests in 23 files, and no AI SDK transport request (form shapes made the compatibility panel a fetch).
+- **Client census counts:**
+  - Modules: 225 → 226, with D-103's copy module imported by the adult confirm.
+  - Requests: 89 → 90, all of them `fetch` calls.
+  - Requests made by no form: 63 → 64. The Embryo gate's server action became a fetch of `api.embryo-acknowledge`.
+  - AI SDK transport requests: 1 → 0.
+- **The AI SDK plant** ("still reads the AI SDK chat transport…") expects one more unrecorded issue, the former panel's missing `X-Inherit-CSRF`. The other six are unchanged.
+- **The chat token test** is renamed "fails when the chat panel stops sending its token, or the SDK transport wraps its request in something it cannot read". The real panel is now a fetch, so dropping its header must surface the CSRF omission. The SDK transport's header function and fetch wrapper are read from a planted panel: the CSRF branch's own pre-merge panel, reduced. It must show no omission as planted, the omission without its `headers` line, and "sends headers the census cannot resolve" when its fetch is wrapped.
+- **The sign-out test** is the CSRF branch's ("…would notice it go back to /"), because the shipped response now redirects to `/auth/sign-in`. Form shapes' extras test is kept beside it.
+
+**`scripts/route-register-correspondence.test.ts`, 73/73.** The source seals are renewed for the merged `chat-panel.tsx`, `invite-adult-form.tsx` and `llm-settings-form.tsx`, each now carrying both sides' changes. The other four seals are the CSRF branch's.
+
+**`src/lib/security/session-csrf-routes.test.ts`, 208/208 (was 203).**
+- `api.embryo-acknowledge` joins `CASES`, `SESSION_CSRF_ROUTES` and `SHELL_CSRF_ROUTES`.
+- The register's bound-route count goes from 74 to 75.
+- The synthetic cookie constants are renamed (`RIGHTS_COOKIE_VALUE`, `CANDIDATE_COOKIE_VALUE`) so that `gate:secrets` passes, including its scan of history.
+- Planted: the route without its wrap fails 6 tests (its five cases and the guard check). Reverted.
+
+**`src/app/api/embryos/acknowledge/route.test.ts`** installs the pass-through mock (`admitEverySessionCsrf`), as the 25 other route suites do. No assertion changes.
+
+**Suites that form shapes and D-103 added after the CSRF branch was cut:**
+- **`src/app/api/chat/compatibility.test.ts` (7) and `src/lib/embryos/adult-subject-confirm.test.ts` (18)** install the same pass-through mock. Without it, every request is refused before its handler runs (403 or 404). No assertion changes.
+- **`src/components/chat/chat-panel.test.ts` (5)** mocks the CSRF provider, as `llm-settings-form.test.ts` does. Its send test also asserts the page's token in `X-Inherit-CSRF`.
+- **`src/components/settings/llm-settings-form.test.ts` (12):** old, the DELETE's headers equal `{ "X-Inherit-Operation-Nonce": nonce }`; new, `{ "X-Inherit-Operation-Nonce": nonce, "X-Inherit-CSRF": token }`. The removal now carries both.
+- **The rewritten chat token test** runs the whole-tree census four times, about 5 seconds on its own, so it takes an explicit 30-second timeout. Under the full suite's load it exceeded the default 5 seconds.
+
+**Ledger** (`docs/register-contract-divergence.json`):
+- **`formRequestDivergence`:** the union of both sides' removals leaves 2 rows (4 issues): the co-parent jurisdiction fields (D-083) and the Settings `apiKey` (owner).
+- **`clientRequestDivergence`:** the llm-settings DELETE nonce row is removed, because form shapes made it read the nonce. A new row records D-103's adult confirm, which omits `subjectArtifact.typedName` and `withAccount`. It closes with the owner's typed-name decision and the move to `api.invitation-accept`. The table stays at 19 rows.
+- **`csrfTransportNote`** now names 38 guarded routes.
+
 ## 2026-10-23 — G8.5: the one-time session X-Inherit-CSRF token on every bound route
 
 This entry follows the owner's decision of 23 October (decisions, "G8.5: forms, CSRF, the server action and the Resend webhook", "CSRF: build the token everywhere"), on local branch `local/g85-csrf` from `287a1408`. The migration `20261024220000_session_csrf_tokens.sql` is a guarded production release; production is untouched. Operation nonces are unchanged.

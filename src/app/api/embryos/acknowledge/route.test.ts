@@ -16,6 +16,10 @@ const mocks = vi.hoisted(() => ({ context: vi.fn() }));
 vi.mock("@/lib/account-deletion", async (load) => ({
   ...await load<typeof import("@/lib/account-deletion")>(), getSensitiveAccountContext: mocks.context,
 }));
+// The one-time X-Inherit-CSRF gate passes through here; it is tested on this
+// route, through the same handler, in src/lib/security/session-csrf-routes.test.ts.
+vi.mock("@/lib/security/session-csrf", async (importOriginal) =>
+  (await import("@/lib/security/session-csrf.test-support")).admitEverySessionCsrf(await importOriginal()));
 
 const { POST } = await import("./route");
 const { TIER2_EMBRYO_COOKIE_NAME, acknowledgedBy, tier2Digest } = await import("@/lib/embryos/tier2");

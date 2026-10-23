@@ -193,7 +193,7 @@ export function sessionCsrfToken(session: CsrfSession, route: CsrfRoute): string
 export const SHELL_CSRF_ROUTES = [
   "auth.sign-out", "api.account-delete", "api.account-delete-cancel", "api.chat", "api.browse-region",
   "api.file-process", "api.file-upload-session", "api.file-finalize", "api.file-delete", "api.llm-settings",
-  "api.subject-drafts", "api.subject-sharing", "api.chromosomal-sex", "api.family-acknowledge", "api.consents",
+  "api.subject-drafts", "api.subject-sharing", "api.chromosomal-sex", "api.family-acknowledge", "api.embryo-acknowledge", "api.consents",
   "api.consent-revoke", "api.consents-revoke-all", "api.embryo-cohorts", "api.embryo-record-key-cards",
   "api.embryo-disposition", "api.jurisdiction",
 ] as const satisfies readonly CsrfRoute[];

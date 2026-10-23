@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getSensitiveAccountContext, isSameOrigin } from "@/lib/account-deletion";
 import { embryoGateCookie } from "@/lib/embryos/tier2";
+import { withAccountCsrf } from "@/lib/security/session-csrf";
 
 /**
  * `POST /api/embryos/acknowledge` (register api.embryo-acknowledge).
@@ -25,6 +26,9 @@ import { embryoGateCookie } from "@/lib/embryos/tier2";
  *
  * The response carries no account id, jurisdiction or authority: only which
  * acknowledgement was recorded and when (embryo-acknowledged-v1).
+ *
+ * Like its twin, it carries the page's one-time X-Inherit-CSRF token
+ * (`withAccountCsrf`), spent before the handler runs.
  */
 
 const body = z
@@ -39,7 +43,8 @@ const NO_STORE = {
   "Referrer-Policy": "no-referrer",
 } as const;
 
-export async function POST(request: Request) {
+export const POST = withAccountCsrf("api.embryo-acknowledge", handlePost);
+async function handlePost(request: Request) {
   if (!isSameOrigin(request)) {
     return NextResponse.json({ error: "invalid_request" }, { status: 400 });
   }

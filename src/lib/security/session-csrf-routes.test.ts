@@ -134,6 +134,7 @@ const CASES: Case[] = [
   { route: "api.subject-sharing", method: "POST", path: `/api/subjects/${ID}/sharing`, params: { id: ID }, load: () => import("@/app/api/subjects/[id]/sharing/route") },
   { route: "api.chromosomal-sex", method: "POST", path: "/api/chromosomal-sex", load: () => import("@/app/api/chromosomal-sex/route") },
   { route: "api.family-acknowledge", method: "POST", path: "/api/family/acknowledge", load: () => import("@/app/api/family/acknowledge/route") },
+  { route: "api.embryo-acknowledge", method: "POST", path: "/api/embryos/acknowledge", load: () => import("@/app/api/embryos/acknowledge/route") },
   { route: "api.family-sharing", method: "POST", path: "/api/family/s-person/sharing", params: { person: "s-person" }, load: () => import("@/app/api/family/[person]/sharing/route") },
   { route: "api.consents", label: "api.consents (the provider and adult grant bodies)", method: "POST", path: "/api/consents", load: () => import("@/app/api/consents/route") },
   { route: "api.consent-reaffirm", method: "POST", path: "/api/consents/reaffirm", load: () => import("@/app/api/consents/reaffirm/route") },
@@ -379,7 +380,8 @@ describe("every route the register binds to csrfTransport is accounted for", () 
     expect(aliases).toEqual(["api.embryo-withdraw"]);
     // A branch row names a route the session token guards for its other bodies.
     for (const row of own.filter(candidate => candidate.branch)) expect(guarded.has(row.routeId), row.routeId).toBe(true);
-    expect(bound).toHaveLength(74);
+    // 75 since the merge with G8.5's form shapes: api.embryo-acknowledge replaced the Embryo gate's server action.
+    expect(bound).toHaveLength(75);
     expect(ownWhole).toHaveLength(36);
   });
 
