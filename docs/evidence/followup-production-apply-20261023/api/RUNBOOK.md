@@ -92,7 +92,15 @@ before going on. No size probe is needed.
 run production-readonly-prechecks.sql $R/prechecks --json-column prechecks
 run fingerprint.sql $R/fp-pre --json-column fp
 python3 -I check-readback.py $R/fp-pre.json 1 pre      # EQUAL (PR 324's batch-4 post-state)
+run ../../../../scripts/tools/d081-retirement-precheck.sql $R/d081 --json-column no_unexpired_pre_cutover_invitations
+cat $R/d081.json                                       # true
 ```
+
+The last line is D-081's release-time check (G8.5). The withdrawal compatibility
+routes were retired on `main` by PR #280, and the 1 October pre-merge receipt for that
+check was never recorded. The query cannot recreate that receipt. It confirms only that
+no adult invitation created before the 13 September cutover is still unexpired, and it
+returns one boolean and no user data. `false`, or any rc but 0: stop and tell the owner.
 
 Apply the pre-check stop rules in `../guarded/README.md` to `$R/prechecks.json`
 ("Pre-check stop rules"): among them the ledger 273 / `20261016221000` with all 25 of
@@ -153,6 +161,21 @@ needs all 7 migrations, so do not leave the merge for later.
 3. Watch `main`'s CI run, and the Deploy Cloudflare run, on the merge commit.
 4. Read the fingerprint again. It must still be EQUAL to batch 2's post-state.
 5. Read the Vercel production environment variable names. Never read values.
+6. D-081's retired routes, status codes only (no body is read or kept):
+
+   ```sh
+   for r in "GET /withdraw/retired-synthetic-invitation-token 404" "GET /withdraw/request 200" \
+            "GET /withdraw/session 404" "HEAD /api/withdraw 404"; do
+     set -- $r
+     if [ "$1" = HEAD ]; then m=--head; else m=--get; fi   # -X HEAD would wait for a body
+     got=$(curl -sS -o /dev/null -w '%{http_code}' $m --max-time 30 "https://inherit.bio$2")
+     echo "$1 $2 expected $3 got $got" | tee -a $R/d081-status.log
+   done
+   ```
+
+   `/withdraw/session` is requested without a cookie. Any code other than the expected
+   one: stop and tell the owner. The release is already applied by then, so change
+   nothing.
 
 ## 8. Evidence, then the credential
 
