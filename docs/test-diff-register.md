@@ -1,3 +1,26 @@
+## 2026-10-23 — The reviewed-document review download reads the clock once
+
+This entry follows the coordinator's decision of 23 October on the defect found during G5.6. `public.open_permission_review_download_v1` (PR 324's `20261016190000_path_b_reviewed_document.sql`) let `created_at` take its `clock_timestamp()` default and computed `expires_at` from a second reading. Whenever the clock advanced between the two readings, the table's check `expires_at <= created_at + interval '1 hour'` refused the insert. A named reviewer's download then failed at random: about one run of `path_b_reviewed_document` in three. The migration `20261023140000_review_download_clock.sql` sets both values from one reading. It is md5-guarded against PR 324's body (`243f68d2…` to `679b0ee2…` to `5d13a237…`) with its exact ACL. Nothing else changes. Production does not hold the function.
+
+**Changed suite: `supabase/tests/path_b_reviewed_document.sql`, 85/85.** No existing assertion changes; four are added after the first requested draft.
+- Planted: the `created_at` default reads the clock one second earlier than the body. This makes the old defect deterministic, because a body that leaves `created_at` to the default now breaks the check on every run.
+- The test then runs the steps of `pg_temp.approved` up to the reviewer's read, since the decision deletes the download rows.
+- New assertions:
+  - the named reviewer's download still opens;
+  - its one row expires exactly one hour after its own creation time;
+  - the planted default was undone with its savepoint;
+  - the open step's md5 is the reviewed successor.
+- On the old body the first two and the md5 pin fail (the insert is refused). On the new body the suite passed 85/85 in each of four runs.
+
+**Patch guards.**
+- Re-running the migration, or applying it after an extra anon grant on the function, fails 55000 "review download declarations predecessor differs".
+- A changed anchor fails "review download clock anchor differs".
+- A wrong successor md5 fails "review download clock successor differs".
+
+**Regression.** All 235 pgTAP suites ran with the five branch migrations. 213 pass completely, including `path_b_reviewed_document` 85/85, `subject_delete_reviewed_document` 18/18, `future_person_claim_review` 100/100 and `public_appeal_evidence_session` 193/193. The other 22 gave byte-identical `ok`/`not ok` lists without this migration.
+
+**Rebuild.** `e2e/helpers/operation-nonce.ts` passes the local key to the mint explicitly (`hmacSecretWithKey`), with a matching case in `src/lib/person-operation-nonce.test.ts`. That change is folded into the rebuilt export-completeness commit, so no commit assigns `process.env.BYOK_ENCRYPTION_KEY`. `pnpm gate:secrets` passes with its history scan. The full vitest suite gives 13354 passed and the same 42 environment-only or pre-existing failures. Typecheck passes.
+
 ## 2026-10-23 — G5.6: the last four person-caused event codes name their actor
 
 This entry follows the coordinator's follow-up to the 23 October attribution item (`docs/protocol/decisions.md`, "Stated behaviour change: the last four person-caused event codes"). For `purpose.reaffirmed`, `subject.account-bound`, `subject-draft.created` and `download.session.created`, each suite now shows whether the code's own transaction proves an actor (a consumed session-bound nonce or the person's own JWT) and that the event names them. The migration is `20261023130000_legal_audit_attribution_remaining.sql`, after `20261023120000`. No wording changes. Production is unchanged.
@@ -43,7 +66,7 @@ In every new block the transaction-local actor is cleared and the claims are set
 
 **Regression.** All 235 pgTAP suites ran with the four branch migrations. 213 pass completely. The other 22 gave byte-identical `ok`/`not ok` lists with the three earlier migrations only, so their failures are the same pre-existing ones as before.
 
-`path_b_reviewed_document` fails intermittently, with or without this change: about one run in three stops at `permission_document_review_downloads_check`. In `open_permission_review_download_v1` (20261016190000), `created_at` takes its `clock_timestamp()` default before `expires_at` is computed as `clock_timestamp()+interval '1 hour'`. So `expires_at <= created_at + interval '1 hour'` fails whenever the clock ticks between the two. The full regression run and the final rerun passed 81/81.
+`path_b_reviewed_document` fails intermittently, with or without this change: about one run in three stops at `permission_document_review_downloads_check`. In `open_permission_review_download_v1` (20261016190000), `created_at` takes its `clock_timestamp()` default before `expires_at` is computed as `clock_timestamp()+interval '1 hour'`. So `expires_at <= created_at + interval '1 hour'` fails whenever the clock ticks between the two. The full regression run and the final rerun passed 81/81. `20261023140000_review_download_clock.sql` fixes it (entry above).
 
 **Vitest.** The full suite gives 13353 passed and 42 failed. All 42 failures are the environment-only and pre-existing ones listed in the previous entry. Typecheck passes, lint is clean on every changed file, and the route gate passes (3 of 3 required headers are read).
 

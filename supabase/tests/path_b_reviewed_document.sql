@@ -360,6 +360,32 @@ select ok((select d.state='invited' and i.status='pending' and i.invitation_kind
  where d.subject_id=pg_temp.sid('main')),'one hidden request bound to the draft, document and review');
 select throws_ok($$select pg_temp.finalize('main','a','main')$$,'42501','not_found','a requested draft is finalized once');
 
+-- 20261023140000: a review download records its creation and expiry from
+-- one clock reading. Planted: the creation default reads the clock a second
+-- earlier than the body does, so a body that leaves created_at to the default
+-- breaks the table's one-hour check every time; the reviewed body sets both.
+savepoint review_clock;
+alter table private.permission_document_review_downloads
+ alter column created_at set default clock_timestamp()-interval '1 second';
+-- The steps of pg_temp.approved up to the reviewer's read; the decision would
+-- delete the download rows this block inspects.
+select pg_temp.draft('clock','f');
+select pg_temp.sign(pg_temp.sid('clock'),'f');
+update fx set session_id=(pg_temp.open(pg_temp.sid('clock'),'f')->>'session')::uuid where name='clock';
+select pg_temp.upload('clock','f');
+select private.assign_permission_document_review_v1(pg_temp.fx_doc('clock'),'0b5e0000-0000-4000-8000-000000000003');
+select lives_ok($$select pg_temp.read_all(pg_temp.fx_doc('clock'),encode(extensions.digest('review:f','sha256'),'hex'))$$,
+ 'planted: with the two clock reads a second apart, the named reviewer''s download still opens');
+select ok((select count(*)=1 and bool_and(expires_at=created_at+interval '1 hour')
+ from private.permission_document_review_downloads where document_id=pg_temp.fx_doc('clock')),
+ 'the review download expires exactly one hour after its own creation time');
+rollback to review_clock;
+select is((select pg_get_expr(d.adbin,d.adrelid) from pg_attrdef d join pg_attribute a on a.attrelid=d.adrelid and a.attnum=d.adnum
+ where d.adrelid='private.permission_document_review_downloads'::regclass and a.attname='created_at'),'clock_timestamp()',
+ 'the planted default was undone with its savepoint');
+select is((select md5(pg_get_functiondef('public.open_permission_review_download_v1(uuid,text)'::regprocedure))),
+ '5d13a237d73df132ac00a219ea289ebd','the review download open step is its reviewed successor');
+
 -- The barred contact: the same receipt, the same visible draft state, no request.
 select pg_temp.approved('barred','b');
 insert into public.invitation_refusal_hmacs(email_hmac,refusal_revision,hmac_key_revision,created_at,expires_at)
