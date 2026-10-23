@@ -1,0 +1,84 @@
+== pgtap-pr324-on-pre.log
+Files=229, Tests=15544, 529 wallclock secs ( 3.04 usr  0.51 sys +  3.63 cusr  3.14 csys = 10.32 CPU)
+Result: PASS
+real	8m51.253s
+== pgtap-pr324-on-post-b1.log
+Test Summary Report
+-------------------
+account_archive_graph_rows.sql               (Wstat: 0 Tests: 167 Failed: 1)
+  Failed test:  166
+other_adult_held_upload.sql                  (Wstat: 0 Tests: 174 Failed: 1)
+  Failed test:  71
+subject_export.sql                           (Wstat: 0 Tests: 287 Failed: 5)
+  Failed tests:  189-193
+Files=229, Tests=15544, 516 wallclock secs ( 3.01 usr  0.56 sys +  3.78 cusr  3.04 csys = 10.39 CPU)
+Files=229, Tests=15544, 516 wallclock secs ( 3.01 usr  0.56 sys +  3.78 cusr  3.04 csys = 10.39 CPU)
+Result: FAIL
+real	8m37.591s
+# Failed test 166: "the original014 nonempty parent graph remains a whole refusal despite private metadata projection"
+#       caught: no exception
+#       wanted: 0A000
+# Looks like you failed 1 test of 167
+--
+# Failed test 71: "only the exact installed one-record class inventory may inspect the record's held custody, behind every API denial"
+# Looks like you failed 1 test of 174
+Failed 1/174 subtests 
+--
+# Failed test 189: "a record with a live family pair is refused with the stated reason"
+#       caught: no exception
+#       wanted: 0A000
+# Failed test 190: "a pair that appears after the request fails the job at its next read"
+#       caught: 42501: not_found
+#       wanted: 0A000: export_joint_results_pending
+# Failed test 191: "the request door gives the same refusal"
+#       caught: no exception
+#       wanted: 0A000
+# Failed test 192: "a revoked pair that is not purged still counts"
+#       caught: no exception
+#       wanted: 0A000
+# Failed test 193: "a Portrait result naming the record as a parent counts"
+#       caught: no exception
+#       wanted: 0A000
+Failed 5/287 subtests 
+== pgtap-pr324-on-post-b2.log
+Test Summary Report
+-------------------
+account_archive_graph_rows.sql               (Wstat: 0 Tests: 167 Failed: 1)
+  Failed test:  166
+other_adult_held_upload.sql                  (Wstat: 0 Tests: 174 Failed: 1)
+  Failed test:  71
+subject_export.sql                           (Wstat: 0 Tests: 287 Failed: 5)
+  Failed tests:  189-193
+Files=229, Tests=15544, 518 wallclock secs ( 3.09 usr  0.51 sys +  3.78 cusr  3.01 csys = 10.39 CPU)
+Files=229, Tests=15544, 518 wallclock secs ( 3.09 usr  0.51 sys +  3.78 cusr  3.01 csys = 10.39 CPU)
+Result: FAIL
+real	8m40.927s
+# Failed test 166: "the original014 nonempty parent graph remains a whole refusal despite private metadata projection"
+#       caught: no exception
+#       wanted: 0A000
+# Looks like you failed 1 test of 167
+--
+# Failed test 71: "only the exact installed one-record class inventory may inspect the record's held custody, behind every API denial"
+# Looks like you failed 1 test of 174
+Failed 1/174 subtests 
+--
+# Failed test 189: "a record with a live family pair is refused with the stated reason"
+#       caught: no exception
+#       wanted: 0A000
+# Failed test 190: "a pair that appears after the request fails the job at its next read"
+#       caught: 42501: not_found
+#       wanted: 0A000: export_joint_results_pending
+# Failed test 191: "the request door gives the same refusal"
+#       caught: no exception
+#       wanted: 0A000
+# Failed test 192: "a revoked pair that is not purged still counts"
+#       caught: no exception
+#       wanted: 0A000
+# Failed test 193: "a Portrait result naming the record as a parent counts"
+#       caught: no exception
+#       wanted: 0A000
+Failed 5/287 subtests 
+== pgtap-followup-on-final.log
+Files=235, Tests=16034, 528 wallclock secs ( 3.25 usr  0.56 sys +  3.92 cusr  3.23 csys = 10.96 CPU)
+Result: PASS
+real	8m50.024s

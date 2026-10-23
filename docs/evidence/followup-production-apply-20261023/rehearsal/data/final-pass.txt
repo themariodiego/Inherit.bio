@@ -1,0 +1,7 @@
+# LOCAL ONLY: the kit at its final SHA256SUMS on a rebuilt mirror (mirror4: production mirror + PR 324's 4 batches), 2026-10-23.
+generate.py --head HEAD final; sha256sum -c SHA256SUMS: 14 of 14 lines OK; ../api: api-run.py OK
+pre-state read-back: EQUAL batch 1 pre-state summary
+all-batches-dry-run.sql (statement_timeout 2min): rc=3, 1 ERROR line: ERROR:  DRY_RUN_COMPLETE_ALL_CHECKS_PASSED; fingerprint unchanged
+batch-1-apply.sql: rc=0, read-back EQUAL batch 1 post-state summary
+batch-2-apply.sql: rc=0, read-back EQUAL batch 2 post-state summary
+final fingerprint 3a0f4d6860a49143b0f939a4185fbae3e1f7a89cb9d114c7c8e3975aab6ba4b4 (== the rehearsal's final mirror and fresh 77d04563 + drift)

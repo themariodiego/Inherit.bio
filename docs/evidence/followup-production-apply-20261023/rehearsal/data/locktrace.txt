@@ -1,0 +1,7 @@
+#01 20261022100000_neanderthal_ancestry_content.sql 0.005s locks on existing relations first taken here: information_schema.columns:AccessShare
+#02 20261022110000_read_called_input_provenance.sql 0.003s locks on existing relations first taken here: -
+#03 20261023100000_subject_export_joint_results.sql 0.006s locks on existing relations first taken here: -
+#04 20261023110000_export_completeness.sql 0.011s locks on existing relations first taken here: -
+#05 20261023120000_legal_audit_attribution_completeness.sql 0.009s locks on existing relations first taken here: public.account_operation_nonces:AccessExclusive, public.account_operation_nonces:ShareRowExclusive
+#06 20261023130000_legal_audit_attribution_remaining.sql 0.008s locks on existing relations first taken here: -
+#07 20261023140000_review_download_clock.sql 0.002s locks on existing relations first taken here: -

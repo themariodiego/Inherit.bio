@@ -1,0 +1,34 @@
+# Builds of the production mirror on stack relfu (rehearsal/scripts/build-mirror.sh, then apply-pr324-kit.sh), 2026-10-23.
+== mirror1: fresh main fingerprint 8860eee4... (asserted); vs production fp-after-merge.json: RESULT EQUAL; after PR 324's 4 batches: 4d2a2747b6653106... (asserted == PR 324 fp-final.json 4d2a2747...)
+   pr324 b1	dry rc=3 sentinel	apply rc=0 .601580472s	EQUAL batch 1 post-state summary	ledger 253 20261016175000
+   pr324 b2	dry rc=3 sentinel	apply rc=0 .662042827s	EQUAL batch 2 post-state summary	ledger 259 20261016196000
+   pr324 b3	dry rc=3 sentinel	apply rc=0 .562903539s	EQUAL batch 3 post-state summary	ledger 272 20261016220000
+   pr324 b4	dry rc=3 sentinel	apply rc=0 .571169587s	EQUAL batch 4 post-state summary	ledger 273 20261016221000
+== mirror2: fresh main fingerprint 8860eee4... (asserted); vs production fp-after-merge.json: RESULT EQUAL; after PR 324's 4 batches: 4d2a2747b6653106... (asserted == PR 324 fp-final.json 4d2a2747...)
+   pr324 b1	dry rc=3 sentinel	apply rc=0 .526985764s	EQUAL batch 1 post-state summary	ledger 253 20261016175000
+   pr324 b2	dry rc=3 sentinel	apply rc=0 .638746720s	EQUAL batch 2 post-state summary	ledger 259 20261016196000
+   pr324 b3	dry rc=3 sentinel	apply rc=0 .603983172s	EQUAL batch 3 post-state summary	ledger 272 20261016220000
+   pr324 b4	dry rc=3 sentinel	apply rc=0 .554840219s	EQUAL batch 4 post-state summary	ledger 273 20261016221000
+== mirror3: fresh main fingerprint 8860eee4... (asserted); vs production fp-after-merge.json: RESULT EQUAL; after PR 324's 4 batches: 4d2a2747b6653106... (asserted == PR 324 fp-final.json 4d2a2747...)
+   pr324 b1	dry rc=3 sentinel	apply rc=0 .439606578s	EQUAL batch 1 post-state summary	ledger 253 20261016175000
+   pr324 b2	dry rc=3 sentinel	apply rc=0 .575120720s	EQUAL batch 2 post-state summary	ledger 259 20261016196000
+   pr324 b3	dry rc=3 sentinel	apply rc=0 .474884705s	EQUAL batch 3 post-state summary	ledger 272 20261016220000
+   pr324 b4	dry rc=3 sentinel	apply rc=0 .480720786s	EQUAL batch 4 post-state summary	ledger 273 20261016221000
+== mirror4: fresh main fingerprint 8860eee4... (asserted); vs production fp-after-merge.json: RESULT EQUAL; after PR 324's 4 batches: 4d2a2747b6653106... (asserted == PR 324 fp-final.json 4d2a2747...)
+   pr324 b1	dry rc=3 sentinel	apply rc=0 .553597562s	EQUAL batch 1 post-state summary	ledger 253 20261016175000
+   pr324 b2	dry rc=3 sentinel	apply rc=0 .583684937s	EQUAL batch 2 post-state summary	ledger 259 20261016196000
+   pr324 b3	dry rc=3 sentinel	apply rc=0 .471525506s	EQUAL batch 3 post-state summary	ledger 272 20261016220000
+   pr324 b4	dry rc=3 sentinel	apply rc=0 .488434305s	EQUAL batch 4 post-state summary	ledger 273 20261016221000
+== mirror5: fresh main fingerprint 8860eee4... (asserted); vs production fp-after-merge.json: RESULT EQUAL
+== mirror1 vs production object for object:
+   extensions: equal (6)
+   functions: equal (1245)
+   schema_acls: equal (2)
+   sequences: equal (8)
+   storage_buckets: equal (3)
+   storage_policies: equal (1)
+   tables: equal (251)
+   types: equal (5)
+   views: equal (0)
+   summary: equal
+   RESULT EQUAL

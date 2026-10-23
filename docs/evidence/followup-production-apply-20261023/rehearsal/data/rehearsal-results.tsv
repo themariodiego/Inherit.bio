@@ -1,0 +1,22 @@
+pre	read-back of the mirror	EQUAL batch 1 pre-state summary 
+pre	prechecks	rc=0	must_be_zero nonzero: none guards ok 19 / 19
+all	dry run (statement_timeout 2min)	rc=3	1 ERROR line(s): ERROR:  DRY_RUN_COMPLETE_ALL_CHECKS_PASSED	0.697s	unchanged	EQUAL batch 1 pre-state summary 
+neg	batch-1 dry run without a session statement_timeout	rc=3	ERROR:  session: set statement_timeout to at most 180s for the session before this statement (a SET inside the block does not bound it)
+neg	batch-1 dry run with statement_timeout 190s	rc=3	ERROR:  session: set statement_timeout to at most 180s for the session before this statement (a SET inside the block does not bound it)
+neg	batch-2 dry run before batch 1	rc=3	ERROR:  predecessor: ledger has 273 rows, max 20261016221000; expected 277 rows, max 20261023110000
+neg	batch-2 apply before batch 1	rc=3	ERROR:  predecessor: ledger has 273 rows, max 20261016221000; expected 277 rows, max 20261023110000
+neg	state after the negative checks	unchanged
+b0	PR 324 pgTAP suite (cf79b1b6) on the pre-state	Files=229, Tests=15544, 529 wallclock secs  Result: PASS 	real 8m51.253s		unchanged
+b1	lock probe	rc=3	1 PROBE_LOCKS line	unchanged
+b1	dry run	rc=3	1 ERROR line(s): ERROR:  DRY_RUN_COMPLETE_ALL_CHECKS_PASSED	0.516s	unchanged	EQUAL batch 1 pre-state summary 
+b1	apply	rc=0	SET DO 	0.485s	EQUAL batch 1 post-state summary 
+b1	ledger	277 rows, max 20261023110000
+b1	PR 324 pgTAP suite (cf79b1b6) on the post-state	Files=229, Tests=15544, 516 wallclock secs  Result: FAIL 	real 8m37.591s	account_archive_graph_rows.sql:1 other_adult_held_upload.sql:1 subject_export.sql:5 	unchanged
+b1	re-apply	rc=3	ERROR:  predecessor: ledger has 277 rows, max 20261023110000; expected 273 rows, max 20261016221000	unchanged
+b2	lock probe	rc=3	1 PROBE_LOCKS line	unchanged
+b2	dry run	rc=3	1 ERROR line(s): ERROR:  DRY_RUN_COMPLETE_ALL_CHECKS_PASSED	0.533s	unchanged	EQUAL batch 2 pre-state summary 
+b2	apply	rc=0	SET DO 	0.453s	EQUAL batch 2 post-state summary 
+b2	ledger	280 rows, max 20261023140000
+b2	PR 324 pgTAP suite (cf79b1b6) on the post-state	Files=229, Tests=15544, 518 wallclock secs  Result: FAIL 	real 8m40.927s	account_archive_graph_rows.sql:1 other_adult_held_upload.sql:1 subject_export.sql:5 	unchanged
+b2	re-apply	rc=3	ERROR:  predecessor: ledger has 280 rows, max 20261023140000; expected 277 rows, max 20261023110000	unchanged
+final	follow-up pgTAP suite (77d04563) on the final state	Files=235, Tests=16034, 528 wallclock secs  Result: PASS 	real 8m50.024s		unchanged

@@ -1,0 +1,26 @@
+# Order equivalence (LOCAL ONLY, stack relfu, 2026-10-23; rehearsal/scripts/equivalence.sh). Fingerprint = ../fingerprint.sql output; dumps = pg_dump 17.6 --schema-only, normalised by dropping the two random \restrict/\unrestrict key lines.
+
+sha256 (fingerprint JSON / normalised dump):
+  fp-final.json 3a0f4d6860a49143b0f939a4185fbae3e1f7a89cb9d114c7c8e3975aab6ba4b4 905889 bytes
+  fp-pr324-plus-7.json 04c167c3dc9a213dff74895f789453d5b7142f3f0e8c220247310bea8b228154 905824 bytes
+  fp-fresh-fu.json 04c167c3dc9a213dff74895f789453d5b7142f3f0e8c220247310bea8b228154 905824 bytes
+  fp-fresh-fu-drift.json 3a0f4d6860a49143b0f939a4185fbae3e1f7a89cb9d114c7c8e3975aab6ba4b4 905889 bytes
+  dump-final.norm.sql 73b5d1225cfcd135a786dc860e84400b791ebc147f73c7ec4291f7e82c643490 102051 lines
+  dump-pr324-plus-7.norm.sql 3c5fb9a4541ebd1de5d28f9c969f2a2bc0244d18060d604f9923f1e8cece0cdd 101973 lines
+  dump-fresh-fu.norm.sql 3c5fb9a4541ebd1de5d28f9c969f2a2bc0244d18060d604f9923f1e8cece0cdd 101973 lines
+  dump-fresh-fu-drift.norm.sql 73b5d1225cfcd135a786dc860e84400b791ebc147f73c7ec4291f7e82c643490 102051 lines
+
+(a) undrifted: fresh 538dcee6 (270) + the 7 (psql -1 -f each, 0.530 s) vs fresh 77d04563 (277):
+  fingerprint byte-identical
+  normalised dump identical
+(b) drifted: rehearsed final mirror (production mirror + PR 324's 4 guarded batches + this kit's 2) vs fresh 77d04563 + the same drift (8 comment-stripped bodies, pg_cron):
+  fingerprint byte-identical
+  normalised dump identical
+(c) rehearsed final mirror vs plain fresh 77d04563 (fpcompare.py):
+  functions differ in exactly the 8 drifted def_md5 values: claim_next_own_preparation_v1, current_adult_subject_invitation_v1, own_report_generation_v1, own_subject_purpose_grant_v1, read_own_upload_finalization_checkpoint_v1, write_own_upload_finalization_checkpoint_v1, claim_due_research_publication_v1, record_blocked_embryo_response_v1
+  extensions differ in pg_cron only; every other category equal
+  dump: 27 lines only in fresh 77d04563, 105 only in the final mirror
+  lines only in fresh 77d04563 that are not full-line comments: 0
+  lines only in the final mirror that are not blank, a bare '--' or about cron: 0
+
+The final mirror's fingerprint (3a0f4d68...) was reached twice: by the rehearsal (rehearse.sh) and again from the final SHA256SUMS state on a rebuilt mirror (final-pass.txt).

@@ -1,0 +1,382 @@
+{
+ "compat_must_be_zero": {
+  "normalization_runs_with_read_calls": 0
+ },
+ "context": {
+  "account_archive_r2_enabled": false,
+  "export_archive_jobs": 0,
+  "family_conversations": 0,
+  "generated_exports_open": 0,
+  "pair_anchored_family_conversations": 0,
+  "permission_review_downloads": 0,
+  "unconsumed_account_operation_nonces": 0
+ },
+ "definitions": {
+  "account_operation_nonces_operation_check": "CHECK ((operation = ANY (ARRAY['account_delete'::text, 'account_delete_cancel'::text, 'consents_revoke_all'::text, 'other_adult_upload_artifact_sign'::text, 'own_account_completion'::text, 'own_upload_artifact_sign'::text, 'subject_delete'::text, 'subject_sharing_stop'::text, 'subject_transfer'::text])))",
+  "literal_count": 9,
+  "parsed_like_120000": [
+   "account_delete",
+   "account_delete_cancel",
+   "consents_revoke_all",
+   "other_adult_upload_artifact_sign",
+   "own_account_completion",
+   "own_upload_artifact_sign",
+   "subject_delete",
+   "subject_sharing_stop",
+   "subject_transfer"
+  ]
+ },
+ "guards": {
+  "#01 20261022100000_neanderthal_ancestry_content line 96": {
+   "function": "private.validate_own_ancestry_content_v1(jsonb,uuid,uuid,jsonb,text)",
+   "have_md5": "901478e0f2a5123e13d72b1cbbb47e08",
+   "kind": "prosrc",
+   "ok": true,
+   "origin": "production",
+   "present": true,
+   "proacl": "{postgres=X/postgres,service_role=X/postgres}",
+   "proconfig": [
+    "search_path=pg_catalog"
+   ],
+   "prosecdef": true,
+   "provolatile": "v",
+   "want_acl": null,
+   "want_md5": "901478e0f2a5123e13d72b1cbbb47e08"
+  },
+  "#02 20261022110000_read_called_input_provenance line 55": {
+   "function": "private.read_own_input_sources_v1(uuid,uuid,uuid,uuid[],text)",
+   "have_md5": "5f6d4777cf080f59ffa0d7d5e888fc8b",
+   "kind": "prosrc",
+   "ok": true,
+   "origin": "production",
+   "present": true,
+   "proacl": "{postgres=X/postgres,service_role=X/postgres}",
+   "proconfig": [
+    "search_path=pg_catalog, private"
+   ],
+   "prosecdef": true,
+   "provolatile": "v",
+   "want_acl": null,
+   "want_md5": "5f6d4777cf080f59ffa0d7d5e888fc8b"
+  },
+  "#03 20261023100000_subject_export_joint_results line 163 (patch 1)": {
+   "function": "private.export_subject_joint_results_v1(uuid)",
+   "have_md5": "767354cddd9908bebbf8e244a0dedb76",
+   "kind": "def",
+   "ok": true,
+   "origin": "PR 324",
+   "present": true,
+   "proacl": "{postgres=X/postgres}",
+   "proconfig": [
+    "search_path=\"\""
+   ],
+   "prosecdef": true,
+   "provolatile": "s",
+   "want_acl": "{postgres=X/postgres}",
+   "want_md5": "767354cddd9908bebbf8e244a0dedb76"
+  },
+  "#03 20261023100000_subject_export_joint_results line 174 (patch 2)": {
+   "function": "private.export_subject_class_inventory_v1(uuid,jsonb)",
+   "have_md5": "ee769c5811458dfb4031f2c464c5256f",
+   "kind": "def",
+   "ok": true,
+   "origin": "PR 324",
+   "present": true,
+   "proacl": "{postgres=X/postgres}",
+   "proconfig": [
+    "search_path=\"\"",
+    "lock_timeout=250ms"
+   ],
+   "prosecdef": true,
+   "provolatile": "v",
+   "want_acl": "{postgres=X/postgres}",
+   "want_md5": "ee769c5811458dfb4031f2c464c5256f"
+  },
+  "#03 20261023100000_subject_export_joint_results line 190 (patch 3)": {
+   "function": "private.export_account_owned_capture_pre_requester_v1(jsonb,text,uuid)",
+   "have_md5": "ca9b6bcefc719018f196f0d4f8e4e73f",
+   "kind": "def",
+   "ok": true,
+   "origin": "PR 324",
+   "present": true,
+   "proacl": "{postgres=X/postgres}",
+   "proconfig": [
+    "search_path=\"\"",
+    "lock_timeout=250ms"
+   ],
+   "prosecdef": true,
+   "provolatile": "v",
+   "want_acl": "{postgres=X/postgres}",
+   "want_md5": "ca9b6bcefc719018f196f0d4f8e4e73f"
+  },
+  "#03 20261023100000_subject_export_joint_results line 195 (patch 4)": {
+   "function": "public.export_archive_account_classes_v1(text,uuid,uuid,text,text,uuid)",
+   "have_md5": "42f4a34ba7a127e89130617a4a005a35",
+   "kind": "def",
+   "ok": true,
+   "origin": "PR 324",
+   "present": true,
+   "proacl": "{postgres=X/postgres,service_role=X/postgres}",
+   "proconfig": [
+    "search_path=\"\"",
+    "lock_timeout=250ms"
+   ],
+   "prosecdef": true,
+   "provolatile": "v",
+   "want_acl": "{postgres=X/postgres,service_role=X/postgres}",
+   "want_md5": "42f4a34ba7a127e89130617a4a005a35"
+  },
+  "#04 20261023110000_export_completeness line 199 (patch 2)": {
+   "function": "private.export_subject_scope_v1(jsonb,uuid)",
+   "have_md5": "fe31c38687c4f5dba894d687c7e72d5c",
+   "kind": "def",
+   "ok": true,
+   "origin": "PR 324",
+   "present": true,
+   "proacl": "{postgres=X/postgres}",
+   "proconfig": [
+    "search_path=\"\""
+   ],
+   "prosecdef": true,
+   "provolatile": "s",
+   "want_acl": "{postgres=X/postgres}",
+   "want_md5": "fe31c38687c4f5dba894d687c7e72d5c"
+  },
+  "#04 20261023110000_export_completeness line 205 (patch 3)": {
+   "function": "private.export_subject_graph_capture_v1(uuid,jsonb)",
+   "have_md5": "23a4c87eb5002d72e9816009021079bd",
+   "kind": "def",
+   "ok": true,
+   "origin": "PR 324",
+   "present": true,
+   "proacl": "{postgres=X/postgres}",
+   "proconfig": [
+    "search_path=\"\"",
+    "lock_timeout=250ms"
+   ],
+   "prosecdef": true,
+   "provolatile": "v",
+   "want_acl": "{postgres=X/postgres}",
+   "want_md5": "23a4c87eb5002d72e9816009021079bd"
+  },
+  "#04 20261023110000_export_completeness line 214 (patch 4)": {
+   "function": "private.export_subject_graph_projection_v1(uuid,uuid[],text)",
+   "have_md5": "b3d75d95193c0c6a752ba21ba23155e0",
+   "kind": "def",
+   "ok": true,
+   "origin": "PR 324",
+   "present": true,
+   "proacl": "{postgres=X/postgres}",
+   "proconfig": [
+    "search_path=\"\"",
+    "lock_timeout=250ms"
+   ],
+   "prosecdef": true,
+   "provolatile": "s",
+   "want_acl": "{postgres=X/postgres}",
+   "want_md5": "b3d75d95193c0c6a752ba21ba23155e0"
+  },
+  "#04 20261023110000_export_completeness line 226 (patch 5)": {
+   "function": "private.export_subject_history_projection_v1(uuid,uuid[],text)",
+   "have_md5": "59bb66b368b8769f0e4de3bc7cf87003",
+   "kind": "def",
+   "ok": true,
+   "origin": "PR 324",
+   "present": true,
+   "proacl": "{postgres=X/postgres}",
+   "proconfig": [
+    "search_path=\"\"",
+    "lock_timeout=250ms"
+   ],
+   "prosecdef": true,
+   "provolatile": "s",
+   "want_acl": "{postgres=X/postgres}",
+   "want_md5": "59bb66b368b8769f0e4de3bc7cf87003"
+  },
+  "#04 20261023110000_export_completeness line 261 (patch 9)": {
+   "function": "public.export_archive_account_content_v1(text,uuid,uuid,text,jsonb)",
+   "have_md5": "25ab819a16105020897e9c0cf7e1fef1",
+   "kind": "def",
+   "ok": true,
+   "origin": "PR 324",
+   "present": true,
+   "proacl": "{postgres=X/postgres,service_role=X/postgres}",
+   "proconfig": [
+    "search_path=\"\""
+   ],
+   "prosecdef": true,
+   "provolatile": "v",
+   "want_acl": "{postgres=X/postgres,service_role=X/postgres}",
+   "want_md5": "25ab819a16105020897e9c0cf7e1fef1"
+  },
+  "#04 20261023110000_export_completeness line 289 (patch 11)": {
+   "function": "private.export_account_owned_capture_pre_member_frame_v1(jsonb,text,uuid)",
+   "have_md5": "65c53bbe4787500a69c764f2bd50951f",
+   "kind": "def",
+   "ok": true,
+   "origin": "PR 324",
+   "present": true,
+   "proacl": "{postgres=X/postgres}",
+   "proconfig": [
+    "search_path=pg_catalog",
+    "lock_timeout=250ms"
+   ],
+   "prosecdef": true,
+   "provolatile": "v",
+   "want_acl": "{postgres=X/postgres}",
+   "want_md5": "65c53bbe4787500a69c764f2bd50951f"
+  },
+  "#04 20261023110000_export_completeness line 312 (patch 12)": {
+   "function": "private.export_account_graph_capture_v1(uuid,jsonb)",
+   "have_md5": "26513cf7d20ed98f3fb4316283a96e14",
+   "kind": "def",
+   "ok": true,
+   "origin": "production",
+   "present": true,
+   "proacl": "{postgres=X/postgres}",
+   "proconfig": [
+    "search_path=\"\"",
+    "lock_timeout=250ms"
+   ],
+   "prosecdef": true,
+   "provolatile": "v",
+   "want_acl": "{postgres=X/postgres}",
+   "want_md5": "26513cf7d20ed98f3fb4316283a96e14"
+  },
+  "#04 20261023110000_export_completeness line 325 (patch 13)": {
+   "function": "private.account_archive_complete_class_rows_v1(jsonb,jsonb,jsonb,text)",
+   "have_md5": "bf340049d6858f1f7f8c6b21f0886bd7",
+   "kind": "def",
+   "ok": true,
+   "origin": "production",
+   "present": true,
+   "proacl": "{postgres=X/postgres}",
+   "proconfig": [
+    "search_path=\"\"",
+    "lock_timeout=250ms",
+    "extra_float_digits=3"
+   ],
+   "prosecdef": true,
+   "provolatile": "v",
+   "want_acl": "{postgres=X/postgres}",
+   "want_md5": "bf340049d6858f1f7f8c6b21f0886bd7"
+  },
+  "#05 20261023120000_legal_audit_attribution_completeness line 240 (patch 1)": {
+   "function": "private.record_subject_operation_nonce_v1(uuid,uuid,text,uuid,text,timestamptz)",
+   "have_md5": "9539afdc5057346d44c1b8cd826b7ee2",
+   "kind": "def",
+   "ok": true,
+   "origin": "PR 324",
+   "present": true,
+   "proacl": "{postgres=X/postgres}",
+   "proconfig": [
+    "search_path=\"\""
+   ],
+   "prosecdef": true,
+   "provolatile": "v",
+   "want_acl": "{postgres=X/postgres}",
+   "want_md5": "9539afdc5057346d44c1b8cd826b7ee2"
+  },
+  "#05 20261023120000_legal_audit_attribution_completeness line 246 (patch 2)": {
+   "function": "private.legal_audit_person_event_v1(text,text)",
+   "have_md5": "b566386791e9736ef744924a2d4d3039",
+   "kind": "def",
+   "ok": true,
+   "origin": "production",
+   "present": true,
+   "proacl": "{postgres=X/postgres}",
+   "proconfig": [
+    "search_path=\"\""
+   ],
+   "prosecdef": false,
+   "provolatile": "i",
+   "want_acl": "{postgres=X/postgres}",
+   "want_md5": "b566386791e9736ef744924a2d4d3039"
+  },
+  "#06 20261023130000_legal_audit_attribution_remaining line 169 (patch 2)": {
+   "function": "public.bind_adult_subject_account_v1(text,text,uuid,uuid,boolean)",
+   "have_md5": "a7375f589e70ff54ced2b5b1d34b69cd",
+   "kind": "def",
+   "ok": true,
+   "origin": "PR 324",
+   "present": true,
+   "proacl": "{postgres=X/postgres,service_role=X/postgres}",
+   "proconfig": [
+    "search_path=\"\"",
+    "lock_timeout=250ms"
+   ],
+   "prosecdef": true,
+   "provolatile": "v",
+   "want_acl": "{postgres=X/postgres,service_role=X/postgres}",
+   "want_md5": "a7375f589e70ff54ced2b5b1d34b69cd"
+  },
+  "#06 20261023130000_legal_audit_attribution_remaining line 86": {
+   "function": "private.adult_subject_control_v1(text,text,text,text,boolean)",
+   "have_md5": "f6201a3830d82dcd8a95d2b8487b59ad",
+   "kind": "def",
+   "ok": true,
+   "origin": "PR 324",
+   "present": true,
+   "proacl": "{postgres=X/postgres}",
+   "proconfig": [
+    "search_path=\"\""
+   ],
+   "prosecdef": true,
+   "provolatile": "v",
+   "want_acl": "{postgres=X/postgres}",
+   "want_md5": "f6201a3830d82dcd8a95d2b8487b59ad"
+  },
+  "#07 20261023140000_review_download_clock line 26 (patch 1)": {
+   "function": "public.open_permission_review_download_v1(uuid,text)",
+   "have_md5": "243f68d2eabb8a27013df14d87cddb6b",
+   "kind": "def",
+   "ok": true,
+   "origin": "PR 324",
+   "present": true,
+   "proacl": "{postgres=X/postgres,authenticated=X/postgres}",
+   "proconfig": [
+    "search_path=\"\""
+   ],
+   "prosecdef": true,
+   "provolatile": "v",
+   "want_acl": "{postgres=X/postgres,authenticated=X/postgres}",
+   "want_md5": "243f68d2eabb8a27013df14d87cddb6b"
+  }
+ },
+ "ledger": {
+  "above_pr324_max": 0,
+  "count": 273,
+  "max": "20261016221000",
+  "pr324_versions_present": 25,
+  "release_versions_present": 0
+ },
+ "must_be_zero": {
+  "embryo_nonce_actor_trigger_missing": 0,
+  "guarded_bodies_not_as_rehearsed": 0,
+  "nonce_check_values_not_parsed": 0,
+  "nonce_check_without_subject_transfer": 0,
+  "prerequisite_functions_missing": 0,
+  "prerequisite_relations_missing": 0,
+  "prerequisite_signatures_missing": 0,
+  "release_functions_present": 0,
+  "release_trigger_present": 0
+ },
+ "session": {
+  "current_user": "postgres",
+  "lock_timeout": "0",
+  "search_path": "\"\\$user\", public, extensions",
+  "server_version": "17.6",
+  "statement_timeout": "0"
+ },
+ "sizes": {
+  "account_operation_nonces": 0,
+  "chat_messages": 0,
+  "chats": 0,
+  "embryo_cohorts": 0,
+  "family_pairs": 0,
+  "own_normalization_runs": 0,
+  "permission_documents": 0,
+  "portrait_results": 0,
+  "subjects": 0
+ }
+}
