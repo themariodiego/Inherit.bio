@@ -2,6 +2,22 @@
 
 This entry follows the owner's decisions of 23 October (decisions, "G8.5: forms, CSRF, the server action and the Resend webhook"), items 1, 3 and 4, on local branch `local/g85-shapes` from `287a1408`. The CSRF token (item 2) and sign-out are another branch's work and are untouched here. Production is untouched.
 
+### The register lists the harmless extras (item 1, register half)
+
+The register gains, each in its own vocabulary next to the existing contracts:
+- `genome.browser`: a closed `queryContract` for `q`, with what the page does when it is absent, empty, unmatched or names an unknown chromosome;
+- `requestId` on all three `closed-subject-draft-create-v1` bodies;
+- a fifth `api.withdraw` body, Path B's account branch (`withAccount: true` and the same `subjectArtifact`), with `accountConfirmBody`;
+- two 409 contracts bound to `api.chat`: `copilot-provider-setup-required-v1` (`no_provider` / `no_key`) and `own-chat-scientific-correction-v1`, the correction refusal the own panel's 409 branch reads;
+- `resource-not-found-v1` bound to `api.future-person-claim`.
+
+Five `formRequestDivergence` rows close and are removed, and the Path A row loses its `requestId` issue. The CSRF rows are untouched.
+
+**Changed suite: `scripts/form-register-correspondence.test.ts`.**
+- "reads a conditional required header only for the body it applies to": the two planted subject-draft bodies now carry `requestId`, which the register requires. The expected results are unchanged (the Path A body without the nonce header fails, the Path B body passes). One assertion is added: the Path B body without `requestId` fails with "omits requestId, which the registered body requires".
+- New: "accepts the extras the register lists since 2026-10-23, and still refuses their neighbours". It passes `q`, refuses a second field `file`, passes the account-branch body, refuses it with `jurisdictionCode` added or `subjectArtifact` left out, passes `api.chat`'s 409 and the claim's 404, and refuses 410 on both.
+- Planted, each reverted: unbinding the claim's 404, or renaming the `withAccount` key in the register, fails the main comparison (a new unrecorded divergence), the two existing planted-ledger tests and the new test.
+
 ### The server action becomes the registered route `api.embryo-acknowledge` (item 3)
 
 `acknowledgeEmbryoGate` (`src/app/(app)/embryos/acknowledge.ts`) is deleted. `POST /api/embryos/acknowledge` replaces it, built like the `tier2-result-gate` case of `api.family-acknowledge`: the same `isSameOrigin`, a closed body (`{ acknowledgement: "embryo-result-gate", affirmed: true }`), the account and auth session from `getSensitiveAccountContext`, and the same cookie (`embryoGateCookie`: httpOnly, Secure, SameSite=Lax, no Max-Age). Like its twin's gate case, it takes no operation nonce. `EmbryoResultGate` posts to it, as the Family gate does, and its three pages no longer pass an action. The register gains the route, `embryo-acknowledged-v1`, the binding and the resource-authorization entry. `docs/route-divergence.json#unregisteredServerActions` is now empty, with a dated note.

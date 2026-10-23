@@ -2196,7 +2196,9 @@
             "copilot-transport-unavailable-v1",
             "copilot-denial-v1",
             "copilot-refusal-v1",
-            "embryo-closed-schema-v1"
+            "embryo-closed-schema-v1",
+            "copilot-provider-setup-required-v1",
+            "own-chat-scientific-correction-v1"
           ],
           "api.chat-history": [
             "copilot-transport-unavailable-v1",
@@ -10475,7 +10477,8 @@
             "const": "path-a-own-account"
           },
           "contactEmail": "normalized-valid-address-at-most-254-bytes",
-          "note": "optional-zero-through-500-Unicode-characters-used-only-in-the-minimal-invitation-template"
+          "note": "optional-zero-through-500-Unicode-characters-used-only-in-the-minimal-invitation-template",
+          "requestId": "required-client-generated-UUID-idempotency-key-one-per-form-instance-so-a-retried-submission-reserves-one-draft-or-invitation; registered-2026-10-23-G8.5"
         },
         {
           "kind": {
@@ -10486,7 +10489,8 @@
           },
           "displayName": "two-through-120-Unicode-characters",
           "dateOfBirth": "valid-ISO-date-proving-18-or-older-by-server-UTC-calculation",
-          "contactEmail": "normalized-valid-address-at-most-254-bytes"
+          "contactEmail": "normalized-valid-address-at-most-254-bytes",
+          "requestId": "required-client-generated-UUID-idempotency-key-one-per-form-instance-so-a-retried-submission-reserves-one-draft-or-invitation; registered-2026-10-23-G8.5"
         },
         {
           "kind": {
@@ -10497,7 +10501,8 @@
           },
           "displayName": "two-through-120-Unicode-characters",
           "dateOfBirth": "valid-ISO-date-proving-18-or-older-by-server-UTC-calculation",
-          "contactEmail": "normalized-valid-address-at-most-254-bytes"
+          "contactEmail": "normalized-valid-address-at-most-254-bytes",
+          "requestId": "required-client-generated-UUID-idempotency-key-one-per-form-instance-so-a-retried-submission-reserves-one-draft-or-invitation; registered-2026-10-23-G8.5"
         }
       ],
       "unknownMissingOrInvalid": "invalid-request-v1",
@@ -11425,6 +11430,40 @@
       "failureEffects": "delete-every-staging-or-uncommitted-promoted-object-and-write-zero-final-file-authority-adult_upload_revision-canonical-genetic-row-derived-row-result-or-job",
       "unknownFieldsRecursively": "forbidden",
       "subjectContactObjectPathUploadTokenPurposeOrJobInternalsExceptOpaqueJobId": "forbidden"
+    },
+    "copilot-provider-setup-required-v1": {
+      "status": 409,
+      "contentType": "application/json",
+      "body": {
+        "error": {
+          "enum": [
+            "no_provider",
+            "no_key"
+          ]
+        },
+        "message": "fixed-server-copy-naming-the-setting-to-add"
+      },
+      "when": "the-compatibility-branch-of-api.chat-for-a-scope-with-no-canonical-Copilot-authority-finds-no-saved-provider-no_provider-or-a-hosted-provider-with-no-stored-key-no_key; after-the-intent-gate-and-before-any-key-decryption-retrieval-or-model-call",
+      "registeredBy": "owner-decision-2026-10-23-G8.5-the-register-lists-the-harmless-extras",
+      "unknownFieldsRecursively": "forbidden",
+      "writes": 0,
+      "modelCalls": 0
+    },
+    "own-chat-scientific-correction-v1": {
+      "status": 409,
+      "contentType": "application/json",
+      "body": {
+        "error": {
+          "const": "report_scientific_correction"
+        },
+        "notice": "the-fixed-OWN_CHAT_CORRECTION_NOTICE-from-src/copy/reports/scientific-correction.ts"
+      },
+      "when": "the-own-scope-branch-finds-a-report-in-the-bound-context-under-a-scientific-correction; before-the-context-token-nonce-is-consumed-and-before-history-or-tools-reach-a-model",
+      "headers": "private-no-store-no-referrer",
+      "registeredBy": "owner-decision-2026-10-23-G8.5-the-register-lists-the-harmless-extras-api.chat's-409",
+      "unknownFieldsRecursively": "forbidden",
+      "writes": 0,
+      "modelCalls": 0
     },
     "own-copilot-unavailable-v1": {
       "status": 403,
@@ -14025,7 +14064,9 @@
         "copilot-refusal-v1",
         "embryo-closed-schema-v1",
         "chat-completion-v1",
-        "own-copilot-unavailable-v1"
+        "own-copilot-unavailable-v1",
+        "copilot-provider-setup-required-v1",
+        "own-chat-scientific-correction-v1"
       ],
       "api.chat-history": [
         "chat-history-v1",
@@ -14332,7 +14373,8 @@
       "api.future-person-claim": [
         "invalid-request-v1",
         "future-person-claim-acceptance-v1",
-        "public-capacity-limited-v1"
+        "public-capacity-limited-v1",
+        "resource-not-found-v1"
       ],
       "api.future-person-claim-complete": [
         "future-person-claim-acceptance-v1",
@@ -15600,6 +15642,25 @@
       "auth": "authenticated",
       "surface": "standard",
       "width": "64rem",
+      "queryContract": {
+        "registeredBy": "owner-decision-2026-10-23-G8.5-the-register-lists-the-harmless-extras",
+        "closed": {
+          "q": {
+            "schema": "optional-free-text-search-term-trimmed-by-the-server-read-as-an-rsID-a-chromosome-position-or-range-a-gene-symbol-or-a-trait-word-in-that-order",
+            "linkSource": {
+              "routeFrom": "genome.browser"
+            },
+            "submittedBy": "the-page's-own-native-GET-search-form-rendered-only-while-the-subject-has-a-prepared-file",
+            "bound": "no-length-bound-beyond-the-request-line; a-position-reads-at-most-the-200-row-region-limit-and-a-gene-symbol-at-most-100-reference-positions",
+            "content": "a-reference-coordinate-symbol-or-word-the-reader-typed; never-a-file-subject-or-genotype-identifier"
+          }
+        },
+        "absentOrEmptyAfterTrim": "render-the-search-box-with-no-result-rows-and-no-search-read",
+        "withoutAPreparedFile": "ignored-with-no-search-read",
+        "noMatch": "render-the-registered-no-reference-match-sentence-with-the-reports-link-and-no-result-rows",
+        "unrecognizedChromosome": "render-the-registered-unrecognized-chromosome-sentence-and-no-result-rows",
+        "unknownParameters": "ignored-and-never-echoed"
+      },
       "stateProfile": "product-result",
       "notApplicableStates": {
         "awaiting-choice": "This route shows what a subject's file already produced. The invitation to choose an analysis renders on /overview alone, and its link points at /genome/[subject]/reports.",
@@ -20600,6 +20661,7 @@
       "requestContract": {
         "contentType": "application/json",
         "schema": "closed-future-person-claim-intake-v1",
+        "claimsClosedNoVerifiedFormTokenOrReplayedForm": "resource-not-found-v1-the-same-opaque-answer-for-all-three-registered-2026-10-23-G8.5",
         "requiredSignals": [
           "Origin-exactly-canonical-origin",
           "Sec-Fetch-Site-same-origin",
@@ -21613,6 +21675,24 @@
             "operation": {
               "const": "confirm"
             },
+            "nonce": "required-one-time-operation-nonce",
+            "withAccount": {
+              "const": true
+            },
+            "subjectArtifact": {
+              "artifactVersion": "required-current-positive-integer",
+              "artifactPresentationToken": "required-short-lived-single-use-server-signed-current-consent.subject-adult-key-version-and-body-hash",
+              "affirmed": {
+                "const": true
+              },
+              "statementKeys": "exact-server-published-four-item-array-with-every-item-individually-actuated",
+              "typedName": "at-least-two-whitespace-separated-tokens-of-at-least-two-characters"
+            }
+          },
+          {
+            "operation": {
+              "const": "confirm"
+            },
             "uploadRevisionAffirmed": {
               "const": true
             },
@@ -21632,6 +21712,7 @@
           }
         ],
         "confirmBodySelection": "the-server-stored-rights-purpose-current-authority-state-and-invitation-kind-select-exactly-one-closed-confirm-body-before-validation; only-a-path-b-adult_subject-invitation-requires-the-full-subjectArtifact-and-jurisdiction-body-while-every-current-adult-upload-revision-requires-only-uploadRevisionAffirmed-true-and-nonce; co_parent-and-identified_donor_subject-confirm-are-forbidden-here-and-use-api.invitation-accept; cross-shape-or-extra-fields-are-invalid-request-v1",
+        "accountConfirmBody": "registered-2026-10-23-G8.5: a-path-b-adult_subject-invitation-whose-invited-address-is-the-signed-in-account-may-send-withAccount-true-with-the-same-subjectArtifact-and-no-jurisdiction-fields-because-that-account's-own-current-declared-jurisdiction-is-the-one-that-counts-and-the-body-cannot-name-the-account; TEST-LOCAL-only-as-the-account-branch-is (src/lib/uploads/other-adult-upload.ts#pathBAccountConfirmBody)",
         "unknownMissingInvalidOrAmbiguous": "invalid-request-v1",
         "forbiddenFields": [
           "rawToken",

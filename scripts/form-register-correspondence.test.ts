@@ -313,9 +313,12 @@ describe("the form census fails on a planted divergence", () => {
   it("reads a conditional required header only for the body it applies to", () => {
     const drafts = (body: string) => form('"/api/subject-drafts"',
       `{ method: "POST", headers: { "content-type": "application/json", "x-inherit-csrf": csrf }, body: JSON.stringify(${body}) }`);
-    expect(issuesOf(drafts('{ kind: "adult", adultFlow: "path-a-own-account", contactEmail }')))
+    expect(issuesOf(drafts('{ kind: "adult", adultFlow: "path-a-own-account", contactEmail, requestId }')))
       .toEqual(["omits the required header x-inherit-operation-nonce"]);
-    expect(issuesOf(drafts('{ kind: "adult", adultFlow: "path-b-subject-esignature", displayName, dateOfBirth, contactEmail }'))).toEqual([]);
+    expect(issuesOf(drafts('{ kind: "adult", adultFlow: "path-b-subject-esignature", displayName, dateOfBirth, contactEmail, requestId }'))).toEqual([]);
+    // requestId is registered on every subject-draft body (2026-10-23), so leaving it out is a divergence too.
+    expect(issuesOf(drafts('{ kind: "adult", adultFlow: "path-b-subject-esignature", displayName, dateOfBirth, contactEmail }')))
+      .toEqual(["omits requestId, which the registered body requires"]);
   });
 
   it("fails on a status the register does not let the route answer", () => {
@@ -349,6 +352,31 @@ describe("the form census fails on a planted divergence", () => {
       "cannot send the required header x-inherit-csrf: a native form submission carries no custom header",
       "submits the field chromosome, which genome.browser declares no query contract for",
     ]);
+  });
+
+  it("accepts the extras the register lists since 2026-10-23, and still refuses their neighbours", () => {
+    // genome.browser's q, and only q.
+    expect(issuesOf('export function Native() {\n  return <form action={route("genome.browser", params)}><input name="q" /></form>;\n}\n'))
+      .toEqual([]);
+    expect(issuesOf('export function Native() {\n  return <form action={route("genome.browser", params)}><input name="q" /><input name="file" /></form>;\n}\n'))
+      .toEqual(["submits the field file, which genome.browser declares no query contract for"]);
+    // Path B's account branch: the registered withAccount body, with nothing added and nothing left out.
+    const withdraw = (body: string) => form('"/api/withdraw/session"',
+      `{ method: "POST", headers: { "content-type": "application/json", "x-inherit-csrf": csrf }, body: JSON.stringify(${body}) }`);
+    const artifact = "{ artifactVersion, artifactPresentationToken, affirmed: true, statementKeys, typedName }";
+    expect(issuesOf(withdraw(`{ operation: "confirm", nonce, withAccount: true, subjectArtifact: ${artifact} }`))).toEqual([]);
+    expect(issuesOf(withdraw(`{ operation: "confirm", nonce, withAccount: true, subjectArtifact: ${artifact}, jurisdictionCode }`)))
+      .toEqual(["sends jurisdictionCode, which the registered body does not declare"]);
+    expect(issuesOf(withdraw('{ operation: "confirm", nonce, withAccount: true }')))
+      .toEqual(["omits subjectArtifact, which the registered body requires"]);
+    // api.chat's 409 and api.future-person-claim's 404 are registered; a neighbouring status is not.
+    const chat = (after: string) => form('"/api/chat"', '{ method: "POST", headers: { "content-type": "application/json", "x-inherit-csrf": csrf }, body: JSON.stringify({ chatId, message }) }', after);
+    expect(issuesOf(chat("if (response.status === 409) return;"))).toEqual([]);
+    expect(issuesOf(chat("if (response.status === 410) return;"))).toEqual(["branches on status 410, which no response contract of api.chat declares"]);
+    const claim = (after: string) => form('"/api/future-person/claim"', '{ method: "POST", headers: { "content-type": "application/json", "x-inherit-csrf": token }, body: JSON.stringify(intake) }', after);
+    expect(issuesOf(claim("if (response.status === 404) return;")).filter(issue => issue.startsWith("branches"))).toEqual([]);
+    expect(issuesOf(claim("if (response.status === 410) return;")).filter(issue => issue.startsWith("branches")))
+      .toEqual(["branches on status 410, which no response contract of api.future-person-claim declares"]);
   });
 
   it("holds the sign-out response to sign-out-v1, and would notice the recorded divergence close", () => {

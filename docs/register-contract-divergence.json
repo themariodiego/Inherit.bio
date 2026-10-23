@@ -227,20 +227,9 @@
       "closing": "Drop 'generated-artifacts' from the three column CHECKs, which also removes this row. It needs no other change; the embryo table's CHECK belongs to the embryo-ingest work, so the three go together when that work next touches it."
     }
   ],
-  "formRequestDivergenceNote": "2026-10-23 (G8.5, form verification). What every <form> in the shipped app sends, read from source by scripts/form-contract-census.ts and held against docs/route-register.json by scripts/form-register-correspondence.test.ts: the target, method, body keys and literal discriminators, required and CSRF headers, Content-Type and the statuses the code branches on. A native form is read from its markup; an actionless form through its submit handler, following local and imported functions, conditional bodies and the props a form hands its submission to. Each row is one (request file, route, method) and the issues it shows, with the X-Inherit-CSRF omission kept in a row of its own that points at csrfTransportNote; the test computes the issue set and compares it with these rows in both directions, so a new divergence fails until recorded and a fixed one fails until its row is removed. closedBy names who has to act: owner (which document moves), counsel, or engineering. Listing a divergence records it; it does not bless it.",
+  "formRequestDivergenceNote": "2026-10-23 (G8.5, form verification). What every <form> in the shipped app sends, read from source by scripts/form-contract-census.ts and held against docs/route-register.json by scripts/form-register-correspondence.test.ts: the target, method, body keys and literal discriminators, required and CSRF headers, Content-Type and the statuses the code branches on. A native form is read from its markup; an actionless form through its submit handler, following local and imported functions, conditional bodies and the props a form hands its submission to. Each row is one (request file, route, method) and the issues it shows, with the X-Inherit-CSRF omission kept in a row of its own that points at csrfTransportNote; the test computes the issue set and compares it with these rows in both directions, so a new divergence fails until recorded and a fixed one fails until its row is removed. closedBy names who has to act: owner (which document moves), counsel, or engineering. Listing a divergence records it; it does not bless it. 2026-10-23, owner decision (\"G8.5: forms, CSRF, the server action and the Resend webhook\", item 1): the register lists the harmless extras that ship, so five rows close and are removed: genome.browser's q (a closed queryContract), requestId on every subject-draft body, Path B's withAccount confirm body on api.withdraw, api.chat's 409s (copilot-provider-setup-required-v1 and own-chat-scientific-correction-v1) and api.future-person-claim's 404 (resource-not-found-v1). The CSRF rows are untouched: that work is item 2.",
   "csrfTransportNote": "Every row whose issues are the X-Inherit-CSRF omission. The register makes X-Inherit-CSRF, a one-time token bound to the session, mandatory on every state-changing request of an authenticated or session-authenticated route (mutationSecurityBindings.csrfTransport; authContracts.authenticated-mutation-v1.csrf; token-api-v1.stateChangingRequest), and says an operation nonce is not CSRF (operationNonceIsNotCsrf). This form's request sends no such header. What the product relies on instead, read from the handlers rather than assumed: an exact Origin or Sec-Fetch-Site same-origin check, SameSite=Lax auth cookies and, where the register asks for one, a one-time operation nonce or form token in the body or the X-Inherit-Operation-Nonce header. So this is a real divergence between the register's CSRF transport and the defence the code implements, not a missing check on an open endpoint. Owner: decide which document moves. Either the register's csrfTransport stays and engineering builds the session-bound one-time X-Inherit-CSRF token (issue, bind, consume or rotate) on every listed route and its form, or the register is amended to name the Origin/Fetch-Metadata/SameSite-plus-nonce defence the code implements. Until then each row stays, and adding the header to a form without a handler that consumes it would make the row go stale without closing anything.",
   "formRequestDivergence": [
-    {
-      "file": "src/app/(app)/genome/[subject]/data/browser/page.tsx",
-      "routeId": "genome.browser",
-      "method": "GET",
-      "issues": [
-        "submits the field q, which genome.browser declares no query contract for"
-      ],
-      "why": "The data browser's search form is a native GET form back to its own page, and the page reads q. The register's genome.browser entry declares no queryContract, so the one query parameter the page accepts has no declared schema, bound or unknown-value disposition, where embryos.compare, for example, declares a closed one.",
-      "closing": "Owner: register a closed queryContract for genome.browser (q with its bound and the page's existing empty and not-found handling), or remove the search. The entry can be drafted from the page once the owner agrees the register should carry it.",
-      "closedBy": "owner"
-    },
     {
       "file": "src/components/chat/chat-panel.tsx",
       "routeId": "api.chat",
@@ -277,17 +266,6 @@
       ],
       "why": "See csrfTransportNote.",
       "closing": "See csrfTransportNote.",
-      "closedBy": "owner"
-    },
-    {
-      "file": "src/components/chat/own-chat-panel.tsx",
-      "routeId": "api.chat",
-      "method": "POST",
-      "issues": [
-        "branches on status 409, which no response contract of api.chat declares"
-      ],
-      "why": "The route answers 409 for no_provider and no_key (src/app/api/chat/route.ts) and for the own-chat correction refusal (src/lib/copilot/own-chat-route.ts, ownChatCorrection), and the panel branches on 409 to show the correction. None of the nine response contracts bound to api.chat in responseContractBindings declares a 409; the nearest, own-copilot-unavailable-v1, is a 403.",
-      "closing": "Owner: register the 409 refusals as a bound response contract, or have the route answer them with a bound contract (engineering, with the panel changed in the same commit).",
       "closedBy": "owner"
     },
     {
@@ -356,22 +334,10 @@
         "omits contactEmail, which the registered body requires",
         "sends adultAttestation, which the registered body does not declare",
         "sends email, which the registered body does not declare",
-        "sends kind=other_adult where the registered body requires adult",
-        "sends requestId, which the registered body does not declare"
+        "sends kind=other_adult where the registered body requires adult"
       ],
-      "why": "The Path A invitation body, which src/app/api/subject-drafts/route.ts parses with its own schema ({ kind: \"other_adult\", adultFlow, email, adultAttestation: true, requestId, note? }), predates requestSchemas.closed-subject-draft-create-v1, which registers { kind: \"adult\", adultFlow: \"path-a-own-account\", contactEmail, note? }. The two Path B bodies in the same route use the registered kind and contactEmail. The route also refuses an unreviewed jurisdiction with 409 jurisdiction_unavailable where the register binds capability-denied-api-v1, a 403. The form and the handler agree with each other and not with the register.",
+      "why": "The Path A invitation body, which src/app/api/subject-drafts/route.ts parses with its own schema ({ kind: \"other_adult\", adultFlow, email, adultAttestation: true, requestId, note? }), predates requestSchemas.closed-subject-draft-create-v1, which registers { kind: \"adult\", adultFlow: \"path-a-own-account\", contactEmail, note? }. The two Path B bodies in the same route use the registered kind and contactEmail. The route also refuses an unreviewed jurisdiction with 409 jurisdiction_unavailable where the register binds capability-denied-api-v1, a 403. The form and the handler agree with each other and not with the register. requestId, which both Path A and Path B send, is registered on every subject-draft body since 2026-10-23 (owner decision, the harmless extras).",
       "closing": "Owner: decide which document moves. The register is the binding authority, so the default is that the handler and this form move to the registered body and the 403 (engineering, with the e2e invitation specs), and the register gains requestId if the owner wants the idempotency key kept (it is sent by both Path A and Path B; see the other-adult row).",
-      "closedBy": "owner"
-    },
-    {
-      "file": "src/components/future-person/claim-form.tsx",
-      "routeId": "api.future-person-claim",
-      "method": "POST",
-      "issues": [
-        "branches on status 404, which no response contract of api.future-person-claim declares"
-      ],
-      "why": "src/app/api/future-person/claim/route.ts answers notFound() when claims are closed, when no form token verifies, and on a duplicate (23505), and the form shows its expired-link sentence on 404. The register binds invalid-request-v1, future-person-claim-acceptance-v1 (202) and public-capacity-limited-v1 (429) to this public route and no 404.",
-      "closing": "Owner: bind resource-not-found-v1 to api.future-person-claim (it is the opaque answer the route already gives), or have the route answer these cases with a bound contract.",
       "closedBy": "owner"
     },
     {
@@ -434,17 +400,6 @@
       "closedBy": "owner"
     },
     {
-      "file": "src/components/uploads/other-adult-upload-card.tsx",
-      "routeId": "api.subject-drafts",
-      "method": "POST",
-      "issues": [
-        "sends requestId, which the registered body does not declare"
-      ],
-      "why": "The Path B new-person form sends the registered path-b body plus requestId, the idempotency key the route uses to make a retried submission create one draft. No registered subject-draft body declares it.",
-      "closing": "Owner: add requestId to the registered subject-draft bodies (it is real behaviour worth keeping), or drop it from both forms and the route.",
-      "closedBy": "owner"
-    },
-    {
       "file": "src/components/uploads/path-b-request-form.tsx",
       "routeId": "api.withdraw",
       "method": "POST",
@@ -453,21 +408,6 @@
       ],
       "why": "See csrfTransportNote.",
       "closing": "See csrfTransportNote.",
-      "closedBy": "owner"
-    },
-    {
-      "file": "src/components/uploads/path-b-request-form.tsx",
-      "routeId": "api.withdraw",
-      "method": "POST",
-      "issues": [
-        "omits jurisdictionAffirmed, which the registered body requires",
-        "omits jurisdictionAttestationHash, which the registered body requires",
-        "omits jurisdictionAttestationVersion, which the registered body requires",
-        "omits jurisdictionCode, which the registered body requires",
-        "sends withAccount, which the registered body does not declare"
-      ],
-      "why": "Path B's account branch (TEST-LOCAL): when the invited address is signed in, the form sends { operation: \"confirm\", nonce, withAccount: true, subjectArtifact }, which src/lib/uploads/other-adult-upload.ts#pathBAccountConfirmBody accepts, and the account's own declared country is used. The register's api.withdraw has no withAccount body; its subjectArtifact confirm body requires the jurisdiction fields. The no-account branch of the same form does send all four fields, the version and hash taken from the published attestation.jurisdiction artifact and checked against it by src/lib/uploads/path-b-respond.ts.",
-      "closing": "Owner: register the account-branch confirm body (adult-subject-confirmation with the account's declaration) or remove the branch. Engineering once decided.",
       "closedBy": "owner"
     }
   ],
