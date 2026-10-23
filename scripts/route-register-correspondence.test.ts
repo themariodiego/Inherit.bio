@@ -148,7 +148,7 @@ const ledger = JSON.parse(readFileSync(LEDGER, "utf8")) as {
   permissiveDynamicSegment: { routeId: string; path: string; file: string; deleteAfter?: string }[];
   kindDivergence: { routeId: string; path: string; file: string; declaredKind: string; builtKind: string }[];
   storageBucketDivergence: { bucket: string; direction: string }[];
-  unregisteredServerActions: { file: string; export: string; why: string; closing: string }[];
+  unregisteredServerActions: { file: string; export: string; why: string; closing: string; hostedBy?: string[]; correction?: string }[];
 };
 
 describe("the route register and the App Router describe the same surface", () => {
@@ -858,6 +858,146 @@ describe("every server action is a recorded surface", () => {
       expect(known.why.length).toBeGreaterThan(120);
       expect(known.closing.length).toBeGreaterThan(20);
     }
+  });
+});
+
+/**
+ * The same surface, counted by action rather than by file (G8.5, 23 October
+ * 2026). The block above records which modules carry the directive, so a
+ * second exported action added to a recorded module, or a function with an
+ * inline directive inside a recorded component, passes it. Next.js makes
+ * every export of a "use server" module, and every function whose body opens
+ * with the directive, its own POST entry point: the installed 16.3.3
+ * `action-handler.js` forwards an action id posted to ANY App Router page to
+ * a worker that holds it (`selectWorkerForForwarding`), refuses a mismatched
+ * Origin and lets a request with no Origin through with a warning. So each
+ * action is counted by name, the registered pages that render it are pinned,
+ * and the one property that makes an unregistered action defensible - it
+ * writes nothing durable - is enforced rather than asserted.
+ */
+function serverActionsIn(source: string, file: string): string[] {
+  const document = ts.createSourceFile(file, source, ts.ScriptTarget.Latest, true,
+    file.endsWith(".tsx") ? ts.ScriptKind.TSX : ts.ScriptKind.TS);
+  const directive = (statements: readonly ts.Statement[]) => {
+    for (const statement of statements) {
+      if (!ts.isExpressionStatement(statement) || !ts.isStringLiteral(statement.expression)) return false;
+      if (statement.expression.text === "use server") return true;
+    }
+    return false;
+  };
+  const names: string[] = [];
+  if (directive(document.statements)) {
+    const exported = (node: ts.Node) => ts.canHaveModifiers(node)
+      && (ts.getModifiers(node) ?? []).some(modifier => modifier.kind === ts.SyntaxKind.ExportKeyword);
+    for (const statement of document.statements) {
+      if (ts.isFunctionDeclaration(statement) && exported(statement)) names.push(statement.name?.text ?? "default");
+      if (ts.isVariableStatement(statement) && exported(statement)) {
+        for (const declaration of statement.declarationList.declarations) names.push(declaration.name.getText(document));
+      }
+      if (ts.isExportDeclaration(statement) && statement.exportClause && ts.isNamedExports(statement.exportClause)) {
+        for (const element of statement.exportClause.elements) names.push(element.name.text);
+      }
+      if (ts.isExportAssignment(statement)) names.push("default");
+    }
+  }
+  const visit = (node: ts.Node) => {
+    if (ts.isFunctionLike(node) && "body" in node && node.body && ts.isBlock(node.body as ts.Node)
+      && directive((node.body as ts.Block).statements)) {
+      const named = (node as ts.FunctionLikeDeclaration).name;
+      const holder = node.parent && ts.isVariableDeclaration(node.parent) ? node.parent.name.getText(document) : null;
+      names.push(`${named?.getText(document) ?? holder ?? "(anonymous)"} (inline)`);
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(document);
+  return [...new Set(names)].sort();
+}
+
+/** Every shipped server action, as `file export`. */
+function serverActionCensus(sources: ReadonlyMap<string, string>): string[] {
+  return [...sources].flatMap(([file, source]) => /["']use server["']/.test(source)
+    ? serverActionsIn(source, file).map(name => `${file} ${name}`) : []).sort();
+}
+
+/** The registered pages that import an action from its module, by register id. */
+function serverActionHosts(actionFile: string, exportName: string, sources: ReadonlyMap<string, string>, entries: Entry[]): string[] {
+  const target = actionFile.replace(/\.(ts|tsx|js|mjs)$/, "");
+  const hosts = new Set<string>();
+  for (const [file, source] of sources) {
+    for (const match of source.matchAll(/import\s*\{([^}]*)\}\s*from\s*["']([^"']+)["']/g)) {
+      if (!match[1].split(",").some(name => name.trim().split(/\s+as\s+/)[0] === exportName)) continue;
+      const specifier = match[2];
+      const resolved = specifier.startsWith("@/") ? `src/${specifier.slice(2)}`
+        : path.posix.normalize(path.posix.join(path.posix.dirname(file), specifier));
+      if (resolved !== target) continue;
+      const page = /^src\/app\/(.*\/)?(page|layout)\.(tsx|ts|jsx|js)$/.exec(file);
+      if (!page) { hosts.add(file); continue; }
+      const url = `/${(page[1] ?? "").split("/").filter(segment => segment && !/^\(.*\)$/.test(segment)).join("/")}`;
+      hosts.add(entries.find(entry => entry.path === url)?.id ?? url);
+    }
+  }
+  return [...hosts].sort();
+}
+
+/**
+ * What an unregistered action may not do. The ledger's reason for leaving an
+ * action out of the register is that it writes nothing durable and carries no
+ * authority a route would gate; a database call, a Storage call, an outbound
+ * request or a service-role client is exactly the thing that would make it a
+ * register endpoint instead.
+ */
+const DURABLE_EFFECT = /\.(?:rpc|from|insert|upsert|update)\s*\(|\.storage\b|\bfetch\s*\(|createAdminClient|localStorage|sessionStorage/;
+
+describe("every server action is recorded by name, with the pages that render it and what it may write", () => {
+  const sources = new Map(codeFiles().map(file => [file.split(path.sep).join("/"), readFileSync(file, "utf8")] as const));
+  const recorded = ledger.unregisteredServerActions ?? [];
+  const entries = register();
+
+  it("counts every action, not only every module, in both directions", () => {
+    expect(serverActionCensus(sources)).toEqual(recorded.map(known => `${known.file} ${known.export}`).sort());
+    expect(serverActionCensus(sources)).toEqual(["src/app/(app)/embryos/acknowledge.ts acknowledgeEmbryoGate"]);
+  });
+
+  it("pins the registered pages that render each action, in both directions", () => {
+    for (const known of recorded) {
+      expect(serverActionHosts(known.file, known.export, sources, entries), known.export).toEqual([...(known.hostedBy ?? [])].sort());
+      // Each host is a registered page, so the POST it now also answers is on a route the register names.
+      for (const host of known.hostedBy ?? []) expect(entries.find(entry => entry.id === host)?.kind, host).toBe("page");
+    }
+  });
+
+  it("keeps each unregistered action free of durable writes, so its reason for having no register row stays true", () => {
+    for (const known of recorded) {
+      expect(DURABLE_EFFECT.test(sources.get(known.file) ?? ""), known.file).toBe(false);
+      expect(known.correction ?? "", known.file).toMatch(/selectWorkerForForwarding/);
+    }
+  });
+
+  it("fails on a planted second export, an inline action and a durable write", () => {
+    const real = sources.get("src/app/(app)/embryos/acknowledge.ts")!;
+    const planted = new Map(sources);
+    planted.set("src/app/(app)/embryos/acknowledge.ts", `${real}\nexport async function forgetEmbryoGate() { return { ok: true }; }\n`);
+    expect(serverActionCensus(planted)).toEqual([
+      "src/app/(app)/embryos/acknowledge.ts acknowledgeEmbryoGate",
+      "src/app/(app)/embryos/acknowledge.ts forgetEmbryoGate",
+    ]);
+    planted.set("src/app/(app)/planted/page.tsx",
+      'export default function Page() {\n  async function save() {\n    "use server";\n    return 1;\n  }\n  return <form action={save} />;\n}\n');
+    expect(serverActionCensus(planted)).toContain("src/app/(app)/planted/page.tsx save (inline)");
+    // The file-level walk above would also have caught the inline one, but not the second export.
+    expect(serverActionCensus(planted).filter(entry => entry.startsWith("src/app/(app)/embryos/acknowledge.ts"))).toHaveLength(2);
+    expect(DURABLE_EFFECT.test(real.replace("store.set(", 'await createAdminClient().rpc("record_gate_v1", {}); store.set('))).toBe(true);
+    expect(DURABLE_EFFECT.test(real)).toBe(false);
+  });
+
+  it("fails on a planted host the ledger does not name, and on a named host that no longer renders the action", () => {
+    const planted = new Map(sources);
+    planted.set("src/app/(app)/embryos/page.tsx", `import { acknowledgeEmbryoGate } from "./acknowledge";\n${sources.get("src/app/(app)/embryos/page.tsx")}`);
+    expect(serverActionHosts("src/app/(app)/embryos/acknowledge.ts", "acknowledgeEmbryoGate", planted, entries))
+      .toEqual(["copilot.scope", "embryos.compare", "embryos.detail", "embryos.index"]);
+    planted.delete("src/app/(app)/copilot/[scope]/page.tsx");
+    expect(serverActionHosts("src/app/(app)/embryos/acknowledge.ts", "acknowledgeEmbryoGate", planted, entries))
+      .toEqual(["embryos.compare", "embryos.detail", "embryos.index"]);
   });
 });
 
