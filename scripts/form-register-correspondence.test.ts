@@ -249,19 +249,39 @@ describe("the form census fails on a planted divergence", () => {
   });
 
   it("fails when a recorded divergence is fixed and its row is left behind (a stale row)", () => {
-    const file = "src/components/settings/llm-settings-form.tsx";
+    // Re-targeted on 2026-10-23: the llm-settings form this planted the registered body into now sends it.
+    const file = "src/components/embryo/co-parent-review-form.tsx";
     const source = real(file);
-    const legacy = /body: JSON\.stringify\(\{\s*provider,\s*base_url,[\s\S]*?api_key: apiKey \|\| null,\s*\}\)/;
-    expect(source).toMatch(legacy);
-    const { unrecorded, stale } = mismatch({ [file]: source.replace(legacy,
-      'body: JSON.stringify({ mode: "hosted", provider, model, apiKey })') });
+    const sent = 'nonce: review.nonce, jurisdictionCode: form.get("jurisdictionCode"),';
+    expect(source).toContain(sent);
+    const { unrecorded, stale } = mismatch({ [file]: source.replace(sent,
+      `${sent} jurisdictionAttestationVersion: version, jurisdictionAttestationHash: hash, jurisdictionAffirmed: true,`) });
     expect(unrecorded).toEqual([]);
     expect(stale).toEqual([
+      `${file} api.invitation-accept POST: omits jurisdictionAffirmed, which the registered body requires`,
+      `${file} api.invitation-accept POST: omits jurisdictionAttestationHash, which the registered body requires`,
+      `${file} api.invitation-accept POST: omits jurisdictionAttestationVersion, which the registered body requires`,
+    ]);
+  });
+
+  it("holds the llm-settings form to its registered bodies: the legacy body fails, an always-sent key closes the one recorded row", () => {
+    const file = "src/components/settings/llm-settings-form.tsx";
+    const source = real(file);
+    const sent = "body: JSON.stringify(body),";
+    expect(source).toContain(sent);
+    const legacy = mismatch({ [file]: source.replace(sent,
+      "body: JSON.stringify({ provider, base_url, model: chosenModel, api_key: apiKey || null }),") });
+    expect(legacy.unrecorded).toEqual([
       `${file} api.llm-settings POST: omits apiKey, which the registered body requires`,
       `${file} api.llm-settings POST: omits mode, which the registered body requires`,
       `${file} api.llm-settings POST: sends api_key, which the registered body does not declare`,
       `${file} api.llm-settings POST: sends base_url, which the registered body does not declare`,
     ]);
+    const optional = /\.\.\.\(apiKey \? \{ apiKey \} : \{\}\)/g;
+    expect(source.match(optional)).toHaveLength(3);
+    const required = mismatch({ [file]: source.replace(optional, "apiKey") });
+    expect(required.unrecorded).toEqual([]);
+    expect(required.stale).toEqual([`${file} api.llm-settings POST: may omit apiKey, which the registered body requires`]);
   });
 
   it("fails on a request to a target no register entry describes, or one it cannot resolve", () => {
@@ -319,6 +339,17 @@ describe("the form census fails on a planted divergence", () => {
     // requestId is registered on every subject-draft body (2026-10-23), so leaving it out is a divergence too.
     expect(issuesOf(drafts('{ kind: "adult", adultFlow: "path-b-subject-esignature", displayName, dateOfBirth, contactEmail }')))
       .toEqual(["omits requestId, which the registered body requires"]);
+  });
+
+  it("reports a required key the request sends only sometimes, unless a sibling body without it explains the branch", () => {
+    expect(issuesOf(jurisdiction('{ ...(known ? { code } : {}), attestationVersion: 1, attestationHash: hash, affirmed: true }')))
+      .toEqual(["may omit code, which the registered body requires"]);
+    expect(issuesOf(jurisdiction('{ code, ...(states ? { subdivision } : {}), attestationVersion: 1, attestationHash: hash, affirmed: true }')))
+      .toEqual([]);
+    // The embryo disposition form sends proposalId only with "confirm"; the "propose" body does not declare it, so nothing is reported.
+    const disposition = "src/components/settings/embryo-disposition.tsx";
+    expect(real(disposition)).toContain("...(control.proposal?{proposalId:control.proposal.id}:{})");
+    expect(run({}).issues.filter(issue => issue.file === disposition && issue.issue.startsWith("may omit"))).toEqual([]);
   });
 
   it("fails on a status the register does not let the route answer", () => {

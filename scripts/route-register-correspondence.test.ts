@@ -1277,7 +1277,11 @@ const CLIENT_FORM_REVIEW: ClientFormReview[] = [
   // native submission before any field is read, the same target and header.
   { file: "src/components/family/invite-adult-form.tsx", forms: 1, sha256: "fecb2937a0caa1e67bb8c33aaf4b332dc4556f583bb03f45aeb66d30ac6102f6" },
   { file: "src/components/settings/jurisdiction-form.tsx", forms: 1, sha256: "fb5b804cf7fa62a68c04f7371ef1376ba5812ed680c5e679fa8deb72ae11c404" },
-  { file: "src/components/settings/llm-settings-form.tsx", forms: 1, sha256: "7b669b559f7db5b0fe391bd39ce8095a33bd8c37cd80d37e06d138ec0d55f45b" },
+  // G8.5 (2026-10-23): re-reviewed after the save moved to the registered
+  // bodies by mode and the removal button gained the page's one-time nonce.
+  // Still one actionless form whose onSubmit handler cancels native submission
+  // first; the same target, and the removal is still a button outside it.
+  { file: "src/components/settings/llm-settings-form.tsx", forms: 1, sha256: "55160a7ff0dfaf035b24e24da1382ecbd9e0c2d3e34c027a5a23e68fdeafee9c" },
   // G2.1 (2026-10-16): re-reviewed after the new-person form gained the
   // reviewed-document flow choice (two radio inputs inside the same form, the
   // same handler and target) and ConsentFields became an export. Still two

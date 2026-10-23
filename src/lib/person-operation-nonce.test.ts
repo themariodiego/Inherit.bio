@@ -40,6 +40,8 @@ describe("the person operation nonce", () => {
       // 20261023130000: the Path B draft and the original download.
       path_b_draft_create: "api.subject-drafts",
       subject_download_open: "api.subject-download",
+      // 20261024110000 (G8.5): the removal of the Copilot provider and its key.
+      provider_setting_delete: "api.llm-settings",
     });
   });
 

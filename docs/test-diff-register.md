@@ -2,6 +2,75 @@
 
 This entry follows the owner's decisions of 23 October (decisions, "G8.5: forms, CSRF, the server action and the Resend webhook"), items 1, 3 and 4, on local branch `local/g85-shapes` from `287a1408`. The CSRF token (item 2) and sign-out are another branch's work and are untouched here. Production is untouched.
 
+### Settings → AI moves to the registered bodies, answers and DELETE nonce (item 1)
+
+What changed:
+- **The bodies.** `src/lib/copilot/own-settings.ts` and `llm-settings-form.tsx` use the register's three closed bodies, discriminated by `mode` (`hosted`, `remote-openai-compatible`, `same-host-local`), with `apiKey` and `baseUrl`. The form picks `same-host-local` only for an address among the server's own local origins, which the page now passes. The server derives the classification and refuses a mode that disagrees (422).
+- **The answers** are `llm-settings-v1`: `{ status: "saved", provider, endpointOrigin, classification }` and `{ status: "deleted" }`.
+- **The DELETE** refuses a body. It reads `X-Inherit-Operation-Nonce` for the new operation `provider_setting_delete` (`src/lib/person-operation-nonce-core.ts`), which `/settings/copilot` renders. It removes through the new door `remove_own_copilot_settings_with_nonce_v1`, which records the nonce hash before the unchanged writer runs. A missing, foreign or replayed nonce answers 422 and writes nothing.
+- **Stored data** is unchanged: `hosted` is stored as `anthropic`, the others as `openai_compatible`, with the same address, label and classification.
+
+**One row remains, narrowed.** The register's hosted and remote bodies say `apiKey` is required. The form sends it only when one is typed, and the handler accepts that, which keeps two things the product does today:
+- the stored key is reused for the same destination;
+- a key-free endpoint can be saved.
+
+The form check now records this as "may omit apiKey, which the registered body requires", with `closedBy: owner`. The other four issues are closed.
+
+**Migration `supabase/migrations/20261024110000_copilot_settings_delete_nonce.sql` (new, GUARDED).** It does three things:
+- widens `account_operation_nonces_operation_check` with `provider_setting_delete`, reading the values it holds;
+- creates the door (service role only);
+- patches `private.consume_account_operation_nonce_v1` in place: md5-guarded `933df950…` to `6869593d…` with its exact ACL and one anchor. The removal writer (`f45c9a8b…`) is checked and left unchanged.
+
+**New pgTAP suite: `supabase/tests/copilot_settings_delete_nonce.sql`, 24/24.** It checks:
+- the door removes the setting and key together and records the nonce consumed, and leaves the other account alone;
+- a replay, another account's session, an expired nonce, an expiry over ten minutes and a malformed hash are each refused, and nothing is removed or recorded;
+- the consumer still refuses an unknown operation and accepts an earlier one;
+- the ACL, the two md5s and the widened check.
+
+Planted: a door that skips the consumer fails 8 of 24.
+
+**Patch guards, each run in a rolled-back transaction:**
+- Re-running the migration fails 55000 "copilot settings delete nonce prerequisite differs".
+- An extra grant on the consumer fails "account operation nonce consumer predecessor differs".
+- An extra grant on the writer fails the prerequisite check.
+- An absent anchor fails "… anchor differs".
+- A wrong successor md5 fails "… successor differs".
+- A check that already holds the operation fails "account operation check unreadable".
+
+**Changed pgTAP suite: `supabase/tests/legal_audit_attribution_completeness.sql`, 83/83.** The consumer's reviewed md5 in test 77 moves from `933df95029c3f1f8a9a306726fccccff` to `6869593d67ff37d93a6d4caea62f01c3`, because this migration patches it. Without the migration the old value passes 83/83; with it, the old value fails test 77 and the new one passes.
+
+**Regression.** Seventeen pgTAP suites touch nonces, Copilot settings or the RLS inventory. They were run with and without the migration, on the shared database inside rolled-back transactions. The chain applied was the 30 missing migrations it accepts: `20261016153100` refuses there, because a function it guards has drifted locally. The only differences are the two above. `rls_cross_account_attack` shows the same 2 failures either way.
+
+**Changed suite: `src/lib/copilot/own-settings.test.ts`, 18/18.** The actor ids are now UUIDs, which a nonce requires.
+- The POST cases send the registered remote body.
+- The removal case asserted `{ deleted: true }` from `remove_own_copilot_settings_v1`. It now asserts `{ status: "deleted" }` from the nonce door, with the nonce hash.
+- New cases:
+  - the stored data is identical to the former mapping;
+  - the `llm-settings-v1` answer carries no key;
+  - the hosted mapping;
+  - local is accepted only with a local classification, and both mode mismatches are refused;
+  - a save without a key keeps the stored key;
+  - the former body and seven other undeclared bodies are refused before any write;
+  - a removal is refused without the right nonce, with a body, on a replay, cross-origin and signed out.
+
+**Changed suite: `src/components/settings/llm-settings-form.test.ts`, 12/12.** The five expected request bodies change from `{ provider, base_url, model, api_key }` to the registered body for their mode. The keys and values they carry are unchanged, and a null key is now left out. "…sends the same body as before" is renamed "…sends the registered hosted body". The stored-key case still sends no key. New cases:
+- the same-host-local body for a local origin;
+- a typed key sent as `apiKey`, never under the legacy names;
+- the removal sends the page's nonce, and is not offered without one.
+
+**Changed suite: `src/lib/person-operation-nonce.test.ts`.** The pinned operation map gains `provider_setting_delete: "api.llm-settings"`.
+
+**Changed suite: `scripts/route-register-correspondence.test.ts`.** The source seal of `llm-settings-form.tsx` in `CLIENT_FORM_REVIEW` moves from `7b669b55…` to `55160a7f…`, re-reviewed: still one actionless form whose handler cancels native submission first, with the same target. The removal is still a button outside the form.
+
+**Changed suite: `scripts/form-register-correspondence.test.ts` and its reader.**
+- `scripts/form-contract-census.ts` gains one check: a key the request sends only sometimes, where the body requires it and every sibling body declares it, is reported as "may omit". Over the whole tree it finds exactly the `apiKey` row. The embryo disposition form's `proposalId` is not reported, because the `propose` body lacks that key.
+- "fails when a recorded divergence is fixed and its row is left behind" planted the registered body into the llm form. That form now sends it, so the test is re-targeted to the co-parent form. With the three jurisdiction fields added, its three recorded omissions read as stale.
+- New: the llm form's legacy body yields its four old issues as unrecorded, and sending `apiKey` always makes the "may omit" row stale.
+- New: "reports a required key the request sends only sometimes, unless a sibling body without it explains the branch".
+- Planted, each reverted: disabling the new check fails five tests, and dropping its sibling exemption fails five.
+
+**Changed browser fixture, not run here: `e2e/helpers/density-copilot-state-fixtures.ts`.** The save answer it asserts changes from `{ saved: true }` to the `llm-settings-v1` body for the key-free synthetic cloud recipient. The browser specs that save a provider type no key, and are unchanged.
+
 ### Path A moves to the registered body and the registered 403 (item 1)
 
 `src/app/api/subject-drafts/route.ts` and `src/components/family/invite-adult-form.tsx` now use the register's Path A body: `{ kind: "adult", adultFlow: "path-a-own-account", contactEmail, requestId, note? }`. The old body was `{ kind: "other_adult", email, adultAttestation, ... }`. An unreviewed jurisdiction gets `capability-denied-api-v1`: 403 `{ error: "jurisdiction_unavailable", message }` with the row's own words, as the Path B bodies answer it. It was 409. The form shows its blocked sentence on 403. The attestation box stays required by the browser; the registered body has no field for it, so it is no longer sent. Nothing stored changes: the invitation door never took the attestation or the kind. The Path A ledger row closes and is removed.

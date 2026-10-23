@@ -29,11 +29,31 @@ import {
 } from "@/lib/copilot/provider-presets";
 import { ANTHROPIC_MODELS, DEFAULT_ANTHROPIC_MODEL } from "@/lib/llm";
 
+/** Whether an address is one of this server's own same-host model origins. */
+function isLocalOrigin(baseUrl: string, localOrigins: readonly string[]): boolean {
+  try { return localOrigins.includes(new URL(baseUrl).origin); } catch { return false; }
+}
+
+/**
+ * Settings → AI (api.llm-settings). The save sends the register's closed body
+ * for its mode (owner decision of 23 October 2026, G8.5): `hosted` for
+ * Anthropic, `same-host-local` for an address among this server's own local
+ * model origins, `remote-openai-compatible` otherwise; the server derives the
+ * classification and refuses a mode that disagrees with it. `apiKey` is sent
+ * only when one is typed, so a stored key is kept for the same destination.
+ * The removal sends the one-time nonce the page rendered.
+ */
 export function LlmSettingsForm({
   current,
   localAvailable = false,
+  localOrigins = [],
+  removeNonce = null,
 }: {
   localAvailable?: boolean;
+  /** This server's own same-host model origins, empty unless local mode is configured. */
+  localOrigins?: readonly string[];
+  /** The one-time nonce /settings/copilot rendered for the removal. */
+  removeNonce?: string | null;
   current: {
     provider: "anthropic" | "openai_compatible";
     base_url: string | null;
@@ -68,18 +88,21 @@ export function LlmSettingsForm({
         setBusy(true);
         setMessage(null);
         try {
+          const chosenModel = provider === "anthropic" && !ANTHROPIC_MODELS.includes(model as never)
+            ? DEFAULT_ANTHROPIC_MODEL
+            : model;
+          const address = base_url ?? "";
+          const body = provider === "anthropic"
+            ? { mode: "hosted", provider: "anthropic", model: chosenModel, ...(apiKey ? { apiKey } : {}) }
+            : isLocalOrigin(address, localOrigins)
+              ? { mode: "same-host-local", provider: "openai-compatible-local", model: chosenModel, baseUrl: address,
+                ...(apiKey ? { apiKey } : {}) }
+              : { mode: "remote-openai-compatible", provider: "openai-compatible", model: chosenModel, baseUrl: address,
+                ...(apiKey ? { apiKey } : {}) };
           const res = await fetch("/api/llm/settings", {
             method: "POST",
             headers: { "content-type": "application/json" },
-            body: JSON.stringify({
-              provider,
-              base_url,
-              model:
-                provider === "anthropic" && !ANTHROPIC_MODELS.includes(model as never)
-                  ? DEFAULT_ANTHROPIC_MODEL
-                  : model,
-              api_key: apiKey || null,
-            }),
+            body: JSON.stringify(body),
           });
           const result = await res.json().catch(() => ({}));
           setMessage(res.ok ? "Provider saved. Review the separate Copilot permission below." : result.error === "key_required" ? "Enter the API key for this provider before saving." : "Provider could not be saved. Check the address and deployment availability, then try again.");
@@ -215,7 +238,7 @@ export function LlmSettingsForm({
         <Button type="submit" disabled={busy}>
           Save provider
         </Button>
-        {current ? (
+        {current && removeNonce ? (
           <Button
             type="button"
             variant="outline"
@@ -223,7 +246,9 @@ export function LlmSettingsForm({
             onClick={async () => {
               setBusy(true);
               try {
-                const response = await fetch("/api/llm/settings", { method: "DELETE" });
+                const response = await fetch("/api/llm/settings", {
+                  method: "DELETE", headers: { "X-Inherit-Operation-Nonce": removeNonce },
+                });
                 setMessage(response.ok ? "Provider and key removed; Copilot permission ended." : "Could not remove the provider. Try again.");
                 router.refresh();
               } catch { setMessage("Could not connect. Try again."); }

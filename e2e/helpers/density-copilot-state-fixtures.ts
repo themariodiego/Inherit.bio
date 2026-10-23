@@ -75,7 +75,10 @@ export function realUnansweredCopilotDensityFixtures(input: {
             && response.request().method() === "POST");
           await page.getByRole("button", { name: "Save provider", exact: true }).click();
           const savedResponse = await saved; expect(savedResponse.status()).toBe(200);
-          expect(await savedResponse.json()).toEqual({ saved: true }); expect(await savedResponse.finished()).toBeNull();
+          // llm-settings-v1 (G8.5, 23 October 2026): the server-normalized recipient, never the key.
+          expect(await savedResponse.json()).toEqual({ status: "saved", provider: DENSITY_COPILOT_PROVIDER,
+            endpointOrigin: `https://${DENSITY_COPILOT_PROVIDER}`, classification: "cloud" });
+          expect(await savedResponse.finished()).toBeNull();
           await expect(page.getByText("Provider saved. Review the separate Copilot permission below.", { exact: true })).toBeVisible();
           const original = await completeRows(accountId);
           expect((await page.goto("/copilot/me"))?.status()).toBe(200);

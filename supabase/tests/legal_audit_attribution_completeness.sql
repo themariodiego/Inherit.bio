@@ -254,7 +254,8 @@ select is((select array_agg(md5(pg_get_functiondef(p.oid)) order by p.oid::regpr
  (select array_agg(m order by s::regprocedure::text) from (values
   ('private.adult_subject_control_v1(text,text,text,text,boolean)','f6201a3830d82dcd8a95d2b8487b59ad'),
   ('private.adult_subject_control_for_account_v1(text,text,text,text,boolean,uuid,uuid)','b1e3b29ba8d18d67e1a16aefaf929550'),
-  ('private.consume_account_operation_nonce_v1(uuid,uuid,text,text,timestamptz)','933df95029c3f1f8a9a306726fccccff'),
+  -- 20261024110000 (G8.5) patches the consumer once more, for provider_setting_delete: 933df950... to 6869593d....
+  ('private.consume_account_operation_nonce_v1(uuid,uuid,text,text,timestamptz)','6869593d67ff37d93a6d4caea62f01c3'),
   ('public.bind_adult_subject_account_v1(text,text,uuid,uuid,boolean)','159a4f50563935de05351b8ef320c6f8'))x(s,m)),
  'the rights-session controller is unchanged, and the derived controller, the consumer and the bind are their reviewed bodies');
 select ok(private.legal_audit_person_event_v1(code,route),code||' on '||route||' stays a person''s own event') from (values

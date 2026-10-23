@@ -39,7 +39,9 @@ export type PersonOperation =
   | "adult_invitation_create"
   // 20261023130000: the Path B draft (both bodies) and the original download.
   | "path_b_draft_create"
-  | "subject_download_open";
+  | "subject_download_open"
+  // 20261024110000 (G8.5): the DELETE of the Copilot provider and its key.
+  | "provider_setting_delete";
 
 /** Each operation belongs to exactly one registered route. */
 export const PERSON_OPERATION_ROUTES: Readonly<Record<PersonOperation, string>> = Object.freeze({
@@ -52,6 +54,7 @@ export const PERSON_OPERATION_ROUTES: Readonly<Record<PersonOperation, string>> 
   adult_invitation_create: "api.subject-drafts",
   path_b_draft_create: "api.subject-drafts",
   subject_download_open: "api.subject-download",
+  provider_setting_delete: "api.llm-settings",
 });
 
 /** The request header that carries the page's nonce to a route whose body is closed without it. */

@@ -874,8 +874,17 @@ interface Misfit { issues: string[]; constMismatches: number; shared: number }
  * correlation the static reader cannot see (`...(proposal ? { proposalId } : {})`
  * beside `action: proposal ? "confirm" : "propose"`). A key no registered body
  * declares is always reported.
+ *
+ * `declaredByEvery` is every key all sibling bodies declare (G8.5, 23 October
+ * 2026). A key the source sends only sometimes, where this body requires it,
+ * is reported as "may omit" when every sibling declares it too: then no
+ * sibling that lacks the key can be the branch that leaves it out, so the
+ * request really can go without a field the register requires. Where some
+ * sibling does not declare it, the correlation above may explain it and it
+ * is not reported.
  */
-function bodyMisfit(shape: BodyShape, body: ClosedBody, declaredAnywhere: ReadonlySet<string>, prefix = ""): Misfit {
+function bodyMisfit(shape: BodyShape, body: ClosedBody, declaredAnywhere: ReadonlySet<string>, prefix = "",
+  declaredByEvery: ReadonlySet<string> = declaredAnywhere): Misfit {
   const issues: string[] = [];
   let constMismatches = 0;
   const declared = Object.keys(body);
@@ -898,6 +907,9 @@ function bodyMisfit(shape: BodyShape, body: ClosedBody, declaredAnywhere: Readon
   for (const key of declared.sort()) {
     if (isOptional(body[key]) || isForbidden(body[key])) continue;
     if (!(key in shape.keys)) { issues.push(`omits ${prefix}${key}, which the registered body requires`); continue; }
+    if (shape.keys[key] === "optional" && declaredByEvery.has(key)) {
+      issues.push(`may omit ${prefix}${key}, which the registered body requires`);
+    }
     const nested = shape.nested[key];
     if (nested && isNestedBody(body[key])) {
       const inner = new Set(Object.keys(body[key] as ClosedBody));
@@ -990,8 +1002,9 @@ function bodyIssues(body: RequestBody, entry: RegisterRoute, method: string, hea
     // A key whose value is one of several literals is several bodies: each
     // is held to the registered body its discriminator selects.
     const declaredAnywhere = new Set(contract.bodies.flatMap(candidate => Object.keys(candidate)));
+    const declaredByEvery = new Set([...declaredAnywhere].filter(key => contract.bodies!.every(candidate => key in candidate)));
     for (const shape of byLiteralValue(body.shape)) {
-      const fits = contract.bodies.map(candidate => bodyMisfit(shape, candidate, declaredAnywhere));
+      const fits = contract.bodies.map(candidate => bodyMisfit(shape, candidate, declaredAnywhere, "", declaredByEvery));
       if (!fits.some(misfit => misfit.issues.length === 0)) issues.push(...nearest(fits).issues);
     }
   }

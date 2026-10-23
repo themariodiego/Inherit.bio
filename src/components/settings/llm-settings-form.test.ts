@@ -37,7 +37,7 @@ function text(node: ReactNode): string {
   return isValidElement<{ children?: ReactNode }>(node) ? text(node.props.children) : "";
 }
 
-let props: { current: Current; localAvailable?: boolean } = { current: null };
+let props: { current: Current; localAvailable?: boolean; localOrigins?: string[]; removeNonce?: string | null } = { current: null };
 function render() { harness.cursor = 0; return LlmSettingsForm(props); }
 function providerSelect(tree: ReactNode) {
   const trigger = elements(tree).findIndex(node => node.type === "x-select-trigger" && node.props.id === "llm-provider");
@@ -53,7 +53,7 @@ function field(tree: ReactNode, id: string) {
 function choose(preset: string) { providerSelect(render()).onValueChange(preset); }
 function type(id: string, value: string) { field(render(), id).onChange!({ target: { value } }); }
 async function submit() {
-  harness.fetch.mockResolvedValueOnce(Response.json({ saved: true }));
+  harness.fetch.mockResolvedValueOnce(Response.json({ status: "saved", provider: "anthropic", endpointOrigin: "https://api.anthropic.com", classification: "cloud" }));
   const form = elements(render()).find(node => node.type === "form")!;
   (form.props.onSubmit as (event: unknown) => Promise<void>)({ preventDefault() {} });
   await vi.waitFor(() => expect(harness.fetch).toHaveBeenCalledTimes(1));
@@ -74,12 +74,12 @@ describe("Copilot provider presets on the settings form", () => {
       "Anthropic (Claude)", "OpenAI (ChatGPT models)", "xAI (Grok)", "Custom OpenAI-compatible endpoint"]);
   });
 
-  it("starts on Anthropic with nothing stored and sends the same body as before", async () => {
+  it("starts on Anthropic with nothing stored and sends the registered hosted body", async () => {
     const tree = render();
     expect(providerSelect(tree).value).toBe("anthropic");
     expect(elements(tree).some(node => node.props.id === "llm-base-url")).toBe(false);
     expect(text(tree)).toContain(COPILOT_PRESET_GUIDES.anthropic.subscription);
-    expect(await submit()).toEqual({ provider: "anthropic", base_url: null, model: DEFAULT_ANTHROPIC_MODEL, api_key: null });
+    expect(await submit()).toEqual({ mode: "hosted", provider: "anthropic", model: DEFAULT_ANTHROPIC_MODEL });
   });
 
   it.each([
@@ -99,8 +99,8 @@ describe("Copilot provider presets on the settings form", () => {
 
     type("llm-model", "model-copied-from-list");
     type("llm-key", "synthetic-api-key");
-    expect(await submit()).toEqual({ provider: "openai_compatible", base_url: baseUrl,
-      model: "model-copied-from-list", api_key: "synthetic-api-key" });
+    expect(await submit()).toEqual({ mode: "remote-openai-compatible", provider: "openai-compatible", baseUrl,
+      model: "model-copied-from-list", apiKey: "synthetic-api-key" });
   });
 
   it("keeps the custom endpoint free-form, and a preset never overwrites its address", async () => {
@@ -120,8 +120,8 @@ describe("Copilot provider presets on the settings form", () => {
     choose("custom");
     tree = render();
     expect(field(tree, "llm-base-url").value).toBe("https://models.example.test/v1");
-    expect(await submit()).toEqual({ provider: "openai_compatible", base_url: "https://models.example.test/v1",
-      model: "llama3.1", api_key: null });
+    expect(await submit()).toEqual({ mode: "remote-openai-compatible", provider: "openai-compatible", baseUrl: "https://models.example.test/v1",
+      model: "llama3.1" });
   });
 
   it("returns to Anthropic with its default model and no address", async () => {
@@ -129,7 +129,7 @@ describe("Copilot provider presets on the settings form", () => {
     type("llm-model", "typed-for-another-provider");
     choose("anthropic");
     expect(elements(render()).some(node => node.props.id === "llm-base-url")).toBe(false);
-    expect(await submit()).toEqual({ provider: "anthropic", base_url: null, model: DEFAULT_ANTHROPIC_MODEL, api_key: null });
+    expect(await submit()).toEqual({ mode: "hosted", provider: "anthropic", model: DEFAULT_ANTHROPIC_MODEL });
   });
 
   it("reads a stored preset back, keeps its model, and does not ask again for a stored key", async () => {
@@ -138,7 +138,7 @@ describe("Copilot provider presets on the settings form", () => {
     expect(providerSelect(tree).value).toBe("xai");
     expect(field(tree, "llm-model").value).toBe("stored-model");
     expect(field(tree, "llm-key").required).toBe(false);
-    expect(await submit()).toEqual({ provider: "openai_compatible", base_url: "https://api.x.ai/v1", model: "stored-model", api_key: null });
+    expect(await submit()).toEqual({ mode: "remote-openai-compatible", provider: "openai-compatible", baseUrl: "https://api.x.ai/v1", model: "stored-model" });
   });
 
   it("reads any other stored address back as an editable custom endpoint", () => {
@@ -153,5 +153,39 @@ describe("Copilot provider presets on the settings form", () => {
     providerSelect(render()).onValueChange("openai_compatible");
     expect(providerSelect(render()).value).toBe("anthropic");
     expect(COPILOT_PRESET_NAMES).not.toHaveProperty("openai_compatible");
+  });
+});
+
+describe("the registered bodies and the removal nonce (G8.5, 23 October 2026)", () => {
+  it("sends the same-host-local body for an address among this server's own local origins, and the remote body otherwise", async () => {
+    props = { current: null, localAvailable: true, localOrigins: ["http://localhost:11434"] };
+    choose("custom");
+    expect(await submit()).toEqual({ mode: "same-host-local", provider: "openai-compatible-local",
+      baseUrl: "http://localhost:11434/v1", model: "llama3.1" });
+    harness.fetch.mockClear();
+    type("llm-base-url", "https://models.example.test/v1");
+    expect(await submit()).toEqual({ mode: "remote-openai-compatible", provider: "openai-compatible",
+      baseUrl: "https://models.example.test/v1", model: "llama3.1" });
+  });
+
+  it("sends a typed key as apiKey in every mode, and never the legacy names", async () => {
+    type("llm-key", "synthetic-hosted-key");
+    const sent = await submit();
+    expect(sent).toEqual({ mode: "hosted", provider: "anthropic", model: DEFAULT_ANTHROPIC_MODEL, apiKey: "synthetic-hosted-key" });
+    for (const legacy of ["api_key", "base_url"]) expect(sent).not.toHaveProperty(legacy);
+  });
+
+  it("removes with the nonce the page rendered, and offers no removal without one", async () => {
+    const current = { provider: "anthropic" as const, base_url: null, model: DEFAULT_ANTHROPIC_MODEL, key_last4: "wxyz" };
+    const removeButton = (tree: ReactNode) => elements(tree).find(node => node.type === "button" && text(node.props.children as ReactNode).includes("Remove provider"));
+    props = { current, removeNonce: null };
+    expect(removeButton(render())).toBeUndefined();
+    props = { current, removeNonce: "synthetic-page-nonce" };
+    harness.fetch.mockResolvedValueOnce(Response.json({ status: "deleted" }));
+    (removeButton(render())!.props.onClick as () => Promise<void>)();
+    await vi.waitFor(() => expect(harness.fetch).toHaveBeenCalledTimes(1));
+    const [url, init] = harness.fetch.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe("/api/llm/settings");
+    expect(init).toEqual({ method: "DELETE", headers: { "X-Inherit-Operation-Nonce": "synthetic-page-nonce" } });
   });
 });
