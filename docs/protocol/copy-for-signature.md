@@ -27,6 +27,10 @@ what was approved and when.
        never been measured, and three of them are at 9.13, 11.68 and 11.70 —
        all worse than the sentence being blocked here.
 
+    **Decided 2026-10-23: choice 1, the split sentence, signed by the owner**
+    (decisions, "D-103: the owner signs the split `revocable` sentence"). D-110
+    stays separate.
+
     **D-102 is unaffected and is wired.**
 - **D-102: approved, and the owner chose ATTRIBUTION** over the unattributed
   wording recommended below. The recommendation is left standing rather than

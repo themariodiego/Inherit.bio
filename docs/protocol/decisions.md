@@ -5372,3 +5372,35 @@ Owner decisions (clickable chat answers), on the findings of G8.5's form check
 
 Nothing here changes D-083 (counsel) or D-103 (the owner's readability choice).
 G8.5 stays NO until these land with their tests and the hosted suite passes.
+
+## 2026-10-23 — D-103: the owner signs the split `revocable` sentence
+
+Owner decision (clickable chat answer, "Split the sentence"), the first of the
+three choices recorded in `docs/protocol/copy-for-signature.md` on 14 September.
+The owner signs this wording for the `revocable` key:
+
+> I can take this back at any time. Inherit then deletes what was built from my
+> file, on the deadlines it publishes.
+
+It measured grade 4.79 on 14 September and makes the same promise. The other four
+statements stay exactly as approved on 14 September. The readability gate is
+unchanged: consent statements are not reclassified as legal copy. D-110 (the six
+co-parent statements already shipping in `co-parent-review-form.tsx`, three of
+them over grade 9) stays a separate item. This signature does not cover it.
+
+Wiring the five statements into the adult confirm body is engineering. It is
+done when they render as individually tickable statements, the request carries
+the register's `statementKeys`, and the readability gate measures them.
+
+## 2026-10-23 — Comprehension model key: Anthropic, with a US$50 workspace limit
+
+Owner decision (clickable chat answer). `COMPREHENSION_MODEL_API_KEY` is a key in
+its own Anthropic Console workspace (`inherit-comprehension`), with a workspace
+spend limit of US$50 set at the provider. The harness reaches it through the
+provider's OpenAI-compatible chat endpoint (`provider.kind:
+openai-compatible-chat`). The key is an environment variable of the cloud
+environment, read only by the operator's run, and never deployment
+configuration. The harness's own `limitMicroDollars` stays at most `50000000`, as
+a second cap. The pinned model identifier is chosen at calibration and recorded
+only where `docs/comprehension-runs/README.md` allows. The run order is
+unchanged: a stub smoke run, one calibration, then full runs.
