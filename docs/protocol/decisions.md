@@ -5342,3 +5342,33 @@ without its corrected readings is still judged on the frozen count.
   (`docs/evidence/density-public-corrected-20261022/README.md`).
 - G2.5 stays NO. It still needs every required capture from the owned-Linux
   runtime.
+
+## 2026-10-23 — G8.5: forms, CSRF, the server action and the Resend webhook
+
+Owner decisions (clickable chat answers), on the findings of G8.5's form check
+(`scripts/form-register-correspondence.test.ts`, ledger rows in
+`docs/register-contract-divergence.json`):
+
+- **Form shapes: code to the register, and the register lists the harmless
+  extras.** Engineering moves Settings → AI (`api.llm-settings`: `{mode, apiKey}`,
+  the `llm-settings-v1` answers, and the DELETE reads the registered nonce), the
+  Path A draft (`api.subject-drafts`: `{kind: "adult", contactEmail}`, 403 for an
+  unreviewed jurisdiction), the compatibility chat body (`api.chat`) and the
+  sign-out redirect (`/auth/sign-in`, as `sign-out-v1` says) to the register.
+  The register gains the extras that ship and harm nothing: `genome.browser`'s
+  `?q=`, `requestId` on the subject-draft forms, Path B's `withAccount`,
+  `api.chat`'s 409 and `api.future-person-claim`'s 404.
+- **CSRF: build the token everywhere.** The register's `csrfTransport` stays.
+  Engineering issues, binds and consumes the one-time session-bound
+  `X-Inherit-CSRF` on every listed route and its callers, following the pattern
+  the future-person flows already send. Sign-out becomes a scripted form that
+  sends it. Operation nonces remain separate (`operationNonceIsNotCsrf`).
+- **Server action: move to a registered route.** `acknowledgeEmbryoGate` is
+  replaced by a registered route handler with the checks of its Family twin
+  `api.family-acknowledge`. The product then has no server action.
+- **`webhooks.resend`: register what it does.** An auth contract for Resend's
+  signed webhook headers and a success contract of 204 (matched) or 202
+  (unmatched), with 401 for a bad signature and 503 when unavailable.
+
+Nothing here changes D-083 (counsel) or D-103 (the owner's readability choice).
+G8.5 stays NO until these land with their tests and the hosted suite passes.
