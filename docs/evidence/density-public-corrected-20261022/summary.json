@@ -78,5 +78,50 @@
    "authColumnPaddingRemovedFrom640": "forgot-password 1280 passes, but sign-up 1280 ink rises from 0.594 to 0.633 of its predecessor, over the 0.6 ceiling (floor 0.518, not text-bound)",
    "landingGuideTwoAcross": "its labels and paragraphs reach the 45ch floor, but the third plate moves below the 1280 fold, which changes the page's 700-character result (744 to under 700) and its first-screen ink"
   }
+ },
+ "round3EveryPageCharacters": {
+  "what": "evaluation-round3.json re-read under the owner's decision of 2026-10-23 (decisions, 'Density: visible characters on every page (G2.5)'): rule 5's above-the-fold character reading applies to every page, not only signed legal documents. Derived from the readings and misses already recorded in evaluation-round3.json (aboveFoldTextCharacterCount against the 480/700 caps); no capture was re-taken, and no other budget's verdict changes.",
+  "everyBudget": {
+   "contract": 14,
+   "corrected": 45
+  },
+  "relativeWithin": {
+   "contract": 12,
+   "corrected": 26,
+   "of": 28,
+   "textBound": 14
+  },
+  "correctedMisses": {
+   "visibleCharacters": 21,
+   "proseMin": 3,
+   "proseMax": 2,
+   "relative": 2
+  },
+  "changedVerdicts": {
+   "legal.future-person 390x844": {
+    "frozen": 778,
+    "aboveTheFold": 628,
+    "before": [
+     "visibleCharacters"
+    ],
+    "after": []
+   },
+   "legal.research-consent 390x844": {
+    "frozen": 779,
+    "aboveTheFold": 654,
+    "before": [
+     "visibleCharacters"
+    ],
+    "after": []
+   },
+   "legal.terms 390x844": {
+    "frozen": 939,
+    "aboveTheFold": 688,
+    "before": [
+     "visibleCharacters"
+    ],
+    "after": []
+   }
+  }
  }
 }

@@ -5319,3 +5319,26 @@ any gap under the one nonce rule (brief X1.5). It is not a new decision.
 - **Where:** `20261023130000_legal_audit_attribution_remaining.sql`, after
   `20261023120000`, in the same guarded release.
 - **Wording:** none.
+
+## 2026-10-23 — Density: visible characters on every page (G2.5)
+
+Owner decision (clickable chat answer, "All pages: visible chars"), extending
+the fifth reading of "2026-10-22 — Density rule corrections (G2.5)". Under the
+corrected rules, the 480/700-character cap counts only the characters actually
+visible above the fold on every page, not only on the seven signed legal
+documents. The caps themselves, the frozen measurement modules, the baseline
+and the contract rules (the verifier's default) do not change. A capture
+without its corrected readings is still judged on the frozen count.
+
+- **Where:** `scripts/density-current.ts` (`evaluateDensityCapture`, rule set
+  `corrected-2026-10-22`). `SIGNED_LEGAL_DOCUMENT_ROUTE_IDS` stays, because
+  each of those routes must still render its signed text as one pre-formatted
+  node.
+- **Test:** `scripts/density-corrected-readings.test.ts`, decision 5, with
+  planted defects (`docs/test-diff-register.md`).
+- **Effect on the 70 public captures:** derived from `evaluation-round3.json`,
+  three 390 legal rows now meet every budget, so 45 of 70 do. 21 captures still
+  have more than 700 characters on the first screen
+  (`docs/evidence/density-public-corrected-20261022/README.md`).
+- G2.5 stays NO. It still needs every required capture from the owned-Linux
+  runtime.

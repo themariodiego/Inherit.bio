@@ -1,3 +1,17 @@
+## 2026-10-23 — Density: visible characters on every page (G2.5)
+
+This entry follows the owner's decision of 23 October (decisions, "Density: visible characters on every page (G2.5)"). Under the corrected rules, `evaluateDensityCapture` counts the above-the-fold characters on every page that carries its corrected readings, not only on the seven signed legal documents. The contract rules and the frozen modules are unchanged.
+
+**Changed test: `scripts/density-corrected-readings.test.ts`, decision 5, 19/19.**
+- Replaced: the old assertion that an unsigned page (`legal.privacy`, above the fold 600, frozen 701) still misses under the corrected rules. That was the old rule, which the decision removes.
+- Kept: the signed document (`legal.insurance-and-discrimination`, frozen 1913) misses under the contract rules, passes at 700 above the fold and misses at 701. The list of seven signed routes is still pinned, and the pre-formatted-node test is unchanged.
+- Added:
+  - `legal.privacy` at 1280 with a frozen count of 2400 misses under the contract rules, even with an above-the-fold reading of 700;
+  - under the corrected rules it passes at 700 and misses at 701;
+  - with its corrected readings removed, it misses on the frozen count;
+  - the domain landing `genome.subject` keeps its 480 cap on the same reading: it passes at 480 and misses at 481.
+- Planted: restoring the signed-only condition fails the test ("expected [ 'visibleCharacters' ] to not include 'visibleCharacters'"). So does dropping the 480 landing cap ("expected [] to include 'visibleCharacters'"). Both were reverted.
+
 ## 2026-10-23 — The reviewed-document review download reads the clock once
 
 This entry follows the coordinator's decision of 23 October on the defect found during G5.6. `public.open_permission_review_download_v1` (PR 324's `20261016190000_path_b_reviewed_document.sql`) let `created_at` take its `clock_timestamp()` default and computed `expires_at` from a second reading. Whenever the clock advanced between the two readings, the table's check `expires_at <= created_at + interval '1 hour'` refused the insert. A named reviewer's download then failed at random: about one run of `path_b_reviewed_document` in three. The migration `20261023140000_review_download_clock.sql` sets both values from one reading. It is md5-guarded against PR 324's body (`243f68d2…` to `679b0ee2…` to `5d13a237…`) with its exact ACL. Nothing else changes. Production does not hold the function.

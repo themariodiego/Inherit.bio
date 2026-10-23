@@ -180,6 +180,33 @@ and first section. Nothing here was changed.
 | `/legal/consent/[key]/diff/…` (signed) | 1280 | 1351 | 1122 | Owner reading: two signed versions side by side |
 | `/legal/insurance-and-discrimination` (signed) | 1280 | 1952 | 765 | Counsel: the signed words cannot change without a new version |
 
+### Under the 23 October reading: visible characters on every page
+
+The owner then extended rule 5 to every page (decisions, "2026-10-23 —
+Density: visible characters on every page (G2.5)"). Under the corrected rules
+`evaluateDensityCapture` now counts `aboveFoldTextCharacterCount` on any capture
+that carries its corrected readings; the contract rules keep the frozen count.
+
+This is a re-reading of `evaluation-round3.json`, not a new run: the raw
+captures behind that file are not kept, so `tools/evaluate.mts` cannot be
+re-run on them. The above-the-fold readings and the other budgets' misses
+recorded there are enough to derive the result, because the decision changes
+only which of two recorded numbers meets the 480/700 cap.
+
+- Three captures change, each from a visible-characters miss to every budget
+  met: `/legal/future-person` at 390 (above the fold 628), `/legal/research-consent`
+  at 390 (654) and `/terms` at 390 (688). These are the three rows the table
+  above marks "above the fold passes at 390".
+- Every budget is met by **45 of 70**. The relative rule is unchanged at 26 of 28.
+- Visible characters still miss on **21** captures, because more than 700
+  characters really are on the first screen: every 1280 row in the table above,
+  plus `/about`, `/legal/appeals`, `/legal/gdpr` and `/privacy` at 390 (769, 701,
+  708 and 705). They need content structure or counsel, as the table says.
+- The other misses are unchanged: the 45ch floor on three rows, the 68ch
+  ceiling on two and the relative rule on two.
+
+`summary.json#round3EveryPageCharacters` holds the counts.
+
 ## Reproducing
 
 ```sh

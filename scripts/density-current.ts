@@ -104,7 +104,9 @@ const key = (id: string, state: string, viewport: string) => JSON.stringify([id,
  *     Both inks come from the frozen pixel body on the same capture.
  *  3. The 45ch floor reads prose paragraphs only (D-115).
  *  4. Section gaps are read in visual order.
- *  5. Signed legal documents count only characters visible above the fold.
+ *  5. Every page counts only characters visible above the fold (owner
+ *     decision of 23 October, "Density: visible characters on every page";
+ *     until then signed legal documents only).
  *  6. Sign-in and sign-up may carry 10 interactive controls.
  * (2, keeping the outlined primary actions, is a product decision with no
  * evaluator reading.) Without its corrected reading a capture is judged on
@@ -114,6 +116,7 @@ export type DensityRules = "contract" | "corrected-2026-10-22";
 export const TEXT_ONLY_FLOOR_VARIANT_SHA256 = "dd099009b40dccc61525264e9849fc8e5d51b84b62103f56f1a18bce5176a396";
 export const DENSITY_CORRECTED_READINGS_MODULE_SHA256 = "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64";
 export const TEXT_BOUND_ALLOWANCE_OF_PREDECESSOR = 0.05;
+// Rule 5's first scope, kept because each one must render its signed text as one pre-formatted node.
 export const SIGNED_LEGAL_DOCUMENT_ROUTE_IDS: readonly string[] = [
   "legal.artifact", "legal.artifact-version", "legal.artifact-diff",
   "legal.consent", "legal.consent-version", "legal.consent-diff",
@@ -184,8 +187,7 @@ export function evaluateDensityCapture(
     : corrected && AUTH_FLOW_TEN_CONTROL_ROUTE_IDS.includes(route.id) ? 10
     : route.surface === "flow" || (route.id === "app.overview" && row.state === "empty") ? 7
     : ["hub", "standard"].includes(route.surface) ? 12 : null;
-  const characters = readings && SIGNED_LEGAL_DOCUMENT_ROUTE_IDS.includes(route.id)
-    ? readings.aboveFoldTextCharacterCount : m.visibleTextCharacterCount;
+  const characters = readings ? readings.aboveFoldTextCharacterCount : m.visibleTextCharacterCount;
   const minimumProse = readings ? readings.minProseParagraphMeasureCh : m.minProseMeasureCh;
   const gap = readings ? readings.minimumVisualSectionGapPx : m.minimumAdjacentSectionGapPx;
   if (m.whiteSpaceRatio < floorWhite) breaches.push("whiteSpace");

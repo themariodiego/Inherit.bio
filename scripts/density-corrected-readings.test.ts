@@ -244,7 +244,7 @@ describe("decisions 3 to 6, each with a planted defect", () => {
     expect(evaluate(withReadings(panes, { topLevelSectionRowCount: 1, minimumVisualSectionGapPx: null })).budgetBreaches).not.toContain("sectionGap");
     expect(evaluate(withReadings(panes, { topLevelSectionRowCount: 2, minimumVisualSectionGapPx: 95 })).budgetBreaches).toContain("sectionGap");
   });
-  it("5: signed legal documents count characters above the fold; other pages keep the frozen count", () => {
+  it("5: every page counts characters above the fold under the corrected rules; the contract keeps the frozen count", () => {
     expect(SIGNED_LEGAL_DOCUMENT_ROUTE_IDS).toEqual(["legal.artifact", "legal.artifact-version", "legal.artifact-diff",
       "legal.consent", "legal.consent-version", "legal.consent-diff", "legal.insurance-and-discrimination"]);
     const signed = capture("legal.insurance-and-discrimination", "complete", "390x844", 0.03);
@@ -252,9 +252,22 @@ describe("decisions 3 to 6, each with a planted defect", () => {
     expect(evaluate(signed, "contract").budgetBreaches).toContain("visibleCharacters");
     expect(evaluate(withReadings(signed, { aboveFoldTextCharacterCount: 700 })).budgetBreaches).not.toContain("visibleCharacters");
     expect(evaluate(withReadings(signed, { aboveFoldTextCharacterCount: 701 })).budgetBreaches).toContain("visibleCharacters");
-    const unsigned = withReadings(capture("legal.privacy", "complete", "390x844", 0.03), { aboveFoldTextCharacterCount: 600 });
-    unsigned.value.metrics.visibleTextCharacterCount = 701;
+    // Owner decision of 23 October: the same reading on pages that are not signed documents.
+    const unsigned = capture("legal.privacy", "complete", "1280x800", 0.03);
+    unsigned.value.metrics.visibleTextCharacterCount = 2400;
+    expect(evaluate(unsigned, "contract").budgetBreaches).toContain("visibleCharacters");
+    expect(evaluate(withReadings(unsigned, { aboveFoldTextCharacterCount: 700 }), "contract").budgetBreaches).toContain("visibleCharacters");
+    expect(evaluate(withReadings(unsigned, { aboveFoldTextCharacterCount: 700 })).budgetBreaches).not.toContain("visibleCharacters");
+    expect(evaluate(withReadings(unsigned, { aboveFoldTextCharacterCount: 701 })).budgetBreaches).toContain("visibleCharacters");
+    // Without its corrected reading a capture keeps the frozen count.
+    unsigned.value.correctedReadings = undefined;
     expect(evaluate(unsigned).budgetBreaches).toContain("visibleCharacters");
+    // A domain landing keeps its 480 cap on the same reading.
+    const landingRow = required.find(entry => entry.route.id === "genome.subject" && entry.viewport === "390x844")!;
+    const landing = capture("genome.subject", landingRow.state, "390x844", 0.03);
+    landing.value.metrics.visibleTextCharacterCount = 1200;
+    expect(evaluate(withReadings(landing, { aboveFoldTextCharacterCount: 480 })).budgetBreaches).not.toContain("visibleCharacters");
+    expect(evaluate(withReadings(landing, { aboveFoldTextCharacterCount: 481 })).budgetBreaches).toContain("visibleCharacters");
   });
   it("5: every signed legal document route renders its signed text as a pre-formatted node", () => {
     const pages: Record<string, string> = {
