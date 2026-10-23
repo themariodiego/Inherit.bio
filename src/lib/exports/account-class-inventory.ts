@@ -36,17 +36,32 @@ export const accountClassRowSchemas={
  suppressions:z.object({id:uuid,condition_id:text,reason_code:text,suppression_revision:revision,active_from:date,ended_at:date.nullable()}).strict(),
 } as const;
 export type AccountProjectedClass=keyof typeof accountClassRowSchemas;
+const identifier=/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/iu;
+/** Joint results a one-record export (api.subject-export) carries only while
+ * every other contributor's permission is live, projected by
+ * private.export_subject_portrait_rows_v1 (20261023100000). Never another
+ * contributor's subject or account, the holding account or a source
+ * fingerprint; a value holding an identifier is refused, not redacted. The
+ * whole-account export still reports these classes as unsupported. */
+export const accountJointClassRowSchemas={
+ portrait_results:z.object({id:uuid,family_pair_id:uuid,kind:z.enum(["carrier_pair","polygenic_distribution"]),trait_key:text,
+  result:z.record(z.string(),z.unknown()),coverage:z.number().min(0).max(1),method_version:text,computation_revision:revision,computed_at:date}).strict()
+  .refine(row=>!identifier.test(JSON.stringify(row.result))),
+} as const;
+export type AccountJointClass=keyof typeof accountJointClassRowSchemas;
+const rowSchemas={...accountClassRowSchemas,...accountJointClassRowSchemas};
 const scienceKinds=["embryo_figures","embryo_qc","embryo_scores","embryo_variants","embryos","report_artifacts"] as const;
 type ScienceKind=(typeof scienceKinds)[number];
 function mode(kind:AccountClassKind){return kind in accountClassRowSchemas?"metadata":(scienceKinds as readonly string[]).includes(kind)?"claimed-bound":"unsupported";}
-const entry=z.object({kind:z.enum(ACCOUNT_CLASS_KINDS),mode:z.enum(["metadata","claimed-bound","unsupported","graph","path-b-results","excluded","requester-statements"]),rows:count,membershipSha256:hash,
+const entry=z.object({kind:z.enum(ACCOUNT_CLASS_KINDS),mode:z.enum(["metadata","claimed-bound","unsupported","graph","path-b-results","excluded","requester-statements","joint-results"]),rows:count,membershipSha256:hash,
  partitions:z.array(z.object({subjectId:uuid,rows:count}).strict())}).strict();
 const inventory=z.object({version:z.literal("account-class-inventory-v1"),authorityReceipt:hash,classes:z.array(entry).length(ACCOUNT_CLASS_KINDS.length),
  boundSnapshots:z.array(futurePersonExportSnapshot),ownStatements:accountOwnStatementCapture.optional()}).strict()
  .refine(v=>new Set(v.classes.map(e=>e.kind)).size===ACCOUNT_CLASS_KINDS.length)
  .refine(v=>v.classes.every(e=>(e.mode===mode(e.kind)||e.mode==="graph"&&(ACCOUNT_GRAPH_CLASSES as readonly string[]).includes(e.kind)
   ||e.mode==="requester-statements"&&["correction_requests","appeal_intakes"].includes(e.kind)&&(e.rows===0||requesterStatementsOpen())&&v.ownStatements!==undefined
-  ||e.mode==="path-b-results"&&e.kind==="path_b_report_bindings"||e.mode==="excluded"&&e.kind==="other_adult_held_uploads")&&new Set(e.partitions.map(p=>p.subjectId)).size===e.partitions.length));
+  ||e.mode==="path-b-results"&&e.kind==="path_b_report_bindings"||e.mode==="excluded"&&e.kind==="other_adult_held_uploads"
+  ||e.mode==="joint-results"&&e.kind in accountJointClassRowSchemas)&&new Set(e.partitions.map(p=>p.subjectId)).size===e.partitions.length));
 export const accountClassInventorySchema=inventory;
 const page=z.object({version:z.literal("account-class-page-v1"),kind:z.enum(ACCOUNT_CLASS_KINDS),
  rows:z.array(z.object({id:uuid,subjectId:uuid.nullable(),rowText:text.max(8192)}).strict()).max(500),nextAfterId:uuid.nullable()}).strict();
@@ -88,16 +103,25 @@ export async function prepareAccountClassInventory(options:{reference:{exportId:
   ||captured.boundSnapshots.some(s=>Date.parse(s.authority.expiresAt)<=Date.now()||s.authority.authorityReceipt!==options.reference.authorityReceipt
    ||!expectedBound.some(p=>p.subjectId===s.source.subjectId&&p.fileIds.length===1&&p.fileIds[0]===s.source.fileId)))throw unavailable();
  if(captured.authorityReceipt!==options.reference.authorityReceipt||captured.classes.some(e=>e.mode==="unsupported"&&e.rows!==0
-  ||e.partitions.some(p=>!subjects.has(p.subjectId))||e.partitions.reduce((n,p)=>n+p.rows,0)>e.rows))throw unavailable();
+  ||e.partitions.some(p=>!subjects.has(p.subjectId))||e.partitions.reduce((n,p)=>n+p.rows,0)>e.rows
+  // Live-permission joint results exist only for one ordinary record, and
+  // every row is that record's.
+  ||e.mode==="joint-results"&&(accountArchiveScope(context)!=="subject"||e.partitions.reduce((n,p)=>n+p.rows,0)!==e.rows)))throw unavailable();
  for(const e of captured.classes)if(e.mode==="unsupported")proved.add(e.kind);
  const check=async(signal:AbortSignal)=>{if(JSON.stringify(inventory.parse(await call("context",signal)))!==JSON.stringify(captured))throw unavailable();};
- async function* records<K extends AccountProjectedClass>(kind:K,signal:AbortSignal){
-  if(!(kind in accountClassRowSchemas))throw unavailable();await check(signal);const expected=captured.classes.find(e=>e.kind===kind)!;
+ async function* records<K extends AccountProjectedClass|AccountJointClass>(kind:K,signal:AbortSignal){
+  if(!(kind in rowSchemas))throw unavailable();await check(signal);const expected=captured.classes.find(e=>e.kind===kind)!;
+  const joint=kind in accountJointClassRowSchemas;
+  // Outside a one-record export a joint class is unsupported and, as checked
+  // above, empty: there is nothing to page.
+  if(joint&&expected.mode==="unsupported"){if(expected.rows!==0)throw unavailable();return;}
+  if(expected.mode!==(joint?"joint-results":"metadata"))throw unavailable();
   let after:string|null=null,n=0,digest=createHash("sha256").update(`account-class-members-v1|${kind}`).digest();const perSubject=new Map<string,number>();
   for(;;){const rows=page.parse(await call("metadata",signal,kind,after));
    if(rows.kind!==kind||rows.nextAfterId!==(rows.rows.length===500?rows.rows.at(-1)!.id:null))throw unavailable();
-   for(const item of rows.rows){if(item.id<=(after??"")||++n>expected.rows||item.subjectId!==null&&!subjects.has(item.subjectId))throw unavailable();
-    const row=accountClassRowSchemas[kind].parse(JSON.parse(item.rowText));if(("id" in row?row.id:row.grant_id)!==item.id)throw unavailable();
+   for(const item of rows.rows){if(item.id<=(after??"")||++n>expected.rows||item.subjectId!==null&&!subjects.has(item.subjectId)
+    ||joint&&(item.subjectId===null||item.subjectId!==context.targetId))throw unavailable();
+    const row=rowSchemas[kind].parse(JSON.parse(item.rowText));if(("id" in row?row.id:row.grant_id)!==item.id)throw unavailable();
     digest=createHash("sha256").update(digest).update(`${item.id}:${item.subjectId??""}:${item.rowText}\n`).digest();after=item.id;
     if(item.subjectId!==null)perSubject.set(item.subjectId,(perSubject.get(item.subjectId)??0)+1);
     yield {subjectId:item.subjectId,row};

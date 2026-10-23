@@ -1,3 +1,135 @@
+## 2026-10-23 — G5.6: the one-record export's joint-result projection (step two of the 16 October decision)
+
+This entry follows the owner decisions of 16 October in `docs/protocol/decisions.md`: "Subject export with joint results: built in two steps" ("The next slice adds the live-permission joint-result projection and lifts that refusal") and "The subjects endpoints (G2.1)" ("Joint results are included only while each other contributor's permission is live"). The stated behaviour change is recorded there under 23 October. The migration is `20261023100000_subject_export_joint_results.sql`, a guarded release after PR 324's. No route, wording, table, grant or audit event changes. Production is unchanged.
+
+**New suite: `supabase/tests/subject_export_joint_results.sql`, 130 assertions.** Three real accounts: the requester A from `fixtures/account_archive_ordinary_scientific.inc`, the other parent B and a third account C. A and B sign in themselves, grant `family.portrait` to each other through `grant_family_portrait_purpose_v1` with a real presentation, and acknowledge Portrait. That creates one current pair. There is no Portrait writer, so the `portrait_results` rows, the chats and every state named "planted" are synthetic owner-only fixtures. Everything rolls back.
+
+1. **The record exports with its live joint results.**
+   - The capture lives where it used to refuse.
+   - The whole-account capture still refuses with `export_partition_projection_unavailable`.
+   - The `portrait_results` class is `joint-results`, with 2 rows in the record's partition.
+   - The cross-account and wrong-pair planted results (B–C pair, and a result naming A filed under the B–C pair) never appear.
+   - Each row has exactly the nine fields. The verdict `pg_temp.counterparty_values()` finds none of A's and B's account ids, the parents' subject ids, C's ids or either source fingerprint anywhere in an exported row.
+   - The pair is the record's one graph row. No cohort row is routed.
+   - The inventory refuses another account's origin or a missing origin (42501), and the projection refuses a record that is not the caller's own.
+2. **The real job reads the same rows.** A real request and create, then `export_archive_worker_v1('begin')`.
+   - The class context carries `joint-results`.
+   - `export_archive_account_classes_v1('metadata','portrait_results')` pages exactly the two live results, each the record's and none naming B or a fingerprint.
+   - The pair's graph row carries neither parent's subject id.
+3. **A permission ending mid-job fails the job through the receipt.**
+   - A real `pause_family_sharing_v1` after the request gives 42501 `not_found` at the next read.
+   - So does a planted revocation (`purpose_grants.revoked_at` set while the result stays).
+   - Another export id cannot page the results.
+4. **Each way the other parent's permission is not live omits the row.**
+   - Real revocation deletes the results and the record still exports.
+   - Planted revoked grant: the results stay, none are exported and the class counts 0.
+   - A real pause keeps the results and exports none.
+   - Planted: missing acknowledgement, pair no longer current (which also no longer refuses the record), the other parent never signed in.
+   - A final check proves each savepoint undid its omission.
+5. **A result that cannot be projected refuses the whole request** with 0A000 `export_class_projection_unavailable`. The planted cases are a result holding a UUID, a non-object result, and a result naming A beside a second record whose person is B (held by C) under the live A–B pair.
+6. **What nothing projects yet still refuses with the stated reason** (0A000 `export_joint_results_pending`).
+   - A canonical pair conversation of A with one turn refuses the capture, and fails a job created before it.
+   - A group conversation whose turn read A's record refuses too.
+   - These do not refuse: a group conversation that never read the record, a legacy unverified conversation (never exported, owner decision of 26 September), and B's own conversation.
+7. **The whole-account export is unchanged.**
+   - After both real revocations, the planted B–C result A holds still refuses the whole-account capture (`export_class_projection_unavailable`).
+   - With no results, its class is still `unsupported`.
+   - A real whole-account job begins. The classes door refuses `portrait_results` for it (22023), and its context keeps the class `unsupported`.
+8. **The joint-result census** (the coordinator's condition).
+   - `joint_census_universe` is computed from the catalog. It is the union of:
+     - every table with a foreign-key path to `public.family_pairs`;
+     - every table deleted by a function named for pairs, Portrait, family, heritability or cohorts, or by any function that deletes from `family_pairs` or `portrait_results`. That covers `delete_pair_derived_rows_v1`, the family and cohort Copilot prunes, the cohort purge and restriction, `empty_self_subject_v1` and the account-deletion purge;
+     - every table named for family, heritability, pairs, Portrait or the health picture;
+     - every table with a `family_pair_id`, `pair_id` or `cohort_id` column;
+     - every table with a foreign key to `embryo_cohorts` or `embryos`.
+   - Set equality holds against 97 classified rows: 1 `live-permission` (`portrait_results`), 16 `refused` (chats and turns, and the cohort and embryo science tables) and 80 `not-joint`, each with its reason.
+   - A planted new table referencing `family_pairs`, and a planted `*_family_results` table, are both reported unclassified.
+9. **Planted copies of the projection are each caught:**
+   - one without the live-permission check exports while paused;
+   - a whole-row projection carries forbidden fields and names the other parent and the fingerprint;
+   - selecting by the holding account exports another pair's result;
+   - without the conversation predicate, a record with a family conversation is captured.
+10. **The cohort role still refuses.**
+    - `fixtures/embryo_ingest_completed.inc` gives the account a live cohort. Its parents are account-level `genetic_parent` principals, which are the account's, not the record's.
+    - A planted participant row for A's own record principal refuses with `export_joint_results_pending`.
+    - With the cohort purged, it refuses with `export_partition_projection_unavailable`.
+11. **Patch hygiene.**
+    - Each of the four patched functions is exactly its reviewed successor md5.
+    - The three new helpers are executable by none of anon, authenticated, inherit_upload_only or service_role.
+    - The classes door keeps its service-only grant.
+
+**Changed: `supabase/tests/subject_export.sql`, section 4 (287 → 303 assertions).** The owner's decision lifts the pair and Portrait refusal, so the five assertions that encoded step one change. Each refusal assertion keeps its intent on the joint result that still refuses:
+
+- "a record with a live family pair is refused with the stated reason" becomes "a record with a family conversation on its pair is refused with the stated reason". A synthetic pending pair plus one canonical family turn is the trigger.
+- "a pair that appears after the request fails the job at its next read" (0A000) becomes "a conversation that appears after the request fails the job at its next read" (0A000), plus "a pair that appears after the request still fails the job at its next read, through the receipt" (42501 `not_found`).
+- "the request door gives the same refusal" is kept for the conversation, plus "the request door gives the same capture" for a pair.
+- "a revoked pair that is not purged still counts" becomes "a revoked pair that is not purged no longer refuses the record".
+- "a Portrait result naming the record as a parent counts" becomes "a Portrait result naming the record as a parent no longer refuses it", plus "with its pair purged the result is not live, so it is left out" (class rows 0).
+- Added: a new first assertion, "a record with a live family pair is captured: the pair is its history, not a joint result".
+- The owner-only privilege list gains the three new helpers (12 assertions).
+- Run on the shared database over PR 324's missing migrations (except `20261016153100`, whose own guard fails there):
+  - the new file with the migration passes 303 of 303;
+  - the new file without the migration fails the four lifted-refusal assertions (192–195) and aborts at the first call to a new helper;
+  - the original file with the migration fails exactly the five step-one assertions (189–193), as the decision requires.
+
+**Changed: `supabase/tests/other_adult_held_upload.sql`.** The md5(prosrc) pin of `private.export_subject_class_inventory_v1` moves from `355f4194…` to `d48410a3…`, the body this migration installs, with a comment naming the migration. The held-table census list is unchanged: the new helpers do not name `other_adult_held_uploads`. With the migration it passes 174 of 174. Without it, only test 71 fails, as expected.
+
+**Changed: `docs/export-member-plan.json` and its generated block in `supabase/tests/export_member_plan.sql`** (regenerated by `scripts/export-member-plan.ts`).
+- `public.portrait_results` and `public.family_pairs` stay `deferred`. Their reasons now say what the one-record export carries and why the class stays open: the whole-account and synchronous archives do not carry them.
+- Each gains one reader member, `reader:classes.portrait_results` and `reader:graph.family_pairs`.
+- No disposition moves, so the counts stay 20 exported and 31 deferred.
+- `docs/proposals/requester-statement-export-member-plan.provenance.json` `active` now pins the plan's new bytes (77763) and sha256 (`e488a8ae…`).
+
+**Changed: `src/lib/exports/account-archive-worker.test.ts`, one-record describe, 6 new cases.**
+- "files a live-permission Portrait result in the record's portrait.json with the record's fields only": the row is exactly `{kind:"portrait_results",scope:"subject",row}`, and the archive bytes hold neither the adult or foreign subject id nor any withheld field name.
+- Four refusals before any reservation: a row for another subject, a row carrying `owner_account_id`, a row carrying `parent_b_subject_id`, and a result value holding an identifier.
+- "refuses live-permission joint results in a whole-account job".
+
+The code under test is `src/lib/exports/account-class-inventory.ts` (a closed `accountJointClassRowSchemas.portrait_results`, mode `joint-results` admitted only in a one-record context and only with every row in the record's partition) and `src/lib/exports/account-partition-members.ts` (joint rows filed under `portrait.json`, scope `subject`). The fixtures in `src/lib/exports/__fixtures__/account-partitions.ts` are unchanged. A whole-account inventory still reports `portrait_results` as `unsupported`, and the existing case "keeps the entire account refused when the unproved portrait_results class is nonempty" still passes.
+
+**Changed: `e2e/subject-export.spec.ts`** (one case, same name). It planted a pending family pair and asserted the 422 `jointResults` refusal for both contributors. A pair alone no longer refuses, so:
+- the pair now first asserts the record passes the door (403 for the forged CSRF proof);
+- the refusal is then planted with one synthetic canonical family conversation turn for each account on that pair. Both records still get 422 `{"error":"invalid_request","issues":["jointResults"]}`, for the create body and a malformed body, before the body or CSRF is read;
+- cleanup deletes the conversations, then the pair, and the record passes the door again.
+
+The no-job, no-export-row and settings assertions are unchanged. Its doc comment names the new planted rows. It was not run in a browser here: it needs PR 324's migrations and this one committed to the database it runs against, and the shared local database may only be used inside rolled-back transactions. CI's fresh database is its real run.
+
+**Planted copies of the migration**, each run against the new suite (the successor-md5 check is dropped so the plant installs):
+- `no_live_permission`: the projection skips `family_portrait_authority_v1`. It fails 16, including "exactly the pair's two live results are counted", "another pair's result and a result filed under another pair never appear", "the door pages exactly the two live results", and every pause, revocation, acknowledgement and pair-status omission.
+- `counterparty_fields`: the projection adds `owner_account_id` and both parent subject ids. It fails 4: "a result carries only the record's nine fields", "no account id, parent subject id or source fingerprint appears anywhere in an exported result", "the projected row is the stored result, verbatim…" and "no paged result names the other parent or a source fingerprint".
+- `no_conversation_refusal`: the stated refusal loses the conversation predicate. It fails 4: the pair conversation, the job created before it, the group conversation that read the record, and the successor-md5 pin.
+- `no_identifier_refusal`: it fails "planted: a result holding an identifier refuses the request".
+- `no_parent_match`: it fails "planted: a result whose parents are not the live pair's refuses the request".
+- `door_any_scope`: the door pages Portrait results for any job. It fails "the classes door never pages Portrait results for a whole-account job".
+- `no_origin_check`: the inventory branch drops its own origin check. Only the successor-md5 pin fails. The projection's own check that the record is the origin account's still refuses a foreign origin, so the branch check is defence in depth.
+
+**Patch guards.**
+- Applied cleanly over PR 324's bodies.
+- Re-running the patch block fails 55000 "subject joint results predecessor differs".
+- A changed first anchor fails "subject joint results anchor differs".
+- A changed second door anchor fails "classes door rows anchor differs".
+- A wrong successor md5 fails "subject joint results successor differs".
+- A predecessor with an extra service_role grant fails "predecessor differs", because each predecessor must carry its exact reviewed ACL.
+
+**Regression.** All 232 pgTAP suites ran on the shared database, each in one rolled-back transaction with this migration over PR 324's missing migrations (except `20261016153100`).
+- 210 pass completely. They include:
+  - `subject_export` 303/303 and `subject_export_joint_results` 130/130;
+  - `other_adult_held_upload` 174/174 and `export_member_plan` 38/38;
+  - `account_archive_class_inventory` 175/175 and `account_archive_complete` 284/284;
+  - `portrait_navigation` 102/102, `portrait_canonical_source_readiness` 32/32 and `carrier_portrait_reader` 24/24.
+- The other 22 were run again without the migration. Each gave a byte-identical list of `ok`/`not ok` lines, so their failures are pre-existing on this shared database. Examples are `family_sharing` 6 and `own_upload_retention` 6; others stop at fixture errors (`embryo_authority`, `mail_outbox`, `v2_backfill`). CI's fresh database is their real run.
+
+Vitest:
+- `src/lib/exports`, `src/lib/export`, `src/components/settings`, `src/app/api/subjects`, `src/app/api/export`, `scripts/account-graph-source-contract.test.ts`, `scripts/export-proposal-boundary.test.ts` and `scripts/account-future-source-union.test.ts` together give 1513 of 1514.
+- The one failure is "composes the complete native supplement with the original nonempty own report and raw bytes in one exact archive". It times out at its 5 s limit (5.7–6.1 s) in this container with or without this change: at baseline it took 5823 ms and 6081 ms. Earlier full runs recorded 4.1–4.4 s.
+- `scripts/acceptance-matrix.test.ts` passes 5 of 5.
+
+Typecheck passes (`NODE_OPTIONS=--max-old-space-size=6144`). Lint is clean on every changed file.
+
+Gates:
+- `secrets`, `routes`, `sql-includes`, `readability`, `claims`, `legal`, `env`, `citations`, `templates`, `jurisdictions`, `first-glance` and `browser-discovery` pass.
+- `names` (`NAME_DENYLIST_FILE` is a CI-only secret) and `catalog-drift` (needs a deployed `SUPABASE_DB_URL`) cannot run here.
+
 ## 2026-10-22 — G5.4: the claimed record in a browser — an approved Record Key claim, its release mail, the claimant page, and the delete closed on the standard app
 
 This entry follows the owner decisions recorded in `docs/protocol/decisions.md`:

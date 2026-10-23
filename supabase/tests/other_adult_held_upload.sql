@@ -528,8 +528,10 @@ select ok(to_regprocedure('private.export_account_class_inventory_v1(uuid,jsonb)
   and not exists(select 1 from unnest(array['anon','authenticated','inherit_upload_only','service_role'])r
    where has_function_privilege(r,to_regprocedure('private.export_account_class_inventory_v1(uuid,jsonb)'),'execute'))),
  'only the exact installed account class inventory may inspect held custody, behind every API denial');
+-- 20261023100000_subject_export_joint_results.sql adds the live-permission
+-- Portrait branch to this exact helper; the pin follows the reviewed body.
 select ok(to_regprocedure('private.export_subject_class_inventory_v1(uuid,jsonb)') is null
- or ((select md5(prosrc)='355f419486531042756e6e47e3f573dc' and prosecdef and proconfig=array['search_path=""','lock_timeout=250ms']::text[]
+ or ((select md5(prosrc)='d48410a3107806c63a50480f3524d980' and prosecdef and proconfig=array['search_path=""','lock_timeout=250ms']::text[]
   and proowner=(select oid from pg_roles where rolname='postgres') from pg_proc
   where oid=to_regprocedure('private.export_subject_class_inventory_v1(uuid,jsonb)'))
   and not exists(select 1 from unnest(array['anon','authenticated','inherit_upload_only','service_role'])r

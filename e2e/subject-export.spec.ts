@@ -10,6 +10,9 @@ import { SUBJECT_EXPORT_HEADING } from "../src/copy/subjects/subject-export";
  * api.subject-export (POST/GET /api/subjects/[id]/export), owner decision of
  * 16 October 2026: the one-record export ships first and refuses, with the
  * stated reason `jointResults`, while the record has live joint results.
+ * Step two (20261023100000_subject_export_joint_results.sql) exports a family
+ * pair and a live-permission Portrait result; a family conversation on the
+ * record and a live embryo cohort role still refuse with that reason.
  *
  * TEST-LOCAL with production OFF and no provider: this deployment has no
  * archive generation capability (the TEST R2 step runs only in
@@ -20,14 +23,17 @@ import { SUBJECT_EXPORT_HEADING } from "../src/copy/subjects/subject-export";
  * TEST R2 producer, completion and delivery are covered by
  * supabase/tests/subject_export.sql and src/lib/exports/account-archive-worker.test.ts.
  *
- * The owner uploads one real file first. The one owner-planted row is a synthetic `family_pairs` row between two
- * synthetic accounts' own records, removed again before the test ends.
+ * The owner uploads one real file first. The owner-planted rows are a synthetic `family_pairs` row between two
+ * synthetic accounts' own records and, on it, one synthetic canonical family conversation turn for each account,
+ * all removed again before the test ends.
  */
 const RUN = randomUUID();
 const OWNER = { email: `subject-export-${RUN}@e2e.local`, password: "e2e-subject-export-pw" };
 const OTHER = { email: `subject-export-other-${RUN}@e2e.local`, password: "e2e-subject-export-other-pw" };
 let ownerSelf = "";
 let otherSelf = "";
+let ownerAccount = "";
+let otherAccount = "";
 
 async function selfSubject(accountId: string): Promise<string> {
   const { data, error } = await adminClient().from("subjects").select("id")
@@ -51,8 +57,10 @@ async function call(page: Page, path: string, init: { method: "GET" | "POST"; bo
 }
 
 test.beforeAll(async () => {
-  ownerSelf = await selfSubject(await createConfirmedUser(OWNER.email, OWNER.password));
-  otherSelf = await selfSubject(await createConfirmedUser(OTHER.email, OTHER.password));
+  ownerAccount = await createConfirmedUser(OWNER.email, OWNER.password);
+  otherAccount = await createConfirmedUser(OTHER.email, OTHER.password);
+  ownerSelf = await selfSubject(ownerAccount);
+  otherSelf = await selfSubject(otherAccount);
 });
 
 test("api.subject-export answers the record door, the stated joint-results refusal and opaque not-found, with no job and no provider", async ({ page }) => {
@@ -81,12 +89,29 @@ test("api.subject-export answers the record door, the stated joint-results refus
       .toMatchObject({ status: 404, body: { error: "not_found" }, setCookie: false });
   }
 
-  // A live family pair with another contributor: the closed stated refusal, before the body or CSRF is read.
+  // A live family pair alone is the record's history, not a joint result: the record passes the door.
   const admin = adminClient();
   const planted = await admin.from("family_pairs").insert({ subject_a_id: ownerSelf, subject_b_id: otherSelf, status: "pending" }).select("id").single();
   expect(planted.error).toBeNull();
   const pairId = (planted.data as { id: string }).id;
+  const chatIds: string[] = [];
   try {
+    expect(await call(page, route, { method: "POST", body: create }))
+      .toMatchObject({ status: 403, body: { error: "request_forbidden" }, setCookie: false, referrer: "no-referrer" });
+    // A family conversation on the pair, one turn for each account: the closed
+    // stated refusal, before the body or CSRF is read.
+    for (const account of [ownerAccount, otherAccount]) {
+      const chat = await admin.from("chats").insert({ user_id: account, scope_kind: "family", family_pair_id: pairId, lifecycle_revision: 1,
+        provider_classification: "local", runtime_attestation_revision: 1, model_recipient_revision: 1,
+        authorization_fingerprint: "d".repeat(64), legacy_unverified: false }).select("id").single();
+      expect(chat.error).toBeNull();
+      const chatId = (chat.data as { id: string }).id;
+      chatIds.push(chatId);
+      const turn = await admin.from("chat_messages").insert({ chat_id: chatId, user_id: account, role: "user", content: { text: "synthetic" },
+        turn_id: randomUUID(), turn_ordinal: 1, paired_role: "user", scope_revision: 1, authorization_fingerprint: "d".repeat(64),
+        provider_classification: "local", runtime_attestation_revision: 1, model_recipient_revision: 1, legacy_unverified: false });
+      expect(turn.error).toBeNull();
+    }
     for (const body of [create, { malformed: true }]) {
       expect(await call(page, route, { method: "POST", body }))
         .toMatchObject({ status: 422, body: { error: "invalid_request", issues: ["jointResults"] }, setCookie: false, referrer: "no-referrer" });
@@ -100,11 +125,15 @@ test("api.subject-export answers the record door, the stated joint-results refus
         .toMatchObject({ status: 422, body: { error: "invalid_request", issues: ["jointResults"] } });
     } finally { await other.close(); }
   } finally {
+    if (chatIds.length > 0) {
+      const removedChats = await admin.from("chats").delete().in("id", chatIds);
+      expect(removedChats.error).toBeNull();
+    }
     const removed = await admin.from("family_pairs").delete().eq("id", pairId);
     expect(removed.error).toBeNull();
   }
 
-  // Once the pair is gone the record passes the door again.
+  // Once the conversation and the pair are gone the record passes the door again.
   expect(await call(page, route, { method: "POST", body: create })).toMatchObject({ status: 403, body: { error: "request_forbidden" } });
 
   // No job, export row or download session was created for either record.

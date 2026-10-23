@@ -442,6 +442,44 @@ describe("one-record (api.subject-export) archive on the account producer",()=>{
   await expect(buildAccountArchive({...account.options,scope:"subject"})).rejects.toThrow();
   expect(account.historical.write).not.toHaveBeenCalled();expect(account.historical.calls.some(c=>c.p_operation==="reserve")).toBe(false);
  });
+ // 20261023100000 (supabase/tests/subject_export_joint_results.sql): the
+ // database pages a Portrait result only while the other parent's permission
+ // is live and only with the record's own nine fields.
+ function jointPortrait(f:Awaited<ReturnType<typeof fixture>>,override:Record<string,unknown>={},subjectId:string=f.self){
+  const id=randomUUID(),row={id,family_pair_id:randomUUID(),kind:"carrier_pair",trait_key:"synthetic-carrier",result:{band:"one-in-four",covered:true},
+   coverage:0.75,method_version:"synthetic-portrait-v1",computation_revision:1,computed_at:date,...override},rowText=JSON.stringify(row);
+  const digest=createHash("sha256").update(createHash("sha256").update("account-class-members-v1|portrait_results").digest())
+   .update(`${id}:${subjectId}:${rowText}\n`).digest("hex");
+  Object.assign(f.classContext.classes.find(e=>e.kind==="portrait_results")!,{mode:"joint-results",rows:1,membershipSha256:digest,partitions:[{subjectId:f.self,rows:1}]});
+  const original=f.classRpc.getMockImplementation()!;
+  f.classRpc.mockImplementation(async(...args)=>args[1].p_operation==="metadata"&&args[1].p_kind==="portrait_results"?
+   {data:{version:"account-class-page-v1",kind:"portrait_results",rows:[{id,subjectId,rowText}],nextAfterId:null},error:null}:original(...args));
+  return row;
+ }
+ it("files a live-permission Portrait result in the record's portrait.json with the record's fields only",async()=>{
+  const f=subjectScope(await fixture()),row=jointPortrait(f);
+  const result=await buildAccountArchive({...f.options,scope:"subject"}),zip=new AdmZip(Buffer.concat(f.historical.writes));
+  expect(result.summary.state).toBe("bytes-complete");
+  expect(JSON.parse(zip.readAsText(`subjects/${f.self}/portrait.json`)).rows).toEqual([{kind:"portrait_results",scope:"subject",row}]);
+  expect(f.classRpc.mock.calls.some(([,a])=>a.p_operation==="metadata"&&a.p_kind==="portrait_results")).toBe(true);
+  const archive=Buffer.concat(f.historical.writes);
+  for(const absent of [f.adult,f.foreign,"owner_account_id","parent_a_subject_id","source_binding_fingerprint"])expect(archive.includes(Buffer.from(absent))).toBe(false);
+ });
+ it.each([
+  ["a result row for another subject",(f:Awaited<ReturnType<typeof fixture>>)=>jointPortrait(f,{},f.adult)],
+  ["a result row carrying the holding account",(f:Awaited<ReturnType<typeof fixture>>)=>jointPortrait(f,{owner_account_id:randomUUID()})],
+  ["a result row carrying the other parent's record",(f:Awaited<ReturnType<typeof fixture>>)=>jointPortrait(f,{parent_b_subject_id:f.foreign})],
+  ["a result value holding an identifier",(f:Awaited<ReturnType<typeof fixture>>)=>jointPortrait(f,{result:{other:f.foreign}})],
+ ])("refuses %s before any reservation",async(_label,plant)=>{
+  const f=subjectScope(await fixture());plant(f);
+  await expect(buildAccountArchive({...f.options,scope:"subject"})).rejects.toThrow();
+  expect(f.historical.write).not.toHaveBeenCalled();expect(f.historical.calls.some(c=>c.p_operation==="reserve")).toBe(false);
+ });
+ it("refuses live-permission joint results in a whole-account job",async()=>{
+  const f=await fixture();jointPortrait(f);
+  await expect(buildAccountArchive(f.options)).rejects.toThrow();
+  expect(f.historical.write).not.toHaveBeenCalled();expect(f.historical.calls.some(c=>c.p_operation==="reserve")).toBe(false);
+ });
  it("refuses a record context carrying a second partition",async()=>{
   const f=subjectScope(await fixture());f.context.partitions.push({subjectId:f.adult,class:"ordinary",fileCount:0,fileIds:[]});
   await expect(buildAccountArchive({...f.options,scope:"subject"})).rejects.toThrow();expect(f.historical.write).not.toHaveBeenCalled();

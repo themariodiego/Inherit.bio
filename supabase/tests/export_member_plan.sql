@@ -922,7 +922,10 @@ create temporary table export_member_plan as select $plan$
     },
     "public.family_pairs": {
       "disposition": "deferred",
-      "reason": "Family pairs. Belongs to the family projection (portrait.json and joint results), which is not built."
+      "reason": "Family pairs. The asynchronous archives route the requester's own pair rows (id, revision, status, created_at; both contributor subject ids withheld) into subjects/{subject_id}/portrait.json, and since 20261023100000 a pair no longer refuses the one-record export. The synchronous archive does not carry them and the whole-account export still refuses while another person's grant to the account is current, so the class stays deferred.",
+      "members": [
+        "reader:graph.family_pairs"
+      ]
     },
     "public.family_sharing_pauses": {
       "disposition": "deferred",
@@ -1160,7 +1163,10 @@ create temporary table export_member_plan as select $plan$
     },
     "public.portrait_results": {
       "disposition": "deferred",
-      "reason": "Portrait results. Belongs to the family projection (portrait.json and joint results), which is not built."
+      "reason": "Portrait results, the joint results of two parents. No writer ships: the Portrait page computes them live. Since 20261023100000 the one-record export (api.subject-export) carries a result naming the record only while the other parent's Portrait permission is live (private.family_portrait_authority_v1), with the record's own fields, into subjects/{subject_id}/portrait.json; never the holding account, either parent's subject id or the source fingerprint, and a result holding an identifier refuses. The whole-account archive still refuses a nonempty class and the synchronous archive does not carry it, so the class stays deferred.",
+      "members": [
+        "reader:classes.portrait_results"
+      ]
     },
     "public.profiles": {
       "disposition": "exported",

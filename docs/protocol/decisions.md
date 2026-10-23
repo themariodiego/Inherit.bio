@@ -5149,3 +5149,43 @@ every glyph kept, and these floors range from 0.605 to 1.075. Owner decisions
 These readings change how budgets are evaluated, not the measurement modules
 or the baseline. G2.5 still needs every required capture, including the
 authenticated ones that run only on the owned-Linux runtime.
+
+## 2026-10-23 — Stated behaviour change: `api.subject-export` with joint results
+
+This applies the owner decisions of 16 October ("Subject export with joint
+results: built in two steps" and "The subjects endpoints (G2.1)": "Joint
+results are included only while each other contributor's permission is
+live"). It is not a new decision.
+
+- **Before:** the one-record export refused with `jointResults` (0A000
+  `export_joint_results_pending`) whenever the record was in any family pair
+  that was not purged, any Portrait result named it as a parent, or it held a
+  role in an embryo cohort that was not purged.
+- **After:**
+  - A family pair no longer refuses the record. Its row (id, revision,
+    status, created_at) leaves in the record's `portrait.json`, with both
+    contributor subject ids withheld.
+  - A Portrait result naming the record leaves only while the other parent's
+    Portrait permission is live: the pair is current, both exact
+    `family.portrait` grants are current, sharing is not paused, and both
+    parents have acknowledged Portrait and signed in themselves. It carries
+    the record's own nine fields. It never carries the holding account,
+    either parent's subject id or the source fingerprint. Otherwise it is left
+    out. A result holding an identifier, or one whose parents are not the
+    live pair, refuses the whole request.
+  - The refusal stays for a live embryo cohort role, and for a canonical
+    family Copilot conversation of the record's own account with a turn that
+    is anchored on a pair naming the record or read its data. A group
+    conversation that read the record now refuses, where before it was left
+    out of the archive without a word.
+- **Where:** migration `20261023100000_subject_export_joint_results.sql`. Its
+  guards expect PR 324's bodies, so it goes in the follow-up guarded release
+  after PR 324's. The whole-account export is unchanged.
+- **Wording:** unchanged. The refusal sentence on `/settings/data` ("This
+  record cannot be exported on its own while it has results made with another
+  person's DNA.") is still true of every case that refuses.
+- **Tests:** `supabase/tests/subject_export_joint_results.sql`, section 4 of
+  `supabase/tests/subject_export.sql`, the one-record cases of
+  `src/lib/exports/account-archive-worker.test.ts`, and
+  `e2e/subject-export.spec.ts`, which now plants a family conversation for
+  the refusal. Recorded in `docs/test-diff-register.md`.

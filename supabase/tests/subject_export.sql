@@ -212,23 +212,49 @@ select ok((select not private.account_archive_job_scope_v1(j,jsonb_populate_reco
  from private.export_archive_jobs j join public.generated_exports e on e.id=j.export_id
  where j.export_id=(select (created->>'exportId')::uuid from sx where label='subject')),'a subject job on another person''s record is not admitted');
 
--- 4. The stated refusal: live joint results, now and after the request.
+-- 4. The stated refusal: the joint results nothing projects yet, now and
+-- after the request. Since 20261023100000_subject_export_joint_results.sql
+-- a family pair and a Portrait result no longer refuse the record: the pair
+-- is its history and a Portrait result is projected only while the other
+-- parent's permission is live (supabase/tests/subject_export_joint_results.sql).
+-- A family conversation on the record and a live cohort role still refuse.
+create function pg_temp.family_conversation(p_pair uuid) returns void language sql as $$
+ insert into public.chats(id,user_id,scope_kind,family_pair_id,lifecycle_revision,provider_classification,runtime_attestation_revision,
+  model_recipient_revision,authorization_fingerprint,legacy_unverified)
+ values('7a5c0000-0000-4000-8000-000000000001','77900000-0000-4000-8000-000000000001','family',p_pair,1,'local',1,1,repeat('d',64),false);
+ insert into public.chat_messages(chat_id,user_id,role,content,turn_id,turn_ordinal,paired_role,scope_revision,authorization_fingerprint,
+  provider_classification,runtime_attestation_revision,model_recipient_revision,legacy_unverified)
+ values('7a5c0000-0000-4000-8000-000000000001','77900000-0000-4000-8000-000000000001','user','{"text":"synthetic"}',
+  '7a5c0000-0000-4000-8000-000000000002',1,'user',1,repeat('d',64),'local',1,1,false);
+$$;
+savepoint live_conversation;
+-- Synthetic owner-only rows: a pair and one family conversation turn on it.
+insert into public.family_pairs(id,subject_a_id,subject_b_id,status) values('7a5e0000-0000-4000-8000-000000000002',(select id from normalization_subject),(select subject from other_ids),'pending');
+select pg_temp.family_conversation('7a5e0000-0000-4000-8000-000000000002');
+set local role service_role;
+select throws_ok($$select pg_temp.request('subject','capture')$$,'0A000','export_joint_results_pending',
+ 'a record with a family conversation on its pair is refused with the stated reason');
+select throws_ok($$select pg_temp.members('subject','context')$$,'0A000','export_joint_results_pending',
+ 'a conversation that appears after the request fails the job at its next read');
+select throws_ok($$select public.export_archive_request_v1('capture',origin,'subject',subject) from sx where label='subject'$$,
+ '0A000','export_joint_results_pending','the request door gives the same refusal');
+reset role;
+rollback to live_conversation;
 savepoint live_pair;
 insert into public.family_pairs(subject_a_id,subject_b_id,status) values((select id from normalization_subject),(select subject from other_ids),'pending');
 set local role service_role;
-select throws_ok($$select pg_temp.request('subject','capture')$$,'0A000','export_joint_results_pending',
- 'a record with a live family pair is refused with the stated reason');
-select throws_ok($$select pg_temp.members('subject','context')$$,'0A000','export_joint_results_pending',
- 'a pair that appears after the request fails the job at its next read');
-select throws_ok($$select public.export_archive_request_v1('capture',origin,'subject',subject) from sx where label='subject'$$,
- '0A000','export_joint_results_pending','the request door gives the same refusal');
+select lives_ok($$select pg_temp.request('subject','capture')$$,
+ 'a record with a live family pair is captured: the pair is its history, not a joint result');
+select throws_ok($$select pg_temp.members('subject','context')$$,'42501','not_found',
+ 'a pair that appears after the request still fails the job at its next read, through the receipt');
+select is((select public.export_archive_request_v1('capture',origin,'subject',subject) from sx where label='subject'),
+ pg_temp.request('subject','capture'),'the request door gives the same capture');
 reset role;
 rollback to live_pair;
 savepoint revoked_pair;
 insert into public.family_pairs(subject_a_id,subject_b_id,status) values((select subject from other_ids),(select id from normalization_subject),'revoked');
 set local role service_role;
-select throws_ok($$select pg_temp.request('subject','capture')$$,'0A000','export_joint_results_pending',
- 'a revoked pair that is not purged still counts');
+select lives_ok($$select pg_temp.request('subject','capture')$$,'a revoked pair that is not purged no longer refuses the record');
 reset role;
 rollback to revoked_pair;
 savepoint portrait;
@@ -237,9 +263,10 @@ insert into public.portrait_results(owner_account_id,parent_a_subject_id,parent_
  source_binding_fingerprint,computation_revision) values('7a520000-0000-4000-8000-000000000001',(select subject from other_ids),(select id from normalization_subject),
  '7a5e0000-0000-4000-8000-000000000001','carrier_pair','fixture','{}',1,'fixture',repeat('f',64),1);
 set local role service_role;
-select throws_ok($$select pg_temp.request('subject','capture')$$,'0A000','export_joint_results_pending',
- 'a Portrait result naming the record as a parent counts');
+select lives_ok($$select pg_temp.request('subject','capture')$$,'a Portrait result naming the record as a parent no longer refuses it');
 reset role;
+select is((select x->>'rows' from sx,jsonb_array_elements(private.export_account_owned_capture_v1(origin,'subject',subject)->'classInventory')x
+ where label='subject' and x->>'kind'='portrait_results'),'0','with its pair purged the result is not live, so it is left out');
 rollback to portrait;
 savepoint purged_pair;
 insert into public.family_pairs(subject_a_id,subject_b_id,status) values((select id from normalization_subject),(select subject from other_ids),'purged');
@@ -271,7 +298,8 @@ select ok(not has_function_privilege(r,p,'execute'),r||' cannot execute '||p) fr
   'private.export_scoped_graph_projection_v1(text,uuid,uuid[],text)','private.export_account_door_scope_v1(jsonb)',
   'private.account_archive_job_scope_v1(private.export_archive_jobs,public.generated_exports)',
   'private.export_subject_history_inventory_v1(uuid,uuid[])','private.export_subject_graph_capture_v1(uuid,jsonb)',
-  'private.export_subject_class_inventory_v1(uuid,jsonb)'])p;
+  'private.export_subject_class_inventory_v1(uuid,jsonb)','private.export_subject_family_conversation_v1(uuid)',
+  'private.export_subject_portrait_rows_v1(jsonb,uuid)','private.export_scoped_class_rows_v1(jsonb,uuid[],text)'])p;
 select throws_ok($$set local role service_role;select set_config('request.jwt.claims','{"role":"authenticated"}',true);select public.export_archive_subject_due_v1()$$,
  '42501','not_found','the subject due reader needs the service JWT too');
 select set_config('request.jwt.claims','{"role":"service_role"}',true);

@@ -16,7 +16,9 @@ import {configuredTestAccountArchive} from "./account-archive-test-capabilities"
 
 /** api.subject-export's closed refusal list (invalid-request-v1 issues). The
  * one stated reason the owner's two-step decision names: the record has live
- * joint results, which this first step never exports. */
+ * joint results that no projection exports yet. Step two (20261023100000)
+ * exports a family pair and a Portrait result under live permission; a live
+ * embryo cohort role and a family conversation on the record still refuse. */
 export const SUBJECT_EXPORT_REFUSALS=["jointResults"] as const;
 export type SubjectExportRefusal=(typeof SUBJECT_EXPORT_REFUSALS)[number];
 
