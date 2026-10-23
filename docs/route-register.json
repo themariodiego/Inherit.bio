@@ -9812,6 +9812,7 @@
     "endpoint:token-candidate": "authContracts.token-candidate-api-v1",
     "endpoint:jobs-secret": "authContracts.machine-api-v1",
     "endpoint:method-specific": "authContracts.machine-api-v1",
+    "endpoint:resend-standard-webhook-signature": "authContracts.resend-webhook-signature-v1",
     "endpoint:gone": "responseContracts.gone-endpoint-v1",
     "redirect:*": "responseContracts.registered-compat-redirect-v1",
     "successEncoding": "a-route-with-successResponseContract-delegates-every-success-status-and-body-to-that-single-contract; a-route-with-methodSuccessResponseContracts-delegates-each-listed-methods-success-status-and-body-to-that-methods-exact-contract-and-every-listed-method-must-have-one; otherwise-successStatus-applies-to-every-listed-method-when-scalar-and-successStatuses-names-every-allowed-success-branch",
@@ -10091,6 +10092,36 @@
         "unknownFieldsRecursively": "forbidden"
       },
       "credentialCodeOrIdentityBodyLogAnalyticsAudit": "forbidden"
+    },
+    "resend-webhook-signature-v1": {
+      "appliesTo": "webhooks.resend",
+      "registeredBy": "owner-decision-2026-10-23-G8.5-webhooks.resend-register-what-it-does",
+      "scheme": "Standard-Webhooks-v1-HMAC-SHA256-as-Resend-signs-each-delivery-through-Svix",
+      "verifier": "the-resend-SDK-webhooks.verify-which-delegates-to-standardwebhooks-Webhook.verify",
+      "verifierConstruction": "the-SDK-client-is-built-from-RESEND_API_KEY; with-it-unset-the-client-cannot-be-built-and-every-delivery-is-answered-as-missingInvalidStaleOrUnmatchedSignature",
+      "headers": {
+        "svix-id": "required-provider-delivery-message-id",
+        "svix-timestamp": "required-integer-unix-seconds",
+        "svix-signature": "required-space-separated-list-of-v1-comma-base64-signatures-of-which-at-least-one-must-match"
+      },
+      "signedContent": "svix-id-dot-svix-timestamp-dot-the-exact-raw-request-body-text-read-once-before-any-parse",
+      "secret": "RESEND_WEBHOOK_SECRET-the-endpoint-whsec_-prefixed-base64-signing-secret-held-in-the-server-environment-only",
+      "comparison": "constant-time",
+      "clockSkew": "the-timestamp-must-be-within-300-seconds-of-server-time-in-either-direction",
+      "replay": "no-separate-replay-store; a-verified-redelivery-inside-the-300-second-window-reapplies-the-same-monotone-coded-delivery-state-and-changes-nothing-further; outside-the-window-it-is-refused-as-stale",
+      "rotation": "one-current-secret; rotating-the-endpoint-secret-at-the-provider-requires-replacing-RESEND_WEBHOOK_SECRET; a-delivery-signed-only-with-a-secret-the-server-no-longer-holds-is-refused-and-left-to-provider-redelivery",
+      "bodyParse": "only-after-a-signature-matches; a-matching-signature-over-a-body-that-is-not-JSON-is-refused-the-same-way",
+      "secretUnset": "responseContracts.provider-webhook-unavailable-v1-before-the-body-is-read",
+      "missingInvalidStaleOrUnmatchedSignature": {
+        "status": 401,
+        "contentType": "text/plain;charset=UTF-8",
+        "body": {
+          "const": "Invalid signature"
+        },
+        "writes": 0
+      },
+      "redirectsForbidden": true,
+      "secretSignatureOrPayloadEchoBodyLogAnalyticsOrAudit": "forbidden"
     }
   },
   "mutationSecurityBindings": {
@@ -13798,6 +13829,47 @@
       "cache": "private-no-store",
       "unknownFields": "forbidden"
     },
+    "provider-webhook-acknowledgement-v1": {
+      "registeredBy": "owner-decision-2026-10-23-G8.5-webhooks.resend-register-what-it-does",
+      "recordedEventTypes": {
+        "email.delivered": "delivered",
+        "email.delivery_delayed": "accepted",
+        "email.complained": "complained",
+        "email.bounced": "bounced",
+        "email.failed": "reviewed_undeliverable",
+        "email.suppressed": "reviewed_undeliverable"
+      },
+      "matched": {
+        "status": 204,
+        "contentType": "empty",
+        "body": "empty",
+        "when": "a-verified-event-of-a-recorded-type-matched-one-recorded-provider-attempt-by-the-keyed-hash-of-its-email_id-and-its-coded-delivery-state-was-written"
+      },
+      "notRecorded": {
+        "status": 204,
+        "contentType": "empty",
+        "body": "empty",
+        "when": "a-verified-event-whose-type-is-not-one-of-recordedEventTypes-or-whose-data-carries-no-email_id; nothing-is-read-or-written"
+      },
+      "unmatched": {
+        "status": 202,
+        "contentType": "empty",
+        "body": "empty",
+        "when": "a-verified-event-of-a-recorded-type-whose-keyed-message-id-matches-no-current-recorded-attempt; nothing-is-written"
+      },
+      "disclosure": "only-a-caller-holding-the-signing-secret-reaches-these-answers; 204-and-202-differ-only-in-whether-a-recorded-attempt-matched-and-neither-carries-a-recipient-target-subject-or-message-id",
+      "unknownFields": "forbidden"
+    },
+    "provider-webhook-unavailable-v1": {
+      "status": 503,
+      "contentType": "text/plain;charset=UTF-8",
+      "body": {
+        "const": "Webhook unavailable"
+      },
+      "when": "RESEND_WEBHOOK_SECRET-is-unset-checked-before-the-body-is-read-or-the-coded-delivery-state-write-failed-after-verification",
+      "redelivery": "left-to-the-provider; the-answer-carries-no-error-detail",
+      "unknownFields": "forbidden"
+    },
     "test-requester-own-correction-statement-v1": {
       "status": 200,
       "contentType": "application/json",
@@ -14409,6 +14481,10 @@
         "test-requester-own-correction-statement-v1",
         "resource-not-found-v1",
         "embryo-closed-schema-v1"
+      ],
+      "webhooks.resend": [
+        "provider-webhook-acknowledgement-v1",
+        "provider-webhook-unavailable-v1"
       ]
     }
   },
@@ -21948,7 +22024,7 @@
         ]
       },
       "disposition": "kept",
-      "successResponseContract": "empty-provider-acknowledgement"
+      "successResponseContract": "provider-webhook-acknowledgement-v1"
     },
     {
       "id": "api.claim-review-receipt",

@@ -1,3 +1,25 @@
+## 2026-10-23 — G8.5: the owner's decisions on form shapes, the server action and the Resend webhook
+
+This entry follows the owner's decisions of 23 October (decisions, "G8.5: forms, CSRF, the server action and the Resend webhook"), items 1, 3 and 4, on local branch `local/g85-shapes` from `287a1408`. The CSRF token (item 2) and sign-out are another branch's work and are untouched here. Production is untouched.
+
+### `webhooks.resend`: the register says what it does (item 4)
+
+The register gains `authContracts.resend-webhook-signature-v1` (the three `svix-*` headers, the signed content, constant-time comparison, the 300-second skew, replay and rotation, 401 for a bad signature), the `contractDefaults` line that binds `endpoint:resend-standard-webhook-signature` to it, `provider-webhook-acknowledgement-v1` (204 matched, 204 for a type it does not record, 202 unmatched) and `provider-webhook-unavailable-v1` (503), and the route's binding entry. The route itself is unchanged. The three ledger rows for it are removed (`endpointAuthModeWithoutContract`, `endpointSuccessContractUndefined`, `endpointSuccessContractUnbound`), and `webhookContractsNote` records why.
+
+**New suite: `src/app/api/webhooks/resend/route.test.ts`, 12/12.** Every delivery is signed for real (Standard Webhooks v1 under a synthetic `whsec_` secret) and verified by the installed Resend SDK; only the database door is mocked. The statuses, content types and bodies it expects are read from the register, not typed.
+- It covers each of the six recorded event types (matched, 204, with the keyed hashes the door receives), an unmatched one (202) and unrecorded types and a missing `email_id` (204, no database call).
+- Refused with 401 and no write: no headers, an empty signature, an empty id, the wrong secret, 301 seconds stale, 301 seconds early, a `v2` signature, a body changed after signing, and a signed body that is not JSON. Accepted: 290 seconds either way, and a list where only the second signature matches.
+- 503 before the body is read when no secret is set, and 503 with no detail when the write fails. Without `RESEND_API_KEY` the SDK client cannot be built, so every delivery is refused 401; the register now says so (`verifierConstruction`).
+- The set of statuses the route answers equals the set the register lets it answer.
+
+**Planted, each reverted:**
+- Answering an unmatched event 204 fails two tests.
+- Skipping verification (`JSON.parse` in place of `verify`) fails three.
+- Deleting the `contractDefaults` line fails `scripts/route-register-correspondence.test.ts` ("resolves every endpoint auth mode…") and this suite.
+- Deleting the binding entry fails "binds every endpoint success contract to its route".
+
+**Changed suite: `scripts/route-register-correspondence.test.ts`.** No assertion changes. Its three both-directions comparisons now run against the shorter ledger lists.
+
 ## 2026-10-23 — D-103: the five signed statements in the adult confirm body
 
 This entry follows the coordinator's D-103 task of 23 October, on local branch `local/d103` from `9cb94b43`, and the owner's decision of the same day (decisions, "D-103: the owner signs the split `revocable` sentence"). The Path A confirm on `api.withdraw` now renders the five signed statements as separate checkboxes, sends `subjectArtifact` with the server-published keys, and the route refuses any other list with `invalid-request-v1`. No migration. Production is untouched.

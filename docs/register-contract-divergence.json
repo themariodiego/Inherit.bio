@@ -2,6 +2,7 @@
   "purpose": "The endpoint and storage-prefix halves of G8.5, recorded the way docs/route-divergence.json records the route half. That file answers which routes exist, which verbs they export, which status their redirects emit and which buckets their migrations create. This one answers the two questions nothing asked: does every one of the register's 88 endpoint entries resolve to the contracts it names, and does every storage prefix the register declares describe the buckets and object keys the live code actually addresses. scripts/route-register-correspondence.test.ts compares every list below in both directions, so an unlisted divergence fails and a listed one that is fixed, moved or no longer reproducible fails too.",
   "notAnApproval": "Listing a divergence records it; it does not bless it. An endpoint whose success contract is undefined has no declared success status or body, and an object key no declared prefix describes has no declared filename contract, retention id or disposition. Each entry names what is missing and what closing it needs.",
   "measured": "2026-09-10, against docs/route-register.json (160 routes: 62 pages, 88 endpoints, 10 redirects; 6 storagePrefixes over 4 buckets), src, worker/src, workers, supabase/migrations and docs/retention.md.",
+  "webhookContractsNote": "2026-10-23 (G8.5, owner decision \"webhooks.resend: register what it does\"). The three webhooks.resend rows are closed: the register now holds authContracts.resend-webhook-signature-v1 (the svix-id, svix-timestamp and svix-signature headers, the signed content, constant-time comparison, the 300-second clock skew, the replay and rotation behaviour, 401 for a missing, invalid, stale or unmatched signature), contractDefaults binds endpoint:resend-standard-webhook-signature to it, and the route names provider-webhook-acknowledgement-v1 (204 matched, 204 for an event type it does not record, 202 unmatched), bound with provider-webhook-unavailable-v1 (503). The rows' notATranscriptionGap objection was that only the brief's author could authorise describing the endpoint; the owner's decision is that authorisation. src/app/api/webhooks/resend/route.test.ts drives every answer with real signatures and reads the statuses from the register, so the two cannot drift apart.",
   "endpointAuthModeWithoutContract": [
     {
       "mode": "public",
@@ -19,39 +20,12 @@
       ],
       "why": "Every other endpoint auth mode resolves through contractDefaults[\"endpoint:<mode>\"] to an authContracts entry. \"public\" deliberately has no such default: the mode means no authentication, so there is no auth contract to point at. It is listed here rather than special-cased in the test so that the day a public endpoint does acquire a contract, or the day this stops being the only unauthenticated mode, the list has to be revisited.",
       "closing": "Nothing to close. This entry exists so the exemption is written down and counted."
-    },
-    {
-      "mode": "resend-standard-webhook-signature",
-      "verdict": "divergence",
-      "routeIds": [
-        "webhooks.resend"
-      ],
-      "why": "POST /api/webhooks/resend declares auth \"resend-standard-webhook-signature\" and the register defines no such scheme anywhere: contractDefaults has no \"endpoint:resend-standard-webhook-signature\" key, authContracts holds twelve contracts and none of them is a provider webhook signature, and machineAuthBindings names the seven jobs.* endpoints and not this one. So the one endpoint in the register that a third party calls directly is the one whose authentication is a name with nothing behind it. The route is built (src/app/api/webhooks/resend/route.ts) and its handler is the only description of the check that exists.",
-      "closing": "An authContracts entry for the Standard Webhooks signature scheme \u2014 the header set, the tolerated clock skew, the secret's rotation and the replay window \u2014 plus the contractDefaults line that binds the mode to it.",
-      "blocker": "none known \u2014 this is a transcription gap, not an authority one; the scheme is implemented and undescribed rather than undecided.",
-      "notATranscriptionGap": "Re-read 2026-09-10: docs/inherit-v2-brief.md mentions resend only as a dependency (line 63) and its API key in the secret allowlist (line 2579). It describes no webhook endpoint and no contract for one. Filling these entries from the handler would document an endpoint the brief never authorised, making the register agree with the code by abandoning what gives the register its authority. The handler is sound - svix signature verification via Resend.webhooks.verify, 503 when RESEND_WEBHOOK_SECRET is unset, and that key is declared in .env.example. Closing this needs the brief to describe the endpoint (an author's decision) or the register entry reconsidered; it is not closable by transcription, and anyone who transcribes it has quietly changed what the register is."
     }
   ],
-  "endpointSuccessContractUndefined": [
-    {
-      "routeId": "webhooks.resend",
-      "contract": "empty-provider-acknowledgement",
-      "why": "contractDefaults.bindingValidation requires that every response-contract reference \"resolve to an exact registered key\". responseContracts holds 93 entries and \"empty-provider-acknowledgement\" is not one of them. It is the only unresolvable success-contract reference among the 88 endpoints; the other 87 resolve. The name reads like an intent \u2014 acknowledge the provider with an empty body \u2014 and no status, body or header set is written down anywhere.",
-      "closing": "A responseContracts entry naming the acknowledgement status and the empty body, or a rebinding of this route to an existing contract. Either way the same name must then appear in responseContractBindings.routes[\"webhooks.resend\"], which is the entry below.",
-      "notATranscriptionGap": "Re-read 2026-09-10: docs/inherit-v2-brief.md mentions resend only as a dependency (line 63) and its API key in the secret allowlist (line 2579). It describes no webhook endpoint and no contract for one. Filling these entries from the handler would document an endpoint the brief never authorised, making the register agree with the code by abandoning what gives the register its authority. The handler is sound - svix signature verification via Resend.webhooks.verify, 503 when RESEND_WEBHOOK_SECRET is unset, and that key is declared in .env.example. Closing this needs the brief to describe the endpoint (an author's decision) or the register entry reconsidered; it is not closable by transcription, and anyone who transcribes it has quietly changed what the register is."
-    }
-  ],
+  "endpointSuccessContractUndefined": [],
   "nonceStoredBeforeUseNote": "Brief X1.5 (owner decision 2026-09-28): an operation nonce is rendered by the page that offers the operation, only the state-changing request consumes it, and no GET creates, rotates or stores one. scripts/route-register-correspondence.test.ts finds every call in shipped code to a database function named issue_*nonce*, and every insert into account_operation_nonces, and compares them with this list in both directions. Empty since 2026-09-28, and still checked: the account-deletion GET that stored a nonce on every visit to /settings/data, and the upload page render that stored one through issue_own_upload_nonce_v1, were both rebuilt so the POST records the nonce hash once, and both issuing functions are dropped. A render or GET that stores a nonce again fails the test until it is recorded here.",
   "nonceStoredBeforeUse": [],
-  "endpointSuccessContractUnbound": [
-    {
-      "routeId": "webhooks.resend",
-      "contract": "empty-provider-acknowledgement",
-      "why": "contractDefaults.bindingValidation also requires that \"every endpoint success contract must also appear in responseContractBindings.routes for that route\". responseContractBindings.routes holds 95 keys, all of them real route ids, and webhooks.resend is not among them \u2014 it is the only endpoint of the 88 with no binding entry at all. So this route's failure responses are undeclared as well as its success one: the bindings list is where a route's full response set is written.",
-      "closing": "The binding entry, once the contract above exists. Its failure branches \u2014 signature rejected, replay, unknown message id \u2014 belong in it too.",
-      "notATranscriptionGap": "Re-read 2026-09-10: docs/inherit-v2-brief.md mentions resend only as a dependency (line 63) and its API key in the secret allowlist (line 2579). It describes no webhook endpoint and no contract for one. Filling these entries from the handler would document an endpoint the brief never authorised, making the register agree with the code by abandoning what gives the register its authority. The handler is sound - svix signature verification via Resend.webhooks.verify, 503 when RESEND_WEBHOOK_SECRET is unset, and that key is declared in .env.example. Closing this needs the brief to describe the endpoint (an author's decision) or the register entry reconsidered; it is not closable by transcription, and anyone who transcribes it has quietly changed what the register is."
-    }
-  ],
+  "endpointSuccessContractUnbound": [],
   "storageCallSites": [
     {
       "site": "genomes src/app/api/export/route.ts",
