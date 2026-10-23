@@ -88,7 +88,97 @@ these 70 are engineering measurements. The other 278 (every authenticated,
 reviewer and processing state, and `/withdraw/[token]`) have no measurement.
 The owned runtime cannot capture any of them yet: the six `genome.carrier`
 pairs added by PR 324 have no state provider, so the capture driver holds the
-whole census before it opens a page.
+whole census before it opens a page. (Round 3, below, adds that provider and
+the operator's command-line path, `OPERATOR.md`.)
+
+## Round 3: carrier provider, operator path and the remaining honest fixes
+
+**Carrier provider.** `e2e/helpers/density-carrier-state-fixtures.ts` reaches
+the six `genome.carrier` states the way `e2e/own-carrier-status.spec.ts` does:
+a fresh account, the committed carrier-pair VCF through the real upload and
+preparation path, the "Observed genetic variants" choice signed and generated
+on the person's own Reports page, and a synthetic reviewed release imported,
+activated and withdrawn only through the rule's own doors. It is wired into
+the fixture assembly, the owned capture ports and the native observers, so the
+source census now has a provider for 174 of 174 pairs (348 captures). It has not
+run against the app: the shared local database here lacks PR 324's newest
+migrations, and the owned runtime gives each capture its own complete stack.
+
+**Operator path.** `OPERATOR.md` lists the 348 selections and gives the
+per-capture command (`scripts/run-owned-density-segment.mts`, now with
+`--baseline-originals <path> --baseline-originals-sha256 <sha>`), the union
+command (`scripts/run-density-segment-union.mts`), the host requirements and
+what Root must supply.
+
+**Source fixes, re-measured with the unchanged modules** (`evaluation-round3.json`;
+all 70 PNG pairs are byte-identical to `evaluation-after.json`, so no first
+screen moved):
+
+- `/science`: each link card's text column is now the card less its arrow,
+  not the width of its one line; its sentences measure 52ch, not 36.5ch. The
+  1280 capture now meets every budget.
+- `/providers`: the page's heading and directory carry the contract's own
+  top-level-section marker. The 16px gaps at 390 were between product blocks
+  inside one provider card, never between sections of the page; the page's one
+  gap is now the 64px a reader sees. The 390 capture keeps only its ink miss.
+- `/`: the four steps sit two across from md, so each step's text runs 61ch,
+  not 28ch (below the fold, so the first screen is unchanged), and the hero
+  eyebrow is held to the 68ch measure.
+
+Every budget is met by **42 of 70** (41 before this round); the relative rule
+holds on 26 of 28.
+
+**Tried and reverted:**
+
+- Dropping the auth column's bare side padding from 640px lets
+  `/auth/forgot-password` meet the 45ch floor, but it raises `/auth/sign-up`'s
+  ink at 1280 from 0.594 to 0.633 of its predecessor, over the 0.6 ceiling
+  (its floor is 0.518, so not text-bound).
+- Setting the landing guide's three plates two across brings their labels and
+  text to 45ch, but it moves the third plate below the 1280 fold. That changes
+  the page's 700-character result and its first-screen ink, so it is not a
+  pass that can be counted.
+
+**Still missing, and why it is not engineering:**
+
+- *45ch floor at 1280*: `/` (the guide plates' labels at 23.5ch and their text
+  at 34.8ch, three across, and the "Sample report" label at 12.7ch),
+  `/auth/forgot-password` and `/auth/sign-up` (the 26rem column's 38ch, see
+  above).
+- *68ch ceiling at 1280*: `/` (the two eyebrow labels whose rule runs to the
+  column edge; holding them to 68ch would shorten the rule, and moving the rule
+  off them sets them under 45ch) and `/providers` (each provider card is a list
+  item as wide as its comparison table, 109ch; no line inside it is longer
+  than 68ch, since its prose already carries the measure).
+- *Relative rule at 390*: `/auth/sign-up` and `/providers`, unchanged.
+
+### The 700-character results, by page
+
+Characters as the frozen measure counts them (any text node that reaches the
+first screen counts whole), and characters actually above the fold (the
+corrected reading). About 80 to 100 of each count are the site header and
+attribution; the rest is the page's own heading, introduction, contents list
+and first section. Nothing here was changed.
+
+| Page | Viewport | Frozen | Above the fold | What would be needed |
+|---|---|---|---|---|
+| `/` | 1280 | 744 | 744 | Content structure: a shorter first screen (hero and guide) |
+| `/about` | 390 / 1280 | 949 / 988 | 769 / 988 | Content structure, or an owner reading for reading pages |
+| `/future-person/claim` | 1280 | 767 | 767 | Counsel: the claim rules are the first section |
+| `/legal/appeals` | 390 / 1280 | 878 / 1008 | 701 / 954 | Counsel, or an owner reading (above the fold, at 390 one over) |
+| `/legal/deceased` | 1280 | 738 | 738 | Counsel, or an owner reading for legal pages |
+| `/legal/future-person` | 390 / 1280 | 778 / 843 | 628 / 843 | Owner reading (above the fold passes at 390); counsel at 1280 |
+| `/legal/gdpr` | 390 / 1280 | 808 / 847 | 708 / 847 | Counsel, or an owner reading for legal pages |
+| `/legal/gina` | 1280 | 999 | 924 | Counsel |
+| `/legal/incident-response` | 1280 | 846 | 785 | Counsel |
+| `/legal/law-enforcement` | 1280 | 874 | 874 | Counsel |
+| `/legal/research-consent` | 390 / 1280 | 779 / 876 | 654 / 876 | Owner reading (above the fold passes at 390); counsel at 1280 |
+| `/privacy` | 390 / 1280 | 705 / 819 | 705 / 819 | Counsel: one introductory paragraph is most of it |
+| `/providers` | 1280 | 829 | 829 | Content structure: the introduction, filter note and explainer |
+| `/terms` | 390 / 1280 | 939 / 1035 | 688 / 1035 | Owner reading (above the fold passes at 390); counsel at 1280 |
+| `/legal/[artifact]/diff/…` (signed) | 1280 | 1351 | 1122 | Owner reading: two signed versions side by side |
+| `/legal/consent/[key]/diff/…` (signed) | 1280 | 1351 | 1122 | Owner reading: two signed versions side by side |
+| `/legal/insurance-and-discrimination` (signed) | 1280 | 1952 | 765 | Counsel: the signed words cannot change without a new version |
 
 ## Reproducing
 

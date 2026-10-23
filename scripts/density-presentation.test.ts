@@ -112,3 +112,38 @@ describe("density presentation follows the brief's type scale and measure", () =
     expect(globals).toMatch(/\.quiet-link:hover \{[^}]*text-decoration-thickness: 2px;/u);
   });
 });
+
+import SciencePage from "../src/app/(marketing)/science/page";
+
+describe("density presentation gives real paragraphs a real column, with the first screen unchanged", () => {
+  const source = (file: string) => readFileSync(join(process.cwd(), file), "utf8");
+
+  it("sets the landing steps two across, keeps the guide three across, and holds the hero eyebrow to the measure", () => {
+    const html = renderToStaticMarkup(createElement(LandingPage));
+    expect(html).toContain('<ol class="mt-10 grid items-start gap-x-8 gap-y-10 md:grid-cols-2">');
+    expect(html).not.toContain("lg:grid-cols-4");
+    // Three plates across at lg, as before: no plate moves below the 1280 fold.
+    expect(html).toContain('<div class="mt-6 grid gap-4 md:grid-cols-2 lg:grid-cols-3">');
+    expect(html).toMatch(/<p class="eyebrow rise max-w-measure"[^>]*>Open-source consumer genomics<\/p>/u);
+    for (const text of ["Find a provider", "Upload your raw data", "Read what your file actually supports",
+      "Ask, explore, export, delete", "BAM, CRAM and FASTQ files are not accepted."]) expect(html).toContain(text);
+  });
+
+  it("makes each science link card's text column the card less its arrow", () => {
+    const html = renderToStaticMarkup(createElement(SciencePage));
+    for (const [title, body] of [["Limits and uncertainty", "Coverage, reference populations, and resolution."],
+      ["Positions and builds", "How observed variants are normalized to GRCh38."]]) {
+      expect(html).toContain(`<div class="min-w-0 flex-1"><h2 class="title">${title}</h2><p class="mt-2 text-sm text-ink-muted">${body}</p></div>`);
+    }
+  });
+
+  it("marks the provider page's heading and directory as its two top-level sections, leaving the product blocks as they are", () => {
+    const page = source("src/app/(marketing)/providers/page.tsx");
+    expect(page).toContain('<header className="reading-head" data-density-top-level-section>');
+    expect(page).toContain('<div className="mt-section" data-density-top-level-section>');
+    expect([...page.matchAll(/data-density-top-level-section/gu)]).toHaveLength(2);
+    const directory = source("src/components/providers/directory.tsx");
+    expect(directory).toContain('className="surface-inset surface-pad-sm"');
+    expect(directory).not.toContain("data-density-top-level-section");
+  });
+});
