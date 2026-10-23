@@ -4,6 +4,7 @@ import { bodyIsEmpty, invalidRequest, notFound, rpcErrorResponse } from "@/lib/e
 import { closedResponse, originDenied, unauthorized } from "@/lib/embryos/guards";
 import { OPERATION_HEADER, verifyEmbryoOperation } from "@/lib/embryos/operation-token";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { withAccountCsrf } from "@/lib/security/session-csrf";
 
 /**
  * `POST /api/cohorts/[id]/restrict` (register api.cohort-restrict; contract
@@ -16,7 +17,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
  * restricted, foreign or unknown is the same 404.
  */
 
-export async function POST(request: Request, context: { params: Promise<{ id: string }> }) {
+export const POST = withAccountCsrf("api.cohort-restrict", handlePost);
+async function handlePost(request: Request, context: { params: Promise<{ id: string }> }) {
   const { id } = await context.params;
   if (!z.uuid().safeParse(id).success) return notFound();
   const account = await getSensitiveAccountContext();

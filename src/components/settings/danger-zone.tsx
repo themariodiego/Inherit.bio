@@ -2,10 +2,12 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { useCsrf } from "@/components/security/csrf-provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { DeletionControlState } from "@/lib/account-deletion-state";
+import type { CsrfHandle } from "@/lib/security/session-csrf-client";
 
 const errorCopy: Record<string, string> = {
   recent_reauthentication_required:
@@ -21,10 +23,13 @@ const errorCopy: Record<string, string> = {
  * The page renders the deletion state and the one-time operation nonce
  * (brief X1.5), so this component fetches nothing to start. After each POST
  * it asks the page to render again, which brings the new state and a fresh
- * nonce; nothing here stores or rotates one.
+ * nonce; nothing here stores or rotates one. Each POST also carries its
+ * route's one-time X-Inherit-CSRF token, which the shell rendered.
  */
 export function DangerZone({ deletion }: { deletion: DeletionControlState | null }) {
   const router = useRouter();
+  const deleteCsrf = useCsrf("api.account-delete");
+  const cancelCsrf = useCsrf("api.account-delete-cancel");
   const [confirm, setConfirm] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(
@@ -33,6 +38,7 @@ export function DangerZone({ deletion }: { deletion: DeletionControlState | null
 
   async function submit(
     path: string,
+    csrf: CsrfHandle,
     confirmation: string,
     succeeded: (body: { status?: string; noticeEndsAt?: string } | null) => boolean,
     failure: string,
@@ -42,9 +48,10 @@ export function DangerZone({ deletion }: { deletion: DeletionControlState | null
     setError(null);
     const response = await fetch(path, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", "X-Inherit-CSRF": csrf.value() },
       body: JSON.stringify({ confirmation, nonce: deletion.operationNonce }),
     });
+    csrf.accept(response);
     const body = (await response.json().catch(() => null)) as
       | { status?: string; noticeEndsAt?: string; error?: string }
       | null;
@@ -62,6 +69,7 @@ export function DangerZone({ deletion }: { deletion: DeletionControlState | null
     if (deletion?.status !== "active") return;
     void submit(
       "/api/account/delete",
+      deleteCsrf,
       "account.delete.confirmation",
       (body) => body?.status === "notice_period" && Boolean(body.noticeEndsAt),
       "The deletion request could not be scheduled.",
@@ -72,6 +80,7 @@ export function DangerZone({ deletion }: { deletion: DeletionControlState | null
     if (deletion?.status !== "notice_period") return;
     void submit(
       "/api/account/delete/cancel",
+      cancelCsrf,
       "account.delete.cancel-confirmation",
       (body) => body?.status === "active",
       "The deletion request could not be cancelled.",

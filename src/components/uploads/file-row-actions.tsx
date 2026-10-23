@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { useCsrf } from "@/components/security/csrf-provider";
 import { Button } from "@/components/ui/button";
 import { deleteFileUntilSettled } from "@/lib/uploads/file-delete-browser";
 import { fileDeletionError } from "@/copy/upload/file-deletion";
@@ -21,6 +22,8 @@ export function FileRowActions({
   preparationOnly?: boolean;
 }) {
   const router = useRouter();
+  const processCsrf = useCsrf("api.file-process");
+  const deleteCsrf = useCsrf("api.file-delete");
   const [busy, setBusy] = useState(false);
   const deletion = useRef<AbortController | null>(null);
   useEffect(() => () => deletion.current?.abort(), []);
@@ -42,7 +45,7 @@ export function FileRowActions({
             setError(null);
             setPreparationError(null);
             if (preparationOnly) {
-              try { await prepareSubjectFile(fileId); }
+              try { await prepareSubjectFile(fileId, { csrf: processCsrf }); }
               catch (error) {
                 setPreparationError(error instanceof BrowserPreparationError ? error.code : "unavailable");
               } finally { setBusy(false); router.refresh(); }
@@ -52,8 +55,9 @@ export function FileRowActions({
             // early so the status reflects that while the run continues.
             const earlyRefresh = setTimeout(() => router.refresh(), 1500);
             const res = await fetch(`/api/files/${fileId}/process`, {
-              method: "POST",
+              method: "POST", headers: { "X-Inherit-CSRF": processCsrf.value() },
             }).catch(() => null);
+            if (res) processCsrf.accept(res);
             clearTimeout(earlyRefresh);
             if (!res?.ok) {
               const detail = res ? await res.text().catch(() => "") : "";
@@ -87,7 +91,7 @@ export function FileRowActions({
           try {
             const controller = new AbortController();
             deletion.current = controller;
-            const result = await deleteFileUntilSettled(fileId, controller.signal);
+            const result = await deleteFileUntilSettled(fileId, controller.signal, deleteCsrf);
             if (controller.signal.aborted) return;
             if (result.status === "pending") {
               setError("Deletion is still pending. You can try Delete again to check progress. The file stays listed until deletion is complete.");

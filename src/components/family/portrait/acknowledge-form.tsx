@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useCsrf } from "@/components/security/csrf-provider";
 import { Button } from "@/components/ui/button";
 import {
   ACKNOWLEDGE_BUTTON,
@@ -35,6 +36,7 @@ export function AcknowledgeForm({
   operationNonce: string;
 }) {
   const router = useRouter();
+  const csrf = useCsrf("api.family-acknowledge");
   const [read, setRead] = useState(false);
   const [pending, setPending] = useState(false);
   const [failed, setFailed] = useState(false);
@@ -71,9 +73,11 @@ export function AcknowledgeForm({
             setFailed(false);
             const response = await fetch("/api/family/acknowledge", {
               method: "POST",
-              headers: { "content-type": "application/json", "X-Inherit-Operation-Nonce": operationNonce },
+              headers: { "content-type": "application/json", "X-Inherit-Operation-Nonce": operationNonce,
+                "X-Inherit-CSRF": csrf.value() },
               body: JSON.stringify({ acknowledgement: "portrait", subjectId, affirmed: true }),
             });
+            csrf.accept(response);
             setPending(false);
             if (!response.ok) {
               setFailed(true);

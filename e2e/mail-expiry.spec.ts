@@ -4,6 +4,7 @@ import path from "node:path";
 import { DEFAULT_TEST_JURISDICTION, adminClient, setDeclaredJurisdiction, signIn } from "./helpers";
 import { generateOwnFileWithChosenReports, uploadOwnFilePrepared } from "./own-report-helpers";
 import { subjectSynchronousReportReceipt } from "../src/lib/uploads/subject-upload-contract";
+import { accountCsrf } from "./helpers/session-csrf";
 
 test("a processed self-upload queues one report-ready notice without deadline renewal", async ({ page }) => {
   const email = `mail-expiry-${randomUUID()}@e2e.local`;
@@ -38,10 +39,10 @@ test("a processed self-upload queues one report-ready notice without deadline re
 
   // Run the actual processing route twice. Neither the route nor this test
   // calls the mail worker or a provider; semantic replay cannot renew expiry.
-  const replay = await page.evaluate(async id => {
-    const response = await fetch(`/api/files/${id}/process`, { method: "POST" });
+  const replay = await page.evaluate(async ({ id, csrf }) => {
+    const response = await fetch(`/api/files/${id}/process`, { method: "POST", headers: { "X-Inherit-CSRF": csrf } });
     return { status: response.status, body: await response.json() };
-  }, fileId);
+  }, { id: fileId, csrf: await accountCsrf(page, "api.file-process") });
   expect(replay.status).toBe(200);
   expect(subjectSynchronousReportReceipt.parse(replay.body).fileId).toBe(fileId);
   const { data: replayNotices, error: replayError } = await readNotice();

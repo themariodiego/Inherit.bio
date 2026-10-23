@@ -14,6 +14,7 @@ import { AppShell } from "@/components/site/app-shell";
 import { SiteFooter } from "@/components/site/footer";
 import { SiteHeader } from "@/components/site/header";
 import { SkipLink } from "@/components/site/skip-link";
+import { accountCsrfTokens } from "@/lib/security/session-csrf";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function FamilyHubLayout({
@@ -26,7 +27,7 @@ export default async function FamilyHubLayout({
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (user) return <AppShell userEmail={user.email}>{children}</AppShell>;
+  if (user) return <AppShell userEmail={user.email} csrf={await accountCsrfTokens()}>{children}</AppShell>;
 
   return (
     <>

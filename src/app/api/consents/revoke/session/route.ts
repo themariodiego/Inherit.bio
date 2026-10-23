@@ -4,6 +4,7 @@ import { closedResponse, readJson } from "@/lib/embryos/guards";
 import { isTestJurisdictionEnabled } from "@/lib/legal/jurisdictions";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { readAdultSubjectControlRequest } from "@/lib/uploads/adult-subject-control";
+import { withPurposeCsrf, readRightsCsrfSession } from "@/lib/security/session-csrf";
 
 /**
  * `POST /api/consents/revoke/session` (register api.consent-revoke-rights).
@@ -29,7 +30,8 @@ const body = z.object({
 
 const ACCEPTED_KEYS = ["status"] as const;
 
-export async function POST(request: Request) {
+export const POST = withPurposeCsrf("api.consent-revoke-rights", readRightsCsrfSession, handlePost);
+async function handlePost(request: Request) {
   if (!isTestJurisdictionEnabled()) return notFound();
   const parsed = body.safeParse(await readJson(request));
   if (!parsed.success) return notFound();

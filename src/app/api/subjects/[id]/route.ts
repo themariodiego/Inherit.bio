@@ -6,6 +6,7 @@ import { drainSubjectFileDeletions } from "@/lib/subject-endpoints/file-drain";
 import { verifySubjectOperationNonce } from "@/lib/subject-endpoints/operation-nonce";
 import { isCanonicalSubjectId } from "@/lib/subject-endpoints/request";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { withAccountCsrf } from "@/lib/security/session-csrf";
 
 /**
  * `DELETE /api/subjects/[id]` (register api.subject-delete; owner decisions
@@ -49,7 +50,8 @@ const outcome = z.discriminatedUnion("case", [
 /** A refusal the caller can cause is the opaque 404; anything else is the server's fault. */
 const REFUSALS = new Set(["42501", "55000", "22023", "23505", "P0002"]);
 
-export async function DELETE(request: Request, context: { params: Promise<{ id: string }> }) {
+export const DELETE = withAccountCsrf("api.subject-delete", handleDelete);
+async function handleDelete(request: Request, context: { params: Promise<{ id: string }> }) {
   const { id } = await context.params;
   if (!isCanonicalSubjectId(id)) return notFound();
   const account = await getSensitiveAccountContext();

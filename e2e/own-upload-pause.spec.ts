@@ -7,6 +7,7 @@ import { promisify } from "node:util";
 import { adminClient, createConfirmedUser, signIn, uploadOwnFileThroughUi, SUPABASE_URL } from "./helpers";
 import { OWN_UPLOAD_COPY } from "../src/copy/upload/consent";
 import { directUploadReceipt, subjectFinalizationReceipt, subjectNormalizationReceipt } from "../src/lib/uploads/subject-upload-contract";
+import { accountCsrf } from "./helpers/session-csrf";
 
 const PAUSED_ORIGIN = "http://localhost:3102";
 test.use({ trace: "off" }); // Never persist a restricted upload bearer or session.
@@ -92,23 +93,26 @@ test("canonical pause refuses new issuance while an acknowledged source finalize
       await expect(pausedPage.getByRole("button", { name: "Choose file", exact: true })).toHaveCount(0);
       await expect(pausedPage.locator('input[type="file"]')).toHaveCount(0);
     }
-    for (const routePath of ["/api/uploads", "/api/files/upload-session"]) {
-      const denied = await pausedPage.evaluate(async ({ routePath, declaration }) => {
-        const response = await fetch(routePath, { method: "POST", headers: { "content-type": "application/json" },
+    for (const [routePath, csrfRoute] of [["/api/uploads", "api.subject-upload-issue"],
+      ["/api/files/upload-session", "api.file-upload-session"]] as const) {
+      const denied = await pausedPage.evaluate(async ({ routePath, declaration, csrf }) => {
+        const response = await fetch(routePath, { method: "POST", headers: { "content-type": "application/json", "X-Inherit-CSRF": csrf },
           body: JSON.stringify(declaration) });
         return { status: response.status, cache: response.headers.get("cache-control"), body: await response.json() };
-      }, { routePath, declaration });
+      }, { routePath, declaration, csrf: await accountCsrf(pausedPage, csrfRoute) });
       expect(denied).toEqual({ status: 503, cache: "private, no-store", body: { error: "uploads_paused" } });
     }
     // App-server transport relay only: the rendered stale entry receives an
     // actual paused server response. Native fetch supplies its same-origin
     // authority. Neither authorization, source state nor Storage is mocked.
+    // The relay carries the stale page's own one-time X-Inherit-CSRF token:
+    // the same browser session, so the paused server spends it as its own.
     await page.route("**/api/files/upload-session", async route => {
-      const reply = await pausedPage.evaluate(async body => {
+      const reply = await pausedPage.evaluate(async ({ body, csrf }) => {
         const response = await fetch("/api/files/upload-session", { method: "POST",
-          headers: { "content-type": "application/json" }, body });
+          headers: { "content-type": "application/json", "X-Inherit-CSRF": csrf }, body });
         return { status: response.status, body: await response.text() };
-      }, route.request().postData());
+      }, { body: route.request().postData(), csrf: route.request().headers()["x-inherit-csrf"] ?? "" });
       await route.fulfill({ status: reply.status, contentType: "application/json", body: reply.body });
     }, { times: 1 });
     await chooseFixture(page, resumedFixture);
@@ -160,17 +164,17 @@ test("canonical pause refuses new issuance while an acknowledged source finalize
 
     // Actual native, bodyless canonical finalization and preparation on the
     // paused app. The browser retains its original authenticated session.
-    const finalized = await pausedPage.evaluate(async uploadId => {
-      const response = await fetch(`/api/files/${uploadId}/finalize`, { method: "POST" });
+    const finalized = await pausedPage.evaluate(async ({ uploadId, csrf }) => {
+      const response = await fetch(`/api/files/${uploadId}/finalize`, { method: "POST", headers: { "X-Inherit-CSRF": csrf } });
       return { status: response.status, body: await response.json() };
-    }, issued.uploadId);
+    }, { uploadId: issued.uploadId, csrf: await accountCsrf(pausedPage, "api.file-finalize") });
     expect(finalized.status).toBe(200);
     const fileId = subjectFinalizationReceipt.parse(finalized.body).fileId;
     expect(fileId).not.toBe(retainedId);
-    const resumed = await pausedPage.evaluate(async id => {
-      const response = await fetch(`/api/files/${id}/process`, { method: "POST" });
+    const resumed = await pausedPage.evaluate(async ({ id, csrf }) => {
+      const response = await fetch(`/api/files/${id}/process`, { method: "POST", headers: { "X-Inherit-CSRF": csrf } });
       return { status: response.status, body: await response.json() };
-    }, fileId);
+    }, { id: fileId, csrf: await accountCsrf(pausedPage, "api.file-process") });
     expect(resumed.status).toBe(200);
     expect(subjectNormalizationReceipt.parse(resumed.body)).toEqual({
       fileId, status: "normalization_complete", analysisState: "not_generated",

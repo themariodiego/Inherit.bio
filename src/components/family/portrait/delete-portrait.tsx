@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useCsrf } from "@/components/security/csrf-provider";
 import { Button } from "@/components/ui/button";
 import {
   DELETE_BUTTON,
@@ -31,6 +32,7 @@ export function DeletePortrait({ grantId, revokeNonce }: {
   revokeNonce: string;
 }) {
   const router = useRouter();
+  const csrf = useCsrf("api.consent-revoke");
   const [confirming, setConfirming] = useState(false);
   const [pending, setPending] = useState(false);
   const [failed, setFailed] = useState(false);
@@ -66,7 +68,8 @@ export function DeletePortrait({ grantId, revokeNonce }: {
                 setPending(true);
                 setFailed(false);
                 const response = await fetch(`/api/consents/${grantId}/revoke`, { method: "POST",
-                  headers: { "X-Inherit-Operation-Nonce": revokeNonce } });
+                  headers: { "X-Inherit-Operation-Nonce": revokeNonce, "X-Inherit-CSRF": csrf.value() } });
+                csrf.accept(response);
                 setPending(false);
                 if (!response.ok) {
                   setFailed(true);

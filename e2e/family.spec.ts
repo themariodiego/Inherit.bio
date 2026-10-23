@@ -20,6 +20,7 @@ import { uploadOwnFileWithChosenReports } from "./own-report-helpers";
 import { CARD_AWAITING_RESULTS_STATUS, CARD_NO_FILE_STATUS } from "@/copy/family";
 import { INDEPENDENT_LOGIN_REQUIRED } from "@/copy/family/permissions";
 import { OWN_UPLOAD_COPY } from "@/copy/upload/consent";
+import { accountCsrf, signOut } from "./helpers/session-csrf";
 
 /**
  * Family surfaces (design docs/design/w9-family-surfaces.md §6.2): the hub,
@@ -363,7 +364,7 @@ test("A invites B, B accepts, adds a file and shares one layer from their own se
   await expect(page.getByText("Just you so far.", { exact: true })).toBeVisible();
 
   // B accepts through their own account, from the link they were mailed.
-  await page.request.post("/auth/sign-out");
+  await signOut(page);
   await acceptAdultInvitation({
     page, invitationUrl: adultInvitationUrl(token!), email: B.email, password: B.password,
     // `/withdraw/session` is a registered page whose only real URL comes from
@@ -463,7 +464,7 @@ test("A invites B, B accepts, adds a file and shares one layer from their own se
 
   // A sign-in of B's own, after the acceptance, stamps the marker and makes
   // the row settable; the grant then succeeds from B's own session.
-  await page.request.post("/auth/sign-out");
+  await signOut(page);
   await signIn(page, B.email, B.password);
   await page.goto(`/family/s-${selfSubjectA}/permissions`);
   const portraitAfter = page
@@ -510,7 +511,7 @@ test("/family/[person] empty: with nothing granted in this direction, the page n
   page,
 }) => {
   // B's session, looking at A. The reverse of every other read in this file.
-  await page.request.post("/auth/sign-out");
+  await signOut(page);
   await signIn(page, B.email, B.password);
   await page.goto(`/family/s-${selfSubjectA}`);
 
@@ -1012,9 +1013,12 @@ test("/family/[person]/permissions complete: pause, resume and stop render and t
   await expect(page.locator('[data-slot="sharing-tombstone"]')).toContainText(
     /^Sharing ended on .+\. \d+ results built from this pairing were deleted\./,
   );
-  // The same code cannot be spent twice: the database recorded its hash.
+  // The same code cannot be spent twice: the database recorded its hash. The
+  // replay carries a fresh X-Inherit-CSRF token for the page's own session
+  // (G8.5), so the refusal is the code's own.
   const replay = await page.request.post(`/api/subjects/${invitedSubjectId}/sharing`, {
-    headers: { origin: new URL(page.url()).origin, "sec-fetch-site": "same-origin", "content-type": "application/json" },
+    headers: { origin: new URL(page.url()).origin, "sec-fetch-site": "same-origin", "content-type": "application/json",
+      "x-inherit-csrf": await accountCsrf(page, "api.subject-sharing") },
     data: stopBody,
   });
   expect(replay.status()).toBe(422);
@@ -1039,7 +1043,7 @@ test("/family/[person]/permissions complete: pause, resume and stop render and t
 
   // Stopping recipient sharing does not withdraw B's own generation permission
   // or remove B's original and stored findings.
-  await page.request.post("/auth/sign-out");
+  await signOut(page);
   await signIn(page, B.email, B.password);
   await page.goto(`/genome/me/reports/${COVERED_SLUGS[2]}`);
   const ownBlock = page.locator("[data-claim-block]").first();

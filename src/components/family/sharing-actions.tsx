@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useCsrf } from "@/components/security/csrf-provider";
 import { Button } from "@/components/ui/button";
 import {
   PAUSE_BODY,
@@ -48,6 +49,7 @@ export function SharingActions({
   nonces: { pause: string; resume: string; stop: string };
 }) {
   const router = useRouter();
+  const csrf = useCsrf("api.subject-sharing");
   const [confirming, setConfirming] = useState(false);
   const [pending, setPending] = useState(false);
   const [failed, setFailed] = useState(false);
@@ -57,9 +59,10 @@ export function SharingActions({
     setFailed(false);
     const response = await fetch(`/api/subjects/${subjectId}/sharing`, {
       method: "POST",
-      headers: { "content-type": "application/json" },
+      headers: { "content-type": "application/json", "X-Inherit-CSRF": csrf.value() },
       body: JSON.stringify({ operation, nonce: nonces[operation] }),
     });
+    csrf.accept(response);
     setPending(false);
     if (!response.ok) {
       setFailed(true);

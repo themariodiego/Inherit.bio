@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { useCsrf } from "@/components/security/csrf-provider";
 import { Button } from "@/components/ui/button";
 import {
   REVOKE_ALL_CONFIRMATION,
@@ -18,6 +19,7 @@ import {
  */
 export function RevokeAllConsents({ nonce }: { nonce: string }) {
   const router = useRouter();
+  const csrf = useCsrf("api.consents-revoke-all");
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState(false);
 
@@ -27,9 +29,10 @@ export function RevokeAllConsents({ nonce }: { nonce: string }) {
     try {
       const response = await fetch("/api/consents/revoke-all", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "X-Inherit-CSRF": csrf.value() },
         body: JSON.stringify({ confirmation: REVOKE_ALL_CONFIRMATION, nonce }),
       });
+      csrf.accept(response);
       const body = (await response.json().catch(() => null)) as { status?: string } | null;
       if (response.status !== 202 || body?.status !== "accepted") setFailed(true);
     } catch {

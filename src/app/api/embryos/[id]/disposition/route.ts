@@ -5,6 +5,7 @@ import { originDenied, readJson, unauthorized } from "@/lib/embryos/guards";
 import { verifyEmbryoOperation } from "@/lib/embryos/operation-token";
 import { dispositionBody, dispositionResponse, dispositionRpcArgs } from "@/lib/embryos/routes";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { withAccountCsrf } from "@/lib/security/session-csrf";
 
 /**
  * `POST /api/embryos/[id]/disposition` (register api.embryo-disposition;
@@ -16,7 +17,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
  * come from the database commit, never from the request; the response
  * body is one of the register's three closed shapes or nothing.
  */
-export async function POST(request: Request, context: { params: Promise<{ id: string }> }) {
+export const POST = withAccountCsrf("api.embryo-disposition", handlePost);
+async function handlePost(request: Request, context: { params: Promise<{ id: string }> }) {
   const { id } = await context.params;
   if (!z.uuid().safeParse(id).success) return notFound();
   const account = await getSensitiveAccountContext();

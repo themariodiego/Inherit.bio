@@ -1,5 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { csrfHandle } from "@/lib/security/session-csrf-client";
 import { disableOwnReportChoice, enableOwnReportChoice, generateOwnReports } from "./own-report-choice-browser";
+// The routes' rendered one-time X-Inherit-CSRF tokens (G8.5).
+const REVOKE_CSRF = `1800000000000.${"R".repeat(43)}.${"6".repeat(64)}`;
+const PROCESS_CSRF = `1800000000000.${"P".repeat(43)}.${"7".repeat(64)}`;
 const fetchMock = vi.fn();
 const id = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 const otherId = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
@@ -31,28 +35,28 @@ describe("own report choice transport", () => {
     reply(receipt, 409); await expect(enableOwnReportChoice(id, choice)).rejects.toThrow();
   });
   it("withdraws exactly the given grant without a client-selected purpose override", async () => {
-    reply({ revoked: true, effectiveAt: "2026-09-06T12:00:00Z" }); await disableOwnReportChoice(otherId, "revoke-nonce");
+    reply({ revoked: true, effectiveAt: "2026-09-06T12:00:00Z" }); await disableOwnReportChoice(otherId, "revoke-nonce", csrfHandle(REVOKE_CSRF));
     // 20261023120000 (G5.6): the page's one-time nonce travels in its header.
     expect(fetchMock).toHaveBeenCalledWith(`/api/consents/${otherId}/revoke`, { method: "POST",
-      headers: { "X-Inherit-Operation-Nonce": "revoke-nonce" } });
+      headers: { "X-Inherit-Operation-Nonce": "revoke-nonce", "X-Inherit-CSRF": REVOKE_CSRF } });
   });
   it("does not accept an unconfirmed withdrawal", async () => {
-    reply({ revoked: true }); await expect(disableOwnReportChoice(otherId, "revoke-nonce")).rejects.toThrow();
+    reply({ revoked: true }); await expect(disableOwnReportChoice(otherId, "revoke-nonce", csrfHandle(REVOKE_CSRF))).rejects.toThrow();
   });
   it("distinguishes generated results from source preparation", async () => {
     reply({ fileId: id, status: "processed", analysisState: "active" });
-    await expect(generateOwnReports(id)).resolves.toBe("ready");
-    expect(fetchMock).toHaveBeenCalledWith(`/api/files/${id}/process`, { method: "POST" });
+    await expect(generateOwnReports(id, csrfHandle(PROCESS_CSRF))).resolves.toBe("ready");
+    expect(fetchMock).toHaveBeenCalledWith(`/api/files/${id}/process`, { method: "POST", headers: { "X-Inherit-CSRF": PROCESS_CSRF } });
     reply({ fileId: id, status: "normalization_complete", analysisState: "not_generated" });
-    await expect(generateOwnReports(id)).resolves.toBe("not_generated");
+    await expect(generateOwnReports(id, csrfHandle(PROCESS_CSRF))).resolves.toBe("not_generated");
   });
   it.each([{ fileId: otherId }, { analysisState: "not_generated" }, { results: [] }])("does not advertise readiness from an invalid receipt: %j", async patch => {
     reply({ fileId: id, status: "processed", analysisState: "active", ...patch });
-    await expect(generateOwnReports(id)).rejects.toThrow();
+    await expect(generateOwnReports(id, csrfHandle(PROCESS_CSRF))).rejects.toThrow();
   });
   it("refuses malformed ids before issuing requests", async () => {
-    await expect(disableOwnReportChoice("../other", "revoke-nonce")).rejects.toThrow();
-    await expect(generateOwnReports("../other")).rejects.toThrow();
+    await expect(disableOwnReportChoice("../other", "revoke-nonce", csrfHandle(REVOKE_CSRF))).rejects.toThrow();
+    await expect(generateOwnReports("../other", csrfHandle(PROCESS_CSRF))).rejects.toThrow();
     expect(fetchMock).not.toHaveBeenCalled();
   });
 });

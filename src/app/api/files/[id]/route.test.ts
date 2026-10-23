@@ -1,4 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+// The one-time X-Inherit-CSRF gate is driven on this route by
+// src/lib/security/session-csrf-routes.test.ts; here it admits every request.
+vi.mock("@/lib/security/session-csrf", async (importOriginal) =>
+  (await import("@/lib/security/session-csrf.test-support")).admitEverySessionCsrf(await importOriginal()));
 import { DELETE } from "./route";
 
 const mocks = vi.hoisted(() => ({ context: vi.fn(), rpc: vi.fn(), remove: vi.fn(), drain: vi.fn() }));

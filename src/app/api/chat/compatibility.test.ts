@@ -32,6 +32,10 @@ vi.mock("@/lib/account-deletion", async (load) => ({
   ...await load<typeof import("@/lib/account-deletion")>(), getSensitiveAccountContext: mocks.account,
 }));
 vi.mock("@/lib/subjects", () => ({ resolveSubjectForAccount: mocks.subject }));
+// The one-time X-Inherit-CSRF gate passes through here; it is tested on this
+// route, through the same handler, in src/lib/security/session-csrf-routes.test.ts.
+vi.mock("@/lib/security/session-csrf", async (importOriginal) =>
+  (await import("@/lib/security/session-csrf.test-support")).admitEverySessionCsrf(await importOriginal()));
 vi.mock("@/lib/copilot/own-chat", () => ({ hasCanonicalCopilotScope: mocks.canonical }));
 vi.mock("@/lib/copilot/own-chat-route", () => ({ ownChatResponse: mocks.own }));
 vi.mock("@/lib/copilot/family-chat-route", () => ({ isFamilyChatRequest: async () => false, familyChatResponse: vi.fn() }));

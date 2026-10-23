@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { route } from "@/lib/primary-routes";
+import type { CsrfHandle } from "@/lib/security/session-csrf-client";
 import type { OwnReportChoicesView } from "./own-report-purpose";
 import { subjectNormalizationReceipt, subjectSynchronousReportReceipt } from "./subject-upload-contract";
 
@@ -25,17 +26,23 @@ export async function enableOwnReportChoice(subjectId: string, choice: Choice): 
   }
 }
 
-/** `nonce` is the one-time nonce the page rendered for this grant's revocation (G5.6, 23 Oct 2026). */
-export async function disableOwnReportChoice(grantId: string, nonce: string): Promise<void> {
+/**
+ * `nonce` is the one-time nonce the page rendered for this grant's revocation
+ * (G5.6, 23 Oct 2026); `csrf`, api.consent-revoke's one-time X-Inherit-CSRF token.
+ */
+export async function disableOwnReportChoice(grantId: string, nonce: string, csrf: CsrfHandle): Promise<void> {
   if (!z.uuid().safeParse(grantId).success) throw new Error("invalid_grant");
   const response = await fetch(route("api.consent-revoke", { id: grantId }), { method: "POST",
-    headers: { "X-Inherit-Operation-Nonce": nonce } });
+    headers: { "X-Inherit-Operation-Nonce": nonce, "X-Inherit-CSRF": csrf.value() } });
+  csrf.accept(response);
   if (response.status !== 200 || !revokeReceipt.safeParse(await response.json()).success) throw new Error("choice_not_saved");
 }
 
-export async function generateOwnReports(fileId: string): Promise<"ready" | "not_generated"> {
+export async function generateOwnReports(fileId: string, csrf: CsrfHandle): Promise<"ready" | "not_generated"> {
   if (!z.uuid().safeParse(fileId).success) throw new Error("invalid_file");
-  const response = await fetch(route("api.file-process", { id: fileId }), { method: "POST" });
+  const response = await fetch(route("api.file-process", { id: fileId }), { method: "POST",
+    headers: { "X-Inherit-CSRF": csrf.value() } });
+  csrf.accept(response);
   const body: unknown = await response.json();
   if (response.status !== 200) throw new Error("generation_unavailable");
   const generated = subjectSynchronousReportReceipt.safeParse(body);

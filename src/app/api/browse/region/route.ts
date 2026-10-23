@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { chromToNumber } from "@/lib/genome/types";
 import { createClient } from "@/lib/supabase/server";
+import { withAccountCsrf } from "@/lib/security/session-csrf";
 
 /**
  * User variants within a genomic region, for the embedded genome browser.
@@ -52,7 +53,8 @@ function response(body: unknown, status: number) {
   } });
 }
 
-export async function POST(request: Request) {
+export const POST = withAccountCsrf("api.browse-region", handlePost);
+async function handlePost(request: Request) {
   if (request.headers.get("origin") !== new URL(request.url).origin
     || request.headers.get("sec-fetch-site") !== "same-origin") {
     return response({ error: "forbidden" }, 403);

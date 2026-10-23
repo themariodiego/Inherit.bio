@@ -2,6 +2,7 @@ import { z } from "zod";
 import { getSensitiveAccountContext, isSameOrigin } from "@/lib/account-deletion";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { prepareFileCleanup } from "@/lib/genome/prepared-source/cleanup-integration";
+import { withAccountCsrf } from "@/lib/security/session-csrf";
 
 export const maxDuration = 60;
 
@@ -9,7 +10,8 @@ const target = z.object({ token: z.string().uuid(), bucket: z.literal("genomes")
 const headers = { "Cache-Control": "private, no-store" };
 const failure = (error: string, status: number) => Response.json({ error }, { status, headers });
 
-export async function DELETE(request: Request, context: { params: Promise<{ id: string }> }) {
+export const DELETE = withAccountCsrf("api.file-delete", handleDelete);
+async function handleDelete(request: Request, context: { params: Promise<{ id: string }> }) {
   if (!isSameOrigin(request)) return failure("file_delete_unauthorized", 403);
   const { id } = await context.params;
   if (!z.string().uuid().safeParse(id).success) return failure("file_delete_not_found", 404);

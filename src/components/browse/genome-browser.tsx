@@ -13,6 +13,8 @@ import {
 } from "@/copy/genome/data";
 import { chromToName, type VariantRecord } from "@/lib/genome/types";
 import { formatLocus } from "@/lib/genome/locus";
+import { useCsrf } from "@/components/security/csrf-provider";
+import type { CsrfHandle } from "@/lib/security/session-csrf-client";
 import { labelIgvControls } from "./igv-accessibility";
 import { enhanceIgvInteractions } from "./igv-interactions";
 import { enhanceIgvTrackScrolling } from "./igv-track-scrolling";
@@ -34,6 +36,41 @@ const ESCAPE_HINT_ID = "genome-browser-keyboard-escape";
 
 const CREATE_BROWSER_TIMEOUT_MS = 30_000;
 
+type RegionRead = { variants: VariantRecord[]; truncated: boolean };
+/**
+ * The region read in flight for each mounted region. Each read spends the
+ * route's one-time X-Inherit-CSRF token, so a remount of the same region
+ * (React runs a development effect twice) shares the one request rather than
+ * sending the spent token again; it is not aborted with the mount for the
+ * same reason, and an unmounted view ignores its answer.
+ */
+const regionReads = new Map<string, Promise<RegionRead>>();
+
+function readRegion(key: string, csrf: CsrfHandle, region: { file: string; chromosome: string; start: number; end: number }) {
+  const pending = regionReads.get(key);
+  if (pending) return pending;
+  const read = (async (): Promise<RegionRead> => {
+    // The file identifier and the stretch of genome being read travel in the
+    // body, never the URL: a query string is written to server logs,
+    // referrers and traces, and this request names both a person's file and
+    // exactly where in their genome they are looking.
+    const res = await fetch("/api/browse/region", {
+      method: "POST",
+      headers: { "content-type": "application/json", "X-Inherit-CSRF": csrf.value() },
+      body: JSON.stringify({
+        file: region.file, chromosome: region.chromosome, start: region.start, end: region.end,
+      }),
+    });
+    csrf.accept(res);
+    if (!res.ok) {
+      throw new Error(`region API responded ${res.status}`);
+    }
+    return (await res.json()) as RegionRead;
+  })().finally(() => regionReads.delete(key));
+  regionReads.set(key, read);
+  return read;
+}
+
 export function GenomeBrowser({
   fileId,
   locus,
@@ -45,6 +82,7 @@ export function GenomeBrowser({
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const escapedRef = useRef<HTMLDivElement>(null);
+  const csrf = useCsrf("api.browse-region");
   const captionId = useId();
   // Outcome keyed by the mounted region: while the key doesn't match the
   // current props the browser is (re)initializing, so "loading" is derived
@@ -77,22 +115,9 @@ export function GenomeBrowser({
       if (!el) return;
 
       const chromName = `chr${chromToName(locus.chrom) === "MT" ? "M" : chromToName(locus.chrom)}`;
-      // The file identifier and the stretch of genome being read travel in the
-      // body, never the URL: a query string is written to server logs,
-      // referrers and traces, and this request names both a person's file and
-      // exactly where in their genome they are looking.
-      const res = await fetch("/api/browse/region", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        signal: request.signal,
-        body: JSON.stringify({
-          file: fileId, chromosome: chromName, start: locus.start, end: locus.end,
-        }),
+      const { variants, truncated } = await readRegion(key, csrf, {
+        file: fileId, chromosome: chromName, start: locus.start, end: locus.end,
       });
-      if (!res.ok) {
-        throw new Error(`region API responded ${res.status}`);
-      }
-      const { variants, truncated } = (await res.json()) as { variants: VariantRecord[]; truncated: boolean };
       if (disposed) return;
       const loaded = createLoadedTrack(variants);
 
@@ -196,7 +221,7 @@ export function GenomeBrowser({
       disposed = true;
       release();
     };
-  }, [fileId, locus.chrom, locus.start, locus.end]);
+  }, [fileId, locus.chrom, locus.start, locus.end, csrf]);
 
   /**
    * The keyboard escape WCAG 2.1 SC 2.1.2 asks for.

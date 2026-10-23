@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { useCsrf } from "@/components/security/csrf-provider";
 import { Button } from "@/components/ui/button";
 import {
   CHROMOSOMAL_SEX_BODY,
@@ -39,6 +40,7 @@ export function ChromosomalSexControl({
   operationNonce: string;
 }) {
   const router = useRouter();
+  const csrf = useCsrf("api.chromosomal-sex");
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState(false);
   // The control shows the choice as soon as it is made and puts it back if the
@@ -60,9 +62,10 @@ export function ChromosomalSexControl({
     try {
       const response = await fetch("/api/chromosomal-sex", {
         method: "POST",
-        headers: { "Content-Type": "application/json", "X-Inherit-Operation-Nonce": operationNonce },
+        headers: { "Content-Type": "application/json", "X-Inherit-Operation-Nonce": operationNonce, "X-Inherit-CSRF": csrf.value() },
         body: JSON.stringify({ subjectId, chromosomalSex }),
       });
+      csrf.accept(response);
       if (!response.ok) {
         setFailed(true);
         setChosen(recorded);

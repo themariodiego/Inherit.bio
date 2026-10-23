@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { useCsrf } from "@/components/security/csrf-provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -38,6 +39,7 @@ export function InviteAdultForm({ operationNonce }: {
   operationNonce: string;
 }) {
   const requestId = useRef(crypto.randomUUID());
+  const csrf = useCsrf("api.subject-drafts");
   const [pending, setPending] = useState(false);
   const [complete, setComplete] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -63,7 +65,7 @@ export function InviteAdultForm({ operationNonce }: {
         const note = String(data.get("note") ?? "").trim();
         const response = await fetch("/api/subject-drafts", {
           method: "POST",
-          headers: { "content-type": "application/json", "X-Inherit-Operation-Nonce": operationNonce },
+          headers: { "content-type": "application/json", "X-Inherit-Operation-Nonce": operationNonce, "X-Inherit-CSRF": csrf.value() },
           body: JSON.stringify({
             kind: "adult",
             adultFlow: "path-a-own-account",
@@ -72,6 +74,7 @@ export function InviteAdultForm({ operationNonce }: {
             ...(note.length > 0 ? { note } : {}),
           }),
         });
+        csrf.accept(response);
         setPending(false);
         if (!response.ok) {
           setError(response.status === 403 ? BLOCKED_HERE_STATUS : REQUEST_FAILED_STATUS);

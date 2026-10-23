@@ -29,6 +29,8 @@ import { jurisdictionChoices } from "@/lib/legal/jurisdiction-declaration";
 import { loadAdultUploadRevisionReview, loadPathBRequestReview } from "@/lib/uploads/path-b-review";
 import { AdultUploadRevisionForm } from "@/components/uploads/adult-upload-revision-form";
 import { PathBRequestForm } from "@/components/uploads/path-b-request-form";
+import { CsrfProvider } from "@/components/security/csrf-provider";
+import { accountCsrfTokens, readRightsCsrfSession, sessionCsrfToken } from "@/lib/security/session-csrf";
 
 export const metadata: Metadata = { title: "Review your request", robots: { index: false, follow: false } };
 
@@ -38,6 +40,18 @@ export default async function RightsSessionPage() {
   const request = new Request("https://inherit.bio/withdraw/session", {
     headers: { cookie: incoming.get("cookie") ?? "" },
   });
+  // The one-time X-Inherit-CSRF tokens this page's forms send: api.withdraw's
+  // for the rights session, and api.invitation-accept's for a signed-in
+  // co-parent. Minted for this render and stored nowhere.
+  const rights = readRightsCsrfSession(request);
+  const csrf = {
+    ...(rights ? { "api.withdraw": sessionCsrfToken(rights, "api.withdraw") } : {}),
+    ...(await accountCsrfTokens(["api.invitation-accept"])),
+  };
+  return <CsrfProvider tokens={csrf}>{await rightsSessionContent(request)}</CsrfProvider>;
+}
+
+async function rightsSessionContent(request: Request) {
   // The purpose stored on the session decides what this page is about. Each
   // loader returns null for a session that is not its own, so a co-parent
   // cookie can never reach another purpose screen.

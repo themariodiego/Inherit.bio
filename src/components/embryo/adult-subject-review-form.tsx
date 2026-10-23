@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useCsrf } from "@/components/security/csrf-provider";
 import { Button } from "@/components/ui/button";
 import { ADULT_SUBJECT_STATEMENTS_HEADING } from "@/copy/family/adult-subject-statements";
 import type { AdultSubjectReview } from "@/lib/embryos/adult-subject-review";
@@ -51,6 +52,7 @@ export function AdultSubjectReviewForm({ review }: { review: AdultSubjectReview 
   const confirmation = review.acceptanceBlockedBy === null ? review.confirmation : null;
   const allTicked = confirmation !== null
     && confirmation.statements.every(statement => ticked[statement.key] === true);
+  const csrf = useCsrf("api.withdraw");
 
   async function answer(operation: Operation) {
     if (status !== "ready") return;
@@ -69,9 +71,10 @@ export function AdultSubjectReviewForm({ review }: { review: AdultSubjectReview 
       } : { operation, nonce: review.nonce };
       const response = await fetch("/api/withdraw/session", {
         method: "POST", credentials: "same-origin", cache: "no-store",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "X-Inherit-CSRF": csrf.value() },
         body: JSON.stringify(payload),
       });
+      csrf.accept(response);
       const body = await response.json().catch(() => null);
       if (response.status !== 202 || body?.status !== "accepted" || body?.operation !== operation) {
         setStatus("failed");

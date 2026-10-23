@@ -3,8 +3,8 @@
   "status": "unbound-source-only",
   "active": {
     "file": "docs/export-member-plan.json",
-    "bytes": 82621,
-    "sha256": "fa10cce145b43dcf9b97c172a027724616e8fe2bb4b1527585ec754e9cbbf6c2",
+    "bytes": 82885,
+    "sha256": "ba5863da821f13e4a44ac9e07bf09591ad9d9b05ecc10b412d7a5b30504c9842",
     "sourceCommit": "28e20c1af57c439c1dc356c899d9a90a01313305"
   },
   "proposal": {

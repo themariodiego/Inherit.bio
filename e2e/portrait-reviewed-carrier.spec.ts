@@ -44,6 +44,7 @@ import {
 } from "@/copy/family/carrier-evidence";
 import { EXACT_MARKER } from "@/lib/figures/contract";
 import { TRAIT_KEYS } from "@/lib/family/traits";
+import { signOut } from "./helpers/session-csrf";
 
 /**
  * `/family/portrait/[pairId]` with a result: the future-child preview's
@@ -458,7 +459,7 @@ test("both adults prepare a synthetic file, and each file's runs measure is stor
   for (const [side, account, fixture] of [["a", A, FIXTURE_A], ["b", B, FIXTURE_B]] as const) {
     await signIn(page, account.email, account.password);
     fileIds[side] = await uploadOwnFilePrepared(page, fixture, { fileType: "vcf" });
-    await page.request.post("/auth/sign-out");
+    await signOut(page);
   }
   const { data, error } = await adminClient().from("genome_files")
     .select("id, roh_status, roh_reason, roh_total_bases, roh_covered_bases, roh_fraction, roh_measured_at")
@@ -485,9 +486,9 @@ test("A invites B, B accepts, and both turn Portrait on and acknowledge it from 
   await expect(page.getByRole("status")).toContainText("Invitation requested");
   const token = await drainMailUntil(request, () => adultInvitationToken(captured
     .find((email) => (Array.isArray(email.to) ? email.to : [email.to]).includes(B.email))?.html), "the invitation");
-  await page.request.post("/auth/sign-out");
+  await signOut(page);
   await acceptAdultInvitation({ page, invitationUrl: adultInvitationUrl(token), email: B.email, password: B.password });
-  await page.request.post("/auth/sign-out");
+  await signOut(page);
 
   const admin = adminClient();
   const inviter = await admin.from("subject_principals").select("id")
@@ -504,13 +505,13 @@ test("A invites B, B accepts, and both turn Portrait on and acknowledge it from 
   await grantPortrait(page, invitedSubjectB);
   pairId = (await pairOf()).id;
   await acknowledgePortrait(page);
-  await page.request.post("/auth/sign-out");
+  await signOut(page);
 
   await signIn(page, B.email, B.password);
   await grantPortrait(page, selfSubjectA);
   await acknowledgePortrait(page);
   await expect(page.getByText(GATE_CHECKBOX, { exact: true })).toBeVisible();
-  await page.request.post("/auth/sign-out");
+  await signOut(page);
   expect((await pairOf()).status).toBe("current");
 });
 
@@ -588,7 +589,7 @@ test("/family/portrait/[pairId] partial-coverage: a reviewed change the other fi
   await expect(page.locator('[data-slot="outcome-dot"]')).toHaveCount(100);
   await expectBoundedHarm(page);
   const fromA = await findingTexts(page);
-  await page.request.post("/auth/sign-out");
+  await signOut(page);
 
   // B reads the mirror: B's own file is the one that does not cover the change.
   await signIn(page, B.email, B.password);
@@ -645,6 +646,6 @@ test("each adult's own carrier status shows the same reviewed reading the pair a
     }
     const text = await page.locator("main").innerText();
     expect(text).not.toMatch(/\b1 in 4\b|in 100\b|\d+(\.\d+)?%/);
-    await page.request.post("/auth/sign-out");
+    await signOut(page);
   }
 });

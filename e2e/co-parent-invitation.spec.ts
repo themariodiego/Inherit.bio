@@ -5,6 +5,7 @@ import config from "../playwright.config";
 import { encryptSecret, hmacSecret } from "../src/lib/crypto";
 import { EMBRYO_ARTIFACT_STATEMENT_KEYS } from "../src/lib/embryos/basis";
 import { JOBS_SECRET, adminClient, anonClient, createConfirmedUser, dueMailCount, jobRan, jobRanCleanly, signIn } from "./helpers";
+import { accountCsrf, rightsCsrf, signOut } from "./helpers/session-csrf";
 
 // Use exactly the local server's existing fixture key, never a hosted secret.
 const servers = Array.isArray(config.webServer) ? config.webServer : [config.webServer];
@@ -134,7 +135,7 @@ test("/withdraw/request → session: real co-parent email, explicit activation, 
   await page.goto("/withdraw/session");
   expect(await page.content()).not.toContain("Synthetic Inviter");
   await expect(page.getByRole("button", { name: "Sign and accept invitation" })).toHaveCount(0);
-  await page.request.post("/auth/sign-out");
+  await signOut(page);
   await page.goto("/withdraw/session");
   await page.getByRole("main").getByRole("link", { name: "Sign in", exact: true }).click();
   await page.getByLabel("Email").fill(recipient.email);
@@ -157,7 +158,10 @@ test("/withdraw/request → session: real co-parent email, explicit activation, 
   const accepted = await responsePromise;
   expect(accepted.status()).toBe(200);
   await expect(page.getByRole("heading", { name: "You have accepted the invitation" })).toBeVisible();
-  const replay = await page.request.post("/api/invitations/accept", { headers: { origin: "http://localhost:3100", "sec-fetch-site": "same-origin" }, data: accepted.request().postDataJSON() });
+  // A fresh X-Inherit-CSRF token for the page's own session, so the replay
+  // reaches the invitation's own one-time answer (G8.5).
+  const replay = await page.request.post("/api/invitations/accept", { headers: { origin: "http://localhost:3100", "sec-fetch-site": "same-origin",
+    "x-inherit-csrf": await accountCsrf(page, "api.invitation-accept") }, data: accepted.request().postDataJSON() });
   expect(replay.status()).toBe(404);
 
   const invitation = await admin.from("subject_invitations").select("status, email_encrypted").eq("id", invitationId).single();
@@ -224,8 +228,11 @@ for (const mode of ["anonymous", "other-account", "other-account-deleting"] as c
     // `failed === 0` read meant before the counts left the response.
     await jobRanCleanly(cleanup, "the retention sweep after a refusal");
     expect((await admin.from("embryo_cohort_drafts").select("id").eq("id", draftId)).data).toEqual([]);
+    // A fresh X-Inherit-CSRF token for the same rights session (G8.5), so the
+    // replay reaches the form token's own idempotent answer.
     const replay = await page.request.post("/api/withdraw/session", {
-      headers: { origin: "http://localhost:3100", "sec-fetch-site": "same-origin" }, data: originalBody,
+      headers: { origin: "http://localhost:3100", "sec-fetch-site": "same-origin",
+        "x-inherit-csrf": await rightsCsrf(page, "api.withdraw") }, data: originalBody,
     });
     expect(replay.status()).toBe(202);
     expect(await replay.json()).toEqual({ status: "accepted", operation: "refuse" });

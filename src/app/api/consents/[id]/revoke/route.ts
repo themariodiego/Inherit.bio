@@ -5,6 +5,7 @@ import { getSensitiveAccountContext } from "@/lib/account-deletion";
 import { isOperationNonceRefusal, personOperationNonceArgs, personOperationNonceFrom } from "@/lib/person-operation-nonce";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import { withAccountCsrf } from "@/lib/security/session-csrf";
 
 /**
  * `POST /api/consents/[id]/revoke` (register api.consent-revoke).
@@ -26,7 +27,8 @@ import { createClient } from "@/lib/supabase/server";
  * name the person who revoked and a replay writes nothing. The own-Copilot
  * and cloud-model cases keep their own authority.
  */
-export async function POST(
+export const POST = withAccountCsrf("api.consent-revoke", handlePost);
+async function handlePost(
   request: Request,
   context: { params: Promise<{ id: string }> },
 ) {

@@ -45,6 +45,10 @@ vi.mock("@/lib/supabase/admin", () => ({
   }),
 }));
 vi.mock("@/lib/account-deletion", () => ({ getSensitiveAccountContext: mocks.account, isSameOrigin: vi.fn() }));
+// The one-time X-Inherit-CSRF gate passes through here; it is tested on this
+// route, through the same handler, in src/lib/security/session-csrf-routes.test.ts.
+vi.mock("@/lib/security/session-csrf", async (importOriginal) =>
+  (await import("@/lib/security/session-csrf.test-support")).admitEverySessionCsrf(await importOriginal()));
 
 const register = JSON.parse(readFileSync("docs/route-register.json", "utf8")) as {
   routes: { id: string; requestContract?: { oneOfClosedBodies?: Record<string, unknown>[] } }[];

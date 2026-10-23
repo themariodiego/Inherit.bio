@@ -3,6 +3,7 @@ import { expect, test } from "./audited-test";
 import { randomUUID } from "node:crypto";
 import { adminClient, anonClient, createConfirmedUser, signIn } from "./helpers";
 import { settingsOperationNonce } from "./helpers/operation-nonce";
+import { accountCsrf } from "./helpers/session-csrf";
 
 /**
  * G5.1a in a browser, on the MAIN server (TEST-LOCAL flag on). ADR 0032.
@@ -47,7 +48,8 @@ async function declare(page: Page, code: string, subdivision?: string) {
   // The one-time nonce the settings page renders for this session (G5.6, 23 Oct 2026).
   const nonce = await settingsOperationNonce(page.request, "jurisdiction");
   return page.request.put("/api/settings/jurisdiction", {
-    headers: { origin: MAIN, "content-type": "application/json", "x-inherit-operation-nonce": nonce },
+    headers: { origin: MAIN, "content-type": "application/json", "x-inherit-operation-nonce": nonce,
+      "x-inherit-csrf": await accountCsrf(page, "api.jurisdiction") },
     data: { code, ...(subdivision === undefined ? {} : { subdivision }), attestationVersion: version,
       attestationHash: body_sha256, affirmed: true },
   });
@@ -247,7 +249,7 @@ test("/family/health-picture jurisdiction-unavailable: an account declared as th
 
   // The register's Path A body and its capability-denied-api-v1 answer (G8.5, 23 October 2026).
   const draft = await page.request.post("/api/subject-drafts", {
-    headers: { origin: MAIN },
+    headers: { origin: MAIN, "x-inherit-csrf": await accountCsrf(page, "api.subject-drafts") },
     data: { kind: "adult", adultFlow: "path-a-own-account", contactEmail: `someone-${runId}@e2e.local`,
       requestId: randomUUID() },
   });

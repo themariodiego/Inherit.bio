@@ -227,42 +227,9 @@
       "closing": "Drop 'generated-artifacts' from the three column CHECKs, which also removes this row. It needs no other change; the embryo table's CHECK belongs to the embryo-ingest work, so the three go together when that work next touches it."
     }
   ],
-  "formRequestDivergenceNote": "2026-10-23 (G8.5, form verification). What every <form> in the shipped app sends, read from source by scripts/form-contract-census.ts and held against docs/route-register.json by scripts/form-register-correspondence.test.ts: the target, method, body keys and literal discriminators, required and CSRF headers, Content-Type and the statuses the code branches on. A native form is read from its markup; an actionless form through its submit handler, following local and imported functions, conditional bodies and the props a form hands its submission to. Each row is one (request file, route, method) and the issues it shows, with the X-Inherit-CSRF omission kept in a row of its own that points at csrfTransportNote; the test computes the issue set and compares it with these rows in both directions, so a new divergence fails until recorded and a fixed one fails until its row is removed. closedBy names who has to act: owner (which document moves), counsel, or engineering. Listing a divergence records it; it does not bless it. 2026-10-23, owner decision (\"G8.5: forms, CSRF, the server action and the Resend webhook\", item 1): the register lists the harmless extras that ship, so five rows close and are removed: genome.browser's q (a closed queryContract), requestId on every subject-draft body, Path B's withAccount confirm body on api.withdraw, api.chat's 409s (copilot-provider-setup-required-v1 and own-chat-scientific-correction-v1) and api.future-person-claim's 404 (resource-not-found-v1). The CSRF rows are untouched: that work is item 2. The Path A row (src/components/family/invite-adult-form.tsx) closes the same day: the form and src/app/api/subject-drafts/route.ts moved to the registered { kind: \"adult\", adultFlow: \"path-a-own-account\", contactEmail, requestId, note? } and answer an unreviewed jurisdiction with capability-denied-api-v1 (403). The compatibility chat row (src/components/chat/chat-panel.tsx) closes the same day: the panel sends the registered { contextToken, message } to api.chat with no query, under a token /copilot/[scope] mints for the account, its auth session and the subject (src/lib/copilot/compat-chat-token.ts), and the route's AI SDK transport branch is gone.",
-  "csrfTransportNote": "Every row whose issues are the X-Inherit-CSRF omission. The register makes X-Inherit-CSRF, a one-time token bound to the session, mandatory on every state-changing request of an authenticated or session-authenticated route (mutationSecurityBindings.csrfTransport; authContracts.authenticated-mutation-v1.csrf; token-api-v1.stateChangingRequest), and says an operation nonce is not CSRF (operationNonceIsNotCsrf). This form's request sends no such header. What the product relies on instead, read from the handlers rather than assumed: an exact Origin or Sec-Fetch-Site same-origin check, SameSite=Lax auth cookies and, where the register asks for one, a one-time operation nonce or form token in the body or the X-Inherit-Operation-Nonce header. So this is a real divergence between the register's CSRF transport and the defence the code implements, not a missing check on an open endpoint. Owner: decide which document moves. Either the register's csrfTransport stays and engineering builds the session-bound one-time X-Inherit-CSRF token (issue, bind, consume or rotate) on every listed route and its form, or the register is amended to name the Origin/Fetch-Metadata/SameSite-plus-nonce defence the code implements. Until then each row stays, and adding the header to a form without a handler that consumes it would make the row go stale without closing anything.",
+  "formRequestDivergenceNote": "2026-10-23 (G8.5, form verification). What every <form> in the shipped app sends, read from source by scripts/form-contract-census.ts and held against docs/route-register.json by scripts/form-register-correspondence.test.ts: the target, method, body keys and literal discriminators, required and CSRF headers, Content-Type and the statuses the code branches on. A native form is read from its markup; an actionless form through its submit handler, following local and imported functions, conditional bodies and the props a form hands its submission to. Each row is one (request file, route, method) and the issues it shows (since 2026-10-23 no request omits X-Inherit-CSRF, and the test fails if one does; see csrfTransportNote); the test computes the issue set and compares it with these rows in both directions, so a new divergence fails until recorded and a fixed one fails until its row is removed. closedBy names who has to act: owner (which document moves), counsel, or engineering. Listing a divergence records it; it does not bless it. 2026-10-23, owner decision (\"G8.5: forms, CSRF, the server action and the Resend webhook\", item 1): the register lists the harmless extras that ship, so five rows close and are removed: genome.browser's q (a closed queryContract), requestId on every subject-draft body, Path B's withAccount confirm body on api.withdraw, api.chat's 409s (copilot-provider-setup-required-v1 and own-chat-scientific-correction-v1) and api.future-person-claim's 404 (resource-not-found-v1). The CSRF rows close with item 2, the one-time session token, the same day (see csrfTransportNote). The Path A row (src/components/family/invite-adult-form.tsx) closes the same day: the form and src/app/api/subject-drafts/route.ts moved to the registered { kind: \"adult\", adultFlow: \"path-a-own-account\", contactEmail, requestId, note? } and answer an unreviewed jurisdiction with capability-denied-api-v1 (403). The compatibility chat row (src/components/chat/chat-panel.tsx) closes the same day: the panel sends the registered { contextToken, message } to api.chat with no query, under a token /copilot/[scope] mints for the account, its auth session and the subject (src/lib/copilot/compat-chat-token.ts), and the route's AI SDK transport branch is gone.",
+  "csrfTransportNote": "2026-10-23 (G8.5; owner decision \"CSRF: build the token everywhere\"). The register's csrfTransport stands and is built. src/lib/security/session-csrf-core.ts mints X-Inherit-CSRF as <expiresAt>.<random>.<mac>: a keyed digest of the session kind, the session (the account and its auth session, or the SHA-256 of the rights-session or activation-candidate cookie), the registered route and a twelve-hour expiry, none of which travels in the token. The page or the signed-in shell renders it and stores nothing. The route verifies it against the live request, and public.consume_session_csrf_v1 (20261024220000_session_csrf_tokens.sql, a guarded production release) spends its hash once, refusing a spent token, an expiry beyond the lifetime and an authenticated token whose auth session is no longer live; the response that spends one carries its successor in the same header. A missing, spent, other-session or other-route token is refused before the handler runs: authenticated-mutation-v1's 403 request_forbidden on an authenticated route, the 404 not_found of token-api-v1 or token-candidate-api-v1 on a purpose-session route. Operation nonces are unchanged and separate (operationNonceIsNotCsrf). The 37 routes of SESSION_CSRF_ROUTES require it, with api.embryo-withdraw sharing api.cohort-restrict's token as its policy.aliasOf; src/lib/security/session-csrf-routes.test.ts drives each through its handler, and scripts/form-register-correspondence.test.ts finds no client request, form or not, that omits the header. auth.sign-out is a scripted form that sends it and checks the exact Origin. Every other route the register binds keeps an X-Inherit-CSRF of its own design, listed in csrfOwnDesign with what it binds and whether it is one-time; two upload-session routes send none. No formRequestDivergence row records a CSRF omission any more.",
   "formRequestDivergence": [
-    {
-      "file": "src/components/chat/chat-panel.tsx",
-      "routeId": "api.chat",
-      "method": "POST",
-      "issues": [
-        "omits X-Inherit-CSRF, which mutationSecurityBindings.csrfTransport requires of this state-changing request"
-      ],
-      "why": "See csrfTransportNote.",
-      "closing": "See csrfTransportNote.",
-      "closedBy": "owner"
-    },
-    {
-      "file": "src/components/chat/own-chat-panel.tsx",
-      "routeId": "api.chat",
-      "method": "POST",
-      "issues": [
-        "omits X-Inherit-CSRF, which mutationSecurityBindings.csrfTransport requires of this state-changing request"
-      ],
-      "why": "See csrfTransportNote.",
-      "closing": "See csrfTransportNote.",
-      "closedBy": "owner"
-    },
-    {
-      "file": "src/components/embryo/co-parent-review-form.tsx",
-      "routeId": "api.invitation-accept",
-      "method": "POST",
-      "issues": [
-        "omits X-Inherit-CSRF, which mutationSecurityBindings.csrfTransport requires of this state-changing request"
-      ],
-      "why": "See csrfTransportNote.",
-      "closing": "See csrfTransportNote.",
-      "closedBy": "owner"
-    },
     {
       "file": "src/components/embryo/co-parent-review-form.tsx",
       "routeId": "api.invitation-accept",
@@ -277,72 +244,6 @@
       "closedBy": "counsel"
     },
     {
-      "file": "src/components/embryo/invitation-refusal-form.tsx",
-      "routeId": "api.withdraw",
-      "method": "POST",
-      "issues": [
-        "omits X-Inherit-CSRF, which mutationSecurityBindings.csrfTransport requires of this state-changing request"
-      ],
-      "why": "See csrfTransportNote.",
-      "closing": "See csrfTransportNote.",
-      "closedBy": "owner"
-    },
-    {
-      "file": "src/components/embryo/upload/upload-stage.tsx",
-      "routeId": "api.embryo-cohorts",
-      "method": "POST",
-      "issues": [
-        "omits X-Inherit-CSRF, which mutationSecurityBindings.csrfTransport requires of this state-changing request"
-      ],
-      "why": "See csrfTransportNote.",
-      "closing": "See csrfTransportNote.",
-      "closedBy": "owner"
-    },
-    {
-      "file": "src/components/family/invite-adult-form.tsx",
-      "routeId": "api.subject-drafts",
-      "method": "POST",
-      "issues": [
-        "omits X-Inherit-CSRF, which mutationSecurityBindings.csrfTransport requires of this state-changing request"
-      ],
-      "why": "See csrfTransportNote.",
-      "closing": "See csrfTransportNote.",
-      "closedBy": "owner"
-    },
-    {
-      "file": "src/components/settings/embryo-disposition.tsx",
-      "routeId": "api.embryo-disposition",
-      "method": "POST",
-      "issues": [
-        "omits X-Inherit-CSRF, which mutationSecurityBindings.csrfTransport requires of this state-changing request"
-      ],
-      "why": "See csrfTransportNote.",
-      "closing": "See csrfTransportNote.",
-      "closedBy": "owner"
-    },
-    {
-      "file": "src/components/settings/jurisdiction-form.tsx",
-      "routeId": "api.jurisdiction",
-      "method": "PUT",
-      "issues": [
-        "omits X-Inherit-CSRF, which mutationSecurityBindings.csrfTransport requires of this state-changing request"
-      ],
-      "why": "See csrfTransportNote.",
-      "closing": "See csrfTransportNote.",
-      "closedBy": "owner"
-    },
-    {
-      "file": "src/components/settings/llm-settings-form.tsx",
-      "routeId": "api.llm-settings",
-      "method": "POST",
-      "issues": [
-        "omits X-Inherit-CSRF, which mutationSecurityBindings.csrfTransport requires of this state-changing request"
-      ],
-      "why": "See csrfTransportNote.",
-      "closing": "See csrfTransportNote.",
-      "closedBy": "owner"
-    },
-    {
       "file": "src/components/settings/llm-settings-form.tsx",
       "routeId": "api.llm-settings",
       "method": "POST",
@@ -351,29 +252,6 @@
       ],
       "why": "Since 2026-10-23 (owner decision, G8.5 item 1) the form and src/lib/copilot/own-settings.ts use the register's three closed bodies, discriminated by mode (hosted, remote-openai-compatible, same-host-local) with camelCase apiKey and baseUrl, answer llm-settings-v1 ({ status: \"saved\", provider, endpointOrigin, classification } and { status: \"deleted\" }), and the DELETE consumes the X-Inherit-Operation-Nonce the page renders (remove_own_copilot_settings_with_nonce_v1, migration 20261024110000). Stored data is unchanged. One difference is left, on purpose: the register's hosted and remote-openai-compatible bodies say apiKey is required-bounded-secret, and the form sends apiKey only when one is typed, which the handler accepts. That keeps two behaviours the product has today and its tests rely on: re-saving the same destination keeps the stored key (the save door reuses it, and answers 409 key_required when the destination changed; llm-settings-form.test.ts \"does not ask again for a stored key\"), and a key-free HTTPS endpoint can be saved (every browser spec that saves the synthetic cloud endpoint, and the density fixture's fixed key-free cloud recipient). Making apiKey required would remove both, which is a product choice, not a transcription.",
       "closing": "Owner: either the register's hosted and remote bodies say apiKey is optional (a stored key is kept for the same destination, and a key-free endpoint may be saved), and this row goes stale, or the key becomes required on every save, and engineering makes the form ask for it each time, drops the key-free path and changes the specs and the density fixture that save one. Until then the handler takes what the form sends.",
-      "closedBy": "owner"
-    },
-    {
-      "file": "src/components/site/app-shell.tsx",
-      "routeId": "auth.sign-out",
-      "method": "POST",
-      "issues": [
-        "cannot send the required header x-inherit-csrf: a native form submission carries no custom header",
-        "responds 303 to / where sign-out-v1 names auth.sign-in (/auth/sign-in)"
-      ],
-      "why": "Sign-out is a native <form action=\"/auth/sign-out\" method=\"post\">, and the register's auth.sign-out requires X-Inherit-CSRF bound to the live session. A native submission can carry no custom header, and src/app/auth/sign-out/route.ts checks neither a header nor Origin before it calls signOut and clears the Tier-2 cookies, so its only cross-site defence is the SameSite=Lax attribute of the auth cookies; the browser suite also signs out with a bare page.request.post(\"/auth/sign-out\"). The response is the 303 the register names, but src/app/auth/sign-out/response.ts sends it to / (and response.test.ts asserts that) where sign-out-v1 names auth.sign-in.",
-      "closing": "Owner: either the register keeps the header and sign-out becomes a script-submitted request carrying a session-bound token (engineering; changes sign-out without script and every browser spec that posts it bare), or the register names an Origin/Sec-Fetch-Site check, which engineering can add to the route without changing the form. Separately, which destination is right, / or /auth/sign-in.",
-      "closedBy": "owner"
-    },
-    {
-      "file": "src/components/uploads/path-b-request-form.tsx",
-      "routeId": "api.withdraw",
-      "method": "POST",
-      "issues": [
-        "omits X-Inherit-CSRF, which mutationSecurityBindings.csrfTransport requires of this state-changing request"
-      ],
-      "why": "See csrfTransportNote.",
-      "closing": "See csrfTransportNote.",
       "closedBy": "owner"
     }
   ],
@@ -408,6 +286,545 @@
       ],
       "why": "The embryo file form hands the chosen file to sendEmbryoFile, which sends through an injectable fetch to route addresses the configure response supplies at run time (session.configureRoute and the mapping, chunk and completion routes), so no target is a literal the census can read. Its requests are the registered upload-session endpoints (api.embryo-ingest-configure, -mapping, -chunk, -complete) and are held to their contracts by src/lib/embryos/upload-transport.test.ts and the embryo-ingest browser journey, not by this census.",
       "closing": "Nothing while the transport takes its addresses from the session response."
+    }
+  ],
+  "clientRequestDivergenceNote": "2026-10-23 (G8.5). What every request the browser makes sends when no form makes it. scripts/form-contract-census.ts reads the client module graph (clientModules: every \"use client\" module and every local module one imports for a value) and every fetch call and chat transport in it (fileRequests), with no argument bound; a request a form makes is read by the form census instead and recorded in formRequestDivergence. scripts/form-register-correspondence.test.ts compares these rows with the census in both directions and fails if any request omits X-Inherit-CSRF. Several rows are the reader's limits rather than the product's (a value passed as an argument, a binary body, a status compared through a reused variable name); each says so and names what would let the census read it. Recorded, not fixed: body fields, nonce headers and statuses belong to the G8.5 form-shape work.",
+  "clientRequestDivergence": [
+    {
+      "file": "src/components/browse/genome-browser.tsx",
+      "routeId": "api.browse-region",
+      "method": "POST",
+      "issues": [
+        "omits nonce, which the registered body requires",
+        "omits region, which the registered body requires",
+        "omits subject, which the registered body requires",
+        "sends chromosome, which the registered body does not declare",
+        "sends end, which the registered body does not declare",
+        "sends file, which the registered body does not declare",
+        "sends start, which the registered body does not declare"
+      ],
+      "why": "The genome browser posts { file, chromosome, start, end }, and src/app/api/browse/region/route.ts parses exactly that. The register's api.browse-region closed body is { subject, region: { chromosome, start, end }, cursor?, nonce }, with a one-time browse nonce and a server-signed cursor the route's own comment says still need a nonce-minting page. The browser and the handler agree with each other and not with the register.",
+      "closing": "Owner: decide which document moves. Engineering then moves the route, the page that would mint the browse nonce and this request to the registered body, or the register is rewritten to the file-and-locus body.",
+      "closedBy": "owner"
+    },
+    {
+      "file": "src/components/browse/igv-reference.ts",
+      "routeId": null,
+      "method": null,
+      "issues": [
+        "sends to /genomes/hg38.chrom.sizes, which no register entry describes"
+      ],
+      "why": "The genome viewer fetches its first-party chromosome-size reference, the static file public/genomes/hg38.chrom.sizes, itself, so the installed viewer resolves no remote URL. It is a public static asset served by the host, not a route, and the register describes routes only, so no entry names it.",
+      "closing": "Owner: say whether the register describes first-party static assets. If it does, add the asset; if not, the census exempts paths served from public/ with this row's evidence.",
+      "closedBy": "owner"
+    },
+    {
+      "file": "src/components/chat/consent-dialog.tsx",
+      "routeId": "api.consents",
+      "method": "POST",
+      "issues": [
+        "omits action, which the registered body requires",
+        "omits affirmed, which the registered body requires",
+        "omits artifactPresentationToken, which the registered body requires",
+        "omits artifactVersion, which the registered body requires",
+        "omits signatureClass, which the registered body requires",
+        "omits statementKeys, which the registered body requires",
+        "omits subjectId, which the registered body requires",
+        "sends providerKey, which the registered body does not declare"
+      ],
+      "why": "The compatibility chat's cloud-provider consent posts { providerKey }, the body src/app/api/consents/route.ts says it has always served (grant_cloud_model_consent). None of the closed bodies the register declares for api.consents is a provider consent: each signs an artifact with a presentation token, statement keys and an affirmation. It sends the session token since 2026-10-23.",
+      "closing": "Owner: register the provider-consent body, or retire it with the compatibility panel (the api.chat compatibility rows in formRequestDivergence). Engineering once decided.",
+      "closedBy": "owner"
+    },
+    {
+      "file": "src/components/embryo/adult-subject-review-form.tsx",
+      "routeId": "api.withdraw",
+      "method": "POST",
+      "issues": [
+        "omits subjectArtifact.typedName, which the registered body requires",
+        "omits withAccount, which the registered body requires"
+      ],
+      "why": "D-103's adult confirm on /withdraw/session (Path A, through the person's own account) sends { operation: \"confirm\", nonce, subjectArtifact: { artifactVersion, artifactPresentationToken, affirmed, statementKeys } } to api.withdraw. The only account confirm body api.withdraw registers is Path B's withAccount body, whose subjectArtifact also carries a typedName. Path A's database confirm stores no name (signing_name_encrypted is null), and the register places Path A's account confirmation on api.invitation-accept, not api.withdraw. Visible since the client census reads requests no form makes (this review has no form). It sends the session token since 2026-10-23.",
+      "closing": "Engineering, by the owner's decision of 2026-10-23 (\"D-103: Path A acceptance includes a typed name\"): Path A's confirm asks for a typed name, stored encrypted by one guarded migration, and moves to api.invitation-accept as the register's adult-subject-confirmation-v1 names it. This row closes with that work.",
+      "closedBy": "engineering"
+    },
+    {
+      "file": "src/components/future-person/claim-documents.tsx",
+      "routeId": "api.evidence-chunk",
+      "method": "PUT",
+      "issues": [
+        "sends a body the census cannot resolve (bytes.slice(sequence * CHUNK_BYTES, (sequence + 1) * CHUNK_BYTES))"
+      ],
+      "why": "Each chunk is the raw bytes of one slice of the document, sent as application/octet-stream, which is the registered api.evidence-chunk body. The census reads JSON bodies only, so a byte slice reads as unresolved: this is the reader's limit, not the product's.",
+      "closing": "Engineering: teach the census a binary body (a typed-array value sent with application/octet-stream to a route whose contentType registers it), then this row goes stale.",
+      "closedBy": "engineering"
+    },
+    {
+      "file": "src/components/future-person/claim-documents.tsx",
+      "routeId": "api.future-person-claim-document-session",
+      "method": "POST",
+      "issues": [
+        "branches on status 429, which no response contract of api.future-person-claim-document-session declares"
+      ],
+      "why": "The route answers 429 try_again_later with Retry-After when a claim is at its document-session or document limit (src/app/api/future-person/claim/session/documents/route.ts), and the claim page shows its limited sentence on 429. The register binds evidence-session-v1 and resource-not-found-v1 to the route and no 429.",
+      "closing": "Owner: bind public-capacity-limited-v1 (the 429 body the route already sends) to api.future-person-claim-document-session, or have the route answer the limit with a bound contract.",
+      "closedBy": "owner"
+    },
+    {
+      "file": "src/components/future-person/public-appeal-case-rejection.tsx",
+      "routeId": "api.appeal-review",
+      "method": "POST",
+      "issues": [
+        "sends a body the census cannot fully resolve"
+      ],
+      "why": "The rejection posts { decision, reviewRevision, reason, nonce, ...reversal } where the reversal fields are spread from a value the component receives, so the census cannot list every key. The registered api.appeal-review POST bodies are closed per decision, and the route's own parser holds the request to them.",
+      "closing": "Engineering: name the reversal fields at the call (or teach the census the prop's type), so the census can hold each decision body to its registered body.",
+      "closedBy": "engineering"
+    },
+    {
+      "file": "src/components/future-person/public-appeal-documents.tsx",
+      "routeId": "api.evidence-chunk",
+      "method": "PUT",
+      "issues": [
+        "branches on status 201, which no response contract of api.evidence-chunk declares",
+        "branches on status 202, which no response contract of api.evidence-chunk declares",
+        "sends a body the census cannot resolve (chunk)"
+      ],
+      "why": "The appeal upload sends each chunk's raw bytes (the registered octet-stream body, which the census cannot read) and checks the chunk answer for 204 only. The 201 and 202 are the completion's answers, compared through a variable of the same name in the same function, which the census attributes to every request there: the reader's limit, not the product's.",
+      "closing": "Engineering: scope the census's status reading to the declaration it reads, and teach it binary bodies; both rows then go stale.",
+      "closedBy": "engineering"
+    },
+    {
+      "file": "src/components/future-person/public-appeal-documents.tsx",
+      "routeId": "api.evidence-complete",
+      "method": "POST",
+      "issues": [
+        "branches on status 204, which no response contract of api.evidence-complete declares"
+      ],
+      "why": "The completion is checked for 201 and 202, which evidence-complete-v1 declares. The 204 is the chunk answer, compared through a variable of the same name in the same function, which the census attributes to every request there: the reader's limit, not the product's.",
+      "closing": "Engineering: scope the census's status reading to the declaration it reads, then this row goes stale.",
+      "closedBy": "engineering"
+    },
+    {
+      "file": "src/components/settings/consent-list.tsx",
+      "routeId": "api.consent-revoke",
+      "method": "POST",
+      "issues": [
+        "omits the required header x-inherit-operation-nonce"
+      ],
+      "why": "The cloud-provider consent list revokes a provider grant with no X-Inherit-Operation-Nonce. api.consent-revoke requires the nonce for every request, but src/app/api/consents/[id]/revoke/route.ts reads it only for a directional purpose grant; the provider and own-Copilot cases keep their own authority. It sends the session token since 2026-10-23.",
+      "closing": "Owner: say whether a provider-consent revocation needs the one-time operation nonce. If so, engineering renders it on the consent page and the route reads it for every case.",
+      "closedBy": "owner"
+    },
+    {
+      "file": "src/components/settings/danger-zone.tsx",
+      "routeId": null,
+      "method": null,
+      "issues": [
+        "sends to an unresolved target (path), which no register entry describes"
+      ],
+      "why": "The deletion controls post to /api/account/delete or /api/account/delete/cancel through one helper that takes the path as an argument from each button's handler. This census reads a request with no argument bound, and no form makes these requests, so the target reads as unresolved: the reader's limit. Both routes are registered and send their tokens.",
+      "closing": "Engineering: call fetch with each route's literal at its button (or teach the census to follow a click handler's call), so each request is held to its own entry.",
+      "closedBy": "engineering"
+    },
+    {
+      "file": "src/components/settings/own-copilot-permission.tsx",
+      "routeId": "api.consent-revoke",
+      "method": "POST",
+      "issues": [
+        "omits the required header x-inherit-operation-nonce"
+      ],
+      "why": "Withdrawing the own-Copilot permission posts to api.consent-revoke with no X-Inherit-Operation-Nonce, which the register requires for every revocation. The route sends an own-Copilot grant to revokeOwnCopilotConsent, which checks the live authority and reads no nonce. It sends the session token since 2026-10-23.",
+      "closing": "Owner: say whether the own-Copilot revocation needs the one-time operation nonce; if so, engineering renders and reads it.",
+      "closedBy": "owner"
+    },
+    {
+      "file": "src/components/uploads/reviewed-document-card.tsx",
+      "routeId": "api.evidence-chunk",
+      "method": "PUT",
+      "issues": [
+        "sends a body the census cannot resolve (bytes.slice(sequence * CHUNK_BYTES, (sequence + 1) * CHUNK_BYTES))"
+      ],
+      "why": "Each chunk of the reviewed document is the raw bytes of one slice, sent as application/octet-stream, the registered api.evidence-chunk body. The census reads JSON bodies only, so a byte slice reads as unresolved: the reader's limit.",
+      "closing": "Engineering: teach the census a binary body, then this row goes stale.",
+      "closedBy": "engineering"
+    },
+    {
+      "file": "src/lib/family/permission-response.ts",
+      "routeId": "api.consents",
+      "method": "POST",
+      "issues": [
+        "sends a body the census cannot resolve (JSON.stringify(action.request))"
+      ],
+      "why": "A permission row sends the grant request the page minted (a GrantPurposeRequest) as it received it, so the census, reading the helper with no argument bound, cannot list its keys. The route parses it with its closed grant-purpose schema and the presentation token fixes every value.",
+      "closing": "Engineering: build the body from named fields at the call, or teach the census the argument's declared type, so it is held to the registered grant body.",
+      "closedBy": "engineering"
+    },
+    {
+      "file": "src/lib/future-person/read-review-document.ts",
+      "routeId": "api.claim-review-chunk-acknowledgement",
+      "method": "POST",
+      "issues": [
+        "sends a body the census cannot resolve (JSON.stringify(proofs[sequence]))"
+      ],
+      "why": "The reviewer's reader acknowledges each chunk with the proof object it computed for that sequence, taken from an array, so the census cannot list its keys. The registered body is { proof, nonce } and the route's parser holds it to that.",
+      "closing": "Engineering: build the acknowledgement from named fields at the call, then this row goes stale.",
+      "closedBy": "engineering"
+    },
+    {
+      "file": "src/lib/future-person/review-pdf.ts",
+      "routeId": null,
+      "method": null,
+      "issues": [
+        "sends to an unresolved target (BASE+\"manifest.json\"), which no register entry describes",
+        "sends to an unresolved target (url), which no register entry describes"
+      ],
+      "why": "The reviewer's inert PDF viewer fetches its own first-party asset manifest under a fixed base path, and then the document by a URL its caller passes in (the review download, a registered route read through its own session). Neither target is a literal the census can resolve.",
+      "closing": "Engineering: name the manifest path as a literal and resolve the document URL at the caller; the owner says whether first-party static assets belong in the register.",
+      "closedBy": "engineering"
+    },
+    {
+      "file": "src/lib/uploads/file-delete-browser.ts",
+      "routeId": "api.file-delete",
+      "method": "DELETE",
+      "issues": [
+        "branches on status 202, which no response contract of api.file-delete declares",
+        "branches on status 204, which no response contract of api.file-delete declares"
+      ],
+      "why": "File deletion repeats the DELETE on 202 file_delete_pending and stops on 204, which src/app/api/files/[id]/route.ts answers. The register's api.file-delete has no success contract and binds only resource-not-found-v1 and capability-denied-api-v1, so neither answer is declared. It sends the session token since 2026-10-23.",
+      "closing": "Owner: register the 204 deleted and 202 pending answers (endpointSuccessContractUndefined lists the route already), or change the route's answers.",
+      "closedBy": "owner"
+    },
+    {
+      "file": "src/lib/uploads/own-report-choice-browser.ts",
+      "routeId": "api.consent-revoke",
+      "method": "POST",
+      "issues": [
+        "branches on status 200, which no response contract of api.consent-revoke declares"
+      ],
+      "why": "Turning a report choice off waits for 200 { revoked, effectiveAt }, which the route answers for a directional grant. The register binds lifecycle-accepted-v1, a 202 { status: \"accepted\" }, to api.consent-revoke. It sends the session token since 2026-10-23.",
+      "closing": "Owner: decide which document moves: the route answers lifecycle-accepted-v1 and every caller follows, or the register binds the revocation receipt the route sends.",
+      "closedBy": "owner"
+    },
+    {
+      "file": "src/lib/uploads/subject-upload-browser.ts",
+      "routeId": "api.file-upload-session",
+      "method": "POST",
+      "issues": [
+        "sends a body the census cannot resolve (JSON.stringify(declaration.data))"
+      ],
+      "why": "The upload sends the declaration its zod schema parsed (uploadSessionBody), so the census sees a parsed value rather than an object literal and cannot list its keys. The schema is the registered body's own closed shape.",
+      "closing": "Engineering: teach the census the schema's keys, or build the body from named fields, so it is held to the registered body.",
+      "closedBy": "engineering"
+    }
+  ],
+  "csrfOwnDesignNote": "2026-10-23 (G8.5). Every route the register binds to csrfTransport whose X-Inherit-CSRF is not the one-time session token of src/lib/security/session-csrf.ts, read from its handler: what the header carries, the kind (digest-not-one-time: a keyed digest of the session that a replay can repeat, so the paired one-time nonce or the session's own rotation is what refuses it; operation-token: the one-time operation or presentation value itself, which operationNonceIsNotCsrf says a CSRF value is not; derived-one-time: a distinct value bound to a one-time token; none), and whether it is one-time. branch marks a route whose other bodies use the session token. src/lib/security/session-csrf-routes.test.ts holds this list to the register in both directions, with SESSION_CSRF_ROUTES, and each row to the literal it cites. Moving a row onto the session token is engineering work once the owner says these designs should go; the two upload-session routes also need a carrier for the first token of a session a response opens.",
+  "csrfOwnDesign": [
+    {
+      "routeId": "auth.reset-password-submit",
+      "file": "src/lib/auth/reset-session.ts",
+      "literal": "return hmacSecret(sessionHash, CSRF_CONTEXT);",
+      "kind": "digest-not-one-time",
+      "value": "A keyed digest of the reset session (resetCsrf).",
+      "oneTime": "In effect: the reset session is spent by its one request."
+    },
+    {
+      "routeId": "api.account-completion",
+      "file": "src/app/api/account/completion/route.ts",
+      "literal": "if (request.headers.get(\"x-inherit-csrf\") !== body.data.presentationToken)",
+      "kind": "operation-token",
+      "value": "The page's completion presentation token, the same value as the body's presentationToken.",
+      "oneTime": "Yes, through the token's nonce, which complete_own_upload_account_v2 records once."
+    },
+    {
+      "routeId": "api.export",
+      "file": "src/lib/exports/account-export-http.ts",
+      "literal": "const csrf=verifyAccountExportCsrf(request.headers.get(\"x-inherit-csrf\"),{actor,originBinding:capture.originBinding,",
+      "kind": "derived-one-time",
+      "value": "A sealed export CSRF value with its own random nonce, bound to the account, auth session, origin, authority receipt and operation, distinct from the operation token.",
+      "oneTime": "Yes: the operation envelope carries its binding and the database spends the pair once (p_csrf_binding)."
+    },
+    {
+      "routeId": "api.subject-export",
+      "file": "src/lib/exports/subject-export-http.ts",
+      "literal": "const csrf=verifyAccountExportCsrf(request.headers.get(\"x-inherit-csrf\"),{actor,originBinding:value.originBinding,",
+      "kind": "derived-one-time",
+      "value": "The same sealed export CSRF value as api.export, for one subject.",
+      "oneTime": "Yes: spent with the operation it is bound to (p_csrf_binding)."
+    },
+    {
+      "routeId": "api.embryo-ingest-configure",
+      "file": "src/app/api/embryo-ingest/[session]/configure/route.ts",
+      "literal": " * The request carries no `X-Inherit-CSRF` header: the only upload-session",
+      "kind": "none",
+      "value": "None. The body's one-time operationNonce from api.embryo-cohorts is the only value the request carries.",
+      "oneTime": "No token. upload-session-api-v1.stateChangingRequest requires one; the response that opens the upload session has no carrier for its first token, since X-Inherit-CSRF on it carries api.embryo-cohorts' own successor. Owner decision needed."
+    },
+    {
+      "routeId": "api.embryo-ingest-mapping",
+      "file": "src/app/api/embryo-ingest/[session]/mapping/route.ts",
+      "literal": "credential-bound authorizer. A request carries no `X-Inherit-CSRF` header:",
+      "kind": "none",
+      "value": "None. Each mapping request carries the one-time mapping nonce the previous response issued.",
+      "oneTime": "No token; as api.embryo-ingest-configure."
+    },
+    {
+      "routeId": "api.embryo-ingest-complete",
+      "file": "src/app/api/embryo-ingest/[session]/complete/route.ts",
+      "literal": "const csrf = csrfOperation(request, { ...bound, operation: \"ingest_complete_csrf\" });",
+      "kind": "derived-one-time",
+      "value": "The ingest_complete_csrf token the configure or mapping response issued, distinct from the completion nonce.",
+      "oneTime": "Yes: its nonce hash (p_csrf_hash) is recorded once."
+    },
+    {
+      "routeId": "api.subjects",
+      "file": "src/lib/uploads/path-b-reviewed-document-server.ts",
+      "literal": "if (!sameDigest(request.headers.get(\"x-inherit-csrf\"), finalizeCsrf(actor.accountId, actor.sessionId, body.subjectDraftId))) {",
+      "kind": "digest-not-one-time",
+      "value": "A keyed digest of the account, auth session and draft (finalizeCsrf).",
+      "oneTime": "No on its own: the body's one-time finalize nonce refuses a replay."
+    },
+    {
+      "routeId": "api.invitations",
+      "file": "src/app/api/invitations/route.ts",
+      "literal": "const claims = csrfOperation(request, {",
+      "kind": "operation-token",
+      "value": "The embryo invitation's one-time operation token (and, for Path B, the request-send operation token) itself.",
+      "oneTime": "Yes, but it is the operation nonce (operationNonceIsNotCsrf)."
+    },
+    {
+      "routeId": "api.embryo-cohort-drafts",
+      "file": "src/app/api/embryo-cohort-drafts/route.ts",
+      "literal": "const claims = csrfOperation(request, {",
+      "kind": "operation-token",
+      "value": "The draft's one-time embryo operation token itself.",
+      "oneTime": "Yes, but it is the operation nonce (operationNonceIsNotCsrf)."
+    },
+    {
+      "routeId": "api.embryo-record-key-cards-rights",
+      "file": "src/lib/embryos/record-key-cards-rights.ts",
+      "literal": "|| request.headers.get(CSRF_HEADER) !== nonce) return null;",
+      "kind": "operation-token",
+      "value": "The rights page's one-time form token, the same value as the body nonce.",
+      "oneTime": "Yes, but it is the operation nonce (operationNonceIsNotCsrf)."
+    },
+    {
+      "routeId": "api.legal-evidence-upload-session",
+      "file": "src/lib/uploads/path-b-reviewed-document-server.ts",
+      "literal": "const nonce = readReviewedDocumentOperation(request.headers.get(\"x-inherit-csrf\"), { accountId: actor.accountId,",
+      "kind": "operation-token",
+      "value": "The reviewed-document session's one-time operation token itself.",
+      "oneTime": "Yes, but it is the operation nonce (operationNonceIsNotCsrf)."
+    },
+    {
+      "routeId": "api.future-person-claim-document-session",
+      "file": "src/app/api/future-person/claim/session/documents/route.ts",
+      "literal": "if (!nonce || !claimMutationCsrfMatches(request.headers.get(\"x-inherit-csrf\"), claimHash, \"documents\", parsed.data.nonce)) return notFound();",
+      "kind": "derived-one-time",
+      "value": "A keyed digest of the claim session, the operation and its one-use token (claimMutationCsrf).",
+      "oneTime": "Yes: the nonce is spent and the claim session rotates."
+    },
+    {
+      "routeId": "api.future-person-claim-complete",
+      "file": "src/app/api/future-person/claim/session/complete/route.ts",
+      "literal": "if (!nonce || !claimMutationCsrfMatches(request.headers.get(\"x-inherit-csrf\"), claimHash, \"complete\", parsed.data.nonce)) return notFound();",
+      "kind": "derived-one-time",
+      "value": "As api.future-person-claim-document-session, for the completion.",
+      "oneTime": "Yes: the nonce is spent and the claim session rotates."
+    },
+    {
+      "routeId": "api.evidence-chunk",
+      "file": "src/lib/future-person/evidence-session.ts",
+      "literal": "return hmacSecret(`${sessionId}|${cookieHash}`, \"evidence-csrf-v1\");",
+      "kind": "digest-not-one-time",
+      "value": "A keyed digest of the evidence session (evidenceCsrf), the same value for every chunk and the completion.",
+      "oneTime": "No: evidence-session-api-v1 asks for it to be rotated or consumed on every request; each sequence is reserved once instead."
+    },
+    {
+      "routeId": "api.evidence-complete",
+      "file": "src/lib/future-person/evidence-session.ts",
+      "literal": "return hmacSecret(`${sessionId}|${cookieHash}`, \"evidence-csrf-v1\");",
+      "kind": "digest-not-one-time",
+      "value": "The same evidence-session digest as api.evidence-chunk.",
+      "oneTime": "No on its own: the body's one-time completion nonce refuses a replay."
+    },
+    {
+      "routeId": "api.legal-evidence-review",
+      "file": "src/lib/uploads/permission-document-review.ts",
+      "literal": "if (!reviewCsrfMatches(request.headers.get(\"x-inherit-csrf\"), id, account.userId, account.sessionId)) return notFound();",
+      "kind": "digest-not-one-time",
+      "value": "A keyed digest of the review case, the reviewer's account and auth session (reviewCsrf), the same value for every request on the case.",
+      "oneTime": "No on its own: the case's one-time review nonce refuses a replayed decision."
+    },
+    {
+      "routeId": "api.future-person-identity-profile",
+      "file": "src/lib/future-person/identity-profile-operation.ts",
+      "literal": "function csrf(value:Claims):string {return hmacSecret(JSON.stringify(value),\"future-person-profile-csrf-v1\");}",
+      "kind": "derived-one-time",
+      "value": "A keyed digest of the one-time operation token's claims, distinct from the token in X-Inherit-Operation-Nonce.",
+      "oneTime": "Yes, through the operation token."
+    },
+    {
+      "routeId": "api.appeal-document-session",
+      "file": "src/lib/future-person/public-appeal-session.ts",
+      "literal": "return hmacSecret(hash, `public-appeal-${operation}-csrf-v1`);",
+      "kind": "digest-not-one-time",
+      "value": "A keyed digest of the rights session and the operation (publicAppealCsrf).",
+      "oneTime": "No on its own: the one-time document nonce in X-Inherit-Operation-Nonce refuses a replay."
+    },
+    {
+      "routeId": "api.appeal-complete",
+      "file": "src/lib/future-person/public-appeal-session.ts",
+      "literal": "return hmacSecret(hash, `public-appeal-${operation}-csrf-v1`);",
+      "kind": "digest-not-one-time",
+      "value": "As api.appeal-document-session, for the completion.",
+      "oneTime": "No on its own: the body's one-time completion nonce refuses a replay."
+    },
+    {
+      "routeId": "api.appeal-review",
+      "file": "src/app/api/reviews/appeals/[id]/route.ts",
+      "literal": "!reviewCsrfMatches(request.headers.get(\"x-inherit-csrf\"), id, account.user.id, account.sessionId)) return notFound();",
+      "kind": "digest-not-one-time",
+      "value": "A keyed digest of the review case, the reviewer's account and auth session (reviewCsrf), the same value for every request on the case.",
+      "oneTime": "No on its own: the case's one-time review nonce refuses a replayed decision."
+    },
+    {
+      "routeId": "api.future-person-documentary-verification",
+      "file": "src/app/api/reviews/future-person/claims/[id]/verify-documents/route.ts",
+      "literal": "if(!account||!reviewCsrfMatches(request.headers.get(REVIEW_CSRF_HEADER),id,account.user.id,account.sessionId))return notFound();",
+      "kind": "digest-not-one-time",
+      "value": "A keyed digest of the review case, the reviewer's account and auth session (reviewCsrf), the same value for every request on the case.",
+      "oneTime": "No on its own: the case's one-time review nonce refuses a replayed decision."
+    },
+    {
+      "routeId": "api.future-person-claim-review",
+      "file": "src/app/api/reviews/future-person/claims/[id]/route.ts",
+      "literal": "!reviewCsrfMatches(request.headers.get(REVIEW_CSRF_HEADER), id, account.user.id, account.sessionId)",
+      "kind": "digest-not-one-time",
+      "value": "A keyed digest of the review case, the reviewer's account and auth session (reviewCsrf), the same value for every request on the case.",
+      "oneTime": "No on its own: the case's one-time review nonce refuses a replayed decision."
+    },
+    {
+      "routeId": "api.future-person-claim-release",
+      "file": "src/app/api/reviews/future-person/claims/[id]/release/route.ts",
+      "literal": "if(!account||!reviewCsrfMatches(request.headers.get(REVIEW_CSRF_HEADER),id,account.user.id,account.sessionId))return notFound();",
+      "kind": "digest-not-one-time",
+      "value": "A keyed digest of the review case, the reviewer's account and auth session (reviewCsrf), the same value for every request on the case.",
+      "oneTime": "No on its own: the case's one-time review nonce refuses a replayed decision."
+    },
+    {
+      "routeId": "api.future-person-claim-objection",
+      "file": "src/lib/future-person/owner-objection.ts",
+      "literal": "export function ownerObjectionCsrf(hash: string): string { return hmacSecret(hash, \"future-person-owner-objection-csrf-v1\"); }",
+      "kind": "digest-not-one-time",
+      "value": "A keyed digest of the rights session (ownerObjectionCsrf); the signed-in owner's branch uses a digest of its one-time nonce instead.",
+      "oneTime": "No on its own for the rights branch: the one-time objection nonce refuses a replay."
+    },
+    {
+      "routeId": "api.future-person-claim-objection-review",
+      "file": "src/app/api/reviews/future-person/claim-objections/[id]/route.ts",
+      "literal": "|| !reviewCsrfMatches(request.headers.get(REVIEW_CSRF_HEADER), id, account.user.id, account.sessionId)) return noReferrer(notFound());",
+      "kind": "digest-not-one-time",
+      "value": "A keyed digest of the review case, the reviewer's account and auth session (reviewCsrf), the same value for every request on the case.",
+      "oneTime": "No on its own: the case's one-time review nonce refuses a replayed decision."
+    },
+    {
+      "routeId": "api.future-person-correction-review",
+      "file": "src/lib/future-person/correction-review.ts",
+      "literal": "return hmacSecret(`${correctionId}|${accountId}|${sessionId}`, \"correction-review-csrf-v1\");",
+      "kind": "digest-not-one-time",
+      "value": "A keyed digest of the correction, the reviewer's account and auth session (correctionReviewCsrf).",
+      "oneTime": "No on its own: the case's one-time review nonce refuses a replayed decision."
+    },
+    {
+      "routeId": "api.future-person-export",
+      "file": "src/lib/exports/claimant-export-http.ts",
+      "literal": "import { claimantCsrf, claimantNotFound, claimantSessionHash } from \"@/lib/future-person/rights\";",
+      "kind": "digest-not-one-time",
+      "value": "A keyed digest of the rights session (claimantCsrf), the same value for every request of the session.",
+      "oneTime": "No on its own: each operation's one-time nonce refuses a replay."
+    },
+    {
+      "routeId": "api.future-person-delete",
+      "file": "src/lib/future-person/rights.ts",
+      "literal": "export function claimantCsrf(sessionHash:string):string{return hmacSecret(sessionHash,\"future-person-rights-csrf-v1\");}",
+      "kind": "digest-not-one-time",
+      "value": "A keyed digest of the rights session (claimantCsrf), the same value for every request of the session.",
+      "oneTime": "No on its own: each operation's one-time nonce refuses a replay."
+    },
+    {
+      "routeId": "api.future-person-claimant-bind",
+      "file": "src/lib/future-person/account-binding.ts",
+      "literal": "||!csrf||!/^[0-9a-f]{64}$/u.test(csrf)||!crypto.timingSafeEqual(Buffer.from(csrf),Buffer.from(claimantCsrf(hash))))return null;",
+      "kind": "digest-not-one-time",
+      "value": "A keyed digest of the rights session (claimantCsrf), the same value for every request of the session.",
+      "oneTime": "No on its own: each operation's one-time nonce refuses a replay."
+    },
+    {
+      "routeId": "api.future-person-recovery-key",
+      "file": "src/lib/future-person/rights.ts",
+      "literal": "export function claimantCsrf(sessionHash:string):string{return hmacSecret(sessionHash,\"future-person-rights-csrf-v1\");}",
+      "kind": "digest-not-one-time",
+      "value": "A keyed digest of the rights session (claimantCsrf), the same value for every request of the session.",
+      "oneTime": "No on its own: each operation's one-time nonce refuses a replay."
+    },
+    {
+      "routeId": "api.future-person-correction",
+      "file": "src/lib/future-person/correction-intake.ts",
+      "literal": "actual = Buffer.from(csrf, \"utf8\"); expected = Buffer.from(claimantCsrf(sessionHash), \"utf8\");",
+      "kind": "digest-not-one-time",
+      "value": "A keyed digest of the rights session (claimantCsrf), the same value for every request of the session.",
+      "oneTime": "No on its own: each operation's one-time nonce refuses a replay."
+    },
+    {
+      "routeId": "api.future-person-analysis-stop",
+      "file": "src/lib/future-person/rights.ts",
+      "literal": "export function claimantCsrf(sessionHash:string):string{return hmacSecret(sessionHash,\"future-person-rights-csrf-v1\");}",
+      "kind": "digest-not-one-time",
+      "value": "A keyed digest of the rights session (claimantCsrf), the same value for every request of the session.",
+      "oneTime": "No on its own: each operation's one-time nonce refuses a replay."
+    },
+    {
+      "routeId": "api.third-party-subject-export",
+      "file": "src/lib/exports/third-party-export-http.ts",
+      "literal": "return hmacSecret(sessionHash, \"third-party-subject-export-csrf-v1\");",
+      "kind": "digest-not-one-time",
+      "value": "A keyed digest of the rights session (thirdPartyExportCsrf).",
+      "oneTime": "No on its own: the export operation's one-time nonce refuses a replay."
+    },
+    {
+      "routeId": "api.claim-review-receipt",
+      "file": "src/app/api/downloads/[session]/receipt/route.ts",
+      "literal": "if (!nonce || !reviewCsrfMatches(request.headers.get(\"x-inherit-csrf\"),target.reviewId,account.user.id,account.sessionId)) return notFound();",
+      "kind": "digest-not-one-time",
+      "value": "A keyed digest of the review case, the reviewer's account and auth session (reviewCsrf), the same value for every request on the case.",
+      "oneTime": "No on its own: the one-time receipt nonce refuses a replay."
+    },
+    {
+      "routeId": "api.claim-review-chunk-acknowledgement",
+      "file": "src/app/api/downloads/[session]/chunks/[sequence]/acknowledge/route.ts",
+      "literal": "if (!cookie || !account || !receiptCsrfMatches(request.headers.get(\"x-inherit-csrf\"),session,cookie,account.user.id,account.sessionId)) return notFound();",
+      "kind": "digest-not-one-time",
+      "value": "A keyed digest of the download, its cookie, the reviewer's account and auth session (receiptCsrf), the same for every chunk.",
+      "oneTime": "No on its own: each chunk's one-time acknowledgement nonce refuses a replay."
+    },
+    {
+      "routeId": "api.consents",
+      "file": "src/lib/uploads/own-consent-route.ts",
+      "literal": "if (request.headers.get(\"x-inherit-csrf\") !== body.artifactPresentationToken) {",
+      "kind": "operation-token",
+      "value": "On the own-upload, other-adult, Path B, own-report and own-Copilot bodies, the page's one-time presentation token, the same value as artifactPresentationToken; on the embryo bodies, the embryo operation token.",
+      "oneTime": "Yes, but it is the operation or presentation value (operationNonceIsNotCsrf). The provider and adult grant bodies use the session token.",
+      "branch": true
+    },
+    {
+      "routeId": "api.subject-drafts",
+      "file": "src/lib/uploads/path-b-routes.ts",
+      "literal": "const nonce = pathBDraftNonce(request.headers.get(\"x-inherit-csrf\"), actor);",
+      "kind": "operation-token",
+      "value": "On the two Path B bodies, the page's one-time draft nonce itself.",
+      "oneTime": "Yes, but it is the operation nonce (operationNonceIsNotCsrf). The Path A body uses the session token.",
+      "branch": true
     }
   ],
   "endpointResponseDivergenceNote": "2026-10-23 (G8.5). A registered endpoint whose method matches the register but whose answer does not. Each row names the register text it departs from and literal evidence in the code that produces the answer; scripts/form-register-correspondence.test.ts checks both, and src/app/api/export/route.test.ts drives the cookieless GET itself, so the row fails as stale the day the behaviour or the register changes. api.export is the case docs/route-divergence.json#methodDivergenceNote describes since 1 October: verb correspondence only.",

@@ -20,6 +20,13 @@ vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: harness.refresh
 vi.mock("next/link", () => ({ default: "a" }));
 vi.mock("@/components/ui/button", () => ({ Button: "button" }));
 vi.mock("@/components/ui/textarea", () => ({ Textarea: "textarea" }));
+// The page's rendered one-time X-Inherit-CSRF token (G8.5). The provider and
+// its context are tested in src/lib/security; here the handler's request is.
+const CSRF = vi.hoisted(() => `1800000000000.${"C".repeat(43)}.${"b".repeat(64)}`);
+vi.mock("@/components/security/csrf-provider", async () => {
+  const { csrfHandle } = await import("@/lib/security/session-csrf-client");
+  return { useCsrf: () => csrfHandle(CSRF) };
+});
 import { OwnChatPanel } from "./own-chat-panel";
 import { ownChatCorrection, OWN_CHAT_CORRECTION_NOTICE } from "@/lib/copilot/own-chat-correction";
 
@@ -77,6 +84,9 @@ describe("own chat correction client contract", () => {
     expect(control(tree, "button", "Send").disabled).toBe(true);
     expect(text(tree)).not.toContain("Review your Copilot settings before asking again");
     expect(harness.fetch).toHaveBeenCalledTimes(2);
+    // G8.5: the turn carries the route's one-time token in its header; the body is unchanged.
+    expect(harness.fetch.mock.calls[1][0]).toBe("/api/chat");
+    expect((harness.fetch.mock.calls[1][1] as RequestInit).headers).toEqual({ "content-type": "application/json", "X-Inherit-CSRF": CSRF });
     expect(harness.refresh).not.toHaveBeenCalled();
     (control(tree, "form").onSubmit as (event: unknown) => void)({ preventDefault() {} });
     expect(harness.fetch).toHaveBeenCalledTimes(2);

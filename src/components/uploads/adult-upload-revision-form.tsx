@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useCsrf } from "@/components/security/csrf-provider";
 import { Button } from "@/components/ui/button";
 import { ADULT_UPLOAD_DERIVED_LIST as DERIVED, ADULT_UPLOAD_REVISION_COPY as COPY } from "@/copy/upload/other-adult";
 import type { AdultUploadRevisionReview } from "@/lib/uploads/path-b-review";
@@ -20,6 +21,7 @@ type Status = "ready" | "pending" | Operation | "failed";
  */
 export function AdultUploadRevisionForm({ review }: { review: AdultUploadRevisionReview }) {
   const [status, setStatus] = useState<Status>("ready");
+  const csrf = useCsrf("api.withdraw");
   const revision = review.revision;
   const retention = review.retention;
 
@@ -28,11 +30,12 @@ export function AdultUploadRevisionForm({ review }: { review: AdultUploadRevisio
     try {
       const response = await fetch("/api/withdraw/session", {
         method: "POST", credentials: "same-origin", cache: "no-store",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "X-Inherit-CSRF": csrf.value() },
         body: JSON.stringify(operation === "confirm"
           ? { operation, uploadRevisionAffirmed: true, nonce: review.nonce }
           : { operation, nonce: review.nonce }),
       });
+      csrf.accept(response);
       const receipt = await response.json().catch(() => null);
       setStatus(response.status === 202 && receipt?.status === "accepted" && receipt?.operation === operation
         ? operation : "failed");

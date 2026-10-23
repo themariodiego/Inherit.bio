@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useCsrf } from "@/components/security/csrf-provider";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -28,6 +29,7 @@ export function ConsentDialog({
 }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const csrf = useCsrf("api.consents");
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onCancel()}>
@@ -78,9 +80,10 @@ export function ConsentDialog({
               setError(null);
               const response = await fetch("/api/consents", {
                 method: "POST",
-                headers: { "content-type": "application/json" },
+                headers: { "content-type": "application/json", "X-Inherit-CSRF": csrf.value() },
                 body: JSON.stringify({ providerKey }),
               });
+              csrf.accept(response);
               setBusy(false);
               if (!response.ok) {
                 setError("Consent could not be saved. Please try again.");

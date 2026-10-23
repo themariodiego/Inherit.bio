@@ -18,6 +18,7 @@ import type { OwnReportPurpose } from "../src/lib/uploads/own-report-purpose";
 import { REGIONAL_FIGURE_PAIRS } from "./fixtures/regional-figure-fixtures";
 import { REGIONAL_CAVEAT } from "../src/lib/genome/regional-admixture";
 import { importSyntheticRelease, reviewSynthetic, ruleGenes, withdrawSynthetic, type SyntheticCondition } from "./synthetic-carrier-release";
+import { signOut } from "./helpers/session-csrf";
 
 /**
  * G8.3: every number is seeded, proved by differencing.
@@ -425,7 +426,7 @@ async function healthPictureFigures(page: Page, label: string, fixture: string, 
   for (const account of [one, two]) {
     await signIn(page, account.email, account.password);
     await uploadOwnFileWithChosenReports(page, file, { fileType: "vcf", purposes: FAMILY_PURPOSES });
-    await page.request.post("/auth/sign-out");
+    await signOut(page);
   }
 
   await signIn(page, one.email, one.password);
@@ -457,7 +458,7 @@ async function healthPictureFigures(page: Page, label: string, fixture: string, 
   }
   expect(invitationToken,
     `the invitation must reach the configured mail provider; drains: ${drains.join(" ")}`).toBeTruthy();
-  await page.request.post("/auth/sign-out");
+  await signOut(page);
 
   // The invitee accepts in their own session, from the link they were sent.
   await acceptAdultInvitation({
@@ -487,16 +488,16 @@ async function healthPictureFigures(page: Page, label: string, fixture: string, 
   // opened after the acceptance rather than the one that accepted: the
   // acceptance session is the invitee proving the invitation, and the Family
   // specs sign every permission from a plain sign-in.
-  await page.request.post("/auth/sign-out");
+  await signOut(page);
   await signIn(page, one.email, one.password);
   for (const purpose of GRANTED_PURPOSES) await grantPurpose(page, representativeTwo, purpose);
-  await page.request.post("/auth/sign-out");
+  await signOut(page);
   await signIn(page, two.email, two.password);
   for (const purpose of GRANTED_PURPOSES) await grantPurpose(page, selfOne, purpose);
   const selfTwo = await selfSubjectOf(accountTwo);
   const pairId = await pairBetween(selfOne, selfTwo);
   await acknowledgePortrait(page, pairId);
-  await page.request.post("/auth/sign-out");
+  await signOut(page);
   await signIn(page, one.email, one.password);
   await acknowledgePortrait(page, pairId);
 
@@ -547,7 +548,7 @@ async function healthPictureFigures(page: Page, label: string, fixture: string, 
   await expect(page.locator('[data-slot="portrait-blocking"], [data-slot="portrait-acknowledge"]')).toHaveCount(0);
   await expect(page.locator("[data-figure-kind]")).toHaveCount(0);
   const portraitFigures = await page.evaluate(collectFigures);
-  await page.request.post("/auth/sign-out");
+  await signOut(page);
   return { figures, keyed: keyed(figures), portraitFigures, crossSurface };
 }
 

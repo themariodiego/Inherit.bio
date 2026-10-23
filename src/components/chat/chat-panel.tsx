@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { z } from "zod";
+import { useCsrf } from "@/components/security/csrf-provider";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { REFUSAL_IDS, refusalFor, type RefusalId } from "@/copy/copilot/refusals";
@@ -54,6 +55,7 @@ export function ChatPanel({
   const [pendingQuestion, setPendingQuestion] = useState<string | null>(null);
   const [blocked, setBlocked] = useState<Blocked | null>(null);
   const [consentFor, setConsentFor] = useState<string | null>(null);
+  const csrf = useCsrf("api.chat");
   const pending = useRef<AbortController | null>(null);
   useEffect(() => () => { pending.current?.abort(); }, []);
   const busy = pendingQuestion !== null;
@@ -70,9 +72,12 @@ export function ChatPanel({
     try {
       const response = await fetch("/api/chat", {
         method: "POST", credentials: "same-origin", cache: "no-store", redirect: "error",
-        headers: { "content-type": "application/json" }, signal: controller.signal,
+        // The route's one-time X-Inherit-CSRF token; the response that spends
+        // it carries the next one.
+        headers: { "content-type": "application/json", "X-Inherit-CSRF": csrf.value() }, signal: controller.signal,
         body: JSON.stringify({ contextToken, message }),
       });
+      csrf.accept(response);
       if (response.headers.get("content-type")?.includes("application/json") && response.ok) {
         const result = completion.parse(await response.json());
         answer = { id: crypto.randomUUID(), role: "assistant", content: result.message.content };

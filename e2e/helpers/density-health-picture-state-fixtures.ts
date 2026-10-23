@@ -24,6 +24,7 @@ import { densityCapturePlan, type DensityStateCase, type DENSITY_VIEWPORTS } fro
 import type { DensityRegister } from "../../scripts/density-current";
 import type { DensityStateFixture } from "./density-current-capture";
 import type { OwnedLinuxCapability } from "../../scripts/owned-linux-runtime";
+import { signOut } from "./session-csrf";
 
 type Facts = Record<string, Record<string, unknown>[]>;
 type Viewport = typeof DENSITY_VIEWPORTS[number];
@@ -367,7 +368,7 @@ async function originalPassGate(page: Page) {
     await signIn(page, account.email, account.password);
     sourceFileIds.push(await uploadOwnFileWithChosenReports(page, fixture, { fileType: "vcf",
       purposes: ["reports.monogenic", "reports.polygenic"] }));
-    await page.request.post("/auth/sign-out");
+    await signOut(page);
   }
   sourceBefore = await sourceReceipt();
   ownGrantsBefore = await ownGrantReceipt();
@@ -398,7 +399,7 @@ async function originalPassGate(page: Page) {
   await expect(page.getByRole("status")).toContainText("Invitation requested");
   const token = await drainMailUntil(page.request, () => adultInvitationToken(input.findActualInvitation(B.email)?.html),
     "the invitation", environment.JOBS_SECRET);
-  await page.request.post("/auth/sign-out");
+  await signOut(page);
   await acceptAdultInvitation({
     page, invitationUrl: adultInvitationUrl(token, origin.origin), email: B.email, password: B.password, origin: input.origin,
   });
@@ -434,7 +435,7 @@ async function originalPassGate(page: Page) {
     .eq("id", binding.data!.account_principal_id).single();
   expect(boundSelf.error).toBeNull();
   expect(boundSelf.data).toEqual({ account_id: accountB, subject_id: selfSubjectB, principal_kind: "account_subject", status: "active" });
-  await page.request.post("/auth/sign-out");
+  await signOut(page);
   // B signs in independently and only reads the permission presentation.
   await signIn(page, B.email, B.password);
   await page.goto(`/family/s-${selfSubjectA}/permissions`);
@@ -667,7 +668,7 @@ async function originalPassGate(page: Page) {
     .in("grant_id", [grantsFromB.get("reports.monogenic")!, grantsFromB.get("family.heritability")!]);
   expect(remaining.error).toBeNull(); expect(remaining.data).toHaveLength(2);
   expect(remaining.data!.every(row => row.revoked_at === null)).toBe(true);
-  await page.request.post("/auth/sign-out");
+  await signOut(page);
 
   await signIn(page, A.email, A.password);
   await passGate(page);
@@ -912,16 +913,16 @@ async function originalPassGate(page: Page) {
             else {
               await signIn(page, B.email, B.password);
               const ready = await uploadOwnFileWithChosenReports(page, TINY_FIXTURE, { fileType: "vcf", purposes: ["reports.polygenic"] });
-              sourceFileIds.push("", ready); await page.request.post("/auth/sign-out");
-              await signIn(page, A.email, A.password); await declareAdulthood(page); await page.request.post("/auth/sign-out");
+              sourceFileIds.push("", ready); await signOut(page);
+              await signIn(page, A.email, A.password); await declareAdulthood(page); await signOut(page);
             }
             await establishPair(page);
-            await page.request.post("/auth/sign-out");
+            await signOut(page);
             await signIn(page, A.email, A.password);
             for (const purpose of GRANTED_PURPOSES) await setSharingPurpose(page, invitedSubjectB, purpose, true);
-            await page.request.post("/auth/sign-out"); await signIn(page, B.email, B.password);
+            await signOut(page); await signIn(page, B.email, B.password);
             for (const purpose of GRANTED_PURPOSES) grantsFromB.set(purpose, (await setSharingPurpose(page, selfSubjectA, purpose, true))!);
-            await page.request.post("/auth/sign-out");
+            await signOut(page);
             if (recipe === "processing") {
               await signIn(page, A.email, A.password); held = await holdPreparation(page);
               heldFileId = await uploadOwnFileThroughUi(page, TINY_FIXTURE); sourceFileIds[0] = heldFileId; await held.assertHeld(heldFileId);
@@ -938,7 +939,7 @@ async function originalPassGate(page: Page) {
               // native bags. No completed capture or simplified DOM is reused.
               await auditComplete(capturedPage);
               if (recipe === "overview-jurisdiction") await auditOverviewJurisdiction(capturedPage);
-              if (recipe === "partial" || recipe === "uncovered") await capturedPage.request.post("/auth/sign-out");
+              if (recipe === "partial" || recipe === "uncovered") await signOut(capturedPage);
               if (recipe === "partial") await auditPartial(capturedPage);
               else if (recipe === "uncovered") await auditUncovered(capturedPage);
             }

@@ -1,4 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+// The one-time X-Inherit-CSRF gate is driven on this route by
+// src/lib/security/session-csrf-routes.test.ts; here it admits every request.
+vi.mock("@/lib/security/session-csrf", async (importOriginal) =>
+  (await import("@/lib/security/session-csrf.test-support")).admitEverySessionCsrf(await importOriginal()));
 const mocks = vi.hoisted(() => ({ account: vi.fn(), actor: vi.fn(), capability: vi.fn(), getUser: vi.fn(), from: vi.fn(), rpc: vi.fn(), copilot: vi.fn(), revokeCopilot: vi.fn(), report: vi.fn(), upload: vi.fn(), embryo: vi.fn() }));
 vi.mock("@/lib/supabase/server", () => ({ createClient: async () => ({ auth: { getUser: mocks.getUser }, from: mocks.from }) }));
 vi.mock("@/lib/supabase/admin", () => ({ createAdminClient: () => ({ from: mocks.from, rpc: mocks.rpc }) }));

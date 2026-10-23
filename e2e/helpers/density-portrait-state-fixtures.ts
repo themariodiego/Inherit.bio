@@ -55,6 +55,7 @@ import { densityCapturePlan, type DensityStateCase, type DENSITY_VIEWPORTS } fro
 import type { DensityRegister } from "../../scripts/density-current";
 import type { DensityStateFixture } from "./density-current-capture";
 import type { OwnedLinuxCapability } from "../../scripts/owned-linux-runtime";
+import { accountCsrf, signOut } from "./session-csrf";
 
 type Facts = Record<string, Record<string, unknown>[]>;
 type Viewport = typeof DENSITY_VIEWPORTS[number];
@@ -555,7 +556,7 @@ async function prepareBothFiles(page: Page) {
   for (const [side, account, fixture] of [["a", A, FIXTURE_A], ["b", B, FIXTURE_B]] as const) {
     await signIn(page, account.email, account.password);
     fileIds[side] = await uploadOwnFilePrepared(page, fixture, { fileType: "vcf" });
-    await page.request.post("/auth/sign-out");
+    await signOut(page);
   }
   const { data, error } = await adminClient().from("genome_files")
     .select("id, roh_status, roh_reason, roh_total_bases, roh_covered_bases, roh_fraction, roh_measured_at")
@@ -580,9 +581,9 @@ async function establishPair(page: Page) {
   await page.getByRole("button", { name: "Send invitation" }).click();
   await expect(page.getByRole("status")).toContainText("Invitation requested");
   const token = await drainMailUntil(page.request, () => adultInvitationToken(input.findActualInvitation(B.email)?.html), "the invitation", environment.JOBS_SECRET);
-  await page.request.post("/auth/sign-out");
+  await signOut(page);
   await acceptAdultInvitation({ page, invitationUrl: adultInvitationUrl(token), email: B.email, password: B.password, origin: input.origin });
-  await page.request.post("/auth/sign-out");
+  await signOut(page);
 
   const admin = adminClient();
   const inviter = await admin.from("subject_principals").select("id")
@@ -599,13 +600,13 @@ async function establishPair(page: Page) {
   await grantPortrait(page, invitedSubjectB);
   pairId = (await pairOf()).id;
   await acknowledgePortrait(page);
-  await page.request.post("/auth/sign-out");
+  await signOut(page);
 
   await signIn(page, B.email, B.password);
   await grantPortrait(page, selfSubjectA);
   await acknowledgePortrait(page);
   await expect(page.getByText(GATE_CHECKBOX, { exact: true })).toBeVisible();
-  await page.request.post("/auth/sign-out");
+  await signOut(page);
   expect((await pairOf()).status).toBe("current");
 }
 async function assertComplete(page: Page) {
@@ -738,7 +739,7 @@ async function facts(): Promise<Facts> {
             if (recipe === "processing") {
               await signIn(page, A.email, A.password);
               fileIds.a = await uploadOwnFilePrepared(page, FIXTURE_A, { fileType: "vcf" });
-              await page.request.post("/auth/sign-out"); await signIn(page, B.email, B.password);
+              await signOut(page); await signIn(page, B.email, B.password);
               held = await hold(page, "**/api/files/*/process");
               fileIds.b = await uploadOwnFileThroughUi(page, FIXTURE_B); await held.assertHeld();
               viewingContext = await input.browser.newContext(options); capturedPage = await viewingContext.newPage();
@@ -749,10 +750,10 @@ async function facts(): Promise<Facts> {
               if (recipe === "partial") {
                 await review(ONE_SIDE_COVERS, "activate"); expect(await ruleGenes()).toEqual([BOTH_COVER.gene, ONE_SIDE_COVERS.gene]);
                 await capturedPage.goto(url()); await assertPartialA(capturedPage);
-                const fromA = await findingTexts(capturedPage); await capturedPage.request.post("/auth/sign-out");
+                const fromA = await findingTexts(capturedPage); await signOut(capturedPage);
                 await signIn(capturedPage, B.email, B.password); await passGate(capturedPage); await assertPartialB(capturedPage, fromA);
-                await capturedPage.request.post("/auth/sign-out");
-              } else await capturedPage.request.post("/auth/sign-out");
+                await signOut(capturedPage);
+              } else await signOut(capturedPage);
             }
             await signIn(capturedPage, A.email, A.password); await passGate(capturedPage);
             let denied: Facts | undefined;
@@ -761,7 +762,7 @@ async function facts(): Promise<Facts> {
               expect(before.files).toEqual([]); expect(before.portrait_results).toEqual([]);
               const declaration = await capturedPage.request.put("/api/settings/jurisdiction", {
                 headers: { origin: origin.origin, "content-type": "application/json",
-                  "x-inherit-operation-nonce": await settingsOperationNonce(capturedPage.request, "jurisdiction") },
+                  "x-inherit-operation-nonce": await settingsOperationNonce(capturedPage.request, "jurisdiction"), "x-inherit-csrf": await accountCsrf(capturedPage, "api.jurisdiction") },
                 data: { code: "XX", attestationVersion: artifact.version, attestationHash: artifact.body_sha256, affirmed: true },
               });
               expect(declaration.status()).toBe(200);

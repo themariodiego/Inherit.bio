@@ -5,6 +5,7 @@ import { closedResponse, originDenied, readJson, unauthorized } from "@/lib/embr
 import { SUBJECT_OPERATION_NONCE_MAX_LENGTH, verifySubjectOperationNonce } from "@/lib/subject-endpoints/operation-nonce";
 import { isCanonicalSubjectId, isJsonRequest } from "@/lib/subject-endpoints/request";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { withAccountCsrf } from "@/lib/security/session-csrf";
 
 /**
  * `POST /api/subjects/[id]/transfer` (register api.subject-transfer;
@@ -41,7 +42,8 @@ const transferred = z.object({
 
 const TRANSFER_KEYS = ["status", "subjectId", "effectiveAt"] as const;
 
-export async function POST(request: Request, context: { params: Promise<{ id: string }> }) {
+export const POST = withAccountCsrf("api.subject-transfer", handlePost);
+async function handlePost(request: Request, context: { params: Promise<{ id: string }> }) {
   const { id } = await context.params;
   if (!isCanonicalSubjectId(id)) return notFound();
   const account = await getSensitiveAccountContext();

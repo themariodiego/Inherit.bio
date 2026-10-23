@@ -5,7 +5,9 @@ import { signOutResponse } from "../src/app/auth/sign-out/response";
 import {
   AI_SDK_CHAT_BODY_KEYS,
   CONDITIONAL_REQUIRED_HEADERS,
+  clientModules,
   diskReader,
+  fileRequests,
   formIssueKey,
   formSites,
   nativeFormIssues,
@@ -41,11 +43,14 @@ import {
 const REGISTER = "docs/route-register.json";
 const LEDGER = "docs/register-contract-divergence.json";
 const CODE_ROOTS = ["src", "worker/src", "workers"];
-const SIGN_OUT_FORM = "src/components/site/app-shell.tsx";
+// G8.5 (2026-10-23): sign-out became a scripted form that sends X-Inherit-CSRF;
+// it was the native form in src/components/site/app-shell.tsx.
+const SIGN_OUT_FORM = "src/components/site/sign-out-form.tsx";
 
 type DivergenceRow = { file: string; routeId: string; method: string; issues: string[]; why: string; closing: string; closedBy: string };
 type ReviewRow = { file: string; usage: string; submits: string; evidence: { file: string; literal: string }[]; why: string; closing: string };
-type Ledger = { formRequestDivergence: DivergenceRow[]; formSubmissionReview: ReviewRow[]; csrfTransportNote: string };
+type Ledger = { formRequestDivergence: DivergenceRow[]; formSubmissionReview: ReviewRow[]; csrfTransportNote: string;
+  clientRequestDivergenceNote: string; clientRequestDivergence: DivergenceRow[] };
 
 const register = JSON.parse(readFileSync(REGISTER, "utf8")) as RegisterDocument & {
   routes: (RegisterDocument["routes"][number] & { requestContract?: unknown; methodRequestContracts?: Record<string, unknown> })[];
@@ -135,17 +140,21 @@ describe("every form sends what its register entry declares (G8.5)", () => {
   it("reads every form and every request, so a passing run is not an empty scan", () => {
     // The exact census. A walker that silently loses a form, or a form that
     // is added, changes these numbers and has to be looked at.
+    // G8.5 (2026-10-23): sign-out moved from a native form (2 native, 24
+    // handler-submitted, 27 requests from 22 files) to a scripted one.
     expect(actual.sites).toHaveLength(26);
-    expect(actual.sites.filter(site => site.action !== null)).toHaveLength(2);
-    expect(actual.sites.filter(site => site.action === null && site.handlerResolved)).toHaveLength(24);
-    expect(actual.requests.length).toBe(27);
+    // Since 2026-10-23: sign-out is a scripted form (it was the second native
+    // form), and the compatibility panel sends the registered body with fetch.
+    expect(actual.sites.filter(site => site.action !== null)).toHaveLength(1);
+    expect(actual.sites.filter(site => site.action === null && site.handlerResolved)).toHaveLength(25);
+    expect(actual.requests.length).toBe(28);
     // 0 since 2026-10-23: the compatibility panel sends the registered body with fetch (it was 1).
     expect(actual.requests.filter(request => request.via === "ai-sdk-default-chat-transport")).toHaveLength(0);
-    expect(new Set(actual.requests.map(request => request.file)).size).toBe(22);
+    expect(new Set(actual.requests.map(request => request.file)).size).toBe(23);
     // And it really reaches the shapes the checks below depend on.
     const jurisdiction = actual.requests.find(request => request.file === "src/components/settings/jurisdiction-form.tsx")!;
     expect(jurisdiction.methods).toEqual(["PUT"]);
-    expect(jurisdiction.headers.names).toEqual(["content-type", "x-inherit-operation-nonce"]);
+    expect(jurisdiction.headers.names).toEqual(["content-type", "x-inherit-csrf", "x-inherit-operation-nonce"]);
     expect(jurisdiction.bodies).toHaveLength(1);
     expect(Object.keys((jurisdiction.bodies[0] as { shape: { keys: object } }).shape.keys).sort())
       .toEqual(["affirmed", "attestationHash", "attestationVersion", "code", "subdivision"]);
@@ -305,6 +314,8 @@ describe("the form census fails on a planted divergence", () => {
     const result = run({ [file]: former });
     expect(result.requests.filter(request => request.via === "ai-sdk-default-chat-transport")).toHaveLength(1);
     expect(ledgerMismatch(result.issues.map(formIssueKey), recordedKeys()).unrecorded).toEqual([
+      // Since the merge with the session token: the former panel also sent no X-Inherit-CSRF.
+      `${file} api.chat POST: omits X-Inherit-CSRF, which mutationSecurityBindings.csrfTransport requires of this state-changing request`,
       `${file} api.chat POST: omits chatId, which the registered body requires`,
       `${file} api.chat POST: omits message, which the registered body requires`,
       `${file} api.chat POST: sends id, which the registered body does not declare`,
@@ -440,17 +451,26 @@ describe("the form census fails on a planted divergence", () => {
       .toEqual(["branches on status 410, which no response contract of api.future-person-claim declares"]);
   });
 
-  it("holds the sign-out response to sign-out-v1, and would notice the recorded divergence close", () => {
-    expect(signOutResponseIssues(signOutResponse("https://inherit.test"), register))
-      .toEqual([{ file: SIGN_OUT_FORM, routeId: "auth.sign-out", method: "POST",
-        issue: "responds 303 to / where sign-out-v1 names auth.sign-in (/auth/sign-in)" }]);
-    const fixed = new Response(null, { status: 303, headers: { location: "https://inherit.test/auth/sign-in" } });
-    expect(signOutResponseIssues(fixed, register)).toEqual([]);
-    const result = run({}, fixed);
-    expect(ledgerMismatch(result.issues.map(formIssueKey), recordedKeys()).stale)
+  it("holds the sign-out response to sign-out-v1, and would notice it go back to /", () => {
+    // G8.5 (2026-10-23): the shipped response now redirects to auth.sign-in, so
+    // it has no issue; the old redirect to / is the planted defect.
+    expect(signOutResponseIssues(signOutResponse("https://inherit.test"), register)).toEqual([]);
+    const home = new Response(null, { status: 303, headers: { location: "https://inherit.test/" } });
+    expect(signOutResponseIssues(home, register)).toEqual([{ file: SIGN_OUT_FORM, routeId: "auth.sign-out", method: "POST",
+      issue: "responds 303 to / where sign-out-v1 names auth.sign-in (/auth/sign-in)" }]);
+    expect(ledgerMismatch(run({}, home).issues.map(formIssueKey), recordedKeys()).unrecorded)
       .toEqual([`${SIGN_OUT_FORM} auth.sign-out POST: responds 303 to / where sign-out-v1 names auth.sign-in (/auth/sign-in)`]);
     const wrongStatus = new Response(null, { status: 302, headers: { location: "https://inherit.test/auth/sign-in" } });
     expect(signOutResponseIssues(wrongStatus, register).map(issue => issue.issue)).toEqual(["responds 302 where sign-out-v1 registers 303"]);
+  });
+
+  it("fails when the scripted sign-out stops sending its token, or goes back to a native form", () => {
+    const source = real(SIGN_OUT_FORM);
+    expect(source).toContain('headers: { "X-Inherit-CSRF": csrf.value() },');
+    expect(mismatch({ [SIGN_OUT_FORM]: source.replace('headers: { "X-Inherit-CSRF": csrf.value() },', "") }).unrecorded)
+      .toEqual([`${SIGN_OUT_FORM} auth.sign-out POST: omits the required header x-inherit-csrf`]);
+    expect(mismatch({ [SIGN_OUT_FORM]: source.replace("<form onSubmit={submit}>", '<form action="/auth/sign-out" method="post">') }).unrecorded)
+      .toEqual([`${SIGN_OUT_FORM} auth.sign-out POST: cannot send the required header x-inherit-csrf: a native form submission carries no custom header`]);
   });
 
   it("reads nothing from an empty tree, which the exact census above refuses", () => {
@@ -493,5 +513,204 @@ describe("recorded endpoint response divergences stay true in both directions", 
     // A 503 bound to api.export would make the POST row stale.
     expect(registeredStatuses(exportEntry, "POST", register)).not.toContain(503);
     expect(registeredStatuses(exportEntry, "POST", register)).toContain(202);
+  });
+});
+
+/**
+ * G8.5 (owner decision 2026-10-23, "CSRF: build the token everywhere"): every
+ * request the browser makes, not only the ones a form makes. The client is
+ * every `"use client"` module and every local module one imports for a value
+ * (`clientModules`), and its requests are every `fetch` call and AI SDK chat
+ * transport in them (`fileRequests`). A request a form makes is read by the
+ * form census above, with its arguments bound, and is not read twice; every
+ * other one is read here, with no argument bound, and its divergences are
+ * compared in both directions with
+ * `docs/register-contract-divergence.json#clientRequestDivergence`. No
+ * request, form or not, may omit the X-Inherit-CSRF the register requires.
+ */
+/** Every shipped `.ts` and `.tsx`, the modules the client graph is drawn from. */
+function shippedSources(): string[] {
+  const found: string[] = [];
+  const walk = (directory: string) => {
+    let entries;
+    try { entries = readdirSync(directory, { withFileTypes: true }); } catch { return; }
+    for (const entry of entries) {
+      const full = path.join(directory, entry.name);
+      if (entry.isDirectory()) { if (entry.name !== "node_modules") walk(full); continue; }
+      if (/\.(ts|tsx)$/.test(entry.name) && !/\.(test|spec|fixtures|test-support)\./.test(entry.name)) found.push(full.split(path.sep).join("/"));
+    }
+  };
+  for (const root of CODE_ROOTS) walk(root);
+  return found.sort();
+}
+
+interface ClientCensus { modules: string[]; calls: ClientRequest[]; unformed: ClientRequest[]; issues: FormIssue[] }
+
+function clientCensus(sources: string[], read: SourceReader, document: RegisterDocument, forms: Census): ClientCensus {
+  const modules = clientModules(sources, read);
+  const calls = modules.flatMap(file => fileRequests(file, read));
+  const formed = new Set(forms.requests.map(request => `${request.file}:${request.line}`));
+  const unformed = calls.filter(request => !formed.has(`${request.file}:${request.line}`));
+  return { modules, calls, unformed, issues: unformed.flatMap(request => requestIssues(request, document)) };
+}
+
+const sources = shippedSources();
+const client = clientCensus(sources, disk, register, actual);
+const recordedClientKeys = () => ledger.clientRequestDivergence.flatMap(row =>
+  row.issues.map(issue => formIssueKey({ file: row.file, routeId: row.routeId, method: row.method, issue })));
+const CSRF_OMISSION = /X-Inherit-CSRF|x-inherit-csrf/u;
+
+describe("every client request sends what its register entry declares (G8.5)", () => {
+  it("reads every client module and every request in them, so a passing run is not an empty scan", () => {
+    // The exact census. 2026-10-23: 225 modules (97 of them "use client"),
+    // 89 requests (88 fetch calls and the chat transport); 26 request sites
+    // are a form's (its 28 requests, two of them read through two usages).
+    // After the merge with G8.5's form shapes and D-103: 226 modules (D-103's
+    // copy module, imported by the adult confirm), 90 requests, all fetch
+    // calls (the compatibility panel's transport became a fetch, and the
+    // Embryo gate's server action became a fetch of api.embryo-acknowledge),
+    // 64 of them made by no form.
+    expect(client.modules).toHaveLength(226);
+    expect(client.modules.filter(file => /^\s*["']use client["']/u.test(readFileSync(file, "utf8")))).toHaveLength(97);
+    expect(client.calls).toHaveLength(90);
+    expect(client.calls.filter(request => request.via === "ai-sdk-default-chat-transport")).toHaveLength(0);
+    expect(new Set(actual.requests.map(request => `${request.file}:${request.line}`)).size).toBe(26);
+    expect(client.unformed).toHaveLength(64);
+    // Every request a form makes is one of the client's, read once.
+    const calls = new Set(client.calls.map(request => `${request.file}:${request.line}`));
+    expect(actual.requests.filter(request => !calls.has(`${request.file}:${request.line}`))).toEqual([]);
+    // It reaches helpers a component calls, which carry no directive of their own.
+    for (const helper of ["src/lib/family/permission-response.ts", "src/lib/uploads/file-delete-browser.ts",
+      "src/lib/uploads/own-report-choice-browser.ts", "src/lib/security/session-csrf-client.ts"]) expect(client.modules).toContain(helper);
+    expect(client.modules.some(file => /^\s*import\s+["']server-only["']/mu.test(readFileSync(file, "utf8")))).toBe(false);
+  });
+
+  it("sends X-Inherit-CSRF on every request the register binds, a form's or not", () => {
+    expect([...actual.issues, ...client.issues].filter(issue => CSRF_OMISSION.test(issue.issue)).map(formIssueKey)).toEqual([]);
+    for (const row of [...ledger.formRequestDivergence, ...ledger.clientRequestDivergence]) {
+      expect(row.issues.filter(issue => CSRF_OMISSION.test(issue)), `${row.file} ${row.routeId}`).toEqual([]);
+    }
+  });
+
+  it("records every other divergence of a request no form makes, in both directions", () => {
+    const { unrecorded, stale } = ledgerMismatch(client.issues.map(formIssueKey), recordedClientKeys());
+    expect(unrecorded, "divergences no clientRequestDivergence row records").toEqual([]);
+    expect(stale, "clientRequestDivergence rows whose divergence no longer exists").toEqual([]);
+  });
+
+  it("says why each client divergence exists, what closes it and who has to act", () => {
+    const groups = new Set<string>();
+    for (const row of ledger.clientRequestDivergence) {
+      const group = `${row.file} ${row.routeId} ${row.method}`;
+      expect(groups.has(group), `${group} is split across rows`).toBe(false);
+      groups.add(group);
+      expect(["owner", "counsel", "engineering"]).toContain(row.closedBy);
+      expect(row.issues.length).toBeGreaterThan(0);
+      expect(row.why.length, group).toBeGreaterThan(150);
+      expect(row.closing.length, group).toBeGreaterThan(60);
+    }
+    expect(ledger.clientRequestDivergenceNote.length).toBeGreaterThan(300);
+  });
+});
+
+describe("the client census fails on a planted divergence", () => {
+  const overlay = (files: Record<string, string>): SourceReader => (file) => file in files ? files[file] : disk(file);
+  const real = (file: string) => readFileSync(file, "utf8");
+  const run = (planted: Record<string, string>) => {
+    const names = [...new Set([...sources, ...Object.keys(planted)])].sort();
+    const read = overlay(planted);
+    const forms = census(names.filter(name => name.endsWith(".tsx")), read, register, signOutResponse("https://inherit.test"));
+    return { ...clientCensus(names, read, register, forms), formIssues: forms.issues };
+  };
+  /** CSRF omissions anywhere, a form's request or not. */
+  const csrfOmissions = (result: ReturnType<typeof run>) => [...result.formIssues, ...result.issues]
+    .filter(issue => CSRF_OMISSION.test(issue.issue)).map(formIssueKey);
+
+  it("fails when a button's request drops its token", () => {
+    const file = "src/components/settings/consent-list.tsx";
+    const source = real(file);
+    expect(source).toContain('method: "POST", headers: { "X-Inherit-CSRF": csrf.value() },');
+    expect(csrfOmissions(run({ [file]: source.replace('method: "POST", headers: { "X-Inherit-CSRF": csrf.value() },', 'method: "POST",') })))
+      .toEqual([`${file} api.consent-revoke POST: omits X-Inherit-CSRF, which mutationSecurityBindings.csrfTransport requires of this state-changing request`]);
+  });
+
+  it("fails when a helper a component imports drops its token, though the helper has no directive", () => {
+    const file = "src/lib/uploads/file-delete-browser.ts";
+    const source = real(file);
+    expect(source).not.toMatch(/^\s*["']use client["']/u);
+    expect(csrfOmissions(run({ [file]: source.replace('headers: { "X-Inherit-CSRF": csrf.value() } });', "});") })))
+      .toEqual([`${file} api.file-delete DELETE: omits X-Inherit-CSRF, which mutationSecurityBindings.csrfTransport requires of this state-changing request`]);
+  });
+
+  it("fails when the chat panel stops sending its token, or the SDK transport wraps its request in something it cannot read", () => {
+    // The compatibility panel's fetch (since the merge with G8.5's form shapes, it is a fetch, not the SDK transport).
+    const file = "src/components/chat/chat-panel.tsx";
+    const source = real(file);
+    const header = 'headers: { "content-type": "application/json", "X-Inherit-CSRF": csrf.value() },';
+    expect(source).toContain(header);
+    expect(csrfOmissions(run({ [file]: source.replace(header, 'headers: { "content-type": "application/json" },') })))
+      .toEqual([`${file} api.chat POST: omits X-Inherit-CSRF, which mutationSecurityBindings.csrfTransport requires of this state-changing request`]);
+    // The census still reads an SDK transport's header function and its fetch wrapper: a planted panel, as this
+    // branch's own panel was before the merge (src/components/chat/chat-panel.tsx at ba3245d8, reduced).
+    const planted = "src/components/chat/planted-sdk-panel.tsx";
+    const sdk = [
+      '"use client";',
+      'import { useChat } from "@ai-sdk/react";',
+      'import { DefaultChatTransport } from "ai";',
+      'import { useCsrf } from "@/components/security/csrf-provider";',
+      "export function PlantedPanel({ scope }: { scope: string }) {",
+      '  const csrf = useCsrf("api.chat");',
+      "  const { sendMessage } = useChat({",
+      "    transport: new DefaultChatTransport({",
+      "      api: `/api/chat?scope=${encodeURIComponent(scope)}`,",
+      '      headers: () => ({ "X-Inherit-CSRF": csrf.value() }),',
+      "      fetch: async (input, init) => {",
+      "        const response = await fetch(input, init);",
+      "        csrf.accept(response);",
+      "        return response;",
+      "      },",
+      "    }),",
+      "  });",
+      '  return <button onClick={() => { void sendMessage({ text: "question" }); }}>Send</button>;',
+      "}",
+    ].join("\n");
+    const headers = '      headers: () => ({ "X-Inherit-CSRF": csrf.value() }),\n';
+    expect(csrfOmissions(run({ [planted]: sdk }))).toEqual([]);
+    expect(csrfOmissions(run({ [planted]: sdk.replace(headers, "") })))
+      .toEqual([`${planted} api.chat POST: omits X-Inherit-CSRF, which mutationSecurityBindings.csrfTransport requires of this state-changing request`]);
+    const unread = run({ [planted]: sdk.replace("const response = await fetch(input, init);", "const response = await fetch(input, { ...init, keepalive: true });") });
+    expect([...unread.formIssues, ...unread.issues].filter(issue => issue.file === planted).map(issue => issue.issue))
+      .toContain("sends headers the census cannot resolve");
+  }, 30_000); // four whole-tree census runs, about 5 s alone
+
+  it("follows value imports from a client module and no type-only one", () => {
+    const entry = "src/components/planted-client-entry.tsx";
+    const helper = "src/lib/planted-client-helper.ts";
+    const typed = "src/lib/planted-type-only.ts";
+    const result = run({
+      [entry]: '"use client";\nimport { send } from "@/lib/planted-client-helper";\nimport type { Shape } from "@/lib/planted-type-only";\n'
+        + 'export function Planted() { return <button onClick={() => send()}>Go</button>; }\n',
+      [helper]: 'export async function send() { await fetch("/api/settings/jurisdiction", { method: "PUT" }); }\n',
+      [typed]: 'export type Shape = { a: 1 };\nexport async function never() { await fetch("/api/chromosomal-sex", { method: "POST" }); }\n',
+    });
+    expect(result.modules).toContain(helper);
+    expect(result.modules).not.toContain(typed);
+    expect(csrfOmissions(result)).toEqual([
+      `${helper} api.jurisdiction PUT: omits X-Inherit-CSRF, which mutationSecurityBindings.csrfTransport requires of this state-changing request`,
+    ]);
+  });
+
+  it("records a new non-CSRF divergence of a request no form makes, and notices a recorded one close", () => {
+    const file = "src/components/settings/consent-list.tsx";
+    const source = real(file);
+    const recorded = `${file} api.consent-revoke POST: omits the required header x-inherit-operation-nonce`;
+    expect(recordedClientKeys()).toContain(recorded);
+    const fixed = run({ [file]: source.replace('method: "POST", headers: { "X-Inherit-CSRF": csrf.value() },',
+      'method: "POST", headers: { "X-Inherit-CSRF": csrf.value(), "X-Inherit-Operation-Nonce": nonce },') });
+    expect(ledgerMismatch(fixed.issues.map(formIssueKey), recordedClientKeys()).stale).toEqual([recorded]);
+    const added = run({ [file]: source.replace('method: "POST", headers: { "X-Inherit-CSRF": csrf.value() },',
+      'method: "POST", headers: { "X-Inherit-CSRF": csrf.value() }, body: JSON.stringify({ grantId: g.id }),') });
+    expect(ledgerMismatch(added.issues.map(formIssueKey), recordedClientKeys()).unrecorded)
+      .toEqual([`${file} api.consent-revoke POST: sends a body the register forbids`]);
   });
 });

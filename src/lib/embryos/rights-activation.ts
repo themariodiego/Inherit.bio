@@ -20,7 +20,7 @@ function hashCandidate(secret: string): string {
  * contains only a hash binding; the random cookie is HttpOnly. Neither
  * grants a right or consumes a mailed credential.
  */
-export function mintRightsActivationCandidate(now = Date.now()): { formToken: string; setCookie: string } {
+export function mintRightsActivationCandidate(now = Date.now()): { formToken: string; setCookie: string; candidateHash: string } {
   const secret = crypto.randomBytes(32).toString("base64url");
   const attributes = [
     `${RIGHTS_CANDIDATE_COOKIE}=${secret}`,
@@ -33,6 +33,7 @@ export function mintRightsActivationCandidate(now = Date.now()): { formToken: st
   return {
     formToken: mintPublicFormToken("rights-activate", now, hashCandidate(secret)),
     setCookie: attributes.join("; "),
+    candidateHash: hashCandidate(secret),
   };
 }
 
@@ -49,6 +50,16 @@ export function readRightsActivationCandidate(
     request.headers.get("content-type")?.split(";")[0].trim().toLowerCase() !== "application/json"
   ) return null;
 
+  const candidateHash = readRightsCandidateHash(request);
+  if (!candidateHash) return null;
+  return readPublicFormToken(formToken, "rights-activate", now, candidateHash);
+}
+
+/**
+ * sha256 of the one well-formed candidate cookie on the request, or null.
+ * The form token and the candidate's `X-Inherit-CSRF` token are both bound to it.
+ */
+export function readRightsCandidateHash(request: Request): string | null {
   const candidates = (request.headers.get("cookie") ?? "").split(";")
     .map(part => part.trim())
     .filter(part => part.slice(0, part.indexOf("=")) === RIGHTS_CANDIDATE_COOKIE);
@@ -56,5 +67,5 @@ export function readRightsActivationCandidate(
   if (candidates.length !== 1) return null;
   const secret = candidates[0].slice(candidates[0].indexOf("=") + 1);
   if (!SECRET_SHAPE.test(secret)) return null;
-  return readPublicFormToken(formToken, "rights-activate", now, hashCandidate(secret));
+  return hashCandidate(secret);
 }

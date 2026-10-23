@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { useCsrf } from "@/components/security/csrf-provider";
 import { Button } from "@/components/ui/button";
 import {
   JURISDICTION_AFFIRM,
@@ -68,6 +69,7 @@ export function JurisdictionForm({
   operationNonce: string;
 }) {
   const router = useRouter();
+  const csrf = useCsrf("api.jurisdiction");
   const [state, setState] = useState<"idle" | "saving" | "saved" | "failed">("idle");
   const [country, setCountry] = useState("");
   const [subdivision, setSubdivision] = useState("");
@@ -87,7 +89,7 @@ export function JurisdictionForm({
     try {
       const response = await fetch("/api/settings/jurisdiction", {
         method: "PUT",
-        headers: { "Content-Type": "application/json", "X-Inherit-Operation-Nonce": operationNonce },
+        headers: { "Content-Type": "application/json", "X-Inherit-Operation-Nonce": operationNonce, "X-Inherit-CSRF": csrf.value() },
         body: JSON.stringify({
           code: String(data.get("jurisdictionCode") ?? ""),
           ...(stateChoices.length > 0 ? { subdivision: String(data.get("jurisdictionSubdivision") ?? "") } : {}),
@@ -96,6 +98,7 @@ export function JurisdictionForm({
           affirmed: data.get("affirmed") === "on",
         }),
       });
+      csrf.accept(response);
       // Reading the body also releases it: a response nothing reads stays open.
       await response.json().catch(() => null);
       if (!response.ok) {

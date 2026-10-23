@@ -18,6 +18,7 @@ import {
   VIEWER_NO_FILE_YET,
 } from "@/copy/family/portrait";
 import { adultDateRequiredFrom } from "@/copy/family/permissions";
+import { signOut } from "./helpers/session-csrf";
 
 /** B's self subject carries the default label, so A sees the invited record's name. */
 const B_AS_SEEN_BY_A = "Invited adult";
@@ -153,7 +154,7 @@ test("two adults agree to compare before either has added a file", async ({ page
     .find((email) => (Array.isArray(email.to) ? email.to : [email.to]).includes(B.email))
     ?.html), "the invitation");
 
-  await page.request.post("/auth/sign-out");
+  await signOut(page);
   await acceptAdultInvitation({
     page, invitationUrl: adultInvitationUrl(token), email: B.email, password: B.password,
   });
@@ -184,7 +185,7 @@ test("two adults agree to compare before either has added a file", async ({ page
     expect(invitation.error).toBeNull();
     return (invitation.data as { target_id: string }).target_id;
   })();
-  await page.request.post("/auth/sign-out");
+  await signOut(page);
   await signIn(page, A.email, A.password);
   await page.goto(`/family/s-${invitedSubjectForD102}/permissions`);
   const beforeB = page
@@ -203,7 +204,7 @@ test("two adults agree to compare before either has added a file", async ({ page
   for (const word of ["under 18", "under eighteen", "minor", "too young"]) {
     expect(body, `the page never says "${word}"`).not.toContain(word);
   }
-  await page.request.post("/auth/sign-out");
+  await signOut(page);
   await signIn(page, B.email, B.password);
 
   // B's own account declaration, in B's own session, which clears the state
@@ -216,7 +217,7 @@ test("two adults agree to compare before either has added a file", async ({ page
     reply.url().endsWith("/api/account/completion") && reply.request().method() === "POST");
   await page.getByRole("button", { name: OWN_UPLOAD_COPY.accountContinue, exact: true }).click();
   expect((await completedB).status()).toBe(200);
-  await page.request.post("/auth/sign-out");
+  await signOut(page);
 
   const admin = adminClient();
   selfSubjectA = await selfSubjectOf(accountA);
@@ -243,13 +244,13 @@ test("two adults agree to compare before either has added a file", async ({ page
   pairSubjectIds = [pair.subject_a_id, pair.subject_b_id];
   await page.goto(`/family/portrait/${pairId}`);
   await acknowledge(page);
-  await page.request.post("/auth/sign-out");
+  await signOut(page);
 
   await signIn(page, B.email, B.password);
   await grantPortrait(page, selfSubjectA);
   await page.goto(`/family/portrait/${pairId}`);
   await acknowledge(page);
-  await page.request.post("/auth/sign-out");
+  await signOut(page);
 
   // The fixture's whole claim: two adults, every step done, and no file
   // anywhere. Asserted from the database so the state below cannot be read as
@@ -317,7 +318,7 @@ test("/family/portrait/[pairId] empty: with no file on either side the page name
   // B reads the mirror image: B's own sentence in the second person, A's by
   // name. A page that showed the viewer's copy to the other adult would be a
   // disclosure defect rather than a wording one.
-  await page.request.post("/auth/sign-out");
+  await signOut(page);
   await signIn(page, B.email, B.password);
   await page.goto(`/family/portrait/${pairId}`);
   await page.getByRole("checkbox").check();

@@ -734,3 +734,35 @@ test("the chromosomal sex declaration is recorded, read back and withdrawn", asy
   await expect(section.getByRole("radio", { name: "XX", exact: true })).not.toBeChecked();
   await expect(section.getByRole("button", { name: "Remove this", exact: true })).toHaveCount(0);
 });
+
+/**
+ * G8.5 (owner decision of 23 October 2026, "CSRF: build the token
+ * everywhere"): the shell's sign-out is a scripted form that sends the
+ * session's one-time X-Inherit-CSRF token and lands on the sign-in page. A
+ * bare POST from this same origin, with no token, is refused and ends
+ * nothing. A fresh account, so no other test's session is touched.
+ */
+test("the shell's Sign out button ends the session with its one-time token, and a bare request without one is refused", async ({ page }) => {
+  const email = `settings-sign-out-${randomUUID()}@e2e.local`, password = "e2e-settings-sign-out-pw";
+  await createConfirmedUser(email, password);
+  await signIn(page, email, password);
+  await page.goto("/settings");
+  const origin = new URL(page.url()).origin;
+
+  const bare = await page.request.post("/auth/sign-out", { headers: { origin }, maxRedirects: 0 });
+  expect(bare.status()).toBe(403);
+  expect(await bare.json()).toEqual({ error: "request_forbidden" });
+  await page.goto("/settings");
+  await expect(page.locator("main").getByText(email, { exact: true }), "the session survived the bare request").toBeVisible();
+
+  const signedOut = page.waitForResponse(response => new URL(response.url()).pathname === "/auth/sign-out"
+    && response.request().method() === "POST");
+  await page.getByRole("button", { name: "Sign out", exact: true }).click();
+  const response = await signedOut;
+  expect(response.status()).toBe(303);
+  expect(new URL(response.headers()["location"], origin).href).toBe(`${origin}/auth/sign-in`);
+  expect(response.request().headers()["x-inherit-csrf"]).toMatch(/^\d{13}\.[A-Za-z0-9_-]{43}\.[0-9a-f]{64}$/u);
+  await page.waitForURL(`${origin}/auth/sign-in`);
+  await page.goto("/settings");
+  await expect(page).toHaveURL(/\/auth\/sign-in/u);
+});

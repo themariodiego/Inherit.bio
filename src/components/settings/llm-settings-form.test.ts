@@ -20,6 +20,13 @@ vi.mock("@/components/ui/input", () => ({ Input: "input" }));
 vi.mock("@/components/ui/label", () => ({ Label: "label" }));
 vi.mock("@/components/ui/select", () => ({ Select: "x-select", SelectTrigger: "x-select-trigger",
   SelectValue: "x-select-value", SelectContent: "x-select-content", SelectItem: "x-select-item" }));
+// The page's rendered one-time X-Inherit-CSRF token (G8.5). The provider and
+// its context are tested in src/lib/security; here the handler's request is.
+const CSRF = vi.hoisted(() => `1800000000000.${"C".repeat(43)}.${"b".repeat(64)}`);
+vi.mock("@/components/security/csrf-provider", async () => {
+  const { csrfHandle } = await import("@/lib/security/session-csrf-client");
+  return { useCsrf: () => csrfHandle(CSRF) };
+});
 import { LlmSettingsForm } from "./llm-settings-form";
 import { COPILOT_PRESET_GUIDES, COPILOT_PRESET_MODEL_HINTS, COPILOT_PRESET_NAMES } from "@/copy/settings/copilot-providers";
 import { DEFAULT_ANTHROPIC_MODEL } from "@/lib/llm";
@@ -60,6 +67,7 @@ async function submit() {
   const [url, init] = harness.fetch.mock.calls[0] as [string, RequestInit];
   expect(url).toBe("/api/llm/settings");
   expect(init.method).toBe("POST");
+  expect((init.headers as Record<string, string>)["X-Inherit-CSRF"], "the route's one-time token").toBe(CSRF);
   return JSON.parse(String(init.body)) as Record<string, unknown>;
 }
 
@@ -186,6 +194,7 @@ describe("the registered bodies and the removal nonce (G8.5, 23 October 2026)", 
     await vi.waitFor(() => expect(harness.fetch).toHaveBeenCalledTimes(1));
     const [url, init] = harness.fetch.mock.calls[0] as [string, RequestInit];
     expect(url).toBe("/api/llm/settings");
-    expect(init).toEqual({ method: "DELETE", headers: { "X-Inherit-Operation-Nonce": "synthetic-page-nonce" } });
+    // Since the merge with the session token: the page's one-time X-Inherit-CSRF token beside the nonce.
+    expect(init).toEqual({ method: "DELETE", headers: { "X-Inherit-Operation-Nonce": "synthetic-page-nonce", "X-Inherit-CSRF": CSRF } });
   });
 });

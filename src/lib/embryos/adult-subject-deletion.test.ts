@@ -1,5 +1,9 @@
 import crypto from "node:crypto";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+// The one-time X-Inherit-CSRF gate is driven on this route by
+// src/lib/security/session-csrf-routes.test.ts; here it admits every request.
+vi.mock("@/lib/security/session-csrf", async (importOriginal) =>
+  (await import("@/lib/security/session-csrf.test-support")).admitEverySessionCsrf(await importOriginal()));
 import { POST } from "@/app/api/withdraw/session/route";
 import { readAdultSubjectResponse } from "./adult-subject-review";
 import { mintPublicFormToken } from "./operation-token";

@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { z } from "zod";
 import { REFUSAL_IDS, refusalFor, type RefusalId } from "@/copy/copilot/refusals";
 import { NOT_DIAGNOSTIC } from "@/copy/reports/strings";
+import { useCsrf } from "@/components/security/csrf-provider";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { providerDisplayName } from "@/lib/llm";
@@ -47,6 +48,7 @@ export function OwnChatPanel({ contextToken, info, chats, displayLabel, scopeKin
   scopeKind?: "self" | "family" | "cohort"; threadHint?: string; placeholder?: string;
 }) {
   const router = useRouter();
+  const csrf = useCsrf("api.chat");
   const [input, setInput] = useState("");
   const [chatId, setChatId] = useState<string | null>(null);
   const [usedToken, setUsedToken] = useState<string | null>(null);
@@ -68,9 +70,10 @@ export function OwnChatPanel({ contextToken, info, chats, displayLabel, scopeKin
     try {
       const response = await fetch("/api/chat", {
         method: "POST", credentials: "same-origin", cache: "no-store", redirect: "error",
-        headers: { "content-type": "application/json" }, signal: controller.signal,
+        headers: { "content-type": "application/json", "X-Inherit-CSRF": csrf.value() }, signal: controller.signal,
         body: JSON.stringify(chatId ? { chatId, message } : { contextToken, message }),
       });
+      csrf.accept(response);
       if (!response.ok) {
         if (response.status === 409) {
           const blocked = ownChatCorrectionSchema.safeParse(await response.clone().json().catch(() => null));

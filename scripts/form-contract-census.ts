@@ -3,7 +3,8 @@ import path from "node:path";
 import ts from "typescript";
 
 /**
- * What every `<form>` in the shipped app actually sends, read from source.
+ * What every `<form>` in the shipped app actually sends, read from source,
+ * and every other request the browser makes (`clientModules`, `fileRequests`).
  *
  * G8.5 asks that every form endpoint's register disposition match its live
  * behaviour. A native form with an `action` is a request the browser builds
@@ -216,29 +217,117 @@ export function propSubmissions(component: string, componentFile: string, prop: 
 }
 
 /**
+ * The `fetch` call a transport's custom `fetch` setting makes, when the
+ * setting only forwards the transport's own request: a function whose first
+ * two parameters are passed, unchanged and in order, to one `fetch` call. That
+ * call is the transport's request (read by `transportRequest`), not another one.
+ */
+export function fetchForwarder(setting: ts.Node): ts.CallExpression | null {
+  if (!ts.isArrowFunction(setting) && !ts.isFunctionExpression(setting)) return null;
+  const [input, init] = setting.parameters;
+  if (!input || !init || !ts.isIdentifier(input.name) || !ts.isIdentifier(init.name)) return null;
+  const calls: ts.CallExpression[] = [];
+  const visit = (node: ts.Node) => {
+    if (ts.isCallExpression(node) && ts.isIdentifier(unwrap(node.expression)) && (unwrap(node.expression) as ts.Identifier).text === "fetch") calls.push(node);
+    ts.forEachChild(node, visit);
+  };
+  visit(setting.body);
+  const [call] = calls;
+  if (calls.length !== 1 || call.arguments.length !== 2) return null;
+  const [first, second] = call.arguments.map(unwrap);
+  return ts.isIdentifier(first) && first.text === (input.name as ts.Identifier).text
+    && ts.isIdentifier(second) && second.text === (init.name as ts.Identifier).text ? call : null;
+}
+
+/** The forwarded `fetch` calls of every `new DefaultChatTransport({ fetch })` in a file. */
+function transportForwardedCalls(document: ts.SourceFile): Set<ts.CallExpression> {
+  const forwarded = new Set<ts.CallExpression>();
+  const visit = (node: ts.Node) => {
+    if (ts.isNewExpression(node) && node.expression.getText(document) === "DefaultChatTransport") {
+      const settings = node.arguments?.[0] && unwrap(node.arguments[0]);
+      const setting = settings && ts.isObjectLiteralExpression(settings) ? settings.properties.find((candidate): candidate is ts.PropertyAssignment =>
+        ts.isPropertyAssignment(candidate) && candidate.name.getText(document) === "fetch") : undefined;
+      const call = setting ? fetchForwarder(unwrap(setting.initializer)) : null;
+      if (call) forwarded.add(call);
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(document);
+  return forwarded;
+}
+
+/**
  * Every `fetch` call in one file, each read in the function that makes it
- * with no parameter bound. This reaches requests that no `<form>` makes (a
- * button's click handler, an effect), which the form census leaves out; a
- * value that arrives as a parameter reads as unresolved here.
+ * with no parameter bound, and every `new DefaultChatTransport({ ... })`. This
+ * reaches requests that no `<form>` makes (a button's click handler, an
+ * effect), which the form census leaves out; a value that arrives as a
+ * parameter reads as unresolved here. A transport's forwarding `fetch` setting
+ * is read as the transport's own request.
  */
 export function fileRequests(file: string, read: SourceReader): ClientRequest[] {
   const text = read(file);
   if (text === null) return [];
   const document = parse(file, text);
   const reader = new Reader(read);
+  const forwarded = transportForwardedCalls(document);
   const found: ClientRequest[] = [];
   const visit = (node: ts.Node) => {
-    if (ts.isCallExpression(node)) {
+    if (ts.isCallExpression(node) && !forwarded.has(node)) {
       const callee = unwrap(node.expression);
       const name = ts.isIdentifier(callee) ? callee.text
         : ts.isPropertyAccessExpression(callee) && ["window", "globalThis", "self"].includes(callee.expression.getText())
           ? callee.name.text : null;
       if (name === "fetch") found.push(reader.fetchRequest(node));
     }
+    if (ts.isNewExpression(node) && node.expression.getText(document) === "DefaultChatTransport") {
+      const transport = reader.transportRequest(node);
+      if (transport) found.push(transport);
+    }
     ts.forEachChild(node, visit);
   };
   visit(document);
   return found;
+}
+
+/** Whether a module's source starts with the `"use client"` directive. */
+export function isClientEntry(text: string): boolean {
+  const document = ts.createSourceFile("entry.tsx", text, ts.ScriptTarget.Latest, false, ts.ScriptKind.TSX);
+  const first = document.statements[0];
+  return Boolean(first && ts.isExpressionStatement(first) && ts.isStringLiteral(first.expression) && first.expression.text === "use client");
+}
+
+/**
+ * The local modules the browser loads: every `"use client"` module among
+ * `files`, and every local module one of them imports for a value,
+ * transitively. Type-only imports are not followed, and a module marked
+ * `server-only` is never part of it. This is where every client request is
+ * made, including the helpers a component calls (a permission row's submit,
+ * the upload transport).
+ */
+export function clientModules(files: string[], read: SourceReader): string[] {
+  const seen = new Set<string>();
+  const queue = files.filter(file => isClientEntry(read(file) ?? ""));
+  while (queue.length) {
+    const file = queue.pop()!;
+    if (seen.has(file)) continue;
+    const text = read(file);
+    if (text === null || /^\s*import\s+["']server-only["'];?\s*$/mu.test(text)) continue;
+    seen.add(file);
+    const document = parse(file, text);
+    for (const statement of document.statements) {
+      if (!(ts.isImportDeclaration(statement) || ts.isExportDeclaration(statement)) || !statement.moduleSpecifier
+        || !ts.isStringLiteral(statement.moduleSpecifier)) continue;
+      if (ts.isImportDeclaration(statement)) {
+        const clause = statement.importClause;
+        if (clause?.isTypeOnly) continue;
+        const named = clause?.namedBindings && ts.isNamedImports(clause.namedBindings) ? clause.namedBindings : null;
+        if (clause && !clause.name && named && named.elements.length > 0 && named.elements.every(element => element.isTypeOnly)) continue;
+      } else if (statement.isTypeOnly) continue;
+      const target = localModule(file, statement.moduleSpecifier.text, read);
+      if (target && !seen.has(target)) queue.push(target);
+    }
+  }
+  return [...seen].sort();
 }
 
 class Reader {
@@ -598,19 +687,43 @@ class Reader {
       ts.isPropertyAssignment(property) && property.name.getText() === "transport");
     const created = transport && unwrap(transport.initializer);
     if (!created || !ts.isNewExpression(created) || created.expression.getText() !== "DefaultChatTransport") return null;
+    // Reported where the transport is created, so the form census and the
+    // client census name the same request by the same line.
+    return this.transportRequest(created);
+  }
+
+  /**
+   * The request a `new DefaultChatTransport({ ... })` sends.
+   * `api` is the target; `headers` (an object, or a function returning one,
+   * which the SDK resolves for each request) adds header names; `fetch` is a
+   * function that forwards the SDK's own request (`fetchForwarder`). Any other
+   * setting leaves the request open.
+   */
+  transportRequest(created: ts.NewExpression): ClientRequest | null {
     const settings = created.arguments?.[0] && unwrap(created.arguments[0]);
     if (!settings || !ts.isObjectLiteralExpression(settings)) return null;
-    const known = new Set(["api"]);
-    const api = settings.properties.find((property): property is ts.PropertyAssignment =>
-      ts.isPropertyAssignment(property) && property.name.getText() === "api");
-    const extra = settings.properties.some(property => !property.name || !known.has(property.name.getText()));
-    const document = call.getSourceFile();
+    const property = (name: string) => settings.properties.find((candidate): candidate is ts.PropertyAssignment =>
+      ts.isPropertyAssignment(candidate) && candidate.name.getText() === name);
+    const api = property("api");
+    const extra = settings.properties.some(candidate => !candidate.name || !["api", "headers", "fetch"].includes(candidate.name.getText()));
+    const headersSetting = property("headers");
+    let headers: { names: string[]; resolved: boolean } = { names: [], resolved: true };
+    if (headersSetting) {
+      const value = unwrap(headersSetting.initializer);
+      const returned = (ts.isArrowFunction(value) || ts.isFunctionExpression(value)) && !ts.isBlock(value.body) ? unwrap(value.body as ts.Expression)
+        : ts.isObjectLiteralExpression(value) ? value : null;
+      headers = returned && ts.isObjectLiteralExpression(returned)
+        ? this.headerNames({ k: "obj", node: returned, env: EMPTY }, 0) : { names: [], resolved: false };
+    }
+    const fetchSetting = property("fetch");
+    const forwards = !fetchSetting || fetchForwarder(unwrap(fetchSetting.initializer)) !== null;
+    const document = created.getSourceFile();
     return {
       file: document.fileName,
-      line: document.getLineAndCharacterOfPosition(call.getStart(document)).line + 1,
+      line: document.getLineAndCharacterOfPosition(created.getStart(document)).line + 1,
       targets: api ? this.target(api.initializer, EMPTY) : [{ kind: "unresolved", text: "(default /api/chat)" }],
       methods: ["POST"],
-      headers: { names: ["content-type"], resolved: !extra },
+      headers: { names: [...new Set(["content-type", ...headers.names])].sort(), resolved: !extra && headers.resolved && forwards },
       bodies: [{ kind: "json", shape: { ...emptyShape(), keys: { ...AI_SDK_CHAT_BODY_KEYS }, open: extra } }],
       statuses: [],
       via: "ai-sdk-default-chat-transport",

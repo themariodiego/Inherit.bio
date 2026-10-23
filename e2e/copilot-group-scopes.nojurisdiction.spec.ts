@@ -3,6 +3,7 @@ import { expect, test } from "./audited-test";
 import { adminClient, createConfirmedUser, signIn } from "./helpers";
 import { COPY_IDS, FAMILY_EMPTY_NOTE, FAMILY_SCOPE_LABEL } from "../src/copy/copilot/group-scopes";
 import { HUB_TILES } from "../src/copy/family/index";
+import { accountCsrf } from "./helpers/session-csrf";
 
 /**
  * The Family Copilot scope as hosted production serves it, since the owner
@@ -88,7 +89,8 @@ test("hosted: the chat and history endpoints serve nothing for the Family scope"
   await signIn(page, USER.email, USER.password);
   await page.goto("/overview");
   const origin = new URL(page.url()).origin;
-  const chat = await page.request.post("/api/chat", { headers: { origin },
+  // The page's own fresh X-Inherit-CSRF token, so the refusal is the chat's own (G8.5).
+  const chat = await page.request.post("/api/chat", { headers: { origin, "x-inherit-csrf": await accountCsrf(page, "api.chat") },
     data: { contextToken: "forged-family-context-token-value", message: "What did they share?" } });
   expect([403, 404]).toContain(chat.status());
   expect(await chat.text()).not.toContain("What did they share?");

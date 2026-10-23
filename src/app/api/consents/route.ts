@@ -21,6 +21,7 @@ import { ownUploadConsent } from "@/lib/uploads/own-consent-route";
 import { isOwnReportConsentPayload, ownReportConsent } from "@/lib/uploads/own-report-consent-route";
 import { isPathBPurposeConsentPayload, pathBPurposeConsent } from "@/lib/uploads/path-b-purpose-server";
 import { isOwnCopilotConsentPayload, ownCopilotConsent } from "@/lib/copilot/own-consent";
+import { requireAccountCsrf } from "@/lib/security/session-csrf";
 
 /**
  * `POST /api/consents` (register api.consents).
@@ -88,12 +89,22 @@ export async function POST(request: Request) {
   if (isOwnCopilotConsentPayload(payload)) return ownCopilotConsent(request, payload);
   if (isEmbryoConsentPayload(payload)) return embryoConsent(request, payload);
 
+  // The two bodies this route answers itself carry the page's one-time
+  // X-Inherit-CSRF token. Each body above is answered by its own module,
+  // which checks the token its own page rendered for it.
+  const csrf = await requireAccountCsrf(request, "api.consents");
+  if (csrf instanceof Response) return csrf;
+  return csrf.rotate(await accountConsent(request, payload, supabase, user.id));
+}
+
+async function accountConsent(request: Request, payload: unknown, supabase: Awaited<ReturnType<typeof createClient>>,
+  accountId: string): Promise<Response> {
   const grant = grantPurposeBody.safeParse(payload);
   if (grant.success) {
     if (!isSameOrigin(request)) {
       return NextResponse.json({ error: "invalid_request" }, { status: 400 });
     }
-    return grantPurpose(user.id, grant.data);
+    return grantPurpose(accountId, grant.data);
   }
 
   const cloud = cloudModelBody.safeParse(payload);
@@ -117,7 +128,7 @@ export async function POST(request: Request) {
   const { data: grantId, error } = await createAdminClient().rpc(
     "grant_cloud_model_consent",
     {
-      p_account_id: user.id,
+      p_account_id: accountId,
       p_provider_key: currentKey,
       p_data_classes: [...LLM_DATA_CLASSES],
     },

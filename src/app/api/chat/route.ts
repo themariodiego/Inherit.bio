@@ -44,6 +44,7 @@ import { isLocalBaseUrl, providerKeyFor, ssrfReasonForBaseUrl } from "@/lib/llm"
 import { resolveSubjectForAccount } from "@/lib/subjects";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import { withAccountCsrf } from "@/lib/security/session-csrf";
 
 export const maxDuration = 300;
 
@@ -95,7 +96,8 @@ async function bufferUIMessageStream(stream: ReadableStream<UIMessageChunk>): Pr
 }
 
 
-export async function POST(request: Request) {
+export const POST = withAccountCsrf("api.chat", handlePost);
+async function handlePost(request: Request) {
   const supabase = await createClient();
   const {
     data: { user },

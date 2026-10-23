@@ -10,6 +10,7 @@ import {
   verifyPersonOperationNonce,
 } from "@/lib/person-operation-nonce";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { withAccountCsrf } from "@/lib/security/session-csrf";
 
 /**
  * `POST /api/family/[person]/sharing` (register api.family-sharing;
@@ -49,7 +50,8 @@ const body = z.discriminatedUnion("operation", [
 
 const NO_STORE = { "Cache-Control": "private, no-store" } as const;
 
-export async function POST(
+export const POST = withAccountCsrf("api.family-sharing", handlePost);
+async function handlePost(
   request: Request,
   context: { params: Promise<{ person: string }> },
 ) {

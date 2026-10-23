@@ -12,6 +12,7 @@ import {
   readGrantRightsPresentation,
 } from "@/lib/uploads/grant-rights-presentation";
 import { isExactKeys, otherAdultTypedNameIsValid } from "@/lib/uploads/other-adult-upload";
+import { withPurposeCsrf, readRightsCsrfSession } from "@/lib/security/session-csrf";
 
 /**
  * `POST /api/consents/grant/session` (register api.consent-grant-rights). A
@@ -59,7 +60,8 @@ const RECEIPT = z.object({
 }).strict();
 const RECEIPT_KEYS = ["recordKind", "recordId", "artifactKey", "artifactVersion", "purposeKey", "signedAt"] as const;
 
-export async function POST(request: Request) {
+export const POST = withPurposeCsrf("api.consent-grant-rights", readRightsCsrfSession, handlePost);
+async function handlePost(request: Request) {
   if (!isTestJurisdictionEnabled()) return notFound();
   const parsed = body.safeParse(await readJson(request));
   if (!parsed.success) return notFound();

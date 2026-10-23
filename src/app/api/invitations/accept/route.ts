@@ -21,6 +21,7 @@ import {
 } from "@/lib/embryos/routes";
 import { readArtifactPresentation, type ArtifactPresentation } from "@/lib/family/grant-token";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { withAccountCsrf } from "@/lib/security/session-csrf";
 
 /**
  * `POST /api/invitations/accept` (register api.invitation-accept; contract
@@ -69,7 +70,8 @@ function presentationOf(
   return presentation;
 }
 
-export async function POST(request: Request) {
+export const POST = withAccountCsrf("api.invitation-accept", handlePost);
+async function handlePost(request: Request) {
   const context = await getSensitiveAccountContext();
   if (!context) return unauthorized();
   const forbidden = originDenied(request);

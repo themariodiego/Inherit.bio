@@ -23,6 +23,13 @@ vi.mock("next/link", () => ({ default: "a" }));
 vi.mock("@/components/ui/button", () => ({ Button: "button" }));
 vi.mock("@/components/ui/textarea", () => ({ Textarea: "textarea" }));
 vi.mock("./consent-dialog", () => ({ ConsentDialog: "x-consent-dialog" }));
+// The page's rendered one-time X-Inherit-CSRF token (G8.5). The provider and
+// its context are tested in src/lib/security; here the handler's request is.
+const CSRF = vi.hoisted(() => `1800000000000.${"C".repeat(43)}.${"b".repeat(64)}`);
+vi.mock("@/components/security/csrf-provider", async () => {
+  const { csrfHandle } = await import("@/lib/security/session-csrf-client");
+  return { useCsrf: () => csrfHandle(CSRF) };
+});
 import { ChatPanel } from "./chat-panel";
 import { refusalFor } from "@/copy/copilot/refusals";
 
@@ -60,6 +67,7 @@ describe("the compatibility Copilot panel", () => {
     const [url, init] = harness.fetch.mock.calls[0] as [string, RequestInit];
     expect(url).toBe("/api/chat");
     expect(init.method).toBe("POST");
+    expect((init.headers as Record<string, string>)["X-Inherit-CSRF"], "the route's one-time token").toBe(CSRF);
     expect(JSON.parse(String(init.body))).toEqual({ contextToken: "synthetic-compat-token", message: "What does my file say about caffeine?" });
     await vi.waitFor(() => expect(text(render())).toContain("Your file does not cover that variant."));
     expect(text(render())).toContain("What does my file say about caffeine?");

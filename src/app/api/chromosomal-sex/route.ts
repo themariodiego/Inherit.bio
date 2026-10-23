@@ -4,6 +4,7 @@ import { getSensitiveAccountContext, isSameOrigin } from "@/lib/account-deletion
 import { CHROMOSOMAL_SEX_VALUES } from "@/lib/family/chromosomal-sex";
 import { personOperationNonceArgs, personOperationNonceFrom } from "@/lib/person-operation-nonce";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { withAccountCsrf } from "@/lib/security/session-csrf";
 
 /**
  * `POST /api/chromosomal-sex` (register api.chromosomal-sex) — the one writer
@@ -59,7 +60,8 @@ const declaration = z
   })
   .strict();
 
-export async function POST(request: Request) {
+export const POST = withAccountCsrf("api.chromosomal-sex", handlePost);
+async function handlePost(request: Request) {
   if (!isSameOrigin(request)) {
     return NextResponse.json({ error: "invalid_request" }, { status: 400 });
   }

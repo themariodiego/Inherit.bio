@@ -8,6 +8,7 @@ import {
 } from "@/lib/family/tier2";
 import { isOperationNonceRefusal, personOperationNonceArgs, personOperationNonceFrom } from "@/lib/person-operation-nonce";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { withAccountCsrf } from "@/lib/security/session-csrf";
 
 /**
  * `POST /api/family/acknowledge` (register api.family-acknowledge).
@@ -53,7 +54,8 @@ const NO_STORE = {
   "Referrer-Policy": "no-referrer",
 } as const;
 
-export async function POST(request: Request) {
+export const POST = withAccountCsrf("api.family-acknowledge", handlePost);
+async function handlePost(request: Request) {
   if (!isSameOrigin(request)) {
     return NextResponse.json({ error: "invalid_request" }, { status: 400 });
   }

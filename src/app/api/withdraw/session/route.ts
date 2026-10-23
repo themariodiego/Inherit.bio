@@ -21,6 +21,7 @@ import {
   confirmPathBSubjectWithAccount,
 } from "@/lib/uploads/path-b-respond";
 import { readAdultUploadRevisionResponse } from "@/lib/uploads/path-b-review";
+import { withPurposeCsrf, readRightsCsrfSession } from "@/lib/security/session-csrf";
 
 /**
  * `POST /api/withdraw/[token]` with the segment pinned to `session`
@@ -59,7 +60,8 @@ async function readBoundedJson(request: Request): Promise<unknown> {
   try { return JSON.parse(text); } catch { return null; }
 }
 
-export async function POST(request: Request) {
+export const POST = withPurposeCsrf("api.withdraw", readRightsCsrfSession, handlePost);
+async function handlePost(request: Request) {
   if (!refusalRequestAllowed(request)) return notFound();
   const json = await readBoundedJson(request);
   if (json === null) return notFound();

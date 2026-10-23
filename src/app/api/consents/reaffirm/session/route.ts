@@ -11,6 +11,7 @@ import {
   reaffirmRightsPresentationForDatabase,
 } from "@/lib/consents/reaffirm-rights";
 import { isExactKeys, otherAdultTypedNameIsValid } from "@/lib/uploads/other-adult-upload";
+import { withPurposeCsrf, readRightsCsrfSession } from "@/lib/security/session-csrf";
 
 /**
  * `POST /api/consents/reaffirm/session` (register api.consent-reaffirm-rights;
@@ -53,7 +54,8 @@ const RECEIPT = z.object({
 }).strict();
 const RECEIPT_KEYS = ["recordKind", "recordId", "artifactKey", "artifactVersion", "purposeKey", "signedAt"] as const;
 
-export async function POST(request: Request) {
+export const POST = withPurposeCsrf("api.consent-reaffirm-rights", readRightsCsrfSession, handlePost);
+async function handlePost(request: Request) {
   if (!isTestJurisdictionEnabled()) return notFound();
   const parsed = body.safeParse(await readJson(request));
   if (!parsed.success) return notFound();

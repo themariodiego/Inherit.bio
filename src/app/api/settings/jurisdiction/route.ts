@@ -12,6 +12,7 @@ import {
 import { declarationRestriction, isPausedCountry } from "@/lib/legal/service-restrictions";
 import { isOperationNonceRefusal, personOperationNonceArgs, personOperationNonceFrom } from "@/lib/person-operation-nonce";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { withAccountCsrf } from "@/lib/security/session-csrf";
 
 /**
  * `PUT /api/settings/jurisdiction` (register api.jurisdiction, G5.1a): the
@@ -44,7 +45,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
  * no account id. A stale or unknown attestation is `invalid-request-v1`, like
  * any other invalid field, so a caller learns nothing about which part failed.
  */
-export async function PUT(request: Request) {
+export const PUT = withAccountCsrf("api.jurisdiction", handlePut);
+async function handlePut(request: Request) {
   if (!isSameOrigin(request)) return invalidRequest(["origin"]);
   const context = await getSensitiveAccountContext();
   if (!context) return new Response("Unauthorized", { status: 401 });

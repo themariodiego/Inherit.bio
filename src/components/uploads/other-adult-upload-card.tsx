@@ -2,6 +2,7 @@
 
 import { useRef, useState, useSyncExternalStore, type FormEvent, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
+import { useCsrf } from "@/components/security/csrf-provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -141,6 +142,7 @@ export function ConsentFields({ consent, checked, setChecked, typedName, setType
  */
 export function OtherAdultUploadCard({ target, limits = null }: { target: OtherAdultTarget; limits?: OwnUploadLimits | null }) {
   const router = useRouter();
+  const sessionCsrf = useCsrf("api.file-upload-session"), finalizeCsrf = useCsrf("api.file-finalize");
   // The server preview has no file-change handler. Keep the picker closed
   // until hydration attaches it so an early selection cannot be lost.
   const interactive = useSyncExternalStore(subscribeNever, clientReady, serverReady);
@@ -233,7 +235,7 @@ export function OtherAdultUploadCard({ target, limits = null }: { target: OtherA
     inFlight.current = true;
     setUploadError(false);
     try {
-      await uploadHeldSubjectFile(file, target.subjectId, setProgress, limits);
+      await uploadHeldSubjectFile(file, target.subjectId, setProgress, limits, { session: sessionCsrf, finalize: finalizeCsrf });
       setHeldNow(true);
       router.refresh();
     } catch { setUploadError(true); setProgress(null); }

@@ -1077,10 +1077,10 @@ describe("every server action is recorded by name, with the pages that render it
  * other expression is reported rather than assumed, because a static reader
  * cannot tell where it points.
  */
-function formActions(): { file: string; action: string; resolved: "literal" | "helper" | "unresolvable" }[] {
+function formActions(planted: Record<string, string> = {}): { file: string; action: string; resolved: "literal" | "helper" | "unresolvable" }[] {
   const found: { file: string; action: string; resolved: "literal" | "helper" | "unresolvable" }[] = [];
-  for (const file of codeFiles().filter((name) => name.endsWith(".tsx"))) {
-    const source = readFileSync(file, "utf8");
+  for (const file of [...codeFiles().filter((name) => name.endsWith(".tsx")), ...Object.keys(planted)]) {
+    const source = planted[file] ?? readFileSync(file, "utf8");
     for (const match of source.matchAll(/<form\b[^>]*?\saction=(?:"([^"]*)"|\{([^}]*)\})/g)) {
       const where = file.split(path.sep).join("/");
       if (match[1] !== undefined) {
@@ -1104,13 +1104,17 @@ describe("every form posts somewhere the register describes", () => {
   const recordedPaths = new Set(ledger.builtButNotRegistered.map((known) => known.path));
 
   it("finds the forms that name a target, so a passing run is not an empty scan", () => {
+    // G8.5 (2026-10-23): sign-out became a scripted form with no action
+    // (src/components/site/sign-out-form.tsx), so the app-shell's literal
+    // "/auth/sign-out" action, the one literal in the tree, is gone.
     expect(actions).toEqual([
       { file: "src/app/(app)/genome/[subject]/data/browser/page.tsx",
         action: 'route("genome.browser", subjectParams)', resolved: "helper" },
-      { file: "src/components/site/app-shell.tsx", action: "/auth/sign-out", resolved: "literal" },
     ]);
-    expect(actions.some((form) => form.resolved === "literal")).toBe(true);
     expect(actions.some((form) => form.resolved === "helper")).toBe(true);
+    // The literal reading is still exercised: a planted native form is read as one.
+    expect(formActions({ "src/components/planted-native-form.tsx": '<form action="/auth/sign-out" method="post" />' }))
+      .toContainEqual({ file: "src/components/planted-native-form.tsx", action: "/auth/sign-out", resolved: "literal" });
   });
 
   it("points every literal action at a registered route, or at a recorded one", () => {
@@ -1231,15 +1235,19 @@ type ClientFormReview = { file: string; forms: number; sha256: string };
 // The guarded embryo/future-person flows add ten client-handled forms. Keep
 // their complete-source review separate so the original fourteen-form
 // inventory remains checked alongside the complete integrated inventory.
+// G8.5 (2026-10-23): upload-stage.tsx (cohort finalize) and
+// embryo-disposition.tsx re-reviewed after their request gained the route's
+// one-time X-Inherit-CSRF header and its rotation. The same forms, handlers,
+// preventDefault before any field is read, and targets.
 const GUARDED_FLOW_CLIENT_FORM_REVIEW: ClientFormReview[] = [
   { file: "src/components/embryo/upload/draft-form.tsx", forms: 1, sha256: "c216fd24a0d903e38171cf53079abe439f1656d010560de8f32694a253dfdc2e" },
   { file: "src/components/embryo/upload/signing-form.tsx", forms: 1, sha256: "09ef84e65cf77e765d40d4034fb9b5345a19196857cd1bc4e6781b820eaffcf8" },
-  { file: "src/components/embryo/upload/upload-stage.tsx", forms: 2, sha256: "84d2461d1e510ca23f2b66f8c77cfcd656480c70e0d8c55288267d0e5db42e6e" },
+  { file: "src/components/embryo/upload/upload-stage.tsx", forms: 2, sha256: "b1c6d5607ac350757ecb617ccedd85cc76d212e0d30827dbd81cdc15424ef878" },
   { file: "src/components/future-person/claim-form.tsx", forms: 1, sha256: "15879dd96632b930bcaf494fc2f47cabd9b75bddfc328ab104bc8610be10fbdb" },
   { file: "src/components/future-person/claim-review.tsx", forms: 1, sha256: "ef96f46a4dec3c6cf56759c7699fdcc71613c14d3171f25e549c75ba2d7f3f6c" },
   { file: "src/components/future-person/keyless-pending-review.tsx", forms: 1, sha256: "d44c1530368a229dc5b3f75339ba541cdb04ce0f0f8442558792306f3a5f7c31" },
   { file: "src/components/future-person/owner-objection.tsx", forms: 1, sha256: "77a7bef89da3708b7227c7c22f4fca3d89a60a8cde3c3eba18b003a2a561db7d" },
-  { file: "src/components/settings/embryo-disposition.tsx", forms: 1, sha256: "e8bb3c6be7c5d03113e867af7204b0d92e8ab6825f107699220db1e2f810f634" },
+  { file: "src/components/settings/embryo-disposition.tsx", forms: 1, sha256: "160248fb03c9bfa4aa681c55598cec84583126c3d3394a3a430763f05122b82b" },
   { file: "src/components/settings/future-person-profile.tsx", forms: 1, sha256: "44edb4bbd08e2d2ff567aa354b43e4c4f27a8b16d1f77882c9a78670f6169788" },
 ];
 
@@ -1259,38 +1267,51 @@ const FUTURE_INTAKE_CLIENT_FORM_REVIEW: ClientFormReview[] = [
  * and dynamically rendered interiors still need their own runtime evidence.
  */
 const CLIENT_FORM_REVIEW: ClientFormReview[] = [
+  // G8.5 (2026-10-23): chat-panel, own-chat-panel, co-parent-review-form,
+  // invitation-refusal-form, invite-adult-form, jurisdiction-form,
+  // llm-settings-form, other-adult-upload-card and path-b-request-form were
+  // re-reviewed after each request gained its route's one-time X-Inherit-CSRF
+  // header and rotation (the chat panel through its transport's headers and
+  // forwarding fetch). Each keeps the same forms, handler, preventDefault and
+  // target; no body changed. sign-out-form.tsx is new: sign-out moved from
+  // the app shell's native form to one actionless form whose onSubmit cancels
+  // native submission and posts with the token.
+  { file: "src/components/site/sign-out-form.tsx", forms: 1, sha256: "04c7d9df794c45168f4e8324ef2f48d82e6b74788963effaf309996e90b05d34" },
   // G2.5 (2026-10-22): re-reviewed after the submit control became the forest
   // outline variant at the same 44px and content width. One actionless form,
   // the same fieldset, handler and preventDefault before any field is read.
   { file: "src/components/auth/auth-form.tsx", forms: 1, sha256: "80e1bf6cabad3769c0613561fd8c942f417a024ae8e0f831402b023470f9e8a8" },
   // G8.5 (2026-10-23): re-reviewed after the compatibility panel moved from the
-  // AI SDK transport to a fetch of the registered { contextToken, message }.
+  // AI SDK transport to a fetch of the registered { contextToken, message }, and
+  // again after the merge added the one-time X-Inherit-CSRF header to that fetch.
   // Still one actionless form whose onSubmit handler cancels native submission
   // before anything is sent; the same composer and the same target, api.chat.
-  { file: "src/components/chat/chat-panel.tsx", forms: 1, sha256: "06f3970abfecad74a4158580b05b0effeec9db55fa8c5d9137ee1181caa55457" },
-  { file: "src/components/chat/own-chat-panel.tsx", forms: 1, sha256: "935d0925a414a1f377fbae00c6d06cccb6cc3817d02aa46d2d0972224b97f89c" },
-  { file: "src/components/embryo/co-parent-review-form.tsx", forms: 1, sha256: "e37f7be36d8b6eed42a49a5c91a2d1d715f549881fd2dcae67b6eb5d77584675" },
-  { file: "src/components/embryo/invitation-refusal-form.tsx", forms: 1, sha256: "d1d5e36f18b1299ea3c21a6ef0369487250d5f2e0cae5c693486833d309ff6a3" },
+  { file: "src/components/chat/chat-panel.tsx", forms: 1, sha256: "5166eb3d779fc8db33e375e0dbd4b2fbade64a92997abd0d2161730e7de2cbff" },
+  { file: "src/components/chat/own-chat-panel.tsx", forms: 1, sha256: "36c6e50740012aae40e04835340ea0de716df08e1268f69864f373319b822c7d" },
+  { file: "src/components/embryo/co-parent-review-form.tsx", forms: 1, sha256: "37c3a9083994657a9f8c7e5d4639b0c46721ae96bee36662508cf31bdb7f5d84" },
+  { file: "src/components/embryo/invitation-refusal-form.tsx", forms: 1, sha256: "037b30d6e19792ea8706f8553b23a7887c1459ed7e39d0a0eb40bcc290272601" },
   // G5.6 (2026-10-23): both re-reviewed after their request gained the page's
   // one-time operation nonce in the X-Inherit-Operation-Nonce header, and the
   // form or its section a data-operation-nonce attribute. Still one actionless
   // form each, the same handler cancelling native submission, the same target.
   // G8.5 (2026-10-23): re-reviewed after the invitation moved to the registered
   // Path A body (contactEmail, kind "adult", no adultAttestation) and branches on
-  // the registered 403. Still one actionless form, the same handler cancelling
-  // native submission before any field is read, the same target and header.
-  { file: "src/components/family/invite-adult-form.tsx", forms: 1, sha256: "fecb2937a0caa1e67bb8c33aaf4b332dc4556f583bb03f45aeb66d30ac6102f6" },
-  { file: "src/components/settings/jurisdiction-form.tsx", forms: 1, sha256: "fb5b804cf7fa62a68c04f7371ef1376ba5812ed680c5e679fa8deb72ae11c404" },
+  // the registered 403, and after the merge added the one-time X-Inherit-CSRF
+  // header. Still one actionless form, the same handler cancelling native
+  // submission before any field is read, the same target.
+  { file: "src/components/family/invite-adult-form.tsx", forms: 1, sha256: "32f8d4ce55136593a079e7e2527567583b0e91da5a85d01f76f48c14c208c1c1" },
+  { file: "src/components/settings/jurisdiction-form.tsx", forms: 1, sha256: "0c4b480cf87379c9841358f927f963692ecf3ea964985894b88eebe2cf723643" },
   // G8.5 (2026-10-23): re-reviewed after the save moved to the registered
-  // bodies by mode and the removal button gained the page's one-time nonce.
+  // bodies by mode and the removal button gained the page's one-time nonce, and
+  // after the merge added the one-time X-Inherit-CSRF header to both requests.
   // Still one actionless form whose onSubmit handler cancels native submission
   // first; the same target, and the removal is still a button outside it.
-  { file: "src/components/settings/llm-settings-form.tsx", forms: 1, sha256: "55160a7ff0dfaf035b24e24da1382ecbd9e0c2d3e34c027a5a23e68fdeafee9c" },
+  { file: "src/components/settings/llm-settings-form.tsx", forms: 1, sha256: "3f4de66a3e0f4ac79078c9ff270dd8b92508356dbd428dfbae9319c153b0a8ec" },
   // G2.1 (2026-10-16): re-reviewed after the new-person form gained the
   // reviewed-document flow choice (two radio inputs inside the same form, the
   // same handler and target) and ConsentFields became an export. Still two
   // actionless forms whose onSubmit handlers cancel native submission.
-  { file: "src/components/uploads/other-adult-upload-card.tsx", forms: 2, sha256: "024b7da96d938bfe4fdc5228b9ec65b4723dd551bf653677bfe6c22750c6896d" },
+  { file: "src/components/uploads/other-adult-upload-card.tsx", forms: 2, sha256: "db35211e825c620af275dd11ec09004f7c4a9206dc12ed432a5767d4110a2225" },
   // G7.4 (2026-10-22): re-reviewed after the flow gained the server-decided
   // `readCalling` prop it passes to both Uploader renders (ADR 0038). Still one
   // actionless account-completion form whose onSubmit handler cancels native
@@ -1299,7 +1320,7 @@ const CLIENT_FORM_REVIEW: ClientFormReview[] = [
   // G5.4 (2026-10-16): re-reviewed after two copy lines (the 30/730-day keep
   // line and the contact of last resort). Still one actionless form whose
   // onSubmit handler cancels native submission; no handler, field or target changed.
-  { file: "src/components/uploads/path-b-request-form.tsx", forms: 1, sha256: "b8372876fa10c03bac696a1c5e7af89c1cdc5674b0638e7682ba7c1a466c44e4" },
+  { file: "src/components/uploads/path-b-request-form.tsx", forms: 1, sha256: "6514df70e359d8e5f2cb9254db62a7bee77dbdf6917b5d7dea7bfbfb742da09f" },
   ...GUARDED_FLOW_CLIENT_FORM_REVIEW,
   ...FUTURE_INTAKE_CLIENT_FORM_REVIEW,
 ];
@@ -1336,9 +1357,10 @@ describe("native form methods match their registered targets", () => {
     expect(all.filter(form => futureIntakeFiles.has(form.file))).toHaveLength(2);
     expect(all).toHaveLength(26);
     const submissions = all.filter(form => form.routeId !== null);
+    // G8.5 (2026-10-23): sign-out is now the reviewed scripted form above, so
+    // the genome search is the one native submission left.
     expect(submissions).toEqual([
       { file: "src/app/(app)/genome/[subject]/data/browser/page.tsx", routeId: "genome.browser", method: "GET" },
-      { file: "src/components/site/app-shell.tsx", routeId: "auth.sign-out", method: "POST" },
     ]);
     expect(formMethodIssues(submissions, entries)).toEqual([]);
   });

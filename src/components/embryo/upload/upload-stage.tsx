@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useId, useRef, useState, type FormEvent } from "react";
+import { useCsrf } from "@/components/security/csrf-provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { formatDate } from "@/components/embryo/format";
@@ -253,6 +254,7 @@ function FinalizeAndSend({ view }: { view: Extract<UploadStageView, { kind: "ack
   const headingId = useId();
   const [finalized, setFinalized] = useState<Finalized | null>(null);
   const [failed, setFailed] = useState(false);
+  const csrf = useCsrf("api.embryo-cohorts");
 
   async function finalize(ids: Partial<Record<string, string>>) {
     const insurance = ids["disclosure.insurance-and-discrimination"] ?? view.signed["disclosure.insurance-and-discrimination"];
@@ -260,10 +262,11 @@ function FinalizeAndSend({ view }: { view: Extract<UploadStageView, { kind: "ack
     setFailed(false);
     const response = await fetch(route("api.embryo-cohorts", {}), {
       method: "POST", credentials: "same-origin", cache: "no-store",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", "X-Inherit-CSRF": csrf.value() },
       body: JSON.stringify({ cohortDraftId: view.draftId, insuranceAcknowledgementId: insurance,
         futurePersonCharterAcknowledgementId: charter, nonce: view.finalizeNonce }),
     });
+    csrf.accept(response);
     if (response.status !== 201) { setFailed(true); return; }
     try { setFinalized(readUploadReceipt(await response.json())); }
     catch { setFailed(true); }

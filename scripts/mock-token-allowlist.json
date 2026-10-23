@@ -72,6 +72,10 @@
       "reason": "Comment only: documents the flag that enables the isolated TEST-LOCAL acceptance fixture."
     },
     {
+      "path": "src/lib/security/session-csrf.test-support.ts",
+      "reason": "Comment and test-only code: the pass-through of the X-Inherit-CSRF gate that route suites install with vi.mock, so each tests its handler once admitted. Imported by tests only; the gate itself is tested in src/lib/security/session-csrf-routes.test.ts."
+    },
+    {
       "path": "worker/src/annotate.ts",
       "reason": "Comment only: notes a minimal query surface so tests can mock pg without depending on it."
     }

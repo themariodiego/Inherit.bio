@@ -7,6 +7,7 @@ import { ingestCookie } from "@/lib/embryos/ingest-session";
 import { mintIngestSessionOperation, verifyEmbryoOperation } from "@/lib/embryos/operation-token";
 import { isTestJurisdictionEnabled } from "@/lib/legal/jurisdictions";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { withAccountCsrf } from "@/lib/security/session-csrf";
 
 /**
  * `POST /api/embryo-cohorts` (register `api.embryo-cohorts`). The entry point
@@ -41,7 +42,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
  * (G5.5). The route exists so the journey can be proved where it is permitted,
  * not to open one where it is not.
  */
-export async function POST(request: Request) {
+export const POST = withAccountCsrf("api.embryo-cohorts", handlePost);
+async function handlePost(request: Request) {
   const account = await getSensitiveAccountContext();
   if (!account) return unauthorized();
   const forbidden = originDenied(request);

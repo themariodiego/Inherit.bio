@@ -12,6 +12,7 @@ import { COHORT_CITATION_LABEL, COHORT_COPILOT_LEDE, cohortEmbryoLine } from "..
 import { STANDING_STATEMENT } from "../src/copy/embryos/compare";
 import { EMBRYO_STATUS, ROLE_OTHER_PARENT, waitingForResultsBody } from "../src/copy/embryos/index";
 import { GATE_BUTTON } from "../src/copy/embryos/gate";
+import { accountCsrf } from "./helpers/session-csrf";
 
 /**
  * The Embryo (cohort) Copilot scope, end to end, on the one app variant that
@@ -180,7 +181,9 @@ test.describe("the Embryo cohort scope, end to end on the local model", () => {
     expect((await pageC.goto(`/copilot/c-${cohortId}`))?.status()).toBe(404);
     expect((await pageC.request.get(`/api/chats/${chatId}`)).status()).toBe(404);
     const origin = new URL(pageC.url()).origin;
-    const post = await pageC.request.post("/api/chat", { headers: { origin }, data: { chatId, message: "What did it say?" } });
+    // C's own fresh X-Inherit-CSRF token, so the refusal is the chat's own (G8.5).
+    const post = await pageC.request.post("/api/chat", { headers: { origin, "x-inherit-csrf": await accountCsrf(pageC, "api.chat") },
+      data: { chatId, message: "What did it say?" } });
     expect([403, 404]).toContain(post.status());
   });
 
@@ -205,11 +208,11 @@ test.describe("the Embryo cohort scope, end to end on the local model", () => {
     // No page renders a single embryo-analysis revocation, so the nonce is
     // minted as a page mints it, for B's own session (G5.6, 23 Oct 2026).
     const revokeNonce = await mintedOperationNonce(pageB.context(), accountB, "consent_revoke", grant!.grant_id);
-    const revoked = await pageB.evaluate(async ([id, nonce]) => {
+    const revoked = await pageB.evaluate(async ([id, nonce, csrf]) => {
       const response = await fetch(`/api/consents/${id}/revoke`, { method: "POST", credentials: "same-origin",
-        headers: { "X-Inherit-Operation-Nonce": nonce } });
+        headers: { "X-Inherit-Operation-Nonce": nonce, "X-Inherit-CSRF": csrf } });
       return { status: response.status, body: await response.json() };
-    }, [grant!.grant_id, revokeNonce] as const);
+    }, [grant!.grant_id, revokeNonce, await accountCsrf(pageB, "api.consent-revoke")] as const);
     expect(revoked.status).toBe(200);
     expect(Object.keys(revoked.body).sort()).toEqual(["effectiveAt", "revoked"]);
     expect(revoked.body.revoked).toBe(true);

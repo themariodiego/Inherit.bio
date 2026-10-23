@@ -8,6 +8,7 @@ import {
 } from "@/lib/account-deletion";
 import { ACCOUNT_OPERATION_NONCE_MAX_LENGTH, verifyAccountOperationNonce } from "@/lib/account-operation-nonce";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { withAccountCsrf } from "@/lib/security/session-csrf";
 
 const requestBody = z
   .object({
@@ -17,7 +18,8 @@ const requestBody = z
   .strict();
 
 /** POST only, under the same rendered-nonce rule as POST /api/account/delete. */
-export async function POST(request: Request) {
+export const POST = withAccountCsrf("api.account-delete-cancel", handlePost);
+async function handlePost(request: Request) {
   if (!isSameOrigin(request)) {
     return NextResponse.json({ error: "invalid_request" }, { status: 400 });
   }

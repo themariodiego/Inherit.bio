@@ -11,6 +11,7 @@ import { createClient } from "@/lib/supabase/server";
 import { isPathBDraftPayload, isPathBReviewedDocumentDraftPayload } from "@/lib/uploads/other-adult-upload";
 import { createPathBReviewedDocumentDraft } from "@/lib/uploads/path-b-reviewed-document-server";
 import { createPathBDraft } from "@/lib/uploads/path-b-routes";
+import { admitAccountCsrf } from "@/lib/security/session-csrf";
 
 /**
  * The register's Path A body (closed-subject-draft-create-v1, owner decision
@@ -53,7 +54,15 @@ export async function POST(request: Request) {
   // The register's third body, path-b-reviewed-document (owner decision
   // 2026-10-16): the same person fields, evidence a named human reviews.
   if (isPathBReviewedDocumentDraftPayload(payload)) return createPathBReviewedDocumentDraft(request, payload);
+  // Path A carries the invite page's one-time X-Inherit-CSRF token, spent
+  // before anything else; the two Path B bodies above check their own page's.
+  const csrf = await admitAccountCsrf(request, "api.subject-drafts");
+  if (csrf.kind === "refused") return csrf.response;
+  const response = await pathAInvitation(request, payload);
+  return csrf.kind === "admitted" ? csrf.rotate(response) : response;
+}
 
+async function pathAInvitation(request: Request, payload: unknown): Promise<Response> {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user?.email) return new Response("Unauthorized", { status: 401 });

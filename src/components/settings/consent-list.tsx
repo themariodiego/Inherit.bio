@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { useCsrf } from "@/components/security/csrf-provider";
 import { EmptyState } from "@/components/site/empty-state";
 import { Button } from "@/components/ui/button";
 import { providerDisplayName } from "@/lib/llm";
@@ -31,6 +32,7 @@ export function ConsentList({
    * already use, so a reader meets one vocabulary rather than two.
    */
   const [revoking, setRevoking] = useState<string | null>(null);
+  const csrf = useCsrf("api.consent-revoke");
 
   if (grants.length === 0) {
     return (
@@ -67,7 +69,10 @@ export function ConsentList({
               onClick={async () => {
                 setRevoking(g.id);
                 try {
-                  await fetch(`/api/consents/${g.id}/revoke`, { method: "POST" });
+                  const response = await fetch(`/api/consents/${g.id}/revoke`, {
+                    method: "POST", headers: { "X-Inherit-CSRF": csrf.value() },
+                  });
+                  csrf.accept(response);
                   router.refresh();
                 } finally {
                   setRevoking(null);

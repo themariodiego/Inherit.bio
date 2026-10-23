@@ -120,7 +120,17 @@ describe("historical fixture verifier unit proofs do not claim SDK network or na
     const end = current.indexOf("  const [userResult, sessionResult] = await Promise.all([", start);
     expect(start).toBeGreaterThan(0); expect(end).toBeGreaterThan(start);
     expect(current.slice(0, start) + current.slice(end)).toBe(original("src/lib/account-deletion.ts"));
-    for (const path of ["src/app/api/account/delete/route.ts", "e2e/helpers/claimed-provenance-native-request.ts",
+    // G8.5 (2026-10-23): the route gained exactly one change, the one-time
+    // X-Inherit-CSRF wrapper in front of its unchanged handler. Undoing that
+    // wrap, and only it, gives the frozen source back.
+    const route = read("src/app/api/account/delete/route.ts");
+    const wrap = [['import { withAccountCsrf } from "@/lib/security/session-csrf";\n', ""],
+      ['export const POST = withAccountCsrf("api.account-delete", handlePost);\nasync function handlePost(request: Request) {',
+        "export async function POST(request: Request) {"]] as const;
+    for (const [added] of wrap) expect(route.split(added), added).toHaveLength(2);
+    expect(wrap.reduce((source, [added, frozenText]) => source.replace(added, frozenText), route))
+      .toBe(original("src/app/api/account/delete/route.ts"));
+    for (const path of ["e2e/helpers/claimed-provenance-native-request.ts",
       "scripts/tools/claimed-provenance-fixture.ts", "scripts/claimed-provenance-independent-sessions.mjs"])
       expect(read(path)).toBe(original(path));
   });

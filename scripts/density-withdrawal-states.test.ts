@@ -32,9 +32,11 @@ describe("real signed-out invitation refusal density boundaries", () => {
     for (const text of ["await createConfirmedUser(inviterEmail, password)", "await signIn(page, inviterEmail, password)",
       'name: "Send invitation", exact: true', "await drainMailUntil(page.request, () => input.findActualInvitation(recipientEmail)",
       "adultInvitationToken(message.html)", 'expect(message.subject).toBe("You were invited to Inherit")',
-      'await page.request.post("/auth/sign-out")', "await context.clearCookies()", "expect(await context.cookies()).toEqual([])",
+      "const signedOut = await signOut(page)", "await context.clearCookies()", "expect(await context.cookies()).toEqual([])",
       "adultInvitationUrl(token, origin.origin)", 'name: "Continue", exact: true', 'status).toBe("current")',
       'await expect(page).toHaveURL(`${origin.origin}/withdraw/session`)']) expect(helper).toContain(text);
+    // G8.5 (2026-10-23): the real sign-out carries its one-time token through the shared helper.
+    expect(helper).toMatch(/import \{[^}]*\bsignOut\b[^}]*\} from "\.\/session-csrf";/u);
     expect(helper).not.toContain("await createConfirmedUser(recipientEmail");
     expect(helper).not.toMatch(/\.fulfill\(|\.abort\(|\.setContent\(|\.addInitScript\(/u);
     expect(helper).not.toMatch(/\.from\([^)]*\)\.(?:insert|update|upsert)\(/u);

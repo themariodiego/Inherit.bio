@@ -19,6 +19,7 @@ import { CELL_FILE_PREPARING, CELL_NO_PREPARED_FILE } from "../src/copy/family/h
 import { GATE_BUTTON, GATE_CHECKBOX_LABEL } from "../src/copy/family/person";
 import { ACKNOWLEDGE_BUTTON, PORTRAIT_H1, VIEWER_FILE_PREPARING, VIEWER_NO_FILE_YET } from "../src/copy/family/portrait";
 import { OWN_UPLOAD_COPY } from "../src/copy/upload/consent";
+import { signOut } from "./helpers/session-csrf";
 
 /**
  * `processing` on the two Family surfaces that read another adult's record:
@@ -215,7 +216,7 @@ test("A invites B, B accepts and prepares a file, both sign every permission bot
   const token = adultInvitationToken(message.html);
   expect(token, "the invitation mail carries one fragment-form review link").toBeTruthy();
 
-  await page.request.post("/auth/sign-out");
+  await signOut(page);
   await acceptAdultInvitation({
     page, invitationUrl: adultInvitationUrl(token!), email: B.email, password: B.password,
   });
@@ -237,7 +238,7 @@ test("A invites B, B accepts and prepares a file, both sign every permission bot
   // B's own file, prepared through the real journey with the estimates layer
   // chosen, so B's own column and B's side of the Portrait have a source and
   // the only side without one is A's.
-  await page.request.post("/auth/sign-out");
+  await signOut(page);
   await signIn(page, B.email, B.password);
   const sourceFileId = await uploadOwnFileWithChosenReports(page, TINY_FIXTURE, {
     fileType: "vcf", purposes: ["reports.polygenic"],
@@ -254,11 +255,11 @@ test("A invites B, B accepts and prepares a file, both sign every permission bot
   for (const purpose of GRANTED_PURPOSES) await grantPurpose(page, selfSubjectA, purpose);
   pairId = await pairBetween(selfSubjectA, selfSubjectB);
   await acknowledgePortrait(page);
-  await page.request.post("/auth/sign-out");
+  await signOut(page);
   await signIn(page, A.email, A.password);
   for (const purpose of GRANTED_PURPOSES) await grantPurpose(page, representativeB, purpose);
   await acknowledgePortrait(page);
-  await page.request.post("/auth/sign-out");
+  await signOut(page);
 
   // A's file, in A's own context, with the preparation request held open:
   // finalized and stored, and the state these tests wait inside is the
@@ -364,7 +365,7 @@ test("/family/portrait/[pairId] processing: the page says the other adult's file
   const text = await page.locator("main").innerText();
   expect(text).not.toMatch(/(^|[^\d])0%/);
   expect(text).not.toMatch(/\b0 in 100\b/);
-  await page.request.post("/auth/sign-out");
+  await signOut(page);
 
   // A's reading, in the held context: A's own file in the second person, and
   // nothing about B, whose file is prepared. A page that showed A's sentence

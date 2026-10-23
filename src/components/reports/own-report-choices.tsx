@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import Link from "next/link";
 import { route } from "@/lib/primary-routes";
 import { useRouter } from "next/navigation";
+import { useCsrf } from "@/components/security/csrf-provider";
 import { Button } from "@/components/ui/button";
 import type { OwnReportChoicesView } from "@/lib/uploads/own-report-purpose";
 import { disableOwnReportChoice, enableOwnReportChoice, generateOwnReports } from "@/lib/uploads/own-report-choice-browser";
@@ -18,11 +19,12 @@ function ReportChoice({ choice, subjectId, onSaved }: {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState(false);
   const inFlight = useRef(false);
+  const revokeCsrf = useCsrf("api.consent-revoke");
   async function save() {
     if (inFlight.current || (!choice.granted && !affirmed)) return;
     inFlight.current = true; setPending(true); setError(false);
     try {
-      if (choice.granted && choice.grantId) await disableOwnReportChoice(choice.grantId, choice.revokeNonce ?? "");
+      if (choice.granted && choice.grantId) await disableOwnReportChoice(choice.grantId, choice.revokeNonce ?? "", revokeCsrf);
       else await enableOwnReportChoice(subjectId, choice);
       onSaved(choice.granted ? `${choice.label} turned off. Your original file is kept.`
         : `${choice.label} enabled. You can now generate your selected reports.`);
@@ -66,6 +68,7 @@ function ReportChoice({ choice, subjectId, onSaved }: {
 
 export function OwnReportChoices({ view, files }: { view: View; files: Array<{ id: string; label: string }> }) {
   const router = useRouter();
+  const processCsrf = useCsrf("api.file-process");
   const [fileId, setFileId] = useState(files[0]?.id ?? "");
   const [pending, setPending] = useState(false);
   const [message, setMessage] = useState("");
@@ -80,7 +83,7 @@ export function OwnReportChoices({ view, files }: { view: View; files: Array<{ i
     if (inFlight.current || !selectedFile || !canGenerate) return;
     inFlight.current = true; setPending(true); setMessage(""); setError("");
     try {
-      const state = await generateOwnReports(selectedFile);
+      const state = await generateOwnReports(selectedFile, processCsrf);
       setMessage(state === "ready" ? ancestrySelected
         ? "Your selected results are ready. Your ancestry result is on the ancestry page."
         : "Your selected reports are ready. Explore your results below."

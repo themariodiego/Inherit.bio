@@ -21,6 +21,7 @@ import { HEALTH_PICTURE_H1, OPEN_PERMISSIONS_LINK, pausedWith } from "../../src/
 import { ACKNOWLEDGE_BUTTON, ACKNOWLEDGE_CHECKBOX_LABEL, BLOCKING_BODY, HEADER_SENTENCE, PORTRAIT_H1,
   VIEWER_NO_FILE_YET, VIEWER_PORTRAIT_STEPS, PORTRAIT_STEPS, viewerMissingStep, missingStep, noFileYet } from "../../src/copy/family/portrait";
 import nothingReceipt from "../fixtures/synthetic-browser-grch38.receipt.json";
+import { accountCsrf, signOut } from "./session-csrf";
 
 interface ActualEmail { to: string[] | string; subject: string; html?: string }
 type Facts = Record<string, Record<string, unknown>[]>;
@@ -303,7 +304,7 @@ export function realPairedFamilyDensityFixtures(input: {
           const message = await drainMailUntil(page.request, () => input.findActualInvitation(bEmail), "this pair's actual invitation");
           expect((Array.isArray(message.to) ? message.to : [message.to])).toContain(bEmail);
           const token = adultInvitationToken(message.html); assert(token, "Native invitation link required");
-          await page.request.post("/auth/sign-out");
+          await signOut(page);
           await acceptAdultInvitation({ page, invitationUrl: adultInvitationUrl(token), email: bEmail, password, origin: origin.origin });
           let facts = await fullPair(accountIds);
           const selfA = facts.subjects.find(subject => subject.subject_account_id === accountIds[0]
@@ -324,7 +325,7 @@ export function realPairedFamilyDensityFixtures(input: {
           if (isPermissionBoundary(recipe)) {
             // A real independent sign-in is a prerequisite, not a seeded
             // mitigation timestamp from the invitation acceptance session.
-            await page.request.post("/auth/sign-out"); await signIn(page, bEmail, password);
+            await signOut(page); await signIn(page, bEmail, password);
             await turnOn(page, selfA.id as string, recipe === "health-paused" ? "family.heritability" : "family.portrait");
             if (recipe === "portrait-empty") {
               const pair = actualPortraitPair(await fullPair(accountIds), selfA.id as string, selfB.id as string);
@@ -358,7 +359,7 @@ export function realPairedFamilyDensityFixtures(input: {
             }
           } else {
             if (recipe !== "preparing") {
-              await page.request.post("/auth/sign-out"); await signIn(page, aEmail, password);
+              await signOut(page); await signIn(page, aEmail, password);
             } else await signIn(capturedPage, aEmail, password);
             if (isPermissionBoundary(recipe)) {
               if (recipe !== "portrait-missing")
@@ -383,7 +384,7 @@ export function realPairedFamilyDensityFixtures(input: {
               const artifact = attestations[0];
               const declared = await page.request.put("/api/settings/jurisdiction", {
                 headers: { origin: origin.origin, "content-type": "application/json",
-                  "x-inherit-operation-nonce": await settingsOperationNonce(page.request, "jurisdiction") },
+                  "x-inherit-operation-nonce": await settingsOperationNonce(page.request, "jurisdiction"), "x-inherit-csrf": await accountCsrf(page, "api.jurisdiction") },
                 data: { code: "XX", attestationVersion: artifact.version, attestationHash: artifact.body_sha256, affirmed: true },
               });
               expect(declared.status(), "Actual current TEST jurisdiction admission is mandatory").toBe(200);

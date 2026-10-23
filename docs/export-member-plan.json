@@ -471,6 +471,10 @@
       "disposition": "excluded-credential",
       "reason": "The purposes a rights session may be issued under, and the target kind each binds. It is rights-session credential machinery and holds no person's data."
     },
+    "private.session_csrf_token_uses": {
+      "disposition": "excluded-credential",
+      "reason": "Spent X-Inherit-CSRF token hashes, the route each was spent on and the token's twelve-hour expiry. They prevent replay and must never be archive content."
+    },
     "private.subject_ownership_transfers": {
       "disposition": "excluded-internal",
       "reason": "The worker's authorization row for one subject transfer: its revision and both account ids. The transfer itself is recorded in the legal audit chain; this row is machinery, and it names another person's account."

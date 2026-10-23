@@ -29,6 +29,7 @@ import { JURISDICTION_AFFIRM, JURISDICTION_SELECT_LABEL } from "../src/copy/sett
 import { parseArtifactFile } from "../src/lib/legal/artifact-file";
 import { artifactStatements } from "../src/lib/uploads/other-adult-upload";
 import { mintedOperationNonce } from "./helpers/operation-nonce";
+import { signOut } from "./helpers/session-csrf";
 
 /**
  * payloadBoundaryContract (verification: this file): no request or response
@@ -393,7 +394,7 @@ test("legal evidence payload boundary: a reviewed-document Path B request, named
 
   // The person confirms with their own signature, with no account.
   const mail = await drainMailUntil(request, mailTo(APPROVED.email, "A request to add your DNA file to Inherit"), "the reviewed-document request");
-  await page.request.post("/auth/sign-out");
+  await signOut(page);
   await page.context().clearCookies();
   const token = adultInvitationToken(mail.html);
   expect(token).toBeTruthy();

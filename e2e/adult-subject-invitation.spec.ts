@@ -12,6 +12,7 @@ import {
   tickAdultSubjectStatements,
 } from "./helpers";
 import { ADULT_SUBJECT_STATEMENTS, ADULT_SUBJECT_STATEMENTS_HEADING } from "../src/copy/family/adult-subject-statements";
+import { signOut } from "./helpers/session-csrf";
 
 // A fresh inviter per run: the database counts invitation attempts per acting
 // account (global-contact-refusal-bar-v1.quotaAuthority, 10 an hour and 30 a
@@ -151,7 +152,7 @@ test("/family/invite complete: invited adult accepts without granting inviter ac
   const afterScanner = await admin.from("token_hashes").select("status").eq("token_hash", tokenHash).single();
   expect(afterScanner.data?.status, "a scanner GET must not activate the token").toBe("current");
 
-  await page.request.post("/auth/sign-out");
+  await signOut(page);
   const outgoing: { url: string; method: string; body: string | null }[] = [];
   page.on("request", request => outgoing.push({ url: request.url(), method: request.method(), body: request.postData() }));
   await page.goto(link);
@@ -175,7 +176,7 @@ test("/family/invite complete: invited adult accepts without granting inviter ac
   await expect(page.getByRole("button", { name: "Accept through my account" })).toHaveCount(0);
   await expect(page.getByRole("checkbox"), "no statement is offered to an account that cannot accept").toHaveCount(0);
   await expect(page.getByRole("button", { name: "Refuse", exact: true })).toBeVisible();
-  await page.request.post("/auth/sign-out");
+  await signOut(page);
 
   await page.goto("/withdraw/session");
   await page.getByRole("link", { name: "Sign in to accept" }).click();
@@ -282,7 +283,7 @@ test("/withdraw/[token] complete: pinned /withdraw/session refusal closes the re
 
   // No account, and prove it rather than assume it: refusing must not require
   // a stranger to register first.
-  await page.request.post("/auth/sign-out");
+  await signOut(page);
   await page.context().clearCookies();
   await page.goto(link);
   await page.getByRole("button", { name: "Continue", exact: true }).click();
@@ -373,7 +374,7 @@ test("signed-out current-session deletion closes only the empty reservation with
   const refusalsBefore = await refusalRows();
   expect(refusalsBefore).toEqual({ legacy: [], canonical: [] });
 
-  await page.request.post("/auth/sign-out");
+  await signOut(page);
   await page.context().clearCookies();
   await page.goto(link);
   await page.getByRole("button", { name: "Continue", exact: true }).click();
@@ -437,7 +438,7 @@ test("/withdraw/[token] processing: the signed-out session announces its pending
   const credential = await admin.from("token_hashes").select("id").eq("token_hash", tokenHash).single();
   expect(credential.error).toBeNull();
 
-  await page.request.post("/auth/sign-out");
+  await signOut(page);
   await page.context().clearCookies();
   await page.goto(link);
   await page.getByRole("button", { name: "Continue", exact: true }).click();

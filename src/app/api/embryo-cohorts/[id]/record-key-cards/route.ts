@@ -6,6 +6,7 @@ import { verifyEmbryoOperation } from "@/lib/embryos/operation-token";
 import { deliveryCard, parseRpcCards, type DeliveryCard } from "@/lib/embryos/record-key-cards";
 import { recordKeyCardsBody } from "@/lib/embryos/routes";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { withAccountCsrf } from "@/lib/security/session-csrf";
 
 /**
  * `POST /api/embryo-cohorts/[id]/record-key-cards` (register
@@ -19,7 +20,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
 
 const DELIVERY_KEYS = ["cohort_id", "recipient_set_revision", "key_revision", "record_key_cards"] as const;
 
-export async function POST(request: Request, context: { params: Promise<{ id: string }> }) {
+export const POST = withAccountCsrf("api.embryo-record-key-cards", handlePost);
+async function handlePost(request: Request, context: { params: Promise<{ id: string }> }) {
   const { id } = await context.params;
   if (!z.uuid().safeParse(id).success) return notFound();
   const account = await getSensitiveAccountContext();

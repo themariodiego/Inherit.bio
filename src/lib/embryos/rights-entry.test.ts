@@ -9,6 +9,7 @@ import { proxy } from "@/proxy";
 import { invitationTokenHash } from "./rights-session";
 import { mintRightsActivationCandidate } from "./rights-activation";
 import { rightsInterstitialScript } from "./rights-interstitial";
+import { mintSessionCsrf, verifySessionCsrf } from "@/lib/security/session-csrf-core";
 
 const mocks = vi.hoisted(() => ({ rpc: vi.fn(), authClient: vi.fn(), admin: vi.fn() }));
 vi.mock("@/lib/supabase/admin", () => ({ createAdminClient: mocks.admin }));
@@ -40,7 +41,7 @@ function browserScript(fragment: string) {
     },
     fetch, URL, Date,
   };
-  vm.runInNewContext(rightsInterstitialScript("served-form"), context);
+  vm.runInNewContext(rightsInterstitialScript("served-form", "served-csrf"), context);
   return {
     events, button, status, fetch, context, order,
     get url() { return url; }, get hashReads() { return hashReads; },
@@ -145,6 +146,8 @@ describe("mailed rights entry", () => {
     expect(page.fetch).toHaveBeenCalledTimes(1);
     expect(page.fetch.mock.calls[0][0]).toBe("/api/rights/activate");
     expect(JSON.parse(page.fetch.mock.calls[0][1].body)).toEqual({ token, nonce: "served-form" });
+    // G8.5 (2026-10-23): the candidate's one-time token travels in its header, never the body.
+    expect(page.fetch.mock.calls[0][1].headers).toEqual({ "Content-Type": "application/json", "X-Inherit-CSRF": "served-csrf" });
     expect(page.status.textContent).toContain("unavailable");
     await page.events.get("click")!();
     expect(page.fetch).toHaveBeenCalledTimes(1);
@@ -181,7 +184,17 @@ describe("mailed rights entry", () => {
   });
 
   it("escapes script terminators in serialized form values", () => {
-    expect(rightsInterstitialScript("</script>")).not.toContain("</script>");
+    expect(rightsInterstitialScript("</script>", "</script>")).not.toContain("</script>");
+  });
+
+  it("renders the candidate's one-time X-Inherit-CSRF token, bound to the cookie it sets and stored nowhere", async () => {
+    const response = GET();
+    const html = await response.text();
+    const secret = response.headers.get("set-cookie")!.split(";")[0].split("=")[1];
+    const served = html.match(/'X-Inherit-CSRF': "([^"]+)"/u)?.[1];
+    const candidate = { kind: "token-candidate" as const, sessionHash: crypto.createHash("sha256").update(secret).digest("hex") };
+    expect(verifySessionCsrf(served, candidate, "api.rights-activate")).not.toBeNull();
+    expect(mocks.admin).not.toHaveBeenCalled();
   });
 });
 
@@ -196,12 +209,19 @@ describe("actual activation route candidate enforcement", () => {
   it("passes only hashes and the served nonce to the one-time RPC", async () => {
     const token = crypto.randomBytes(32).toString("base64url");
     const candidate = mintRightsActivationCandidate();
-    mocks.rpc.mockResolvedValue({ data: [{ expires_at: new Date(Date.now() + 60000).toISOString() }], error: null });
-    const response = await POST(request(token, candidate.formToken, candidate.setCookie.split(";")[0]));
+    // The candidate's one-time X-Inherit-CSRF token (G8.5), spent first.
+    const csrf = mintSessionCsrf({ kind: "token-candidate", sessionHash: candidate.candidateHash }, "api.rights-activate");
+    mocks.rpc.mockImplementation(async (name: string) => name === "consume_session_csrf_v1" ? { data: true, error: null }
+      : { data: [{ expires_at: new Date(Date.now() + 60000).toISOString() }], error: null });
+    const response = await POST(request(token, candidate.formToken, candidate.setCookie.split(";")[0], { "x-inherit-csrf": csrf }));
     expect(response.status).toBe(303);
     expect(response.headers.get("location")).toBe("/withdraw/session");
     expect(response.headers.get("set-cookie")).toContain("HttpOnly; SameSite=Strict");
     expect(await response.text()).toBe("");
+    expect(mocks.rpc).toHaveBeenCalledWith("consume_session_csrf_v1", expect.objectContaining({
+      p_route_id: "api.rights-activate", p_session_kind: "token-candidate",
+      p_token_hash: crypto.createHash("sha256").update(csrf).digest("hex"), p_account_id: null, p_session_id: null,
+    }));
     expect(mocks.rpc).toHaveBeenCalledWith("activate_rights_session_v1", {
       p_token_hash: invitationTokenHash(token), p_session_hash: expect.stringMatching(/^[a-f0-9]{64}$/u),
       p_form_nonce: expect.stringMatching(/^[A-Za-z0-9_-]{32}$/u),

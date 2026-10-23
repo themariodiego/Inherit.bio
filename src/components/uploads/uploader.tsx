@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useCsrf } from "@/components/security/csrf-provider";
 import { Button } from "@/components/ui/button";
 import { REQUEST_DATA_BUTTON } from "@/copy/embryos/index";
 import { UPLOAD_H1 } from "@/copy/embryos/upload";
@@ -67,6 +68,9 @@ export function Uploader({ disabled = false, subjectId = "me", limits = null, fr
      * reads are called on this device and only the resulting VCF is sent. */
     readCalling?: boolean }) {
   const router = useRouter();
+  // The one-time X-Inherit-CSRF tokens of the three upload routes.
+  const csrf = { session: useCsrf("api.file-upload-session"), finalize: useCsrf("api.file-finalize"),
+    process: useCsrf("api.file-process") };
   const inputRef = useRef<HTMLInputElement>(null);
   const inFlight = useRef(false);
   /** Attempts already spent on one staged upload. Keyed by the upload, so a
@@ -89,7 +93,7 @@ export function Uploader({ disabled = false, subjectId = "me", limits = null, fr
   async function prepare(fileId: string, reportsOnly = false) {
     setPhase({ step: reportsOnly ? "making-reports" : "preparing", fileId });
     try {
-      const receipt = await prepareSubjectFile(fileId);
+      const receipt = await prepareSubjectFile(fileId, { csrf: csrf.process });
       setPhase({ step: receipt.analysisState === "active" ? "results-ready" : "prepared", fileId });
     } catch (error) {
       setPhase({ step: "preparation-error", fileId,
@@ -109,7 +113,7 @@ export function Uploader({ disabled = false, subjectId = "me", limits = null, fr
     inFlight.current = true;
     setPhase({ step: "validating", pct: 0 });
     try {
-      const receipt = await finishStagedUpload(uploadId);
+      const receipt = await finishStagedUpload(uploadId, csrf);
       await prepare(receipt.fileId);
     } catch (error) { setPhase(uploadError(error, limits)); }
     finally { inFlight.current = false; }
@@ -154,7 +158,7 @@ export function Uploader({ disabled = false, subjectId = "me", limits = null, fr
     setReadCalls(null);
     try {
       const receipt = await uploadSubjectFile(file, subjectId, setPhase, limits,
-        { readCalling, companions, onReadCalls: setReadCalls });
+        { readCalling, companions, onReadCalls: setReadCalls }, csrf);
       await prepare(receipt.fileId);
     } catch (error) { setPhase(uploadError(error, limits)); }
     finally {

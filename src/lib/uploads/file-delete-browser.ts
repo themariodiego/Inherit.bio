@@ -1,6 +1,9 @@
+import type { CsrfHandle } from "@/lib/security/session-csrf-client";
+
 /** Repeats only the same owner-authorized DELETE after its explicit pending
- * receipt. A timeout never means deletion completed. */
-export async function deleteFileUntilSettled(fileId: string, external: AbortSignal): Promise<
+ * receipt. A timeout never means deletion completed. Each DELETE spends the
+ * route's current one-time X-Inherit-CSRF token and keeps the successor. */
+export async function deleteFileUntilSettled(fileId: string, external: AbortSignal, csrf: CsrfHandle): Promise<
   { status: "deleted" } | { status: "pending" } | { status: "failed"; code: unknown }
 > {
   if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(fileId)) return { status: "failed", code: null };
@@ -18,7 +21,9 @@ export async function deleteFileUntilSettled(fileId: string, external: AbortSign
   }
   try {
     while (!signal.aborted) {
-      const response = await fetch(`/api/files/${fileId}`, { method: "DELETE", signal });
+      const response = await fetch(`/api/files/${fileId}`, { method: "DELETE", signal,
+        headers: { "X-Inherit-CSRF": csrf.value() } });
+      csrf.accept(response);
       signal.throwIfAborted();
       if (response.status === 204) return { status: "deleted" };
       const raw: unknown = await response.json().catch(() => null);

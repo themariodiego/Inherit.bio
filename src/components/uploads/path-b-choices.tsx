@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { route } from "@/lib/primary-routes";
+import { useCsrf } from "@/components/security/csrf-provider";
 import { Button } from "@/components/ui/button";
 import { PATH_B_CHOICES_COPY as COPY } from "@/copy/upload/other-adult";
 import { PATH_B_STATEMENTS, type PathBChoice, type PathBChoicesView } from "@/lib/uploads/path-b-purpose";
@@ -22,6 +23,7 @@ function ChoiceRow({ subjectId, choice, open, onSaved }: {
   const [pending, setPending] = useState(false);
   const [failed, setFailed] = useState(false);
   const inFlight = useRef(false);
+  const revokeCsrf = useCsrf("api.consent-revoke");
   const granted = choice.grantId !== null;
   const layer = COPY.layers[choice.purpose];
   const who = choice.direction === "self" ? COPY.forYou : COPY.forThem;
@@ -32,7 +34,7 @@ function ChoiceRow({ subjectId, choice, open, onSaved }: {
     try {
       const response = granted
         ? await fetch(`/api/consents/${choice.grantId}/revoke`, { method: "POST", credentials: "same-origin", cache: "no-store",
-          headers: { "X-Inherit-Operation-Nonce": choice.revokeNonce ?? "" } })
+          headers: { "X-Inherit-Operation-Nonce": choice.revokeNonce ?? "", "X-Inherit-CSRF": revokeCsrf.value() } })
         : await fetch("/api/consents", {
           method: "POST", credentials: "same-origin", cache: "no-store",
           headers: { "Content-Type": "application/json", "x-inherit-csrf": choice.offer!.token },
@@ -40,6 +42,7 @@ function ChoiceRow({ subjectId, choice, open, onSaved }: {
             artifactVersion: choice.offer!.artifactVersion, artifactPresentationToken: choice.offer!.token,
             affirmed: true, statementKeys: PATH_B_STATEMENTS[choice.direction] }),
         });
+      if (granted) revokeCsrf.accept(response);
       if (!response.ok) throw new Error("not recorded");
       onSaved();
     } catch { setFailed(true); setAffirmed(false); inFlight.current = false; setPending(false); }
