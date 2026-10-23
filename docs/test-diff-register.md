@@ -1,3 +1,7 @@
+## 2026-10-23 — The email capture test removes its temporary clones
+
+`src/lib/claims/capture-emails.test.ts`, 12/12. The suite cloned the repository into `inherit-email-capture-test-*` and wrote a standalone capture into `inherit-email-standalone-test-*` under the system temp directory, and never removed either. One development container had 58 clones, 3.8 GB. An `afterAll` now removes both directories (`rm`, recursive, which unlinks the `node_modules` symlinks without following them). No assertion changes. After a run, neither prefix is left in the temp directory; it also runs when `beforeAll` fails.
+
 ## 2026-10-23 — Density: visible characters on every page (G2.5)
 
 This entry follows the owner's decision of 23 October (decisions, "Density: visible characters on every page (G2.5)"). Under the corrected rules, `evaluateDensityCapture` counts the above-the-fold characters on every page that carries its corrected readings, not only on the seven signed legal documents. The contract rules and the frozen modules are unchanged.

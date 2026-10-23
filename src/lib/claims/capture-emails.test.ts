@@ -1,10 +1,10 @@
-import { access, mkdir, mkdtemp, readFile, readdir, symlink } from "node:fs/promises";
+import { access, mkdir, mkdtemp, readFile, readdir, rm, symlink } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { pathToFileURL } from "node:url";
-import { beforeAll, describe, expect, it, vi } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { renderMail, mailSubject } from "../email";
 import { captureEmailClaims as sourceCaptureEmailClaims, sha256, type EmailCaptureResult } from "./capture-emails";
 import { EMAIL_RENDERERS, emailFixtures } from "./email-fixtures";
@@ -73,8 +73,15 @@ describe("independent production email fixture inventory", () => {
 describe("actual production email HTML and envelope capture", () => {
   let outputDirectory: string, fixtureRoot: string, sourceHead: string, sourceTree: string, result: EmailCaptureResult;
   let captureEmailClaims: typeof sourceCaptureEmailClaims;
+  // Each run clones the repository into these; without removal they pile up at
+  // tens of megabytes a run.
+  const temporaryDirectories: string[] = [];
+  afterAll(async () => {
+    await Promise.all(temporaryDirectories.map((directory) => rm(directory, { recursive: true, force: true })));
+  });
   beforeAll(async () => {
     const directory = await mkdtemp(join(tmpdir(), "inherit-email-capture-test-"));
+    temporaryDirectories.push(directory);
     outputDirectory = join(directory, "capture");
     fixtureRoot = join(directory, "repo");
     const git = async (args: string[], cwd = projectRoot) => (await promisify(execFile)("git",
@@ -164,7 +171,9 @@ describe("actual production email HTML and envelope capture", () => {
     expect(await readFile(join(outputDirectory, "capture.json"))).toEqual(before);
   });
   it("captures in the standalone tsx runner without host-only serialization helpers", async () => {
-    const directory = join(await mkdtemp(join(tmpdir(), "inherit-email-standalone-test-")), "capture");
+    const parent = await mkdtemp(join(tmpdir(), "inherit-email-standalone-test-"));
+    temporaryDirectories.push(parent);
+    const directory = join(parent, "capture");
     const script = `import { captureEmailClaims } from "./src/lib/claims/capture-emails";
       (async () => { const result = await captureEmailClaims({ outputDirectory: ${JSON.stringify(directory)},
         registry: { resolveCitation: () => undefined, resolveClaim: () => undefined },
