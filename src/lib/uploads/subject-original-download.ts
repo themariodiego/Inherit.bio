@@ -6,6 +6,7 @@ import { getSensitiveAccountContext } from "@/lib/account-deletion";
 import { CHUNK_BYTES, downloadCookie, downloadCookieHash } from "@/lib/future-person/review";
 import { preparedStorageConfig } from "@/lib/genome/prepared-source/storage-common";
 import { isTestJurisdictionEnabled } from "@/lib/legal/jurisdictions";
+import { isOperationNonceRefusal, personOperationNonceArgs, personOperationNonceFrom } from "@/lib/person-operation-nonce";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { originalDownloadName } from "./original-download-name";
 
@@ -44,7 +45,7 @@ const SEQUENCE = /^(0|[1-9][0-9]{0,8})$/u;
 const SAFE_NAME = /^[A-Za-z0-9][A-Za-z0-9 ._-]{0,119}$/u;
 
 export type DownloadActor = { accountId: string; sessionId: string };
-type RpcResult = { data: unknown; error: { code?: string } | null };
+type RpcResult = { data: unknown; error: { code?: string; message?: string } | null };
 export type SubjectDownloadDependencies = {
   /** TEST-LOCAL only (INHERIT_TEST_JURISDICTION=1): closed, no session opens and no chunk is served. */
   enabled(): boolean;
@@ -122,12 +123,27 @@ export async function openSubjectDownload(request: Request, subjectId: string, d
     if (target.error) return errorCode(target.error) === "42501" ? downloadNotFound() : unavailable();
     return target.data === true ? invalid(query.issues) : downloadNotFound();
   }
+  // The one-time operation nonce for this account, session and file (G5.6,
+  // 23 Oct 2026; 20261023130000_legal_audit_attribution_remaining.sql): the
+  // door records its hash before the session is created, so the creation's
+  // audit event names the account and a replay opens nothing. As with a bad
+  // query, a subject the caller cannot read is the opaque 404 first.
+  const nonce = personOperationNonceFrom(request, { accountId: actor.accountId, sessionId: actor.sessionId,
+    operation: "subject_download_open", targetId: query.file });
+  if (!nonce) {
+    const target = await deps.rpc("subject_original_download_target_v1", {
+      p_account_id: actor.accountId, p_session_id: actor.sessionId, p_subject_id: subjectId,
+    }, request.signal);
+    if (target.error) return errorCode(target.error) === "42501" ? downloadNotFound() : unavailable();
+    return target.data === true ? invalid(["nonce"]) : downloadNotFound();
+  }
   const secret = deps.secret();
   const cookieHash = crypto.createHash("sha256").update(secret).digest("hex");
-  const result = await deps.rpc("open_subject_original_download_v1", {
+  const result = await deps.rpc("open_subject_original_download_with_nonce_v1", {
     p_account_id: actor.accountId, p_session_id: actor.sessionId, p_subject_id: subjectId,
-    p_file_id: query.file, p_cookie_hash: cookieHash,
+    p_file_id: query.file, p_cookie_hash: cookieHash, ...personOperationNonceArgs(nonce),
   }, request.signal);
+  if (isOperationNonceRefusal(result.error)) return invalid(["nonce"]);
   if (result.error) return errorCode(result.error) === "42501" ? downloadNotFound() : unavailable();
   const session = opened.safeParse(result.data);
   if (!session.success || session.data.chunkCount !== Math.ceil(session.data.sizeBytes / CHUNK_BYTES)

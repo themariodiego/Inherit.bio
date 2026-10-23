@@ -28,6 +28,7 @@ import {
 import { JURISDICTION_AFFIRM, JURISDICTION_SELECT_LABEL } from "../src/copy/settings/jurisdiction";
 import { parseArtifactFile } from "../src/lib/legal/artifact-file";
 import { artifactStatements } from "../src/lib/uploads/other-adult-upload";
+import { mintedOperationNonce } from "./helpers/operation-nonce";
 
 /**
  * payloadBoundaryContract (verification: this file): no request or response
@@ -477,10 +478,16 @@ test("large download payload boundary: the caller's own original arrives in boun
     const self = await adminClient().from("subjects").select("id").eq("subject_account_id", ownerId).eq("subject_class", "self").single();
     expect(self.error).toBeNull();
     const original = fs.readFileSync(file);
-    const result = await page.evaluate(async ({ subject, fileId }) => {
+    // No page renders the create step's one-time nonce yet, so each open
+    // carries one minted as a page mints it, for this session and file
+    // (G5.6, 23 Oct 2026; 20261023130000).
+    const nonces = [await mintedOperationNonce(page.context(), ownerId, "subject_download_open", fileId),
+      await mintedOperationNonce(page.context(), ownerId, "subject_download_open", fileId)];
+    const result = await page.evaluate(async ({ subject, fileId, nonces }) => {
       const invalid = await fetch(`/api/subjects/${subject}/download?file=${fileId}&offset=0`, { credentials: "same-origin" });
       const foreign = await fetch(`/api/subjects/${crypto.randomUUID()}/download?file=${fileId}`, { credentials: "same-origin" });
-      const opened = await fetch(`/api/subjects/${subject}/download?file=${fileId}`, { credentials: "same-origin", cache: "no-store" });
+      const opened = await fetch(`/api/subjects/${subject}/download?file=${fileId}`, { credentials: "same-origin", cache: "no-store",
+        headers: { "X-Inherit-Operation-Nonce": nonces[0]! } });
       const descriptor = await opened.json() as { session: string; sha256: string; sizeBytes: number; chunkCount: number; chunkRoute: string };
       const sizes: number[] = [];
       const parts: Uint8Array[] = [];
@@ -496,11 +503,12 @@ test("large download payload boundary: the caller's own original arrives in boun
       for (const part of parts) { whole.set(part, offset); offset += part.length; }
       const digest = [...new Uint8Array(await crypto.subtle.digest("SHA-256", whole))].map(byte => byte.toString(16).padStart(2, "0")).join("");
       // A second open revokes the first session: its next chunk is the opaque 404.
-      await fetch(`/api/subjects/${subject}/download?file=${fileId}`, { credentials: "same-origin", cache: "no-store" });
+      await fetch(`/api/subjects/${subject}/download?file=${fileId}`, { credentials: "same-origin", cache: "no-store",
+        headers: { "X-Inherit-Operation-Nonce": nonces[1]! } });
       const revoked = await fetch(descriptor.chunkRoute.replace("{sequence}", "0"), { credentials: "same-origin", cache: "no-store" });
       return { invalid: invalid.status, foreign: foreign.status, opened: opened.status, keys: Object.keys(descriptor).sort(),
         descriptor, sizes, digest, revoked: revoked.status };
-    }, { subject: self.data!.id as string, fileId });
+    }, { subject: self.data!.id as string, fileId, nonces });
     expect(result).toMatchObject({ invalid: 422, foreign: 404, opened: 200, revoked: 404 });
     const value = result as { keys: string[]; descriptor: { sha256: string; sizeBytes: number; chunkCount: number }; sizes: number[]; digest: string };
     expect(value.keys).toEqual(["chunkBytes", "chunkCount", "chunkRoute", "filename", "session", "sha256", "sizeBytes"]);

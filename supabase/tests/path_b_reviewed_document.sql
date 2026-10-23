@@ -217,6 +217,28 @@ select is((select r->>'subjectDraftId' from (select public.create_path_b_reviewe
   '0b5e0000-0000-4000-8000-000000000001','0b5e0000-0000-4000-8000-000000000011','Synthetic Relative',date '1980-05-05',
   decode('00112233445566778899aabbccddeeff','hex'),repeat('a',64),repeat('a',64),true) r) x),pg_temp.sid('main')::text,
  'the same request reserves the same draft once');
+-- G5.6 (20261023130000): the draft names the uploader only through the
+-- door that records the page's one-time nonce. The actor is cleared where
+-- production would have committed; no user JWT is present.
+savepoint attributed_draft;
+select set_config('request.jwt.claims','{"role":"service_role"}',true),set_config('inherit.legal_audit_actor','',true);
+select public.create_path_b_reviewed_document_draft_v1('0b5e0000-0000-4000-8000-000000000001','0b5e0000-0000-4000-8000-000000000011','Synthetic Attributed',date '1980-05-05',
+  decode('00112233445566778899aabbccddeeff','hex'),repeat('7',64),repeat('7',64),true);
+select is((select audit_principal_id from public.legal_audit_log where event_code='subject-draft.created' and route_id='api.subject-drafts' order by seq desc limit 1),null::uuid,
+ 'the draft writer alone, with no nonce, names no one');
+select set_config('request.jwt.claims','{"role":"service_role"}',true),set_config('inherit.legal_audit_actor','',true);
+select lives_ok($$select public.create_path_b_reviewed_document_draft_with_nonce_v1('0b5e0000-0000-4000-8000-000000000001','0b5e0000-0000-4000-8000-000000000011','Synthetic Attributed',date '1980-05-05',
+  decode('00112233445566778899aabbccddeeff','hex'),repeat('8',64),repeat('8',64),true,null,
+  encode(extensions.digest('reviewed-draft-nonce-one','sha256'),'hex'),clock_timestamp()+interval '5 minutes')$$,'the door reserves a draft');
+select ok(coalesce((select audit_principal_id from public.legal_audit_log where event_code='subject-draft.created' and route_id='api.subject-drafts' order by seq desc limit 1)
+  =(select audit_principal_id from private.legal_audit_account_principals where account_id='0b5e0000-0000-4000-8000-000000000001'::uuid),false),'and its event names the uploader');
+select throws_ok($$select public.create_path_b_reviewed_document_draft_with_nonce_v1('0b5e0000-0000-4000-8000-000000000001','0b5e0000-0000-4000-8000-000000000011','Synthetic Attributed',date '1980-05-05',
+  decode('00112233445566778899aabbccddeeff','hex'),repeat('9',64),repeat('9',64),true,null,
+  encode(extensions.digest('reviewed-draft-nonce-one','sha256'),'hex'),clock_timestamp()+interval '5 minutes')$$,
+ '22023','invalid_operation_nonce','a replayed nonce is refused');
+rollback to attributed_draft;
+select is((select count(*) from public.subjects where display_label='Synthetic Attributed'),0::bigint,
+ 'the attribution drafts were undone with their savepoint');
 select ok((select d.adult_flow='path-b-reviewed-document' and d.confirmation_mode='path-b-token-or-account'
   and d.evidence_kind='uploaded_document' and d.state='draft' and s.lifecycle='draft' and s.subject_class='other_adult'
   and s.subject_account_id is null and s.owner_account_id='0b5e0000-0000-4000-8000-000000000001'

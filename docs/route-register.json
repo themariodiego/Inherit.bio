@@ -17792,7 +17792,8 @@
         "contentType": "application/json",
         "schema": "closed-subject-draft-create-v1",
         "requiredHeader": "X-Inherit-Operation-Nonce-from-the-invite-page-for-the-path-a-adult-invitation",
-        "operationNonce": "recorded-in-account_operation_nonces-before-the-writer-in-the-same-transaction-so-its-legal-audit-event-names-the-actor-G5.6-2026-10-23"
+        "operationNonce": "recorded-in-account_operation_nonces-before-the-writer-in-the-same-transaction-so-its-legal-audit-event-names-the-actor-G5.6-2026-10-23",
+        "pathBDraftNonce": "both-path-b-bodies-carry-the-upload-page's-one-time-draft-nonce-in-x-inherit-csrf-recorded-in-account_operation_nonces-before-the-draft-is-written-20261023130000"
       },
       "stateProfile": "endpoint",
       "policy": {
@@ -17881,6 +17882,11 @@
           "file": "required-genome-file-id-joined-server-side-to-the-route-subject"
         },
         "unknownMissingOrInvalid": "invalid-request-v1"
+      },
+      "requestContract": {
+        "requiredHeader": "X-Inherit-Operation-Nonce-bound-to-this-account-session-and-query.file",
+        "operationNonce": "recorded-in-account_operation_nonces-before-the-session-is-created-in-the-same-transaction-so-its-legal-audit-event-names-the-actor-G5.6-2026-10-23",
+        "missingOrInvalidNonce": "invalid-request-v1-only-for-a-readable-subject-else-resource-not-found-v1"
       },
       "stateProfile": "endpoint",
       "policy": {

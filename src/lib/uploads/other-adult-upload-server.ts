@@ -4,6 +4,7 @@ import crypto from "node:crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import { hmacSecret } from "@/lib/crypto";
+import { mintPersonOperationNonce, verifyPersonOperationNonce, type VerifiedPersonOperationNonce } from "@/lib/person-operation-nonce-core";
 import { accountCapability, isTestJurisdictionEnabled } from "@/lib/legal/jurisdictions";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
@@ -107,18 +108,18 @@ export function readOtherAdultPresentation(token: string, now = Date.now()): Oth
 }
 
 /**
- * The page's operation token for the two uploader mutations that are not
- * signatures: reserving a draft (target: the account) and sending the
- * request (target: the draft). It travels in `x-inherit-csrf` and binds the
- * account, its session, the operation and the target.
+ * The page's operation token for sending the request (target: the draft), the
+ * one uploader mutation here that is neither a signature nor a draft. It
+ * travels in `x-inherit-csrf` and binds the account, its session, the
+ * operation and the target.
  */
 const OPERATION_CONTEXT = "path-b-operation-v1";
 const OPERATION_LIFETIME_MS = 10 * 60 * 1000;
-export type PathBOperation = "draft-create" | "request-send";
+export type PathBOperation = "request-send";
 const operationSchema = z.object({
   accountId: uuid,
   sessionId: uuid,
-  operation: z.enum(["draft-create", "request-send"]),
+  operation: z.enum(["request-send"]),
   targetId: uuid,
   expiresAt: z.number().int().positive().safe(),
 }).strict();
@@ -136,6 +137,24 @@ export function verifyPathBOperation(token: string | null, expected: { accountId
   return parsed.success && parsed.data.expiresAt > now && parsed.data.expiresAt - now <= OPERATION_LIFETIME_MS
     && parsed.data.accountId === expected.accountId && parsed.data.sessionId === expected.sessionId
     && parsed.data.operation === expected.operation && parsed.data.targetId === expected.targetId;
+}
+
+/**
+ * Reserving a draft (both Path B bodies) takes the page's one-time person
+ * operation nonce instead, still in `x-inherit-csrf` (G5.6, 23 Oct 2026;
+ * 20261023130000_legal_audit_attribution_remaining.sql): the database door
+ * records its hash before the draft is written, so the draft's audit event
+ * names the uploader and a replay reserves nothing.
+ */
+export function mintPathBDraftNonce(accountId: string, sessionId: string, now = Date.now()): string {
+  return mintPersonOperationNonce({ accountId, sessionId, operation: "path_b_draft_create", targetId: accountId }, now);
+}
+
+/** The draft nonce a request carries, verified for this account and session, or null. */
+export function pathBDraftNonce(token: string | null, actor: { accountId: string; sessionId: string },
+  now = Date.now()): VerifiedPersonOperationNonce | null {
+  return verifyPersonOperationNonce(token, { accountId: actor.accountId, sessionId: actor.sessionId,
+    operation: "path_b_draft_create", targetId: actor.accountId }, now);
 }
 
 /** The uploader's own Path B people, read-only. Null outside TEST-LOCAL. */
@@ -211,7 +230,7 @@ export async function prepareOtherAdultUploads(): Promise<OtherAdultUploads | nu
     const presented = await presentUploaderArtifact(admin, actor, artifact, target.subjectId);
     result.push(presented.blockedBy ? { ...target, blockedBy: presented.blockedBy } : { ...target, operationToken, ...presented });
   }
-  return { draftToken: mintPathBOperation(actor.accountId, actor.sessionId, "draft-create", actor.accountId), targets: result };
+  return { draftToken: mintPathBDraftNonce(actor.accountId, actor.sessionId), targets: result };
 }
 
 type UploaderArtifact = Omit<OtherAdultConsentView, "token"> & { bodySha256: string };

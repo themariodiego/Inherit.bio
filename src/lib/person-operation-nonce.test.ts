@@ -37,6 +37,9 @@ describe("the person operation nonce", () => {
       consent_revoke: "api.consent-revoke",
       portrait_acknowledge: "api.family-acknowledge",
       adult_invitation_create: "api.subject-drafts",
+      // 20261023130000: the Path B draft and the original download.
+      path_b_draft_create: "api.subject-drafts",
+      subject_download_open: "api.subject-download",
     });
   });
 

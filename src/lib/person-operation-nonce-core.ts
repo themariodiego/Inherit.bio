@@ -36,7 +36,10 @@ export type PersonOperation =
   | "family_sharing_resume"
   | "consent_revoke"
   | "portrait_acknowledge"
-  | "adult_invitation_create";
+  | "adult_invitation_create"
+  // 20261023130000: the Path B draft (both bodies) and the original download.
+  | "path_b_draft_create"
+  | "subject_download_open";
 
 /** Each operation belongs to exactly one registered route. */
 export const PERSON_OPERATION_ROUTES: Readonly<Record<PersonOperation, string>> = Object.freeze({
@@ -47,6 +50,8 @@ export const PERSON_OPERATION_ROUTES: Readonly<Record<PersonOperation, string>> 
   consent_revoke: "api.consent-revoke",
   portrait_acknowledge: "api.family-acknowledge",
   adult_invitation_create: "api.subject-drafts",
+  path_b_draft_create: "api.subject-drafts",
+  subject_download_open: "api.subject-download",
 });
 
 /** The request header that carries the page's nonce to a route whose body is closed without it. */
@@ -62,7 +67,7 @@ export type PersonOperationContext = Readonly<{
   accountId: string;
   sessionId: string;
   operation: PersonOperation;
-  /** The account itself, the record, the counterpart account or the grant the page showed. */
+  /** The account itself, the record, the counterpart account, the grant or the file the request names. */
   targetId: string;
 }>;
 

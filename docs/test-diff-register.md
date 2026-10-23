@@ -1,3 +1,52 @@
+## 2026-10-23 — G5.6: the last four person-caused event codes name their actor
+
+This entry follows the coordinator's follow-up to the 23 October attribution item (`docs/protocol/decisions.md`, "Stated behaviour change: the last four person-caused event codes"). For `purpose.reaffirmed`, `subject.account-bound`, `subject-draft.created` and `download.session.created`, each suite now shows whether the code's own transaction proves an actor (a consumed session-bound nonce or the person's own JWT) and that the event names them. The migration is `20261023130000_legal_audit_attribution_remaining.sql`, after `20261023120000`. No wording changes. Production is unchanged.
+
+In every new block the transaction-local actor is cleared and the claims are set to the service role first, where production would have committed, so only the call under test can name anyone. Accounts, sessions and writers are the real ones from each suite's fixtures. The planted states are named "planted".
+
+**Changed suites.**
+- `supabase/tests/consent_reaffirm.sql`, 40/40: `purpose.reaffirmed` already proves its actor. Planted: with the `purpose_grant_nonces` attribution trigger dropped, the same reaffirmation names no one. Then the real reaffirmation names the account that reaffirmed. No existing assertion changes.
+- `supabase/tests/adult_subject_bind.sql`, 28/28: planted first, the bind with its nonce recorded with no account (the old controller) names no one. The real bind then names the account that bound the record, and its one nonce is recorded once, with that account and its auth session. No existing assertion changes.
+- `supabase/tests/other_adult_held_upload.sql`, 179/179, and `supabase/tests/path_b_reviewed_document.sql`, 81/81: for each Path B body, the draft writer alone names no one; the door reserves a draft whose event names the uploader; a replayed nonce is refused (22023 `invalid_operation_nonce`). Everything is undone with its savepoint, which a trailing assertion proves. No existing assertion changes.
+- `supabase/tests/subject_original_download.sql`, 53/53: the create step alone names no one; the door opens a session whose event names the account; a replayed nonce and a nonce under another account's session are refused. Undone with its savepoint, as a trailing assertion proves. No existing assertion changes.
+- `supabase/tests/subject_delete.sql`, 48/48: round two's "the emptying names the account that asked for it" becomes `ok(coalesce(event = pseudonym, false))`. The old `is(event, pseudonym)` also passed when both were null. Every new positive assertion above uses the same form, because a bind mutant passed the `is` form exactly that way.
+- `supabase/tests/legal_audit_attribution_completeness.sql`, 83/83, new section 7:
+  - the three doors are service-role only, and the derived controller is owner-only;
+  - the rights-session controller keeps its reviewed md5 (`f6201a38…`), and the derived controller, the consumer and the bind are their reviewed successors;
+  - the four codes stay on the closed list on their own routes, and the rights-session reaffirmation stays off;
+  - the operation check gains the two operations and keeps the ones it held.
+
+**TypeScript tests.**
+- `src/lib/uploads/subject-original-download.test.ts`:
+  - The fixture mints the nonce for its account, session and file under a stubbed key. The create step's expected RPC becomes the door, with the nonce's hash and never the nonce.
+  - New: no, malformed, other-file, other-session and other-account nonces are each refused before any session opens. The refusal is `invalid-request-v1` on `nonce` for a readable subject and 404 otherwise. A nonce the database already recorded is `invalid-request-v1` with no cookie.
+- `src/lib/uploads/other-adult-upload.test.ts`, `src/lib/uploads/path-b-reviewed-document-server.test.ts`:
+  - The draft request carries the page's one-time draft nonce, and the expected RPC is the door with its hash.
+  - New: a request-send token, another session's nonce and a spent nonce are refused like a missing one (403).
+  - The operation-token test's "draft-create" case becomes "a request-send token is never a draft nonce", because the sealed token no longer has a draft operation.
+- `src/lib/person-operation-nonce.test.ts`: the route map gains `path_b_draft_create` (api.subject-drafts) and `subject_download_open` (api.subject-download).
+- `e2e/function-payload.spec.ts` (not run here; it needs the migration): both download opens carry a nonce minted as a page mints it, for the session and file. No expectation changes. `e2e/helpers/operation-nonce.ts` accepts the new operation.
+
+**Mutants of `20261023130000`.** Each copy had its md5 guards switched off and one change made. All are caught:
+- `derived_without_account` and `bind_keeps_old_controller`: "the bind names the account that bound the record", "its one nonce is recorded once, with the account and its auth session", and the section-7 md5 pin fail.
+- `draft_door_writer_first`: "and its event names the uploader" fails.
+- `reviewed_door_no_nonce`: the naming and replay assertions fail.
+- `download_door_no_nonce`: "a replayed nonce is refused" fails.
+
+**Patch guards.**
+- Applied over the three branch migrations, it is clean.
+- Re-running the whole migration fails 55000 "attribution remaining prerequisite differs", and so does applying it without `20261023120000`.
+- Re-running its patch block fails "account operation nonce consumer predecessor differs".
+- A changed derivation anchor fails "adult subject control anchor differs", and a changed patch anchor fails "adult subject bind anchor differs".
+- A wrong successor md5 fails "adult subject bind successor differs", and a wrong derived md5 fails "adult subject control derivation differs".
+- An extra grant on the controller or the consumer fails its "predecessor differs".
+
+**Regression.** All 235 pgTAP suites ran with the four branch migrations. 213 pass completely. The other 22 gave byte-identical `ok`/`not ok` lists with the three earlier migrations only, so their failures are the same pre-existing ones as before.
+
+`path_b_reviewed_document` fails intermittently, with or without this change: about one run in three stops at `permission_document_review_downloads_check`. In `open_permission_review_download_v1` (20261016190000), `created_at` takes its `clock_timestamp()` default before `expires_at` is computed as `clock_timestamp()+interval '1 hour'`. So `expires_at <= created_at + interval '1 hour'` fails whenever the clock ticks between the two. The full regression run and the final rerun passed 81/81.
+
+**Vitest.** The full suite gives 13353 passed and 42 failed. All 42 failures are the environment-only and pre-existing ones listed in the previous entry. Typecheck passes, lint is clean on every changed file, and the route gate passes (3 of 3 required headers are read).
+
 ## 2026-10-23 — G5.6: export completeness (family conversations, own cohort records, writer-less classes) and person attribution
 
 This entry follows the owner decisions of 23 October in `docs/protocol/decisions.md` ("Export completeness: family conversations, cohorts, empty classes": conversations projected under live grants, option A for cohorts, the five writer-less classes complete while empty, attribution, and the TEST complete archive's Portrait fields) and the attribution design of 28 September (option A, its one nonce rule, brief X1.5). The stated behaviour change is recorded there under 23 October. The migrations are `20261023110000_export_completeness.sql` and `20261023120000_legal_audit_attribution_completeness.sql`, guarded releases after PR 324's and `20261023100000`'s. One new sentence of wording, `EXPORT_EMBRYO_RESULTS_NOTE`, states a fact in the manifest. Production is unchanged.

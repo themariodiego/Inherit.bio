@@ -29,7 +29,8 @@ import {
   type ReviewedDocumentTarget,
   type ReviewedDocumentTargetState,
 } from "./other-adult-upload";
-import { heldUploadRpc, otherAdultUploadAvailable, presentUploaderArtifactFor, verifyPathBOperation } from "./other-adult-upload-server";
+import { isOperationNonceRefusal, personOperationNonceArgs } from "@/lib/person-operation-nonce";
+import { heldUploadRpc, otherAdultUploadAvailable, pathBDraftNonce, presentUploaderArtifactFor } from "./other-adult-upload-server";
 import { currentOwnUploadAccount, ownUploadJson } from "./own-upload-context";
 
 /**
@@ -138,21 +139,25 @@ export async function createPathBReviewedDocumentDraft(request: Request, payload
   const actor = await currentOwnUploadAccount();
   if (!actor) return unauthenticated();
   if (!(await otherAdultUploadAvailable(actor.accountId))) return notFound();
-  // The same page token as the e-signature draft: one draft-create for this account.
-  if (!verifyPathBOperation(request.headers.get("x-inherit-csrf"), { accountId: actor.accountId,
-    sessionId: actor.sessionId, operation: "draft-create", targetId: actor.accountId })) return forbidden();
+  // The same one-time page nonce as the e-signature draft (G5.6, 23 Oct 2026):
+  // the door records its hash before the draft is written, so the draft's
+  // audit event names the uploader; a spent nonce is refused like a missing one.
+  const nonce = pathBDraftNonce(request.headers.get("x-inherit-csrf"), actor);
+  if (!nonce) return forbidden();
   const parsed = pathBReviewedDocumentDraftBody.safeParse(payload);
   if (!parsed.success || !isAdultOn(parsed.data.dateOfBirth)) return invalid(["body"]);
   const body = parsed.data;
-  const { data, error } = await heldUploadRpc(createAdminClient(), "create_path_b_reviewed_document_draft_v1", {
+  const { data, error } = await heldUploadRpc(createAdminClient(), "create_path_b_reviewed_document_draft_with_nonce_v1", {
     p_account_id: actor.accountId, p_session_id: actor.sessionId, p_display_name: body.displayName,
     p_date_of_birth: body.dateOfBirth, p_contact_ciphertext: encryptedLiteral(body.contactEmail),
     p_contact_hmac: null, p_contact_hmac_set: contactDigestSet(body.contactEmail),
     p_request_key: hmacSecret(JSON.stringify(["adult-path-b-reviewed-document-draft-v1", actor.accountId, body.requestId]),
       "mail-idempotency-v1"),
     p_test_jurisdiction: true,
+    ...personOperationNonceArgs(nonce),
   });
   if (error) {
+    if (isOperationNonceRefusal(error)) return forbidden();
     if (error.code === "42501") return notFound();
     if (error.code === "22023") return invalid(["body"]);
     if (error.code === "55000" && error.message === "adult_account_required") {

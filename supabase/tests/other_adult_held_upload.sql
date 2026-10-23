@@ -230,6 +230,28 @@ select ok((select d.adult_flow='path-b-subject-esignature' and d.confirmation_mo
 select throws_ok($$update public.adult_subject_drafts set adult_flow='path-a-own-account',confirmation_mode='path-a-account-required',
  evidence_kind='none',request_key=null where subject_id=pg_temp.sid('main')$$,'55000','immutable_adult_flow',
  'the flow never changes after the draft is reserved');
+-- G5.6 (20261023130000): the draft names the uploader only through the
+-- door that records the page's one-time nonce. The actor is cleared where
+-- production would have committed; no user JWT is present.
+savepoint attributed_draft;
+select set_config('request.jwt.claims','{"role":"service_role"}',true),set_config('inherit.legal_audit_actor','',true);
+select public.create_path_b_adult_draft_v1('0a5e0000-0000-4000-8000-000000000001','0a5e0000-0000-4000-8000-000000000011','Synthetic Attributed',date '1980-05-05',
+  decode('00112233445566778899aabbccddeeff','hex'),repeat('7',64),repeat('7',64),true);
+select is((select audit_principal_id from public.legal_audit_log where event_code='subject-draft.created' and route_id='api.subject-drafts' order by seq desc limit 1),null::uuid,
+ 'the draft writer alone, with no nonce, names no one');
+select set_config('request.jwt.claims','{"role":"service_role"}',true),set_config('inherit.legal_audit_actor','',true);
+select lives_ok($$select public.create_path_b_adult_draft_with_nonce_v1('0a5e0000-0000-4000-8000-000000000001','0a5e0000-0000-4000-8000-000000000011','Synthetic Attributed',date '1980-05-05',
+  decode('00112233445566778899aabbccddeeff','hex'),repeat('8',64),repeat('8',64),true,null,
+  encode(extensions.digest('draft-nonce-one','sha256'),'hex'),clock_timestamp()+interval '5 minutes')$$,'the door reserves a draft');
+select ok(coalesce((select audit_principal_id from public.legal_audit_log where event_code='subject-draft.created' and route_id='api.subject-drafts' order by seq desc limit 1)
+  =(select audit_principal_id from private.legal_audit_account_principals where account_id='0a5e0000-0000-4000-8000-000000000001'::uuid),false),'and its event names the uploader');
+select throws_ok($$select public.create_path_b_adult_draft_with_nonce_v1('0a5e0000-0000-4000-8000-000000000001','0a5e0000-0000-4000-8000-000000000011','Synthetic Attributed',date '1980-05-05',
+  decode('00112233445566778899aabbccddeeff','hex'),repeat('9',64),repeat('9',64),true,null,
+  encode(extensions.digest('draft-nonce-one','sha256'),'hex'),clock_timestamp()+interval '5 minutes')$$,
+ '22023','invalid_operation_nonce','a replayed nonce is refused');
+rollback to attributed_draft;
+select is((select count(*) from public.subjects where display_label='Synthetic Attributed'),0::bigint,
+ 'the attribution drafts were undone with their savepoint');
 
 -- A Path A invitation from the same uploader, for contrast throughout.
 create temporary table path_a as select * from public.create_adult_subject_invitation_v1('0a5e0000-0000-4000-8000-000000000001',

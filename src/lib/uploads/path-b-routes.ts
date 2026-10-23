@@ -4,6 +4,7 @@ import { hmacSecret } from "@/lib/crypto";
 import { encryptedLiteral } from "@/lib/embryos/guards";
 import { contactDigestSet, legacyContactDigest } from "@/lib/hmac-keyring";
 import { invitationQuotaKeys } from "@/lib/rate-limit-keys";
+import { isOperationNonceRefusal, personOperationNonceArgs } from "@/lib/person-operation-nonce";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
   isAdultOn,
@@ -11,7 +12,7 @@ import {
   pathBDraftReceipt,
   pathBInvitationBody,
 } from "./other-adult-upload";
-import { heldUploadRpc, otherAdultUploadAvailable, verifyPathBOperation } from "./other-adult-upload-server";
+import { heldUploadRpc, otherAdultUploadAvailable, pathBDraftNonce, verifyPathBOperation } from "./other-adult-upload-server";
 import { currentOwnUploadAccount, ownUploadJson } from "./own-upload-context";
 
 /**
@@ -38,14 +39,15 @@ export async function createPathBDraft(request: Request, payload: unknown): Prom
   const actor = await currentOwnUploadAccount();
   if (!actor) return ownUploadJson({ error: "unauthorized" }, 401);
   if (!(await otherAdultUploadAvailable(actor.accountId))) return ownUploadJson({ error: "not_found" }, 404);
-  if (!verifyPathBOperation(request.headers.get("x-inherit-csrf"), { accountId: actor.accountId,
-    sessionId: actor.sessionId, operation: "draft-create", targetId: actor.accountId })) {
-    return ownUploadJson({ error: "forbidden" }, 403);
-  }
+  // The page's one-time draft nonce (G5.6, 23 Oct 2026): the door records its
+  // hash before the draft is written, so the draft's audit event names the
+  // uploader; a spent nonce is refused like a missing one.
+  const nonce = pathBDraftNonce(request.headers.get("x-inherit-csrf"), actor);
+  if (!nonce) return ownUploadJson({ error: "forbidden" }, 403);
   const parsed = pathBDraftBody.safeParse(payload);
   if (!parsed.success || !isAdultOn(parsed.data.dateOfBirth)) return ownUploadJson({ error: "invalid_request" }, 422);
   const body = parsed.data;
-  const { data, error } = await heldUploadRpc(createAdminClient(), "create_path_b_adult_draft_v1", {
+  const { data, error } = await heldUploadRpc(createAdminClient(), "create_path_b_adult_draft_with_nonce_v1", {
     p_account_id: actor.accountId, p_session_id: actor.sessionId, p_display_name: body.displayName,
     p_date_of_birth: body.dateOfBirth, p_contact_ciphertext: encryptedLiteral(body.contactEmail),
     p_contact_hmac: null,
@@ -53,8 +55,10 @@ export async function createPathBDraft(request: Request, payload: unknown): Prom
     p_request_key: hmacSecret(JSON.stringify(["adult-path-b-draft-v1", actor.accountId, body.requestId]),
       "mail-idempotency-v1"),
     p_test_jurisdiction: true,
+    ...personOperationNonceArgs(nonce),
   });
   if (error) {
+    if (isOperationNonceRefusal(error)) return ownUploadJson({ error: "forbidden" }, 403);
     if (error.code === "42501") return ownUploadJson({ error: "not_found" }, 404);
     if (error.code === "22023") return ownUploadJson({ error: "invalid_request" }, 422);
     if (error.code === "55000" && error.message === "adult_account_required") {

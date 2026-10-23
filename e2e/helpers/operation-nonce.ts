@@ -28,7 +28,7 @@ export async function settingsOperationNonce(request: APIRequestContext, slot: "
  * never set in this process's environment. Never a hosted key.
  */
 export async function mintedOperationNonce(context: BrowserContext, accountId: string,
-  operation: "consent_revoke", targetId: string): Promise<string> {
+  operation: "consent_revoke" | "subject_download_open", targetId: string): Promise<string> {
   // Loaded here, not at the top: the configuration refuses to load outside a
   // browser run, and the density fixtures import this module for the
   // settings nonce alone.

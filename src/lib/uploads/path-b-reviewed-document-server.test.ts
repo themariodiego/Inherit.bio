@@ -12,7 +12,7 @@ vi.mock("@/lib/legal/jurisdictions", async (original) => {
 
 import { encryptSecret } from "@/lib/crypto";
 import { legacyContactDigest } from "@/lib/hmac-keyring";
-import { mintPathBOperation } from "./other-adult-upload-server";
+import { mintPathBDraftNonce, mintPathBOperation } from "./other-adult-upload-server";
 import {
   createPathBReviewedDocumentDraft,
   finalizeCsrf,
@@ -62,19 +62,24 @@ describe("POST /api/subject-drafts, the reviewed-document body", () => {
     dateOfBirth: "1980-05-05", contactEmail: "Relative@E2E.local", requestId };
   const receipt = { subjectDraftId: subjectId, state: "awaiting_uploader_artifact", next: "sign_uploader_artifact",
     expiresAt: "2026-11-15T12:00:00+00:00" };
-  function draft(overrides: Record<string, unknown> = {}, headers: Record<string, string> = {}) {
+  // 20261023130000 (G5.6): the page renders a one-time draft nonce.
+  function draft(overrides: Record<string, unknown> = {}, headers: Record<string, string> = {}, token = mintPathBDraftNonce(accountId, sessionId)) {
     const payload = { ...body, ...overrides };
     return createPathBReviewedDocumentDraft(post("https://inherit.bio/api/subject-drafts", payload,
-      { "x-inherit-csrf": mintPathBOperation(accountId, sessionId, "draft-create", accountId), ...headers }), payload);
+      { "x-inherit-csrf": token, ...headers }), payload);
   }
 
   it("reserves the draft with an encrypted, keyed address and answers the register's receipt", async () => {
     mocks.rpc.mockResolvedValueOnce({ data: receipt, error: null });
-    const response = await draft();
+    const token = mintPathBDraftNonce(accountId, sessionId);
+    const response = await draft({}, {}, token);
     expect(response.status).toBe(201);
     expect(await response.json()).toEqual(receipt);
     const [name, args] = mocks.rpc.mock.calls[0]!;
-    expect(name).toBe("create_path_b_reviewed_document_draft_v1");
+    // The door records the page nonce's hash before the draft is written.
+    expect(name).toBe("create_path_b_reviewed_document_draft_with_nonce_v1");
+    expect(args.p_nonce_hash).toBe(crypto.createHash("sha256").update(token).digest("hex"));
+    expect(JSON.stringify(args)).not.toContain(token);
     expect(args).toMatchObject({ p_account_id: accountId, p_session_id: sessionId, p_display_name: "Synthetic Relative",
       p_date_of_birth: "1980-05-05", p_contact_hmac: null, p_test_jurisdiction: true });
     expectContactSet(args.p_contact_hmac_set);
@@ -91,6 +96,14 @@ describe("POST /api/subject-drafts, the reviewed-document body", () => {
     vi.stubEnv("INHERIT_TEST_JURISDICTION", "");
     expect((await draft()).status).toBe(404);
     expect(mocks.rpc).not.toHaveBeenCalled();
+  });
+
+  it("refuses a request-send token, another session's nonce and a spent nonce as a missing one", async () => {
+    expect((await draft({}, {}, mintPathBOperation(accountId, sessionId, "request-send", subjectId))).status).toBe(403);
+    expect((await draft({}, {}, mintPathBDraftNonce(accountId, subjectId))).status).toBe(403);
+    expect(mocks.rpc).not.toHaveBeenCalled();
+    mocks.rpc.mockResolvedValueOnce({ data: null, error: { code: "22023", message: "invalid_operation_nonce" } });
+    expect((await draft()).status).toBe(403);
   });
 
   it("refuses when the jurisdiction does not permit third-party adult analysis", async () => {

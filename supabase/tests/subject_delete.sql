@@ -184,8 +184,8 @@ select is((select count(*) from public.legal_audit_log where event_code='subject
  'one audit event records the emptying');
 -- 20261023120000: the code is recorded already consumed, which the insert
 -- trigger now sees, and subject.emptied is a person's own event.
-select is((select audit_principal_id from public.legal_audit_log where event_code='subject.emptied' and route_id='api.subject-delete'
-  order by seq desc limit 1),(select audit_principal_id from private.legal_audit_account_principals where account_id=(select alpha from fx)),
+select ok(coalesce((select audit_principal_id from public.legal_audit_log where event_code='subject.emptied' and route_id='api.subject-delete'
+  order by seq desc limit 1)=(select audit_principal_id from private.legal_audit_account_principals where account_id=(select alpha from fx)),false),
  'the emptying names the account that asked for it');
 select ok((select not (coded_context ?| array['account_id','subject_id']) from public.legal_audit_log
   where event_code='subject.emptied' order by seq desc limit 1),'the audit context names no account or record');

@@ -46,8 +46,10 @@ import {
 } from "./other-adult-upload";
 import {
   mintOtherAdultPresentation,
+  mintPathBDraftNonce,
   mintPathBOperation,
   otherAdultUploadAvailable,
+  pathBDraftNonce,
   readOtherAdultPresentation,
   verifyPathBOperation,
 } from "./other-adult-upload-server";
@@ -232,7 +234,9 @@ describe("the Path B operation token", () => {
     expect(verifyPathBOperation(token, expected, NOW)).toBe(true);
     expect(verifyPathBOperation(token, expected, NOW + 599_999)).toBe(true);
     expect(verifyPathBOperation(token, expected, NOW + 600_000)).toBe(false);
-    expect(verifyPathBOperation(token, { ...expected, operation: "draft-create" }, NOW)).toBe(false);
+    // 20261023130000 (G5.6): reserving a draft takes the one-time person
+    // operation nonce now, so a request-send token is never a draft nonce.
+    expect(pathBDraftNonce(token, { accountId, sessionId }, NOW)).toBeNull();
     expect(verifyPathBOperation(token, { ...expected, targetId: accountId }, NOW)).toBe(false);
     expect(verifyPathBOperation(token, { ...expected, sessionId: accountId }, NOW)).toBe(false);
     expect(verifyPathBOperation(null, expected, NOW)).toBe(false);
@@ -322,8 +326,7 @@ describe("POST /api/subject-drafts, the Path B body", () => {
     dateOfBirth: "1980-05-05", contactEmail: "relative@e2e.local", requestId };
   const receipt = { subjectDraftId: subjectId, state: "awaiting_uploader_artifact", next: "sign_uploader_artifact",
     expiresAt: "2026-10-28T12:00:00+00:00" };
-  function draft(overrides: Record<string, unknown> = {}, headers: Record<string, string> = {}) {
-    const token = mintPathBOperation(accountId, sessionId, "draft-create", accountId);
+  function draft(overrides: Record<string, unknown> = {}, headers: Record<string, string> = {}, token = mintPathBDraftNonce(accountId, sessionId)) {
     const payload = { ...body, ...overrides };
     return createPathBDraft(sameOrigin("https://inherit.bio/api/subject-drafts", payload,
       { "x-inherit-csrf": token, ...headers }), payload);
@@ -331,13 +334,17 @@ describe("POST /api/subject-drafts, the Path B body", () => {
   it("reserves a draft with an encrypted address keyed under every held revision, and answers the register's receipt", async () => {
     vi.stubEnv("INHERIT_HMAC_KEYRING", `2:${KEY_2}`);
     mocks.rpc.mockResolvedValueOnce({ data: receipt, error: null });
-    const response = await draft();
+    const token = mintPathBDraftNonce(accountId, sessionId);
+    const response = await draft({}, {}, token);
     expect(response.status).toBe(201);
     expect(await response.json()).toEqual(receipt);
     const [name, args] = mocks.rpc.mock.calls[0]!;
-    expect(name).toBe("create_path_b_adult_draft_v1");
+    // 20261023130000 (G5.6): the door records the page nonce's hash first.
+    expect(name).toBe("create_path_b_adult_draft_with_nonce_v1");
     expect(args).toMatchObject({ p_account_id: accountId, p_session_id: sessionId, p_display_name: "Synthetic Relative",
-      p_date_of_birth: "1980-05-05", p_test_jurisdiction: true });
+      p_date_of_birth: "1980-05-05", p_test_jurisdiction: true,
+      p_nonce_hash: crypto.createHash("sha256").update(token).digest("hex") });
+    expect(JSON.stringify(args)).not.toContain(token);
     expectContactSet(args);
     expect(args).not.toHaveProperty("p_quota_keys");
     expect(args.p_contact_ciphertext).toMatch(/^\\x[0-9a-f]+$/);
@@ -352,6 +359,13 @@ describe("POST /api/subject-drafts, the Path B body", () => {
   it("refuses a person under 18 before the database", async () => {
     expect((await draft({ dateOfBirth: `${new Date().getUTCFullYear() - 10}-01-01` })).status).toBe(422);
     expect(mocks.rpc).not.toHaveBeenCalled();
+  });
+  it("refuses a request-send token, another session's nonce and a spent nonce as a missing one", async () => {
+    expect((await draft({}, {}, mintPathBOperation(accountId, sessionId, "request-send", subjectId))).status).toBe(403);
+    expect((await draft({}, {}, mintPathBDraftNonce(accountId, subjectId))).status).toBe(403);
+    expect(mocks.rpc).not.toHaveBeenCalled();
+    mocks.rpc.mockResolvedValueOnce({ data: null, error: { code: "22023", message: "invalid_operation_nonce" } });
+    expect((await draft()).status).toBe(403);
   });
   it("refuses without the page's operation token, from another origin, and outside TEST-LOCAL", async () => {
     expect((await draft({}, { "x-inherit-csrf": "nope" })).status).toBe(403);

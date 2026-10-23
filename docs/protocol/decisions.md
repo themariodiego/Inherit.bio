@@ -5286,3 +5286,36 @@ decision.
   `subject_export.sql`, `account_archive_graph_rows.sql`, `subject_delete.sql`
   and `export_member_plan.sql`, and the route, worker and component tests
   listed in `docs/test-diff-register.md`.
+
+## 2026-10-23 — Stated behaviour change: the last four person-caused event codes (G5.6)
+
+The coordinator's follow-up to the 23 October attribution item: check that the
+four of PR 324's eight codes not yet shown to name their actor do, and close
+any gap under the one nonce rule (brief X1.5). It is not a new decision.
+
+- **`purpose.reaffirmed` (api.consent-reaffirm): no change.** Its own
+  transaction already proves the actor: each grant function the reaffirmation
+  re-runs records the presentation's single-use nonce in
+  `purpose_grant_nonces` for the account, and that insert names it.
+- **`subject.account-bound` (api.adult-subject-bind).**
+  - **Before:** the bind's one nonce, the rights session's, was recorded with
+    no account, so the event named no one.
+  - **After:** the same nonce is recorded once with the signed-in account and
+    its auth session, so the event names the account. The rights-session
+    routes keep their controller unchanged. The door stays closed, as before:
+    no issuer registers the adult-subject-control purpose.
+- **`subject-draft.created` (api.subject-drafts, both Path B bodies).**
+  - **Before:** the upload page's draft token was verified and never recorded,
+    so it could be used again for ten minutes and the event named no one.
+  - **After:** the page renders a one-time operation nonce in its place, in the
+    same `x-inherit-csrf` header. Its hash is recorded before the draft is
+    written; a spent nonce is refused like a missing one (403).
+- **`download.session.created` (api.subject-download).**
+  - **Before:** the create step took no nonce and named no one.
+  - **After:** it requires `X-Inherit-Operation-Nonce` minted for the account,
+    session and file. A missing, wrong or spent nonce is `invalid-request-v1`
+    for a readable subject and the opaque 404 otherwise. No page links the
+    download yet; the browser proof mints its nonce as a page would.
+- **Where:** `20261023130000_legal_audit_attribution_remaining.sql`, after
+  `20261023120000`, in the same guarded release.
+- **Wording:** none.

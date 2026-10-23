@@ -233,5 +233,39 @@ select is((select pg_get_triggerdef(oid) from pg_trigger where tgname='legal_aud
  'CREATE TRIGGER legal_audit_actor_on_consumed_insert AFTER INSERT ON public.account_operation_nonces FOR EACH ROW WHEN ((new.consumed_at IS NOT NULL)) EXECUTE FUNCTION private.note_legal_audit_actor_from_nonce_v1()',
  'the insert trigger fires only for a nonce recorded consumed');
 
+-- 7. 20261023130000, the last four of PR 324's codes. Each code's own
+-- transaction is proved in its own suite (consent_reaffirm, adult_subject_bind,
+-- other_adult_held_upload, path_b_reviewed_document, subject_original_download);
+-- here, the new doors are service-only, the derived rights-session controller
+-- is owner-only, the rights-session routes keep theirs unchanged, and the
+-- patched bodies are exactly the reviewed successors.
+select ok(has_function_privilege('service_role',f,'execute') and not has_function_privilege('anon',f,'execute')
+ and not has_function_privilege('authenticated',f,'execute') and not has_function_privilege('inherit_upload_only',f,'execute'),f||' is service-only')
+ from unnest(array['public.create_path_b_adult_draft_with_nonce_v1(uuid,uuid,text,date,bytea,text,text,boolean,jsonb,text,timestamptz)',
+  'public.create_path_b_reviewed_document_draft_with_nonce_v1(uuid,uuid,text,date,bytea,text,text,boolean,jsonb,text,timestamptz)',
+  'public.open_subject_original_download_with_nonce_v1(uuid,uuid,uuid,uuid,text,text,timestamptz)'])f;
+select ok(not has_function_privilege(r,'private.adult_subject_control_for_account_v1(text,text,text,text,boolean,uuid,uuid)','execute'),
+ r||' cannot call the account-bound rights-session controller') from unnest(array['anon','authenticated','inherit_upload_only','service_role'])r;
+select is((select array_agg(md5(pg_get_functiondef(p.oid)) order by p.oid::regprocedure::text) from pg_proc p where p.oid in(
+ 'private.adult_subject_control_v1(text,text,text,text,boolean)'::regprocedure,
+ 'private.adult_subject_control_for_account_v1(text,text,text,text,boolean,uuid,uuid)'::regprocedure,
+ 'private.consume_account_operation_nonce_v1(uuid,uuid,text,text,timestamptz)'::regprocedure,
+ 'public.bind_adult_subject_account_v1(text,text,uuid,uuid,boolean)'::regprocedure)),
+ (select array_agg(m order by s::regprocedure::text) from (values
+  ('private.adult_subject_control_v1(text,text,text,text,boolean)','f6201a3830d82dcd8a95d2b8487b59ad'),
+  ('private.adult_subject_control_for_account_v1(text,text,text,text,boolean,uuid,uuid)','b1e3b29ba8d18d67e1a16aefaf929550'),
+  ('private.consume_account_operation_nonce_v1(uuid,uuid,text,text,timestamptz)','933df95029c3f1f8a9a306726fccccff'),
+  ('public.bind_adult_subject_account_v1(text,text,uuid,uuid,boolean)','159a4f50563935de05351b8ef320c6f8'))x(s,m)),
+ 'the rights-session controller is unchanged, and the derived controller, the consumer and the bind are their reviewed bodies');
+select ok(private.legal_audit_person_event_v1(code,route),code||' on '||route||' stays a person''s own event') from (values
+ ('purpose.reaffirmed','api.consent-reaffirm'),('subject.account-bound','api.adult-subject-bind'),
+ ('subject-draft.created','api.subject-drafts'),('download.session.created','api.subject-download')) x(code,route);
+select ok(not private.legal_audit_person_event_v1('purpose.reaffirmed','api.consent-reaffirm-rights'),
+ 'the rights-session reaffirmation stays off the list');
+select ok(pg_get_constraintdef(c.oid) like '%path_b_draft_create%' and pg_get_constraintdef(c.oid) like '%subject_download_open%'
+  and pg_get_constraintdef(c.oid) like '%subject_transfer%' and pg_get_constraintdef(c.oid) like '%adult_invitation_create%',
+ 'the operation check gains the two operations and keeps the ones it held') from pg_constraint c
+ where c.conrelid='public.account_operation_nonces'::regclass and c.conname='account_operation_nonces_operation_check';
+
 select * from finish();
 rollback;
