@@ -6,9 +6,12 @@ import {
   adultInvitationToken,
   createConfirmedUser,
   drainMailUntil,
+  expectAxeClean,
   findUserByEmail,
   signIn,
+  tickAdultSubjectStatements,
 } from "./helpers";
+import { ADULT_SUBJECT_STATEMENTS, ADULT_SUBJECT_STATEMENTS_HEADING } from "../src/copy/family/adult-subject-statements";
 
 // A fresh inviter per run: the database counts invitation attempts per acting
 // account (global-contact-refusal-bar-v1.quotaAuthority, 10 an hour and 30 a
@@ -170,6 +173,7 @@ test("/family/invite complete: invited adult accepts without granting inviter ac
   await signIn(page, INVITER.email, INVITER.password);
   await page.goto("/withdraw/session");
   await expect(page.getByRole("button", { name: "Accept through my account" })).toHaveCount(0);
+  await expect(page.getByRole("checkbox"), "no statement is offered to an account that cannot accept").toHaveCount(0);
   await expect(page.getByRole("button", { name: "Refuse", exact: true })).toBeVisible();
   await page.request.post("/auth/sign-out");
 
@@ -179,7 +183,40 @@ test("/family/invite complete: invited adult accepts without granting inviter ac
   await page.getByLabel("Password").fill(RECIPIENT.password);
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
   await expect(page).toHaveURL("http://localhost:3100/withdraw/session");
-  await page.getByRole("button", { name: "Accept through my account" }).click();
+
+  // D-103: the five signed statements, each its own checkbox named by its
+  // sentence, in the published order, and Accept disabled until all five are
+  // ticked. The audit runs on this screen, which only an invitation reaches.
+  const acceptControl = page.getByRole("button", { name: "Accept through my account", exact: true });
+  const statements = page.getByRole("group", { name: ADULT_SUBJECT_STATEMENTS_HEADING, exact: true }).getByRole("checkbox");
+  await expectAxeClean(page);
+  await expect(statements).toHaveCount(ADULT_SUBJECT_STATEMENTS.length);
+  for (const [index, statement] of ADULT_SUBJECT_STATEMENTS.entries()) {
+    await expect(statements.nth(index)).toHaveAccessibleName(statement.text);
+    await expect(statements.nth(index)).not.toBeChecked();
+  }
+  await expect(acceptControl).toBeDisabled();
+  for (const missing of ADULT_SUBJECT_STATEMENTS) {
+    for (const statement of ADULT_SUBJECT_STATEMENTS) {
+      await page.getByRole("checkbox", { name: statement.text, exact: true }).setChecked(statement.key !== missing.key);
+    }
+    await expect(acceptControl, `Accept with "${missing.key}" unticked`).toBeDisabled();
+  }
+  for (const statement of ADULT_SUBJECT_STATEMENTS) {
+    await page.getByRole("checkbox", { name: statement.text, exact: true }).uncheck();
+  }
+  await tickAdultSubjectStatements(page);
+  await expect(acceptControl).toBeEnabled();
+  const confirmRequest = page.waitForRequest(sent =>
+    new URL(sent.url()).pathname === "/api/withdraw/session" && sent.method() === "POST");
+  await acceptControl.click();
+  const confirmBody = (await confirmRequest).postDataJSON() as Record<string, unknown>;
+  expect(Object.keys(confirmBody).sort()).toEqual(["nonce", "operation", "subjectArtifact"]);
+  expect(confirmBody.operation).toBe("confirm");
+  expect(confirmBody.subjectArtifact).toEqual({
+    artifactVersion: expect.any(Number), artifactPresentationToken: expect.any(String), affirmed: true,
+    statementKeys: ADULT_SUBJECT_STATEMENTS.map(statement => statement.key),
+  });
   await expect(page.getByRole("heading", { name: "Invitation accepted" })).toBeVisible();
 
   // Both fixture addresses are fixed, so they age: `listUsers` returns page
@@ -194,6 +231,16 @@ test("/family/invite complete: invited adult accepts without granting inviter ac
     .eq("id", invitation.target_id)
     .single();
   expect(subject).toEqual({ subject_account_id: recipientId, lifecycle: "active" });
+  // The signature records the five keys the person ticked, in order.
+  const { data: signature, error: signatureError } = await admin
+    .from("consent_signatures")
+    .select("artifact_key, statement_keys, signer_account_id")
+    .eq("target_kind", "subject").eq("target_id", invitation.target_id)
+    .eq("purpose", "adult-subject-account-acceptance")
+    .single();
+  expect(signatureError).toBeNull();
+  expect(signature).toEqual({ artifact_key: "consent.subject-adult", signer_account_id: recipientId,
+    statement_keys: ADULT_SUBJECT_STATEMENTS.map(statement => statement.key) });
   const { count: inviterGrants } = await admin
     .from("directional_grants")
     .select("grant_id", { count: "exact", head: true })
@@ -243,6 +290,7 @@ test("/withdraw/[token] complete: pinned /withdraw/session refusal closes the re
   await expect(page.getByText("No genetic data has been shared")).toBeVisible();
   await expect(page.getByRole("link", { name: "Sign in to accept" }),
     "accepting needs an account; refusing does not").toBeVisible();
+  await expect(page.getByRole("checkbox"), "the statements are for the account that can accept").toHaveCount(0);
 
   await page.getByRole("button", { name: "Refuse", exact: true }).click();
 

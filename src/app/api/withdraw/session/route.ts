@@ -1,8 +1,15 @@
-import { getSensitiveAccountContext } from "@/lib/account-deletion";
-import { contactDigestSet, type DigestSet } from "@/lib/hmac-keyring";
-import { adultSubjectResponseBody, readAdultSubjectResponse } from "@/lib/embryos/adult-subject-review";
+import { getSensitiveAccountContext, type SensitiveAccountContext } from "@/lib/account-deletion";
+import { contactDigestSet } from "@/lib/hmac-keyring";
+import {
+  adultSubjectAcceptanceBlockedBy,
+  adultSubjectAnswerBody,
+  adultSubjectConfirmEnvelope,
+  adultSubjectConfirmIssues,
+  readAdultSubjectOffer,
+  readAdultSubjectResponse,
+} from "@/lib/embryos/adult-subject-review";
 import { embryoParentWithdrawalBody, readEmbryoParentWithdrawal, respondEmbryoParentWithdrawal } from "@/lib/embryos/embryo-parent-withdrawal";
-import { notFound } from "@/lib/embryos/api";
+import { invalidRequest, notFound } from "@/lib/embryos/api";
 import { closedResponse } from "@/lib/embryos/guards";
 import { invitationRefusalBody, readInvitationRefusal, refusalRequestAllowed } from "@/lib/embryos/invitation-refusal";
 import { normalizeContact } from "@/lib/embryos/routes";
@@ -24,7 +31,10 @@ import { readAdultUploadRevisionResponse } from "@/lib/uploads/path-b-review";
  *
  * The registered receipt is `{status, operation}` and nothing else. An
  * invitation that has expired, been answered or was never this session's is
- * the same 404 as one that does not exist.
+ * the same 404 as one that does not exist. A Path A confirm whose session,
+ * form and account are this invitation's but whose body is not the
+ * registered one (D-103: the five published statement keys, each ticked) is
+ * invalid-request-v1, the register's answer, and reaches no database write.
  */
 
 const RECEIPT_KEYS = ["status", "operation"] as const;
@@ -74,10 +84,15 @@ export async function POST(request: Request) {
     if (authority) return answerAdultUploadRevision(authority, revision.data.operation);
   }
 
-  const adult = adultSubjectResponseBody.safeParse(json);
+  const adult = adultSubjectAnswerBody.safeParse(json);
   if (adult.success) {
     const authority = readAdultSubjectResponse(request, adult.data.nonce);
-    if (authority) return answerAdultSubject(authority, adult.data.operation);
+    if (authority) return answerAdultSubject(authority, adult.data.operation, null);
+  }
+  const adultConfirm = adultSubjectConfirmEnvelope.safeParse(json);
+  if (adultConfirm.success) {
+    const authority = readAdultSubjectResponse(request, adultConfirm.data.nonce);
+    if (authority) return confirmAdultSubject(request, authority, json);
   }
 
   const embryo = embryoParentWithdrawalBody.safeParse(json);
@@ -103,25 +118,43 @@ export async function POST(request: Request) {
 }
 
 /**
+ * Accepting a Path A invitation (adult-subject-confirmation-v1, the account
+ * branch). The account is authority here, so it is read before any field is
+ * judged, and the offer this session was opened for is read again: an
+ * account that may not accept it, or a session that no longer offers it, is
+ * the opaque 404. Only then is the body held to the offer, and any fault is
+ * invalid-request-v1 with no write. The database records the five published
+ * keys on the signature; the body may name no other list.
+ */
+async function confirmAdultSubject(
+  request: Request,
+  authority: { sessionHash: string; nonce: string },
+  body: unknown,
+) {
+  const context = await getSensitiveAccountContext();
+  if (!context?.user.email || !context.user.email_confirmed_at) return notFound();
+  const offer = await readAdultSubjectOffer(request);
+  if (!offer || offer.sessionHash !== authority.sessionHash
+    || adultSubjectAcceptanceBlockedBy(context, offer) !== null) return notFound();
+  const issues = adultSubjectConfirmIssues(body, offer);
+  if (issues.length > 0) return invalidRequest(issues);
+  return answerAdultSubject(authority, "confirm", context);
+}
+
+/**
  * Refusing and deleting need no account. Accepting binds the reserved
- * subject to one, so the account is read here and its address is passed as
- * digests under every held contact key revision; the RPC compares the one the
- * invitation was written under with the invited address again and refuses
- * every mismatch itself.
+ * subject to one, so the account's address is passed as digests under every
+ * held contact key revision; the RPC compares the one the invitation was
+ * written under with the invited address again and refuses every mismatch
+ * itself.
  */
 async function answerAdultSubject(
   authority: { sessionHash: string; nonce: string },
   operation: "confirm" | "refuse" | "delete",
+  account: SensitiveAccountContext | null,
 ) {
-  let accountId: string | null = null;
-  let accountEmailHmacs: DigestSet | null = null;
-  if (operation === "confirm") {
-    const context = await getSensitiveAccountContext();
-    const email = context?.user.email;
-    if (!context || !email || !context.user.email_confirmed_at) return notFound();
-    accountId = context.user.id;
-    accountEmailHmacs = contactDigestSet(normalizeContact(email));
-  }
+  const email = account?.user.email;
+  if (operation === "confirm" && (!account || !email)) return notFound();
 
   const { data, error } = await createAdminClient().rpc(
     "respond_adult_subject_invitation_session_v1",
@@ -129,8 +162,8 @@ async function answerAdultSubject(
       p_session_hash: authority.sessionHash,
       p_action: operation,
       p_nonce: authority.nonce,
-      ...(accountId && accountEmailHmacs
-        ? { p_account_id: accountId, p_account_email_hmac_set: accountEmailHmacs }
+      ...(operation === "confirm" && account && email
+        ? { p_account_id: account.user.id, p_account_email_hmac_set: contactDigestSet(normalizeContact(email)) }
         : {}),
     },
   );

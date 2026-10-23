@@ -15,6 +15,7 @@ const mocks = vi.hoisted(() => ({
   account: vi.fn(),
   user: vi.fn(),
   capability: vi.fn(),
+  offer: vi.fn(),
 }));
 vi.mock("@/lib/supabase/admin", () => ({
   createAdminClient: () => ({
@@ -32,6 +33,12 @@ vi.mock("@/lib/account-deletion", async (original) => ({ getSensitiveAccountCont
 vi.mock("@/lib/legal/jurisdictions", async (original) => ({
   ...(await original<typeof import("@/lib/legal/jurisdictions")>()),
   accountCapability: mocks.capability,
+}));
+// D-103: the confirm reads the session's offer again before judging its body;
+// the offer's rows are not what this file is about, so it is supplied whole.
+vi.mock("@/lib/embryos/adult-subject-review", async (original) => ({
+  ...(await original<typeof import("@/lib/embryos/adult-subject-review")>()),
+  readAdultSubjectOffer: mocks.offer,
 }));
 vi.mock("@/lib/embryos/guards", async (original) => ({
   ...(await original<typeof import("@/lib/embryos/guards")>()),
@@ -173,8 +180,12 @@ describe("POST /api/withdraw/session (adult confirm)", () => {
     const { POST: respond } = await import("@/app/api/withdraw/session/route");
     const { mintPublicFormToken } = await import("./operation-token");
     const { newRightsSessionSecret, RIGHTS_COOKIE_NAME, rightsSessionHash } = await import("./rights-session");
+    const { ADULT_SUBJECT_STATEMENT_KEYS, mintAdultSubjectPresentation } = await import("./adult-subject-review");
     const secret = newRightsSessionSecret();
     const hash = rightsSessionHash(secret);
+    mocks.offer.mockResolvedValue({ sessionHash: hash, draftOwnerAccountId: DRAFT,
+      invitationEmailHmac: legacyContactDigest("invited-person@example.invalid"),
+      artifact: { version: 1, effectiveOn: "2026-09-01", summaryMarkdown: "S.", bodyMarkdown: "B.", bodySha256: "d".repeat(64) } });
     mocks.account.mockResolvedValue({
       user: { id: ACCOUNT, email: "Invited-Person@Example.invalid", email_confirmed_at: "2026-09-01T00:00:00Z" },
       sessionId: "s",
@@ -186,7 +197,10 @@ describe("POST /api/withdraw/session (adult confirm)", () => {
         origin: "https://inherit.bio", "sec-fetch-site": "same-origin", "content-type": "application/json",
         cookie: `${RIGHTS_COOKIE_NAME}=${secret}`,
       },
-      body: JSON.stringify({ operation: "confirm", nonce: mintPublicFormToken("adult-subject-respond", Date.now(), hash) }),
+      body: JSON.stringify({ operation: "confirm", nonce: mintPublicFormToken("adult-subject-respond", Date.now(), hash),
+        subjectArtifact: { artifactVersion: 1, affirmed: true, statementKeys: [...ADULT_SUBJECT_STATEMENT_KEYS],
+          artifactPresentationToken: mintAdultSubjectPresentation({ sessionHash: hash, artifactVersion: 1,
+            artifactBodySha256: "d".repeat(64) }) } }),
     }));
     expect(response.status).toBe(202);
     expect(mocks.rpc.mock.calls[0]![0]).toBe("respond_adult_subject_invitation_session_v1");

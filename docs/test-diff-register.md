@@ -1,3 +1,38 @@
+## 2026-10-23 — D-103: the five signed statements in the adult confirm body
+
+This entry follows the coordinator's D-103 task of 23 October, on local branch `local/d103` from `9cb94b43`, and the owner's decision of the same day (decisions, "D-103: the owner signs the split `revocable` sentence"). The Path A confirm on `api.withdraw` now renders the five signed statements as separate checkboxes, sends `subjectArtifact` with the server-published keys, and the route refuses any other list with `invalid-request-v1`. No migration. Production is untouched.
+
+**New suite: `src/copy/family/adult-subject-statements.test.ts`, 7/7.**
+- The five keys in the order the transaction records them, and each sentence compared as UTF-8 bytes with the signed text, printable ASCII only. The split `revocable` is two sentences and is not the 14 September draft.
+- The four 14 September sentences equal their rows in `docs/protocol/copy-for-signature.md`; `revocable` equals the quotation in the 23 October decision; the table still holds the unsplit draft.
+- Every `array['age-18-plus', …]` literal in `supabase/migrations/` (seven files) is exactly the published list, and the last migration to mention `adult_subject_invitation_response_v1` is the one whose body records it.
+- The readability gate reads the five from the copy registry as `block` copy, not legal; the three of 15 words or more grade at most 9; the gate reports nothing for the module. In a throwaway tree with only this module, the gate passes it, and fails it at `grade 9.1 exceeds 9` with the 14 September sentence in place.
+- Planted, each reverted byte for byte: a lower-case `inherit` (2 failures); the unsplit `revocable` (5); two keys swapped (2, including the migration pin); the module listed as model-facing copy so the gate skips it (2); the module classed as legal copy (2).
+
+**New suite: `src/lib/embryos/adult-subject-confirm.test.ts`, 18/18.**
+- The register's `api.withdraw` confirm body still asks for `exact-server-published-…-with-every-item-individually-actuated` statement keys and binds `invalid-request-v1`; the 422 status is read from the register.
+- The page publishes the five sentences and a presentation (session, artifact version and body hash, list digest) only to the account that may accept; signed out, another address, the inviter and an unconfirmed address get neither. The presentation the page served is the one the confirm accepts (202).
+- Refused with 422 and no database call: each one of the five missing, an extra key, a reordered list, a repeated key, an empty or non-string list, a presentation minted under a stale list (the 14 September `revocable`, and the four-item reading), a presentation for another session, version, body, an expired or a forged one, the old bare `{ operation, nonce }`, `affirmed: false`, a wrong version, a `typedName`, and a top-level `jurisdictionCode` or `accountId`.
+- The opaque 404 before any field is judged: no account, an unconfirmed address, another address, the inviter, a Path B session, no session; and for a form nonce of another purpose, session or age, no account or offer is read. A database answer other than `accepted` is a 404. Refusing still needs no account and no statements.
+- Planted, each reverted byte for byte: an order-insensitive key check (the reorder/duplicate case fails, 202); the list digest not compared (the stale case fails, 202); the length check dropped (missing `revocable` fails); faults answered 404 instead of 422 (9 cases fail); fields judged before the account (the precedence case fails, 422); the loader publishing statements to a blocked reader, and minting under the wrong digest (one case each).
+
+**New suite: `src/components/embryo/adult-subject-review-form.test.ts`, 4/4.** The real client component, bundled for the browser (no `server-only` module may enter the graph) and driven in Chromium.
+- One group named by the legend holds five checkboxes, each named exactly by its sentence, in order and unticked; axe (WCAG 2.0/2.1 A and AA, colour contrast excluded because the bundle has no stylesheet) finds nothing.
+- Accept is disabled with any one of the five unticked (each tried) and posts nothing; it enables only on the fifth tick, disables again when one is unticked, and the request is exactly `{ operation: "confirm", nonce, subjectArtifact: { artifactVersion, artifactPresentationToken, affirmed: true, statementKeys: [the five] } }`.
+- Signed out there is no checkbox and refusing posts `{ operation, nonce }` only.
+- Planted, each reverted: Accept not gated on the ticks (2 failures); the sentence outside its label (3); the keys sent reversed whatever is ticked (1).
+
+**Changed suite: `src/lib/embryos/invitation-keyring-routes.test.ts`, 12/12.** One case, "sends the account address under every held revision and nothing bare", sent the old bare confirm, which is now refused. Its request now carries the registered `subjectArtifact` with a minted presentation, and the file supplies the session's offer through a partial mock of `readAdultSubjectOffer`. Its assertions are unchanged.
+
+**Changed suite: `src/components/uploads/other-adult-upload-card.test.ts`, 22/22.** The Path A review fixture gains `confirmation: null` (the new field). No assertion changes.
+
+**Changed browser suite and helper (not run here; see below).**
+- `e2e/helpers.ts`: `acceptAdultInvitation` ticks each of the five statements by its sentence before Accept (new `tickAdultSubjectStatements`). Every family journey that accepts an invitation goes through it.
+- `e2e/adult-subject-invitation.spec.ts`: added, no existing assertion changed or removed. The accepting screen is audited with `expectAxeClean`; the five checkboxes are named by their sentences in order and unticked; Accept is disabled with each one unticked in turn and enabled once all five are ticked; the request body is the registered one with the five keys; the stored signature (`consent_signatures`, purpose `adult-subject-account-acceptance`) records them; the inviter and the signed-out refuser are offered no checkbox.
+- Not run: the shared local database lacks 31 of the repository's 277 migrations, including `20261023120000_legal_audit_attribution_completeness.sql`, which defines `create_adult_subject_invitation_with_nonce_v1`. `/family/invite` calls it to create the invitation, so the spec's first step cannot pass there. `pnpm gate:browser-discovery` lists the spec (626 cases).
+
+**Unchanged.** The form census (`scripts/form-register-correspondence.test.ts`) reads only `<form>` elements. The adult review has none, before and after, so its counts and rows do not move. The readability gate gains 6 blocks (3 long, 1 short-role, 6 copy-registry: 3444 to 3450), with no threshold or classification change.
+
 ## 2026-10-23 — The email capture test removes its temporary clones
 
 `src/lib/claims/capture-emails.test.ts`, 12/12. The suite cloned the repository into `inherit-email-capture-test-*` and wrote a standalone capture into `inherit-email-standalone-test-*` under the system temp directory, and never removed either. One development container had 58 clones, 3.8 GB. An `afterAll` now removes both directories (`rm`, recursive, which unlinks the `node_modules` symlinks without following them). No assertion changes. After a run, neither prefix is left in the temp directory; it also runs when `beforeAll` fails.

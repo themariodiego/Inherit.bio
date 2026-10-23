@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { ADULT_SUBJECT_STATEMENTS_HEADING } from "@/copy/family/adult-subject-statements";
 import type { AdultSubjectReview } from "@/lib/embryos/adult-subject-review";
 import { route } from "@/lib/primary-routes";
 
@@ -11,6 +12,13 @@ import { route } from "@/lib/primary-routes";
  * its mailed link opened. The copy is the copy the mailed-token page already
  * used for the same three outcomes; only the way the authority arrives has
  * changed.
+ *
+ * Accepting (D-103): the five signed statements the server published, each
+ * its own checkbox named by its sentence. Accept stays disabled until every
+ * one is ticked, and the body carries only the keys that are ticked, so it
+ * names the published list exactly when, and only when, all five are. The
+ * statements render only for the account that may accept; signed out, the
+ * page is the one it was.
  */
 
 type Operation = "confirm" | "refuse" | "delete";
@@ -39,15 +47,30 @@ const RECEIPTS: Record<Outcome, { title: string; body: string }> = {
 
 export function AdultSubjectReviewForm({ review }: { review: AdultSubjectReview }) {
   const [status, setStatus] = useState<Status>("ready");
+  const [ticked, setTicked] = useState<Record<string, boolean>>({});
+  const confirmation = review.acceptanceBlockedBy === null ? review.confirmation : null;
+  const allTicked = confirmation !== null
+    && confirmation.statements.every(statement => ticked[statement.key] === true);
 
   async function answer(operation: Operation) {
     if (status !== "ready") return;
+    if (operation === "confirm" && (!confirmation || !allTicked)) return;
     setStatus("pending");
     try {
+      const payload = operation === "confirm" && confirmation ? {
+        operation, nonce: review.nonce,
+        subjectArtifact: {
+          artifactVersion: review.artifact.version,
+          artifactPresentationToken: confirmation.presentationToken,
+          affirmed: true,
+          statementKeys: confirmation.statements.filter(statement => ticked[statement.key] === true)
+            .map(statement => statement.key),
+        },
+      } : { operation, nonce: review.nonce };
       const response = await fetch("/api/withdraw/session", {
         method: "POST", credentials: "same-origin", cache: "no-store",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ operation, nonce: review.nonce }),
+        body: JSON.stringify(payload),
       });
       const body = await response.json().catch(() => null);
       if (response.status !== 202 || body?.status !== "accepted" || body?.operation !== operation) {
@@ -113,11 +136,27 @@ export function AdultSubjectReviewForm({ review }: { review: AdultSubjectReview 
             address that received it to accept. You can still refuse or delete
             the reserved record from here.
           </p>
-        ) : (
-          <Button type="button" size="lg" disabled={busy} onClick={() => answer("confirm")}>
-            {busy ? "Saving your choice…" : "Accept through my account"}
-          </Button>
-        )}
+        ) : confirmation ? (
+          <>
+            <fieldset disabled={busy} className="space-y-4" data-slot="adult-subject-statements">
+              <legend className="label text-ink">{ADULT_SUBJECT_STATEMENTS_HEADING}</legend>
+              {confirmation.statements.map(statement => (
+                <label key={statement.key} className="flex min-h-11 max-w-measure items-start gap-3 text-base leading-relaxed text-ink">
+                  <input type="checkbox" name={statement.key} checked={ticked[statement.key] === true}
+                    onChange={event => {
+                      const checked = event.target.checked;
+                      setTicked(current => ({ ...current, [statement.key]: checked }));
+                    }}
+                    className="mt-1.5 size-4 shrink-0 accent-forest" />
+                  <span>{statement.text}</span>
+                </label>
+              ))}
+            </fieldset>
+            <Button type="button" size="lg" disabled={busy || !allTicked} onClick={() => answer("confirm")}>
+              {busy ? "Saving your choice…" : "Accept through my account"}
+            </Button>
+          </>
+        ) : null}
         <div className="flex flex-wrap gap-3 border-t border-line pt-5">
           <Button type="button" variant="outline" disabled={busy} onClick={() => answer("refuse")}>
             Refuse

@@ -8,6 +8,7 @@ import { expect, type Page } from "@playwright/test";
 import fs from "node:fs";
 import path from "node:path";
 import { OWN_UPLOAD_COPY } from "../src/copy/upload/consent";
+import { ADULT_SUBJECT_STATEMENTS } from "../src/copy/family/adult-subject-statements";
 import { subjectFinalizationReceipt, subjectNormalizationReceipt } from "../src/lib/uploads/subject-upload-contract";
 
 const localProject = localE2eProject(process.env);
@@ -254,7 +255,8 @@ export function adultInvitationUrl(token: string, origin = "http://localhost:310
  * browser and posts it once to `api.rights-activate`; from there the invitee
  * is on `/withdraw/session`, holding a host-only rights cookie, and no token
  * appears in any URL again. Accepting needs the invited account, so this
- * signs in through the review screen's own control rather than around it.
+ * signs in through the review screen's own control rather than around it,
+ * and the five signed statements (D-103), each ticked by its own sentence.
  *
  * `onReview` runs on the review screen before anything is clicked — the
  * accessibility audit of a page `e2e/a11y.spec.ts` cannot reach, since its
@@ -280,8 +282,16 @@ export async function acceptAdultInvitation(options: {
   await page.getByLabel("Password").fill(password);
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
   await expect(page).toHaveURL(`${origin}/withdraw/session`);
+  await tickAdultSubjectStatements(page);
   await page.getByRole("button", { name: "Accept through my account" }).click();
   await expect(page.getByRole("heading", { name: "Invitation accepted" })).toBeVisible();
+}
+
+/** D-103: tick each of the five signed statements by its own sentence, one at a time. */
+export async function tickAdultSubjectStatements(page: Page): Promise<void> {
+  for (const statement of ADULT_SUBJECT_STATEMENTS) {
+    await page.getByRole("checkbox", { name: statement.text, exact: true }).check();
+  }
 }
 
 export async function signIn(page: Page, email: string, password: string) {
