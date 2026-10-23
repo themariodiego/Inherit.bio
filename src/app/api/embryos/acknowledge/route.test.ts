@@ -1,0 +1,121 @@
+import crypto from "node:crypto";
+import { readFileSync } from "node:fs";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+/**
+ * `POST /api/embryos/acknowledge` (register api.embryo-acknowledge), the
+ * registered route that replaced the server action `acknowledgeEmbryoGate`
+ * (owner decision of 23 October 2026, G8.5). It is held to its Family twin's
+ * checks: the same Origin rule, a closed body, the signed-in account and its
+ * auth session, and the session cookie the Embryo pages read. Only the
+ * account context is mocked; the Origin check and the cookie are the real
+ * ones.
+ */
+vi.stubEnv("BYOK_ENCRYPTION_KEY", crypto.randomBytes(32).toString("base64"));
+const mocks = vi.hoisted(() => ({ context: vi.fn() }));
+vi.mock("@/lib/account-deletion", async (load) => ({
+  ...await load<typeof import("@/lib/account-deletion")>(), getSensitiveAccountContext: mocks.context,
+}));
+
+const { POST } = await import("./route");
+const { TIER2_EMBRYO_COOKIE_NAME, acknowledgedBy, tier2Digest } = await import("@/lib/embryos/tier2");
+const { TIER2_COOKIE_NAME, tier2Digest: familyDigest } = await import("@/lib/family/tier2");
+
+const ACCOUNT = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+const SESSION = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
+const OTHER_SESSION = "cccccccc-cccc-4ccc-8ccc-cccccccccccc";
+const GATE = { acknowledgement: "embryo-result-gate", affirmed: true };
+
+const register = JSON.parse(readFileSync("docs/route-register.json", "utf8")) as {
+  routes: { id: string; path: string; methods?: string[]; requestContract?: { closedBody?: Record<string, unknown> }; successResponseContract?: string }[];
+  responseContracts: Record<string, { status?: number; body?: Record<string, unknown> }>;
+  responseContractBindings: { routes: Record<string, string[]> };
+};
+
+function call(body: unknown, headers: Record<string, string> = { origin: "https://inherit.test" }) {
+  return POST(new Request("https://inherit.test/api/embryos/acknowledge", {
+    method: "POST", headers: { "content-type": "application/json", ...headers }, body: JSON.stringify(body),
+  }));
+}
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  mocks.context.mockResolvedValue({ user: { id: ACCOUNT }, sessionId: SESSION });
+});
+
+describe("POST /api/embryos/acknowledge", () => {
+  it("sets the Embryo gate's session cookie and answers which acknowledgement was recorded", async () => {
+    const response = await call(GATE);
+    expect(response.status).toBe(200);
+    const answer = await response.json() as { acknowledgement: string; acknowledgedAt: string };
+    expect(Object.keys(answer).sort()).toEqual(["acknowledgedAt", "acknowledgement"]);
+    expect(answer.acknowledgement).toBe("embryo-result-gate");
+    expect(new Date(answer.acknowledgedAt).toISOString()).toBe(answer.acknowledgedAt);
+    expect(response.headers.get("cache-control")).toBe("private, no-store");
+    expect(response.headers.get("referrer-policy")).toBe("no-referrer");
+
+    const cookie = response.headers.get("set-cookie")!;
+    expect(cookie.startsWith(`${TIER2_EMBRYO_COOKIE_NAME}=${tier2Digest(ACCOUNT, SESSION)};`)).toBe(true);
+    const attributes = cookie.split(";").slice(1).map(part => part.trim().toLowerCase());
+    expect(attributes.sort()).toEqual(["httponly", "path=/", "samesite=lax", "secure"]);
+    expect(cookie).not.toMatch(/max-age|expires/i);
+  });
+
+  it("writes a cookie that verifies for this session only and never opens the Family gate", async () => {
+    const cookie = (await call(GATE)).headers.get("set-cookie")!;
+    const value = cookie.split(";")[0].split("=")[1];
+    expect(acknowledgedBy(value, ACCOUNT, SESSION)).toBe(true);
+    expect(acknowledgedBy(value, ACCOUNT, OTHER_SESSION)).toBe(false);
+    expect(acknowledgedBy(value, ACCOUNT, null)).toBe(false);
+    expect(TIER2_EMBRYO_COOKIE_NAME).not.toBe(TIER2_COOKIE_NAME);
+    expect(value).not.toBe(familyDigest(ACCOUNT, SESSION));
+  });
+
+  it("refuses a cross-site request, and one carrying neither Origin nor Sec-Fetch-Site, before reading the account", async () => {
+    const refused: Record<string, string>[] = [{ origin: "https://elsewhere.test" }, {}, { "sec-fetch-site": "cross-site" }, { "sec-fetch-site": "same-site" }];
+    for (const headers of refused) {
+      const response = await call(GATE, headers);
+      expect(response.status).toBe(400);
+      expect(await response.json()).toEqual({ error: "invalid_request" });
+      expect(response.headers.get("set-cookie")).toBeNull();
+    }
+    expect(mocks.context).not.toHaveBeenCalled();
+    expect((await call(GATE, { "sec-fetch-site": "same-origin" })).status).toBe(200);
+  });
+
+  it("refuses any body but the closed one, including the Family gate's, with no cookie", async () => {
+    for (const body of [{}, null, { acknowledgement: "tier2-result-gate", affirmed: true }, { ...GATE, affirmed: false },
+      { acknowledgement: "embryo-result-gate" }, { ...GATE, accountId: ACCOUNT }, { ...GATE, cohortId: ACCOUNT }]) {
+      const response = await call(body);
+      expect(response.status).toBe(400);
+      expect(response.headers.get("set-cookie")).toBeNull();
+    }
+    expect(mocks.context).not.toHaveBeenCalled();
+  });
+
+  it("refuses a request with no signed-in account and session, with no cookie", async () => {
+    mocks.context.mockResolvedValue(null);
+    const response = await call(GATE);
+    expect(response.status).toBe(401);
+    expect(response.headers.get("set-cookie")).toBeNull();
+  });
+});
+
+describe("the register describes the route that answers", () => {
+  const entry = register.routes.find(route => route.id === "api.embryo-acknowledge")!;
+
+  it("registers the path, method, closed body and success contract this handler implements", () => {
+    expect(entry.path).toBe("/api/embryos/acknowledge");
+    expect(entry.methods).toEqual(["POST"]);
+    expect(entry.requestContract?.closedBody).toEqual({ acknowledgement: { const: GATE.acknowledgement }, affirmed: { const: true } });
+    expect(entry.successResponseContract).toBe("embryo-acknowledged-v1");
+    expect(register.responseContractBindings.routes["api.embryo-acknowledge"]).toContain("embryo-acknowledged-v1");
+  });
+
+  it("answers the registered success status and body keys", async () => {
+    const contract = register.responseContracts["embryo-acknowledged-v1"];
+    const response = await call(GATE);
+    expect(response.status).toBe(contract.status);
+    expect(Object.keys(await response.json()).sort()).toEqual(Object.keys(contract.body ?? {}).sort());
+  });
+});

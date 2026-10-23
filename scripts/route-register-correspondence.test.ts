@@ -1,4 +1,4 @@
-import { readFileSync, readdirSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { createHash } from "node:crypto";
 import path from "node:path";
 import ts from "typescript";
@@ -823,23 +823,65 @@ describe("the register's storage prefixes and the buckets the code addresses agr
  * An inline one is precisely the case a top-of-file check would miss, and a
  * false positive costs one ledger row while a false negative loses a mutation
  * entry point.
+ *
+ * Since 23 October 2026 the product has none (owner decision, G8.5): the one
+ * there was, `acknowledgeEmbryoGate`, is the registered route
+ * `api.embryo-acknowledge`. The assertions below hold that at zero, and the
+ * planted modules prove the walker would still see one.
  */
-function serverActionModules(): string[] {
-  return codeFiles()
-    .filter((file) => /(^|[^\w])["']use server["']/.test(readFileSync(file, "utf8")))
-    .map((file) => file.split(path.sep).join("/"))
+function serverActionModulesIn(sources: ReadonlyMap<string, string>): string[] {
+  return [...sources]
+    .filter(([, source]) => /(^|[^\w])["']use server["']/.test(source))
+    .map(([file]) => file)
     .sort();
 }
 
+function shippedSources(): Map<string, string> {
+  return new Map(codeFiles().map(file => [file.split(path.sep).join("/"), readFileSync(file, "utf8")] as const));
+}
+
+/**
+ * The deleted module, kept as a fixture so the planted defects below plant
+ * exactly what used to ship (src/app/(app)/embryos/acknowledge.ts at
+ * 287a1408, its header comment omitted).
+ */
+const FORMER_ACTION_FILE = "src/app/(app)/embryos/acknowledge.ts";
+const FORMER_ACTION = [
+  '"use server";',
+  "",
+  'import { cookies } from "next/headers";',
+  'import { currentAuthSessionId, embryoGateCookie } from "@/lib/embryos/tier2";',
+  'import { createClient } from "@/lib/supabase/server";',
+  "",
+  "export async function acknowledgeEmbryoGate(): Promise<{ ok: boolean }> {",
+  "  const supabase = await createClient();",
+  "  const {",
+  "    data: { user },",
+  "  } = await supabase.auth.getUser();",
+  "  if (!user) return { ok: false };",
+  "  const sessionId = await currentAuthSessionId();",
+  "  if (!sessionId) return { ok: false };",
+  "  const store = await cookies();",
+  "  store.set(embryoGateCookie(user.id, sessionId));",
+  "  return { ok: true };",
+  "}",
+  "",
+].join("\n");
+
 describe("every server action is a recorded surface", () => {
-  const found = serverActionModules();
+  const sources = shippedSources();
+  const found = serverActionModulesIn(sources);
   const recorded = ledger.unregisteredServerActions ?? [];
 
-  it("finds the walker's own subject, so a passing run is not an empty scan", () => {
-    // If this ever legitimately reaches zero, the ledger empties in the same
-    // change and the two assertions below fail first, which is the point.
-    expect(found.length).toBeGreaterThan(0);
-    expect(found).toContain("src/app/(app)/embryos/acknowledge.ts");
+  it("walks the shipped code at all, so a passing run is not an empty scan", () => {
+    expect(sources.size).toBeGreaterThan(1000);
+    expect([...sources.keys()].some(file => file.startsWith("src/app/(app)/embryos/"))).toBe(true);
+  });
+
+  it("finds no server action in the product, and the ledger records none", () => {
+    expect(found).toEqual([]);
+    expect(recorded).toEqual([]);
+    expect(existsSync(FORMER_ACTION_FILE)).toBe(false);
   });
 
   it("records every server action that exists", () => {
@@ -858,6 +900,17 @@ describe("every server action is a recorded surface", () => {
       expect(known.why.length).toBeGreaterThan(120);
       expect(known.closing.length).toBeGreaterThan(20);
     }
+  });
+
+  it("fails on a planted server action, top-of-file or inline, whichever quotes it uses", () => {
+    const planted = new Map(sources);
+    planted.set(FORMER_ACTION_FILE, FORMER_ACTION);
+    planted.set("src/components/planted-inline.tsx",
+      "export function Planted() {\n  async function save() {\n    'use server';\n    return 1;\n  }\n  return <form action={save} />;\n}\n");
+    const plantedFound = serverActionModulesIn(planted);
+    expect(plantedFound).toEqual([FORMER_ACTION_FILE, "src/components/planted-inline.tsx"]);
+    // Each is a module no ledger row records, so "records every server action that exists" fails.
+    expect(plantedFound.filter((file) => !recorded.some((known) => known.file === file))).toEqual(plantedFound);
   });
 });
 
@@ -949,13 +1002,13 @@ function serverActionHosts(actionFile: string, exportName: string, sources: Read
 const DURABLE_EFFECT = /\.(?:rpc|from|insert|upsert|update)\s*\(|\.storage\b|\bfetch\s*\(|createAdminClient|localStorage|sessionStorage/;
 
 describe("every server action is recorded by name, with the pages that render it and what it may write", () => {
-  const sources = new Map(codeFiles().map(file => [file.split(path.sep).join("/"), readFileSync(file, "utf8")] as const));
+  const sources = shippedSources();
   const recorded = ledger.unregisteredServerActions ?? [];
   const entries = register();
 
   it("counts every action, not only every module, in both directions", () => {
     expect(serverActionCensus(sources)).toEqual(recorded.map(known => `${known.file} ${known.export}`).sort());
-    expect(serverActionCensus(sources)).toEqual(["src/app/(app)/embryos/acknowledge.ts acknowledgeEmbryoGate"]);
+    expect(serverActionCensus(sources)).toEqual([]);
   });
 
   it("pins the registered pages that render each action, in both directions", () => {
@@ -964,6 +1017,8 @@ describe("every server action is recorded by name, with the pages that render it
       // Each host is a registered page, so the POST it now also answers is on a route the register names.
       for (const host of known.hostedBy ?? []) expect(entries.find(entry => entry.id === host)?.kind, host).toBe("page");
     }
+    // The three pages that rendered the former action import it no more.
+    expect(serverActionHosts(FORMER_ACTION_FILE, "acknowledgeEmbryoGate", sources, entries)).toEqual([]);
   });
 
   it("keeps each unregistered action free of durable writes, so its reason for having no register row stays true", () => {
@@ -973,31 +1028,36 @@ describe("every server action is recorded by name, with the pages that render it
     }
   });
 
-  it("fails on a planted second export, an inline action and a durable write", () => {
-    const real = sources.get("src/app/(app)/embryos/acknowledge.ts")!;
+  it("fails on a planted action, a planted second export, an inline action and a durable write", () => {
     const planted = new Map(sources);
-    planted.set("src/app/(app)/embryos/acknowledge.ts", `${real}\nexport async function forgetEmbryoGate() { return { ok: true }; }\n`);
+    planted.set(FORMER_ACTION_FILE, FORMER_ACTION);
+    // One planted action is already a census the ledger does not match.
+    expect(serverActionCensus(planted)).toEqual([`${FORMER_ACTION_FILE} acknowledgeEmbryoGate`]);
+    expect(serverActionCensus(planted)).not.toEqual(recorded.map(known => `${known.file} ${known.export}`).sort());
+    planted.set(FORMER_ACTION_FILE, `${FORMER_ACTION}\nexport async function forgetEmbryoGate() { return { ok: true }; }\n`);
     expect(serverActionCensus(planted)).toEqual([
-      "src/app/(app)/embryos/acknowledge.ts acknowledgeEmbryoGate",
-      "src/app/(app)/embryos/acknowledge.ts forgetEmbryoGate",
+      `${FORMER_ACTION_FILE} acknowledgeEmbryoGate`,
+      `${FORMER_ACTION_FILE} forgetEmbryoGate`,
     ]);
     planted.set("src/app/(app)/planted/page.tsx",
       'export default function Page() {\n  async function save() {\n    "use server";\n    return 1;\n  }\n  return <form action={save} />;\n}\n');
     expect(serverActionCensus(planted)).toContain("src/app/(app)/planted/page.tsx save (inline)");
     // The file-level walk above would also have caught the inline one, but not the second export.
-    expect(serverActionCensus(planted).filter(entry => entry.startsWith("src/app/(app)/embryos/acknowledge.ts"))).toHaveLength(2);
-    expect(DURABLE_EFFECT.test(real.replace("store.set(", 'await createAdminClient().rpc("record_gate_v1", {}); store.set('))).toBe(true);
-    expect(DURABLE_EFFECT.test(real)).toBe(false);
+    expect(serverActionCensus(planted).filter(entry => entry.startsWith(FORMER_ACTION_FILE))).toHaveLength(2);
+    expect(DURABLE_EFFECT.test(FORMER_ACTION.replace("store.set(", 'await createAdminClient().rpc("record_gate_v1", {}); store.set('))).toBe(true);
+    expect(DURABLE_EFFECT.test(FORMER_ACTION)).toBe(false);
   });
 
-  it("fails on a planted host the ledger does not name, and on a named host that no longer renders the action", () => {
+  it("finds every page that renders a planted action, and loses a host that stops", () => {
     const planted = new Map(sources);
+    planted.set(FORMER_ACTION_FILE, FORMER_ACTION);
     planted.set("src/app/(app)/embryos/page.tsx", `import { acknowledgeEmbryoGate } from "./acknowledge";\n${sources.get("src/app/(app)/embryos/page.tsx")}`);
-    expect(serverActionHosts("src/app/(app)/embryos/acknowledge.ts", "acknowledgeEmbryoGate", planted, entries))
-      .toEqual(["copilot.scope", "embryos.compare", "embryos.detail", "embryos.index"]);
+    planted.set("src/app/(app)/copilot/[scope]/page.tsx",
+      `import { acknowledgeEmbryoGate } from "../../embryos/acknowledge";\n${sources.get("src/app/(app)/copilot/[scope]/page.tsx")}`);
+    expect(serverActionHosts(FORMER_ACTION_FILE, "acknowledgeEmbryoGate", planted, entries))
+      .toEqual(["copilot.scope", "embryos.index"]);
     planted.delete("src/app/(app)/copilot/[scope]/page.tsx");
-    expect(serverActionHosts("src/app/(app)/embryos/acknowledge.ts", "acknowledgeEmbryoGate", planted, entries))
-      .toEqual(["embryos.compare", "embryos.detail", "embryos.index"]);
+    expect(serverActionHosts(FORMER_ACTION_FILE, "acknowledgeEmbryoGate", planted, entries)).toEqual(["embryos.index"]);
   });
 });
 

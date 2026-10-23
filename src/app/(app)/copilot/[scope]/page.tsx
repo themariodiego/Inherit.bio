@@ -9,7 +9,6 @@ import { EmptyState } from "@/components/site/empty-state";
 import { Button } from "@/components/ui/button";
 import { NAV_LABELS } from "@/copy/navigation";
 import { EmbryoResultGate } from "@/components/embryo/result-gate";
-import { acknowledgeEmbryoGate } from "../../embryos/acknowledge";
 import { parseCopilotRouteScope } from "@/lib/copilot/group-scopes";
 import { prepareOwnCopilotChat } from "@/lib/copilot/own-chat";
 import { isLocalBaseUrl, providerKeyFor } from "@/lib/llm";
@@ -40,7 +39,7 @@ export default async function ChatPage(
   if (!routeScope || routeScope.kind === "report") notFound();
   if (routeScope.kind === "family") return <FamilyCopilotPage />;
   if (routeScope.kind === "cohort") {
-    return <CohortCopilotPage cohortId={routeScope.id} gate={<EmbryoResultGate action={acknowledgeEmbryoGate} />} />;
+    return <CohortCopilotPage cohortId={routeScope.id} gate={<EmbryoResultGate />} />;
   }
   const subject = await resolveSubjectForAccount(user.id, scope);
   if (!subject) notFound();

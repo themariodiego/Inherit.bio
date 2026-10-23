@@ -61,7 +61,6 @@ import { acknowledged } from "@/lib/embryos/tier2";
 import type { FindingLayer } from "@/lib/genome/taxonomy";
 import { route } from "@/lib/primary-routes";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { acknowledgeEmbryoGate } from "../acknowledge";
 import { loadCohorts, loadViewer } from "../context";
 
 export const metadata: Metadata = { title: COMPARE_H1 };
@@ -194,7 +193,7 @@ export default async function EmbryoComparePage(props: PageProps<"/embryos/compa
       );
     }
     case "gated":
-      return frame(<EmbryoResultGate action={acknowledgeEmbryoGate} />);
+      return frame(<EmbryoResultGate />);
     case "complete":
       break;
   }

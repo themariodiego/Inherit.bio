@@ -8459,6 +8459,10 @@
         "targetSource": "acting-account-and-for-the-portrait-case-the-exact-subject-whose-subject_account_id-is-the-acting-account",
         "operation": "family-acknowledgement-write"
       },
+      "api.embryo-acknowledge": {
+        "targetSource": "acting-account-and-its-current-auth-session",
+        "operation": "embryo-gate-acknowledgement-cookie"
+      },
       "api.family-sharing": {
         "targetSource": "route-family-person-resolved-through-the-family-graph-to-exactly-one-counterpart-account-and-every-grant-relationship-and-pair-between-the-two-accounts",
         "operation": "family-sharing-pause-resume-or-stop"
@@ -13330,6 +13334,19 @@
       "unknownFieldsRecursively": "forbidden",
       "headers": "private-no-store-no-referrer"
     },
+    "embryo-acknowledged-v1": {
+      "status": 200,
+      "contentType": "application/json",
+      "body": {
+        "acknowledgement": {
+          "const": "embryo-result-gate"
+        },
+        "acknowledgedAt": "ISO-8601-UTC-server-timestamp"
+      },
+      "unknownFieldsRecursively": "forbidden",
+      "headers": "private-no-store-no-referrer",
+      "setCookie": "httpOnly-Secure-SameSite-Lax-path-root-session-cookie-inherit_embryo_gate-with-no-Max-Age-or-Expires"
+    },
     "signup-v1": {
       "status": 202,
       "contentType": "application/json",
@@ -14115,6 +14132,10 @@
         "family-acknowledged-v1",
         "invalid-request-v1",
         "resource-not-found-v1"
+      ],
+      "api.embryo-acknowledge": [
+        "embryo-acknowledged-v1",
+        "invalid-request-v1"
       ],
       "api.family-sharing": [
         "sharing-updated-v1",
@@ -18352,6 +18373,57 @@
         ]
       },
       "successResponseContract": "family-acknowledged-v1",
+      "disposition": "kept"
+    },
+    {
+      "id": "api.embryo-acknowledge",
+      "path": "/api/embryos/acknowledge",
+      "kind": "endpoint",
+      "domain": "api",
+      "auth": "authenticated",
+      "methods": [
+        "POST"
+      ],
+      "requestContract": {
+        "contentType": "application/json",
+        "closedBody": {
+          "acknowledgement": {
+            "const": "embryo-result-gate"
+          },
+          "affirmed": {
+            "const": true
+          }
+        },
+        "unknownMissingInvalidOrAmbiguous": "invalid-request-v1",
+        "forbiddenFields": [
+          "accountId",
+          "cohortId",
+          "embryoId",
+          "acknowledgedAt"
+        ],
+        "origin": "the-api.family-acknowledge-check: an-Origin-header-must-equal-the-request-origin-and-without-one-Sec-Fetch-Site-must-be-same-origin"
+      },
+      "stateProfile": "endpoint",
+      "policy": {
+        "mode": "right",
+        "jurisdictionBypass": true,
+        "actorRole": "acting-account",
+        "registeredBy": "owner-decision-2026-10-23-G8.5-the-server-action-acknowledgeEmbryoGate-moves-to-a-registered-route-with-the-checks-of-api.family-acknowledge",
+        "operationCases": {
+          "embryo-result-gate": {
+            "effect": "set-one-httpOnly-Secure-SameSite-Lax-session-cookie-inherit_embryo_gate-whose-value-is-a-keyed-digest-of-the-account-id-and-the-current-auth-session-id-under-its-own-embryo-digest-context-with-no-Max-Age; auth.sign-out-clears-it; localStorage-is-forbidden",
+            "writes": "none",
+            "operationNonce": "none-as-for-the-api.family-acknowledge-tier2-result-gate-case: a-reading-acknowledgement-that-destroys-nothing-and-grants-no-authority",
+            "readBy": "embryos.compare-embryos.detail-and-copilot.scope-for-a-cohort-scope-fetch-nothing-derived-until-the-cookie-verifies-server-side",
+            "separation": "never-opens-the-Family-gate-and-the-Family-gate-never-opens-it"
+          }
+        },
+        "protectedFetchSerializeEnqueueOrModelCall": "forbidden",
+        "contracts": [
+          "resource-authorization-v1"
+        ]
+      },
+      "successResponseContract": "embryo-acknowledged-v1",
       "disposition": "kept"
     },
     {

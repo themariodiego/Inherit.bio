@@ -2,6 +2,38 @@
 
 This entry follows the owner's decisions of 23 October (decisions, "G8.5: forms, CSRF, the server action and the Resend webhook"), items 1, 3 and 4, on local branch `local/g85-shapes` from `287a1408`. The CSRF token (item 2) and sign-out are another branch's work and are untouched here. Production is untouched.
 
+### The server action becomes the registered route `api.embryo-acknowledge` (item 3)
+
+`acknowledgeEmbryoGate` (`src/app/(app)/embryos/acknowledge.ts`) is deleted. `POST /api/embryos/acknowledge` replaces it, built like the `tier2-result-gate` case of `api.family-acknowledge`: the same `isSameOrigin`, a closed body (`{ acknowledgement: "embryo-result-gate", affirmed: true }`), the account and auth session from `getSensitiveAccountContext`, and the same cookie (`embryoGateCookie`: httpOnly, Secure, SameSite=Lax, no Max-Age). Like its twin's gate case, it takes no operation nonce. `EmbryoResultGate` posts to it, as the Family gate does, and its three pages no longer pass an action. The register gains the route, `embryo-acknowledged-v1`, the binding and the resource-authorization entry. `docs/route-divergence.json#unregisteredServerActions` is now empty, with a dated note.
+
+**New suite: `src/app/api/embryos/acknowledge/route.test.ts`, 7/7.** It checks:
+- the exact cookie: its name, the digest for this account and session, the four attributes and no lifetime;
+- that the cookie verifies only for its own session and is never the Family cookie;
+- refusal, before the account is read, of a foreign Origin, no Origin and no `Sec-Fetch-Site`, `cross-site` and `same-site`; `same-origin` is accepted;
+- refusal of seven bodies, including the Family gate's;
+- 401 with no account;
+- the register's path, method, closed body, contract and status.
+
+Planted, each reverted:
+- Dropping the Origin check fails the refusal test.
+- A `maxAge` on the cookie fails the cookie test.
+- Removing the register entry fails "registers every built route" and "binds only real route ids" in `scripts/route-register-correspondence.test.ts`. `pnpm gate:routes` does not catch this; it counts 100 endpoint contracts instead of 101.
+
+**Changed suite: `scripts/route-register-correspondence.test.ts`, the two server-action blocks.** Old and new assertions:
+- "finds the walker's own subject…" asserted `found.length > 0` and `found` contains `acknowledge.ts`. It is now "walks the shipped code at all…": more than 1000 shipped files, some under `src/app/(app)/embryos/`. A new test, "finds no server action in the product, and the ledger records none", asserts that the module census and the ledger are both `[]` and that the file is gone.
+- "counts every action…" asserted the census equals `["src/app/(app)/embryos/acknowledge.ts acknowledgeEmbryoGate"]`. It now asserts `[]`.
+- "pins the registered pages…" gains one assertion: the three former hosts import the former action no more.
+- "fails on a planted second export, an inline action and a durable write" read the shipped module. It now plants the deleted module's exact code (kept in the test as `FORMER_ACTION`). One planted action already breaks the census-equals-ledger assertion. The second export, the inline action and the durable write are caught as before.
+- "fails on a planted host…" expected four hosts, then three after a deletion. With no shipped hosts it plants the module and two importing pages: `copilot.scope` and `embryos.index`, then `embryos.index` alone.
+- New: "fails on a planted server action, top-of-file or inline, whichever quotes it uses" plants the former module and an inline `'use server'` component, and both are found.
+- Planted on disk and removed: restoring `acknowledge.ts` fails three tests here, plus "leaves no surface in scope both unguarded and unexplained" in `scripts/jurisdiction-enforcement.test.ts`.
+
+**Changed suite: `scripts/jurisdiction-enforcement.test.ts`.** Two changes, no other assertion:
+- The non-empty-scan list named `src/app/(app)/embryos/acknowledge.ts`. It now names `src/app/api/embryos/acknowledge/route.ts`.
+- The `WITHOUT_CHECK` reason moves to the route. Its planted `"use server"` module still covers server actions.
+
+**Changed suite: `src/components/embryo/embryo.test.ts`.** The gate renders with no `action` prop, which no longer exists. Its assertions are unchanged.
+
 ### `webhooks.resend`: the register says what it does (item 4)
 
 The register gains `authContracts.resend-webhook-signature-v1` (the three `svix-*` headers, the signed content, constant-time comparison, the 300-second skew, replay and rotation, 401 for a bad signature), the `contractDefaults` line that binds `endpoint:resend-standard-webhook-signature` to it, `provider-webhook-acknowledgement-v1` (204 matched, 204 for a type it does not record, 202 unmatched) and `provider-webhook-unavailable-v1` (503), and the route's binding entry. The route itself is unchanged. The three ledger rows for it are removed (`endpointAuthModeWithoutContract`, `endpointSuccessContractUndefined`, `endpointSuccessContractUnbound`), and `webhookContractsNote` records why.
