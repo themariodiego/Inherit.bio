@@ -1,4 +1,5 @@
 import { type BrowserContext, type Page } from "@playwright/test";
+import { mintedOperationNonce } from "./helpers/operation-nonce";
 import { randomUUID } from "node:crypto";
 import path from "node:path";
 import { expect, test } from "./audited-test";
@@ -201,10 +202,14 @@ test.describe("the Embryo cohort scope, end to end on the local model", () => {
       .eq("grant_id", grant!.grant_id).single()).data).toEqual(grant);
     expect((await admin.from("directional_grants").select("grant_revision,status,ended_at,relationship_or_pair_revision")
       .eq("grant_id", grant!.grant_id).single()).data).toEqual(directionBefore.data);
-    const revoked = await pageB.evaluate(async id => {
-      const response = await fetch(`/api/consents/${id}/revoke`, { method: "POST", credentials: "same-origin" });
+    // No page renders a single embryo-analysis revocation, so the nonce is
+    // minted as a page mints it, for B's own session (G5.6, 23 Oct 2026).
+    const revokeNonce = await mintedOperationNonce(pageB.context(), accountB, "consent_revoke", grant!.grant_id);
+    const revoked = await pageB.evaluate(async ([id, nonce]) => {
+      const response = await fetch(`/api/consents/${id}/revoke`, { method: "POST", credentials: "same-origin",
+        headers: { "X-Inherit-Operation-Nonce": nonce } });
       return { status: response.status, body: await response.json() };
-    }, grant!.grant_id);
+    }, [grant!.grant_id, revokeNonce] as const);
     expect(revoked.status).toBe(200);
     expect(Object.keys(revoked.body).sort()).toEqual(["effectiveAt", "revoked"]);
     expect(revoked.body.revoked).toBe(true);

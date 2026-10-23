@@ -1,3 +1,4 @@
+import { mintPersonOperationNonce } from "@/lib/person-operation-nonce";
 import "server-only";
 
 import crypto from "node:crypto";
@@ -151,6 +152,8 @@ export async function preparePathBChoices(now = Date.now()): Promise<PathBChoice
         const artifact = artifacts.get(PATH_B_GRANT_TEXT[direction][purpose]);
         const canOffer = !grant && artifact && (direction === "self" || shareOpen);
         choices.push({ purpose, direction, grantId: grant?.grantId ?? null,
+          revokeNonce: grant ? mintPersonOperationNonce({ accountId: actor.accountId, sessionId: actor.sessionId,
+            operation: "consent_revoke", targetId: grant.grantId }, now) : null,
           offer: canOffer ? {
             token: mintPathBPurposePresentation({ accountId: actor.accountId, sessionId: actor.sessionId,
               subjectId: person.subjectId, purpose, direction, artifactKey: artifact.artifact_key,

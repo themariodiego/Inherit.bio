@@ -28,26 +28,24 @@ import {
  * (register family.permissions.rightActions). Both triggers are outline
  * buttons; only the confirmation inside the dialog is destructive.
  *
- * Pause and resume go to the person route (api.family-sharing). Stop goes to
- * its UUID-addressed twin (api.subject-sharing) with the single-use stop
- * code this page issued for that route and this person's record (owner
- * decision 2026-10-16); both routes run the same sharing functions.
+ * All three go to the UUID-addressed route (api.subject-sharing) with the
+ * single-use code this page issued for that route, that operation and this
+ * person's record: stop since the owner decision of 2026-10-16, pause and
+ * resume since 2026-10-23, so the legal audit can name who paused or
+ * resumed (G5.6). The person route runs the same sharing functions.
  */
 export function SharingActions({
   personName,
-  personSegment,
   subjectId,
   paused,
-  stopNonce,
+  nonces,
 }: {
   personName: string;
-  /** The `s-{uuid}` segment the sharing endpoint resolves to one counterpart. */
-  personSegment: string;
-  /** The same record's UUID, which the stop route resolves the same way. */
+  /** The person's record UUID, which the sharing route resolves to one counterpart. */
   subjectId: string;
   paused: boolean;
-  /** The single-use stop code this page issued for the stop route and this record. */
-  stopNonce: string;
+  /** The single-use codes this page issued for the sharing route and this record, one per operation. */
+  nonces: { pause: string; resume: string; stop: string };
 }) {
   const router = useRouter();
   const [confirming, setConfirming] = useState(false);
@@ -57,15 +55,10 @@ export function SharingActions({
   async function send(operation: "pause" | "resume" | "stop") {
     setPending(true);
     setFailed(false);
-    const endpoint = operation === "stop"
-      ? `/api/subjects/${subjectId}/sharing`
-      : `/api/family/${personSegment}/sharing`;
-    const response = await fetch(endpoint, {
+    const response = await fetch(`/api/subjects/${subjectId}/sharing`, {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify(
-        operation === "stop" ? { operation, nonce: stopNonce } : { operation },
-      ),
+      body: JSON.stringify({ operation, nonce: nonces[operation] }),
     });
     setPending(false);
     if (!response.ok) {

@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-const mocks = vi.hoisted(() => ({ actor: vi.fn(), capability: vi.fn(), getUser: vi.fn(), from: vi.fn(), rpc: vi.fn(), copilot: vi.fn(), revokeCopilot: vi.fn(), report: vi.fn(), upload: vi.fn(), embryo: vi.fn() }));
+const mocks = vi.hoisted(() => ({ account: vi.fn(), actor: vi.fn(), capability: vi.fn(), getUser: vi.fn(), from: vi.fn(), rpc: vi.fn(), copilot: vi.fn(), revokeCopilot: vi.fn(), report: vi.fn(), upload: vi.fn(), embryo: vi.fn() }));
 vi.mock("@/lib/supabase/server", () => ({ createClient: async () => ({ auth: { getUser: mocks.getUser }, from: mocks.from }) }));
 vi.mock("@/lib/supabase/admin", () => ({ createAdminClient: () => ({ from: mocks.from, rpc: mocks.rpc }) }));
 // Keep the actual signed-token discriminators. Only the delegated handlers are
@@ -8,7 +8,8 @@ vi.mock("@/lib/copilot/own-consent", async importOriginal => ({ ...await importO
 vi.mock("@/lib/uploads/own-report-consent-route", async importOriginal => ({ ...await importOriginal<typeof import("@/lib/uploads/own-report-consent-route")>(), ownReportConsent: mocks.report }));
 vi.mock("@/lib/uploads/own-consent-route", () => ({ ownUploadConsent: mocks.upload }));
 vi.mock("@/lib/embryos/consents", () => ({ embryoConsent: mocks.embryo }));
-vi.mock("@/lib/account-deletion", () => ({ isSameOrigin: () => true }));
+vi.mock("@/lib/account-deletion", async importOriginal => ({ isSameOrigin: () => true, getSensitiveAccountContext: mocks.account,
+  hashOperationNonce: (await importOriginal<typeof import("@/lib/account-deletion")>()).hashOperationNonce }));
 vi.mock("@/lib/uploads/own-upload-context", () => ({ currentOwnUploadAccount: mocks.actor }));
 vi.mock("@/lib/family/access", () => ({ familyCapability: mocks.capability }));
 import { POST } from "./route";
@@ -16,6 +17,7 @@ import { POST as revoke } from "./[id]/revoke/route";
 import { mintOwnCopilotConsent } from "@/lib/copilot/own-consent";
 import { mintOwnReportPresentation } from "@/lib/uploads/own-report-token";
 import { mintGrantPresentation, SHARE_WITH_ADULT_ARTIFACT, SHARE_WITH_ADULT_STATEMENT_KEYS } from "@/lib/family/grant-token";
+import { mintPersonOperationNonce } from "@/lib/person-operation-nonce";
 const accountId = "77900000-0000-4000-8000-000000000001", subjectId = "77900000-0000-4000-8000-000000000002", grantId = "77900000-0000-4000-8000-000000000003";
 const snapshot = { accountRevision: 1, authSessionRevision: 1, jurisdictionRevision: 1, subjectBindingRevision: 1, accountBindingRevision: 1, uploadConsentId: grantId, subjectLifecycleRevision: 1, originatingSessionRevision: 1, principalId: grantId, principalRevision: 1 };
 const artifact = { artifact_key: SHARE_WITH_ADULT_ARTIFACT, version: 1, body_sha256: "b".repeat(64) };
@@ -27,6 +29,7 @@ beforeEach(() => {
   mocks.actor.mockResolvedValue({ accountId, sessionId: subjectId });
   mocks.capability.mockResolvedValue({ status: "permitted" });
   mocks.getUser.mockResolvedValue({ data: { user: { id: accountId } } });
+  mocks.account.mockResolvedValue({ user: { id: accountId }, sessionId: subjectId });
   mocks.from.mockImplementation((table: string) => row(table === "consent_artifacts" ? artifact : null));
   mocks.rpc.mockResolvedValue({ data: grantId, error: null });
   mocks.copilot.mockResolvedValue(Response.json({ granted: true }, { status: 201 }));
@@ -129,10 +132,24 @@ describe("actual revoke POST dispatcher", () => {
     const req = request({}); expect((await revoke(req, { params: Promise.resolve({ id: grantId }) })).status).toBe(200);
     expect(mocks.revokeCopilot).toHaveBeenCalledExactlyOnceWith(req, grantId, subjectId); expect(mocks.rpc).not.toHaveBeenCalled();
   });
-  it("keeps a noncanonical adult purpose on the existing revocation RPC", async () => {
+  // 20261023120000 (G5.6): a directional revocation carries the page's one-time
+  // nonce for this account, session and grant, and records it with the revocation.
+  const revokeNonce = (target = grantId) => mintPersonOperationNonce({ accountId, sessionId: subjectId, operation: "consent_revoke", targetId: target });
+  const withNonce = (nonce: string | null) => { const req = request({}); if (nonce !== null) req.headers.set("X-Inherit-Operation-Nonce", nonce); return req; };
+  it("keeps a noncanonical adult purpose on the existing revocation, behind the page's nonce", async () => {
     mocks.from.mockImplementation((table: string) => row(table === "purpose_grants" ? { grant_id: grantId, target_id: subjectId, copilot_recipient_revision: null } : null));
     mocks.rpc.mockResolvedValue({ data: "2026-09-07T10:00:00+00:00", error: null });
-    expect((await revoke(request({}), { params: Promise.resolve({ id: grantId }) })).status).toBe(200);
-    expect(mocks.revokeCopilot).not.toHaveBeenCalled(); expect(mocks.rpc).toHaveBeenCalledExactlyOnceWith("revoke_directional_purpose_v1", { p_account_id: accountId, p_grant_id: grantId });
+    expect((await revoke(withNonce(revokeNonce()), { params: Promise.resolve({ id: grantId }) })).status).toBe(200);
+    expect(mocks.revokeCopilot).not.toHaveBeenCalled(); expect(mocks.rpc).toHaveBeenCalledExactlyOnceWith("revoke_directional_purpose_with_nonce_v1",
+      { p_account_id: accountId, p_session_id: subjectId, p_grant_id: grantId, p_nonce_hash: expect.stringMatching(/^[0-9a-f]{64}$/), p_nonce_expires_at: expect.any(String) });
+  });
+  it("refuses a directional revocation without the nonce for this grant, before any write", async () => {
+    mocks.from.mockImplementation((table: string) => row(table === "purpose_grants" ? { grant_id: grantId, target_id: subjectId, copilot_recipient_revision: null } : null));
+    for (const nonce of [null, "not-a-nonce", revokeNonce(accountId)]) {
+      expect((await revoke(withNonce(nonce), { params: Promise.resolve({ id: grantId }) })).status).toBe(400);
+    }
+    mocks.rpc.mockResolvedValue({ data: null, error: { code: "22023", message: "invalid_operation_nonce" } });
+    expect((await revoke(withNonce(revokeNonce()), { params: Promise.resolve({ id: grantId }) })).status).toBe(400);
+    expect(mocks.rpc).toHaveBeenCalledTimes(1);
   });
 });

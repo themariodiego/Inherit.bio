@@ -56,7 +56,11 @@ function boundFixture(){
 afterEach(()=>{vi.useRealTimers();vi.restoreAllMocks();vi.unstubAllEnvs();});
 describe("consumed complete class membership",()=>{
  it("classifies every original public deferred class plus the exact two held Path B classes",()=>{
-  const deferred=Object.entries(exportMemberPlan.tables).filter(([key,row])=>key.startsWith("public.")&&row.disposition==="deferred").map(([key])=>key.slice(7));
+  // 20261023110000 (owner decision, 23 Oct 2026): the five classes no writer
+  // fills count as complete while empty, and this inventory still refuses or
+  // projects any row of them.
+  const deferred=Object.entries(exportMemberPlan.tables).filter(([key,row])=>key.startsWith("public.")
+   &&(row.disposition==="deferred"||row.disposition==="complete-empty")).map(([key])=>key.slice(7));
   expect(new Set(ACCOUNT_CLASS_KINDS)).toEqual(new Set([...deferred,"other_adult_held_uploads","path_b_report_bindings"]));
   expect(ACCOUNT_CLASS_KINDS).toHaveLength(29);
  });

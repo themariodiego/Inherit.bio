@@ -7,6 +7,7 @@ import { JurisdictionForm } from "@/components/settings/jurisdiction-form";
 import { DATA_AND_METHODS } from "@/copy/reports/strings";
 import { localAuthDestination } from "@/lib/auth/local-destination";
 import { declaredChromosomalSexFrom } from "@/lib/family/chromosomal-sex";
+import { pageOperationNonce } from "@/lib/person-operation-nonce";
 import {
   countriesWithSubdivisions,
   currentJurisdictionAttestation,
@@ -68,6 +69,13 @@ export default async function SettingsPage({
         )
       : null;
 
+  // The one-time nonces of the two writers on this page, for this account and
+  // session (G5.6, 23 Oct 2026); only the POST that uses one consumes it.
+  const [jurisdictionNonce, sexNonce] = await Promise.all([
+    user ? pageOperationNonce("jurisdiction_declare", (accountId) => accountId) : null,
+    self ? pageOperationNonce("chromosomal_sex_declare", self.id) : null,
+  ]);
+
   return (
     <div className="page-stack rec-column stack-sections">
       <header className="rec-head">
@@ -83,7 +91,7 @@ export default async function SettingsPage({
       {/* One form for every preference after the rows: a plate with its
           label in the head, the plates 48px apart (round-3 R3). */}
       <div className="stack-blocks">
-        {user && attestation ? (
+        {user && attestation && jurisdictionNonce ? (
           <JurisdictionForm
             choices={declarationChoices(declaredCode)}
             states={Object.fromEntries(countriesWithSubdivisions().map((code) => [code, subdivisionChoices(code)]))}
@@ -96,6 +104,7 @@ export default async function SettingsPage({
             } : null}
             attestation={attestation}
             next={next}
+            operationNonce={jurisdictionNonce}
           />
         ) : null}
         {user ? (
@@ -106,7 +115,7 @@ export default async function SettingsPage({
             </div>
           </section>
         ) : null}
-        {self ? <ChromosomalSexControl subjectId={self.id} declared={declaredSex} /> : null}
+        {self && sexNonce ? <ChromosomalSexControl subjectId={self.id} declared={declaredSex} operationNonce={sexNonce} /> : null}
       </div>
       <footer className="rule flex flex-wrap gap-x-6 gap-y-2 pt-4 text-sm">
         <Link href="/about#accessibility" className="link-target quiet-link">Accessibility</Link>

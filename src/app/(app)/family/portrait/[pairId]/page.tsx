@@ -1,3 +1,4 @@
+import { pageOperationNonce } from "@/lib/person-operation-nonce";
 import { loadPortraitSourceReadiness } from "@/lib/family/portrait-source-readiness";
 import type { Metadata } from "next";
 import { CarrierInputProvenance } from "@/components/family/carrier-input-provenance";
@@ -274,6 +275,12 @@ export default async function FamilyPortraitPage(props: PageProps<"/family/portr
     { subjectId: rows.b.id, displayLabel: labelOf(rows.b), isViewer: rows.b.id === mine.id },
   ];
   const grantId = ownPortraitGrantId(rows);
+  // The one-time nonces of the two writers this page can offer, for this
+  // account and session (G5.6, 23 Oct 2026).
+  const [acknowledgeNonce, revokeNonce] = await Promise.all([
+    pageOperationNonce("portrait_acknowledge", mine.id),
+    grantId ? pageOperationNonce("consent_revoke", grantId) : null,
+  ]);
   // A gene with a one-sided reading renders that reading alone: the carrier
   // rule's refusal for the same gene (the other side's change being harmless
   // or of unknown meaning) would say "both of you have a change" about a
@@ -324,6 +331,7 @@ export default async function FamilyPortraitPage(props: PageProps<"/family/portr
           people={blockingPeople}
           missing={preconditions.missing}
           consentsHref={route("settings.consents")}
+          acknowledgeNonce={acknowledgeNonce}
         />
       ) : gated ? (
         <ResultGate />
@@ -435,7 +443,7 @@ export default async function FamilyPortraitPage(props: PageProps<"/family/portr
           </div> : null}
           <RefusalsList limitsHref={route("science.index")} />
 
-          {grantId ? <DeletePortrait grantId={grantId} /> : null}
+          {grantId && revokeNonce ? <DeletePortrait grantId={grantId} revokeNonce={revokeNonce} /> : null}
 
           <div className="space-y-2">
             <p data-density-required-accuracy className="caption max-w-measure">

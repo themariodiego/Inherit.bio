@@ -5208,3 +5208,81 @@ Owner decisions (clickable chat answers):
   artifacts) count as complete. A pinned check refuses any export that finds a
   row in one of them. The asynchronous archives already do this, and the
   synchronous archive gets the same refusal.
+
+## 2026-10-23 — Stated behaviour change: export completeness and person attribution (G5.6)
+
+This applies the owner decisions of 23 October ("Export completeness: family
+conversations, cohorts, empty classes", above) and the attribution design of
+28 September (option A, with its one nonce rule, brief X1.5). It is not a new
+decision.
+
+- **Family Copilot conversations (one-record export).**
+  - **Before:** a canonical family conversation of the record's own account
+    on the record's pair, or one with a turn that read the record, refused the
+    export with `jointResults`.
+  - **After:** the record's family group conversations, which are anchored on
+    the account's self record, leave in its `chats.json` as written, while
+    every grant each turn used is current. A turn whose grant ended, whose
+    record ended or whose source changed, and a turn while sharing is paused,
+    is left out, with every later turn of its conversation, as the
+    conversation history drops the same suffix. In citations, an id or link
+    that names a person's record is removed; a publication's id and link stay;
+    a label holding an identifier refuses the request. The turns are bound
+    into the job's receipt, so a grant that ends mid-job fails the job. An
+    adult record carries none.
+  - **Still refused** with `jointResults`: a canonical conversation anchored
+    on a pair naming the record. No writer makes one, and this release has no
+    projection for it. The route's closed reason list is unchanged.
+- **Embryo cohorts.**
+  - **Before:** the whole-account export refused an account that owned an
+    embryo record or held a live cohort role, or whose cohort held embryos;
+    the one-record export refused any cohort role of the record.
+  - **After:** neither refuses. The whole-account export and the one-record
+    export of the self record carry the account's own cohort, basis,
+    participant-set, donor-attribution, disposition-proposal and confirmation
+    rows, redacted as before: the other parent and any donor appear only as
+    "is requester" flags, and evidence and signatures only as "recorded"
+    flags. The self record also carries the account's own cohort signatures
+    and attestations. The other parent's signatures, principal ids, account
+    ids and records never appear. Embryo results (embryos, quality, scores,
+    variants, figures, report artifacts) are left out, and every manifest that
+    carries cohort records says so in `excludedClasses`, in plain words
+    (`EXPORT_EMBRYO_RESULTS_NOTE`). An adult record carries no cohort record.
+    `jointResults` no longer fires for a cohort role.
+- **Classes with no production writer.** `GET /api/export` now refuses (503)
+  when any row of ancestry regions, attestation contradictions,
+  subject-control refusal authorities, suppressions or report artifacts is in
+  the requester's scope. The member plan marks the five `complete-empty`.
+- **TEST complete archive.** Its Portrait rows carry the same nine fields as
+  the one-record export, and a result holding an identifier refuses.
+- **Person attribution.**
+  - **Before:** nine writers consumed no nonce, so their events named no one:
+    the jurisdiction and chromosomal-sex declarations, the person route's
+    pause, resume and stop, the directional revocation, the Portrait
+    acknowledgement, the adult invitation, and the subject route's pause and
+    resume. A nonce recorded already consumed (subject delete, subject
+    transfer, the subject-sharing stop) was never seen. PR 324's eight
+    person-caused codes were not on the closed list.
+  - **After:** each of those routes requires the one-time nonce its page
+    rendered; its door records the nonce's hash before the writer runs, in the
+    same transaction, so the writer's events name the person and a replay
+    writes nothing. The Family permissions page now sends pause and resume to
+    the subject route, as it already sent stop. The attribution trigger also
+    fires on a nonce inserted already consumed. PR 324's eight codes are on
+    the list, each bound to its own account route; the rights-session
+    reaffirmation stays off it.
+  - **Unchanged:** the rights-session actors, which wait on the owner and
+    counsel; events written before 28 September stay unattributed.
+- **Where:** migrations `20261023110000_export_completeness.sql` and
+  `20261023120000_legal_audit_attribution_completeness.sql`. Their guards
+  expect PR 324's bodies and `20261023100000`'s, so they go in the same
+  follow-up guarded release, after them.
+- **Wording:** one new sentence, `EXPORT_EMBRYO_RESULTS_NOTE`, a plain
+  factual statement in the manifest. No legal text changes.
+- **Tests:** `supabase/tests/subject_export_family_conversations.sql`,
+  `supabase/tests/export_cohort_records.sql`,
+  `supabase/tests/legal_audit_attribution_completeness.sql`, the changed
+  cases in `supabase/tests/subject_export_joint_results.sql`,
+  `subject_export.sql`, `account_archive_graph_rows.sql`, `subject_delete.sql`
+  and `export_member_plan.sql`, and the route, worker and component tests
+  listed in `docs/test-diff-register.md`.

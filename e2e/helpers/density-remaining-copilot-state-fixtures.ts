@@ -4,6 +4,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { expect, type Browser, type Page } from "@playwright/test";
 import { adminClient, createConfirmedUser, signIn } from "../helpers";
+import { settingsOperationNonce } from "./operation-nonce";
 import { ownRunCompletions, uploadOwnFileWithChosenReports } from "../own-report-helpers";
 import { allowCopilot, CAFFEINE_ANSWER, CAFFEINE_PROMPT, CAFFEINE_SLUG, COPILOT_MODEL_HOST,
   expectClosedCompletion, expectedCaffeineCitations, lastToolResult, saveCopilotProvider, startCopilotFixture,
@@ -261,7 +262,8 @@ export function realRemainingCopilotDensityFixtures(input:{
         const response=await page.goto("/copilot/family");expect(response?.status()).toBe(200);
       }else{
         const old=await freshJurisdictionSnapshot(accountId,false),artifact=old.published_attestations[0];
-        const response=await page.request.put("/api/settings/jurisdiction",{headers:{origin:appOrigin,"content-type":"application/json"},
+        const response=await page.request.put("/api/settings/jurisdiction",{headers:{origin:appOrigin,"content-type":"application/json",
+          "x-inherit-operation-nonce":await settingsOperationNonce(page.request,"jurisdiction")},
           data:{code:"XX",attestationVersion:artifact.version,attestationHash:artifact.body_sha256,affirmed:true}});
         expect(response.status()).toBe(200);
         expect(JSON.parse((await response.body()).toString("utf8"))).toEqual({status:"updated",jurisdiction:"XX",capabilityReevaluation:"complete"});

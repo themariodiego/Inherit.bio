@@ -27,7 +27,8 @@ chain.eq = () => chain;
 vi.mock("@/lib/supabase/server", () => ({
   createClient: async () => ({ auth: { getUser: mocks.user } }),
 }));
-vi.mock("@/lib/account-deletion", () => ({ getSensitiveAccountContext: mocks.account, isSameOrigin: () => true }));
+vi.mock("@/lib/account-deletion", async (original) => ({ getSensitiveAccountContext: mocks.account, isSameOrigin: () => true,
+  hashOperationNonce: (await original<typeof import("@/lib/account-deletion")>()).hashOperationNonce }));
 vi.mock("@/lib/legal/jurisdictions", async (original) => ({
   ...(await original<typeof import("@/lib/legal/jurisdictions")>()),
   accountCapability: mocks.capability,
@@ -41,8 +42,10 @@ vi.mock("@/lib/embryos/guards", async (original) => ({
 const { POST: inviteCoParent } = await import("@/app/api/invitations/route");
 const { POST: inviteAdult } = await import("@/app/api/subject-drafts/route");
 const { legacyContactDigest } = await import("@/lib/hmac-keyring");
+const { mintPersonOperationNonce } = await import("@/lib/person-operation-nonce");
 
 const ACCOUNT = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+const SESSION = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
 const DRAFT = "cccccccc-cccc-4ccc-8ccc-cccccccccccc";
 const INVITED = "invited-person@example.invalid";
 const NETWORK = "192.0.2.44";
@@ -52,22 +55,24 @@ beforeEach(() => {
   vi.stubEnv("BYOK_ENCRYPTION_KEY", crypto.randomBytes(32).toString("base64"));
   vi.stubEnv("INHERIT_HMAC_KEYRING", `2:${KEY_2}`);
   vi.clearAllMocks();
-  mocks.account.mockResolvedValue({ user: { id: ACCOUNT, email: "owner@example.invalid" }, sessionId: "s" });
+  mocks.account.mockResolvedValue({ user: { id: ACCOUNT, email: "owner@example.invalid" }, sessionId: SESSION });
   mocks.user.mockResolvedValue({ data: { user: { id: ACCOUNT, email: "owner@example.invalid" } } });
   mocks.capability.mockResolvedValue({ status: "permitted" });
 });
 afterEach(() => vi.unstubAllEnvs());
 
-const post = (path: string, body: unknown) => new Request(`https://inherit.bio${path}`, {
+const post = (path: string, body: unknown, headers: Record<string, string> = {}) => new Request(`https://inherit.bio${path}`, {
   method: "POST",
-  headers: { origin: "https://inherit.bio", "content-type": "application/json", "x-real-ip": NETWORK },
+  headers: { origin: "https://inherit.bio", "content-type": "application/json", "x-real-ip": NETWORK, ...headers },
   body: JSON.stringify(body),
 });
 const coParent = () => post("/api/invitations", { targetCohortDraftId: DRAFT, contactEmail: INVITED });
+// 20261023120000 (G5.6): /family/invite renders a one-time nonce for this account and session.
 const adult = () => post("/api/subject-drafts", {
   kind: "other_adult", adultFlow: "path-a-own-account", email: INVITED,
   adultAttestation: true, requestId: crypto.randomUUID(),
-});
+}, { "x-inherit-operation-nonce": mintPersonOperationNonce({ accountId: ACCOUNT, sessionId: SESSION,
+  operation: "adult_invitation_create", targetId: ACCOUNT }) });
 
 function sentArgs(): Record<string, unknown> {
   expect(mocks.rpc).toHaveBeenCalledTimes(1);
@@ -130,7 +135,8 @@ describe("POST /api/subject-drafts (adult invitation)", () => {
     mocks.rpc.mockResolvedValue({ data: [{ invitation_id: crypto.randomUUID() }], error: null });
     const response = await inviteAdult(adult());
     expect(response.status).toBe(202);
-    expect(mocks.rpc.mock.calls[0]![0]).toBe("create_adult_subject_invitation_v1");
+    expect(mocks.rpc.mock.calls[0]![0]).toBe("create_adult_subject_invitation_with_nonce_v1");
+    expect(sentArgs()).toMatchObject({ p_session_id: SESSION, p_nonce_hash: expect.stringMatching(/^[0-9a-f]{64}$/) });
     expectKeyedCall(sentArgs());
   });
 
@@ -146,6 +152,13 @@ describe("POST /api/subject-drafts (adult invitation)", () => {
   it("answers 503 when the database refuses the keys", async () => {
     mocks.rpc.mockResolvedValue({ data: null, error: { code: "55000", message: "keyed digest set incomplete" } });
     expect((await inviteAdult(adult())).status).toBe(503);
+  });
+
+  it("refuses an invitation without the page's nonce before reserving anything", async () => {
+    const response = await inviteAdult(post("/api/subject-drafts", { kind: "other_adult", adultFlow: "path-a-own-account",
+      email: INVITED, adultAttestation: true, requestId: crypto.randomUUID() }));
+    expect(response.status).toBe(400);
+    expect(mocks.rpc).not.toHaveBeenCalled();
   });
 
   it("fails closed on a malformed keyring instead of sending fewer revisions", async () => {

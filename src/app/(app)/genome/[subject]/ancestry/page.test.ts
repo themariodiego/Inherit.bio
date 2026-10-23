@@ -36,7 +36,7 @@ const props = { params: Promise.resolve({ subject: "me" }) } as Parameters<typeo
 /** The Reports page's "Choose your reports" section, with the Ancestry choice on or off. */
 function choicesPanel(ancestryGranted: boolean): OwnReportChoicesPanel {
   const choice = (purposeKey: "reports.monogenic" | "reports.polygenic" | "ancestry", granted: boolean) => ({
-    purposeKey, label: purposeKey, description: "", granted, grantId: granted ? subjectId : null,
+    purposeKey, label: purposeKey, description: "", granted, grantId: granted ? subjectId : null, revokeNonce: granted ? "revoke-nonce" : null,
     artifact: { key: `consent.${purposeKey}`, version: 1, body: "" }, token: "token", statementKeys: [], reconsent: null });
   return { kind: "ready", files: [{ id: fileA, label: "File 1" }], view: { kind: "ready", subjectId, choices: [
     choice("reports.monogenic", false), choice("reports.polygenic", true), choice("ancestry", ancestryGranted)] } };

@@ -1,4 +1,5 @@
 import { type Page } from "@playwright/test";
+import { settingsOperationNonce } from "./helpers/operation-nonce";
 import { expect, test } from "./audited-test";
 import { randomUUID } from "node:crypto";
 import fs from "node:fs";
@@ -1075,7 +1076,8 @@ test("changing where B lives ends every Family permission B took part in, and le
   const { data: published } = await adminClient().from("consent_artifacts").select("version, body_sha256")
     .eq("artifact_key", "attestation.jurisdiction").is("superseded_at", null).single();
   const answer = await page.request.put("/api/settings/jurisdiction", {
-    headers: { origin: "http://localhost:3100", "content-type": "application/json" },
+    headers: { origin: "http://localhost:3100", "content-type": "application/json",
+      "x-inherit-operation-nonce": await settingsOperationNonce(page.request, "jurisdiction") },
     data: { code: "XX", attestationVersion: published!.version, attestationHash: published!.body_sha256, affirmed: true },
   });
   expect(answer.status()).toBe(200);

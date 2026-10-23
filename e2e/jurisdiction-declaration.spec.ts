@@ -2,6 +2,7 @@ import { type Page } from "@playwright/test";
 import { expect, test } from "./audited-test";
 import { randomUUID } from "node:crypto";
 import { adminClient, anonClient, createConfirmedUser, signIn } from "./helpers";
+import { settingsOperationNonce } from "./helpers/operation-nonce";
 
 /**
  * G5.1a in a browser, on the MAIN server (TEST-LOCAL flag on). ADR 0032.
@@ -43,8 +44,10 @@ async function attestation(): Promise<{ version: number; body_sha256: string }> 
 /** Declares through the real route, from the signed-in page's own context, as the settings form does. */
 async function declare(page: Page, code: string, subdivision?: string) {
   const { version, body_sha256 } = await attestation();
+  // The one-time nonce the settings page renders for this session (G5.6, 23 Oct 2026).
+  const nonce = await settingsOperationNonce(page.request, "jurisdiction");
   return page.request.put("/api/settings/jurisdiction", {
-    headers: { origin: MAIN, "content-type": "application/json" },
+    headers: { origin: MAIN, "content-type": "application/json", "x-inherit-operation-nonce": nonce },
     data: { code, ...(subdivision === undefined ? {} : { subdivision }), attestationVersion: version,
       attestationHash: body_sha256, affirmed: true },
   });

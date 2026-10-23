@@ -1,6 +1,8 @@
 import { revokeOwnCopilotConsent } from "@/lib/copilot/own-consent";
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { getSensitiveAccountContext } from "@/lib/account-deletion";
+import { isOperationNonceRefusal, personOperationNonceArgs, personOperationNonceFrom } from "@/lib/person-operation-nonce";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
@@ -15,6 +17,14 @@ import { createClient } from "@/lib/supabase/server";
  * recipient held, returns a Portrait pair to pending and enqueues the
  * purpose.derived-60s purge job. Only the account that holds the data
  * subject principal may revoke; every other actor is answered as not found.
+ *
+ * A directional revocation carries, in the `X-Inherit-Operation-Nonce`
+ * header, the one-time nonce the page that offered it rendered for this
+ * account, session and grant (G5.6, 23 Oct 2026).
+ * `revoke_directional_purpose_with_nonce_v1` records its hash before the
+ * revocation runs, in the same transaction, so the revocation's audit events
+ * name the person who revoked and a replay writes nothing. The own-Copilot
+ * and cloud-model cases keep their own authority.
  */
 export async function POST(
   request: Request,
@@ -47,10 +57,18 @@ export async function POST(
   }
 
   if (purposeGrant) {
-    const { data: revokedAt, error } = await admin.rpc("revoke_directional_purpose_v1", {
+    const account = await getSensitiveAccountContext();
+    if (!account || account.user.id !== user.id) return new Response("Unauthorized", { status: 401 });
+    const nonce = personOperationNonceFrom(request, { accountId: user.id, sessionId: account.sessionId,
+      operation: "consent_revoke", targetId: id });
+    if (!nonce) return NextResponse.json({ error: "invalid_request" }, { status: 400 });
+    const { data: revokedAt, error } = await admin.rpc("revoke_directional_purpose_with_nonce_v1", {
       p_account_id: user.id,
+      p_session_id: account.sessionId,
       p_grant_id: id,
+      ...personOperationNonceArgs(nonce),
     });
+    if (isOperationNonceRefusal(error)) return NextResponse.json({ error: "invalid_request" }, { status: 400 });
     if (error || !revokedAt) return new Response("Not found", { status: 404 });
     return NextResponse.json(
       { revoked: true, effectiveAt: new Date(revokedAt).toISOString() },

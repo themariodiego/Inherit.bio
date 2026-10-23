@@ -28,6 +28,15 @@ export const DATA_EXPORT_BUTTON = "Download export";
 /** `chats.json` when the chat history has nothing to show. */
 export const EXPORT_CHATS_EMPTY = "Your chat history has no saved Copilot conversations.";
 
+/**
+ * In the manifest of an archive that carries the person's own embryo cohort
+ * records. Owner decision of 23 October 2026 ("Export completeness",
+ * docs/protocol/decisions.md): a parent's export has their own cohort
+ * records and leaves out the embryo results.
+ */
+export const EXPORT_EMBRYO_RESULTS_NOTE =
+  "This export has the records of the embryo files you added or took part in. It leaves out the embryo results: the embryos and their checks, scores, DNA variants, figures and reports.";
+
 /** How `legal-audit.json` is described in the archive's manifest. */
 export const EXPORT_LEGAL_AUDIT_DESCRIPTION =
   "Legal audit records of what you did yourself. Records that do not say who acted are left out.";

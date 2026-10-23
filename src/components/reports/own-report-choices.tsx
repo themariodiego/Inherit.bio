@@ -22,7 +22,7 @@ function ReportChoice({ choice, subjectId, onSaved }: {
     if (inFlight.current || (!choice.granted && !affirmed)) return;
     inFlight.current = true; setPending(true); setError(false);
     try {
-      if (choice.granted && choice.grantId) await disableOwnReportChoice(choice.grantId);
+      if (choice.granted && choice.grantId) await disableOwnReportChoice(choice.grantId, choice.revokeNonce ?? "");
       else await enableOwnReportChoice(subjectId, choice);
       onSaved(choice.granted ? `${choice.label} turned off. Your original file is kept.`
         : `${choice.label} enabled. You can now generate your selected reports.`);

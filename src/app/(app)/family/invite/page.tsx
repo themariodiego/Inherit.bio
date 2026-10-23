@@ -6,6 +6,7 @@ import { Breadcrumbs } from "@/components/site/breadcrumbs";
 import { INVITE_H1, PRE_CONSENT_STATEMENT } from "@/copy/family/invite";
 import { NAV_LABELS } from "@/copy/navigation";
 import { accountCapability, permits } from "@/lib/family/access";
+import { pageOperationNonce } from "@/lib/person-operation-nonce";
 import { route } from "@/lib/primary-routes";
 import { createClient } from "@/lib/supabase/server";
 
@@ -48,6 +49,10 @@ export default async function FamilyInvitePage() {
     );
   }
 
+  // The invitation's one-time nonce, for this account and session (G5.6, 23 Oct 2026).
+  const operationNonce = await pageOperationNonce("adult_invitation_create", (accountId) => accountId);
+  if (!operationNonce) redirect("/auth/sign-in");
+
   return (
     <div data-surface="flow" className="page-stack stack-blocks max-w-3xl">
       <div className="fam-head">
@@ -67,7 +72,7 @@ export default async function FamilyInvitePage() {
           </p>
         </header>
       </div>
-      <InviteAdultForm />
+      <InviteAdultForm operationNonce={operationNonce} />
     </div>
   );
 }

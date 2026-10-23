@@ -16,6 +16,8 @@ export const ownReportPurposeBody = z.object({
 export type OwnReportChoicesView = { kind: "unavailable" } | {
   kind: "ready"; subjectId: string; choices: Array<{
     purposeKey: OwnReportPurpose; label: string; description: string; granted: boolean; grantId: string | null;
+    /** With a grant: the one-time nonce the page rendered for its revocation (G5.6, 23 Oct 2026). */
+    revokeNonce: string | null;
     artifact: { key: string; version: number; body: string }; token: string; statementKeys: string[];
     /**
      * Present only when this person already agreed to an earlier version of

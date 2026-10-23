@@ -41,11 +41,19 @@ vi.mock("@/lib/supabase/admin", () => ({
 }));
 
 const { PUT } = await import("./route");
+const { mintPersonOperationNonce } = await import("@/lib/person-operation-nonce");
+const { hashOperationNonce } = await import("@/lib/account-deletion");
+const BYOK = Buffer.alloc(32, 7).toString("base64");
 
-function put(body: unknown, headers: Record<string, string> = { origin: ORIGIN }): Promise<Response> {
+// 20261023120000 (G5.6): the settings page renders a one-time nonce for this
+// account and session; every request below carries it unless a case says not.
+const nonce = (overrides: Record<string, string> = {}) => mintPersonOperationNonce({ accountId: ACCOUNT, sessionId: SESSION,
+  operation: "jurisdiction_declare", targetId: ACCOUNT, ...overrides } as Parameters<typeof mintPersonOperationNonce>[0]);
+
+function put(body: unknown, headers: Record<string, string> = { origin: ORIGIN }, operationNonce: string | null = nonce()): Promise<Response> {
   return PUT(new Request(`${ORIGIN}/api/settings/jurisdiction`, {
     method: "PUT",
-    headers: { "content-type": "application/json", ...headers },
+    headers: { "content-type": "application/json", ...(operationNonce === null ? {} : { "x-inherit-operation-nonce": operationNonce }), ...headers },
     body: typeof body === "string" ? body : JSON.stringify(body),
   }));
 }
@@ -58,6 +66,7 @@ beforeEach(() => {
   vi.unstubAllEnvs();
   // CI sets the acceptance flag for the whole job; each case states its own.
   vi.stubEnv("INHERIT_TEST_JURISDICTION", "");
+  vi.stubEnv("BYOK_ENCRYPTION_KEY", BYOK);
   mocks.account = { user: { id: ACCOUNT }, sessionId: SESSION };
   mocks.rpc = [];
   mocks.result = { jurisdiction: "GB", subdivision: null, changed: true, revokedGrants: 0 };
@@ -69,14 +78,37 @@ beforeEach(() => {
 
 describe("PUT /api/settings/jurisdiction", () => {
   it("records the declaration through the one writer and answers jurisdiction-write-v1 exactly", async () => {
-    const response = await put(body());
+    const code = nonce();
+    const response = await put(body(), { origin: ORIGIN }, code);
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual({ status: "updated", jurisdiction: "GB", capabilityReevaluation: "complete" });
     expect(response.headers.get("cache-control")).toBe("private, no-store");
-    expect(mocks.rpc).toEqual([["declare_jurisdiction_v2", {
+    expect(mocks.rpc).toEqual([["declare_jurisdiction_with_nonce_v1", {
       p_account_id: ACCOUNT, p_session_id: SESSION, p_code: "GB", p_subdivision: null,
       p_attestation_version: 1, p_attestation_sha256: HASH, p_test_jurisdiction: false,
+      p_nonce_hash: hashOperationNonce(code), p_nonce_expires_at: expect.any(String),
     }]]);
+    expect(JSON.stringify(mocks.rpc)).not.toContain(code);
+  });
+
+  it.each([
+    ["no nonce", () => null],
+    ["a nonce for another account", () => nonce({ accountId: "12345678-1234-4234-8234-000000000099", targetId: "12345678-1234-4234-8234-000000000099" })],
+    ["a nonce for another session", () => nonce({ sessionId: "12345678-1234-4234-8234-0000000000b9" })],
+    ["a nonce for another operation", () => nonce({ operation: "chromosomal_sex_declare" })],
+    ["a malformed nonce", () => "not-a-nonce"],
+  ])("refuses %s before the writer runs", async (_label, code) => {
+    const response = await put(body(), { origin: ORIGIN }, code());
+    expect(response.status).toBe(422);
+    expect(await response.json()).toEqual({ error: "invalid_request", issues: ["nonce"] });
+    expect(mocks.rpc).toEqual([]);
+  });
+
+  it("answers a nonce the database already recorded as invalid-request-v1 on the nonce", async () => {
+    mocks.error = { code: "22023", message: "invalid_operation_nonce" };
+    const response = await put(body());
+    expect(response.status).toBe(422);
+    expect(await response.json()).toEqual({ error: "invalid_request", issues: ["nonce"] });
   });
 
   it("normalises the code before validating it", async () => {
@@ -160,7 +192,7 @@ describe("the United States state (ADR 0032, 27 Sep 2026)", () => {
     const response = await put(body({ code: "us", subdivision: " us-ny " }));
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual({ status: "updated", jurisdiction: "US", capabilityReevaluation: "complete" });
-    expect(mocks.rpc[0]).toEqual(["declare_jurisdiction_v2", expect.objectContaining({ p_code: "US", p_subdivision: "US-NY" })]);
+    expect(mocks.rpc[0]).toEqual(["declare_jurisdiction_with_nonce_v1", expect.objectContaining({ p_code: "US", p_subdivision: "US-NY" })]);
   });
 
   it.each([

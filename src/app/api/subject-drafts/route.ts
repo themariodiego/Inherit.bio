@@ -4,6 +4,8 @@ import { encryptSecret, hmacSecret } from "@/lib/crypto";
 import { contactDigestSet, legacyContactDigest } from "@/lib/hmac-keyring";
 import { invitationQuotaKeys } from "@/lib/rate-limit-keys";
 import { accountCapability } from "@/lib/legal/jurisdictions";
+import { getSensitiveAccountContext } from "@/lib/account-deletion";
+import { isOperationNonceRefusal, personOperationNonceArgs, personOperationNonceFrom } from "@/lib/person-operation-nonce";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { isPathBDraftPayload, isPathBReviewedDocumentDraftPayload } from "@/lib/uploads/other-adult-upload";
@@ -62,6 +64,15 @@ export async function POST(request: Request) {
   if (email === normalizedEmail(user.email)) {
     return NextResponse.json({ error: "invalid_request" }, { status: 400 });
   }
+  // The one-time nonce /family/invite rendered for this account and session
+  // (G5.6, 23 Oct 2026). The database records its hash before the invitation
+  // is reserved, in the same transaction, so the invitation's audit events
+  // name the person who invited and a replay reserves nothing.
+  const account = await getSensitiveAccountContext();
+  if (!account || account.user.id !== user.id) return new Response("Unauthorized", { status: 401 });
+  const nonce = personOperationNonceFrom(request, { accountId: user.id, sessionId: account.sessionId,
+    operation: "adult_invitation_create", targetId: user.id });
+  if (!nonce) return NextResponse.json({ error: "invalid_request" }, { status: 400 });
 
   // The revision-1 digest keeps the idempotency key stable across a rotation.
   const idempotencyKey = hmacSecret(
@@ -78,15 +89,18 @@ export async function POST(request: Request) {
   // counts this attempt against the account and network quotas before it
   // matches anything (global-contact-refusal-bar-v1). An exhausted quota
   // returns no invitation, exactly as a barred address does.
-  const { data, error } = await admin.rpc("create_adult_subject_invitation_v1", {
+  const { data, error } = await admin.rpc("create_adult_subject_invitation_with_nonce_v1", {
     p_account_id: user.id,
+    p_session_id: account.sessionId,
     p_contact_ciphertext: `\\x${encryptSecret(email).toString("hex")}`,
     p_contact_hmac: null,
     p_contact_hmac_set: contactDigestSet(email),
     p_quota_keys: invitationQuotaKeys(user.id, request.headers),
     p_idempotency_key: idempotencyKey,
     p_test_jurisdiction: true,
+    ...personOperationNonceArgs(nonce),
   });
+  if (isOperationNonceRefusal(error)) return NextResponse.json({ error: "invalid_request" }, { status: 400 });
   if (error) {
     return NextResponse.json({ error: "invitation_unavailable" }, { status: 503 });
   }

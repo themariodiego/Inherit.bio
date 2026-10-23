@@ -15,6 +15,8 @@ vi.mock("@/lib/family/carrier-pair", async original => ({ ...await original<obje
 vi.mock("@/lib/family/carrier-canonical", () => ({ resolveCanonicalCarrierPair: m.canonical }));
 vi.mock("@/lib/genome/input-sources", () => ({ loadInputSources: m.inputs }));
 vi.mock("@/lib/genome/load", () => ({ hasFileInPreparation: m.preparing }));
+// 20261023120000 (G5.6): the page renders the one-time nonces of its two writers.
+vi.mock("@/lib/person-operation-nonce", () => ({ pageOperationNonce: async () => "page-nonce" }));
 import Page from "@/app/(app)/family/portrait/[pairId]/page";
 import { NO_CLASSIFIED_POSITIONS, UNNAMED_PERSON_LABEL } from "@/copy/family/portrait";
 function text(node: ReactNode): string {

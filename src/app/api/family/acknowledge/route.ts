@@ -6,6 +6,7 @@ import {
   tier2CookieAttributes,
   tier2Digest,
 } from "@/lib/family/tier2";
+import { isOperationNonceRefusal, personOperationNonceArgs, personOperationNonceFrom } from "@/lib/person-operation-nonce";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 /**
@@ -20,7 +21,12 @@ import { createAdminClient } from "@/lib/supabase/admin";
  *     session it was given in;
  *   - `portrait` stamps `subjects.portrait_acknowledged_at` once through
  *     `acknowledge_portrait_v1`, on a subject bound to the acting account;
- *     any other subject is refused with no existence signal.
+ *     any other subject is refused with no existence signal. It carries, in
+ *     the `X-Inherit-Operation-Nonce` header, the one-time nonce the Portrait
+ *     page rendered for this account, session and subject (G5.6, 23 Oct
+ *     2026); `acknowledge_portrait_with_nonce_v1` records its hash first, in
+ *     the same transaction, so the audit event names the person and a replay
+ *     writes nothing.
  *
  * The response never carries a jurisdiction, an authority or an account id:
  * only which acknowledgement was recorded and when (family-acknowledged-v1).
@@ -59,10 +65,16 @@ export async function POST(request: Request) {
   if (!context) return new Response("Unauthorized", { status: 401 });
 
   if (parsed.data.acknowledgement === "portrait") {
-    const { data, error } = await createAdminClient().rpc("acknowledge_portrait_v1", {
+    const nonce = personOperationNonceFrom(request, { accountId: context.user.id, sessionId: context.sessionId,
+      operation: "portrait_acknowledge", targetId: parsed.data.subjectId });
+    if (!nonce) return NextResponse.json({ error: "invalid_request" }, { status: 400 });
+    const { data, error } = await createAdminClient().rpc("acknowledge_portrait_with_nonce_v1", {
       p_account_id: context.user.id,
+      p_session_id: context.sessionId,
       p_subject_id: parsed.data.subjectId,
+      ...personOperationNonceArgs(nonce),
     });
+    if (isOperationNonceRefusal(error)) return NextResponse.json({ error: "invalid_request" }, { status: 400 });
     if (error || !data) return new Response("Not found", { status: 404 });
     return NextResponse.json(
       { acknowledgement: "portrait", acknowledgedAt: new Date(data).toISOString() },

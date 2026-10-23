@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getSensitiveAccountContext, isSameOrigin } from "@/lib/account-deletion";
 import { CHROMOSOMAL_SEX_VALUES } from "@/lib/family/chromosomal-sex";
+import { personOperationNonceArgs, personOperationNonceFrom } from "@/lib/person-operation-nonce";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 /**
@@ -22,6 +23,13 @@ import { createAdminClient } from "@/lib/supabase/admin";
  * changed, and nothing else — no account id, no subject class, no other
  * person. The 404 for an unauthorised subject is identical to the 404 for one
  * that does not exist, so a caller learns nothing by guessing.
+ *
+ * The request carries, in the `X-Inherit-Operation-Nonce` header, the
+ * one-time nonce the settings page rendered for this account, session and
+ * record (G5.6, 23 Oct 2026). `declare_chromosomal_sex_with_nonce_v1`
+ * records its hash before the writer runs, in the same transaction, so the
+ * declaration's audit event names the person who declared and a replay
+ * writes nothing.
  */
 
 const body = z
@@ -61,11 +69,16 @@ export async function POST(request: Request) {
   }
   const context = await getSensitiveAccountContext();
   if (!context) return new Response("Unauthorized", { status: 401 });
+  const nonce = personOperationNonceFrom(request, { accountId: context.user.id, sessionId: context.sessionId,
+    operation: "chromosomal_sex_declare", targetId: parsed.data.subjectId });
+  if (!nonce) return NextResponse.json({ error: "invalid_request" }, { status: 400 });
 
-  const { data, error } = await createAdminClient().rpc("declare_chromosomal_sex_v1", {
+  const { data, error } = await createAdminClient().rpc("declare_chromosomal_sex_with_nonce_v1", {
     p_account_id: context.user.id,
+    p_session_id: context.sessionId,
     p_subject_id: parsed.data.subjectId,
     p_chromosomal_sex: parsed.data.chromosomalSex,
+    ...personOperationNonceArgs(nonce),
   });
   if (error) return new Response("Not found", { status: 404 });
   // The route states what it returns rather than forwarding whatever the

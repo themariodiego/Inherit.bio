@@ -5,21 +5,34 @@ const mocks = vi.hoisted(() => ({
   context: vi.fn(),
   rpc: vi.fn(),
 }));
-vi.mock("@/lib/account-deletion", () => ({
+vi.mock("@/lib/account-deletion", async (importOriginal) => ({
+  hashOperationNonce: (await importOriginal<typeof import("@/lib/account-deletion")>()).hashOperationNonce,
   isSameOrigin: mocks.sameOrigin,
   getSensitiveAccountContext: mocks.context,
 }));
+vi.stubEnv("BYOK_ENCRYPTION_KEY", Buffer.alloc(32, 7).toString("base64"));
 vi.mock("@/lib/supabase/admin", () => ({ createAdminClient: () => ({ rpc: mocks.rpc }) }));
 
 import { POST } from "./route";
+import { hashOperationNonce } from "@/lib/account-deletion";
+import { mintPersonOperationNonce } from "@/lib/person-operation-nonce";
 
 const ACCOUNT = "77900000-0000-4000-8000-000000000001";
 const SUBJECT = "77900000-0000-4000-8000-000000000002";
+const SESSION = "77900000-0000-4000-8000-0000000000a2";
+const OTHER = "77900000-0000-4000-8000-000000000099";
 
-function request(payload: unknown) {
+// 20261023120000 (G5.6): the settings page renders a one-time nonce for this
+// account, session and record; every request below carries it unless a case
+// says not.
+const nonce = (overrides: Partial<{ accountId: string; sessionId: string; targetId: string }> = {}) =>
+  mintPersonOperationNonce({ accountId: ACCOUNT, sessionId: SESSION, operation: "chromosomal_sex_declare", targetId: SUBJECT, ...overrides });
+
+function request(payload: unknown, operationNonce: string | null = nonce()) {
   return new Request("https://inherit.test/api/chromosomal-sex", {
     method: "POST",
-    headers: { "Content-Type": "application/json", origin: "https://inherit.test" },
+    headers: { "Content-Type": "application/json", origin: "https://inherit.test",
+      ...(operationNonce === null ? {} : { "X-Inherit-Operation-Nonce": operationNonce }) },
     body: JSON.stringify(payload),
   });
 }
@@ -34,20 +47,33 @@ const declared = {
 beforeEach(() => {
   vi.clearAllMocks();
   mocks.sameOrigin.mockReturnValue(true);
-  mocks.context.mockResolvedValue({ user: { id: ACCOUNT }, sessionId: SUBJECT });
+  mocks.context.mockResolvedValue({ user: { id: ACCOUNT }, sessionId: SESSION });
   mocks.rpc.mockResolvedValue({ data: declared, error: null });
 });
 
 describe("POST /api/chromosomal-sex (D-031)", () => {
   it("passes the acting account through rather than anything the body says", async () => {
-    const response = await POST(request({ subjectId: SUBJECT, chromosomalSex: "XX" }));
+    const code = nonce();
+    const response = await POST(request({ subjectId: SUBJECT, chromosomalSex: "XX" }, code));
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual(declared);
-    expect(mocks.rpc).toHaveBeenCalledExactlyOnceWith("declare_chromosomal_sex_v1", {
+    expect(mocks.rpc).toHaveBeenCalledExactlyOnceWith("declare_chromosomal_sex_with_nonce_v1", {
       p_account_id: ACCOUNT,
+      p_session_id: SESSION,
       p_subject_id: SUBJECT,
       p_chromosomal_sex: "XX",
+      p_nonce_hash: hashOperationNonce(code),
+      p_nonce_expires_at: expect.any(String),
     });
+  });
+
+  it("refuses a request without the page's nonce for this account, session and record, before the writer", async () => {
+    for (const code of [null, "not-a-nonce", nonce({ accountId: OTHER }), nonce({ sessionId: OTHER }), nonce({ targetId: OTHER })]) {
+      const response = await POST(request({ subjectId: SUBJECT, chromosomalSex: "XX" }, code));
+      expect(response.status).toBe(400);
+      expect(await response.json()).toEqual({ error: "invalid_request" });
+    }
+    expect(mocks.rpc).not.toHaveBeenCalled();
   });
 
   it("withdraws through the same call, so the way back is as short as the way in", async () => {

@@ -22,6 +22,9 @@ const OTHER = "dddddddd-dddd-4ddd-8ddd-dddddddddddd";
 describe("the subject-route operation nonce", () => {
   it("names one registered route per operation", () => {
     expect(SUBJECT_OPERATION_ROUTES).toEqual({
+      // 20261023120000: the sharing pause and resume take a code too.
+      subject_sharing_pause: "api.subject-sharing",
+      subject_sharing_resume: "api.subject-sharing",
       subject_sharing_stop: "api.subject-sharing",
       subject_delete: "api.subject-delete",
       subject_transfer: "api.subject-transfer",
@@ -36,6 +39,14 @@ describe("the subject-route operation nonce", () => {
     });
     for (const changed of [{ accountId: OTHER }, { sessionId: OTHER }, { subjectId: OTHER }]) {
       expect(verifySubjectOperationNonce(nonce, { ...STOP, ...changed }, NOW)).toBeNull();
+    }
+  });
+
+  it("binds the sharing pause, resume and stop to their own operation", () => {
+    const codes = (["subject_sharing_pause", "subject_sharing_resume", "subject_sharing_stop"] as const)
+      .map(operation => [operation, mintSubjectOperationNonce({ ...STOP, operation }, NOW)] as const);
+    for (const [minted, nonce] of codes) for (const [operation] of codes) {
+      expect(verifySubjectOperationNonce(nonce, { ...STOP, operation }, NOW) !== null).toBe(minted === operation);
     }
   });
 

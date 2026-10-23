@@ -13,6 +13,7 @@ import {ACCOUNT_SUBJECT_MEMBERS} from "./account-subject-member-names";
 import {accountCompleteContextSchema,type AccountCompleteContext} from "./account-complete-context";
 import {ACCOUNT_COMPLETE_VARIANT_COLUMNS} from "./account-complete-variant-csv";
 import {anySignal} from "./abort-signals";
+import {EXPORT_EMBRYO_RESULTS_NOTE} from "@/copy/settings/data-export";
 
 export {ACCOUNT_SUBJECT_MEMBERS} from "./account-subject-member-names";
 const indexes=["subjects","consents","legacy-consents","attestations","audit-log","portrait","embryos"] as const;
@@ -42,7 +43,10 @@ export async function prepareAccountArchivePlan(options:{context:z.infer<typeof 
  completeContext?:AccountCompleteContext;
  factories:FuturePersonMemberFactory[];files:AccountArchiveFile[];sources:AccountArchiveSourceMember[];resultSources?:AccountPathBSource[];
  signal:AbortSignal;check:(signal:AbortSignal)=>Promise<unknown>;sensitiveRuntime?:RequesterStatementRuntime;
- ownStatements?:z.infer<typeof accountOwnStatementCapture>}){
+ ownStatements?:z.infer<typeof accountOwnStatementCapture>;
+ /** The archive carries the requester's own embryo cohort records (the
+  * server's routed graph receipts hold a nonempty cohort class). */
+ cohortRecords?:boolean}){
  const legacyContext=accountArchiveContextSchema.parse(options.context);
  const complete=options.completeContext===undefined?undefined:accountCompleteContextSchema.parse(options.completeContext);
  if(complete&&JSON.stringify(complete.legacyCapture.context)!==JSON.stringify(legacyContext))throw unavailable();
@@ -209,10 +213,15 @@ export async function prepareAccountArchivePlan(options:{context:z.infer<typeof 
   payloadBytes+=sizeBytes;if(!Number.isSafeInteger(payloadBytes))throw unavailable();
  }
  await check(options.signal);
+ const excludedClasses=[...(scope==="subject"?[{class:"legal-audit",reasonCode:"audit-events-record-no-subject"}]:[]),
+  ...(options.cohortRecords===true?[{class:"embryo-results",reasonCode:"embryo-results-not-exported",note:EXPORT_EMBRYO_RESULTS_NOTE}]:[])];
  const manifest=encoder.encode(JSON.stringify({schemaVersion:"subject-partitioned-archive-v1",capturedAt:context.capturedAt,
   subjectPartitions:context.partitions.map(p=>p.subjectId),
-  // A one-record export names its contract and the class it leaves out.
-  ...(scope==="subject"?{exportContract:"subject-export-v1",excludedClasses:[{class:"legal-audit",reasonCode:"audit-events-record-no-subject"}]}:{}),files,...(resultSources.length?{resultSources}:{}),
+  // A one-record export names its contract and the class it leaves out. An
+  // archive with the requester's own cohort records says that it leaves out
+  // the embryo results (owner decision, 23 October 2026).
+  ...(scope==="subject"?{exportContract:"subject-export-v1"}:{}),
+  ...(excludedClasses.length?{excludedClasses}:{}),files,...(resultSources.length?{resultSources}:{}),
   ...(complete?{completeReceipt:complete.completeReceipt,dispositions:complete.dispositions}:{}),members:descriptors})+"\n");
  options.sensitiveRuntime?.own(manifest);
  const manifestFactory:FuturePersonMemberFactory={name:"manifest.json",rows:descriptors.length,chunks:async function*(signal){await check(signal);yield manifest;await check(signal);}};

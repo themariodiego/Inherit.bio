@@ -31,7 +31,8 @@ function ChoiceRow({ subjectId, choice, open, onSaved }: {
     inFlight.current = true; setPending(true); setFailed(false);
     try {
       const response = granted
-        ? await fetch(`/api/consents/${choice.grantId}/revoke`, { method: "POST", credentials: "same-origin", cache: "no-store" })
+        ? await fetch(`/api/consents/${choice.grantId}/revoke`, { method: "POST", credentials: "same-origin", cache: "no-store",
+          headers: { "X-Inherit-Operation-Nonce": choice.revokeNonce ?? "" } })
         : await fetch("/api/consents", {
           method: "POST", credentials: "same-origin", cache: "no-store",
           headers: { "Content-Type": "application/json", "x-inherit-csrf": choice.offer!.token },

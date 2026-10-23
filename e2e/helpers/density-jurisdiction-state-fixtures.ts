@@ -4,6 +4,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { expect, type Browser, type Page } from "@playwright/test";
 import { adminClient, createConfirmedUser, signIn } from "../helpers";
+import { settingsOperationNonce } from "./operation-nonce";
 import { densityCapturePlan, type DensityStateCase } from "../../scripts/density-capture-plan";
 import { assertFreshJurisdictionRows, DENSITY_TEST_DENY_SENTENCE, jurisdictionDensityRecipe,
   type FreshJurisdictionRows, type JurisdictionDensityRecipe } from "../../scripts/density-jurisdiction-states";
@@ -79,7 +80,8 @@ export function realJurisdictionDensityFixtures(input: {
           if (denied) {
             const artifact = original.published_attestations[0];
             const response = await page.request.put("/api/settings/jurisdiction", {
-              headers: { origin: origin.origin, "content-type": "application/json" },
+              headers: { origin: origin.origin, "content-type": "application/json",
+                "x-inherit-operation-nonce": await settingsOperationNonce(page.request, "jurisdiction") },
               data: { code: "XX", attestationVersion: artifact.version, attestationHash: artifact.body_sha256, affirmed: true },
             });
             expect(response.status(), "actual TEST jurisdiction admission is mandatory").toBe(200);

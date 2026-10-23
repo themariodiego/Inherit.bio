@@ -49,11 +49,13 @@ describe("Family permission operation receipts", () => {
     expect(await submitFamilyPermission(grant)).toBe(false);
   });
   it("confirms only the exact revocation response and preserves the selected grant", async () => {
-    const action: PermissionAction = { kind: "revoke", grantId: receipt.recordId };
+    const action: PermissionAction = { kind: "revoke", grantId: receipt.recordId, nonce: "revoke-nonce" };
     const request = vi.fn().mockResolvedValue(Response.json({ revoked: true, effectiveAt: receipt.signedAt }));
     vi.stubGlobal("fetch", request);
     expect(await submitFamilyPermission(action)).toBe(true);
-    expect(request).toHaveBeenCalledExactlyOnceWith(`/api/consents/${receipt.recordId}/revoke`, { method: "POST" });
+    // 20261023120000 (G5.6): the page's one-time nonce travels in its header.
+    expect(request).toHaveBeenCalledExactlyOnceWith(`/api/consents/${receipt.recordId}/revoke`, { method: "POST",
+      headers: { "X-Inherit-Operation-Nonce": "revoke-nonce" } });
     for (const data of [{ revoked: false, effectiveAt: receipt.signedAt }, { revoked: true }, receipt]) {
       request.mockResolvedValue(Response.json(data));
       expect(await submitFamilyPermission(action)).toBe(false);

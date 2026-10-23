@@ -48,6 +48,7 @@ import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { ownRunCompletions } from "../own-report-helpers";
 import { uploadOwnFileThroughUi } from "../helpers";
+import { settingsOperationNonce } from "./operation-nonce";
 import { DISTINGUISHING_PRINCIPLE, filePreparingFor } from "../../src/copy/family/portrait";
 import { portraitDensityRecipe, checkedPortraitJurisdictionTransition, PORTRAIT_DENSITY_NATIVE_SOURCES } from "../../scripts/density-portrait-states";
 import { densityCapturePlan, type DensityStateCase, type DENSITY_VIEWPORTS } from "../../scripts/density-capture-plan";
@@ -759,7 +760,8 @@ async function facts(): Promise<Facts> {
               const before = await facts(), artifacts = await currentJurisdictionAttestations(), artifact = artifacts[0];
               expect(before.files).toEqual([]); expect(before.portrait_results).toEqual([]);
               const declaration = await capturedPage.request.put("/api/settings/jurisdiction", {
-                headers: { origin: origin.origin, "content-type": "application/json" },
+                headers: { origin: origin.origin, "content-type": "application/json",
+                  "x-inherit-operation-nonce": await settingsOperationNonce(capturedPage.request, "jurisdiction") },
                 data: { code: "XX", attestationVersion: artifact.version, attestationHash: artifact.body_sha256, affirmed: true },
               });
               expect(declaration.status()).toBe(200);

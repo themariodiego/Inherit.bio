@@ -25,9 +25,11 @@ export async function enableOwnReportChoice(subjectId: string, choice: Choice): 
   }
 }
 
-export async function disableOwnReportChoice(grantId: string): Promise<void> {
+/** `nonce` is the one-time nonce the page rendered for this grant's revocation (G5.6, 23 Oct 2026). */
+export async function disableOwnReportChoice(grantId: string, nonce: string): Promise<void> {
   if (!z.uuid().safeParse(grantId).success) throw new Error("invalid_grant");
-  const response = await fetch(route("api.consent-revoke", { id: grantId }), { method: "POST" });
+  const response = await fetch(route("api.consent-revoke", { id: grantId }), { method: "POST",
+    headers: { "X-Inherit-Operation-Nonce": nonce } });
   if (response.status !== 200 || !revokeReceipt.safeParse(await response.json()).success) throw new Error("choice_not_saved");
 }
 

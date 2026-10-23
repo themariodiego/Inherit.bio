@@ -22,15 +22,18 @@ import { createAdminClient } from "@/lib/supabase/admin";
  *     counterpart account the subject resolves to, which is never a request
  *     field. Pause and stop are rights and bypass the jurisdiction gate;
  *     resume rechecks it first (purpose-to-capability-v1).
- *   - Stop takes the single-use stop code the Family permissions page issues
- *     for this route and this subject. The database records its hash in the
- *     same transaction as the stop, so a replay changes nothing.
+ *   - Each operation takes the single-use code the Family permissions page
+ *     issues for this route, that operation and this subject: stop since
+ *     2026-10-16, pause and resume since 2026-10-23 (G5.6), so the legal
+ *     audit can name who acted. The database records its hash in the same
+ *     transaction as the operation, so a replay changes nothing.
  */
 
+const nonceField = z.string().min(1).max(SUBJECT_OPERATION_NONCE_MAX_LENGTH);
 const body = z.discriminatedUnion("operation", [
-  z.object({ operation: z.literal("pause") }).strict(),
-  z.object({ operation: z.literal("resume") }).strict(),
-  z.object({ operation: z.literal("stop"), nonce: z.string().min(1).max(SUBJECT_OPERATION_NONCE_MAX_LENGTH) }).strict(),
+  z.object({ operation: z.literal("pause"), nonce: nonceField }).strict(),
+  z.object({ operation: z.literal("resume"), nonce: nonceField }).strict(),
+  z.object({ operation: z.literal("stop"), nonce: nonceField }).strict(),
 ]);
 
 const SHARING_KEYS = ["state", "effectiveAt"] as const;
@@ -78,23 +81,24 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
   if (!parsed.success) return invalidRequest(["body"]);
 
   const admin = createAdminClient();
-  const pair = { p_account_id: account.user.id, p_counterpart_account_id: person.counterpartAccountId };
+  const nonce = verifySubjectOperationNonce(parsed.data.nonce, {
+    accountId: account.user.id,
+    sessionId: account.sessionId,
+    operation: `subject_sharing_${parsed.data.operation}`,
+    subjectId: id,
+  });
+  if (!nonce) return invalidRequest(["nonce"]);
+  const pair = {
+    p_account_id: account.user.id,
+    p_counterpart_account_id: person.counterpartAccountId,
+    p_session_id: account.sessionId,
+    p_subject_id: id,
+    p_nonce_hash: nonce.nonceHash,
+    p_nonce_expires_at: new Date(nonce.expiresAt).toISOString(),
+  };
 
   if (parsed.data.operation === "stop") {
-    const nonce = verifySubjectOperationNonce(parsed.data.nonce, {
-      accountId: account.user.id,
-      sessionId: account.sessionId,
-      operation: "subject_sharing_stop",
-      subjectId: id,
-    });
-    if (!nonce) return invalidRequest(["nonce"]);
-    const { data, error } = await admin.rpc("stop_subject_sharing_v1", {
-      ...pair,
-      p_session_id: account.sessionId,
-      p_subject_id: id,
-      p_nonce_hash: nonce.nonceHash,
-      p_nonce_expires_at: new Date(nonce.expiresAt).toISOString(),
-    });
+    const { data, error } = await admin.rpc("stop_subject_sharing_v1", pair);
     const row = Array.isArray(data) ? data[0] : null;
     if (error || !row) return rpcFailure(error);
     const endedAt = new Date(row.ended_at);
@@ -111,13 +115,13 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
     if (!permits(decision)) {
       return sensitiveJson({ error: "jurisdiction_unavailable", message: decision.userFacingCopy }, 403);
     }
-    const { error } = await admin.rpc("resume_family_sharing_v1", pair);
+    const { error } = await admin.rpc("resume_subject_sharing_v1", pair);
     if (error) return rpcFailure(error);
     return closedResponse("api.subject-sharing", SHARING_KEYS,
       { state: "sharing_active", effectiveAt: new Date().toISOString() }, 200);
   }
 
-  const { error } = await admin.rpc("pause_family_sharing_v1", pair);
+  const { error } = await admin.rpc("pause_subject_sharing_v1", pair);
   if (error) return rpcFailure(error);
   return closedResponse("api.subject-sharing", SHARING_KEYS,
     { state: "sharing_paused", effectiveAt: new Date().toISOString() }, 200);

@@ -4,7 +4,7 @@ const fetchMock = vi.fn();
 const id = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 const otherId = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
 const choice = { purposeKey: "reports.polygenic" as const, label: "Trait reports and estimates", description: "Traits",
-  granted: false, grantId: null, artifact: { key: "consent.own-polygenic", version: 2, body: "The permission" },
+  granted: false, grantId: null, revokeNonce: null, artifact: { key: "consent.own-polygenic", version: 2, body: "The permission" },
   token: "presentation-token", statementKeys: ["make-this-result-for-me"], reconsent: null };
 const receipt = { recordKind: "purpose_grant", recordId: otherId, artifactKey: choice.artifact.key,
   artifactVersion: 2, purposeKey: choice.purposeKey, signedAt: "2026-09-06T12:00:00Z" };
@@ -31,11 +31,13 @@ describe("own report choice transport", () => {
     reply(receipt, 409); await expect(enableOwnReportChoice(id, choice)).rejects.toThrow();
   });
   it("withdraws exactly the given grant without a client-selected purpose override", async () => {
-    reply({ revoked: true, effectiveAt: "2026-09-06T12:00:00Z" }); await disableOwnReportChoice(otherId);
-    expect(fetchMock).toHaveBeenCalledWith(`/api/consents/${otherId}/revoke`, { method: "POST" });
+    reply({ revoked: true, effectiveAt: "2026-09-06T12:00:00Z" }); await disableOwnReportChoice(otherId, "revoke-nonce");
+    // 20261023120000 (G5.6): the page's one-time nonce travels in its header.
+    expect(fetchMock).toHaveBeenCalledWith(`/api/consents/${otherId}/revoke`, { method: "POST",
+      headers: { "X-Inherit-Operation-Nonce": "revoke-nonce" } });
   });
   it("does not accept an unconfirmed withdrawal", async () => {
-    reply({ revoked: true }); await expect(disableOwnReportChoice(otherId)).rejects.toThrow();
+    reply({ revoked: true }); await expect(disableOwnReportChoice(otherId, "revoke-nonce")).rejects.toThrow();
   });
   it("distinguishes generated results from source preparation", async () => {
     reply({ fileId: id, status: "processed", analysisState: "active" });
@@ -49,7 +51,7 @@ describe("own report choice transport", () => {
     await expect(generateOwnReports(id)).rejects.toThrow();
   });
   it("refuses malformed ids before issuing requests", async () => {
-    await expect(disableOwnReportChoice("../other")).rejects.toThrow();
+    await expect(disableOwnReportChoice("../other", "revoke-nonce")).rejects.toThrow();
     await expect(generateOwnReports("../other")).rejects.toThrow();
     expect(fetchMock).not.toHaveBeenCalled();
   });

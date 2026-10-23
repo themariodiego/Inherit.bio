@@ -23,6 +23,7 @@ create temporary table export_member_plan as select $plan$
   "universe": "Every ordinary table in the public and private schemas. Set equality between this list and the database catalog is checked by supabase/tests/export_member_plan.sql, so a new table fails CI until it has an entry here.",
   "personScoped": "A table is person-scoped when a column is named user_id or account_id or ends in _user_id or _account_id, when it has a foreign key to auth.users or public.audit_principals, or when it has a foreign key to a person-scoped table. A person-scoped table may never be classified reference.",
   "dispositions": {
+    "complete-empty": "No production writer fills the class, so it holds no person's row. It counts as complete while it is empty: the synchronous archive refuses when any row of the requester's is found, and the asynchronous archives refuse or project a nonempty class.",
     "deferred": "Belongs in a complete export under a registered contract, but no reader exists yet. These are the open gaps.",
     "excluded-credential": "A credential, key, token, nonce or session, or its hash. Exporting it would be a security defect.",
     "excluded-internal": "Processing, delivery, retention or security machinery. It is not the person's record.",
@@ -535,8 +536,8 @@ create temporary table export_member_plan as select $plan$
       "reason": "Analysis queue rows. It is machinery, not the person's record."
     },
     "public.ancestry_regions": {
-      "disposition": "deferred",
-      "reason": "Regional ancestry estimates. No writer ships today; when one does they belong in ancestry.json."
+      "disposition": "complete-empty",
+      "reason": "Regional ancestry estimates. No production writer ships, so no row can exist. The export counts the class complete while it is empty: the synchronous archive refuses if any row of the requester's is found (public.own_export_writerless_rows_v1, owner decision 2026-10-23), and the asynchronous archives refuse a nonempty class. When a writer ships they belong in ancestry.json."
     },
     "public.ancestry_results": {
       "disposition": "exported",
@@ -577,8 +578,8 @@ create temporary table export_member_plan as select $plan$
       "reason": "The person's own appeals. No appeal surface ships and the statement is ciphertext. Belongs to the non-self and independent projections (docs/export-member-selection-design.md, step 3), which are not built."
     },
     "public.attestation_contradictions": {
-      "disposition": "deferred",
-      "reason": "Recorded contradictions of an attestation. Belongs to the non-self and independent projections (docs/export-member-selection-design.md, step 3), which are not built."
+      "disposition": "complete-empty",
+      "reason": "Recorded contradictions of an attestation. No production writer ships, so no row can exist. The export counts the class complete while it is empty: the synchronous archive refuses if any row of the requester's is found (public.own_export_writerless_rows_v1, owner decision 2026-10-23), and the asynchronous archives refuse a nonempty class. The asynchronous archives also project the requester's own rows as metadata."
     },
     "public.attestations": {
       "disposition": "exported",
@@ -628,11 +629,12 @@ create temporary table export_member_plan as select $plan$
     },
     "public.chat_messages": {
       "disposition": "exported",
-      "reason": "The turns of an exported chat, up to the first one answered from data that has since changed. Only the history fields leave: no projection, retrieval ids, grant revisions or provider classification.",
+      "reason": "The turns of an exported chat, up to the first one answered from data that has since changed. Only the history fields leave: no projection, retrieval ids, grant revisions or provider classification. A family group turn leaves while every grant it used is current, up to the first that is not, with any citation id or link that names a record removed; its ordinal orders the transport only.",
       "scope": "chat_id is an exported chat.",
       "members": [
         "archive:chats.json",
-        "reader:chat-messages"
+        "reader:chat-messages",
+        "reader:family-turns"
       ],
       "columns": [
         "id",
@@ -666,11 +668,12 @@ create temporary table export_member_plan as select $plan$
     },
     "public.chats": {
       "disposition": "exported",
-      "reason": "Saved Copilot conversations, as the chat history shows them (owner decision, 2026-09-26). Canonical chats never set a title; legacy chats are not exported. No grant revision, fingerprint or authority leaves.",
-      "scope": "user_id = the requesting account, self scope, a subject this account IS, and the chat's own grants still current.",
+      "reason": "Saved Copilot conversations, as the chat history shows them (owner decision, 2026-09-26). Canonical chats never set a title; legacy chats are not exported. No grant revision, fingerprint or authority leaves. Since 20261023110000 the one-record export of the self record also carries the account's family group conversations, while every grant each turn used is current (owner decision, 2026-10-23), as rows with scope_kind family and no subject; a canonical conversation anchored on a pair naming the record refuses that export.",
+      "scope": "user_id = the requesting account, self scope, a subject this account IS, and the chat's own grants still current; in the one-record export of the self record also the account's canonical family group chats.",
       "members": [
         "archive:chats.json",
-        "reader:chats"
+        "reader:chats",
+        "reader:family-turns"
       ],
       "columns": [
         "id",
@@ -830,7 +833,10 @@ create temporary table export_member_plan as select $plan$
     },
     "public.embryo_basis_bindings": {
       "disposition": "deferred",
-      "reason": "The legal basis a cohort rests on. Belongs to the embryo cohort projection (embryos.json and the subject partitions of a cohort), which is not built. No production embryo ingest runs today."
+      "reason": "The legal basis a cohort rests on. Since 20261023110000 (owner decision 2026-10-23, option A) the asynchronous archives carry the requester's own redacted rows in subjects/{self}/embryos.json, in the whole-account export and the one-record export of the self record, never in an adult record's: the other parent and any donor appear only as is-requester flags, and evidence and signatures only as recorded flags. The synchronous archive does not carry them, so the class stays deferred.",
+      "members": [
+        "reader:graph.embryo_basis_bindings"
+      ]
     },
     "public.embryo_cohort_drafts": {
       "disposition": "out-of-scope",
@@ -838,19 +844,31 @@ create temporary table export_member_plan as select $plan$
     },
     "public.embryo_cohorts": {
       "disposition": "deferred",
-      "reason": "Embryo cohorts this account owns. Belongs to the embryo cohort projection (embryos.json and the subject partitions of a cohort), which is not built. No production embryo ingest runs today."
+      "reason": "Embryo cohorts this account owns or takes part in. Since 20261023110000 (owner decision 2026-10-23, option A) the asynchronous archives carry the requester's own redacted rows in subjects/{self}/embryos.json, in the whole-account export and the one-record export of the self record, never in an adult record's: the other parent and any donor appear only as is-requester flags, and evidence and signatures only as recorded flags. The synchronous archive does not carry them, so the class stays deferred.",
+      "members": [
+        "reader:graph.embryo_cohorts"
+      ]
     },
     "public.embryo_disposition_confirmations": {
       "disposition": "deferred",
-      "reason": "Disposition confirmations. Belongs to the embryo cohort projection (embryos.json and the subject partitions of a cohort), which is not built. No production embryo ingest runs today."
+      "reason": "Disposition confirmations. Since 20261023110000 (owner decision 2026-10-23, option A) the asynchronous archives carry the requester's own redacted rows in subjects/{self}/embryos.json, in the whole-account export and the one-record export of the self record, never in an adult record's: the other parent and any donor appear only as is-requester flags, and evidence and signatures only as recorded flags. The synchronous archive does not carry them, so the class stays deferred.",
+      "members": [
+        "reader:graph.embryo_disposition_confirmations"
+      ]
     },
     "public.embryo_disposition_proposals": {
       "disposition": "deferred",
-      "reason": "Disposition proposals. Belongs to the embryo cohort projection (embryos.json and the subject partitions of a cohort), which is not built. No production embryo ingest runs today."
+      "reason": "Disposition proposals. Since 20261023110000 (owner decision 2026-10-23, option A) the asynchronous archives carry the requester's own redacted rows in subjects/{self}/embryos.json, in the whole-account export and the one-record export of the self record, never in an adult record's: the other parent and any donor appear only as is-requester flags, and evidence and signatures only as recorded flags. The synchronous archive does not carry them, so the class stays deferred.",
+      "members": [
+        "reader:graph.embryo_disposition_proposals"
+      ]
     },
     "public.embryo_donor_attributions": {
       "disposition": "deferred",
-      "reason": "Donor attributions. Belongs to the embryo cohort projection (embryos.json and the subject partitions of a cohort), which is not built. No production embryo ingest runs today."
+      "reason": "Donor attributions. Since 20261023110000 (owner decision 2026-10-23, option A) the asynchronous archives carry the requester's own redacted rows in subjects/{self}/embryos.json, in the whole-account export and the one-record export of the self record, never in an adult record's: the other parent and any donor appear only as is-requester flags, and evidence and signatures only as recorded flags. The synchronous archive does not carry them, so the class stays deferred.",
+      "members": [
+        "reader:graph.embryo_donor_attributions"
+      ]
     },
     "public.embryo_draft_participants": {
       "disposition": "out-of-scope",
@@ -858,7 +876,7 @@ create temporary table export_member_plan as select $plan$
     },
     "public.embryo_figures": {
       "disposition": "deferred",
-      "reason": "Embryo figures. Belongs to the embryo cohort projection (embryos.json and the subject partitions of a cohort), which is not built. No production embryo ingest runs today."
+      "reason": "Embryo figures. A parent's export leaves embryo results out and its manifest says so (owner decision 2026-10-23); a claimed record's own export carries them under approved-future-person-export-v1. No production embryo ingest runs today."
     },
     "public.embryo_fragment_handle_maps": {
       "disposition": "excluded-internal",
@@ -894,15 +912,18 @@ create temporary table export_member_plan as select $plan$
     },
     "public.embryo_participant_sets": {
       "disposition": "deferred",
-      "reason": "Cohort participant sets. Belongs to the embryo cohort projection (embryos.json and the subject partitions of a cohort), which is not built. No production embryo ingest runs today."
+      "reason": "Cohort participant sets. Since 20261023110000 (owner decision 2026-10-23, option A) the asynchronous archives carry the requester's own redacted rows in subjects/{self}/embryos.json, in the whole-account export and the one-record export of the self record, never in an adult record's: the other parent and any donor appear only as is-requester flags, and evidence and signatures only as recorded flags. The synchronous archive does not carry them, so the class stays deferred.",
+      "members": [
+        "reader:graph.embryo_participant_sets"
+      ]
     },
     "public.embryo_qc": {
       "disposition": "deferred",
-      "reason": "Embryo quality control (embryos.json). Belongs to the embryo cohort projection (embryos.json and the subject partitions of a cohort), which is not built. No production embryo ingest runs today."
+      "reason": "Embryo quality control (embryos.json). A parent's export leaves embryo results out and its manifest says so (owner decision 2026-10-23); a claimed record's own export carries them under approved-future-person-export-v1. No production embryo ingest runs today."
     },
     "public.embryo_scores": {
       "disposition": "deferred",
-      "reason": "Embryo scores, including nullable computation_receipt: the embryo’s own closed observed-source/reference/attempt receipt and separate public-disclosure hold, never the other principals’ complete authorization snapshot. Authorized whole-subject and own-account archive members preserve whole score rows; the public cohort projection remains deferred. Complete authority capture stays in credential-excluded worker_jobs.payload. Existing whole-row erasure removes the receipt. No production embryo ingest runs today."
+      "reason": "Embryo scores, including nullable computation_receipt: the embryo’s own closed observed-source/reference/attempt receipt and separate public-disclosure hold, never the other principals’ complete authorization snapshot. Authorized whole-subject and own-account archive members preserve whole score rows; the public cohort projection remains deferred. Complete authority capture stays in credential-excluded worker_jobs.payload. Existing whole-row erasure removes the receipt. No production embryo ingest runs today. A parent's export leaves embryo results out and its manifest says so (owner decision 2026-10-23); a claimed record's own export carries them under approved-future-person-export-v1."
     },
     "public.embryo_terminal_mail": {
       "disposition": "excluded-protected",
@@ -910,11 +931,11 @@ create temporary table export_member_plan as select $plan$
     },
     "public.embryo_variants": {
       "disposition": "deferred",
-      "reason": "Embryo variants, as a sanitized subject projection. Belongs to the embryo cohort projection (embryos.json and the subject partitions of a cohort), which is not built. No production embryo ingest runs today."
+      "reason": "Embryo variants, as a sanitized subject projection. A parent's export leaves embryo results out and its manifest says so (owner decision 2026-10-23); a claimed record's own export carries them under approved-future-person-export-v1. No production embryo ingest runs today."
     },
     "public.embryos": {
       "disposition": "deferred",
-      "reason": "Embryos. Belongs to the embryo cohort projection (embryos.json and the subject partitions of a cohort), which is not built. No production embryo ingest runs today."
+      "reason": "Embryos. A parent's export leaves embryo results out and its manifest says so (owner decision 2026-10-23); a claimed record's own export carries them under approved-future-person-export-v1. No production embryo ingest runs today."
     },
     "public.encrypted_contact_references": {
       "disposition": "excluded-protected",
@@ -1314,8 +1335,8 @@ create temporary table export_member_plan as select $plan$
       "reason": "Reference variants. It holds no person's data."
     },
     "public.report_artifacts": {
-      "disposition": "deferred",
-      "reason": "Subject and cohort report artifacts. No writer ships today. Belongs to the non-self and independent projections (docs/export-member-selection-design.md, step 3), which are not built."
+      "disposition": "complete-empty",
+      "reason": "Subject and cohort report artifacts. No production writer ships, so no row can exist. The export counts the class complete while it is empty: the synchronous archive refuses if any row of the requester's is found (public.own_export_writerless_rows_v1, owner decision 2026-10-23), and the asynchronous archives refuse a nonempty class."
     },
     "public.report_observed_calls": {
       "disposition": "exported",
@@ -1447,8 +1468,8 @@ create temporary table export_member_plan as select $plan$
       "withheld": []
     },
     "public.subject_control_refusal_authorities": {
-      "disposition": "deferred",
-      "reason": "Refusal authority over a subject. Belongs to the non-self and independent projections (docs/export-member-selection-design.md, step 3), which are not built."
+      "disposition": "complete-empty",
+      "reason": "Refusal authority over a subject. No production writer ships, so no row can exist. The export counts the class complete while it is empty: the synchronous archive refuses if any row of the requester's is found (public.own_export_writerless_rows_v1, owner decision 2026-10-23), and the asynchronous archives refuse a nonempty class. The asynchronous archives also project the requester's own rows as metadata."
     },
     "public.subject_demographics": {
       "disposition": "exported",
@@ -1526,8 +1547,8 @@ create temporary table export_member_plan as select $plan$
       ]
     },
     "public.suppressions": {
-      "disposition": "deferred",
-      "reason": "Condition suppressions that follow a correction. Belongs to the non-self and independent projections (docs/export-member-selection-design.md, step 3), which are not built."
+      "disposition": "complete-empty",
+      "reason": "Condition suppressions that follow a correction. No production writer ships, so no row can exist. The export counts the class complete while it is empty: the synchronous archive refuses if any row of the requester's is found (public.own_export_writerless_rows_v1, owner decision 2026-10-23), and the asynchronous archives refuse a nonempty class. The asynchronous archives also project the requester's own rows as metadata."
     },
     "public.template_reviews": {
       "disposition": "out-of-scope",
@@ -1646,7 +1667,7 @@ $$;
 -- holds when every list is empty.
 create function pg_temp.export_plan_verdict(p_plan jsonb) returns jsonb language plpgsql stable as $$
 declare
- dispositions text[]:=array['exported','excluded-credential','excluded-protected','excluded-internal',
+ dispositions text[]:=array['exported','complete-empty','excluded-credential','excluded-protected','excluded-internal',
   'out-of-scope','deferred','reference'];
  -- A credential, key, token, nonce or session table is an excluded credential.
  credential_table text:='(^|_)(nonces?|tokens?|sessions?|keys?|credentials?|secrets?|cookies?|passwords?)(_|$)';
@@ -1730,6 +1751,15 @@ select is_empty($$select key from export_member_plan,jsonb_each(plan->'tables')
  'every nonce and session table is an excluded credential');
 select ok((select count(*) from export_member_plan,jsonb_each(plan->'tables') where key ~ '(nonce|session)')>=13,
  'the nonce and session check is not vacuous');
+
+-- The classes no writer fills (owner decision, 23 Oct 2026): complete while
+-- empty, each one counted by the synchronous archive's refusal.
+select is((select array_agg(key order by key) from export_member_plan,jsonb_each(plan->'tables') where value->>'disposition'='complete-empty'),
+ array['public.ancestry_regions','public.attestation_contradictions','public.report_artifacts','public.subject_control_refusal_authorities',
+  'public.suppressions'],'the five classes no writer fills are complete while empty, and no other class is');
+select is_empty($$select key from export_member_plan,jsonb_each(plan->'tables') where value->>'disposition'='complete-empty'
+ and position(key||' ' in (select prosrc from pg_proc where oid='public.own_export_writerless_rows_v1(uuid,uuid)'::regprocedure))=0$$,
+ 'the synchronous archive''s refusal counts every one of them');
 
 -- The redaction the export relies on, held by name.
 select ok((select plan#>'{tables,public.consent_signatures,withheld}' ? 'signing_name_encrypted' from export_member_plan),

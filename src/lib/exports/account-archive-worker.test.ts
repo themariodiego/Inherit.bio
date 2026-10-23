@@ -29,6 +29,7 @@ import {accountPartitionFixture} from "./__fixtures__/account-partitions";
 import {claimantArchiveFixture} from "./__fixtures__/claimant-archive";
 import {ORDINARY_SUBJECT_AUDIT_NOTE,type AccountAuditRpc} from "./account-audit-members";
 import {SUBJECT_EXPORT_AUDIT_NOTE} from "@/copy/subjects/subject-export";
+import {EXPORT_EMBRYO_RESULTS_NOTE} from "@/copy/settings/data-export";
 import type {AccountMemberRpc,AccountBoundSourceRpc} from "./bound-account-archive-worker";
 import type {AccountContentRpc} from "./account-content-reader";
 import type {AccountOriginalRpc} from "./account-original-source";
@@ -408,6 +409,11 @@ function subjectScope(f:Awaited<ReturnType<typeof fixture>>){
  const metadata=f.metadataRpc.getMockImplementation()!;
  f.metadataRpc.mockImplementation(async(...args)=>{const result=await metadata(...args),data=result.data as {rows:Record<string,unknown>[]};
   if(args[1].p_operation==="context")data.rows[0].purposeGrantCount=0;if(args[1].p_operation==="purpose-grants")data.rows=[];return result;});
+ // 20261023110000: a record job pages its family group conversation turns;
+ // this record has none.
+ const content=f.contentRpc.getMockImplementation()!;
+ f.contentRpc.mockImplementation(async(...args)=>args[1].p_operation==="family-turns"?{data:{version:"account-family-turns-page-v1",
+  membership:{version:"account-family-turns-v1",rows:0,membershipSha256:hash("account-family-turns-v1")},rows:[],nextAfterKey:null},error:null}:content(...args));
  return f;
 }
 const subjectAudit={schema_version:"legal-audit-v1",attribution:"unrecorded",attribution_started_at:null,note:SUBJECT_EXPORT_AUDIT_NOTE,events:[]};
@@ -479,6 +485,37 @@ describe("one-record (api.subject-export) archive on the account producer",()=>{
   const f=await fixture();jointPortrait(f);
   await expect(buildAccountArchive(f.options)).rejects.toThrow();
   expect(f.historical.write).not.toHaveBeenCalled();expect(f.historical.calls.some(c=>c.p_operation==="reserve")).toBe(false);
+ });
+ // 20261023110000 (owner decision, 23 October 2026, option A): an archive
+ // that carries the requester's own cohort records says plainly in its
+ // manifest that it leaves out the embryo results.
+ function cohortRow(f:Awaited<ReturnType<typeof fixture>>){
+  const cohort=randomUUID(),projection=projectAccountGraphRow("embryo_participant_sets",{cohort_id:cohort,set_kind:"disposition_authorities",
+   principal_id:f.foreign,set_revision:1,membership_revision:1,created_at:date,revoked_at:null},f.context.actor.accountId,[]);
+  const row={identity:projection.identity,subjectId:f.self,scope:"requester-account-history",rowText:JSON.stringify(projection.row)},
+   digest=createHash("sha256").update(createHash("sha256").update("account-graph-routed-v2|embryo_participant_sets").digest())
+    .update(`${row.identity}:${row.subjectId}:${row.scope}:${row.rowText}\n`).digest("hex");
+  Object.assign(f.classContext.classes.find(e=>e.kind==="embryo_participant_sets")!,{rows:1,membershipSha256:digest,partitions:[{subjectId:f.self,rows:1}]});
+  const original=f.graphRpc.getMockImplementation()!;f.graphRpc.mockImplementation(async(...args)=>args[1].p_kind==="embryo_participant_sets"?
+   {data:{version:"account-graph-page-v2",kind:"embryo_participant_sets",authorityReceipt:f.reference.authorityReceipt,membership:{rows:1,sha256:digest},
+    rows:[row],nextAfterKey:null},error:null}:original(...args));
+  return projection;
+ }
+ it.each([["whole-account",false],["one-record",true]])("states the embryo-results exclusion in a %s manifest that carries cohort records",async(_label,record)=>{
+  const f=record?subjectScope(await fixture()):await fixture(),projection=cohortRow(f);
+  await buildAccountArchive(record?{...f.options,scope:"subject"}:f.options);
+  const zip=new AdmZip(Buffer.concat(f.historical.writes)),manifest=JSON.parse(zip.readAsText("manifest.json"));
+  expect(manifest.excludedClasses).toEqual([...(record?[{class:"legal-audit",reasonCode:"audit-events-record-no-subject"}]:[]),
+   {class:"embryo-results",reasonCode:"embryo-results-not-exported",note:EXPORT_EMBRYO_RESULTS_NOTE}]);
+  expect(JSON.parse(zip.readAsText(`subjects/${f.self}/embryos.json`)).sections.find((s:{kind:string})=>s.kind==="graph-metadata").content.rows)
+   .toEqual([{kind:"embryo_participant_sets",scope:"requester-account-history",row:projection.row}]);
+  // The transport identity names the other principal; it never enters the member.
+  expect(zip.readAsText(`subjects/${f.self}/embryos.json`)).not.toContain(f.foreign);
+  if(record)expect(Buffer.concat(f.historical.writes).includes(Buffer.from(f.foreign))).toBe(false);
+ });
+ it("says nothing about embryo results in a manifest without cohort records",async()=>{
+  const f=await fixture();await buildAccountArchive(f.options);
+  expect(JSON.parse(new AdmZip(Buffer.concat(f.historical.writes)).readAsText("manifest.json"))).not.toHaveProperty("excludedClasses");
  });
  it("refuses a record context carrying a second partition",async()=>{
   const f=subjectScope(await fixture());f.context.partitions.push({subjectId:f.adult,class:"ordinary",fileCount:0,fileIds:[]});

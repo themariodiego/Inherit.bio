@@ -31,9 +31,12 @@ import type { ChromosomalSexValue } from "@/lib/family/chromosomal-sex";
 export function ChromosomalSexControl({
   subjectId,
   declared,
+  operationNonce,
 }: {
   subjectId: string;
   declared: ChromosomalSexValue | null;
+  /** The one-time nonce the page rendered for this record (G5.6, 23 Oct 2026). */
+  operationNonce: string;
 }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
@@ -57,7 +60,7 @@ export function ChromosomalSexControl({
     try {
       const response = await fetch("/api/chromosomal-sex", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "X-Inherit-Operation-Nonce": operationNonce },
         body: JSON.stringify({ subjectId, chromosomalSex }),
       });
       if (!response.ok) {
@@ -86,7 +89,7 @@ export function ChromosomalSexControl({
   return (
     // A plate like the declaration above it: the label in the head, the
     // three sentences, then the ruled choices (round-3 R3).
-    <section data-slot="chromosomal-sex" className="plate">
+    <section data-slot="chromosomal-sex" data-operation-nonce={operationNonce} className="plate">
       <div className="plate-head"><h2 className="eyebrow">{CHROMOSOMAL_SEX_HEADING}</h2></div>
       <div className="plate-body rec-stack">
         <div className="rec-stack-sm max-w-measure">

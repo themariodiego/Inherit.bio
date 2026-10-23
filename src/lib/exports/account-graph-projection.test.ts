@@ -107,8 +107,11 @@ describe("closed graph projection prerequisites, without new export authority",(
  it("retains the exact registered held-source exclusion and statement/scientific deferrals",()=>{
   const plan=JSON.parse(readFileSync(new URL("../../../docs/export-member-plan.json",import.meta.url),"utf8"));
   expect(plan.tables["public.other_adult_held_uploads"].disposition).toBe("out-of-scope");
-  for(const name of ["public.appeal_intakes","public.correction_requests","public.ancestry_regions","public.portrait_results","private.path_b_report_bindings"])
+  for(const name of ["public.appeal_intakes","public.correction_requests","public.portrait_results","private.path_b_report_bindings"])
    expect(plan.tables[name].disposition).toBe("deferred");
+  // 20261023110000 (owner decision, 23 Oct 2026): no writer fills regional
+  // ancestry, so it counts as complete while empty.
+  expect(plan.tables["public.ancestry_regions"].disposition).toBe("complete-empty");
  });
  it("does not pretend an encrypted statement, held source or scientific result is readable metadata",()=>{
   for(const kind of ["appeal_intakes","correction_requests","other_adult_held_uploads","ancestry_regions","portrait_results","path_b_report_bindings"])

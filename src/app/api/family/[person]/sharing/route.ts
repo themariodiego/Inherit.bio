@@ -1,11 +1,15 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { isSameOrigin } from "@/lib/account-deletion";
+import { getSensitiveAccountContext, hashOperationNonce, isSameOrigin } from "@/lib/account-deletion";
 import { permits, personCapability } from "@/lib/family/access";
 import { resolveFamilyPerson } from "@/lib/family/graph";
 import { readSharingOperation } from "@/lib/family/grant-token";
+import {
+  PERSON_OPERATION_NONCE_MAX_LENGTH,
+  personOperationNonceArgs,
+  verifyPersonOperationNonce,
+} from "@/lib/person-operation-nonce";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { createClient } from "@/lib/supabase/server";
 
 /**
  * `POST /api/family/[person]/sharing` (register api.family-sharing;
@@ -27,11 +31,19 @@ import { createClient } from "@/lib/supabase/server";
  *     purpose.derived-60s purge for each side. It carries the one-time
  *     operation nonce this session's permissions page minted for exactly
  *     this counterpart.
+ *
+ * Since 20261023120000 (G5.6, owner decision of 23 October 2026) every
+ * operation records its one-time nonce in the database before the sharing
+ * function runs, in the same transaction, so the legal audit names who acted
+ * and a replay writes nothing: pause and resume carry a person operation
+ * nonce minted for this route and this counterpart, and the stop's own
+ * nonce is recorded too. The Family permissions page sends all three to the
+ * UUID-addressed twin, api.subject-sharing, which does the same.
  */
 
 const body = z.discriminatedUnion("operation", [
-  z.object({ operation: z.literal("pause") }).strict(),
-  z.object({ operation: z.literal("resume") }).strict(),
+  z.object({ operation: z.literal("pause"), nonce: z.string().min(1).max(PERSON_OPERATION_NONCE_MAX_LENGTH) }).strict(),
+  z.object({ operation: z.literal("resume"), nonce: z.string().min(1).max(PERSON_OPERATION_NONCE_MAX_LENGTH) }).strict(),
   z.object({ operation: z.literal("stop"), nonce: z.string().min(16).max(4096) }).strict(),
 ]);
 
@@ -48,11 +60,9 @@ export async function POST(
   if (!parsed.success) {
     return NextResponse.json({ error: "invalid_request" }, { status: 400 });
   }
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return new Response("Unauthorized", { status: 401 });
+  const account = await getSensitiveAccountContext();
+  if (!account) return new Response("Unauthorized", { status: 401 });
+  const user = account.user;
 
   const { person: segment } = await context.params;
   const person = await resolveFamilyPerson(user.id, segment);
@@ -71,9 +81,12 @@ export async function POST(
     ) {
       return NextResponse.json({ error: "invalid_request" }, { status: 400 });
     }
-    const { data, error } = await admin.rpc("stop_family_sharing_v1", {
+    const { data, error } = await admin.rpc("stop_family_sharing_with_nonce_v1", {
       p_account_id: user.id,
+      p_session_id: account.sessionId,
       p_counterpart_account_id: person.counterpartAccountId,
+      p_nonce_hash: hashOperationNonce(parsed.data.nonce),
+      p_nonce_expires_at: new Date(operation.expiresAt).toISOString(),
     });
     const row = data?.[0];
     if (error || !row) {
@@ -94,15 +107,26 @@ export async function POST(
     );
   }
 
+  const nonce = verifyPersonOperationNonce(parsed.data.nonce, {
+    accountId: user.id,
+    sessionId: account.sessionId,
+    operation: parsed.data.operation === "resume" ? "family_sharing_resume" : "family_sharing_pause",
+    targetId: person.counterpartAccountId,
+  });
+  if (!nonce) return NextResponse.json({ error: "invalid_request" }, { status: 400 });
+  const pair = {
+    p_account_id: user.id,
+    p_session_id: account.sessionId,
+    p_counterpart_account_id: person.counterpartAccountId,
+    ...personOperationNonceArgs(nonce),
+  };
+
   if (parsed.data.operation === "resume") {
     const decision = await personCapability(user.id, person, "third_party_adult_analysis");
     if (!permits(decision)) {
       return NextResponse.json({ error: "jurisdiction_unavailable" }, { status: 409 });
     }
-    const { error } = await admin.rpc("resume_family_sharing_v1", {
-      p_account_id: user.id,
-      p_counterpart_account_id: person.counterpartAccountId,
-    });
+    const { error } = await admin.rpc("resume_family_sharing_with_nonce_v1", pair);
     if (error) {
       return NextResponse.json({ error: "sharing_unavailable" }, { status: 409 });
     }
@@ -112,10 +136,7 @@ export async function POST(
     );
   }
 
-  const { error } = await admin.rpc("pause_family_sharing_v1", {
-    p_account_id: user.id,
-    p_counterpart_account_id: person.counterpartAccountId,
-  });
+  const { error } = await admin.rpc("pause_family_sharing_with_nonce_v1", pair);
   if (error) {
     return NextResponse.json({ error: "sharing_unavailable" }, { status: 409 });
   }

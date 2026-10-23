@@ -7,6 +7,7 @@ import { ownSubjectIds, subjectRecordOf, subjectRecordRowCount } from "@/lib/exp
 import { ownChatsForExport } from "@/lib/export/own-chats";
 import { EXPORT_CHATS_EMPTY, EXPORT_LEGAL_AUDIT_DESCRIPTION, exportLegalAuditNote } from "@/copy/settings/data-export";
 import { LEGAL_AUDIT_SCHEMA_VERSION, ownLegalAuditEvents } from "@/lib/export/legal-audit";
+import { writerlessClassesEmpty } from "@/lib/export/writerless-classes";
 import { originalDownloadName, originalFileExtension } from "@/lib/uploads/original-download-name";
 import { assertPreparedMetadataBounds } from "@/lib/genome/prepared-source/canonical-manifest";
 import { preparedOriginalDownloadSourceSchema, streamPreparedOriginalDownload } from "@/lib/uploads/prepared-original-download";
@@ -381,7 +382,7 @@ export async function GET(request?:Request) {
   try { canonical = await ownContent.list(); } catch { return new Response("Export unavailable", { status: 503 }); }
 
   const [legacyFiles, { data: legacyAncestry, error: ancestryError }, { data: consents },
-    subjectRecord, legalAudit] =
+    subjectRecord, legalAudit, writerlessEmpty] =
     await Promise.all([
       fetchAllRows((from, to) => admin.from("genome_files").select("*").eq("user_id", user.id)
         .is("single_logical_sample_verified_at", null).order("id").range(from, to)),
@@ -392,10 +393,14 @@ export async function GET(request?:Request) {
         .eq("user_id", user.id),
       subjectRecordOf(admin, user.id),
       ownLegalAuditEvents(admin.rpc.bind(admin) as unknown as Parameters<typeof ownLegalAuditEvents>[0], exportActor),
+      // The five classes no writer fills have no member here: any row of
+      // them refuses the archive (owner decision, 23 Oct 2026).
+      writerlessClassesEmpty(admin.rpc.bind(admin) as unknown as Parameters<typeof writerlessClassesEmpty>[0], exportActor),
     ]);
   if (ancestryError) return new Response("Export unavailable", { status: 503 });
   if (subjectRecord === null) return new Response("Export unavailable", { status: 503 });
   if (legalAudit === null) return new Response("Export unavailable", { status: 503 });
+  if (!writerlessEmpty) return new Response("Export unavailable", { status: 503 });
 
   const files = [...legacyFiles, ...canonical.map(snapshot => snapshot.file)];
   const legacyIds = new Set(legacyFiles.map(file => file.id));

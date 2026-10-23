@@ -17790,7 +17790,9 @@
       ],
       "requestContract": {
         "contentType": "application/json",
-        "schema": "closed-subject-draft-create-v1"
+        "schema": "closed-subject-draft-create-v1",
+        "requiredHeader": "X-Inherit-Operation-Nonce-from-the-invite-page-for-the-path-a-adult-invitation",
+        "operationNonce": "recorded-in-account_operation_nonces-before-the-writer-in-the-same-transaction-so-its-legal-audit-event-names-the-actor-G5.6-2026-10-23"
       },
       "stateProfile": "endpoint",
       "policy": {
@@ -18109,12 +18111,14 @@
           {
             "operation": {
               "const": "pause"
-            }
+            },
+            "nonce": "required-recent-one-time-operation-nonce"
           },
           {
             "operation": {
               "const": "resume"
-            }
+            },
+            "nonce": "required-recent-one-time-operation-nonce"
           },
           {
             "operation": {
@@ -18123,7 +18127,8 @@
             "nonce": "required-recent-one-time-operation-nonce"
           }
         ],
-        "unknownMissingInvalidOrAmbiguous": "invalid-request-v1"
+        "unknownMissingInvalidOrAmbiguous": "invalid-request-v1",
+        "operationNonce": "recorded-in-account_operation_nonces-before-the-writer-in-the-same-transaction-so-its-legal-audit-event-names-the-actor-G5.6-2026-10-23"
       },
       "stateProfile": "endpoint",
       "policy": {
@@ -18181,7 +18186,9 @@
           "revision",
           "updatedAt",
           "derivedFrom"
-        ]
+        ],
+        "requiredHeader": "X-Inherit-Operation-Nonce-from-the-settings-page-for-this-subject",
+        "operationNonce": "recorded-in-account_operation_nonces-before-the-writer-in-the-same-transaction-so-its-legal-audit-event-names-the-actor-G5.6-2026-10-23"
       },
       "stateProfile": "endpoint",
       "policy": {
@@ -18237,7 +18244,9 @@
           "pairId",
           "counterpartSubjectId",
           "acknowledgedAt"
-        ]
+        ],
+        "requiredHeader": "X-Inherit-Operation-Nonce-from-the-portrait-page-for-the-portrait-acknowledgement",
+        "operationNonce": "recorded-in-account_operation_nonces-before-the-writer-in-the-same-transaction-so-its-legal-audit-event-names-the-actor-G5.6-2026-10-23"
       },
       "stateProfile": "endpoint",
       "policy": {
@@ -18281,12 +18290,14 @@
           {
             "operation": {
               "const": "pause"
-            }
+            },
+            "nonce": "required-recent-one-time-operation-nonce"
           },
           {
             "operation": {
               "const": "resume"
-            }
+            },
+            "nonce": "required-recent-one-time-operation-nonce"
           },
           {
             "operation": {
@@ -18302,7 +18313,8 @@
           "subjectId",
           "pairId",
           "grantIds"
-        ]
+        ],
+        "operationNonce": "recorded-in-account_operation_nonces-before-the-writer-in-the-same-transaction-so-its-legal-audit-event-names-the-actor-G5.6-2026-10-23"
       },
       "stateProfile": "endpoint",
       "policy": {
@@ -18810,7 +18822,8 @@
       ],
       "requestContract": {
         "body": "forbidden",
-        "requiredHeader": "X-Inherit-Operation-Nonce-from-the-consent-page"
+        "requiredHeader": "X-Inherit-Operation-Nonce-from-the-consent-page",
+        "operationNonce": "the-directional-purpose-revocation-recorded-in-account_operation_nonces-before-the-writer-in-the-same-transaction-so-its-legal-audit-event-names-the-actor-G5.6-2026-10-23"
       },
       "stateProfile": "endpoint",
       "policy": {
@@ -21599,7 +21612,9 @@
             "const": true
           }
         },
-        "unknownMissingInvalidStaleOrHashMismatch": "invalid-request-v1"
+        "unknownMissingInvalidStaleOrHashMismatch": "invalid-request-v1",
+        "requiredHeader": "X-Inherit-Operation-Nonce-from-the-settings-page",
+        "operationNonce": "recorded-in-account_operation_nonces-before-the-writer-in-the-same-transaction-so-its-legal-audit-event-names-the-actor-G5.6-2026-10-23"
       },
       "stateProfile": "endpoint",
       "policy": {

@@ -1067,8 +1067,12 @@ const CLIENT_FORM_REVIEW: ClientFormReview[] = [
   { file: "src/components/chat/own-chat-panel.tsx", forms: 1, sha256: "935d0925a414a1f377fbae00c6d06cccb6cc3817d02aa46d2d0972224b97f89c" },
   { file: "src/components/embryo/co-parent-review-form.tsx", forms: 1, sha256: "e37f7be36d8b6eed42a49a5c91a2d1d715f549881fd2dcae67b6eb5d77584675" },
   { file: "src/components/embryo/invitation-refusal-form.tsx", forms: 1, sha256: "d1d5e36f18b1299ea3c21a6ef0369487250d5f2e0cae5c693486833d309ff6a3" },
-  { file: "src/components/family/invite-adult-form.tsx", forms: 1, sha256: "1866d5e668f9069c0d94a2aa8c8d3f8e55ccd341403a029915fb39d8ac8e04d7" },
-  { file: "src/components/settings/jurisdiction-form.tsx", forms: 1, sha256: "995f24840ae8e802a2f4d6b8be1c0ce3dbe804dfa75fc9b62a64572395c8fe6c" },
+  // G5.6 (2026-10-23): both re-reviewed after their request gained the page's
+  // one-time operation nonce in the X-Inherit-Operation-Nonce header, and the
+  // form or its section a data-operation-nonce attribute. Still one actionless
+  // form each, the same handler cancelling native submission, the same target.
+  { file: "src/components/family/invite-adult-form.tsx", forms: 1, sha256: "9aabb8cb1827216e5da6f6c7d4966510f24e50b836af4fcdd855287bd343c641" },
+  { file: "src/components/settings/jurisdiction-form.tsx", forms: 1, sha256: "fb5b804cf7fa62a68c04f7371ef1376ba5812ed680c5e679fa8deb72ae11c404" },
   { file: "src/components/settings/llm-settings-form.tsx", forms: 1, sha256: "7b669b559f7db5b0fe391bd39ce8095a33bd8c37cd80d37e06d138ec0d55f45b" },
   // G2.1 (2026-10-16): re-reviewed after the new-person form gained the
   // reviewed-document flow choice (two radio inputs inside the same form, the

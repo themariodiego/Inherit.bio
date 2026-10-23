@@ -6,9 +6,13 @@ select no_plan();
 -- owner decision of 16 October 2026: joint results are included only while
 -- each other contributor's permission is live. A Portrait result naming the
 -- record leaves only while the other parent's Portrait permission holds, with
--- the record's own fields only; a family pair no longer refuses the record; a
--- live embryo cohort role and a family conversation on the record still
--- refuse with the stated reason.
+-- the record's own fields only; a family pair no longer refuses the record.
+-- Since 20261023110000_export_completeness.sql (owner decisions of 23
+-- October) a family group conversation is projected under the same
+-- live-grant rule (subject_export_family_conversations.sql) and a cohort role
+-- no longer refuses (export_cohort_records.sql); a canonical conversation
+-- anchored on the record's pair is the one joint result that still refuses
+-- with the stated reason.
 --
 -- Every request, job, attempt, grant, pair, pause and acknowledgement here is
 -- produced by the current doors. There is no Portrait writer, so the
@@ -276,7 +280,9 @@ select throws_ok($$select pg_temp.request('subject','capture')$$,'0A000','export
 reset role;
 rollback to mismatched_parents;
 
--- 6. What nothing projects yet still refuses with the stated reason.
+-- 6. What nothing projects yet still refuses with the stated reason. Since
+-- 20261023110000 the turns are written in the canonical shape, which the
+-- group conversation projection reads.
 create function pg_temp.family_chat(id uuid,pair uuid,legacy boolean,retrieved uuid[]) returns void language sql as $$
  insert into public.chats(id,user_id,scope_kind,family_pair_id,lifecycle_revision,provider_classification,runtime_attestation_revision,
   model_recipient_revision,authorization_fingerprint,legacy_unverified,canonical_authority)
@@ -284,11 +290,11 @@ create function pg_temp.family_chat(id uuid,pair uuid,legacy boolean,retrieved u
   case when pair is null then '{"scope":"family-group"}'::jsonb end);
  insert into public.chat_messages(chat_id,user_id,role,content,turn_id,turn_ordinal,paired_role,scope_revision,authorization_fingerprint,
   retrieved_subject_ids,provider_classification,runtime_attestation_revision,model_recipient_revision,legacy_unverified)
- values(id,pg_temp.v('a','account'),'user','{"text":"synthetic"}',gen_random_uuid(),1,'user',1,repeat('d',64),retrieved,'local',1,1,legacy);
+ values(id,pg_temp.v('a','account'),'user','[{"type":"text","text":"synthetic"}]',gen_random_uuid(),1,'user',1,repeat('d',64),retrieved,'local',1,1,legacy);
 $$;
 savepoint pair_conversation;
 select pg_temp.family_chat('7a560000-0000-4000-8000-000000000301',pg_temp.pair(),false,'{}');
-select ok(private.export_subject_family_conversation_v1(pg_temp.v('a','subject')),'a pair conversation with a turn is a family conversation on the record');
+select ok(private.export_subject_joint_results_v1(pg_temp.v('a','subject')),'a pair conversation with a turn is the joint result left on the record');
 set local role service_role;
 select throws_ok($$select pg_temp.request('subject','capture')$$,'0A000','export_joint_results_pending',
  'a record with a family conversation is refused with the stated reason');
@@ -299,17 +305,21 @@ rollback to pair_conversation;
 savepoint group_conversation;
 select pg_temp.family_chat('7a560000-0000-4000-8000-000000000302',null,false,array[pg_temp.v('a','subject')]);
 set local role service_role;
-select throws_ok($$select pg_temp.request('subject','capture')$$,'0A000','export_joint_results_pending',
- 'a group conversation whose turn read the record refuses too, where before it was left out without a word');
+select lives_ok($$select pg_temp.request('subject','capture')$$,
+ 'a group conversation whose turn read the record no longer refuses: its current turns are projected (20261023110000)');
+reset role;
+select is((select count(*) from sx,private.export_subject_family_turn_rows_v1(origin,subject) where label='subject'),1::bigint,
+ 'and its one current turn is the record''s');
+set local role service_role;
 reset role;
 rollback to group_conversation;
 savepoint unrelated_group;
 select pg_temp.family_chat('7a560000-0000-4000-8000-000000000303',null,false,array[pg_temp.v('b','subject')]);
-select ok(not private.export_subject_family_conversation_v1(pg_temp.v('a','subject')),'a group conversation that never read the record is not on it');
+select ok(not private.export_subject_joint_results_v1(pg_temp.v('a','subject')),'a group conversation is not a joint result on the record');
 rollback to unrelated_group;
 savepoint legacy_conversation;
 select pg_temp.family_chat('7a560000-0000-4000-8000-000000000304',pg_temp.pair(),true,'{}');
-select ok(not private.export_subject_family_conversation_v1(pg_temp.v('a','subject')),
+select ok(not private.export_subject_joint_results_v1(pg_temp.v('a','subject')),
  'a legacy unverified conversation is never exported and does not refuse (owner decision, 26 September)');
 rollback to legacy_conversation;
 savepoint other_account_conversation;
@@ -320,7 +330,7 @@ insert into public.chat_messages(chat_id,user_id,role,content,turn_id,turn_ordin
  retrieved_subject_ids,provider_classification,runtime_attestation_revision,model_recipient_revision,legacy_unverified)
  values('7a560000-0000-4000-8000-000000000305',pg_temp.v('b','account'),'user','{"text":"synthetic"}',gen_random_uuid(),1,'user',1,repeat('d',64),
   array[pg_temp.v('a','subject')],'local',1,1,false);
-select ok(not private.export_subject_family_conversation_v1(pg_temp.v('a','subject')),
+select ok(not private.export_subject_joint_results_v1(pg_temp.v('a','subject')),
  'the other parent''s own conversation is theirs: it neither refuses nor enters the record''s export');
 rollback to other_account_conversation;
 
@@ -376,24 +386,28 @@ create temporary table joint_census(name text primary key,disposition text not n
 insert into joint_census values
  -- Exported only while every other contributor's permission is live.
  ('public.portrait_results','live-permission','A joint result: projected to the record''s fields only while the other parent''s Portrait permission holds (export_subject_portrait_rows_v1).'),
- -- Still refused with the stated reason (export_joint_results_pending), or
- -- for a purged cohort's history export_partition_projection_unavailable.
- ('public.chats','refused','A family conversation on the record refuses (export_subject_family_conversation_v1); a cohort one through the cohort role. Only self conversations, the record''s own, are exported.'),
- ('public.chat_messages','refused','Turns of those conversations, refused with them; self turns keep their live-grant prefix.'),
- ('public.embryo_cohorts','refused','Cohort results are joint: any cohort role of the record refuses.'),
- ('public.embryo_basis_bindings','refused','Part of a cohort the record has a role in, which refuses.'),
- ('public.embryo_participant_sets','refused','The cohort role itself, which refuses.'),
- ('public.embryo_donor_attributions','refused','A cohort role, which refuses.'),
- ('public.embryo_disposition_proposals','refused','A cohort role, which refuses.'),
- ('public.embryos','refused','Embryos of a cohort the record has a role in, which refuses; an embryo is never the record.'),
- ('public.embryo_qc','refused','Cohort science made from both parents, refused through the cohort role.'),
- ('public.embryo_scores','refused','Cohort science made from both parents, refused through the cohort role.'),
- ('public.embryo_variants','refused','Cohort science made from both parents, refused through the cohort role.'),
- ('public.embryo_figures','refused','Cohort science made from both parents, refused through the cohort role.'),
+ -- Since 20261023110000: family group conversation turns leave while every
+ -- grant each turn used is current; a canonical pair conversation refuses.
+ ('public.chats','live-permission','The record''s family group conversations leave while every turn''s grants are current (export_subject_family_turn_rows_v1); a canonical one on the record''s pair still refuses (export_subject_joint_results_v1). Self conversations are the record''s own.'),
+ ('public.chat_messages','live-permission','Their turns, up to the first whose grants have ended, with record ids and links removed from citations; self turns keep their live-grant prefix.'),
+ -- Since 20261023110000 (option A): the account's own cohort records leave
+ -- on the self record, redacted; an adult record carries none.
+ ('public.embryo_cohorts','own-cohort','The account''s own cohort rows, with the owner only as "is requester", on the self record.'),
+ ('public.embryo_basis_bindings','own-cohort','The basis of the account''s own cohorts, evidence only as "recorded" flags.'),
+ ('public.embryo_participant_sets','own-cohort','Each role in the account''s cohorts, the other parent only as "not the requester".'),
+ ('public.embryo_donor_attributions','own-cohort','Donor attributions of the account''s cohorts, the donor only as "is requester" and the signature only as "recorded".'),
+ ('public.embryo_disposition_proposals','own-cohort','Proposals in the account''s cohorts, the proposer only as "is requester".'),
+ -- Embryo results are left out, and the manifest says so.
+ ('public.embryos','left-out','An embryo result: never in a parent''s export (owner decision, 23 October 2026); an embryo is never the record.'),
+ ('public.embryo_qc','left-out','An embryo result, left out of a parent''s export.'),
+ ('public.embryo_scores','left-out','An embryo result, left out of a parent''s export.'),
+ ('public.embryo_variants','left-out','An embryo result, left out of a parent''s export.'),
+ ('public.embryo_figures','left-out','An embryo result, left out of a parent''s export.'),
+ ('private.embryo_canonical_sources','left-out','A cohort''s sanitized embryo source, left out of a parent''s export.'),
+ ('private.embryo_split_ordinals','left-out','Cohort split machinery behind embryo results, left out.'),
+ ('private.embryo_split_variants','left-out','Embryo split calls, left out of a parent''s export.'),
+ -- Still refused.
  ('public.report_artifacts','refused','A cohort or record report artifact refuses in the one-record class inventory; no writer ships.'),
- ('private.embryo_canonical_sources','refused','A cohort''s sanitized source, refused through the cohort role.'),
- ('private.embryo_split_ordinals','refused','Cohort split machinery, refused through the cohort role.'),
- ('private.embryo_split_variants','refused','Cohort split calls, refused through the cohort role.'),
  -- Not a joint result.
  ('public.family_pairs','not-joint','The pair record, not a result: exported with both contributor subject identities withheld.'),
  ('public.directional_grants','not-joint','Grant records: the record''s own grants leave as its permissions, without the recipient; grants received are the account''s.'),
@@ -477,9 +491,10 @@ insert into joint_census values
  ('public.future_person_record_key_recipients','not-joint','Record Key delivery machinery.');
 select set_eq('select name from joint_census_universe','select name from joint_census',
  'every pair-derived, pair-referencing, family, pair or cohort scoped table is classified for the one-record export');
-select is((select array_agg(name order by name) from joint_census where disposition='live-permission'),array['public.portrait_results'],
- 'Portrait results are the one joint result exported under live permission');
-select ok((select bool_and(disposition in('live-permission','refused','not-joint') and length(reason)>=10) from joint_census),
+select is((select array_agg(name order by name) from joint_census where disposition='live-permission'),
+ array['public.chat_messages','public.chats','public.portrait_results'],
+ 'Portrait results and, since 20261023110000, family group conversations are the joint results exported under live permission');
+select ok((select bool_and(disposition in('live-permission','own-cohort','left-out','refused','not-joint') and length(reason)>=10) from joint_census),
  'each classification is closed and has a reason');
 -- Planted: a new pair-scoped results table is caught until it is classified.
 savepoint census_plant;
@@ -518,16 +533,18 @@ select ok('7a560000-0000-4000-8000-000000000103'::uuid=any(pg_temp.exported_ids(
  'caught: selecting by the holding account exports another pair''s result');
 rollback to plant_account_scope;
 savepoint plant_no_conversation_refusal;
-create or replace function private.export_subject_family_conversation_v1(p_subject uuid) returns boolean language sql stable
+-- Since 20261023110000 the pair conversation predicate is part of
+-- export_subject_joint_results_v1, and the turn projection repeats it.
+create or replace function private.export_subject_joint_results_v1(p_subject uuid) returns boolean language sql stable
  security definer set search_path='' as $f$ select false $f$;
 select pg_temp.family_chat('7a560000-0000-4000-8000-000000000306',pg_temp.pair(),false,'{}');
 set local role service_role;
-select lives_ok($$select pg_temp.request('subject','capture')$$,
- 'caught: without the conversation predicate a record with a family conversation is captured, which the refusal assertions above reject');
+select throws_ok($$select pg_temp.request('subject','capture')$$,'0A000','export_class_projection_unavailable',
+ 'without the conversation predicate the turn projection still refuses a pair conversation, so it never leaves');
 reset role;
 rollback to plant_no_conversation_refusal;
 
--- 10. The cohort role still refuses with the stated reason. The fixture's
+-- 10. Since 20261023110000 a cohort role no longer refuses. The fixture's
 -- live cohort binds its parents through account-level genetic_parent
 -- principals, which are the account's, not the record's; the planted row
 -- gives the requester's own record principal a role in that live cohort.
@@ -541,18 +558,19 @@ select is((select count(*) from public.embryo_participant_sets where principal_i
  'planted: the requester''s record holds a role in a live cohort');
 set local role service_role;
 select set_config('request.jwt.claims','{"role":"service_role"}',true);
-select throws_ok($$select pg_temp.request('subject','capture')$$,'0A000','export_joint_results_pending',
- 'a record with a live embryo cohort role is still refused with the stated reason');
+select lives_ok($$select pg_temp.request('subject','capture')$$,
+ 'a record with a live embryo cohort role is captured, no longer refused (owner decision, 23 October 2026)');
 reset role;
 update public.embryo_cohorts set status='purged' where id=(select cohort_id from public.embryo_participant_sets where principal_id=pg_temp.v('a','principal'));
 set local role service_role;
-select throws_ok($$select pg_temp.request('subject','capture')$$,'0A000','export_partition_projection_unavailable',
- 'a purged cohort''s history is still refused as the whole-account export refuses it');
+select lives_ok($$select pg_temp.request('subject','capture')$$,
+ 'a purged cohort''s history no longer refuses the record either');
 reset role;
 rollback to cohort_role;
 
 -- 11. Patch hygiene: the four patched bodies are exactly the reviewed
--- successors and the three new helpers are owner-only.
+-- successors (since 20261023110000, its successors of three of them) and the
+-- new helpers are owner-only.
 reset role;
 select is((select array_agg(md5(pg_get_functiondef(p.oid)) order by p.oid::regprocedure::text) from pg_proc p where p.oid in(
  'private.export_subject_joint_results_v1(uuid)'::regprocedure,'private.export_subject_class_inventory_v1(uuid,jsonb)'::regprocedure,
@@ -560,12 +578,12 @@ select is((select array_agg(md5(pg_get_functiondef(p.oid)) order by p.oid::regpr
  'public.export_archive_account_classes_v1(text,uuid,uuid,text,text,uuid)'::regprocedure)),
  (select array_agg(m order by s) from (values
   ('export_archive_account_classes_v1(text,uuid,uuid,text,text,uuid)','577efc1f1c985d799c9e0f7391ccd0a1'),
-  ('private.export_account_owned_capture_pre_requester_v1(jsonb,text,uuid)','be85c35c4d6996088bb0498856da1ff6'),
-  ('private.export_subject_class_inventory_v1(uuid,jsonb)','8eda83e8821d527d0f1985e38b893a80'),
-  ('private.export_subject_joint_results_v1(uuid)','387df71020e0de94355ae38cc2139d91'))x(s,m)),
+  ('private.export_account_owned_capture_pre_requester_v1(jsonb,text,uuid)','32b11ad705abb2fea5b67d90a3bd6b0b'),
+  ('private.export_subject_class_inventory_v1(uuid,jsonb)','4c56e0db2f05075fc393b4d8e815b9bb'),
+  ('private.export_subject_joint_results_v1(uuid)','ca2b57f4fd138c2d092f3838f7524049'))x(s,m)),
  'each patched function is exactly its reviewed successor');
 select ok(not has_function_privilege(r,f,'execute'),r||' cannot execute '||f) from unnest(array['anon','authenticated','inherit_upload_only','service_role'])r,
- unnest(array['private.export_subject_family_conversation_v1(uuid)','private.export_subject_portrait_rows_v1(jsonb,uuid)',
+ unnest(array['private.export_subject_family_turn_rows_v1(jsonb,uuid)','private.export_subject_portrait_rows_v1(jsonb,uuid)',
   'private.export_scoped_class_rows_v1(jsonb,uuid[],text)'])f;
 select ok(has_function_privilege('service_role','public.export_archive_account_classes_v1(text,uuid,uuid,text,text,uuid)','execute')
  and not has_function_privilege('authenticated','public.export_archive_account_classes_v1(text,uuid,uuid,text,text,uuid)','execute'),

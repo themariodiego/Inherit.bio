@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { settingsOperationNonce } from "./operation-nonce";
 import { createHash, randomUUID } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
@@ -381,7 +382,8 @@ export function realPairedFamilyDensityFixtures(input: {
               const before = await fullPair(accountIds), attestations = await currentJurisdictionAttestations();
               const artifact = attestations[0];
               const declared = await page.request.put("/api/settings/jurisdiction", {
-                headers: { origin: origin.origin, "content-type": "application/json" },
+                headers: { origin: origin.origin, "content-type": "application/json",
+                  "x-inherit-operation-nonce": await settingsOperationNonce(page.request, "jurisdiction") },
                 data: { code: "XX", attestationVersion: artifact.version, attestationHash: artifact.body_sha256, affirmed: true },
               });
               expect(declared.status(), "Actual current TEST jurisdiction admission is mandatory").toBe(200);

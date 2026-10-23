@@ -140,6 +140,9 @@ select ok((select count(*) from private.genome_file_deletions where file_id in (
 
 -- Self: empty the record ---------------------------------------------------------
 create temporary table before_self as select lifecycle_revision rev from public.subjects where id=(select alpha_subject from fx);
+-- The actor context is transaction-local; clear it where production would
+-- have committed, so only the delete's own code can name who acted.
+select set_config('inherit.legal_audit_actor','',true);
 set local role service_role;
 create temporary table emptied as select pg_temp.del((select alpha from fx),(select alpha_session from fx),(select alpha_subject from fx),'self-1') body;
 reset role;
@@ -179,6 +182,11 @@ select is((select count(*) from public.portrait_results where family_pair_id='7a
  'the pair''s joint results are deleted');
 select is((select count(*) from public.legal_audit_log where event_code='subject.emptied' and route_id='api.subject-delete'),1::bigint,
  'one audit event records the emptying');
+-- 20261023120000: the code is recorded already consumed, which the insert
+-- trigger now sees, and subject.emptied is a person's own event.
+select is((select audit_principal_id from public.legal_audit_log where event_code='subject.emptied' and route_id='api.subject-delete'
+  order by seq desc limit 1),(select audit_principal_id from private.legal_audit_account_principals where account_id=(select alpha from fx)),
+ 'the emptying names the account that asked for it');
 select ok((select not (coded_context ?| array['account_id','subject_id']) from public.legal_audit_log
   where event_code='subject.emptied' order by seq desc limit 1),'the audit context names no account or record');
 select throws_ok($$select pg_temp.del((select alpha from fx),(select alpha_session from fx),(select alpha_subject from fx),'self-1')$$,

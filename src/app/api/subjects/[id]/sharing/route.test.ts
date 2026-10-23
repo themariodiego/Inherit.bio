@@ -29,6 +29,12 @@ const ORIGIN = "http://localhost";
 function stopCode(overrides: Partial<{ accountId: string; sessionId: string; subjectId: string }> = {}) {
   return mintSubjectOperationNonce({ accountId: ACCOUNT, sessionId: SESSION, operation: "subject_sharing_stop", subjectId: SUBJECT, ...overrides });
 }
+// 20261023120000 (G5.6): the pause and resume take their own single-use code too.
+function code(operation: "pause" | "resume", overrides: Partial<{ accountId: string; sessionId: string; subjectId: string }> = {}) {
+  return mintSubjectOperationNonce({ accountId: ACCOUNT, sessionId: SESSION, operation: `subject_sharing_${operation}`, subjectId: SUBJECT, ...overrides });
+}
+const pause = () => ({ operation: "pause", nonce: code("pause") });
+const resume = () => ({ operation: "resume", nonce: code("resume") });
 
 function call(body: unknown, options: { id?: string; origin?: string | null; contentType?: string | null } = {}) {
   const headers = new Headers();
@@ -54,7 +60,8 @@ beforeEach(() => {
 
 describe("POST /api/subjects/[id]/sharing", () => {
   it("pauses over the counterpart the route subject resolves to, never a request field", async () => {
-    const response = await call({ operation: "pause" });
+    const nonce = code("pause");
+    const response = await call({ operation: "pause", nonce });
     expect(response.status).toBe(200);
     const body = await response.json();
     expect(Object.keys(body).sort()).toEqual(["effectiveAt", "state"]);
@@ -62,21 +69,24 @@ describe("POST /api/subjects/[id]/sharing", () => {
     expect(Number.isNaN(Date.parse(body.effectiveAt))).toBe(false);
     expect(response.headers.get("cache-control")).toBe("private, no-store");
     expect(mocks.person).toHaveBeenCalledWith(ACCOUNT, `s-${SUBJECT}`);
-    expect(mocks.rpc).toHaveBeenCalledWith("pause_family_sharing_v1", { p_account_id: ACCOUNT, p_counterpart_account_id: COUNTERPART });
+    expect(mocks.rpc).toHaveBeenCalledWith("pause_subject_sharing_v1", expect.objectContaining({ p_account_id: ACCOUNT,
+      p_counterpart_account_id: COUNTERPART, p_session_id: SESSION, p_subject_id: SUBJECT, p_nonce_hash: hashOperationNonce(nonce) }));
     expect(mocks.capability).not.toHaveBeenCalled();
   });
 
   it("resumes only after the jurisdiction recheck permits it", async () => {
-    const response = await call({ operation: "resume" });
+    const nonce = code("resume");
+    const response = await call({ operation: "resume", nonce });
     expect(response.status).toBe(200);
     expect((await response.json()).state).toBe("sharing_active");
     expect(mocks.capability).toHaveBeenCalledWith(ACCOUNT, expect.objectContaining({ counterpartAccountId: COUNTERPART }), "third_party_adult_analysis");
-    expect(mocks.rpc).toHaveBeenCalledWith("resume_family_sharing_v1", { p_account_id: ACCOUNT, p_counterpart_account_id: COUNTERPART });
+    expect(mocks.rpc).toHaveBeenCalledWith("resume_subject_sharing_v1", expect.objectContaining({ p_account_id: ACCOUNT,
+      p_counterpart_account_id: COUNTERPART, p_session_id: SESSION, p_subject_id: SUBJECT, p_nonce_hash: hashOperationNonce(nonce) }));
   });
 
   it("refuses a resume the jurisdiction does not permit with capability-denied-api-v1 and no write", async () => {
     mocks.capability.mockResolvedValue({ status: "unavailable", userFacingCopy: "Not available here." });
-    const response = await call({ operation: "resume" });
+    const response = await call(resume());
     expect(response.status).toBe(403);
     expect(await response.json()).toEqual({ error: "jurisdiction_unavailable", message: "Not available here." });
     expect(mocks.rpc).not.toHaveBeenCalled();
@@ -84,7 +94,7 @@ describe("POST /api/subjects/[id]/sharing", () => {
 
   it("does not gate pause or stop on the jurisdiction: they are rights", async () => {
     mocks.capability.mockResolvedValue({ status: "unavailable", userFacingCopy: "Not available here." });
-    expect((await call({ operation: "pause" })).status).toBe(200);
+    expect((await call(pause())).status).toBe(200);
     expect((await call({ operation: "stop", nonce: stopCode() })).status).toBe(200);
     expect(mocks.capability).not.toHaveBeenCalled();
   });
@@ -114,6 +124,18 @@ describe("POST /api/subjects/[id]/sharing", () => {
     expect(mocks.rpc).not.toHaveBeenCalled();
   });
 
+  it.each([
+    ["the stop", () => ({ operation: "pause", nonce: stopCode() })],
+    ["the resume", () => ({ operation: "pause", nonce: code("resume") })],
+    ["another record", () => ({ operation: "pause", nonce: code("pause", { subjectId: OTHER }) })],
+    ["another session", () => ({ operation: "resume", nonce: code("resume", { sessionId: OTHER }) })],
+  ])("refuses a pause or resume with a code minted for %s before any write", async (_label, body) => {
+    const response = await call(body());
+    expect(response.status).toBe(422);
+    expect(await response.json()).toEqual({ error: "invalid_request", issues: ["nonce"] });
+    expect(mocks.rpc).not.toHaveBeenCalled();
+  });
+
   it("refuses a replayed stop code that the database has already recorded", async () => {
     mocks.rpc.mockResolvedValue({ data: null, error: { code: "22023", message: "invalid_operation_nonce" } });
     const response = await call({ operation: "stop", nonce: stopCode() });
@@ -123,7 +145,7 @@ describe("POST /api/subjects/[id]/sharing", () => {
 
   it.each(["42501", "55000"])("answers an unavailable pair or pause (%s) with the opaque 404", async (code) => {
     mocks.rpc.mockResolvedValue({ data: null, error: { code, message: "private detail" } });
-    for (const body of [{ operation: "pause" }, { operation: "resume" }, { operation: "stop", nonce: stopCode() }]) {
+    for (const body of [pause(), resume(), { operation: "stop", nonce: stopCode() }]) {
       const response = await call(body);
       expect(response.status).toBe(404);
       expect(await response.json()).toEqual({ error: "not_found" });
@@ -132,7 +154,7 @@ describe("POST /api/subjects/[id]/sharing", () => {
 
   it("answers an unexpected database failure as unavailable, without detail", async () => {
     mocks.rpc.mockResolvedValue({ data: null, error: { code: "XX000", message: "private detail" } });
-    const response = await call({ operation: "pause" });
+    const response = await call(pause());
     expect(response.status).toBe(503);
     expect(JSON.stringify(await response.json())).not.toContain("private");
   });
@@ -147,13 +169,13 @@ describe("POST /api/subjects/[id]/sharing", () => {
 
   it("refuses a resolution that names a different record than the route", async () => {
     mocks.person.mockResolvedValue({ handle: { id: OTHER }, counterpartAccountId: COUNTERPART });
-    expect((await call({ operation: "pause" })).status).toBe(404);
+    expect((await call(pause())).status).toBe(404);
     expect(mocks.rpc).not.toHaveBeenCalled();
   });
 
   it.each(["s-cccccccc-cccc-4ccc-8ccc-cccccccccccc", "bind", "CCCCCCCC-CCCC-4CCC-8CCC-CCCCCCCCCCCC", "me"])(
     "never resolves a non-canonical segment %s", async (id) => {
-      const response = await call({ operation: "pause" }, { id });
+      const response = await call(pause(), { id });
       expect(response.status).toBe(404);
       expect(mocks.context).not.toHaveBeenCalled();
       expect(mocks.person).not.toHaveBeenCalled();
@@ -161,9 +183,9 @@ describe("POST /api/subjects/[id]/sharing", () => {
 
   it("requires a signed-in session and the same origin before any lookup", async () => {
     mocks.context.mockResolvedValue(null);
-    expect((await call({ operation: "pause" })).status).toBe(401);
+    expect((await call(pause())).status).toBe(401);
     mocks.context.mockResolvedValue({ user: { id: ACCOUNT }, sessionId: SESSION });
-    const forbidden = await call({ operation: "pause" }, { origin: "https://example.invalid" });
+    const forbidden = await call(pause(), { origin: "https://example.invalid" });
     expect(forbidden.status).toBe(403);
     expect(await forbidden.json()).toEqual({ error: "request_forbidden" });
     expect(mocks.person).not.toHaveBeenCalled();
@@ -171,8 +193,8 @@ describe("POST /api/subjects/[id]/sharing", () => {
   });
 
   it.each([
-    [{}, "body"], [{ operation: "delete" }, "body"], [{ operation: "pause", nonce: "x" }, "body"],
-    [{ operation: "stop" }, "body"], [{ operation: "pause", counterpartAccountId: OTHER }, "body"],
+    [{}, "body"], [{ operation: "delete" }, "body"], [{ operation: "pause" }, "body"], [{ operation: "resume" }, "body"],
+    [{ operation: "stop" }, "body"], [{ operation: "pause", nonce: "x", counterpartAccountId: OTHER }, "body"],
     [{ operation: "stop", nonce: "x".repeat(129) }, "body"], ["{", "body"], [[], "body"],
   ])("refuses the closed body %j with invalid-request-v1 and no write", async (body, issue) => {
     const response = await call(body);
@@ -182,7 +204,7 @@ describe("POST /api/subjects/[id]/sharing", () => {
   });
 
   it("refuses a body that is not declared as JSON", async () => {
-    const response = await call({ operation: "pause" }, { contentType: "text/plain" });
+    const response = await call(pause(), { contentType: "text/plain" });
     expect(response.status).toBe(422);
     expect(await response.json()).toEqual({ error: "invalid_request", issues: ["content-type"] });
     expect(mocks.rpc).not.toHaveBeenCalled();

@@ -529,9 +529,11 @@ select ok(to_regprocedure('private.export_account_class_inventory_v1(uuid,jsonb)
    where has_function_privilege(r,to_regprocedure('private.export_account_class_inventory_v1(uuid,jsonb)'),'execute'))),
  'only the exact installed account class inventory may inspect held custody, behind every API denial');
 -- 20261023100000_subject_export_joint_results.sql adds the live-permission
--- Portrait branch to this exact helper; the pin follows the reviewed body.
+-- Portrait branch to this exact helper, and 20261023110000_export_completeness.sql
+-- lets the self record see the account's own cohorts (owner decision, 23 Oct
+-- 2026); the pin follows the reviewed body. The held-custody branch is unchanged.
 select ok(to_regprocedure('private.export_subject_class_inventory_v1(uuid,jsonb)') is null
- or ((select md5(prosrc)='d48410a3107806c63a50480f3524d980' and prosecdef and proconfig=array['search_path=""','lock_timeout=250ms']::text[]
+ or ((select md5(prosrc)='de5a71ac7e1f9d6634a812dda69e7784' and prosecdef and proconfig=array['search_path=""','lock_timeout=250ms']::text[]
   and proowner=(select oid from pg_roles where rolname='postgres') from pg_proc
   where oid=to_regprocedure('private.export_subject_class_inventory_v1(uuid,jsonb)'))
   and not exists(select 1 from unnest(array['anon','authenticated','inherit_upload_only','service_role'])r

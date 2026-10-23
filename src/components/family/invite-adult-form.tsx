@@ -27,7 +27,10 @@ import {
  * grants from their side; nothing here touches their data. The secondary
  * Path B link is not rendered, because Path B has no screen to link to.
  */
-export function InviteAdultForm() {
+export function InviteAdultForm({ operationNonce }: {
+  /** The one-time nonce the page rendered for this invitation (G5.6, 23 Oct 2026). */
+  operationNonce: string;
+}) {
   const requestId = useRef(crypto.randomUUID());
   const [pending, setPending] = useState(false);
   const [complete, setComplete] = useState(false);
@@ -45,6 +48,7 @@ export function InviteAdultForm() {
   return (
     <form
       className="surface surface-pad space-y-6"
+      data-operation-nonce={operationNonce}
       onSubmit={async (event) => {
         event.preventDefault();
         setPending(true);
@@ -53,7 +57,7 @@ export function InviteAdultForm() {
         const note = String(data.get("note") ?? "").trim();
         const response = await fetch("/api/subject-drafts", {
           method: "POST",
-          headers: { "content-type": "application/json" },
+          headers: { "content-type": "application/json", "X-Inherit-Operation-Nonce": operationNonce },
           body: JSON.stringify({
             kind: "other_adult",
             adultFlow: "path-a-own-account",

@@ -217,7 +217,9 @@ select ok((select not private.account_archive_job_scope_v1(j,jsonb_populate_reco
 -- a family pair and a Portrait result no longer refuse the record: the pair
 -- is its history and a Portrait result is projected only while the other
 -- parent's permission is live (supabase/tests/subject_export_joint_results.sql).
--- A family conversation on the record and a live cohort role still refuse.
+-- Since 20261023110000_export_completeness.sql a family group conversation is
+-- projected and a cohort role no longer refuses; a canonical conversation
+-- anchored on the record's pair still refuses, as here.
 create function pg_temp.family_conversation(p_pair uuid) returns void language sql as $$
  insert into public.chats(id,user_id,scope_kind,family_pair_id,lifecycle_revision,provider_classification,runtime_attestation_revision,
   model_recipient_revision,authorization_fingerprint,legacy_unverified)
@@ -279,7 +281,7 @@ select is((select x->'partitions' from sx,jsonb_array_elements(private.export_ac
  where label='subject' and x->>'kind'='family_pairs'),jsonb_build_array(jsonb_build_object('subjectId',(select id from normalization_subject),'rows',1)),
  'the purged pair''s history row is routed to the record');
 select is((select (x->>'rows')::bigint from sx,jsonb_array_elements(private.export_account_owned_capture_v1(origin,'subject',subject)#>'{readableGraph,inventory}')x
- where label='subject' and x->>'kind'='embryo_cohorts'),0::bigint,'no cohort row is ever routed to a record');
+ where label='subject' and x->>'kind'='embryo_cohorts'),0::bigint,'a record whose account has no cohort has no cohort row');
 rollback to purged_pair;
 select ok(not private.export_subject_joint_results_v1((select id from normalization_subject)),'the fixture record has no joint result');
 select ok(not private.export_subject_cohort_role_v1((select id from normalization_subject)),'the fixture record has no cohort role');
@@ -298,7 +300,8 @@ select ok(not has_function_privilege(r,p,'execute'),r||' cannot execute '||p) fr
   'private.export_scoped_graph_projection_v1(text,uuid,uuid[],text)','private.export_account_door_scope_v1(jsonb)',
   'private.account_archive_job_scope_v1(private.export_archive_jobs,public.generated_exports)',
   'private.export_subject_history_inventory_v1(uuid,uuid[])','private.export_subject_graph_capture_v1(uuid,jsonb)',
-  'private.export_subject_class_inventory_v1(uuid,jsonb)','private.export_subject_family_conversation_v1(uuid)',
+  'private.export_subject_class_inventory_v1(uuid,jsonb)','private.export_subject_family_turn_rows_v1(jsonb,uuid)',
+  'private.export_subject_family_turn_capture_v1(jsonb,uuid)',
   'private.export_subject_portrait_rows_v1(jsonb,uuid)','private.export_scoped_class_rows_v1(jsonb,uuid[],text)'])p;
 select throws_ok($$set local role service_role;select set_config('request.jwt.claims','{"role":"authenticated"}',true);select public.export_archive_subject_due_v1()$$,
  '42501','not_found','the subject due reader needs the service JWT too');
