@@ -5404,3 +5404,20 @@ configuration. The harness's own `limitMicroDollars` stays at most `50000000`, a
 a second cap. The pinned model identifier is chosen at calibration and recorded
 only where `docs/comprehension-runs/README.md` allows. The run order is
 unchanged: a stub smoke run, one calibration, then full runs.
+
+## 2026-10-23 — D-103: Path A acceptance includes a typed name
+
+Owner decision (clickable chat answer, "Yes, as the register says"). An adult
+who accepts through their own account (Path A) also types their name, as the
+register's `subjectArtifact.typedName` requires. The name is stored encrypted
+the way Path B's e-signature stores it. Today
+`private.adult_subject_invitation_response_v1` writes `signing_name_encrypted`
+as null for Path A, so this needs one guarded migration. It goes into the release
+after the follow-up, not the follow-up's pinned set.
+
+The same piece of work follows the earlier G8.5 decision ("code to the
+register"):
+- Path A's account confirmation moves to the route the register names,
+  `api.invitation-accept` (`adult-subject-confirmation-v1.modes.path-a-account-required.route`).
+- The register's `api.withdraw` confirm wording ("four-item array") is
+  corrected for the five D-103 statements and Path B's own list.
