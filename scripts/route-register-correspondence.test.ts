@@ -1263,7 +1263,11 @@ const CLIENT_FORM_REVIEW: ClientFormReview[] = [
   // outline variant at the same 44px and content width. One actionless form,
   // the same fieldset, handler and preventDefault before any field is read.
   { file: "src/components/auth/auth-form.tsx", forms: 1, sha256: "80e1bf6cabad3769c0613561fd8c942f417a024ae8e0f831402b023470f9e8a8" },
-  { file: "src/components/chat/chat-panel.tsx", forms: 1, sha256: "77759a6b209673bef9ea9c5ca46e031a03e1cfb7a73f7e9e437ca519eb1dfdd1" },
+  // G8.5 (2026-10-23): re-reviewed after the compatibility panel moved from the
+  // AI SDK transport to a fetch of the registered { contextToken, message }.
+  // Still one actionless form whose onSubmit handler cancels native submission
+  // before anything is sent; the same composer and the same target, api.chat.
+  { file: "src/components/chat/chat-panel.tsx", forms: 1, sha256: "06f3970abfecad74a4158580b05b0effeec9db55fa8c5d9137ee1181caa55457" },
   { file: "src/components/chat/own-chat-panel.tsx", forms: 1, sha256: "935d0925a414a1f377fbae00c6d06cccb6cc3817d02aa46d2d0972224b97f89c" },
   { file: "src/components/embryo/co-parent-review-form.tsx", forms: 1, sha256: "e37f7be36d8b6eed42a49a5c91a2d1d715f549881fd2dcae67b6eb5d77584675" },
   { file: "src/components/embryo/invitation-refusal-form.tsx", forms: 1, sha256: "d1d5e36f18b1299ea3c21a6ef0369487250d5f2e0cae5c693486833d309ff6a3" },

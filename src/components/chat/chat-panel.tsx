@@ -1,11 +1,12 @@
 "use client";
 
-import { useChat } from "@ai-sdk/react";
-import { DefaultChatTransport } from "ai";
 import Link from "next/link";
-import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
+import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { REFUSAL_IDS, refusalFor, type RefusalId } from "@/copy/copilot/refusals";
 import { providerDisplayName } from "@/lib/llm";
 import { NOT_DIAGNOSTIC } from "@/copy/reports/strings";
 import { ConsentDialog } from "./consent-dialog";
@@ -20,41 +21,87 @@ export interface ChatProviderInfo {
   hasConsent?: boolean;
 }
 
-function extractErrorCode(err: Error): { code: string; providerKey?: string } {
-  try {
-    const parsed = JSON.parse(err.message) as {
-      error?: string;
-      provider_key?: string;
-    };
-    return { code: parsed.error ?? "unknown", providerKey: parsed.provider_key };
-  } catch {
-    return { code: "unknown" };
-  }
-}
+/** chat-completion-v1, as the compatibility branch answers it: no citations and no embryo findings. */
+const completion = z.object({ chatId: z.uuid(), message: z.object({ role: z.literal("assistant"),
+  content: z.string().max(100_000), citations: z.array(z.never()).max(0), embryoFindings: z.array(z.never()).max(0) }).strict() }).strict();
+const refusalBody = z.object({ error: z.string().max(200), provider_key: z.string().max(400).optional() }).passthrough();
+type Turn = { id: string; role: "user" | "assistant"; content: string };
+type Blocked = { code: string; providerKey?: string };
 
+/**
+ * The compatibility panel on `/copilot/[scope]`, for a scope with no canonical
+ * Copilot authority. Since 23 October 2026 (owner decision, G8.5) it sends the
+ * register's `{ contextToken, message }` to `api.chat`, as `OwnChatPanel`
+ * does, in place of the AI SDK transport's `{ id, messages, trigger,
+ * messageId }` with a `?scope=` query. The page mints the token for this
+ * account, session and subject. This branch keeps no conversation on the
+ * server, so each question is sent and answered on its own, and the page is
+ * refreshed after each one for a fresh token.
+ */
 export function ChatPanel({
   info,
-  scope,
+  contextToken,
+  displayLabel,
 }: {
   info: ChatProviderInfo;
-  scope: string;
+  /** The compatibility context token the page minted (src/lib/copilot/compat-chat-token.ts). */
+  contextToken: string;
+  displayLabel: string;
 }) {
+  const router = useRouter();
   const [input, setInput] = useState("");
+  const [turns, setTurns] = useState<Turn[]>([]);
+  const [pendingQuestion, setPendingQuestion] = useState<string | null>(null);
+  const [blocked, setBlocked] = useState<Blocked | null>(null);
   const [consentFor, setConsentFor] = useState<string | null>(null);
-  const { messages, sendMessage, status, error, clearError } = useChat({
-    transport: new DefaultChatTransport({
-      api: `/api/chat?scope=${encodeURIComponent(scope)}`,
-    }),
-  });
+  const pending = useRef<AbortController | null>(null);
+  useEffect(() => () => { pending.current?.abort(); }, []);
+  const busy = pendingQuestion !== null;
 
-  const errorCode = error ? extractErrorCode(error) : null;
-
-  const submit = () => {
-    const text = input.trim();
-    if (!text || status === "streaming" || status === "submitted") return;
+  async function submit() {
+    const message = input.trim();
+    if (!message || busy || pending.current) return;
+    const controller = new AbortController();
+    pending.current = controller;
     setInput("");
-    void sendMessage({ text });
-  };
+    setBlocked(null);
+    setPendingQuestion(message);
+    let answer: Turn | null = null;
+    try {
+      const response = await fetch("/api/chat", {
+        method: "POST", credentials: "same-origin", cache: "no-store", redirect: "error",
+        headers: { "content-type": "application/json" }, signal: controller.signal,
+        body: JSON.stringify({ contextToken, message }),
+      });
+      if (response.headers.get("content-type")?.includes("application/json") && response.ok) {
+        const result = completion.parse(await response.json());
+        answer = { id: crypto.randomUUID(), role: "assistant", content: result.message.content };
+      } else if (response.ok) {
+        // The registered intent-refusal transport (copilot-refusal-v1).
+        const refusal = response.headers.get("x-copilot-refusal");
+        await response.body?.cancel();
+        if (!refusal || !REFUSAL_IDS.includes(refusal as RefusalId)) throw new Error("unexpected_response");
+        answer = { id: crypto.randomUUID(), role: "assistant", content: refusalFor(refusal as RefusalId, displayLabel) };
+      } else {
+        const parsed = refusalBody.safeParse(await response.json().catch(() => null));
+        setBlocked({ code: parsed.success ? parsed.data.error : "unknown", providerKey: parsed.success ? parsed.data.provider_key : undefined });
+      }
+    } catch {
+      if (!controller.signal.aborted) setBlocked({ code: "unknown" });
+    } finally {
+      if (pending.current === controller) pending.current = null;
+      if (!controller.signal.aborted) {
+        const asked: Turn = { id: crypto.randomUUID(), role: "user", content: message };
+        if (answer) setTurns(previous => [...previous, asked, answer!]);
+        setPendingQuestion(null);
+        // A fresh token for the next question; this panel's state is kept.
+        router.refresh();
+      }
+    }
+  }
+
+  const shown: Turn[] = pendingQuestion === null ? turns
+    : [...turns, { id: "pending-question", role: "user", content: pendingQuestion }];
 
   return (
     <div className="rec-stack">
@@ -89,7 +136,7 @@ export function ChatPanel({
       </div>
 
       <div className="rec-thread">
-        {messages.length === 0 ? (
+        {shown.length === 0 ? (
           <div className="surface-inset surface-pad-sm rec-stack-sm max-w-measure text-sm text-ink">
             <p>
               Ask about your own genome. Try: &ldquo;What does my file say about
@@ -103,45 +150,22 @@ export function ChatPanel({
             </p>
           </div>
         ) : null}
-        {messages.map((m) => (
+        {shown.map((turn) => (
           <div
-            key={m.id}
-            data-role={m.role === "user" ? "user" : "assistant"}
+            key={turn.id}
+            data-role={turn.role === "user" ? "user" : "assistant"}
             className="rec-message"
           >
-            {m.parts.map((part, i) => {
-              if (part.type === "text") {
-                return (
-                  <p key={i} className="whitespace-pre-wrap">
-                    {part.text}
-                  </p>
-                );
-              }
-              if (part.type.startsWith("tool-")) {
-                const label = part.type.replace("tool-", "");
-                return (
-                  <p
-                    key={i}
-                    className="caption my-1 font-mono"
-                  >
-                    ⚙ {label}
-                    {"state" in part && part.state === "output-available"
-                      ? " ✓"
-                      : "…"}
-                  </p>
-                );
-              }
-              return null;
-            })}
-            {m.role !== "user" ? <p data-slot="chat-not-diagnostic" className="caption mt-3">{NOT_DIAGNOSTIC}</p> : null}
+            <p className="whitespace-pre-wrap">{turn.content}</p>
+            {turn.role !== "user" ? <p data-slot="chat-not-diagnostic" className="caption mt-3">{NOT_DIAGNOSTIC}</p> : null}
           </div>
         ))}
-        {status === "submitted" ? (
+        {busy ? (
           <p className="caption">Thinking…</p>
         ) : null}
       </div>
 
-      {errorCode?.code === "consent_required" ? (
+      {blocked?.code === "consent_required" ? (
         <div className="plate">
           <div className="plate-head">
             <p className="text-sm text-ink">
@@ -152,13 +176,13 @@ export function ChatPanel({
           <div className="plate-body">
             <Button
               size="sm"
-              onClick={() => setConsentFor(errorCode.providerKey ?? "")}
+              onClick={() => setConsentFor(blocked.providerKey ?? "")}
             >
               Review what would be shared
             </Button>
           </div>
         </div>
-      ) : errorCode?.code === "no_provider" || errorCode?.code === "no_key" ? (
+      ) : blocked?.code === "no_provider" || blocked?.code === "no_key" ? (
         <div className="plate">
           <div className="plate-head">
             <p className="text-sm text-ink">
@@ -171,7 +195,7 @@ export function ChatPanel({
             </p>
           </div>
         </div>
-      ) : error ? (
+      ) : blocked ? (
         <p role="alert" className="text-sm text-danger">
           The copilot request failed. Check your provider settings and try
           again.
@@ -182,7 +206,7 @@ export function ChatPanel({
         className="rec-composer"
         onSubmit={(e) => {
           e.preventDefault();
-          submit();
+          void submit();
         }}
       >
         <Textarea
@@ -191,16 +215,17 @@ export function ChatPanel({
           onKeyDown={(e) => {
             if (e.key === "Enter" && !e.shiftKey) {
               e.preventDefault();
-              submit();
+              void submit();
             }
           }}
+          maxLength={8000}
           placeholder="Ask about your genome…"
           aria-label="Message the copilot"
           rows={1}
         />
         <Button
           type="submit"
-          disabled={status === "streaming" || status === "submitted"}
+          disabled={busy}
         >
           Send
         </Button>
@@ -211,7 +236,7 @@ export function ChatPanel({
         open={consentFor !== null}
         onGranted={() => {
           setConsentFor(null);
-          clearError();
+          setBlocked(null);
         }}
         onCancel={() => setConsentFor(null)}
       />

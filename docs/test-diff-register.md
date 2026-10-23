@@ -2,6 +2,49 @@
 
 This entry follows the owner's decisions of 23 October (decisions, "G8.5: forms, CSRF, the server action and the Resend webhook"), items 1, 3 and 4, on local branch `local/g85-shapes` from `287a1408`. The CSRF token (item 2) and sign-out are another branch's work and are untouched here. Production is untouched.
 
+### The compatibility Copilot panel sends the registered chat body (item 1)
+
+What changed:
+- **The panel.** `src/components/chat/chat-panel.tsx` (on `/copilot/[scope]`, for a scope with no canonical Copilot authority) no longer uses the AI SDK's `DefaultChatTransport`, which posted `{ id, messages, trigger, messageId }` to `/api/chat?scope=`. It posts the register's `{ contextToken, message }` to `/api/chat` with no query, as `OwnChatPanel` does.
+- **The token.** `/copilot/[scope]` mints it for the account, its auth session and the subject the route resolved (`src/lib/copilot/compat-chat-token.ts`), under its own MAC domain, for nine minutes.
+- **The route.** `src/app/api/chat/route.ts` answers this body in a compatibility branch, after the family and cohort checks and before the own branch. The branch runs every check it ran before, in the same order: canonical scope, intent gate, provider, local-only for another person, provider-key consent, key, endpoint. It adds an Origin and no-query check, as the own branch has. It answers `chat-completion-v1` with a fresh id, or the registered refusal stream. The AI SDK body is refused 400 `invalid_request`.
+- **What it does not keep.** The branch keeps no conversation and the client sends none, so each question is answered on its own; the model no longer sees earlier turns. The panel refreshes the page after each answer for a fresh token. Tool-step indicators are no longer shown.
+- **The ledger.** The chat-panel contract row closes; its CSRF row is untouched.
+
+**New suite: `src/lib/copilot/compat-chat-token.test.ts`, 6/6.** It covers:
+- the round trip and the exact nine-minute window;
+- a fresh token on every mint;
+- refusal of a changed payload, a changed signature, extra parts, non-strings and an oversized token;
+- refusal of invalid claims at mint;
+- separation from the own token's MAC domain, in both directions;
+- recognition of the panel's body.
+
+**New suite: `src/app/api/chat/compatibility.test.ts`, 7/7.** Only the database, the provider SDKs and the model stream are mocked. It checks:
+- the registered body is answered with `chat-completion-v1`, and the model is sent exactly the one question;
+- the AI SDK body is refused 400, with and without `?scope=me`, before any check;
+- a token for another account or another session, or no session, gets the same 404;
+- a cross-site request, a query, an extra `scope` field and a blank message are refused before the token is read;
+- a token that is not a compatibility token goes to the own branch;
+- the refusals come in their order: `copilot_unavailable`, `no_provider` (409), `local_model_required`, `consent_required` with `provider_key`, then `no_key` (409);
+- a gated question gets the refusal stream and no model call.
+
+Planted, each reverted: dropping the session comparison fails the 404 test, and sending the model a second message fails the first test.
+
+**New suite: `src/components/chat/chat-panel.test.ts`, 5/5.** It runs the real client handler and checks:
+- the body, URL and method, the answer shown, and one refresh;
+- the question and "Thinking…" while the request is open, with Send disabled;
+- the consent review for the named provider, and the setup sentence for `no_provider` and `no_key`;
+- the refusal stream shown as the assistant's turn;
+- a generic failure that shows no reply.
+
+Planted: a body without the token fails the first test and the form check (an unrecorded "omits chatId").
+
+**Changed suite: `scripts/form-register-correspondence.test.ts`.** "reads every form and every request…" asserted one request through the AI SDK transport. It now asserts 0; the 27 requests and the other counts are unchanged. New: "still reads the AI SDK chat transport…" plants the former panel's request (inline, reduced to the lines that make it) and finds its six former issues as unrecorded.
+
+**Changed suite: `scripts/route-register-correspondence.test.ts`.** The source seal of `chat-panel.tsx` moves from `77759a6b…` to `06f3970a…`, re-reviewed: still one actionless form whose handler cancels native submission, with the same target.
+
+**Changed suite: `scripts/density-copilot-states.test.ts`.** It pinned the fixture literal `page.route("**/api/chat?scope=me"`. It now pins `page.route("**/api/chat"` and asserts that no `/api/chat?scope=` remains. The fixture `e2e/helpers/density-copilot-state-fixtures.ts` holds the query-free URL, which the panel now posts to. It has not been run here. The browser specs that drive this panel (`e2e/copilot-scope-states.spec.ts`, `e2e/settings.spec.ts`) keep their assertions: the same copy, "Thinking…", the consent refusal body and the review button.
+
 ### Settings → AI moves to the registered bodies, answers and DELETE nonce (item 1)
 
 What changed:

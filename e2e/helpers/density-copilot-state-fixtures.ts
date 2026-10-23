@@ -85,7 +85,7 @@ export function realUnansweredCopilotDensityFixtures(input: {
           await expect(page.getByLabel("Message the copilot")).toBeVisible();
           if (recipe !== "empty") {
             const pending = new Promise<void>(resolve => { release = resolve; });
-            await page.route("**/api/chat?scope=me", async route => {
+            await page.route("**/api/chat", async route => {
               if (route.request().method() !== "POST") { await route.continue(); return; }
               assert(++intercepted === 1, "Exactly one original chat POST required");
               continuation = (async () => { await pending; await consentRefusal(route); })();

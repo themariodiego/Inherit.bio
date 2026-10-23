@@ -11,6 +11,8 @@ import { NAV_LABELS } from "@/copy/navigation";
 import { EmbryoResultGate } from "@/components/embryo/result-gate";
 import { parseCopilotRouteScope } from "@/lib/copilot/group-scopes";
 import { prepareOwnCopilotChat } from "@/lib/copilot/own-chat";
+import { mintCompatChatToken } from "@/lib/copilot/compat-chat-token";
+import { getSensitiveAccountContext } from "@/lib/account-deletion";
 import { isLocalBaseUrl, providerKeyFor } from "@/lib/llm";
 import { resolveSubjectForAccount } from "@/lib/subjects";
 import { createClient } from "@/lib/supabase/server";
@@ -119,10 +121,17 @@ export default async function ChatPage(
     };
   }
 
+  // The compatibility panel sends the register's { contextToken, message }
+  // (G8.5, 23 October 2026): the token names this account, its auth session
+  // and the subject this route resolved, and grants nothing on its own.
+  const account = info.configured ? await getSensitiveAccountContext() : null;
+  if (info.configured && (!account || account.user.id !== user.id)) notFound();
+  const contextToken = account ? mintCompatChatToken({ accountId: user.id, sessionId: account.sessionId, subjectId: subject.id }) : null;
+
   return (
     <div className="page-stack rec-column stack-blocks">
       {header}
-      {!info.configured ? (
+      {!info.configured || !contextToken ? (
         // The empty state (round-1 m13): one inset surface with the sentence,
         // the example questions as quiet lines and "Open Settings" as the
         // page's one forest action; the setup notes follow as plain text,
@@ -229,7 +238,7 @@ export default async function ChatPage(
           </div>
         </div>
       ) : (
-        <ChatPanel info={info} scope={subject.routeSegment} />
+        <ChatPanel info={info} contextToken={contextToken} displayLabel={subject.displayLabel} />
       )}
     </div>
   );

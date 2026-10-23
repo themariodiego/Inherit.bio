@@ -139,7 +139,8 @@ describe("every form sends what its register entry declares (G8.5)", () => {
     expect(actual.sites.filter(site => site.action !== null)).toHaveLength(2);
     expect(actual.sites.filter(site => site.action === null && site.handlerResolved)).toHaveLength(24);
     expect(actual.requests.length).toBe(27);
-    expect(actual.requests.filter(request => request.via === "ai-sdk-default-chat-transport")).toHaveLength(1);
+    // 0 since 2026-10-23: the compatibility panel sends the registered body with fetch (it was 1).
+    expect(actual.requests.filter(request => request.via === "ai-sdk-default-chat-transport")).toHaveLength(0);
     expect(new Set(actual.requests.map(request => request.file)).size).toBe(22);
     // And it really reaches the shapes the checks below depend on.
     const jurisdiction = actual.requests.find(request => request.file === "src/components/settings/jurisdiction-form.tsx")!;
@@ -282,6 +283,35 @@ describe("the form census fails on a planted divergence", () => {
     const required = mismatch({ [file]: source.replace(optional, "apiKey") });
     expect(required.unrecorded).toEqual([]);
     expect(required.stale).toEqual([`${file} api.llm-settings POST: may omit apiKey, which the registered body requires`]);
+  });
+
+  it("still reads the AI SDK chat transport, so the compatibility panel's former body would fail again", () => {
+    // The former panel's request, reduced to the lines that make it (src/components/chat/chat-panel.tsx at 287a1408).
+    const file = "src/components/chat/chat-panel.tsx";
+    const former = [
+      '"use client";',
+      'import { useChat } from "@ai-sdk/react";',
+      'import { DefaultChatTransport } from "ai";',
+      "export function ChatPanel({ scope }: { scope: string }) {",
+      "  const { sendMessage } = useChat({",
+      "    transport: new DefaultChatTransport({",
+      "      api: `/api/chat?scope=${encodeURIComponent(scope)}`,",
+      "    }),",
+      "  });",
+      "  const submit = () => { void sendMessage({ text: \"question\" }); };",
+      "  return <form onSubmit={(e) => { e.preventDefault(); submit(); }}><button type=\"submit\">Send</button></form>;",
+      "}",
+    ].join("\n");
+    const result = run({ [file]: former });
+    expect(result.requests.filter(request => request.via === "ai-sdk-default-chat-transport")).toHaveLength(1);
+    expect(ledgerMismatch(result.issues.map(formIssueKey), recordedKeys()).unrecorded).toEqual([
+      `${file} api.chat POST: omits chatId, which the registered body requires`,
+      `${file} api.chat POST: omits message, which the registered body requires`,
+      `${file} api.chat POST: sends id, which the registered body does not declare`,
+      `${file} api.chat POST: sends messageId, which the registered body does not declare`,
+      `${file} api.chat POST: sends messages, which the registered body does not declare`,
+      `${file} api.chat POST: sends trigger, which the registered body does not declare`,
+    ]);
   });
 
   it("fails on a request to a target no register entry describes, or one it cannot resolve", () => {

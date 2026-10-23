@@ -86,7 +86,9 @@ describe("real unanswered Copilot density states", () => {
     expect(source).toContain('expect(actual, "the consent refusal stores no conversation or permission").toEqual(original)');
   });
   it("holds exactly one original POST and awaits its real 403 before context disposal", () => {
-    expect(source).toContain('page.route("**/api/chat?scope=me"');
+    // 2026-10-23 (G8.5): the compatibility panel posts the registered body to /api/chat with no ?scope= query.
+    expect(source).toContain('page.route("**/api/chat"');
+    expect(source).not.toContain("/api/chat?scope=");
     expect(source).toContain('assert(++intercepted === 1, "Exactly one original chat POST required")');
     expect(source).toContain("await route.continue()"); expect(source).toContain("await response.finished() === null");
     expect(source.indexOf("if (release) { release(); if (continuation) await continuation; }")).toBeLessThan(source.indexOf("await context.close()"));

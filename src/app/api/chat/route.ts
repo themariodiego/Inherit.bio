@@ -2,17 +2,18 @@ import { ownChatResponse } from "@/lib/copilot/own-chat-route";
 import { familyChatResponse, isFamilyChatRequest } from "@/lib/copilot/family-chat-route";
 import { cohortChatResponse, isCohortChatRequest } from "@/lib/copilot/cohort-chat-route";
 import { hasCanonicalCopilotScope } from "@/lib/copilot/own-chat";
+import { isCompatChatRequest, readCompatChatToken } from "@/lib/copilot/compat-chat-token";
+import { getSensitiveAccountContext, isSameOrigin } from "@/lib/account-deletion";
+import { randomUUID } from "node:crypto";
 import { createAnthropic } from "@ai-sdk/anthropic";
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import {
-  convertToModelMessages,
   createUIMessageStream,
   createUIMessageStreamResponse,
   stepCountIs,
   streamText,
   tool,
   toUIMessageStream,
-  type UIMessage,
   type UIMessageChunk,
 } from "ai";
 import { NextResponse } from "next/server";
@@ -23,10 +24,8 @@ import { OWN_SYSTEM_PROMPT, ownLegacySystemMessage } from "@/copy/copilot/system
 import {
   checkResponse,
   classifyIntent,
-  dropGatedTurns,
   foldStreamChunks,
   guardScopeKindFor,
-  userTurnText,
   type AllowedNumerals,
   type GuardScope,
 } from "@/lib/copilot/guard";
@@ -48,13 +47,19 @@ import { createClient } from "@/lib/supabase/server";
 
 export const maxDuration = 300;
 
-/** The text of the newest user turn, or null when the request carries none. */
-function latestUserText(messages: UIMessage[]): string | null {
-  const last = [...messages].reverse().find((message) => message.role === "user");
-  if (!last) return null;
-  const text = userTurnText(last);
-  return text.length > 0 ? text : null;
-}
+/**
+ * The compatibility panel's body, the register's `{ contextToken, message }`
+ * (owner decision of 23 October 2026, G8.5), with the token minted by
+ * /copilot/[scope] for this account, session and subject
+ * (src/lib/copilot/compat-chat-token.ts). It replaced the AI SDK transport's
+ * `{ id, messages, trigger, messageId }` with a `?scope=` query, which the
+ * register does not declare.
+ */
+const compatibilityBody = z.object({
+  contextToken: z.string().min(16).max(12000),
+  message: z.string().trim().min(1).max(8000),
+}).strict();
+const COMPATIBILITY_HEADERS = { "Cache-Control": "private, no-store", "Referrer-Policy": "no-referrer", "X-Content-Type-Options": "nosniff" };
 
 /**
  * The refusal as the whole assistant turn on the same stream transport the
@@ -89,13 +94,6 @@ async function bufferUIMessageStream(stream: ReadableStream<UIMessageChunk>): Pr
   return chunks;
 }
 
-function replayChunks(chunks: UIMessageChunk[]): ReadableStream<UIMessageChunk> {
-  return createUIMessageStream({
-    execute: ({ writer }) => {
-      for (const chunk of chunks) writer.write(chunk);
-    },
-  });
-}
 
 export async function POST(request: Request) {
   const supabase = await createClient();
@@ -110,27 +108,37 @@ export async function POST(request: Request) {
     // own scope never reads either, and the two answer the same closed shape.
     if (await isFamilyChatRequest(raw)) return familyChatResponse(request, raw, { refusal: refusalResponse });
     if (await isCohortChatRequest(raw)) return cohortChatResponse(request, raw, { refusal: refusalResponse });
+    if (isCompatChatRequest(raw)) return compatibilityChatResponse(request, raw, user.id, supabase);
     return ownChatResponse(request, raw, { systemPrompt: OWN_SYSTEM_PROMPT, refusal: refusalResponse });
   }
-  // The AI SDK transport posts an ENVELOPE around the turns, not the turns
-  // alone: `DefaultChatTransport` sends `{ id, messages, trigger, messageId? }`
-  // (ai 7.0.83, `PrepareSendMessagesRequest`). A schema admitting only
-  // `messages` refused every one of them with 400 `invalid_request`, so the
-  // compatibility panel on `/copilot/[scope]` could not send a single question
-  // and answered "Check your provider settings" for what was a client/server
-  // contract mismatch. The four keys the transport actually sends are named
-  // and bounded here; `.strict()` still refuses anything else, so an unknown
-  // key is a refusal rather than a silently ignored field.
-  const legacy = z.object({
-    id: z.string().max(200).optional(),
-    messageId: z.string().max(200).optional(),
-    trigger: z.enum(["submit-message", "regenerate-message"]).optional(),
-    messages: z.array(z.custom<UIMessage>()).max(100),
-  }).strict().safeParse(raw);
-  if (!legacy.success) return NextResponse.json({ error: "invalid_request" }, { status: 400 });
-  const body = legacy.data;
-  const scopeSegment = new URL(request.url).searchParams.get("scope") ?? "me";
-  const subject = await resolveSubjectForAccount(user.id, scopeSegment);
+  // Every registered body names a context token or a chat. The AI SDK
+  // transport body the compatibility panel sent until 23 October 2026 is
+  // refused like any other unregistered body.
+  return NextResponse.json({ error: "invalid_request" }, { status: 400 });
+}
+
+/**
+ * The compatibility branch: a scope with no canonical Copilot authority
+ * (`hasCanonicalCopilotScope` false), answered as before the register's body
+ * reached it, and keeping no conversation. Each question is sent and
+ * answered on its own; the answer is chat-completion-v1 with a fresh id that
+ * names nothing stored, or the registered refusal stream.
+ */
+async function compatibilityChatResponse(request: Request, raw: unknown, userId: string,
+  supabase: Awaited<ReturnType<typeof createClient>>): Promise<Response> {
+  if (!isSameOrigin(request) || new URL(request.url).search) {
+    return NextResponse.json({ error: "copilot_unavailable" }, { status: 403 });
+  }
+  const input = compatibilityBody.safeParse(raw);
+  if (!input.success) return NextResponse.json({ error: "invalid_request" }, { status: 400 });
+  // The token names this account, its auth session and the subject the page
+  // resolved; a token for anyone or anything else is the same opaque 404.
+  const token = readCompatChatToken(input.data.contextToken);
+  const account = await getSensitiveAccountContext();
+  if (!token || !account || account.user.id !== userId || token.accountId !== userId || token.sessionId !== account.sessionId) {
+    return NextResponse.json({ error: "not_found" }, { status: 404 });
+  }
+  const subject = await resolveSubjectForAccount(userId, `s-${token.subjectId}`);
   // Only a self or an adult subject has a chat scope today; a minor or an
   // embryo answers the same opaque 404 as an unknown segment until its own
   // scope exists.
@@ -149,10 +157,7 @@ export async function POST(request: Request) {
   // with the fixed refusal for its class; the message is neither stored nor
   // logged, only the class is. Family and cohort scopes pass their kind here
   // once the route resolves them; today it serves self and subject scopes.
-  const latest = latestUserText(body.messages);
-  if (latest === null) {
-    return NextResponse.json({ error: "invalid_request" }, { status: 400 });
-  }
+  const latest = input.data.message;
   const guardScope: GuardScope = { kind: scopeKind, displayLabel: subject.displayLabel };
   const verdict = classifyIntent(latest, guardScope);
   if (verdict.intent !== "allowed") {
@@ -165,7 +170,7 @@ export async function POST(request: Request) {
   const { data: settings } = await supabase
     .from("llm_settings")
     .select("provider, base_url, model, key_last4")
-    .eq("user_id", user.id)
+    .eq("user_id", userId)
     .maybeSingle();
   if (!settings) {
     return NextResponse.json(
@@ -216,7 +221,7 @@ export async function POST(request: Request) {
   const { data: keyRow } = await admin
     .from("llm_keys")
     .select("encrypted_key")
-    .eq("user_id", user.id)
+    .eq("user_id", userId)
     .maybeSingle();
   if (keyRow?.encrypted_key) {
     const hex = (keyRow.encrypted_key as unknown as string).replace(/^\\x/, "");
@@ -410,13 +415,12 @@ export async function POST(request: Request) {
     }),
   };
 
-  // The history the model sees: every earlier user turn is classified again
-  // and a gated one is dropped with the refusal that answered it, so a
-  // refused message never reaches the model through the client's resend.
+  // The model sees the one question, already through the intent gate: this
+  // branch keeps no history, and the client sends none.
   const result = streamText({
     model,
     system: ownLegacySystemMessage(subject.displayLabel, files.length),
-    messages: await convertToModelMessages(dropGatedTurns(body.messages, guardScope)),
+    messages: [{ role: "user", content: latest }],
     tools,
     stopWhen: stepCountIs(8),
   });
@@ -436,5 +440,7 @@ export async function POST(request: Request) {
     console.info(`[copilot] replaced ${output.violation}`);
     return refusalResponse(output.violation, refusalFor(output.violation, subject.displayLabel));
   }
-  return createUIMessageStreamResponse({ stream: replayChunks(chunks) });
+  // chat-completion-v1: the validated text only; tool parts are not sent on.
+  return NextResponse.json({ chatId: randomUUID(), message: { role: "assistant", content: text, citations: [], embryoFindings: [] } },
+    { headers: COMPATIBILITY_HEADERS });
 }
