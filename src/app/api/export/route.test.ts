@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import AdmZip from "adm-zip";
+import { readFileSync } from "node:fs";
 const mocks = vi.hoisted(() => ({ prepared: false, retired: false, stateInvalid: false, stateError: false, authorityFail: false, changedSource: false,
   stateRead: false, failAfterState: false, failFinalStreamCheck: false, originalReads: [] as string[], streamReads: 0, authChecks: 0, failStreamCheck: false,
   preparedId: "12345678-1234-4234-8234-000000000003", manifestId: "12345678-1234-4234-8234-000000000004",
@@ -579,5 +580,27 @@ describe("the archive against the export member plan", () => {
     const names = (await archive()).map(entry => entry.name);
     const members = new Set(names.map(name => (name.includes("/") ? name.slice(0, name.indexOf("/") + 1) : name)));
     expect(members).toEqual(producerArchiveMembers("legacy-account"));
+  });
+});
+
+/**
+ * G8.5: api.export's one open response divergence, driven rather than
+ * described. A signed-in GET without the __Host-inherit-export cookie, which
+ * is what /settings/data's export link sends, answers the synchronous ZIP;
+ * the register says that request is resource-not-found-v1. The row in
+ * docs/register-contract-divergence.json records it, and this test fails the
+ * day either side changes, so the row cannot outlive the behaviour.
+ */
+describe("the cookieless GET against the register (G8.5)", () => {
+  it("answers the synchronous archive where the register names resource-not-found-v1, and the ledger says so", async () => {
+    const response = await GET(new Request("https://inherit.test/api/export", { headers: { cookie: "sb-session=synthetic" } }));
+    expect(response.status).toBe(200);
+    expect(response.headers.get("content-type")).toBe("application/zip");
+    expect(new AdmZip(Buffer.from(await response.arrayBuffer())).getEntries().map(entry => entry.entryName)).toContain("manifest.json");
+    const register = JSON.parse(readFileSync("docs/route-register.json", "utf8")) as { routes: { id: string; methodRequestContracts?: { GET?: Record<string, unknown> } }[] };
+    expect(register.routes.find(route => route.id === "api.export")?.methodRequestContracts?.GET?.missingPrincipalBoundExportCookie)
+      .toBe("resource-not-found-v1");
+    const ledger = JSON.parse(readFileSync("docs/register-contract-divergence.json", "utf8")) as { endpointResponseDivergence: { routeId: string; method: string; case: string }[] };
+    expect(ledger.endpointResponseDivergence.map(row => `${row.routeId} ${row.method} ${row.case}`)).toContain("api.export GET no-export-cookie");
   });
 });
