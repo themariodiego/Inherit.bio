@@ -16,6 +16,36 @@ This entry follows the owner's decision of 23 October (decisions, "Density: visi
   - the domain landing `genome.subject` keeps its 480 cap on the same reading: it passes at 480 and misses at 481.
 - Planted: restoring the signed-only condition fails the test ("expected [ 'visibleCharacters' ] to not include 'visibleCharacters'"). So does dropping the 480 landing cap ("expected [] to include 'visibleCharacters'"). Both were reverted.
 
+## 2026-10-23 — G8.5: form verification, server actions by export, and api.export's answers
+
+This entry follows the coordinator's G8.5 task of 23 October, on local branch `local/g85` from `e050055c`. No product code, migration or existing assertion changes. Production is untouched.
+
+**New suite: `scripts/form-register-correspondence.test.ts`, 22/22**, over the new reader `scripts/form-contract-census.ts`.
+- It reads every shipped `<form>`: 26 forms (2 native, 24 handler-submitted) and 27 requests. The reader follows local and imported functions with their arguments bound, conditional bodies (as alternatives), literal discriminators, the AI SDK chat transport (pinned to `ai` 7.0.83 and the literal it was read from) and the props a form hands its submission to.
+- It holds each request to the register: target, method, closed body keys and `const`/`enum` values, forbidden fields, required headers (two conditional `-for-the-` headers in a table compared with the register in both directions), the `X-Inherit-CSRF` transport, JSON `Content-Type`, the statuses the code branches on, and the sign-out response against `sign-out-v1`.
+- The result is compared in both directions with `docs/register-contract-divergence.json#formRequestDivergence` (20 rows, 40 issues) and `formSubmissionReview` (2 rows, anchored to literal evidence). The exact census (26 forms, 27 requests, 22 request files) is pinned so a walker that loses a form fails.
+- `endpointResponseDivergence` (2 rows, `api.export`) is held to the register text it departs from, to literal evidence, and to `registeredStatuses`, so a 503 bound to the route makes the POST row stale.
+
+**Planted defects, each run over the real tree with one file replaced or added.** Every one fails the assertion meant to catch it:
+- `jurisdiction-form.tsx` without its `X-Inherit-Operation-Nonce` header: one new unrecorded issue, no stale row. Also planted on disk once and reverted: the main comparison test failed with exactly that key.
+- `llm-settings-form.tsx` sending the registered hosted body: the four recorded body issues read as stale.
+- A request to an unregistered path, to an unresolvable target, with an undeclared method, an undeclared field, a missing required field, a pinned literal changed (`operation: "approve"`), a forbidden field (`accountId`), no required header, no `X-Inherit-CSRF`, no `Content-Type`, and a status branch (418) no contract declares.
+- A conditional header: the Path A subject-draft body without the nonce fails; the Path B body without it passes.
+- A prop-delegated submission found through its caller, and a caller that sends nothing named as silent.
+- Native forms: a named field on body-forbidden `auth.sign-out` and an undeclared query field on `genome.browser`.
+- A sign-out response to `/auth/sign-in` closes the recorded row (read as stale); a 302 fails.
+- Conforming requests (with and without the conditional `subdivision`) produce no issue, so the checks are not noise.
+
+**Changed suite: `scripts/route-register-correspondence.test.ts`, 71/71.** A new describe block; no existing assertion changes. The ledger row type gains the optional `hostedBy` and `correction` fields.
+- It counts server actions by export and by inline directive, equal in both directions to `unregisteredServerActions`, and pins the one action.
+- It pins the registered pages that import each action (`hostedBy`), in both directions, and requires each to be a registered page.
+- It holds an unregistered action to no database, Storage, network or service-role call.
+- Planted: a second export in `acknowledge.ts`, an inline `"use server"` function in a planted page, a `createAdminClient().rpc` call, an added host and a removed host. Each is caught; the old file-level walk misses the second export.
+
+**Changed suite: `src/app/api/export/route.test.ts`, 42/42.** One new test; nothing else changes. A signed-in GET without the export cookie answers 200 `application/zip` with a manifest; the register still names `resource-not-found-v1` for that request; and the ledger records the divergence. Fixing either side fails it, so the row cannot outlive the behaviour.
+
+**Also.** `package.json`'s `test:source-inventories` gains the new suite. `pnpm gate:routes` passes unchanged.
+
 ## 2026-10-23 — The reviewed-document review download reads the clock once
 
 This entry follows the coordinator's decision of 23 October on the defect found during G5.6. `public.open_permission_review_download_v1` (PR 324's `20261016190000_path_b_reviewed_document.sql`) let `created_at` take its `clock_timestamp()` default and computed `expires_at` from a second reading. Whenever the clock advanced between the two readings, the table's check `expires_at <= created_at + interval '1 hour'` refused the insert. A named reviewer's download then failed at random: about one run of `path_b_reviewed_document` in three. The migration `20261023140000_review_download_clock.sql` sets both values from one reading. It is md5-guarded against PR 324's body (`243f68d2…` to `679b0ee2…` to `5d13a237…`) with its exact ACL. Nothing else changes. Production does not hold the function.
