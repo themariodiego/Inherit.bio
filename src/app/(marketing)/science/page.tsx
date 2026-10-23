@@ -27,14 +27,16 @@ export default function SciencePage() {
       <div className="mt-section stack-sections">
         <div className="grid gap-4 sm:grid-cols-2">
           <Link href="/science/limits" className="surface link-surface surface-pad-sm flex items-start justify-between gap-4 text-ink">
-            <div>
+            {/* The text column is the card less its arrow, so the sentence's
+                measure is the card's, not the width of its own one line. */}
+            <div className="min-w-0 flex-1">
               <h2 className="title">Limits and uncertainty</h2>
               <p className="mt-2 text-sm text-ink-muted">Coverage, reference populations, and resolution.</p>
             </div>
             <ArrowUpRight aria-hidden="true" className="link-arrow mt-1 size-4 shrink-0 text-forest" />
           </Link>
           <Link href="/science/positions" className="surface link-surface surface-pad-sm flex items-start justify-between gap-4 text-ink">
-            <div>
+            <div className="min-w-0 flex-1">
               <h2 className="title">Positions and builds</h2>
               <p className="mt-2 text-sm text-ink-muted">How observed variants are normalized to GRCh38.</p>
             </div>

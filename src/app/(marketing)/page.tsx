@@ -62,7 +62,7 @@ export default function LandingPage() {
     <>
       <section className="hero">
         <div className="hero-content mx-auto w-full max-w-6xl px-6 pt-12 pb-8 md:pt-20 md:pb-10">
-          <p className="eyebrow rise" style={stagger(0)}>
+          <p className="eyebrow rise max-w-measure" style={stagger(0)}>
             Open-source consumer genomics
           </p>
           <h1 className="display rise mt-6" style={stagger(1)}>
@@ -112,7 +112,9 @@ export default function LandingPage() {
       <section className="mt-section border-y border-line bg-card">
         <div className="mx-auto max-w-6xl px-6 py-section">
           <p className="eyebrow eyebrow-rule">How it works</p>
-          <ol className="mt-10 grid items-start gap-x-8 gap-y-10 md:grid-cols-2 lg:grid-cols-4">
+          {/* Two across from md: four across set each step's text at 28ch,
+              under the brief's 45ch floor (G2.5). */}
+          <ol className="mt-10 grid items-start gap-x-8 gap-y-10 md:grid-cols-2">
             {steps.map((s) => (
               <li key={s.n} className="step">
                 <span className="ordinal">{s.n}</span>

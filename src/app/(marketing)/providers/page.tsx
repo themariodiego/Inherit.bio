@@ -26,7 +26,10 @@ export default async function ProvidersPage() {
 
   return (
     <div className="mx-auto max-w-6xl px-6 py-section">
-      <header className="reading-head">
+      {/* The page's two top-level sections are the heading and the directory
+          (G2.5). The product blocks a phone shows inside each provider card
+          are <section>s of that card, 16px apart, not sections of the page. */}
+      <header className="reading-head" data-density-top-level-section>
         <p className="eyebrow">Provider directory</p>
         {/* "sequencing from" and "a real provider." each hold together, so a
             phone sets "Buy / sequencing from / a real provider." and no line
@@ -44,7 +47,7 @@ export default async function ProvidersPage() {
           with your data. When your results arrive, bring the raw file here.
         </p>
       </header>
-      <div className="mt-section">
+      <div className="mt-section" data-density-top-level-section>
         {providers.length > 0 ? (
           <ProviderDirectory providers={providers} />
         ) : (

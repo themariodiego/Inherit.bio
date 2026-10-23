@@ -110,6 +110,7 @@ type Provider = keyof DensityNativeObservers;
 const sources: Record<Provider, string> = {
   publicAndAuth: "density-real-state-fixtures", accountAndOwn: "density-owned-state-fixtures",
   pairedFamily: "density-family-state-fixtures", ownReport: "density-report-state-fixtures",
+  ownCarrier: "density-carrier-state-fixtures",
   cohortEntry: "density-cohort-entry-state-fixtures", fileTransfer: "density-file-transfer-state-fixtures",
   publishedCohort: "density-cohort-publication-state-fixtures", unansweredCopilot: "density-copilot-state-fixtures",
   jurisdiction: "density-jurisdiction-state-fixtures", liveCohort: "density-cohort-live-state-fixtures",
@@ -397,7 +398,7 @@ export function createRootDensityNativeObservers(ownership: FreshDensityRuntime,
     } catch { throw new Error(REFUSAL); }
   } });
   return { publicAndAuth: provider("publicAndAuth"), accountAndOwn: provider("accountAndOwn"), pairedFamily: provider("pairedFamily"),
-    ownReport: provider("ownReport"), cohortEntry: provider("cohortEntry"), fileTransfer: provider("fileTransfer"),
+    ownReport: provider("ownReport"), ownCarrier: provider("ownCarrier"), cohortEntry: provider("cohortEntry"), fileTransfer: provider("fileTransfer"),
     publishedCohort: provider("publishedCohort"), unansweredCopilot: provider("unansweredCopilot"), jurisdiction: provider("jurisdiction"),
     liveCohort: provider("liveCohort"), withdrawal: provider("withdrawal"), claimProcessing: provider("claimProcessing"),
     statisticalCohort: provider("statisticalCohort"), appealReview: provider("appealReview"), claimReview: provider("claimReview"),

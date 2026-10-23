@@ -37,5 +37,46 @@
  "sources": {
   "before": "cf79b1b6 (PR 324 head)",
   "after": "ac13250f (local/density)"
+ },
+ "round3": {
+  "what": "The same 70 captures after the round-3 source fixes (science link cards, the provider page's two top-level sections, the landing steps two across, the hero eyebrow held to the measure), evaluated by the same evaluator; evaluation-round3.json.",
+  "pngsByteIdenticalToAfter": 70,
+  "everyBudget": {
+   "contract": 14,
+   "corrected": 42
+  },
+  "relativeWithin": {
+   "contract": 12,
+   "corrected": 26,
+   "of": 28,
+   "textBound": 14
+  },
+  "correctedMisses": {
+   "visibleCharacters": 24,
+   "proseMin": 3,
+   "proseMax": 2,
+   "relative": 2
+  },
+  "changedVerdicts": {
+   "marketing.providers 390x844": {
+    "before": [
+     "sectionGap",
+     "relative"
+    ],
+    "after": [
+     "relative"
+    ]
+   },
+   "science.index 1280x800": {
+    "before": [
+     "proseMin"
+    ],
+    "after": []
+   }
+  },
+  "triedAndReverted": {
+   "authColumnPaddingRemovedFrom640": "forgot-password 1280 passes, but sign-up 1280 ink rises from 0.594 to 0.633 of its predecessor, over the 0.6 ceiling (floor 0.518, not text-bound)",
+   "landingGuideTwoAcross": "its labels and paragraphs reach the 45ch floor, but the third plate moves below the 1280 fold, which changes the page's 700-character result (744 to under 700) and its first-screen ink"
+  }
  }
 }
