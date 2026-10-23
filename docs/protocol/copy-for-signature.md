@@ -1,12 +1,20 @@
 # Copy drafted for signature — D-102 and D-103
 
-**Status: SIGNED 2026-09-14, not yet wired.** Owner decision 2026-09-13: "I
-draft, you sign." Both are now approved and this file becomes the record of
-what was approved and when.
+**Status: SIGNED 2026-09-14. D-102 is wired; D-103 is wired 2026-10-23
+(`72ba6c53`, local branch `local/d103`, unmerged).** Owner decision
+2026-09-13: "I draft, you sign." Both are now approved and this file becomes
+the record of what was approved and when.
 
 - **D-103's five statements: approved VERBATIM**, including statement 5's
-  pointer to the published deadlines rather than the figures. Wiring them into
-  the confirm body is queued work, not done here.
+  pointer to the published deadlines rather than the figures. **Wired
+  2026-10-23 in `72ba6c53`** (local branch `local/d103`, not yet merged): the
+  five live in `src/copy/family/adult-subject-statements.ts`, exactly as
+  signed (the four rows below and the split `revocable`), and the Path A
+  review on `/withdraw/session` renders each as its own checkbox named by its
+  sentence, with Accept disabled until all five are ticked. The confirm body
+  carries the server-published keys, and the route refuses any other list.
+  The readability gate measures them there as ordinary copy: 8.90, 3.02 and
+  4.79 for the three of 15 words or more; the two shorter ones are not graded.
   - **BLOCKED 2026-09-14 on one sentence, and the measurement is the reason.**
     Putting the five into `src/copy/family/` subjects them to the readability
     gate, which holds a long block to grade 9. The approved `revocable`
