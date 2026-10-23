@@ -1271,7 +1271,11 @@ const CLIENT_FORM_REVIEW: ClientFormReview[] = [
   // one-time operation nonce in the X-Inherit-Operation-Nonce header, and the
   // form or its section a data-operation-nonce attribute. Still one actionless
   // form each, the same handler cancelling native submission, the same target.
-  { file: "src/components/family/invite-adult-form.tsx", forms: 1, sha256: "9aabb8cb1827216e5da6f6c7d4966510f24e50b836af4fcdd855287bd343c641" },
+  // G8.5 (2026-10-23): re-reviewed after the invitation moved to the registered
+  // Path A body (contactEmail, kind "adult", no adultAttestation) and branches on
+  // the registered 403. Still one actionless form, the same handler cancelling
+  // native submission before any field is read, the same target and header.
+  { file: "src/components/family/invite-adult-form.tsx", forms: 1, sha256: "fecb2937a0caa1e67bb8c33aaf4b332dc4556f583bb03f45aeb66d30ac6102f6" },
   { file: "src/components/settings/jurisdiction-form.tsx", forms: 1, sha256: "fb5b804cf7fa62a68c04f7371ef1376ba5812ed680c5e679fa8deb72ae11c404" },
   { file: "src/components/settings/llm-settings-form.tsx", forms: 1, sha256: "7b669b559f7db5b0fe391bd39ce8095a33bd8c37cd80d37e06d138ec0d55f45b" },
   // G2.1 (2026-10-16): re-reviewed after the new-person form gained the

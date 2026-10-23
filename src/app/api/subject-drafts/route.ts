@@ -12,11 +12,21 @@ import { isPathBDraftPayload, isPathBReviewedDocumentDraftPayload } from "@/lib/
 import { createPathBReviewedDocumentDraft } from "@/lib/uploads/path-b-reviewed-document-server";
 import { createPathBDraft } from "@/lib/uploads/path-b-routes";
 
+/**
+ * The register's Path A body (closed-subject-draft-create-v1, owner decision
+ * of 23 October 2026, G8.5): `{ kind: "adult", adultFlow:
+ * "path-a-own-account", contactEmail, requestId, note? }`. It replaced the
+ * route's own `{ kind: "other_adult", email, adultAttestation, ... }`; the
+ * form still asks the inviter to confirm the person is an adult, and the
+ * browser requires that box before it sends anything, but the registered
+ * body carries no field for it, so nothing about it is sent or stored. The
+ * request id is the one the route has always used so a retried click
+ * reserves one invitation.
+ */
 const requestSchema = z.object({
-  kind: z.literal("other_adult"),
+  kind: z.literal("adult"),
   adultFlow: z.literal("path-a-own-account"),
-  email: z.email().max(320),
-  adultAttestation: z.literal(true),
+  contactEmail: z.string().trim().pipe(z.email().max(254)),
   requestId: z.uuid(),
   // The optional note the invited person reads in the invitation mail
   // (brief §5 §5.2). Plain text only: no control characters, so the mail
@@ -50,9 +60,12 @@ export async function POST(request: Request) {
 
   // The inviter's own declared jurisdiction, read now rather than when the
   // form loaded (G5.1a, G5.1b). Without the acceptance flag every account
-  // resolves unreviewed, as before.
-  if ((await accountCapability(user.id, "third_party_adult_analysis")).status !== "permitted") {
-    return NextResponse.json({ error: "jurisdiction_unavailable" }, { status: 409 });
+  // resolves unreviewed, as before. The refusal is the register's
+  // capability-denied-api-v1 (403, with the row's own words), as the Path B
+  // bodies answer it; it was a 409 until 23 October 2026.
+  const decision = await accountCapability(user.id, "third_party_adult_analysis");
+  if (decision.status !== "permitted") {
+    return NextResponse.json({ error: "jurisdiction_unavailable", message: decision.userFacingCopy }, { status: 403 });
   }
 
   const parsed = requestSchema.safeParse(payload);
@@ -60,7 +73,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "invalid_request" }, { status: 400 });
   }
 
-  const email = normalizedEmail(parsed.data.email);
+  const email = normalizedEmail(parsed.data.contactEmail);
   if (email === normalizedEmail(user.email)) {
     return NextResponse.json({ error: "invalid_request" }, { status: 400 });
   }

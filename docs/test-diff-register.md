@@ -2,6 +2,27 @@
 
 This entry follows the owner's decisions of 23 October (decisions, "G8.5: forms, CSRF, the server action and the Resend webhook"), items 1, 3 and 4, on local branch `local/g85-shapes` from `287a1408`. The CSRF token (item 2) and sign-out are another branch's work and are untouched here. Production is untouched.
 
+### Path A moves to the registered body and the registered 403 (item 1)
+
+`src/app/api/subject-drafts/route.ts` and `src/components/family/invite-adult-form.tsx` now use the register's Path A body: `{ kind: "adult", adultFlow: "path-a-own-account", contactEmail, requestId, note? }`. The old body was `{ kind: "other_adult", email, adultAttestation, ... }`. An unreviewed jurisdiction gets `capability-denied-api-v1`: 403 `{ error: "jurisdiction_unavailable", message }` with the row's own words, as the Path B bodies answer it. It was 409. The form shows its blocked sentence on 403. The attestation box stays required by the browser; the registered body has no field for it, so it is no longer sent. Nothing stored changes: the invitation door never took the attestation or the kind. The Path A ledger row closes and is removed.
+
+**Changed suite: `src/lib/embryos/invitation-keyring-routes.test.ts`, the Path A block.**
+- The `adult()` request and the no-nonce request now send the registered body. The old body was `{ kind: "other_adult", email, adultAttestation: true, requestId }`. Every assertion on them is unchanged: the keyed digest set, the quota keys, the nonce hash, 202, 503, and 400 with no reservation.
+- New: the former body, `kind: "other_adult"`, an added `adultAttestation`, an added `email`, a missing `contactEmail`, a missing `requestId` and an invalid address are each refused 400 with no database call.
+- New: an unreviewed jurisdiction answers 403 with the row's copy, for a valid and an invalid body, with no database call.
+- New: an address with spaces and capitals is normalized before it is keyed, and the optional note reaches the queued mail.
+
+**Changed suite: `src/lib/embryos/routes.test.ts`.** The Path A body in the co-parent "must not parse" list is now the registered one. The assertion is unchanged: it must not parse as a co-parent body.
+
+**Changed suite: `scripts/route-register-correspondence.test.ts`.** The source seal of `invite-adult-form.tsx` in `CLIENT_FORM_REVIEW` moves from `9aabb8cb…` to `fecb2937…`, re-reviewed: still one actionless form, with the same handler cancelling native submission before any field is read, the same target and the same nonce header. The seal failed with "reviewed client form source changed" until it was updated.
+
+**Changed browser spec, not run here: `e2e/jurisdiction-declaration.spec.ts`.**
+- The direct POST sends the registered body. Its expected answer changes from 409 `{ error }` to 403 `{ error, message: TEST_DENY_SENTENCE }`.
+- The page-load race expects 403 where it expected 409. The rendered sentence and the "nothing is created" count are unchanged.
+- It needs the hosted browser suite. The shared local database lacks the nonce doors this route calls.
+
+**Planted on disk:** the form sending `kind: "other_adult"` again gives one unrecorded issue, "sends kind=other_adult where the registered body requires adult". Restoring the handler's 409 fails the new 403 test. Both were reverted.
+
 ### The register lists the harmless extras (item 1, register half)
 
 The register gains, each in its own vocabulary next to the existing contracts:

@@ -75,11 +75,13 @@ const post = (path: string, body: unknown, headers: Record<string, string> = {})
 });
 const coParent = () => post("/api/invitations", { targetCohortDraftId: DRAFT, contactEmail: INVITED });
 // 20261023120000 (G5.6): /family/invite renders a one-time nonce for this account and session.
-const adult = () => post("/api/subject-drafts", {
-  kind: "other_adult", adultFlow: "path-a-own-account", email: INVITED,
-  adultAttestation: true, requestId: crypto.randomUUID(),
-}, { "x-inherit-operation-nonce": mintPersonOperationNonce({ accountId: ACCOUNT, sessionId: SESSION,
+// 2026-10-23 (G8.5): the register's Path A body, closed-subject-draft-create-v1.
+const pathA = (body: Record<string, unknown> = {}) => ({
+  kind: "adult", adultFlow: "path-a-own-account", contactEmail: INVITED, requestId: crypto.randomUUID(), ...body,
+});
+const pageNonce = () => ({ "x-inherit-operation-nonce": mintPersonOperationNonce({ accountId: ACCOUNT, sessionId: SESSION,
   operation: "adult_invitation_create", targetId: ACCOUNT }) });
+const adult = (body: Record<string, unknown> = pathA()) => post("/api/subject-drafts", body, pageNonce());
 
 function sentArgs(): Record<string, unknown> {
   expect(mocks.rpc).toHaveBeenCalledTimes(1);
@@ -162,10 +164,41 @@ describe("POST /api/subject-drafts (adult invitation)", () => {
   });
 
   it("refuses an invitation without the page's nonce before reserving anything", async () => {
-    const response = await inviteAdult(post("/api/subject-drafts", { kind: "other_adult", adultFlow: "path-a-own-account",
-      email: INVITED, adultAttestation: true, requestId: crypto.randomUUID() }));
+    const response = await inviteAdult(post("/api/subject-drafts", pathA()));
     expect(response.status).toBe(400);
     expect(mocks.rpc).not.toHaveBeenCalled();
+  });
+
+  it("refuses the route's former body and every field the registered body does not declare, before reserving anything", async () => {
+    for (const body of [
+      { kind: "other_adult", adultFlow: "path-a-own-account", email: INVITED, adultAttestation: true, requestId: crypto.randomUUID() },
+      pathA({ kind: "other_adult" }),
+      pathA({ adultAttestation: true }),
+      pathA({ email: INVITED }),
+      { ...pathA(), contactEmail: undefined },
+      { ...pathA(), requestId: undefined },
+      pathA({ contactEmail: "not-an-address" }),
+    ]) {
+      expect((await inviteAdult(adult(body))).status).toBe(400);
+    }
+    expect(mocks.rpc).not.toHaveBeenCalled();
+  });
+
+  it("refuses an unreviewed jurisdiction with the registered 403 and the row's own words, before reading the body", async () => {
+    mocks.capability.mockResolvedValue({ status: "unreviewed", userFacingCopy: "Synthetic refusal copy." });
+    for (const body of [pathA(), { not: "a draft body" }]) {
+      const response = await inviteAdult(adult(body));
+      expect(response.status).toBe(403);
+      expect(await response.json()).toEqual({ error: "jurisdiction_unavailable", message: "Synthetic refusal copy." });
+    }
+    expect(mocks.rpc).not.toHaveBeenCalled();
+  });
+
+  it("keeps the note optional and passes the normalized address on", async () => {
+    mocks.rpc.mockResolvedValue({ data: [{ invitation_id: crypto.randomUUID() }], error: null });
+    expect((await inviteAdult(adult(pathA({ contactEmail: ` ${INVITED.toUpperCase()} `, note: "Synthetic note." })))).status).toBe(202);
+    expect(mocks.update).toHaveBeenCalledWith({ template_payload: { note: "Synthetic note." } });
+    expectKeyedCall(sentArgs());
   });
 
   it("fails closed on a malformed keyring instead of sending fewer revisions", async () => {

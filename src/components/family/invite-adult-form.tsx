@@ -26,6 +26,12 @@ import {
  * invited person accepts in their own account, adds their own file and
  * grants from their side; nothing here touches their data. The secondary
  * Path B link is not rendered, because Path B has no screen to link to.
+ *
+ * It sends the register's Path A body (closed-subject-draft-create-v1,
+ * owner decision of 23 October 2026): the kind, the flow, `contactEmail`,
+ * the request id and the optional note. The attestation box is required by
+ * the browser before anything is sent; the registered body has no field for
+ * it, so it is not sent.
  */
 export function InviteAdultForm({ operationNonce }: {
   /** The one-time nonce the page rendered for this invitation (G5.6, 23 Oct 2026). */
@@ -59,17 +65,16 @@ export function InviteAdultForm({ operationNonce }: {
           method: "POST",
           headers: { "content-type": "application/json", "X-Inherit-Operation-Nonce": operationNonce },
           body: JSON.stringify({
-            kind: "other_adult",
+            kind: "adult",
             adultFlow: "path-a-own-account",
-            email: String(data.get("email") ?? ""),
-            adultAttestation: data.get("adultAttestation") === "on",
+            contactEmail: String(data.get("email") ?? ""),
             requestId: requestId.current,
             ...(note.length > 0 ? { note } : {}),
           }),
         });
         setPending(false);
         if (!response.ok) {
-          setError(response.status === 409 ? BLOCKED_HERE_STATUS : REQUEST_FAILED_STATUS);
+          setError(response.status === 403 ? BLOCKED_HERE_STATUS : REQUEST_FAILED_STATUS);
           return;
         }
         setComplete(true);

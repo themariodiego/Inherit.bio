@@ -245,13 +245,14 @@ test("/family/health-picture jurisdiction-unavailable: an account declared as th
   await expect(page.getByRole("heading", { name: REFUSAL_HEADING })).toBeVisible();
   await expect(page.getByLabel("Their email address")).toHaveCount(0);
 
+  // The register's Path A body and its capability-denied-api-v1 answer (G8.5, 23 October 2026).
   const draft = await page.request.post("/api/subject-drafts", {
     headers: { origin: MAIN },
-    data: { kind: "other_adult", adultFlow: "path-a-own-account", email: `someone-${runId}@e2e.local`,
-      adultAttestation: true, requestId: randomUUID() },
+    data: { kind: "adult", adultFlow: "path-a-own-account", contactEmail: `someone-${runId}@e2e.local`,
+      requestId: randomUUID() },
   });
-  expect(draft.status()).toBe(409);
-  expect(await draft.json()).toEqual({ error: "jurisdiction_unavailable" });
+  expect(draft.status()).toBe(403);
+  expect(await draft.json()).toEqual({ error: "jurisdiction_unavailable", message: TEST_DENY_SENTENCE });
 
   // Adult self-analysis is the one capability no jurisdiction restricts.
   await page.goto("/genome/me");
@@ -274,7 +275,7 @@ test("/family/invite: a declaration changed between page load and submit decides
   await page.getByRole("checkbox").check();
   const submitted = page.waitForResponse(response => response.url().endsWith("/api/subject-drafts"));
   await page.getByRole("button", { name: "Send invitation" }).click();
-  expect((await submitted).status()).toBe(409);
+  expect((await submitted).status()).toBe(403);
   await expect(page.locator("form").getByRole("alert")).toHaveText("Inherit cannot send invitations here yet.");
   const { count } = await adminClient().from("adult_subject_drafts").select("id", { count: "exact", head: true })
     .eq("owner_account_id", accountId);
