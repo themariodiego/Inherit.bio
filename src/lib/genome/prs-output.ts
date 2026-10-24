@@ -28,42 +28,6 @@ export function serializePrsCoverage(
   };
 }
 
-/** The chat tool reads only coverage; forbidden legacy quantities never enter its context. */
-export async function loadPrsForChat(db: Db, subjectId: string, scoreId: string, hasFiles: boolean) {
-  if (!/^PGS\d{6}$/.test(scoreId)) return { error: "unknown score id" };
-  const { data: meta, error: metaError } = await db
-    .from("prs_scores")
-    .select("pgs_id, name, trait, n_variants, ancestry_note, citation")
-    .eq("pgs_id", scoreId)
-    .maybeSingle();
-  if (metaError) return { error: "score metadata unavailable" };
-  if (!meta) return { error: "unknown score id" };
-
-  let row: { matched: number } | undefined;
-  if (hasFiles) {
-    const { data, error } = await db
-      .from("user_prs")
-      .select("matched,genome_files!inner(single_logical_sample_verified_at)")
-      .eq("subject_id", subjectId)
-      .eq("pgs_id", scoreId)
-      // New report choices never enable Copilot; its own scoped authorization
-      // is a separate workflow. Keep this legacy chat path on legacy sources.
-      .is("genome_files.single_logical_sample_verified_at", null)
-      .order("computed_at", { ascending: false })
-      .limit(1);
-    if (error) return { error: "score coverage unavailable" };
-    row = data?.[0];
-  }
-  return {
-    pgs_id: meta.pgs_id,
-    name: meta.name,
-    trait: meta.trait,
-    ancestry_note: meta.ancestry_note,
-    citation: meta.citation,
-    result: serializePrsCoverage(row, meta.n_variants),
-  };
-}
-
 /** Account-scoped export, retaining per-file provenance but not unvalidated quantities. */
 export async function loadPrsForExport(db: Db, userId: string) {
   const rows: { pgs_id: string; file_id: string; matched: number; computed_at: string }[] = [];

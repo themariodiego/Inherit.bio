@@ -12,7 +12,7 @@ On local branch `local/chat` from `0a291af0`. It follows the owner's G8.5 decisi
   - its token, `src/lib/copilot/compat-chat-token.ts`;
   - the panel, `src/components/chat/chat-panel.tsx`;
   - its consent dialog, `src/components/chat/consent-dialog.tsx`;
-  - `hasCanonicalCopilotScope` and `ownLegacySystemMessage`;
+  - `hasCanonicalCopilotScope`, `ownLegacySystemMessage` and `loadPrsForChat` (`src/lib/genome/prs-output.ts`), the branch's PRS loader;
   - `ALLOW_PRIVATE_LLM_ENDPOINTS` in `.env.example` and the self-hosting guide, which only the branch read.
 - **Answers:**
   - The retired body (`{ contextToken, message }` under the `copilot-compat-context-v1` MAC) is now an unreadable token: 404 `not_found`, before anything is read.
@@ -72,6 +72,15 @@ On local branch `local/chat` from `0a291af0`. It follows the owner's G8.5 decisi
   - The two ledger-mutation tests use the own route's entry.
 - `scripts/env-gate.test.ts`, 38/38: direct keys 26 → 25, read keys 49 → 48 (48 → 47 in the claimant plant), template and guide keys 41 → 40, guide names 52 → 51. All of this is the one retired variable.
 - `scripts/self-host-local.test.ts`, 31/31: the exported-template-key refusal uses `ALLOW_LOCAL_MODEL_ENDPOINTS` in place of the retired `ALLOW_PRIVATE_LLM_ENDPOINTS`.
+- `src/lib/genome/prs-output.test.ts`, 23/23 (was 35):
+  - Its "chat PRS query boundary" block (6 tests, 12 cases, over `loadPrsForChat`) is removed with the loader.
+  - The wiring test's chat half used to expect `loadPrsForChat(admin, subject.id, score_id, files.length > 0)` in `src/app/api/chat/route.ts`. It now reads that route together with `src/lib/copilot/own-chat-route.ts`, and expects:
+    - `await pages('prs', ownChatPrsSchema)` and `capturedPrsResult(rows, score_id)`;
+    - no `loadPrsForChat`;
+    - no `user_prs` read;
+    - no ClinVar or gnomAD field, as before.
+  - The export half is unchanged.
+  - The full suite found this pin after the first commit, and it is fixed in the second.
 - Removed with their code: `src/app/api/chat/compatibility.test.ts` (7), `src/components/chat/chat-panel.test.ts` (5) and `src/lib/copilot/compat-chat-token.test.ts` (6).
 
 **Planted defects.** Each was applied on disk, run and reverted, and each fails its test:
