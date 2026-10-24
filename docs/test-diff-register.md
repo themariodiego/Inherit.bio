@@ -1,3 +1,13 @@
+## 2026-10-24 — Two e2e fixes found on the first fresh-stack browser run
+
+The first local browser run with every migration applied (a fresh `sequence` stack, 279 migrations) failed in two ways that no unit suite could see.
+
+- **The fixture key.** `e2e/helpers/operation-nonce.ts` (G5.6) and `e2e/helpers/session-csrf.ts` (CSRF) loaded the Playwright configuration with a dynamic `import()`. That returns the CommonJS-compiled config wrapped once more (`{ default: { default: config } }`), so `webServer` read as undefined and every caller threw "Local browser fixture key missing". The new `e2e/helpers/playwright-config.ts` unwraps it, and both helpers use it. No assertion changes. The four `jurisdiction-declaration` and `adult-subject-invitation` cases that failed this way are re-run.
+- **`e2e/jurisdiction-declaration.spec.ts`, the first declaration's ledger event.**
+  - Old: `event.audit_principal_id === null`, "one pseudonymized ledger event records the first declaration".
+  - New: `audit_principal_id` is a string and is not the account id, "one ledger event records the first declaration and names its actor by pseudonym".
+  - Why: G5.6's approved behaviour change (decisions, "Stated behaviour change: export completeness and person attribution (G5.6)") makes the jurisdiction declaration consume the page's nonce, so its event names the person's pseudonym. `supabase/tests/legal_audit_attribution_completeness.sql` asserts it is that account's pseudonym ("and the declaration names the account that declared"). The old assertion described the pre-G5.6 ledger. On the fresh stack, all three declarations of the run (FR, US, DE) carry a non-null principal.
+
 ## 2026-10-23 — Merge of G8.5's form shapes and the session CSRF token
 
 The CSRF commit (`local/g85-csrf`, from `287a1408`) merged onto the follow-up, which already held D-103 and G8.5's form shapes. Each side's assertions are kept. These changes follow from the two meeting, and each is checked against the merged tree.

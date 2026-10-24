@@ -1,6 +1,7 @@
 import type { APIRequestContext, BrowserContext } from "@playwright/test";
 import { createServerClient } from "@supabase/ssr";
 import { ANON_KEY, SUPABASE_URL } from "../helpers";
+import { loadPlaywrightConfig } from "./playwright-config";
 
 /**
  * The one-time operation nonces of the person-caused writers (G5.6, owner
@@ -32,7 +33,7 @@ export async function mintedOperationNonce(context: BrowserContext, accountId: s
   // Loaded here, not at the top: the configuration refuses to load outside a
   // browser run, and the density fixtures import this module for the
   // settings nonce alone.
-  const { default: config } = await import("../../playwright.config");
+  const config = await loadPlaywrightConfig();
   const servers = Array.isArray(config.webServer) ? config.webServer : [config.webServer];
   const fixtureKey = servers[0]?.env?.BYOK_ENCRYPTION_KEY;
   if (!fixtureKey) throw new Error("Local browser fixture key missing");

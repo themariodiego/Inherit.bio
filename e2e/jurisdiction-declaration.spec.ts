@@ -120,8 +120,12 @@ test("/settings: the first sign-in answers where the person lives, from a select
   expect(profile!.jurisdiction_declared_at).toBeTruthy();
   const { data: events } = await adminClient().from("legal_audit_log").select("coded_context, audit_principal_id")
     .eq("event_code", "jurisdiction.declared").gte("occurred_at", startedAt);
+  // Since G5.6 (decisions, "Stated behaviour change: export completeness and person attribution")
+  // the declaration names its actor, by pseudonym only; supabase/tests/legal_audit_attribution_completeness.sql
+  // proves the pseudonym is this account's.
   expect((events ?? []).some(event => event.coded_context.code === "FR" && event.coded_context.first === true
-    && event.audit_principal_id === null), "one pseudonymized ledger event records the first declaration").toBe(true);
+    && typeof event.audit_principal_id === "string" && event.audit_principal_id !== accountId),
+  "one ledger event records the first declaration and names its actor by pseudonym").toBe(true);
 
   // Declared: product pages open, and settings shows the answer and what changing it ends.
   await page.goto("/overview");

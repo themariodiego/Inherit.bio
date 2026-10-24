@@ -3,6 +3,7 @@ import type { APIResponse, BrowserContext, Page } from "@playwright/test";
 import { createServerClient } from "@supabase/ssr";
 import { ANON_KEY, SUPABASE_URL } from "../helpers";
 import type { CsrfRoute } from "../../src/lib/security/session-csrf-core";
+import { loadPlaywrightConfig } from "./playwright-config";
 
 /**
  * The one-time `X-Inherit-CSRF` token (src/lib/security/session-csrf-core.ts;
@@ -18,7 +19,7 @@ type Cookies = Awaited<ReturnType<BrowserContext["cookies"]>>;
 
 async function fixtureKey(): Promise<string> {
   // Loaded here, not at the top: the configuration refuses to load outside a browser run.
-  const { default: config } = await import("../../playwright.config");
+  const config = await loadPlaywrightConfig();
   const servers = Array.isArray(config.webServer) ? config.webServer : [config.webServer];
   const key = servers[0]?.env?.BYOK_ENCRYPTION_KEY;
   if (!key) throw new Error("Local browser fixture key missing");
