@@ -42,7 +42,8 @@ export default async function RightsSessionPage() {
   });
   // The one-time X-Inherit-CSRF tokens this page's forms send: api.withdraw's
   // for the rights session, and api.invitation-accept's for a signed-in
-  // co-parent. Minted for this render and stored nowhere.
+  // co-parent or Path A adult accepting. Minted for this render and stored
+  // nowhere.
   const rights = readRightsCsrfSession(request);
   const csrf = {
     ...(rights ? { "api.withdraw": sessionCsrfToken(rights, "api.withdraw") } : {}),

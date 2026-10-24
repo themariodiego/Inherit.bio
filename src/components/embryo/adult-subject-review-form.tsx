@@ -4,9 +4,13 @@ import { useState } from "react";
 import Link from "next/link";
 import { useCsrf } from "@/components/security/csrf-provider";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { ADULT_SUBJECT_STATEMENTS_HEADING } from "@/copy/family/adult-subject-statements";
+import { PATH_B_REQUEST_COPY } from "@/copy/upload/other-adult";
 import type { AdultSubjectReview } from "@/lib/embryos/adult-subject-review";
 import { route } from "@/lib/primary-routes";
+import { otherAdultTypedNameIsValid } from "@/lib/uploads/other-adult-upload";
 
 /**
  * The three answers to an adult-subject invitation, from the rights session
@@ -15,10 +19,15 @@ import { route } from "@/lib/primary-routes";
  * changed.
  *
  * Accepting (D-103): the five signed statements the server published, each
- * its own checkbox named by its sentence. Accept stays disabled until every
- * one is ticked, and the body carries only the keys that are ticked, so it
- * names the published list exactly when, and only when, all five are. The
- * statements render only for the account that may accept; signed out, the
+ * its own checkbox named by its sentence, and the person's typed name (owner
+ * decision of 23 October 2026), with the label and rule Path B's own
+ * signature uses. Accept stays disabled until every statement is ticked and
+ * the name has two parts of two characters or more, and the body carries
+ * only the keys that are ticked, so it names the published list exactly
+ * when, and only when, all five are. It goes to api.invitation-accept, the
+ * route the register names for Path A, with that route's session token;
+ * refusing and deleting stay on api.withdraw with its own. The statements
+ * and the name render only for the account that may accept; signed out, the
  * page is the one it was.
  */
 
@@ -49,32 +58,56 @@ const RECEIPTS: Record<Outcome, { title: string; body: string }> = {
 export function AdultSubjectReviewForm({ review }: { review: AdultSubjectReview }) {
   const [status, setStatus] = useState<Status>("ready");
   const [ticked, setTicked] = useState<Record<string, boolean>>({});
+  const [typedName, setTypedName] = useState("");
   const confirmation = review.acceptanceBlockedBy === null ? review.confirmation : null;
   const allTicked = confirmation !== null
     && confirmation.statements.every(statement => ticked[statement.key] === true);
-  const csrf = useCsrf("api.withdraw");
+  const nameValid = otherAdultTypedNameIsValid(typedName);
+  const rights = useCsrf("api.withdraw");
+  const accept = useCsrf("api.invitation-accept");
 
-  async function answer(operation: Operation) {
-    if (status !== "ready") return;
-    if (operation === "confirm" && (!confirmation || !allTicked)) return;
+  /** Accepting: api.invitation-accept's adult body and its invitation-accepted-v1 answer. */
+  async function confirm() {
+    if (status !== "ready" || !confirmation || !allTicked || !nameValid) return;
     setStatus("pending");
     try {
-      const payload = operation === "confirm" && confirmation ? {
-        operation, nonce: review.nonce,
-        subjectArtifact: {
-          artifactVersion: review.artifact.version,
-          artifactPresentationToken: confirmation.presentationToken,
-          affirmed: true,
-          statementKeys: confirmation.statements.filter(statement => ticked[statement.key] === true)
-            .map(statement => statement.key),
-        },
-      } : { operation, nonce: review.nonce };
+      const response = await fetch("/api/invitations/accept", {
+        method: "POST", credentials: "same-origin", cache: "no-store",
+        headers: { "Content-Type": "application/json", "X-Inherit-CSRF": accept.value() },
+        body: JSON.stringify({
+          nonce: confirmation.nonce,
+          subjectArtifact: {
+            artifactKey: "consent.subject-adult",
+            artifactVersion: review.artifact.version,
+            artifactPresentationToken: confirmation.presentationToken,
+            affirmed: true,
+            statementKeys: confirmation.statements.filter(statement => ticked[statement.key] === true)
+              .map(statement => statement.key),
+            typedName: typedName.trim(),
+          },
+        }),
+      });
+      accept.accept(response);
+      const body = await response.json().catch(() => null);
+      if (response.status !== 200 || body?.invitationKind !== "adult_subject" || body?.status !== "accepted") {
+        setStatus("failed");
+        return;
+      }
+      setStatus("accepted");
+    } catch { setStatus("failed"); }
+  }
+
+  /** Refusing and deleting: api.withdraw's `{operation, nonce}` and its rights-operation-accepted-v1 receipt. */
+  async function answer(operation: Exclude<Operation, "confirm">) {
+    if (status !== "ready") return;
+    setStatus("pending");
+    try {
       const response = await fetch("/api/withdraw/session", {
         method: "POST", credentials: "same-origin", cache: "no-store",
-        headers: { "Content-Type": "application/json", "X-Inherit-CSRF": csrf.value() },
-        body: JSON.stringify(payload),
+        headers: { "Content-Type": "application/json", "X-Inherit-CSRF": rights.value() },
+        body: JSON.stringify({ operation, nonce: review.nonce }),
       });
-      csrf.accept(response);
+      rights.accept(response);
       const body = await response.json().catch(() => null);
       if (response.status !== 202 || body?.status !== "accepted" || body?.operation !== operation) {
         setStatus("failed");
@@ -155,7 +188,15 @@ export function AdultSubjectReviewForm({ review }: { review: AdultSubjectReview 
                 </label>
               ))}
             </fieldset>
-            <Button type="button" size="lg" disabled={busy || !allTicked} onClick={() => answer("confirm")}>
+            <div className="max-w-md space-y-2">
+              <Label htmlFor="adult-subject-typed-name">{PATH_B_REQUEST_COPY.typedNameLabel}</Label>
+              <Input id="adult-subject-typed-name" name="typedName" autoComplete="name" maxLength={200}
+                value={typedName} disabled={busy} aria-describedby="adult-subject-typed-name-rule"
+                aria-invalid={typedName.trim().length > 0 && !nameValid}
+                onChange={event => setTypedName(event.target.value)} />
+              <p id="adult-subject-typed-name-rule" className="caption">{PATH_B_REQUEST_COPY.typedNameError}</p>
+            </div>
+            <Button type="button" size="lg" disabled={busy || !allTicked || !nameValid} onClick={() => confirm()}>
               {busy ? "Saving your choice…" : "Accept through my account"}
             </Button>
           </>

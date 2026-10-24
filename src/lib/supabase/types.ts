@@ -7803,6 +7803,17 @@ export type Database = {
         Args: { p_file_id: string; p_claim_token_hash: string }
         Returns: undefined
       }
+      accept_adult_subject_invitation_v1: {
+        Args: {
+          p_account_email_hmac_set: Json
+          p_account_id: string
+          p_auth_session_id: string
+          p_nonce: string
+          p_session_hash: string
+          p_signing_name_ciphertext: string
+        }
+        Returns: string | null
+      }
       accept_embryo_co_parent_invitation_v1: {
         Args: {
           p_account_email_hmac: string | null

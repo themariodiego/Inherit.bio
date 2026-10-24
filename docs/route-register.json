@@ -21751,7 +21751,7 @@
               "affirmed": {
                 "const": true
               },
-              "statementKeys": "exact-server-published-four-item-array-with-every-item-individually-actuated",
+              "statementKeys": "exact-server-published-nonempty-array-with-every-item-individually-actuated",
               "typedName": "at-least-two-whitespace-separated-tokens-of-at-least-two-characters"
             },
             "jurisdictionCode": "normalized-code-valid-under-data/jurisdictions.json-determination.resolutionGrammar",
@@ -21775,7 +21775,7 @@
               "affirmed": {
                 "const": true
               },
-              "statementKeys": "exact-server-published-four-item-array-with-every-item-individually-actuated",
+              "statementKeys": "exact-server-published-nonempty-array-with-every-item-individually-actuated",
               "typedName": "at-least-two-whitespace-separated-tokens-of-at-least-two-characters"
             }
           },

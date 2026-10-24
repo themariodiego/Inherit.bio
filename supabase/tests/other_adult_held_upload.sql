@@ -935,8 +935,12 @@ update public.profiles set deletion_requested_at=null where id='0a5e0000-0000-40
 -- 16. Path A still works as it did ---------------------------------------------------------
 select is(pg_temp.open_session((select token_hash from fx where name='path-a'),'5','path-a-open-pppppppppppppppp'),1::bigint,
  'the Path A invitee opens their invitation');
-select is(public.respond_adult_subject_invitation_session_v1(repeat('5',64),'confirm','path-a-accept-pppppppppppppp',
- '0a5e0000-0000-4000-8000-000000000002',repeat('4',64)),'accepted','Path A''s account acceptance is unchanged');
+-- 20261025400000 (D-103): Path A's account acceptance includes the typed name,
+-- through the account door api.invitation-accept calls.
+select is(public.accept_adult_subject_invitation_v1(repeat('5',64),'path-a-accept-pppppppppppppp',
+ '0a5e0000-0000-4000-8000-000000000002','0a5e0000-0000-4000-8000-000000000012',
+ jsonb_build_object('1',repeat('4',64)),decode(repeat('5a',28),'hex')),pg_temp.sid('path-a'),
+ 'Path A''s account acceptance still binds the invitee, now with a typed name');
 select ok((select subject_account_id='0a5e0000-0000-4000-8000-000000000002' and owner_account_id is null
  from public.subjects where id=pg_temp.sid('path-a')),'the accepted Path A subject belongs to the invitee alone');
 select is((select count(*) from public.adult_subject_drafts where subject_id=pg_temp.sid('path-a')),0::bigint,

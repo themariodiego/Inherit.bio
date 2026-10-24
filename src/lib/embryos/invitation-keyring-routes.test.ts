@@ -212,35 +212,39 @@ describe("POST /api/subject-drafts (adult invitation)", () => {
   });
 });
 
-describe("POST /api/withdraw/session (adult confirm)", () => {
+describe("POST /api/invitations/accept (Path A adult)", () => {
   it("sends the account address under every held revision and nothing bare", async () => {
-    const { POST: respond } = await import("@/app/api/withdraw/session/route");
-    const { mintPublicFormToken } = await import("./operation-token");
+    const { POST: accept } = await import("@/app/api/invitations/accept/route");
+    const { mintEmbryoOperation } = await import("./operation-token");
     const { newRightsSessionSecret, RIGHTS_COOKIE_NAME, rightsSessionHash } = await import("./rights-session");
     const { ADULT_SUBJECT_STATEMENT_KEYS, mintAdultSubjectPresentation } = await import("./adult-subject-review");
     const secret = newRightsSessionSecret();
     const hash = rightsSessionHash(secret);
-    mocks.offer.mockResolvedValue({ sessionHash: hash, draftOwnerAccountId: DRAFT,
+    const SUBJECT = "dddddddd-dddd-4ddd-8ddd-dddddddddddd";
+    mocks.offer.mockResolvedValue({ sessionHash: hash, subjectId: SUBJECT, draftOwnerAccountId: DRAFT,
       invitationEmailHmac: legacyContactDigest("invited-person@example.invalid"),
       artifact: { version: 1, effectiveOn: "2026-09-01", summaryMarkdown: "S.", bodyMarkdown: "B.", bodySha256: "d".repeat(64) } });
     mocks.account.mockResolvedValue({
       user: { id: ACCOUNT, email: "Invited-Person@Example.invalid", email_confirmed_at: "2026-09-01T00:00:00Z" },
-      sessionId: "s",
+      sessionId: SESSION,
     });
-    mocks.rpc.mockResolvedValue({ data: "accepted", error: null });
-    const response = await respond(new Request("https://inherit.bio/api/withdraw/session", {
+    mocks.rpc.mockResolvedValue({ data: SUBJECT, error: null });
+    const response = await accept(new Request("https://inherit.bio/api/invitations/accept", {
       method: "POST",
       headers: {
         origin: "https://inherit.bio", "sec-fetch-site": "same-origin", "content-type": "application/json",
         cookie: `${RIGHTS_COOKIE_NAME}=${secret}`,
       },
-      body: JSON.stringify({ operation: "confirm", nonce: mintPublicFormToken("adult-subject-respond", Date.now(), hash),
-        subjectArtifact: { artifactVersion: 1, affirmed: true, statementKeys: [...ADULT_SUBJECT_STATEMENT_KEYS],
+      body: JSON.stringify({
+        nonce: mintEmbryoOperation({ accountId: ACCOUNT, sessionId: SESSION, operation: "invitation_accept",
+          targetKind: "rights_session", targetId: hash }),
+        subjectArtifact: { artifactKey: "consent.subject-adult", artifactVersion: 1, affirmed: true,
+          statementKeys: [...ADULT_SUBJECT_STATEMENT_KEYS], typedName: "Synthetic Invitee",
           artifactPresentationToken: mintAdultSubjectPresentation({ sessionHash: hash, artifactVersion: 1,
             artifactBodySha256: "d".repeat(64) }) } }),
     }));
-    expect(response.status).toBe(202);
-    expect(mocks.rpc.mock.calls[0]![0]).toBe("respond_adult_subject_invitation_session_v1");
+    expect(response.status).toBe(200);
+    expect(mocks.rpc.mock.calls[0]![0]).toBe("accept_adult_subject_invitation_v1");
     const args = sentArgs();
     expect(args).not.toHaveProperty("p_account_email_hmac");
     const set = args.p_account_email_hmac_set as Record<string, string>;

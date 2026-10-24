@@ -9,6 +9,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { OWN_UPLOAD_COPY } from "../src/copy/upload/consent";
 import { ADULT_SUBJECT_STATEMENTS } from "../src/copy/family/adult-subject-statements";
+import { PATH_B_REQUEST_COPY } from "../src/copy/upload/other-adult";
 import { subjectFinalizationReceipt, subjectNormalizationReceipt } from "../src/lib/uploads/subject-upload-contract";
 
 const localProject = localE2eProject(process.env);
@@ -256,7 +257,9 @@ export function adultInvitationUrl(token: string, origin = "http://localhost:310
  * is on `/withdraw/session`, holding a host-only rights cookie, and no token
  * appears in any URL again. Accepting needs the invited account, so this
  * signs in through the review screen's own control rather than around it,
- * and the five signed statements (D-103), each ticked by its own sentence.
+ * the five signed statements (D-103), each ticked by its own sentence, and
+ * the person's typed name (owner decision of 23 October 2026); the page
+ * sends the acceptance to api.invitation-accept.
  *
  * `onReview` runs on the review screen before anything is clicked — the
  * accessibility audit of a page `e2e/a11y.spec.ts` cannot reach, since its
@@ -283,6 +286,7 @@ export async function acceptAdultInvitation(options: {
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
   await expect(page).toHaveURL(`${origin}/withdraw/session`);
   await tickAdultSubjectStatements(page);
+  await typeAdultSubjectName(page);
   await page.getByRole("button", { name: "Accept through my account" }).click();
   await expect(page.getByRole("heading", { name: "Invitation accepted" })).toBeVisible();
 }
@@ -292,6 +296,14 @@ export async function tickAdultSubjectStatements(page: Page): Promise<void> {
   for (const statement of ADULT_SUBJECT_STATEMENTS) {
     await page.getByRole("checkbox", { name: statement.text, exact: true }).check();
   }
+}
+
+/** The synthetic name the invited adult types to accept; never a real person's. */
+export const ADULT_SUBJECT_TYPED_NAME = "Synthetic Invitee";
+
+/** D-103: the typed name Path A's acceptance includes (owner decision of 23 October 2026), in its labelled field. */
+export async function typeAdultSubjectName(page: Page, name = ADULT_SUBJECT_TYPED_NAME): Promise<void> {
+  await page.getByRole("textbox", { name: PATH_B_REQUEST_COPY.typedNameLabel, exact: true }).fill(name);
 }
 
 export async function signIn(page: Page, email: string, password: string) {

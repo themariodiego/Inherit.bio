@@ -298,15 +298,17 @@
     },
     {
       "file": "src/components/embryo/adult-subject-review-form.tsx",
-      "routeId": "api.withdraw",
+      "routeId": "api.invitation-accept",
       "method": "POST",
       "issues": [
-        "omits subjectArtifact.typedName, which the registered body requires",
-        "omits withAccount, which the registered body requires"
+        "omits jurisdictionAffirmed, which the registered body requires",
+        "omits jurisdictionAttestationHash, which the registered body requires",
+        "omits jurisdictionAttestationVersion, which the registered body requires",
+        "omits jurisdictionCode, which the registered body requires"
       ],
-      "why": "D-103's adult confirm on /withdraw/session (Path A, through the person's own account) sends { operation: \"confirm\", nonce, subjectArtifact: { artifactVersion, artifactPresentationToken, affirmed, statementKeys } } to api.withdraw. The only account confirm body api.withdraw registers is Path B's withAccount body, whose subjectArtifact also carries a typedName. Path A's database confirm stores no name (signing_name_encrypted is null), and the register places Path A's account confirmation on api.invitation-accept, not api.withdraw. Visible since the client census reads requests no form makes (this review has no form). It sends the session token since 2026-10-23.",
-      "closing": "Engineering, by the owner's decision of 2026-10-23 (\"D-103: Path A acceptance includes a typed name\"): Path A's confirm asks for a typed name, stored encrypted by one guarded migration, and moves to api.invitation-accept as the register's adult-subject-confirmation-v1 names it. This row closes with that work.",
-      "closedBy": "engineering"
+      "why": "Since 2026-10-24 (owner decision of 2026-10-23, \"D-103: Path A acceptance includes a typed name\"), Path A's acceptance on /withdraw/session goes to api.invitation-accept, the route adult-subject-confirmation-v1.modes.path-a-account-required names, with the registered subjectArtifact: artifactKey, artifactVersion, artifactPresentationToken, affirmed, the five published statementKeys and typedName, which the database stores encrypted the way Path B's signature stores it (20261025400000_path_a_account_accept_typed_name.sql). This row replaces the api.withdraw row that recorded the missing typedName and the old route. The body sends no jurisdiction field: the acceptance records the account's own current declaration (profiles.jurisdiction_code), the reading the owner registered for Path B's account body on api.withdraw (withAccount, 2026-10-23), and the attestation version and hash are D-083's, which docs/route-divergence.json#unhashableAttestationFields already records for api.invitation-accept. The co-parent body on the same route sends jurisdictionCode; its missing attestation fields are formRequestDivergence's co-parent row.",
+      "closing": "Counsel, then the owner: the jurisdiction artifact the attestation fields attest to is authored and approved (D-083), and the owner says whether Path A's account body, like Path B's account body, carries no jurisdiction field because the account's own declaration counts (the register then says so and this row goes stale), or sends all four (engineering then renders them and the database records the code sent).",
+      "closedBy": "counsel"
     }
   ],
   "clientRequestReviewNote": "2026-10-24 (G8.5). Requests the client census reads but cannot hold to a register entry because they are not a request to an Inherit route: a first-party static asset, or an object URL of bytes already in the page. Each lists the census issues it accounts for and literal evidence that must still be present, so a reviewed request that changes fails until it is re-reviewed. scripts/form-register-correspondence.test.ts compares them, with clientRequestDivergence, with the census in both directions.",
@@ -686,7 +688,7 @@
       "branch": true
     }
   ],
-  "endpointResponseDivergenceNote": "2026-10-23 (G8.5). A registered endpoint whose method matches the register but whose answer does not. Each row names the register text it departs from and literal evidence in the code that produces the answer; scripts/form-register-correspondence.test.ts checks both, and src/app/api/export/route.test.ts drives the cookieless GET itself, so the row fails as stale the day the behaviour or the register changes. api.export is the case docs/route-divergence.json#methodDivergenceNote describes since 1 October: verb correspondence only.",
+  "endpointResponseDivergenceNote": "2026-10-23 (G8.5). A registered endpoint whose method matches the register but whose answer does not. Each row names the register text it departs from and literal evidence in the code that produces the answer; scripts/form-register-correspondence.test.ts checks both, and src/app/api/export/route.test.ts drives the cookieless GET itself, so the row fails as stale the day the behaviour or the register changes. api.export is the case docs/route-divergence.json#methodDivergenceNote describes since 1 October: verb correspondence only. 2026-10-24 (D-103 and G8.5's \"code to the register\"): api.subject-drafts' Path A answer joins them. The register's subject-draft-created-v1 (201) and reserved draft wait on a product decision, because the draft's next step is an uploader artifact that Path A's inviter, who never holds the file, cannot truthfully sign; the row says which two decisions would close it.",
   "endpointResponseDivergence": [
     {
       "routeId": "api.export",
@@ -734,6 +736,30 @@
       ],
       "why": "The POST is built closed on purpose until a provider is approved (docs/account-archive-orchestration.md: \"the export provider remains an unanswered owner choice. The actual POST refuses before durable create\"), and no public page offers it. Its refusal is a status the register does not let the route answer.",
       "closing": "Owner: the same provider decision. Until then either the register binds a closed-capability response to api.export, or the door answers a bound contract, as the other routes built closed do with resource-not-found-v1 (engineering, once the owner picks).",
+      "closedBy": "owner"
+    },
+    {
+      "routeId": "api.subject-drafts",
+      "method": "POST",
+      "case": "path-a-own-account",
+      "registered": "successResponseContract subject-draft-created-v1: 201 { subjectDraftId, state: \"awaiting_uploader_artifact\", next: \"sign_uploader_artifact\", expiresAt }. policy.transaction reserves one no-data adult subject draft that cannot accept an invitation until the acting account signs current consent.upload-other-adult against that exact subjectDraftId, and only api.invitations may then advance it (api.invitations policy.uploaderArtifactPrecondition, for every adult target).",
+      "built": "202 {\"accepted\":true} for the Path A body: one call reserves the draft and creates the invitation and its mail (create_adult_subject_invitation_with_nonce_v1). No subjectDraftId, state or expiry is returned, no uploader artifact is signed, and /family/invite shows its sent receipt on any 2xx.",
+      "evidence": [
+        {
+          "file": "src/app/api/subject-drafts/route.ts",
+          "literal": "return NextResponse.json({ accepted: true }, { status: 202 });"
+        },
+        {
+          "file": "src/app/api/subject-drafts/route.ts",
+          "literal": "const { data, error } = await admin.rpc(\"create_adult_subject_invitation_with_nonce_v1\", {"
+        },
+        {
+          "file": "src/components/family/invite-adult-form.tsx",
+          "literal": "setComplete(true);"
+        }
+      ],
+      "why": "Found on 2026-10-24 while moving Path A to the register (D-103 and G8.5's \"code to the register\"); the form census cannot see it because the form branches only on response.ok and 403. The register's draft model has the Path A inviter sign the uploader artifact before the invitation can be sent. The only uploader artifact, consent.upload-other-adult, is Path B's: v2 says the inviter holds the other adult's file (\"I got this file lawfully, and they know I have it\"), and v1 described the account-based flow the owner declined on 28 September. In Path A the inviter never holds or uploads a file (decisions, 28 September: \"the inviter never touches that file\"; adult-subject-confirmation-v1.pathAOwnershipInvariant: the inviter is never an uploader). Signing either would be a false statement, and answering 201 with next sign_uploader_artifact and nothing to sign would leave the invitation unsent. So the move needs a product decision first; it is recorded here, not made.",
+      "closing": "Owner: either a Path A inviter artifact is written and approved (consent copy, so the owner's words), and engineering then reserves the draft, answers subject-draft-created-v1, has /family/invite sign it and sends the invitation through api.invitations; or the register's Path A draft is amended (its own state and next, and api.invitations' uploaderArtifactPrecondition exempting path-a-own-account), and engineering moves the code to that. Until then the route keeps its one-call 202 and this row stays.",
       "closedBy": "owner"
     }
   ]

@@ -1,5 +1,7 @@
 import { getSensitiveAccountContext } from "@/lib/account-deletion";
 import { contactDigestSet } from "@/lib/hmac-keyring";
+import { acceptAdultSubjectInvitation } from "@/lib/embryos/adult-subject-accept";
+import { isAdultSubjectAcceptPayload } from "@/lib/embryos/adult-subject-review";
 import { notFound } from "@/lib/embryos/api";
 import { EMBRYO_ARTIFACT_STATEMENT_KEYS, typedNameIsValid } from "@/lib/embryos/basis";
 import {
@@ -25,7 +27,17 @@ import { withAccountCsrf } from "@/lib/security/session-csrf";
 
 /**
  * `POST /api/invitations/accept` (register api.invitation-accept; contract
- * §6.5), the co-parent body. The invited parent, now signed in, presents
+ * §6.5). The stored invitation kind selects one closed body, and each
+ * branch rechecks the kind its rights session stores, so a body sent to a
+ * session of the other kind is the same 404:
+ *
+ * - the adult-subject body, `subjectArtifact` (Path A, D-103): the invited
+ *   adult accepts in their own account with the five published statements
+ *   and their typed name (`src/lib/embryos/adult-subject-accept.ts`). No
+ *   embryo capability gates it, as none gated it on api.withdraw.
+ * - the co-parent body, below.
+ *
+ * The co-parent body. The invited parent, now signed in, presents
  * the rights cookie the activation route set, one operation token bound to
  * that session, and the two artifacts the page showed them. The route
  * checks that every token was minted for this account and for the one
@@ -76,12 +88,17 @@ async function handlePost(request: Request) {
   if (!context) return unauthorized();
   const forbidden = originDenied(request);
   if (forbidden) return forbidden;
+  const json = await readJson(request);
+  if (isAdultSubjectAcceptPayload(json)) {
+    const sessionHash = readRightsSessionHash(request);
+    return sessionHash ? acceptAdultSubjectInvitation(request, context, sessionHash, json) : notFound();
+  }
   const denied = await accountJurisdictionDenied(context.user.id);
   if (denied) return denied;
 
   const sessionHash = readRightsSessionHash(request);
   if (!sessionHash || !context.user.email) return notFound();
-  const parsed = coParentAcceptBody.safeParse(await readJson(request));
+  const parsed = coParentAcceptBody.safeParse(json);
   if (!parsed.success) return notFound();
   const body = parsed.data;
   // Only a country the jurisdiction register knows is ever persisted.

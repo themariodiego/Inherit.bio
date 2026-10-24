@@ -93,16 +93,23 @@ describe("the five D-103 statements are the signed text, byte for byte", () => {
     for (const { name, literal } of literals) {
       expect([...literal.matchAll(/'([^']*)'/g)].map(match => match[1]), name).toEqual(keys);
     }
-    // The body that records them today is the last migration to define the
-    // acceptance, and no later migration patches it in place.
-    const mentions = files.filter(name =>
-      fs.readFileSync(path.join(directory, name), "utf8").includes("adult_subject_invitation_response_v1"));
-    const current = mentions.at(-1)!;
+    // The body that records them is the last migration to define the
+    // acceptance. One later migration patches it in place, 20261025400000
+    // (D-103's typed name), and its new signature still records this list;
+    // no other later migration touches it.
+    const read = (name: string) => fs.readFileSync(path.join(directory, name), "utf8");
+    const definition = "create or replace function private.adult_subject_invitation_response_v1(";
+    const current = files.filter(name => read(name).includes(definition)).at(-1)!;
     expect(current).toBe("20260928150000_other_adult_held_upload.sql");
-    const source = fs.readFileSync(path.join(directory, current), "utf8");
-    const body = source.slice(source.lastIndexOf("create or replace function private.adult_subject_invitation_response_v1("));
+    const body = read(current).slice(read(current).lastIndexOf(definition));
     const recorded = /'adult-subject-account-acceptance',\s*(array\[[^\]]*\])/.exec(body)?.[1];
     expect([...(recorded ?? "").matchAll(/'([^']*)'/g)].map(match => match[1])).toEqual(keys);
+    const later = files.filter(name => name > current && read(name).includes("adult_subject_invitation_response_v1"));
+    expect(later).toEqual(["20261025400000_path_a_account_accept_typed_name.sql"]);
+    const patch = read(later[0]!);
+    const successor = patch.slice(patch.indexOf("$new$    insert into public.consent_signatures ("));
+    const patched = /'adult-subject-account-acceptance',\s*(array\[[^\]]*\])/.exec(successor)?.[1];
+    expect([...(patched ?? "").matchAll(/'([^']*)'/g)].map(match => match[1])).toEqual(keys);
   });
 });
 

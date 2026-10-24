@@ -1,10 +1,6 @@
-import { getSensitiveAccountContext, type SensitiveAccountContext } from "@/lib/account-deletion";
-import { contactDigestSet } from "@/lib/hmac-keyring";
 import {
-  adultSubjectAcceptanceBlockedBy,
   adultSubjectAnswerBody,
   adultSubjectConfirmEnvelope,
-  adultSubjectConfirmIssues,
   readAdultSubjectOffer,
   readAdultSubjectResponse,
 } from "@/lib/embryos/adult-subject-review";
@@ -12,7 +8,6 @@ import { embryoParentWithdrawalBody, readEmbryoParentWithdrawal, respondEmbryoPa
 import { invalidRequest, notFound } from "@/lib/embryos/api";
 import { closedResponse } from "@/lib/embryos/guards";
 import { invitationRefusalBody, readInvitationRefusal, refusalRequestAllowed } from "@/lib/embryos/invitation-refusal";
-import { normalizeContact } from "@/lib/embryos/routes";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { adultUploadRevisionBody, pathBAccountConfirmBody, pathBSubjectConfirmBody } from "@/lib/uploads/other-adult-upload";
 import {
@@ -32,10 +27,18 @@ import { withPurposeCsrf, readRightsCsrfSession } from "@/lib/security/session-c
  *
  * The registered receipt is `{status, operation}` and nothing else. An
  * invitation that has expired, been answered or was never this session's is
- * the same 404 as one that does not exist. A Path A confirm whose session,
- * form and account are this invitation's but whose body is not the
- * registered one (D-103: the five published statement keys, each ticked) is
- * invalid-request-v1, the register's answer, and reaches no database write.
+ * the same 404 as one that does not exist.
+ *
+ * Path A is not confirmed here any more (owner decision of 23 October 2026,
+ * "D-103: Path A acceptance includes a typed name"): the register puts its
+ * account confirmation on api.invitation-accept
+ * (adult-subject-confirmation-v1.modes.path-a-account-required), and
+ * api.withdraw confirms only a Path B request or one held file. A confirm
+ * sent here on a Path A session whose form nonce is this session's is
+ * invalid-request-v1, the register's answer for a body the stored kind does
+ * not take (requestContract.confirmBodySelection), read without an account
+ * and with no database write; one that cannot be tied to the session is the
+ * opaque 404.
  */
 
 const RECEIPT_KEYS = ["status", "operation"] as const;
@@ -89,12 +92,12 @@ async function handlePost(request: Request) {
   const adult = adultSubjectAnswerBody.safeParse(json);
   if (adult.success) {
     const authority = readAdultSubjectResponse(request, adult.data.nonce);
-    if (authority) return answerAdultSubject(authority, adult.data.operation, null);
+    if (authority) return answerAdultSubject(authority, adult.data.operation);
   }
   const adultConfirm = adultSubjectConfirmEnvelope.safeParse(json);
   if (adultConfirm.success) {
     const authority = readAdultSubjectResponse(request, adultConfirm.data.nonce);
-    if (authority) return confirmAdultSubject(request, authority, json);
+    if (authority) return refusePathAConfirm(request, authority);
   }
 
   const embryo = embryoParentWithdrawalBody.safeParse(json);
@@ -120,57 +123,34 @@ async function handlePost(request: Request) {
 }
 
 /**
- * Accepting a Path A invitation (adult-subject-confirmation-v1, the account
- * branch). The account is authority here, so it is read before any field is
- * judged, and the offer this session was opened for is read again: an
- * account that may not accept it, or a session that no longer offers it, is
- * the opaque 404. Only then is the body held to the offer, and any fault is
- * invalid-request-v1 with no write. The database records the five published
- * keys on the signature; the body may name no other list.
+ * A Path A confirm sent to api.withdraw. The register gives a Path A
+ * invitation's rights session no confirm here: its account confirmation is
+ * api.invitation-accept's, and this route's only adult confirms are Path B's.
+ * Once the form nonce and the offer show this session's own pending Path A
+ * invitation, the body is one the stored kind does not take, and the answer
+ * is invalid-request-v1 naming the operation; nothing about an account is
+ * read and nothing is written. A session that offers no such invitation is
+ * the opaque 404.
  */
-async function confirmAdultSubject(
-  request: Request,
-  authority: { sessionHash: string; nonce: string },
-  body: unknown,
-) {
-  const context = await getSensitiveAccountContext();
-  if (!context?.user.email || !context.user.email_confirmed_at) return notFound();
+async function refusePathAConfirm(request: Request, authority: { sessionHash: string; nonce: string }) {
   const offer = await readAdultSubjectOffer(request);
-  if (!offer || offer.sessionHash !== authority.sessionHash
-    || adultSubjectAcceptanceBlockedBy(context, offer) !== null) return notFound();
-  const issues = adultSubjectConfirmIssues(body, offer);
-  if (issues.length > 0) return invalidRequest(issues);
-  return answerAdultSubject(authority, "confirm", context);
+  if (!offer || offer.sessionHash !== authority.sessionHash) return notFound();
+  return invalidRequest(["operation"]);
 }
 
 /**
- * Refusing and deleting need no account. Accepting binds the reserved
- * subject to one, so the account's address is passed as digests under every
- * held contact key revision; the RPC compares the one the invitation was
- * written under with the invited address again and refuses every mismatch
- * itself.
+ * Refusing and deleting need no account. The database consumes the form
+ * nonce and answers for the session's own invitation.
  */
 async function answerAdultSubject(
   authority: { sessionHash: string; nonce: string },
-  operation: "confirm" | "refuse" | "delete",
-  account: SensitiveAccountContext | null,
+  operation: "refuse" | "delete",
 ) {
-  const email = account?.user.email;
-  if (operation === "confirm" && (!account || !email)) return notFound();
-
   const { data, error } = await createAdminClient().rpc(
     "respond_adult_subject_invitation_session_v1",
-    {
-      p_session_hash: authority.sessionHash,
-      p_action: operation,
-      p_nonce: authority.nonce,
-      ...(operation === "confirm" && account && email
-        ? { p_account_id: account.user.id, p_account_email_hmac_set: contactDigestSet(normalizeContact(email)) }
-        : {}),
-    },
+    { p_session_hash: authority.sessionHash, p_action: operation, p_nonce: authority.nonce },
   );
-  const expected = operation === "confirm" ? "accepted"
-    : operation === "refuse" ? "refused" : "deleted";
+  const expected = operation === "refuse" ? "refused" : "deleted";
   if (error || data !== expected) return notFound();
   return closedResponse("api.withdraw", RECEIPT_KEYS,
     { status: "accepted", operation }, 202);

@@ -503,9 +503,11 @@ describe("recorded endpoint response divergences stay true in both directions", 
   const rows = (JSON.parse(readFileSync(LEDGER, "utf8")) as { endpointResponseDivergence: ResponseRow[] }).endpointResponseDivergence;
   const exportEntry = register.routes.find(route => route.id === "api.export")!;
 
-  it("records exactly the two api.export answers the register does not describe", () => {
+  it("records exactly the two api.export answers and Path A's draft answer the register does not describe", () => {
+    // 2026-10-24: api.subject-drafts' Path A 202 joins the two api.export rows (owner decision pending).
     expect(rows.map(row => `${row.routeId} ${row.method} ${row.case}`))
-      .toEqual(["api.export GET no-export-cookie", "api.export POST capability-unconfigured"]);
+      .toEqual(["api.export GET no-export-cookie", "api.export POST capability-unconfigured",
+        "api.subject-drafts POST path-a-own-account"]);
     for (const row of rows) {
       expect(["owner", "counsel", "engineering"]).toContain(row.closedBy);
       expect(row.why.length).toBeGreaterThan(150);
@@ -522,6 +524,16 @@ describe("recorded endpoint response divergences stay true in both directions", 
     // A 503 bound to api.export would make the POST row stale.
     expect(registeredStatuses(exportEntry, "POST", register)).not.toContain(503);
     expect(registeredStatuses(exportEntry, "POST", register)).toContain(202);
+    // The Path A draft row departs from subject-draft-created-v1: the day the
+    // register binds a 202 to api.subject-drafts, or the route answers 201
+    // with the registered body, the row is stale.
+    const drafts = register.routes.find(route => route.id === "api.subject-drafts")!;
+    expect((drafts as { successResponseContract?: string }).successResponseContract).toBe("subject-draft-created-v1");
+    const created = (register as unknown as { responseContracts: Record<string, { status: number; body: Record<string, unknown> }> })
+      .responseContracts["subject-draft-created-v1"]!;
+    expect(created.status).toBe(201);
+    expect(created.body.next).toEqual({ const: "sign_uploader_artifact" });
+    expect(registeredStatuses(drafts, "POST", register)).not.toContain(202);
   });
 });
 
@@ -591,14 +603,18 @@ describe("every client request sends what its register entry declares (G8.5)", (
     // Then the compatibility panel and its consent dialog are retired, two
     // "use client" modules with one fetch each (the panel's a form's, the
     // dialog's not): 224 modules (95 "use client"), 102 requests from 88 fetch
-    // calls, 25 form request sites, 73 made by no form.
+    // calls, 25 form request sites, 73 made by no form. Then D-103's Path A
+    // acceptance goes to api.invitation-accept in its own fetch, while refusing
+    // and deleting keep theirs to api.withdraw, and its imports were client
+    // modules already. The new fetch sits in a local function its file calls
+    // twice, so it is read twice: 104 requests from 89 fetch calls, 75 made by no form.
     expect(client.modules).toHaveLength(224);
     expect(client.modules.filter(file => /^\s*["']use client["']/u.test(readFileSync(file, "utf8")))).toHaveLength(95);
-    expect(client.calls).toHaveLength(102);
-    expect(new Set(client.calls.map(request => `${request.file}:${request.line}`)).size).toBe(88);
+    expect(client.calls).toHaveLength(104);
+    expect(new Set(client.calls.map(request => `${request.file}:${request.line}`)).size).toBe(89);
     expect(client.calls.filter(request => request.via === "ai-sdk-default-chat-transport")).toHaveLength(0);
     expect(new Set(actual.requests.map(request => `${request.file}:${request.line}`)).size).toBe(25);
-    expect(client.unformed).toHaveLength(73);
+    expect(client.unformed).toHaveLength(75);
     // Every request a form makes is one of the client's, read once.
     const calls = new Set(client.calls.map(request => `${request.file}:${request.line}`));
     expect(actual.requests.filter(request => !calls.has(`${request.file}:${request.line}`))).toEqual([]);

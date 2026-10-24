@@ -2,6 +2,7 @@ import { expect, test } from "./audited-test";
 import crypto from "node:crypto";
 import http from "node:http";
 import {
+  ADULT_SUBJECT_TYPED_NAME,
   adminClient,
   adultInvitationToken,
   createConfirmedUser,
@@ -10,9 +11,11 @@ import {
   findUserByEmail,
   signIn,
   tickAdultSubjectStatements,
+  typeAdultSubjectName,
 } from "./helpers";
 import { ADULT_SUBJECT_STATEMENTS, ADULT_SUBJECT_STATEMENTS_HEADING } from "../src/copy/family/adult-subject-statements";
-import { signOut } from "./helpers/session-csrf";
+import { PATH_B_REQUEST_COPY } from "../src/copy/upload/other-adult";
+import { accountCsrf, signOut } from "./helpers/session-csrf";
 
 // A fresh inviter per run: the database counts invitation attempts per acting
 // account (global-contact-refusal-bar-v1.quotaAuthority, 10 an hour and 30 a
@@ -186,17 +189,22 @@ test("/family/invite complete: invited adult accepts without granting inviter ac
   await expect(page).toHaveURL("http://localhost:3100/withdraw/session");
 
   // D-103: the five signed statements, each its own checkbox named by its
-  // sentence, in the published order, and Accept disabled until all five are
-  // ticked. The audit runs on this screen, which only an invitation reaches.
+  // sentence, in the published order, and the typed name (owner decision of
+  // 23 October 2026). Accept stays disabled until all five are ticked and a
+  // name of two parts of two characters is typed. The audit runs on this
+  // screen, which only an invitation reaches.
   const acceptControl = page.getByRole("button", { name: "Accept through my account", exact: true });
   const statements = page.getByRole("group", { name: ADULT_SUBJECT_STATEMENTS_HEADING, exact: true }).getByRole("checkbox");
+  const nameField = page.getByRole("textbox", { name: PATH_B_REQUEST_COPY.typedNameLabel, exact: true });
   await expectAxeClean(page);
   await expect(statements).toHaveCount(ADULT_SUBJECT_STATEMENTS.length);
   for (const [index, statement] of ADULT_SUBJECT_STATEMENTS.entries()) {
     await expect(statements.nth(index)).toHaveAccessibleName(statement.text);
     await expect(statements.nth(index)).not.toBeChecked();
   }
+  await expect(nameField).toHaveValue("");
   await expect(acceptControl).toBeDisabled();
+  await typeAdultSubjectName(page);
   for (const missing of ADULT_SUBJECT_STATEMENTS) {
     for (const statement of ADULT_SUBJECT_STATEMENTS) {
       await page.getByRole("checkbox", { name: statement.text, exact: true }).setChecked(statement.key !== missing.key);
@@ -207,18 +215,37 @@ test("/family/invite complete: invited adult accepts without granting inviter ac
     await page.getByRole("checkbox", { name: statement.text, exact: true }).uncheck();
   }
   await tickAdultSubjectStatements(page);
+  for (const invalid of ["", "   ", "Synthetic", "Synthetic I"]) {
+    await nameField.fill(invalid);
+    await expect(acceptControl, `Accept with the name ${JSON.stringify(invalid)}`).toBeDisabled();
+  }
+  await typeAdultSubjectName(page);
   await expect(acceptControl).toBeEnabled();
-  const confirmRequest = page.waitForRequest(sent =>
-    new URL(sent.url()).pathname === "/api/withdraw/session" && sent.method() === "POST");
+  // The acceptance goes to api.invitation-accept, the route the register
+  // names for Path A; api.withdraw is no longer asked.
+  const outgoingBefore = outgoing.length;
+  const confirmResponse = page.waitForResponse(answer =>
+    new URL(answer.url()).pathname === "/api/invitations/accept" && answer.request().method() === "POST");
   await acceptControl.click();
-  const confirmBody = (await confirmRequest).postDataJSON() as Record<string, unknown>;
-  expect(Object.keys(confirmBody).sort()).toEqual(["nonce", "operation", "subjectArtifact"]);
-  expect(confirmBody.operation).toBe("confirm");
+  const accepted = await confirmResponse;
+  const confirmBody = accepted.request().postDataJSON() as Record<string, unknown>;
+  expect(Object.keys(confirmBody).sort()).toEqual(["nonce", "subjectArtifact"]);
   expect(confirmBody.subjectArtifact).toEqual({
-    artifactVersion: expect.any(Number), artifactPresentationToken: expect.any(String), affirmed: true,
-    statementKeys: ADULT_SUBJECT_STATEMENTS.map(statement => statement.key),
+    artifactKey: "consent.subject-adult", artifactVersion: expect.any(Number), artifactPresentationToken: expect.any(String),
+    affirmed: true, statementKeys: ADULT_SUBJECT_STATEMENTS.map(statement => statement.key), typedName: ADULT_SUBJECT_TYPED_NAME,
   });
+  expect(accepted.status()).toBe(200);
+  const receipt = await accepted.json() as Record<string, unknown>;
+  expect(receipt).toEqual({ invitationKind: "adult_subject", status: "accepted", subjectId: invitation.target_id,
+    subjectAccountBound: true, accountOrigin: "existing_account", activationBlock: "pending_exact_purpose" });
+  expect(JSON.stringify(receipt), "the receipt never carries the typed name").not.toContain(ADULT_SUBJECT_TYPED_NAME);
+  expect(outgoing.slice(outgoingBefore).some(entry => new URL(entry.url).pathname === "/api/withdraw/session"),
+    "accepting posts nothing to api.withdraw").toBe(false);
   await expect(page.getByRole("heading", { name: "Invitation accepted" })).toBeVisible();
+  // The same request again is refused: its nonce and its rights session are spent.
+  const replay = await page.request.post("/api/invitations/accept", { headers: { origin: "http://localhost:3100",
+    "sec-fetch-site": "same-origin", "x-inherit-csrf": await accountCsrf(page, "api.invitation-accept") }, data: confirmBody });
+  expect(replay.status()).toBe(404);
 
   // Both fixture addresses are fixed, so they age: `listUsers` returns page
   // one, newest first, and after a few hundred accounts these two sit past it.
@@ -232,16 +259,19 @@ test("/family/invite complete: invited adult accepts without granting inviter ac
     .eq("id", invitation.target_id)
     .single();
   expect(subject).toEqual({ subject_account_id: recipientId, lifecycle: "active" });
-  // The signature records the five keys the person ticked, in order.
+  // The signature records the five keys the person ticked, in order, and the
+  // typed name as ciphertext only, the way Path B's signature stores it.
   const { data: signature, error: signatureError } = await admin
     .from("consent_signatures")
-    .select("artifact_key, statement_keys, signer_account_id")
+    .select("artifact_key, statement_keys, signer_account_id, signing_name_encrypted")
     .eq("target_kind", "subject").eq("target_id", invitation.target_id)
     .eq("purpose", "adult-subject-account-acceptance")
     .single();
   expect(signatureError).toBeNull();
   expect(signature).toEqual({ artifact_key: "consent.subject-adult", signer_account_id: recipientId,
-    statement_keys: ADULT_SUBJECT_STATEMENTS.map(statement => statement.key) });
+    statement_keys: ADULT_SUBJECT_STATEMENTS.map(statement => statement.key), signing_name_encrypted: expect.stringMatching(/^\\x[0-9a-f]{32,}$/) });
+  const plaintextHex = Buffer.from(ADULT_SUBJECT_TYPED_NAME, "utf8").toString("hex");
+  expect(String(signature!.signing_name_encrypted), "the name is never stored as text").not.toContain(plaintextHex);
   const { count: inviterGrants } = await admin
     .from("directional_grants")
     .select("grant_id", { count: "exact", head: true })

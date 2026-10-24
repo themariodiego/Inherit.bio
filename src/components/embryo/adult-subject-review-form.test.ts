@@ -4,16 +4,20 @@ import { createRequire } from "node:module";
 import path from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { ADULT_SUBJECT_STATEMENTS, ADULT_SUBJECT_STATEMENTS_HEADING } from "@/copy/family/adult-subject-statements";
+import { PATH_B_REQUEST_COPY } from "@/copy/upload/other-adult";
 import type { AdultSubjectReview } from "@/lib/embryos/adult-subject-review";
 
 /**
  * D-103 in a real browser: the actual client component, bundled for the
  * browser and rendered with a review the server would publish. Each of the
- * five signed statements is a checkbox named by its sentence; Accept stays
- * disabled while any one is unticked; and the request names exactly the
- * published keys with the served presentation. The browser graph may not
- * reach a server-only module. The full journey against the database is
- * `e2e/adult-subject-invitation.spec.ts`.
+ * five signed statements is a checkbox named by its sentence, and the
+ * person's typed name has its own labelled field (owner decision of 23
+ * October 2026); Accept stays disabled while any one statement is unticked
+ * or the name is not two parts of two characters; and the request goes to
+ * api.invitation-accept, naming exactly the published keys with the served
+ * presentation, the accept nonce and the trimmed name. Refusing stays on
+ * api.withdraw. The browser graph may not reach a server-only module. The
+ * full journey against the database is `e2e/adult-subject-invitation.spec.ts`.
  */
 
 const localRequire = createRequire(import.meta.url);
@@ -24,12 +28,15 @@ const ORIGIN = "http://adult-confirm.test";
 const KEYS = ADULT_SUBJECT_STATEMENTS.map(statement => statement.key);
 const PRESENTATION = "synthetic-presentation-token-for-this-page";
 const NONCE = "synthetic-form-nonce";
+const ACCEPT_NONCE = "synthetic-accept-nonce";
+/** A synthetic name, typed with the spaces a person might leave around it. */
+const NAME = "Synthetic Invitee";
 
 const artifact = { version: 1, effectiveOn: "2026-09-01", summaryMarkdown: "Summary.", bodyMarkdown: "Body.",
   bodySha256: "a".repeat(64) };
 const ACCEPTING: AdultSubjectReview = {
   nonce: NONCE, acceptanceBlockedBy: null, artifact,
-  confirmation: { presentationToken: PRESENTATION,
+  confirmation: { nonce: ACCEPT_NONCE, presentationToken: PRESENTATION,
     statements: ADULT_SUBJECT_STATEMENTS.map(statement => ({ key: statement.key, text: statement.text })) },
 };
 const SIGNED_OUT: AdultSubjectReview = { nonce: NONCE, acceptanceBlockedBy: "sign-in", artifact, confirmation: null };
@@ -67,11 +74,12 @@ beforeAll(async () => {
 
 afterAll(async () => { await browser?.close(); });
 
-/** The page with this review, and every request body the form posts to api.withdraw. */
+/** The page with this review, and every request the form posts, with the route it went to. */
 async function open(review: AdultSubjectReview, receipt?: { operation: string }) {
   // A context of its own: the accessibility audit needs one, and nothing is shared between cases.
   const page = await (await browser.newContext()).newPage();
   const posted: Record<string, unknown>[] = [];
+  const accepted: Record<string, unknown>[] = [];
   const html = `<!doctype html><html lang="en"><head><title>Review your request</title></head><body><main id="root"></main>`
     + `<script type="application/json" id="review">${JSON.stringify(review)}</script><script>${script.replace(/<\/script/g, "<\\/script")}</script></body></html>`;
   await page.route(`${ORIGIN}/**`, async route => {
@@ -83,18 +91,26 @@ async function open(review: AdultSubjectReview, receipt?: { operation: string })
     if (url.pathname === "/api/withdraw/session" && route.request().method() === "POST") {
       posted.push(route.request().postDataJSON() as Record<string, unknown>);
       await route.fulfill({ status: 202, contentType: "application/json",
-        body: JSON.stringify({ status: "accepted", operation: receipt?.operation ?? "confirm" }) });
+        body: JSON.stringify({ status: "accepted", operation: receipt?.operation ?? "refuse" }) });
+      return;
+    }
+    if (url.pathname === "/api/invitations/accept" && route.request().method() === "POST") {
+      accepted.push(route.request().postDataJSON() as Record<string, unknown>);
+      await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({
+        invitationKind: "adult_subject", status: "accepted", subjectId: "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+        subjectAccountBound: true, accountOrigin: "existing_account", activationBlock: "pending_exact_purpose" }) });
       return;
     }
     await route.fulfill({ status: 404, body: "" });
   });
   await page.goto(`${ORIGIN}/`);
   await expect.poll(() => page.getByRole("heading", { level: 1 }).count()).toBe(1);
-  return { page, posted };
+  return { page, posted, accepted };
 }
 
 const statementBox = (page: Page, text: string) => page.getByRole("checkbox", { name: text, exact: true });
 const accept = (page: Page) => page.getByRole("button", { name: "Accept through my account", exact: true });
+const nameField = (page: Page) => page.getByRole("textbox", { name: PATH_B_REQUEST_COPY.typedNameLabel, exact: true });
 
 describe("the Path A review renders the five signed statements as separate checkboxes (D-103)", () => {
   it("names each checkbox by its own sentence, in the published order, inside one labelled group", async () => {
@@ -115,10 +131,23 @@ describe("the Path A review renders the five signed statements as separate check
     } finally { await page.context().close(); }
   });
 
-  it("keeps Accept disabled while any one of the five is unticked", async () => {
-    const { page, posted } = await open(ACCEPTING);
+  it("asks for the typed name in its own labelled field, beside the five statements", async () => {
+    const { page } = await open(ACCEPTING);
+    try {
+      expect(await nameField(page).count()).toBe(1);
+      expect(await nameField(page).inputValue()).toBe("");
+      expect(await nameField(page).getAttribute("autocomplete")).toBe("name");
+      // The rule is stated beside the field, as Path B's signature states it.
+      const described = await nameField(page).getAttribute("aria-describedby");
+      expect(await page.locator(`#${described}`).textContent()).toBe(PATH_B_REQUEST_COPY.typedNameError);
+    } finally { await page.context().close(); }
+  });
+
+  it("keeps Accept disabled while any one of the five is unticked, even with a valid name", async () => {
+    const { page, posted, accepted } = await open(ACCEPTING);
     try {
       expect(await accept(page).isDisabled()).toBe(true);
+      await nameField(page).fill(NAME);
       for (const missing of ADULT_SUBJECT_STATEMENTS) {
         for (const statement of ADULT_SUBJECT_STATEMENTS) {
           await statementBox(page, statement.text).setChecked(statement.key !== missing.key);
@@ -127,12 +156,34 @@ describe("the Path A review renders the five signed statements as separate check
         await accept(page).click({ force: true });
       }
       expect(posted).toEqual([]);
+      expect(accepted).toEqual([]);
     } finally { await page.context().close(); }
   });
 
-  it("enables Accept only once all five are ticked, and sends exactly the published keys with the served presentation", async () => {
-    const { page, posted } = await open(ACCEPTING);
+  it("keeps Accept disabled with all five ticked until the name has two parts of two characters", async () => {
+    const { page, accepted } = await open(ACCEPTING);
     try {
+      for (const statement of ADULT_SUBJECT_STATEMENTS) await statementBox(page, statement.text).check();
+      expect(await accept(page).isDisabled(), "no name").toBe(true);
+      for (const name of ["   ", "Synthetic", "Synthetic I", "S I"]) {
+        await nameField(page).fill(name);
+        expect(await accept(page).isDisabled(), JSON.stringify(name)).toBe(true);
+        expect(await nameField(page).getAttribute("aria-invalid"), JSON.stringify(name)).toBe(name.trim() ? "true" : "false");
+        await accept(page).click({ force: true });
+      }
+      await nameField(page).fill(NAME);
+      expect(await accept(page).isEnabled()).toBe(true);
+      expect(await nameField(page).getAttribute("aria-invalid")).toBe("false");
+      await nameField(page).fill("");
+      expect(await accept(page).isDisabled()).toBe(true);
+      expect(accepted).toEqual([]);
+    } finally { await page.context().close(); }
+  });
+
+  it("enables Accept once all five are ticked and a name is typed, and sends the registered body to api.invitation-accept", async () => {
+    const { page, posted, accepted } = await open(ACCEPTING);
+    try {
+      await nameField(page).fill(`  ${NAME} `);
       for (const [index, statement] of ADULT_SUBJECT_STATEMENTS.entries()) {
         expect(await accept(page).isDisabled(), `before ${statement.key}`).toBe(true);
         await statementBox(page, statement.text).check();
@@ -143,8 +194,13 @@ describe("the Path A review renders the five signed statements as separate check
       await statementBox(page, ADULT_SUBJECT_STATEMENTS[2].text).check();
       await accept(page).click();
       await expect.poll(() => page.getByRole("heading", { name: "Invitation accepted", exact: true }).count()).toBe(1);
-      expect(posted).toEqual([{ operation: "confirm", nonce: NONCE, subjectArtifact: {
-        artifactVersion: 1, artifactPresentationToken: PRESENTATION, affirmed: true, statementKeys: KEYS } }]);
+      expect(accepted).toEqual([{ nonce: ACCEPT_NONCE, subjectArtifact: {
+        artifactKey: "consent.subject-adult", artifactVersion: 1, artifactPresentationToken: PRESENTATION, affirmed: true,
+        statementKeys: KEYS, typedName: NAME } }]);
+      expect(posted).toEqual([]);
+      // The receipt shows nothing of the name.
+      expect(await page.locator("main").innerText()).not.toContain(NAME);
+      expect(await page.locator("main input").count()).toBe(0);
     } finally { await page.context().close(); }
   });
 
@@ -152,6 +208,7 @@ describe("the Path A review renders the five signed statements as separate check
     const { page, posted } = await open(SIGNED_OUT, { operation: "refuse" });
     try {
       expect(await page.getByRole("checkbox").count()).toBe(0);
+      expect(await nameField(page).count()).toBe(0);
       expect(await accept(page).count()).toBe(0);
       expect(await page.getByRole("link", { name: "Sign in to accept", exact: true }).count()).toBe(1);
       await page.getByRole("button", { name: "Refuse", exact: true }).click();

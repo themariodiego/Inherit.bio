@@ -1,5 +1,5 @@
 begin;
-select plan(25);
+select plan(28);
 \ir fixtures/invitation_quota_keys.inc
 -- `claim_mail_outbox` takes the oldest deliverable row, so a developer
 -- database holding other queued mail would hand this suite someone else's
@@ -68,10 +68,31 @@ select is(public.respond_adult_subject_invitation_v1(
   '74000000-0000-0000-0000-000000000002', repeat('f', 64)
 ), 'unavailable',
   'an account whose authenticated email does not match cannot accept');
+-- 20261025400000 (D-103): Path A's acceptance includes the typed name, so the
+-- mailed token alone accepts nothing. The person accepts through the rights
+-- session the token opens, in their own account, with the name's ciphertext
+-- (the account door api.invitation-accept calls).
 select is(public.respond_adult_subject_invitation_v1(
   (select token_hash from invitation_token), 'confirm',
   '74000000-0000-0000-0000-000000000002', repeat('a', 64)
-), 'accepted',
+), 'unavailable',
+  'the mailed token alone no longer accepts a Path A invitation');
+insert into auth.sessions (id, user_id, created_at, updated_at, aal) values
+  ('74000000-0000-0000-0000-000000000012', '74000000-0000-0000-0000-000000000002', now(), now(), 'aal1');
+select is((select count(*) from public.activate_rights_session_v1(
+  (select token_hash from invitation_token), repeat('e', 64), 'adult-invitation-open-aaaaaaa')), 1::bigint,
+  'the unspent token opens its rights session');
+select is(public.accept_adult_subject_invitation_v1(
+  repeat('e', 64), 'adult-invitation-wrong-mail-a', '74000000-0000-0000-0000-000000000002',
+  '74000000-0000-0000-0000-000000000012', jsonb_build_object('1', repeat('f', 64)),
+  decode(repeat('5a', 28), 'hex')
+), null::uuid,
+  'nor does the account door accept an account whose authenticated email does not match');
+select is(public.accept_adult_subject_invitation_v1(
+  repeat('e', 64), 'adult-invitation-accept-aaaaa', '74000000-0000-0000-0000-000000000002',
+  '74000000-0000-0000-0000-000000000012', jsonb_build_object('1', repeat('a', 64)),
+  decode(repeat('5a', 28), 'hex')
+), (select subject_id from created_invitation),
   'the matching adult account accepts atomically');
 select is((select subject_account_id from public.subjects
   where id = (select subject_id from created_invitation)),

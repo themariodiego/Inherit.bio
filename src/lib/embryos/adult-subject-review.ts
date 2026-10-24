@@ -7,7 +7,8 @@ import { hmacSecret } from "@/lib/crypto";
 import { contactDigestCandidates } from "@/lib/hmac-keyring";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { looseAdmin } from "@/lib/uploads/other-adult-upload-server";
-import { mintPublicFormToken, readPublicFormToken } from "./operation-token";
+import { otherAdultTypedNameIsValid } from "@/lib/uploads/other-adult-upload";
+import { mintEmbryoOperation, mintPublicFormToken, readPublicFormToken } from "./operation-token";
 import { readRightsSessionHash, RIGHTS_COOKIE_NAME } from "./rights-session";
 import { normalizeContact } from "./routes";
 
@@ -20,8 +21,12 @@ import { normalizeContact } from "./routes";
  * Refusing and deleting need no account — the person holding the mailbox is
  * the person with the right. Accepting needs an account whose confirmed
  * address is the invited one, because acceptance binds the reserved subject
- * to it, and the five signed statements of D-103, each ticked on its own
- * (`src/copy/family/adult-subject-statements.ts`).
+ * to it, the five signed statements of D-103, each ticked on its own
+ * (`src/copy/family/adult-subject-statements.ts`), and the person's typed
+ * name (owner decision of 23 October 2026). Accepting is
+ * api.invitation-accept's (`src/lib/embryos/adult-subject-accept.ts`), as
+ * the register's adult-subject-confirmation-v1 names it; api.withdraw keeps
+ * refusing and deleting.
  */
 
 const formNonce = z.string().min(1).max(2_048);
@@ -33,33 +38,15 @@ export const adultSubjectAnswerBody = z.object({
 }).strict();
 
 /**
- * Enough of a confirm body to find its authority before any field is judged
- * (invalid-request-v1.authorizationPrecedence): a body that cannot be tied to
- * this session's form is the opaque 404, never a list of its faults.
+ * Enough of an api.withdraw confirm body to find its authority before any
+ * field is judged (invalid-request-v1.authorizationPrecedence): a body that
+ * cannot be tied to this session's form is the opaque 404, never a list of
+ * its faults. Path A is no longer confirmed there (see the route).
  */
 export const adultSubjectConfirmEnvelope = z.object({
   operation: z.literal("confirm"),
   nonce: formNonce,
 }).loose();
-
-/**
- * The confirm body (register api.withdraw, `subjectArtifact`): the artifact
- * version and presentation the page was served, and the server-published
- * statement keys, each one ticked on its own, in the published order. The
- * account's own current country declaration is the one the database records,
- * so no jurisdiction field is sent (D-083 keeps the attestation fields with
- * counsel), and nothing here can name an account, a target or a purpose.
- */
-export const adultSubjectConfirmBody = z.object({
-  operation: z.literal("confirm"),
-  nonce: formNonce,
-  subjectArtifact: z.object({
-    artifactVersion: z.number().int().positive().safe(),
-    artifactPresentationToken: z.string().min(16).max(4_096),
-    affirmed: z.literal(true),
-    statementKeys: z.array(z.string().min(1).max(64)).min(1).max(16),
-  }).strict(),
-}).strict();
 
 export type AdultSubjectOperation = "confirm" | "refuse" | "delete";
 
@@ -156,16 +143,20 @@ export function readAdultSubjectResponse(request: Request, nonce: string, now = 
 }
 
 export interface AdultSubjectReview {
+  /** The rights-session form nonce refusing and deleting send to api.withdraw. */
   nonce: string;
   /** Why the accept control is not offered, or null when it is. */
   acceptanceBlockedBy: "sign-in" | "other-account" | null;
   artifact: AdultSubjectArtifact;
   /**
-   * The five signed statements, as the server publishes them, and the
-   * presentation that binds them to this session, artifact and list (D-103).
-   * Only when this account may accept: a confirm body names them back.
+   * The five signed statements, as the server publishes them, the
+   * presentation that binds them to this session, artifact and list (D-103),
+   * and the one-time nonce api.invitation-accept takes from this account and
+   * auth session for this rights session. Only when this account may accept:
+   * the accept body names them back with the person's typed name.
    */
   confirmation: {
+    nonce: string;
     presentationToken: string;
     statements: { key: string; text: string }[];
   } | null;
@@ -182,6 +173,8 @@ export interface AdultSubjectArtifact {
 /** What one rights session's pending Path A invitation offers, before any account is read. */
 export interface AdultSubjectOffer {
   sessionHash: string;
+  /** The reserved subject the invitation names; acceptance makes it the account's own. */
+  subjectId: string;
   draftOwnerAccountId: string;
   invitationEmailHmac: string;
   artifact: AdultSubjectArtifact;
@@ -255,6 +248,7 @@ export async function readAdultSubjectOffer(
 
   return {
     sessionHash,
+    subjectId: session.target_id,
     draftOwnerAccountId: draft.owner_account_id,
     invitationEmailHmac: invitation.email_hmac,
     artifact: {
@@ -295,13 +289,18 @@ export async function loadAdultSubjectReview(
   if (!offer) return null;
   // Signing in is offered, never required: the two controls that need no
   // account are the ones a person without one came here to use.
-  const acceptanceBlockedBy = adultSubjectAcceptanceBlockedBy(await getSensitiveAccountContext(), offer);
+  const context = await getSensitiveAccountContext();
+  const acceptanceBlockedBy = adultSubjectAcceptanceBlockedBy(context, offer);
 
   return {
     nonce: mintPublicFormToken("adult-subject-respond", now, offer.sessionHash),
     acceptanceBlockedBy,
     artifact: offer.artifact,
-    confirmation: acceptanceBlockedBy === null ? {
+    confirmation: acceptanceBlockedBy === null && context ? {
+      nonce: mintEmbryoOperation({
+        accountId: context.user.id, sessionId: context.sessionId, operation: "invitation_accept",
+        targetKind: "rights_session", targetId: offer.sessionHash,
+      }, now),
       presentationToken: mintAdultSubjectPresentation({
         sessionHash: offer.sessionHash,
         artifactVersion: offer.artifact.version,
@@ -312,47 +311,55 @@ export async function loadAdultSubjectReview(
   };
 }
 
-const CONFIRM_FIELDS = new Set([
-  "subjectArtifact",
-  "subjectArtifact.artifactVersion",
-  "subjectArtifact.artifactPresentationToken",
-  "subjectArtifact.affirmed",
-  "subjectArtifact.statementKeys",
-]);
+/**
+ * The Path A accept body (register api.invitation-accept, the
+ * `subjectArtifact` body; owner decision of 23 October 2026, "D-103: Path A
+ * acceptance includes a typed name"): the artifact key, the version and
+ * presentation the page was served, the server-published statement keys,
+ * each ticked on its own, in the published order, and the person's typed
+ * name. The account's own current country declaration is the one the
+ * database records, so no jurisdiction field is sent (D-083 keeps the
+ * attestation fields with counsel), and nothing here can name an account, a
+ * target or a purpose.
+ */
+export const adultSubjectAcceptBody = z.object({
+  nonce: formNonce,
+  subjectArtifact: z.object({
+    artifactKey: z.literal(ADULT_SUBJECT_ARTIFACT_KEY),
+    artifactVersion: z.number().int().positive().safe(),
+    artifactPresentationToken: z.string().min(16).max(4_096),
+    affirmed: z.literal(true),
+    statementKeys: z.array(z.string().min(1).max(64)).min(1).max(16),
+    typedName: z.string().min(1).max(200),
+  }).strict(),
+}).strict();
+export type AdultSubjectAcceptRequest = z.infer<typeof adultSubjectAcceptBody>;
+
+/** The adult-subject body of api.invitation-accept is the one that carries `subjectArtifact`. */
+export function isAdultSubjectAcceptPayload(value: unknown): boolean {
+  return typeof value === "object" && value !== null && "subjectArtifact" in value;
+}
 
 /**
- * Every fault of a confirm body against the offer it answers, as the
- * register's closed, server-derived issue names; empty when the body may go
- * to the database. Call it only once the session, the form nonce and the
- * account have been found to be this offer's: before that the answer is the
- * opaque 404. The statement keys must be exactly the published list, in
- * order, with nothing missing, added or repeated, and the presentation must
- * be the one served to this session for the current artifact and the list
- * published now, so a page served before either changed is refused.
+ * Whether an accept body answers the offer it was served for: the current
+ * artifact version, a presentation this deployment served to this session
+ * for the current artifact and the list published now (so a page served
+ * before either changed is refused), exactly the published keys in order
+ * with nothing missing, added or repeated, and a typed name of at least two
+ * whitespace-separated tokens of at least two characters (the register's
+ * typedName rule, Path B's validator). Call it only once the session, the
+ * nonce and the account have been found to be this offer's.
  */
-export function adultSubjectConfirmIssues(body: unknown, offer: AdultSubjectOffer, now = Date.now()): string[] {
-  const parsed = adultSubjectConfirmBody.safeParse(body);
-  if (!parsed.success) {
-    const fields = parsed.error.issues.map(issue => {
-      const path = issue.path.slice(0, 2).filter(segment => typeof segment === "string").join(".");
-      return CONFIRM_FIELDS.has(path) ? path : "body";
-    });
-    return [...new Set(fields)].sort();
-  }
-  const artifact = parsed.data.subjectArtifact;
-  const issues: string[] = [];
-  if (artifact.artifactVersion !== offer.artifact.version) issues.push("subjectArtifact.artifactVersion");
+export function adultSubjectAcceptMatchesOffer(body: AdultSubjectAcceptRequest, offer: AdultSubjectOffer,
+  now = Date.now()): boolean {
+  const artifact = body.subjectArtifact;
   const presentation = readAdultSubjectPresentation(artifact.artifactPresentationToken, now);
-  if (!presentation || presentation.sessionHash !== offer.sessionHash
-    || presentation.artifactVersion !== offer.artifact.version
-    || presentation.artifactBodySha256 !== offer.artifact.bodySha256
-    || presentation.statementsSha256 !== ADULT_SUBJECT_STATEMENTS_SHA256) {
-    issues.push("subjectArtifact.artifactPresentationToken");
-  }
-  const keys = artifact.statementKeys;
-  if (keys.length !== ADULT_SUBJECT_STATEMENT_KEYS.length
-    || keys.some((key, index) => key !== ADULT_SUBJECT_STATEMENT_KEYS[index])) {
-    issues.push("subjectArtifact.statementKeys");
-  }
-  return issues.sort();
+  return artifact.artifactVersion === offer.artifact.version
+    && presentation !== null && presentation.sessionHash === offer.sessionHash
+    && presentation.artifactVersion === offer.artifact.version
+    && presentation.artifactBodySha256 === offer.artifact.bodySha256
+    && presentation.statementsSha256 === ADULT_SUBJECT_STATEMENTS_SHA256
+    && artifact.statementKeys.length === ADULT_SUBJECT_STATEMENT_KEYS.length
+    && artifact.statementKeys.every((key, index) => key === ADULT_SUBJECT_STATEMENT_KEYS[index])
+    && otherAdultTypedNameIsValid(artifact.typedName);
 }

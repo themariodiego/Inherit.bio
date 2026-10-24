@@ -1,5 +1,5 @@
 begin;
-select plan(24);
+select plan(25);
 \ir fixtures/invitation_quota_keys.inc
 -- `claim_mail_outbox` takes the oldest deliverable row, so a developer
 -- database holding other queued mail would hand this suite someone else's
@@ -11,6 +11,10 @@ update public.mail_outbox set state='invalidated' where state in ('queued','clai
 insert into auth.users (id, email, raw_user_meta_data) values
  ('7c000000-0000-0000-0000-000000000001','session-inviter@example.invalid','{"display_name":"Inviter"}'),
  ('7c000000-0000-0000-0000-000000000002','session-adult@example.invalid','{"display_name":"Invited"}');
+-- 20261025400000 (D-103): the invited adult's own auth session, which the
+-- account door checks.
+insert into auth.sessions (id, user_id, created_at, updated_at, aal) values
+ ('7c000000-0000-0000-0000-000000000012','7c000000-0000-0000-0000-000000000002',now(),now(),'aal1');
 
 create temporary table inv as
 select * from public.create_adult_subject_invitation_v1(
@@ -40,10 +44,11 @@ select is(public.respond_adult_subject_invitation_session_v1(
  '7c000000-0000-0000-0000-000000000002', repeat('a',64)),
  'unavailable','a malformed session hash answers nothing');
 
-select is(public.respond_adult_subject_invitation_session_v1(
- repeat('d',64),'confirm','adult-session-wrong-mail-aaaa',
- '7c000000-0000-0000-0000-000000000002', repeat('f',64)),
- 'unavailable','an account whose authenticated email does not match cannot accept');
+-- 20261025400000 (D-103): accepting is the account door's, with a typed name.
+select is(public.accept_adult_subject_invitation_v1(
+ repeat('d',64),'adult-session-wrong-mail-aaaa','7c000000-0000-0000-0000-000000000002',
+ '7c000000-0000-0000-0000-000000000012',jsonb_build_object('1',repeat('f',64)),decode(repeat('5a',28),'hex')),
+ null::uuid,'an account whose authenticated email does not match cannot accept');
 select is((select status from public.rights_sessions where session_hash=repeat('d',64)),
  'active','a refused attempt leaves the session open for the right holder');
 
@@ -53,9 +58,9 @@ returns text language plpgsql as $$
 declare v_result text;
 begin
  begin
-  v_result := public.respond_adult_subject_invitation_session_v1(
-   repeat('d',64),'confirm','adult-session-wrong-mail-aaaa',
-   '7c000000-0000-0000-0000-000000000002', repeat('a',64));
+  v_result := public.accept_adult_subject_invitation_v1(
+   repeat('d',64),'adult-session-wrong-mail-aaaa','7c000000-0000-0000-0000-000000000002',
+   '7c000000-0000-0000-0000-000000000012',jsonb_build_object('1',repeat('a',64)),decode(repeat('5a',28),'hex'));
  exception when others then v_result := sqlstate;
  end;
  return v_result;
@@ -63,10 +68,17 @@ end;
 $$;
 select is(pg_temp.replay(),'23505','a replayed form nonce cannot answer again');
 
+-- 20261025400000 (D-103): Path A's acceptance includes the typed name, so the
+-- session door, which carries none, accepts nothing; the account door
+-- api.invitation-accept calls accepts with the name's ciphertext.
 select is(public.respond_adult_subject_invitation_session_v1(
  repeat('d',64),'confirm','adult-session-accept-aaaaaaaa',
  '7c000000-0000-0000-0000-000000000002', repeat('a',64)),
- 'accepted','the matching adult account accepts through the session');
+ 'unavailable','the session door alone no longer accepts a Path A invitation');
+select is(public.accept_adult_subject_invitation_v1(
+ repeat('d',64),'adult-session-accept-bbbbbbbb','7c000000-0000-0000-0000-000000000002',
+ '7c000000-0000-0000-0000-000000000012',jsonb_build_object('1',repeat('a',64)),decode(repeat('5a',28),'hex')),
+ (select subject_id from inv),'the matching adult account accepts through the session, with a typed name');
 select is((select subject_account_id from public.subjects where id=(select subject_id from inv)),
  '7c000000-0000-0000-0000-000000000002'::uuid,
  'acceptance binds control to the invited adult');
