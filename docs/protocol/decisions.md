@@ -5421,3 +5421,11 @@ register"):
   `api.invitation-accept` (`adult-subject-confirmation-v1.modes.path-a-account-required.route`).
 - The register's `api.withdraw` confirm wording ("four-item array") is
   corrected for the five D-103 statements and Path B's own list.
+
+## 2026-10-24 — G8.5: Settings → AI may omit `apiKey`
+
+Owner decision (clickable chat answer, "Register what ships"). In the hosted and
+remote bodies of `api.llm-settings`, an empty or absent `apiKey` keeps the stored
+key, and a remote HTTPS endpoint may be saved with no key. The register is
+amended to say so. The code already behaves this way. This closes the last
+Settings row in `formRequestDivergence`.
