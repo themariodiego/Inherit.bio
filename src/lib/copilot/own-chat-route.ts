@@ -108,8 +108,12 @@ export async function ownChatResponse(request: Request, body: unknown, options: 
         // before history or tools can reach a model, including old paraphrases.
         if (hasOwnChatReportCorrection(await reports()))
             return Response.json(ownChatCorrection(), { status: 409, headers });
-        if (!chatId && (!token || await ownChatRpc('begin', provider.authority, projection, null,
-            { nonceHash: snapshotHash(token.nonce), expiresAt: new Date(token.expiresAt).toISOString() }) !== true)) return denied();
+        // The context token is single use (chat-scope-v1): the database records
+        // its nonce here and refuses one it has already seen. A spent token is
+        // an invalid one, which api.chat answers with resource-not-found-v1.
+        if (!chatId && !(token && await ownChatRpc('begin', provider.authority, projection, null,
+            { nonceHash: snapshotHash(token.nonce), expiresAt: new Date(token.expiresAt).toISOString() })
+            .then(spent => spent === true, () => false))) return notFound();
         const legacyAnalysis = () => [...projection.legacySources.map(s => ({ file_id: s.id, status: 'historical_analysis_unavailable', note: LEGACY_SOURCE_LIMIT })),
             ...projection.unavailableSources.map(s => ({ file_id: s.id, status: s.reason, note: 'This source is not currently readable; no result is inferred.' }))];
         const rawProvenance = () => projection.legacySources.length ? { legacy_sources: projection.legacySources.map(s => ({ file_id: s.id, provenance: 'historical_normalization_unrecorded' })), provenance_note: LEGACY_RAW_NOTE } : {};

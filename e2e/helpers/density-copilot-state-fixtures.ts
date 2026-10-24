@@ -3,15 +3,19 @@ import { createHash, randomUUID } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { expect, type Browser, type Page, type Route } from "@playwright/test";
-import { adminClient, createConfirmedUser, signIn } from "../helpers";
+import { adminClient, completeOwnUploadConsent, createConfirmedUser, signIn } from "../helpers";
+import { allowCopilot } from "../fixtures/canonical-copilot-browser";
 import { densityCapturePlan, type DensityStateCase } from "../../scripts/density-capture-plan";
-import { assertUnansweredCopilotRows, copilotDensityRecipe, COPILOT_DENSITY_TABLES,
-  DENSITY_COPILOT_ENDPOINT, DENSITY_COPILOT_PROVIDER, type CopilotDensityRecipe } from "../../scripts/density-copilot-states";
+import { assertPermittedUnansweredCopilotRows, assertUnansweredCopilotRows, copilotDensityRecipe, COPILOT_DENSITY_TABLES,
+  DENSITY_COPILOT_ENDPOINT, DENSITY_COPILOT_GATED_QUESTION, DENSITY_COPILOT_PROVIDER, type CopilotDensityRecipe } from "../../scripts/density-copilot-states";
 import type { DensityRegister } from "../../scripts/density-current";
 import type { DensityStateFixture } from "./density-current-capture";
+import { refusalFor } from "../../src/copy/copilot/refusals";
 
-const question = "What is my caffeine genotype?";
-async function completeRows(accountId: string) {
+const question = DENSITY_COPILOT_GATED_QUESTION;
+const CONSENT_REQUIRED = "Choose what Copilot may use before asking about your file. Saving a provider does not grant that permission.";
+const THREAD_HINT = "Ask about your own file or a report you chose. Answers explain what was found, its sources, and what remains unknown.";
+async function completeRows(accountId: string, recipe: CopilotDensityRecipe) {
   assert(/^[a-f0-9-]{36}$/.test(accountId), "Actual native account required");
   const rows: Record<string, Record<string, unknown>[]> = {}, admin = adminClient();
   for (const [table, column] of [["profiles", "id"], ["subjects", "subject_account_id"], ["subject_principals", "account_id"],
@@ -30,21 +34,27 @@ async function completeRows(accountId: string) {
   rows.purpose_grants = grants.data!;
   expect(Object.keys(rows).sort()).toEqual([...COPILOT_DENSITY_TABLES].sort());
   for (const values of Object.values(rows)) values.sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b)));
-  assertUnansweredCopilotRows(rows, accountId);
+  if (recipe === "permission") assertUnansweredCopilotRows(rows, accountId);
+  else assertPermittedUnansweredCopilotRows(rows, accountId);
   return rows;
 }
 
-async function consentRefusal(route: Route) {
+/** The held question settles with the own chat's fixed refusal: its intent
+ * gate answers before any provider, retrieval, write or model step. */
+async function intentRefusal(route: Route) {
   await route.continue();
   const response = await route.request().response();
   assert(response && await response.finished() === null, "The same original chat request must settle");
-  expect(response.status()).toBe(403);
-  expect(await response.json()).toEqual({ error: "consent_required", provider_key: DENSITY_COPILOT_PROVIDER });
+  expect(response.status()).toBe(200);
+  expect(response.headers()["x-copilot-refusal"]).toBe("treatment");
 }
 
-/** Original compatibility conversation on a fresh actor with no canonical
- * source. The app's own consent gate answers before retrieval or inference.
- * A new account that cannot enter this real legacy contract holds instead. */
+/** The own chat on a fresh actor with no canonical source (G8.5, 24 October
+ * 2026: the compatibility panel these states were captured on is retired).
+ * `consent-required` is the page for a saved provider with no Copilot
+ * permission; `empty` and `processing` are the panel once the actor signed
+ * their own upload consent and allowed Copilot for that model, and the held
+ * question is one the intent gate refuses before any provider step. */
 export function realUnansweredCopilotDensityFixtures(input: {
   root: string; browser: Browser; origin: string; register: DensityRegister;
   observeState: (row: DensityStateCase, page: Page, fixtureSourceSha256: string,
@@ -66,6 +76,7 @@ export function realUnansweredCopilotDensityFixtures(input: {
         let release: (() => void) | undefined, continuation: Promise<void> | undefined, intercepted = 0;
         try {
           const accountId = await createConfirmedUser(email, password); await signIn(page, email, password);
+          if (recipe !== "permission") await completeOwnUploadConsent(page);
           expect((await page.goto("/settings/copilot"))?.status()).toBe(200);
           await page.getByLabel("Provider", { exact: true }).click();
           await page.getByRole("option", { name: /OpenAI-compatible/ }).click();
@@ -80,31 +91,32 @@ export function realUnansweredCopilotDensityFixtures(input: {
             endpointOrigin: `https://${DENSITY_COPILOT_PROVIDER}`, classification: "cloud" });
           expect(await savedResponse.finished()).toBeNull();
           await expect(page.getByText("Provider saved. Review the separate Copilot permission below.", { exact: true })).toBeVisible();
-          const original = await completeRows(accountId);
+          if (recipe !== "permission") await allowCopilot(page);
+          const original = await completeRows(accountId, recipe);
           expect((await page.goto("/copilot/me"))?.status()).toBe(200);
-          await expect(page.getByLabel("Message the copilot")).toBeVisible();
-          if (recipe !== "empty") {
+          if (recipe === "permission") await expect(page.getByText(CONSENT_REQUIRED, { exact: true })).toBeVisible();
+          else await expect(page.getByLabel("Message the copilot")).toBeVisible();
+          if (recipe === "pending") {
             const pending = new Promise<void>(resolve => { release = resolve; });
             await page.route("**/api/chat", async route => {
               if (route.request().method() !== "POST") { await route.continue(); return; }
               assert(++intercepted === 1, "Exactly one original chat POST required");
-              continuation = (async () => { await pending; await consentRefusal(route); })();
+              continuation = (async () => { await pending; await intentRefusal(route); })();
               void continuation.catch(() => {}); await continuation;
             });
             await page.getByLabel("Message the copilot").fill(question);
             await page.getByRole("button", { name: "Send", exact: true }).click();
             await expect.poll(() => intercepted).toBe(1);
-            if (recipe === "permission") { assert(release && continuation); release(); await continuation; }
           }
           const observe = async () => {
-            const actual = await completeRows(accountId);
-            expect(actual, "the consent refusal stores no conversation or permission").toEqual(original);
+            const actual = await completeRows(accountId, recipe);
+            expect(actual, "the refusal stores no conversation or permission").toEqual(original);
             await assertState(page, recipe);
             if (recipe === "pending") expect(intercepted).toBe(1);
             return input.observeState(row, page, sourceSha256, { accountId, nativeSnapshot: actual });
           };
           await observe(); await capture({ page, observe });
-          expect(await completeRows(accountId)).toEqual(original);
+          expect(await completeRows(accountId, recipe)).toEqual(original);
         } finally {
           try {
             if (release) { release(); if (continuation) await continuation; }
@@ -116,28 +128,30 @@ export function realUnansweredCopilotDensityFixtures(input: {
 
 async function assertState(page: Page, recipe: CopilotDensityRecipe) {
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Ask about You");
-  const indicator = page.getByTestId("data-flow-indicator");
-  await expect(indicator).toContainText("Cloud mode"); await expect(indicator).toContainText(DENSITY_COPILOT_PROVIDER);
-  await expect(indicator.getByRole("link", { name: "revoke in Settings" })).toHaveAttribute("href", "/settings/copilot");
   await expect(page.locator('[data-role="assistant"], [data-figure-kind], [data-claim-block]')).toHaveCount(0);
   await expect(page.locator("main").getByRole("alert")).toHaveCount(0);
-  if (recipe === "empty") {
+  if (recipe === "permission") {
+    // consent-required: the missing permission is named and linked, and nothing can be asked.
+    await expect(page.getByText(CONSENT_REQUIRED, { exact: true })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Review Copilot settings", exact: true })).toHaveAttribute("href", "/settings/copilot");
+    await expect(page.getByLabel("Message the copilot")).toHaveCount(0);
+    await expect(page.getByTestId("data-flow-indicator")).toHaveCount(0);
     await expect(page.locator('[data-role="user"]')).toHaveCount(0);
-    await expect(page.getByText("Ask about your own genome. Try:", { exact: false })).toBeVisible();
-    await expect(page.getByText("The copilot is informational — never a diagnosis", { exact: false })).toBeVisible();
-    await expect(page.getByText("Thinking…", { exact: true })).toHaveCount(0);
-    await expect(page.getByRole("button", { name: "Review what would be shared", exact: true })).toHaveCount(0);
+    return;
+  }
+  const indicator = page.getByTestId("data-flow-indicator");
+  await expect(indicator).toContainText("Cloud mode"); await expect(indicator).toContainText(DENSITY_COPILOT_PROVIDER);
+  await expect(indicator.getByRole("link", { name: "Review or withdraw permission" })).toHaveAttribute("href", "/settings/copilot");
+  await expect(page.locator('[data-role="user"]')).toHaveCount(0);
+  if (recipe === "empty") {
+    await expect(page.getByText(THREAD_HINT, { exact: true })).toBeVisible();
+    await expect(page.getByText("Checking your question…", { exact: true })).toHaveCount(0);
+    await expect(page.getByLabel("Message the copilot")).toBeEnabled();
   } else {
-    await expect(page.locator('[data-role="user"]')).toHaveCount(1);
-    await expect(page.getByText(question, { exact: true })).toBeVisible();
-    if (recipe === "pending") {
-      await expect(page.getByText("Thinking…", { exact: true })).toBeVisible();
-      await expect(page.getByRole("button", { name: "Send", exact: true })).toBeDisabled();
-      await expect(page.getByRole("button", { name: "Review what would be shared", exact: true })).toHaveCount(0);
-    } else {
-      await expect(page.getByText("Thinking…", { exact: true })).toHaveCount(0);
-      await expect(page.getByText("Before sending data from your genome to a cloud service, Copilot needs your clear consent.", { exact: true })).toBeVisible();
-      await expect(page.getByRole("button", { name: "Review what would be shared", exact: true })).toBeVisible();
-    }
+    await expect(page.getByText("Checking your question…", { exact: true })).toBeVisible();
+    await expect(page.getByLabel("Message the copilot")).toHaveValue(question);
+    await expect(page.getByLabel("Message the copilot")).toBeDisabled();
+    await expect(page.getByRole("button", { name: "Send", exact: true })).toBeDisabled();
+    await expect(page.getByText(refusalFor("treatment", "You"), { exact: true })).toHaveCount(0);
   }
 }

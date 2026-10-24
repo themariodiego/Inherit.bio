@@ -144,15 +144,17 @@ describe("every form sends what its register entry declares (G8.5)", () => {
     // is added, changes these numbers and has to be looked at.
     // G8.5 (2026-10-23): sign-out moved from a native form (2 native, 24
     // handler-submitted, 27 requests from 22 files) to a scripted one.
-    expect(actual.sites).toHaveLength(26);
+    // G8.5 (2026-10-24): the compatibility panel's form is gone with the
+    // panel (26 forms, 25 handler-submitted, 28 requests from 23 files before).
+    expect(actual.sites).toHaveLength(25);
     // Since 2026-10-23: sign-out is a scripted form (it was the second native
-    // form), and the compatibility panel sends the registered body with fetch.
+    // form).
     expect(actual.sites.filter(site => site.action !== null)).toHaveLength(1);
-    expect(actual.sites.filter(site => site.action === null && site.handlerResolved)).toHaveLength(25);
-    expect(actual.requests.length).toBe(28);
+    expect(actual.sites.filter(site => site.action === null && site.handlerResolved)).toHaveLength(24);
+    expect(actual.requests.length).toBe(27);
     // 0 since 2026-10-23: the compatibility panel sends the registered body with fetch (it was 1).
     expect(actual.requests.filter(request => request.via === "ai-sdk-default-chat-transport")).toHaveLength(0);
-    expect(new Set(actual.requests.map(request => request.file)).size).toBe(23);
+    expect(new Set(actual.requests.map(request => request.file)).size).toBe(22);
     // And it really reaches the shapes the checks below depend on.
     const jurisdiction = actual.requests.find(request => request.file === "src/components/settings/jurisdiction-form.tsx")!;
     expect(jurisdiction.methods).toEqual(["PUT"]);
@@ -586,13 +588,17 @@ describe("every client request sends what its register entry declares (G8.5)", (
     // calls is read once per call (localCallSites). Ten such fetches are
     // read 24 times, so 104 requests from the same 90 fetch calls; 74 are
     // made by no form (the other 14 readings are of three form handlers' fetches).
-    expect(client.modules).toHaveLength(226);
-    expect(client.modules.filter(file => /^\s*["']use client["']/u.test(readFileSync(file, "utf8")))).toHaveLength(97);
-    expect(client.calls).toHaveLength(104);
-    expect(new Set(client.calls.map(request => `${request.file}:${request.line}`)).size).toBe(90);
+    // Then the compatibility panel and its consent dialog are retired, two
+    // "use client" modules with one fetch each (the panel's a form's, the
+    // dialog's not): 224 modules (95 "use client"), 102 requests from 88 fetch
+    // calls, 25 form request sites, 73 made by no form.
+    expect(client.modules).toHaveLength(224);
+    expect(client.modules.filter(file => /^\s*["']use client["']/u.test(readFileSync(file, "utf8")))).toHaveLength(95);
+    expect(client.calls).toHaveLength(102);
+    expect(new Set(client.calls.map(request => `${request.file}:${request.line}`)).size).toBe(88);
     expect(client.calls.filter(request => request.via === "ai-sdk-default-chat-transport")).toHaveLength(0);
-    expect(new Set(actual.requests.map(request => `${request.file}:${request.line}`)).size).toBe(26);
-    expect(client.unformed).toHaveLength(74);
+    expect(new Set(actual.requests.map(request => `${request.file}:${request.line}`)).size).toBe(25);
+    expect(client.unformed).toHaveLength(73);
     // Every request a form makes is one of the client's, read once.
     const calls = new Set(client.calls.map(request => `${request.file}:${request.line}`));
     expect(actual.requests.filter(request => !calls.has(`${request.file}:${request.line}`))).toEqual([]);
@@ -687,8 +693,9 @@ describe("the client census fails on a planted divergence", () => {
   });
 
   it("fails when the chat panel stops sending its token, or the SDK transport wraps its request in something it cannot read", () => {
-    // The compatibility panel's fetch (since the merge with G8.5's form shapes, it is a fetch, not the SDK transport).
-    const file = "src/components/chat/chat-panel.tsx";
+    // The chat panel's fetch. The compatibility panel this read until 24 October 2026 is retired (G8.5);
+    // the own panel, which now serves its subjects, sends the same header.
+    const file = "src/components/chat/own-chat-panel.tsx";
     const source = real(file);
     const header = 'headers: { "content-type": "application/json", "X-Inherit-CSRF": csrf.value() },';
     expect(source).toContain(header);

@@ -190,14 +190,15 @@ describe("the human review backlog is an exact ratchet", () => {
 });
 
 describe("the gate scans the real non-template surfaces", () => {
-  it("pins all surface types and passes with the original 59-sentence backlog", () => {
+  it("pins all surface types and passes with the original backlog, less the two sentences that left with their file", () => {
     expect(SURFACE_TYPES).toEqual(["report-copy", "copilot-context", "email", "portrait", "embryo-card"]);
-    expect(OPEN_BACKLOG).toBe(59);
+    // 59 until 2026-10-24 (G8.5): the compatibility chat branch's two tool descriptions left with it.
+    expect(OPEN_BACKLOG).toBe(57);
     const result = runRepositoryGate(ROOT, TODAY);
     expect(result.failures).toEqual([]);
     expect(result.fileCount).toBeGreaterThanOrEqual(103);
-    expect(result).toMatchObject({ sourced: 0, open: 59, classified: 0 });
-    expect(result.candidates).toHaveLength(59);
+    expect(result).toMatchObject({ sourced: 0, open: 57, classified: 0 });
+    expect(result.candidates).toHaveLength(57);
   });
   it("pins the source coverage so deleting a registered path cannot hide copy", () => {
     expect(JSON.parse(readFileSync(path.join(ROOT, "data/gates/claim-surfaces.json"), "utf8")).surfaces)
@@ -225,14 +226,16 @@ describe("the gate scans the real non-template surfaces", () => {
     const source = relative.endsWith(".tsx") ? `export function Copy() { return <p>${CLAIM}</p>; }`
       : `export const copy = ${JSON.stringify(CLAIM)};`;
     const result = runRepositoryGate(plant({ [relative]: source }), TODAY);
-    expect(result.candidates).toHaveLength(60);
+    // 60 until 2026-10-24 (G8.5): two backlog sentences left with the compatibility chat branch.
+    expect(result.candidates).toHaveLength(58);
     expect(result.failures).toEqual([expect.stringContaining(`${relative}: unsourced ${type} claim`)]);
   });
   it("fails a sentence removed from the real ledger", () => {
-    const root = plant({}, value => value.surfaces["copilot-context"]["src/app/api/chat/route.ts"].shift());
+    // The chat route's two sentences left with its compatibility branch (G8.5, 2026-10-24); the own route's one stands in.
+    const root = plant({}, value => value.surfaces["copilot-context"]["src/lib/copilot/own-chat-route.ts"].shift());
     const result = runRepositoryGate(root, TODAY);
     expect(result.failures).toContainEqual(expect.stringContaining("unsourced copilot-context claim"));
-    expect(result.failures).toContainEqual(expect.stringContaining("down from 59"));
+    expect(result.failures).toContainEqual(expect.stringContaining("down from 57"));
   });
   it("does not scan test fixtures as product copy", () => {
     const root = plant({ "src/copy/reports/citation-gate-planted.test.ts": files[0].source,
@@ -259,7 +262,7 @@ describe("the gate scans the real non-template surfaces", () => {
   });
   it("retains every existing review verdict when rebuilding the worklist", () => {
     const root = plant({}, value => {
-      const reviewed = value.surfaces["copilot-context"]["src/app/api/chat/route.ts"][0];
+      const reviewed = value.surfaces["copilot-context"]["src/lib/copilot/own-chat-route.ts"][0];
       Object.assign(reviewed, { verdict: "claim-to-register", reviewedBy: "Synthetic reviewer", reviewedOn: TODAY });
     });
     expect(rebuildBacklog(root)).toEqual(readRepositoryInputs(root).backlog);
@@ -286,9 +289,11 @@ describe("the 2 October release integration preserves measured debt", () => {
     // src/copy/genome/carrier.ts and src/components/results/carrier/own-carrier-panel.tsx
     // to the report-copy surface; neither carries a claim-marked sentence, so
     // the 59 candidates below are unchanged.
+    // 57 since 2026-10-24 (G8.5): the compatibility chat branch's two tool
+    // descriptions left src/app/api/chat/route.ts with it.
     expect(result.fileCount).toBe(121);
-    expect(result.candidates).toHaveLength(59);
-    expect(result).toMatchObject({ sourced: 0, open: 59, classified: 0 });
+    expect(result.candidates).toHaveLength(57);
+    expect(result).toMatchObject({ sourced: 0, open: 57, classified: 0 });
     const inputs = readRepositoryInputs(ROOT);
     expect(inputs.citations).toHaveLength(53);
     // The 120 report and export claims, plus the eleven Copilot prompt claims
@@ -303,15 +308,19 @@ describe("the 2 October release integration preserves measured debt", () => {
     const value = readFileSync(path.join(ROOT, "docs/claim-surface-backlog.json"));
     // Re-pinned on 2026-10-16: three Copilot prompt sentences moved, unchanged,
     // from src/app/api/chat/route.ts to src/copy/copilot/system-prompts.ts.
+    // Re-pinned on 2026-10-24 (G8.5): the retired compatibility branch's two
+    // tool descriptions ("The rsID to look up, e.g. 'rs762551'" and "No
+    // percentile, rank or risk is available.") left with it, unreviewed.
     expect(createHash("sha256").update(value).digest("hex"))
-      .toBe("45a15f6fafcb403966c2c5a4a41b1cc098e449a684aa7eac3da017d50c1fcdc7");
-    expect(OPEN_BACKLOG).toBe(59);
+      .toBe("a96ec9a5db9c14c44e054c108b46085aa78acc7ac228d246b1fc68161e245de6");
+    expect(OPEN_BACKLOG).toBe(57);
     const surfaces = readRepositoryInputs(ROOT).backlog.surfaces;
     const entries = Object.values(surfaces).flatMap(surface => Object.values(surface).flat());
-    expect(entries).toHaveLength(59);
-    // The same 59 sentences as the original worklist, whichever file now states them.
+    expect(entries).toHaveLength(57);
+    // The original worklist less those two, whichever file now states them.
     expect(createHash("sha256").update(entries.map(entry => entry.sha256).sort().join("\n")).digest("hex"))
-      .toBe("d980c939d3df091ac7e737adac15a339a8b5b91c693ebc7baa24337016616ec4");
+      .toBe("4d9e4d5faf0a9b5407aef5ec5a110dcc928307bb30159546f35168ab70abb68f");
+    expect(surfaces["copilot-context"]["src/app/api/chat/route.ts"]).toBeUndefined();
     expect(surfaces["copilot-context"]["src/copy/copilot/system-prompts.ts"].map(entry => entry.sha256)).toEqual([
       "4661ac8ccdffcc1585dde25affc0bfb37dbe80e23af914a7a1c2928dc147cad7",
       "8fae27cf6edde9da682d59e51911ee8dca51dc62af9d6bc8c18755c170a88c07",
@@ -345,9 +354,10 @@ describe("the 2 October release integration preserves measured debt", () => {
     const source = relative.endsWith(".tsx") ? `export function Copy() { return <p>${CLAIM}</p>; }`
       : `export const copy = ${JSON.stringify(CLAIM)};`;
     const result = runRepositoryGate(plant({ [relative]: source }), "2026-10-02");
-    expect(result.candidates).toHaveLength(60);
+    // 60 and 59 until 2026-10-24 (G8.5; see above).
+    expect(result.candidates).toHaveLength(58);
     expect(result.failures).toEqual([expect.stringContaining(`${relative}: unsourced`)]);
-    expect(result.open).toBe(59);
+    expect(result.open).toBe(57);
     expect(result.classified).toBe(0);
   });
 });

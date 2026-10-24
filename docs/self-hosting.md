@@ -125,7 +125,7 @@ can be configured after establishing the same-host, egress-isolated network
 described in [own Copilot authority](own-copilot-authority.md). Section 5
 lists the four settings that must agree before the own-Copilot local
 transport is available. Those settings attest an existing network; they do
-not create isolation. `ALLOW_PRIVATE_LLM_ENDPOINTS` alone is insufficient.
+not create isolation.
 
 Save your actual endpoint and the name of the model you installed in
 **Settings → Copilot provider**, then give the separate Copilot permission.
@@ -410,7 +410,6 @@ reads its ceilings from the database instead of from these.
 
 | Variable | What to set, and what a missing or wrong value does |
 | --- | --- |
-| `ALLOW_PRIVATE_LLM_ENDPOINTS` | `true` only when self-hosting, so the legacy server-side provider fetch may reach a loopback or RFC-1918 address. It does not enable the own-Copilot transport below. Left unset, those addresses are refused; cloud-metadata and link-local addresses are refused either way. |
 | `INHERIT_DEPLOYMENT_KIND` | Exactly `self-hosted-development`. Any other value, unset included, reads as unattested and leaves the local model transport off. |
 | `ALLOW_LOCAL_MODEL_ENDPOINTS` | Exactly `1`. |
 | `INHERIT_LOCAL_MODEL_HOST_ATTESTATION` | Exactly `same-host-egress-isolated-v1`. It records your claim that a same-host, egress-isolated network already exists; it neither builds nor verifies one. |

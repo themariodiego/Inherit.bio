@@ -1,3 +1,98 @@
+## 2026-10-24 — G8.5: the compatibility Copilot chat follows the register's chat rules, and is retired
+
+On local branch `local/chat` from `0a291af0`. It follows the owner's G8.5 decision of 23 October ("code to the register") for the item that entry left open: the compatibility chat branch's authority. No migration. Production is untouched. The `X-Inherit-CSRF` handling of every chat request is unchanged.
+
+**What changed.**
+- **Every subject the compatibility panel served is answered by a canonical rule** (`src/lib/copilot/subject-scope.ts`, used by `/copilot/[scope]` before any token is minted):
+  - A self subject the account holds goes to the own chat, including one with no canonical upload consent, source or chat (the old `legacy` classification). That chat has a server-held conversation, the person's own `copilot.local` or `copilot.cloud` purpose grant, and a context token whose nonce the database spends once. Without that grant the page shows the own chat's consent-required plate, or the setup instructions when no provider is saved.
+  - Another adult the account uploaded or holds a grant for (`subject:adult-uploader-or-grantee`) gets the register's `unavailablePageProjection` on a runtime with no attested same-host model, and a 404 on a runtime that has one. The register requires `copilot.local` signed by that adult for this recipient relationship, and no door writes such a grant.
+  - An `other_adult` record the person holds themselves, a minor and an embryo get a 404. Either the own Copilot permission admits `self` only, or `scope-derived-v1` has no subject case.
+- **Retired:**
+  - the compatibility branch of `src/app/api/chat/route.ts`, which used provider-key consent, kept no conversation and had a reusable token;
+  - its token, `src/lib/copilot/compat-chat-token.ts`;
+  - the panel, `src/components/chat/chat-panel.tsx`;
+  - its consent dialog, `src/components/chat/consent-dialog.tsx`;
+  - `hasCanonicalCopilotScope` and `ownLegacySystemMessage`;
+  - `ALLOW_PRIVATE_LLM_ENDPOINTS` in `.env.example` and the self-hosting guide, which only the branch read.
+- **Answers:**
+  - The retired body (`{ contextToken, message }` under the `copilot-compat-context-v1` MAC) is now an unreadable token: 404 `not_found`, before anything is read.
+  - The AI SDK body is still 400.
+  - The own chat answers a spent context token (its `begin` spend refused) with resource-not-found-v1, 404, as `api.chat`'s `unreadableChatOrInvalidContextToken` says. It was 403 `copilot_unavailable`.
+
+**New suites.**
+- `src/app/api/chat/canonical-scopes.test.ts`, 4/4. It drives the real route handler, the real own branch, the real context token and the real guards over a stateful fake of `own_copilot_chat_v1`, which keeps nonces, chats and turns as the SQL does. It checks:
+  - a second turn, sent as `{ chatId, message }`, reaches the model after the first question and answer, and both pairs are stored with ordinals 1 and 2;
+  - a replayed context token is 404 `not_found`, makes no second model call and adds no chat, while a fresh token opens a new conversation;
+  - the retired compatibility token, for the self subject or another adult, is 404 with no subject, provider, database or model read, and the AI SDK body with or without `?scope=me`, or any `scope` field, is 400;
+  - an own-format token for another adult, a chat row about that adult, another account's chat and an unknown chat are each 404, with no provider, database or model step.
+- `src/lib/copilot/subject-scope.test.ts`, 4/4:
+  - the classification by subject class, holder and transport;
+  - the page opens the own chat for an own self subject;
+  - another adult the account uploaded or holds a grant for gets the unavailable page with no own chat prepared;
+  - nine other subject, holder and runtime combinations, and an unresolvable subject, each get the 404 with nothing prepared.
+- `src/components/chat/own-chat-panel.test.ts`, 5/5 (one new): the first turn sends `{ contextToken, message }`, the second sends only `{ chatId, message }`, and both pairs are shown.
+- `scripts/density-copilot-states.test.ts`, 7/7 (one new). `assertPermittedUnansweredCopilotRows` accepts exactly these rows, with no key, provider-key consent, source, chat or context token:
+  - the upload consent;
+  - the insurance acknowledgement;
+  - one live `copilot.cloud` grant with its cloud disclosure.
+  It refuses each of these variations.
+
+**Changed assertions (old, new, why).**
+- `src/lib/copilot/own-chat-route.test.ts`, "rejects a stale projection and a replayed nonce before dispatch":
+  - Old: 403.
+  - New: the replay is 404 `{ error: "not_found" }`, and a changed projection is still 403. No model call and no commit happen.
+  - Why: the register answers an invalid context token with resource-not-found-v1.
+- `src/lib/copilot/own-chat.test.ts`:
+  - "keeps the configured legacy-only experience…" expected `{ kind: "legacy" }` for a subject with no canonical consent. Its replacement expects `{ kind: "unavailable", reason: "consent_required" }` from the status, with no classification query.
+  - "fails closed on classification query errors" called `hasCanonicalCopilotScope`, which is gone. Its replacement makes the status read throw and expects `scope_unavailable`.
+  - The query double loses its classification branch.
+- `src/lib/copilot/own-chat-context-recovery.test.ts`: the subject double gains `subjectAccountId`, the page's own-subject test, and loses the mock of the deleted panel. The assertion is unchanged.
+- `src/copy/copilot/system-prompts.test.ts`, 7/7 (was 8):
+  - "assembles both legacy own-scope messages…" and its two digests are removed with the function.
+  - The route-text test no longer expects `ownLegacySystemMessage(...)`. It now expects that the route calls no `streamText(`.
+- `scripts/form-register-correspondence.test.ts`, 36/36:
+  - Form census: 26 → 25 forms, 25 → 24 handler-submitted, 28 → 27 requests, 23 → 22 files.
+  - Client census: 226 → 224 modules, 97 → 95 "use client", 90 → 88 requests, 26 → 25 form request sites, 64 → 63 made by no form.
+  - The chat-token test reads `own-chat-panel.tsx`, which sends the same header, instead of the deleted panel.
+- `scripts/route-register-correspondence.test.ts`, 73/73:
+  - The `chat-panel.tsx` review seal is removed.
+  - `own-chat-panel.tsx` is resealed, because it gained the `ChatProviderInfo` type the retired panel exported. It is still one form, the same handler and the same target.
+  - The reviewed form counts go 14/24/26 → 13/23/25.
+- `scripts/density-copilot-states.test.ts`:
+  - The fixture pins no longer expect the 403 `consent_required` refusal, the `Review what would be shared` button or the chat route's consent line before `streamText(`.
+  - They now expect, for every state:
+    - the permission screens (`completeOwnUploadConsent`, `allowCopilot`);
+    - one of the two row assertions;
+    - the own route's intent gate before `prepareOwnCopilotProvider`.
+  - For `processing`: the held POST settling 200 with `x-copilot-refusal: treatment`.
+  - For `consent-required`: the link to `/settings/copilot` and no composer.
+- `scripts/citation-surface-gate.ts` and its test, 61/61:
+  - `OPEN_BACKLOG` goes 59 → 57, because the branch's two unreviewed tool descriptions ("The rsID to look up, e.g. 'rs762551'", "No percentile, rank or risk is available.") left with it, and their `docs/claim-surface-backlog.json` entries are removed.
+  - The backlog file and entry digests are re-pinned, and planted counts go 60 → 58.
+  - The two ledger-mutation tests use the own route's entry.
+- `scripts/env-gate.test.ts`, 38/38: direct keys 26 → 25, read keys 49 → 48 (48 → 47 in the claimant plant), template and guide keys 41 → 40, guide names 52 → 51. All of this is the one retired variable.
+- `scripts/self-host-local.test.ts`, 31/31: the exported-template-key refusal uses `ALLOW_LOCAL_MODEL_ENDPOINTS` in place of the retired `ALLOW_PRIVATE_LLM_ENDPOINTS`.
+- Removed with their code: `src/app/api/chat/compatibility.test.ts` (7), `src/components/chat/chat-panel.test.ts` (5) and `src/lib/copilot/compat-chat-token.test.ts` (6).
+
+**Planted defects.** Each was applied on disk, run and reverted, and each fails its test:
+- (a) The own route drops the server history from the model's messages: "keeps the conversation on the server, so a second turn sees the first" fails ("expected [ [ { role: 'user', …(1) } ], …(1) ] to deeply equal …").
+- (b) The own route binds the nonce spend to a per-request salt instead of the token's nonce: "spends the context token once…" fails (`expected 200 to be 404`).
+- (c) The retired branch is restored (`route.ts`, `compat-chat-token.ts`, `own-chat.ts` and `system-prompts.ts` from `0a291af0`): "refuses the retired compatibility body…" fails (`expected 403 to be 404`).
+- (d) The own route drops its `subjectClass !== 'self'` check: "refuses a subject the person may not ask about…" fails (`expected 403 to be 404`).
+- (e) The page classifier treats another adult as own: all three page tests fail.
+- (f) The own panel resends the context token on the second turn: the new panel test fails.
+- (g) pgTAP: `supabase/tests/canonical_own_copilot_chat.sql` passes 123/123 in its own rolled-back transaction on the shared local database. With `own_copilot_nonces_pkey` dropped inside that transaction, it fails "new conversation nonce is single-use" (and one dependent assertion). The constraint is present afterwards.
+
+**Browser tests, typechecked and not run.**
+- `e2e/copilot-scope-states.spec.ts`: `empty` and `processing` move to the own chat:
+  - Each test signs the upload consent and allows Copilot for the synthetic cloud endpoint.
+  - `empty`: the own thread hint and the data-flow indicator's "Review or withdraw permission" link.
+  - `processing`: "Checking your question…" with the composer holding the question and disabled. The held question is one the intent gate refuses, so the release shows the `treatment` refusal.
+- `e2e/helpers/density-copilot-state-fixtures.ts`:
+  - `consent-required`: the own chat's plate for a saved provider with no permission, with no POST.
+  - `empty` and `processing`: the permitted own panel.
+- `e2e/settings.spec.ts` (`/settings/consents` processing and complete) and `e2e/helpers/density-owned-state-fixtures.ts` (`consents-ready`, `consents-pending`) write their `consent_grants` row by sending the deleted dialog's own request, `{ providerKey }` to `/api/consents`, with the route's one-time token. That door is still served, and no screen sends it any more. Their assertions about the Consents page are unchanged.
+
 ## 2026-10-24 — G8.5: the remaining client requests and responses, aligned with the register
 
 This entry follows the owner's decisions of 23 October ("G8.5: forms, CSRF, the server action and the Resend webhook", item 1: code to the register, and the register lists the harmless extras) and 24 October ("G8.5: Settings → AI may omit `apiKey`"), on local branch `local/align` from `0a291af0`. The migration `20261025200000_consent_revoke_provider_nonce.sql` is a guarded production release; production is untouched.

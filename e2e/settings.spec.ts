@@ -3,6 +3,7 @@ import { type Page } from "@playwright/test";
 import { expect, test } from "./audited-test";
 import path from "node:path";
 import { adminClient, createConfirmedUser, signIn } from "./helpers";
+import { accountCsrf } from "./helpers/session-csrf";
 import { uploadOwnFilePrepared } from "./own-report-helpers";
 import {
   COPILOT_PRESET_GUIDES,
@@ -37,7 +38,7 @@ const SECTIONS = [
  * — chosen there because `allowedModelAddress` blocks every documentation
  * range (192.0.2/24, 198.51.100/24, 203.0.113/24) and this one sits just
  * outside the last of them, so it classifies as a remote cloud recipient.
- * Nothing here connects to it; the consent gate refuses before any model step.
+ * Nothing here connects to it: no Copilot question is asked.
  */
 const SYNTHETIC_CLOUD_ENDPOINT = "https://203.0.114.10:8123/v1";
 /** The provider key `providerKeyFor` derives from that endpoint. */
@@ -59,25 +60,23 @@ async function saveSyntheticCloudProvider(page: Page) {
 }
 
 /**
- * Walks the only path that writes a `consent_grants` row: ask one question,
- * meet the cloud consent gate, consent in the dialog it offers. See the header
- * above the processing test for why no shorter path exists.
+ * Writes one `consent_grants` row through the only door that writes one: the
+ * provider-key body of `POST /api/consents` (`grant_cloud_model_consent`).
+ * Until 24 October 2026 the compatibility Copilot panel's dialog sent it,
+ * after the chat route's `consent_required`. That panel is retired (G8.5): no
+ * screen sends the body any more and no chat reads the table, while the
+ * route still accepts it and this page still lists and revokes what it
+ * wrote. So the request is the dialog's own, sent from this signed-in page
+ * with the route's one-time token, for the provider just saved.
  */
 async function grantCloudModelConsent(page: Page) {
-  await page.goto("/copilot/me");
-  await page.getByLabel("Message the copilot").fill("What is my caffeine genotype?");
-  const refused = page.waitForResponse(r => new URL(r.url()).pathname === "/api/chat");
-  await page.getByRole("button", { name: "Send", exact: true }).click();
-  const refusal = await refused;
-  expect(refusal.status()).toBe(403);
-  expect(await refusal.json()).toEqual({ error: "consent_required", provider_key: SYNTHETIC_PROVIDER_KEY });
-  const review = page.getByRole("button", { name: "Review what would be shared", exact: true });
-  await expect(review, "the cloud consent gate refused before any model step").toBeVisible();
-  await review.click();
-  const granted = page.waitForResponse((response) =>
-    new URL(response.url()).pathname === "/api/consents" && response.request().method() === "POST");
-  await page.getByTestId("consent-grant").click();
-  expect((await granted).status()).toBe(200);
+  const origin = new URL(page.url()).origin;
+  const granted = await page.request.post("/api/consents", {
+    headers: { origin, "content-type": "application/json", "x-inherit-csrf": await accountCsrf(page, "api.consents") },
+    data: { providerKey: SYNTHETIC_PROVIDER_KEY },
+  });
+  expect(granted.status()).toBe(200);
+  expect(Object.keys(await granted.json())).toEqual(["grantId"]);
 }
 
 test.describe.configure({ mode: "serial" });
@@ -429,12 +428,21 @@ test("the People settings page says it is not built, and blames no jurisdiction"
  *      provider, key or model step.
  *   3. consent in the dialog it offers. THAT is what writes the row.
  *
+ * SINCE 24 OCTOBER 2026 (G8.5) steps 2 and 3 are gone from the product: the
+ * compatibility panel and its dialog are retired, `/copilot/me` answers every
+ * self subject through the own chat, and no screen sends the provider-key
+ * body. The route still takes it and this page still lists and revokes the
+ * row, so `grantCloudModelConsent` sends the dialog's request itself, with
+ * the route's one-time token, and asserts its response. What this test
+ * proves about the revoke control is unchanged.
+ *
  * WHICH ALSO SETTLES A QUESTION LEFT OPEN. The empty-state copy above says
  * "No cloud-LLM consent grants. None are needed for local models", and it was
  * unclear whether a local grant could land in a list captioned that way. It
  * cannot: `api/chat/route.ts` consults and requires `consent_grants` only
  * inside its `if (!local)` branch, and nothing else inserts into that table.
- * The copy is accurate.
+ * The copy is accurate. (Since G8.5 the chat route reads `consent_grants` not
+ * at all; the own chat's cloud permission is a purpose grant.)
  *
  * AND STEP 2 DID NOT WORK, which is the more valuable half of this. Every
  * question the compatibility panel sent came back 400 `invalid_request`, and

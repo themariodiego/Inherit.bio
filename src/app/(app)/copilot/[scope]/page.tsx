@@ -1,19 +1,17 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ChatPanel, type ChatProviderInfo } from "@/components/chat/chat-panel";
 import { OwnChatPanel } from "@/components/chat/own-chat-panel";
-import { CohortCopilotPage, FamilyCopilotPage } from "@/components/chat/group-scope-pages";
+import { CohortCopilotPage, FamilyCopilotPage, LocalTransportUnavailable } from "@/components/chat/group-scope-pages";
 import { Breadcrumbs } from "@/components/site/breadcrumbs";
 import { EmptyState } from "@/components/site/empty-state";
 import { Button } from "@/components/ui/button";
 import { NAV_LABELS } from "@/copy/navigation";
 import { EmbryoResultGate } from "@/components/embryo/result-gate";
 import { parseCopilotRouteScope } from "@/lib/copilot/group-scopes";
+import { modelRuntime } from "@/lib/copilot/model-endpoint";
 import { prepareOwnCopilotChat } from "@/lib/copilot/own-chat";
-import { mintCompatChatToken } from "@/lib/copilot/compat-chat-token";
-import { getSensitiveAccountContext } from "@/lib/account-deletion";
-import { isLocalBaseUrl, providerKeyFor } from "@/lib/llm";
+import { copilotSubjectScope } from "@/lib/copilot/subject-scope";
 import { resolveSubjectForAccount } from "@/lib/subjects";
 import { createClient } from "@/lib/supabase/server";
 import { route } from "@/lib/primary-routes";
@@ -45,7 +43,16 @@ export default async function ChatPage(
   }
   const subject = await resolveSubjectForAccount(user.id, scope);
   if (!subject) notFound();
-  const ownChat = subject.subjectClass === "self" ? await prepareOwnCopilotChat(subject.id) : null;
+  // copilot-transport-availability-v1 classifies the resolved subject as own
+  // or true non-self; only an own self subject reaches a context token
+  // (src/lib/copilot/subject-scope.ts). A true non-self subject on a runtime
+  // with no attested same-host model gets the registered unavailable page,
+  // which names nothing about the subject; every other subject is the same
+  // non-enumerating 404 as an unknown segment.
+  const subjectScope = copilotSubjectScope(user.id, subject, modelRuntime().localAllowed);
+  if (subjectScope.kind === "true-non-self-unavailable") return <LocalTransportUnavailable />;
+  if (subjectScope.kind !== "own") notFound();
+  const ownChat = await prepareOwnCopilotChat(subject.id);
   // Crumbs say where this is (round-2 M8): the record, then the page by its
   // own h1, the way the record routes do.
   const title = `Ask about ${subject.displayLabel}`;
@@ -61,7 +68,7 @@ export default async function ChatPage(
       <h1 className="display">{title}</h1>
     </header>
   );
-  if (ownChat?.kind === "ready") {
+  if (ownChat.kind === "ready") {
     return (
       <div className="page-stack rec-column stack-blocks">
         {header}
@@ -70,7 +77,7 @@ export default async function ChatPage(
       </div>
     );
   }
-  if (ownChat?.kind === "unavailable" && ownChat.reason !== "provider_unavailable") {
+  if (ownChat.reason !== "provider_unavailable") {
     if (ownChat.reason === "account_required" || ownChat.reason === "scope_unavailable") notFound();
     return (
       <div className="page-stack rec-column stack-blocks">
@@ -88,158 +95,115 @@ export default async function ChatPage(
       </div>
     );
   }
-  // Only an explicitly legacy scope may use the compatibility UI. A missing
-  // canonical provider never falls back to the old provider-key consent path.
-  const { data: settings } = ownChat?.kind === "unavailable" ? { data: null } : await supabase
-    .from("llm_settings")
-    .select("provider, base_url, model")
-    .maybeSingle();
-
-  let info: ChatProviderInfo = { configured: false };
-  if (settings) {
-    const providerKey = providerKeyFor(
-      settings.provider as "anthropic" | "openai_compatible",
-      settings.base_url,
-    );
-    const local =
-      settings.provider === "openai_compatible" &&
-      settings.base_url != null &&
-      isLocalBaseUrl(settings.base_url);
-    const { data: grant } = await supabase
-      .from("consent_grants")
-      .select("id")
-      .eq("provider_key", providerKey)
-      .is("revoked_at", null)
-      .maybeSingle();
-    info = {
-      configured: true,
-      provider: settings.provider as "anthropic" | "openai_compatible",
-      providerKey,
-      model: settings.model,
-      local,
-      hasConsent: Boolean(grant),
-    };
-  }
-
-  // The compatibility panel sends the register's { contextToken, message }
-  // (G8.5, 23 October 2026): the token names this account, its auth session
-  // and the subject this route resolved, and grants nothing on its own.
-  const account = info.configured ? await getSensitiveAccountContext() : null;
-  if (info.configured && (!account || account.user.id !== user.id)) notFound();
-  const contextToken = account ? mintCompatChatToken({ accountId: user.id, sessionId: account.sessionId, subjectId: subject.id }) : null;
-
+  // No saved provider: the setup instructions. Nothing is sent from here.
   return (
     <div className="page-stack rec-column stack-blocks">
       {header}
-      {!info.configured || !contextToken ? (
-        // The empty state (round-1 m13): one inset surface with the sentence,
-        // the example questions as quiet lines and "Open Settings" as the
-        // page's one forest action; the setup notes follow as plain text,
-        // and the settings page is linked once.
-        <div data-testid="local-mode-instructions" className="stack-blocks text-sm">
-          <EmptyState
-            action={
-              <Button asChild size="lg">
-                <Link href={route("settings.copilot")}>Open Settings →</Link>
-              </Button>
-            }
-          >
-            <div className="rec-stack-sm">
-              <p className="body-lg text-ink">
-                Ask questions about your own reports in plain language —{" "}
-                <em>&ldquo;What does my caffeine result mean?&rdquo;</em> — and
-                get answers grounded in your data.
-              </p>
-              <ul aria-label="Example questions" className="rec-stack-sm mt-2">
-                {EXAMPLE_QUESTIONS.map((q) => (
-                  <li
-                    key={q}
-                    className="caption border-l-2 border-line-strong pl-3 italic"
-                  >
-                    &ldquo;{q}&rdquo;
-                  </li>
-                ))}
-              </ul>
-              <p className="caption">
-                Questions like these become askable as soon as an AI is
-                connected.
-              </p>
-            </div>
-          </EmptyState>
-
-          <div className="rec-stack max-w-measure">
-            <p>
-              To answer, the copilot needs an AI — Inherit doesn&rsquo;t
-              bundle one, so you decide which AI (if any) ever sees your
-              questions. <strong>Connecting an AI is a one-time technical
-              step.</strong>
+      {/* The empty state (round-1 m13): one inset surface with the sentence,
+          the example questions as quiet lines and "Open Settings" as the
+          page's one forest action; the setup notes follow as plain text,
+          and the settings page is linked once. */}
+      <div data-testid="local-mode-instructions" className="stack-blocks text-sm">
+        <EmptyState
+          action={
+            <Button asChild size="lg">
+              <Link href={route("settings.copilot")}>Open Settings →</Link>
+            </Button>
+          }
+        >
+          <div className="rec-stack-sm">
+            <p className="body-lg text-ink">
+              Ask questions about your own reports in plain language —{" "}
+              <em>&ldquo;What does my caffeine result mean?&rdquo;</em> — and
+              get answers grounded in your data.
             </p>
-
-            <div className="rec-stack-sm">
-              <h2 className="title">Easiest: use an AI service</h2>
-              <ol className="max-w-measure list-decimal space-y-2 pl-5">
-                <li>
-                  Create an Anthropic API key at{" "}
-                  <a
-                    href="https://console.anthropic.com"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="prose-link"
-                  >
-                    console.anthropic.com
-                  </a>
-                  .
+            <ul aria-label="Example questions" className="rec-stack-sm mt-2">
+              {EXAMPLE_QUESTIONS.map((q) => (
+                <li
+                  key={q}
+                  className="caption border-l-2 border-line-strong pl-3 italic"
+                >
+                  &ldquo;{q}&rdquo;
                 </li>
-                <li>
-                  Paste it in <span className="font-medium">Settings → Copilot provider</span>{" "}
-                  and save. Then review and allow the information Copilot may use.
-                </li>
-              </ol>
-              <p className="max-w-measure text-ink-muted">
-                An API key is like a password. It lets Inherit send{" "}
-                <strong>your</strong> questions to the AI service you chose. We
-                ask for your explicit permission before using your data. The
-                permission names the provider and the information it may receive.
-                It remains in effect until it ends or you withdraw it. Changing
-                the provider, model or key requires a new permission. Your AI
-                provider sets its own charges.
-              </p>
-            </div>
+              ))}
+            </ul>
+            <p className="caption">
+              Questions like these become askable as soon as an AI is
+              connected.
+            </p>
+          </div>
+        </EmptyState>
 
-            <details className="surface-inset px-4 pb-1 text-ink">
-              <summary className="font-medium">
-                Advanced: run an AI beside your own Inherit server
-              </summary>
-              <p className="mt-1 max-w-measure pb-3 leading-relaxed">
-                On a configured self-hosted development installation, run{" "}
+        <div className="rec-stack max-w-measure">
+          <p>
+            To answer, the copilot needs an AI — Inherit doesn&rsquo;t
+            bundle one, so you decide which AI (if any) ever sees your
+            questions. <strong>Connecting an AI is a one-time technical
+            step.</strong>
+          </p>
+
+          <div className="rec-stack-sm">
+            <h2 className="title">Easiest: use an AI service</h2>
+            <ol className="max-w-measure list-decimal space-y-2 pl-5">
+              <li>
+                Create an Anthropic API key at{" "}
                 <a
-                  href="https://ollama.com"
+                  href="https://console.anthropic.com"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="prose-link"
                 >
-                  Ollama
-                </a>{" "}
-                or LM Studio on the same machine as Inherit. Then choose
-                &ldquo;OpenAI-compatible&rdquo; in Settings. Use the base URL{" "}
-                <code className="rounded-sm bg-card px-1.5 py-0.5 font-mono text-xs">
-                  http://localhost:11434/v1
-                </code>{" "}
-                and a model such as{" "}
-                <code className="rounded-sm bg-card px-1.5 py-0.5 font-mono text-xs">
-                  llama3.1
-                </code>
-                . Local mode requires a configured same-host endpoint and a
-                network that blocks outside connections. The public Inherit
-                service cannot connect to a model on your computer. Saving a
-                local endpoint does not itself create that network protection.
-              </p>
-            </details>
+                  console.anthropic.com
+                </a>
+                .
+              </li>
+              <li>
+                Paste it in <span className="font-medium">Settings → Copilot provider</span>{" "}
+                and save. Then review and allow the information Copilot may use.
+              </li>
+            </ol>
+            <p className="max-w-measure text-ink-muted">
+              An API key is like a password. It lets Inherit send{" "}
+              <strong>your</strong> questions to the AI service you chose. We
+              ask for your explicit permission before using your data. The
+              permission names the provider and the information it may receive.
+              It remains in effect until it ends or you withdraw it. Changing
+              the provider, model or key requires a new permission. Your AI
+              provider sets its own charges.
+            </p>
           </div>
+
+          <details className="surface-inset px-4 pb-1 text-ink">
+            <summary className="font-medium">
+              Advanced: run an AI beside your own Inherit server
+            </summary>
+            <p className="mt-1 max-w-measure pb-3 leading-relaxed">
+              On a configured self-hosted development installation, run{" "}
+              <a
+                href="https://ollama.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="prose-link"
+              >
+                Ollama
+              </a>{" "}
+              or LM Studio on the same machine as Inherit. Then choose
+              &ldquo;OpenAI-compatible&rdquo; in Settings. Use the base URL{" "}
+              <code className="rounded-sm bg-card px-1.5 py-0.5 font-mono text-xs">
+                http://localhost:11434/v1
+              </code>{" "}
+              and a model such as{" "}
+              <code className="rounded-sm bg-card px-1.5 py-0.5 font-mono text-xs">
+                llama3.1
+              </code>
+              . Local mode requires a configured same-host endpoint and a
+              network that blocks outside connections. The public Inherit
+              service cannot connect to a model on your computer. Saving a
+              local endpoint does not itself create that network protection.
+            </p>
+          </details>
         </div>
-      ) : (
-        <ChatPanel info={info} contextToken={contextToken} displayLabel={subject.displayLabel} />
-      )}
+      </div>
     </div>
   );
 }

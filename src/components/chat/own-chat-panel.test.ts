@@ -102,3 +102,27 @@ describe("own chat correction client contract", () => {
     expect(harness.refresh).toHaveBeenCalledOnce();
   });
 });
+
+describe("own chat conversation turns", () => {
+  // G8.5 (24 October 2026): this panel now serves every subject the
+  // compatibility panel served on /copilot/me. The server holds the
+  // conversation, so the second turn names it and sends no history.
+  it("opens with the page's token once, then sends only { chatId, message } for the next turn", async () => {
+    const ask = async (question: string) => {
+      (control(render(), "textarea").onChange as (event: unknown) => void)({ target: { value: question } });
+      (control(render(), "form").onSubmit as (event: unknown) => void)({ preventDefault() {} });
+      await vi.waitFor(() => expect(control(render(), "textarea").disabled).toBe(false));
+    };
+    harness.fetch.mockResolvedValueOnce(Response.json({ chatId, message: { role: "assistant", content: "First answer.", citations: [], embryoFindings: [] } }))
+      .mockResolvedValueOnce(Response.json({ chatId, message: { role: "assistant", content: "Second answer.", citations: [], embryoFindings: [] } }));
+    await ask("First question?");
+    await ask("Second question?");
+    expect(harness.fetch.mock.calls.map(([url, init]) => [url, JSON.parse(String((init as RequestInit).body))])).toEqual([
+      ["/api/chat", { contextToken: props.contextToken, message: "First question?" }],
+      ["/api/chat", { chatId, message: "Second question?" }],
+    ]);
+    const shown = text(render());
+    for (const line of ["First question?", "First answer.", "Second question?", "Second answer."]) expect(shown).toContain(line);
+    expect(harness.refresh).not.toHaveBeenCalled();
+  });
+});

@@ -89,7 +89,9 @@ describe("fresh local profile", () => {
     expect(() => checkedEnvironment({ CI: "true", GITHUB_ACTIONS: "true", RUNNER_ENVIRONMENT: "github-hosted" })).not.toThrow();
     for (const name of ["SUPABASE_AUTH_JWT_SECRET", "DOCKER_CONFIG", "OPENAI_API_KEY", "S3_HOST", "PGHOST"])
       expect(() => checkedEnvironment({ [name]: "synthetic" }, TEMPLATE)).toThrow("ambient_configuration_override");
-    for (const name of ["DATABASE_URL", "NEXT_PUBLIC_SUPABASE_URL", "RESEND_API_KEY", "INHERIT_PREPARED_WGS_ENABLED", "ALLOW_PRIVATE_LLM_ENDPOINTS"])
+    // G8.5 (2026-10-24): ALLOW_PRIVATE_LLM_ENDPOINTS left the template with the compatibility chat; its
+    // place is the own-Copilot local transport's commented key, the same kind of optional template line.
+    for (const name of ["DATABASE_URL", "NEXT_PUBLIC_SUPABASE_URL", "RESEND_API_KEY", "INHERIT_PREPARED_WGS_ENABLED", "ALLOW_LOCAL_MODEL_ENDPOINTS"])
       for (const value of ["synthetic", ""]) expect(() => checkedEnvironment({ [name]: value }, TEMPLATE)).toThrow(/(?:exported_app_configuration|ambient_configuration_override)/);
   });
   it("fails on missing or unreviewed template values, without returning their contents", () => {

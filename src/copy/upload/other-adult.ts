@@ -256,8 +256,9 @@ export const PATH_B_CHOICES_COPY = {
  *
  * Ancestry is not listed: a Path B ancestry choice can be recorded, but no
  * job makes an ancestry result from this file. Family pages read the
- * person's own record, never this file, and Copilot never reads it: the
- * file's descriptor closes the legacy chat scope (hasCanonicalCopilotScope).
+ * person's own record, never this file, and Copilot never reads it:
+ * `/copilot/[scope]` opens no conversation for an `other_adult` subject
+ * (src/lib/copilot/subject-scope.ts).
  */
 export const ADULT_UPLOAD_DERIVED_LIST = {
   heading: "What can be made from this file",

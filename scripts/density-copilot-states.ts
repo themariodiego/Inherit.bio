@@ -21,9 +21,47 @@ const record = (value: unknown): value is Record<string, unknown> => Boolean(val
   && !Array.isArray(value) && [Object.prototype, null].includes(Object.getPrototypeOf(value))
   && Object.values(Object.getOwnPropertyDescriptors(value)).every(property => "value" in property));
 
-/** These are complete reads of a fresh actor before the consent gate.
+/** The question the `pending` state holds. The own chat's intent gate refuses
+ * it (`treatment`) before any provider step, so nothing reaches the model. */
+export const DENSITY_COPILOT_GATED_QUESTION = "What dosage of vitamin D should I take?";
+
+/** These are complete reads of a fresh actor with a saved provider and no
+ * Copilot permission: the own chat's consent-required state (G8.5, 24
+ * October 2026; until then the compatibility panel's consent refusal).
  * Validation never creates a model answer, grant or native evidence. */
 export function assertUnansweredCopilotRows(value: unknown, accountId: string): asserts value is UnansweredCopilotRows {
+  assertNativeCopilotActor(value, accountId);
+  const rows = value as UnansweredCopilotRows;
+  for (const name of ["llm_keys", "subject_consents", "consent_signatures", "consent_grants", "genome_files",
+    "chats", "copilot_context_tokens", "purpose_grants"] as const)
+    assert(rows[name].length === 0, "No key, consent, canonical source, stored chat or model result is permitted");
+}
+
+/** Complete reads of an actor who signed their own upload consent and allowed
+ * Copilot for the saved cloud model, and has asked nothing that was answered:
+ * the own chat's `empty` and `processing` states. Exactly the upload consent,
+ * the insurance acknowledgement and one live copilot.cloud permission with its
+ * cloud disclosure; no key, provider-key consent, source, stored chat, context
+ * token or model result. */
+export function assertPermittedUnansweredCopilotRows(value: unknown, accountId: string): asserts value is UnansweredCopilotRows {
+  assertNativeCopilotActor(value, accountId);
+  const rows = value as UnansweredCopilotRows, subjectId = rows.subjects[0].id;
+  for (const name of ["llm_keys", "consent_grants", "genome_files", "chats", "copilot_context_tokens"] as const)
+    assert(rows[name].length === 0, "No key, provider-key consent, canonical source, stored chat or context token is permitted");
+  assert(rows.purpose_grants.length === 1 && rows.purpose_grants[0].purpose === "copilot.cloud"
+    && rows.purpose_grants[0].revoked_at === null && rows.purpose_grants[0].target_kind === "subject"
+    && rows.purpose_grants[0].target_id === subjectId, "Exactly one live own copilot.cloud permission required");
+  const live = rows.subject_consents.filter(row => row.revoked_at === null);
+  assert(rows.subject_consents.length === 2 && live.length === 2 && live.every(row => row.account_id === accountId && row.subject_id === subjectId)
+    && live.some(row => row.consent_type === "upload_class" && JSON.stringify(row.scope) === JSON.stringify(["store"]))
+    && live.some(row => row.consent_type === "cloud_model"), "Exactly the live upload consent and cloud disclosure required");
+  assert(rows.consent_signatures.length === 4 && rows.consent_signatures.every(row => row.signer_account_id === accountId
+    && row.target_id === subjectId) && JSON.stringify(rows.consent_signatures.map(row => row.purpose).sort())
+    === JSON.stringify(["copilot.cloud", "copilot.cloud", "insurance_acknowledgement", "store"]),
+  "Exactly the upload, insurance and Copilot permission signatures required");
+}
+
+function assertNativeCopilotActor(value: unknown, accountId: string): asserts value is UnansweredCopilotRows {
   assert(/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/.test(accountId), "Actual account UUID required");
   assert(record(value) && Object.keys(value).length === COPILOT_DENSITY_TABLES.length
     && COPILOT_DENSITY_TABLES.every(name => Object.hasOwn(value, name) && Array.isArray(value[name])
@@ -47,8 +85,5 @@ export function assertUnansweredCopilotRows(value: unknown, accountId: string): 
     && recipient.baseUrl === DENSITY_COPILOT_ENDPOINT && typeof recipient.revision === "number"
     && Number.isSafeInteger(recipient.revision) && recipient.revision > 0
     && recipient.revision === rows.profiles[0].copilot_settings_revision, "Actual current native provider revision required");
-  for (const name of ["llm_keys", "subject_consents", "consent_signatures", "consent_grants", "genome_files",
-    "chats", "copilot_context_tokens", "purpose_grants"] as const)
-    assert(rows[name].length === 0, "No key, consent, canonical source, stored chat or model result is permitted");
   assert(rows.account_operation_nonces.every(row => row.account_id === accountId), "Exact actor operation history required");
 }

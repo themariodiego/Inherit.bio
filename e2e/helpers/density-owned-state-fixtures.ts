@@ -5,6 +5,7 @@ import path from "node:path";
 import { expect, type Browser, type Page, type Route } from "@playwright/test";
 import { adminClient, completeOwnUploadConsent, createConfirmedUser, signIn, uploadOwnFileThroughUi } from "../helpers";
 import { uploadOwnFilePrepared } from "../own-report-helpers";
+import { accountCsrf } from "./session-csrf";
 import { densityCapturePlan, type DensityStateCase } from "../../scripts/density-capture-plan";
 import { ownedDensityRecipe, type OwnedDensityRecipe } from "../../scripts/density-owned-states";
 import type { DensityRegister } from "../../scripts/density-current";
@@ -125,20 +126,18 @@ async function saveCloudProvider(page: Page) {
   await expect(page.getByText("Provider saved. Review the separate Copilot permission below.", { exact: true })).toBeVisible();
 }
 
+/** The provider-key consent the Consents page lists, through its one door
+ * (grant_cloud_model_consent). The compatibility Copilot panel's dialog sent it
+ * until 24 October 2026; that panel is retired (G8.5) and no screen sends it,
+ * so this sends the dialog's own request with the route's one-time token. */
 async function grantCloudConsent(page: Page) {
   await saveCloudProvider(page);
-  await page.goto("/copilot/me");
-  await page.getByLabel("Message the copilot").fill("What is my caffeine genotype?");
-  const refused = page.waitForResponse(response => new URL(response.url()).pathname === "/api/chat");
-  await page.getByRole("button", { name: "Send", exact: true }).click();
-  const response = await refused;
-  expect(response.status()).toBe(403);
-  expect(await response.json()).toEqual({ error: "consent_required", provider_key: CLOUD_PROVIDER });
-  await page.getByRole("button", { name: "Review what would be shared", exact: true }).click();
-  const signed = page.waitForResponse(reply => new URL(reply.url()).pathname === "/api/consents"
-    && reply.request().method() === "POST");
-  await page.getByTestId("consent-grant").click();
-  expect((await signed).status()).toBe(200); // No model step is requested after consent.
+  const signed = await page.request.post("/api/consents", {
+    headers: { origin: new URL(page.url()).origin, "content-type": "application/json", "x-inherit-csrf": await accountCsrf(page, "api.consents") },
+    data: { providerKey: CLOUD_PROVIDER },
+  });
+  expect(signed.status()).toBe(200); // No model step is requested.
+  expect(Object.keys(await signed.json())).toEqual(["grantId"]);
 }
 
 async function assertEmpty(page: Page, row: DensityStateCase) {

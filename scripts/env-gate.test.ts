@@ -132,7 +132,9 @@ describe("the env gate holds .env.example to what the code reads", () => {
     // NEW appeals-open reads both TEST flags directly; the complete source
     // census had 23 direct keys. The account R2 adapter now explicitly reads
     // its declared TEST flag, owner DSN and public CA: three additional keys.
-    expect(result.directReadKeyCount).toBe(26);
+    // G8.5 (2026-10-24): one fewer direct, read, template and guide key each: the retired compatibility chat
+    // branch was the one reader of ALLOW_PRIVATE_LLM_ENDPOINTS, which left .env.example and the guide with it.
+    expect(result.directReadKeyCount).toBe(25);
     // V5 adds six private server settings and one harness-owned TEST flag.
     // Four source modules add a distinct process.env binding each: requester
     // statement policy, R2 native adapter, gateway adapter, private transport.
@@ -155,14 +157,14 @@ describe("the env gate holds .env.example to what the code reads", () => {
     // claimant adapter adds one; distinct keys and binding sites differ.
     expect(result.boundBindingCount).toBe(17);
     expect(result.dynamicReadSiteCount).toBe(1);
-    expect(result.readKeyCount).toBe(49);
-    expect(result.templateKeyCount).toBe(41);
+    expect(result.readKeyCount).toBe(48);
+    expect(result.templateKeyCount).toBe(40);
     // Every key an operator is told to fill in is named in the guide they
     // follow, and the ten further names the guide writes as configuration are
     // the recorded ones: the two labels the Supabase CLI prints, the worker's
     // own project URL, and the seven nobody should ever set by hand.
-    expect(result.guideDocumentedKeyCount).toBe(41);
-    expect(result.guideNamedCount).toBe(52);
+    expect(result.guideDocumentedKeyCount).toBe(40);
+    expect(result.guideNamedCount).toBe(51);
     expect(result.guideNamedCount).toBe(result.templateKeyCount + GUIDE_FOREIGN_NAMES.length);
     expect(result.runtimeInjectedKeyCount).toBe(8);
   });
@@ -178,12 +180,12 @@ describe("the env gate holds .env.example to what the code reads", () => {
       const root = plant({ modules: { [file]: source.replace("=process.env", "={}") } });
       const result = runEnvGate(root);
       expect(result.failures).toEqual([]);
-      expect(result.directReadKeyCount).toBe(26);
+      expect(result.directReadKeyCount).toBe(25);
       // The other archive reader and the independent claimant adapter still
       // bind this flag; the claimant adapter also retains its transport keys.
       expect(result.boundReadKeyCount).toBe(28);
       expect(result.boundBindingCount).toBe(16);
-      expect(result.readKeyCount).toBe(49);
+      expect(result.readKeyCount).toBe(48);
     },
   );
 
@@ -196,13 +198,13 @@ describe("the env gate holds .env.example to what the code reads", () => {
     }
     const result = runEnvGate(plant({ modules }));
     expect(result.failures).toEqual([]);
-    expect(result.directReadKeyCount).toBe(26);
+    expect(result.directReadKeyCount).toBe(25);
     // Removing two binding sites does not remove a key still bound by the
     // claimant adapter, including its independent request/retained transport.
     expect(result.boundReadKeyCount).toBe(28);
     expect(result.boundBindingCount).toBe(15);
     // The original direct R2 reader and declaration remain: this is not a lost key.
-    expect(result.readKeyCount).toBe(49);
+    expect(result.readKeyCount).toBe(48);
   });
 
   it("counts the claimant's exact binding and refuses its declaration after that binding is removed", () => {
@@ -223,10 +225,10 @@ describe("the env gate holds .env.example to what the code reads", () => {
     expect(result.failures).toEqual([
       "stale environment variable: .env.example declares INHERIT_TEST_CLAIMANT_RIGHTS but nothing under src/ reads it",
     ]);
-    expect(result.directReadKeyCount).toBe(26);
+    expect(result.directReadKeyCount).toBe(25);
     expect(result.boundReadKeyCount).toBe(25);
     expect(result.boundBindingCount).toBe(16);
-    expect(result.readKeyCount).toBe(48);
+    expect(result.readKeyCount).toBe(47);
   });
 
   it("refuses a missing claimant declaration read through its actual environment binding", () => {

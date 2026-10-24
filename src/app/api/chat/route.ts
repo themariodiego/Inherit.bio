@@ -1,66 +1,14 @@
 import { ownChatResponse } from "@/lib/copilot/own-chat-route";
 import { familyChatResponse, isFamilyChatRequest } from "@/lib/copilot/family-chat-route";
 import { cohortChatResponse, isCohortChatRequest } from "@/lib/copilot/cohort-chat-route";
-import { hasCanonicalCopilotScope } from "@/lib/copilot/own-chat";
-import { isCompatChatRequest, readCompatChatToken } from "@/lib/copilot/compat-chat-token";
-import { getSensitiveAccountContext, isSameOrigin } from "@/lib/account-deletion";
-import { randomUUID } from "node:crypto";
-import { createAnthropic } from "@ai-sdk/anthropic";
-import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
-import {
-  createUIMessageStream,
-  createUIMessageStreamResponse,
-  stepCountIs,
-  streamText,
-  tool,
-  toUIMessageStream,
-  type UIMessageChunk,
-} from "ai";
+import { createUIMessageStream, createUIMessageStreamResponse } from "ai";
 import { NextResponse } from "next/server";
-import { z } from "zod";
-import allowedNumerals from "../../../../config/allowed-numerals.json";
-import { refusalFor, type RefusalId } from "@/copy/copilot/refusals";
-import { OWN_SYSTEM_PROMPT, ownLegacySystemMessage } from "@/copy/copilot/system-prompts";
-import {
-  checkResponse,
-  classifyIntent,
-  foldStreamChunks,
-  guardScopeKindFor,
-  type AllowedNumerals,
-  type GuardScope,
-} from "@/lib/copilot/guard";
-import { decryptSecret } from "@/lib/crypto";
-import { CATEGORY_LABELS } from "@/lib/genome/categories";
-import {
-  getPublishedTemplates,
-  getSubjectGenotypesByRsid,
-  getSubjectProcessedFiles,
-  templateRsids,
-} from "@/lib/genome/load";
-import { resolveTemplate, type ReportTemplate } from "@/lib/genome/reports";
-import { loadPrsForChat } from "@/lib/genome/prs-output";
-import { parseRsid } from "@/lib/genome/types";
-import { isLocalBaseUrl, providerKeyFor, ssrfReasonForBaseUrl } from "@/lib/llm";
-import { resolveSubjectForAccount } from "@/lib/subjects";
-import { createAdminClient } from "@/lib/supabase/admin";
+import type { RefusalId } from "@/copy/copilot/refusals";
+import { OWN_SYSTEM_PROMPT } from "@/copy/copilot/system-prompts";
 import { createClient } from "@/lib/supabase/server";
 import { withAccountCsrf } from "@/lib/security/session-csrf";
 
 export const maxDuration = 300;
-
-/**
- * The compatibility panel's body, the register's `{ contextToken, message }`
- * (owner decision of 23 October 2026, G8.5), with the token minted by
- * /copilot/[scope] for this account, session and subject
- * (src/lib/copilot/compat-chat-token.ts). It replaced the AI SDK transport's
- * `{ id, messages, trigger, messageId }` with a `?scope=` query, which the
- * register does not declare.
- */
-const compatibilityBody = z.object({
-  contextToken: z.string().min(16).max(12000),
-  message: z.string().trim().min(1).max(8000),
-}).strict();
-const COMPATIBILITY_HEADERS = { "Cache-Control": "private, no-store", "Referrer-Policy": "no-referrer", "X-Content-Type-Options": "nosniff" };
 
 /**
  * The refusal as the whole assistant turn on the same stream transport the
@@ -83,19 +31,25 @@ function refusalResponse(id: RefusalId, text: string): Response {
   });
 }
 
-/** Drain a UI message stream to its chunks; nothing is forwarded while it runs. */
-async function bufferUIMessageStream(stream: ReadableStream<UIMessageChunk>): Promise<UIMessageChunk[]> {
-  const chunks: UIMessageChunk[] = [];
-  const reader = stream.getReader();
-  for (;;) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    chunks.push(value);
-  }
-  return chunks;
-}
-
-
+/**
+ * `POST /api/chat` (register `api.chat`, `chat-scope-v1`, `scope-derived-v1`).
+ * Every body is one of the register's two closed shapes, `{ contextToken,
+ * message }` for a new conversation or `{ chatId, message }` for a turn in a
+ * server-held one, and its scope comes only from the token or the database
+ * chat row. Three canonical scopes answer: the Family group, the embryo
+ * cohort and the person's own subject. Each keeps its conversation on the
+ * server, spends its context token once and rechecks its authority before
+ * every read and the model call.
+ *
+ * Since 24 October 2026 (G8.5) there is no compatibility branch. It answered
+ * `/copilot/[scope]`'s other subjects, and self subjects with no canonical
+ * upload consent, under provider-key consent, with no conversation and a
+ * reusable token. Its token, the register's `{ contextToken, message }` under
+ * the `copilot-compat-context-v1` MAC, now reads as no token of any scope and
+ * gets the same resource-not-found-v1 as a forged one; no page mints it.
+ * Which subjects a page can open a conversation for is decided before any
+ * token is minted (src/lib/copilot/subject-scope.ts).
+ */
 export const POST = withAccountCsrf("api.chat", handlePost);
 async function handlePost(request: Request) {
   const supabase = await createClient();
@@ -110,339 +64,10 @@ async function handlePost(request: Request) {
     // own scope never reads either, and the two answer the same closed shape.
     if (await isFamilyChatRequest(raw)) return familyChatResponse(request, raw, { refusal: refusalResponse });
     if (await isCohortChatRequest(raw)) return cohortChatResponse(request, raw, { refusal: refusalResponse });
-    if (isCompatChatRequest(raw)) return compatibilityChatResponse(request, raw, user.id, supabase);
     return ownChatResponse(request, raw, { systemPrompt: OWN_SYSTEM_PROMPT, refusal: refusalResponse });
   }
   // Every registered body names a context token or a chat. The AI SDK
   // transport body the compatibility panel sent until 23 October 2026 is
   // refused like any other unregistered body.
   return NextResponse.json({ error: "invalid_request" }, { status: 400 });
-}
-
-/**
- * The compatibility branch: a scope with no canonical Copilot authority
- * (`hasCanonicalCopilotScope` false), answered as before the register's body
- * reached it, and keeping no conversation. Each question is sent and
- * answered on its own; the answer is chat-completion-v1 with a fresh id that
- * names nothing stored, or the registered refusal stream.
- */
-async function compatibilityChatResponse(request: Request, raw: unknown, userId: string,
-  supabase: Awaited<ReturnType<typeof createClient>>): Promise<Response> {
-  if (!isSameOrigin(request) || new URL(request.url).search) {
-    return NextResponse.json({ error: "copilot_unavailable" }, { status: 403 });
-  }
-  const input = compatibilityBody.safeParse(raw);
-  if (!input.success) return NextResponse.json({ error: "invalid_request" }, { status: 400 });
-  // The token names this account, its auth session and the subject the page
-  // resolved; a token for anyone or anything else is the same opaque 404.
-  const token = readCompatChatToken(input.data.contextToken);
-  const account = await getSensitiveAccountContext();
-  if (!token || !account || account.user.id !== userId || token.accountId !== userId || token.sessionId !== account.sessionId) {
-    return NextResponse.json({ error: "not_found" }, { status: 404 });
-  }
-  const subject = await resolveSubjectForAccount(userId, `s-${token.subjectId}`);
-  // Only a self or an adult subject has a chat scope today; a minor or an
-  // embryo answers the same opaque 404 as an unknown segment until its own
-  // scope exists.
-  const scopeKind = subject ? guardScopeKindFor(subject.subjectClass) : null;
-  if (!subject || !scopeKind) {
-    return NextResponse.json({ error: "scope_not_found" }, { status: 404 });
-  }
-
-  if (await hasCanonicalCopilotScope(subject.id).catch(() => true)) {
-    return NextResponse.json({ error: "copilot_unavailable" }, { status: 403 });
-  }
-
-  // Intent gate (brief line 2262; §5.7 line 366, §6.4 line 402): the newest
-  // user turn is classified after scope authorization and before any
-  // provider, consent, retrieval or model step. A gated intent is answered
-  // with the fixed refusal for its class; the message is neither stored nor
-  // logged, only the class is. Family and cohort scopes pass their kind here
-  // once the route resolves them; today it serves self and subject scopes.
-  const latest = input.data.message;
-  const guardScope: GuardScope = { kind: scopeKind, displayLabel: subject.displayLabel };
-  const verdict = classifyIntent(latest, guardScope);
-  if (verdict.intent !== "allowed") {
-    console.info(`[copilot] refused ${verdict.intent}`);
-    return refusalResponse(verdict.intent, refusalFor(verdict.intent, subject.displayLabel));
-  }
-
-  const admin = createAdminClient();
-
-  const { data: settings } = await supabase
-    .from("llm_settings")
-    .select("provider, base_url, model, key_last4")
-    .eq("user_id", userId)
-    .maybeSingle();
-  if (!settings) {
-    return NextResponse.json(
-      { error: "no_provider", message: "Configure a copilot provider in Settings first." },
-      { status: 409 },
-    );
-  }
-
-  const local =
-    settings.provider === "openai_compatible" &&
-    settings.base_url != null &&
-      isLocalBaseUrl(settings.base_url);
-
-  if (subject.subjectClass !== "self" && !local) {
-    return NextResponse.json(
-      {
-        error: "local_model_required",
-        message:
-          "For anyone's genome but your own, Copilot only runs on a model you host yourself. Nothing leaves Inherit.",
-      },
-      { status: 403 },
-    );
-  }
-
-  // Consent gate: genome-derived data may not leave for a CLOUD provider
-  // without a stored, unrevoked grant naming that provider.
-  const providerKey = providerKeyFor(
-    settings.provider as "anthropic" | "openai_compatible",
-    settings.base_url,
-  );
-  if (!local) {
-    const { data: grant } = await supabase
-      .from("consent_grants")
-      .select("id")
-      .eq("provider_key", providerKey)
-      .is("revoked_at", null)
-      .maybeSingle();
-    if (!grant) {
-      return NextResponse.json(
-        { error: "consent_required", provider_key: providerKey },
-        { status: 403 },
-      );
-    }
-  }
-
-  // Decrypt the BYOK key server-side (service role; table has no client grants).
-  let apiKey: string | undefined;
-  const { data: keyRow } = await admin
-    .from("llm_keys")
-    .select("encrypted_key")
-    .eq("user_id", userId)
-    .maybeSingle();
-  if (keyRow?.encrypted_key) {
-    const hex = (keyRow.encrypted_key as unknown as string).replace(/^\\x/, "");
-    apiKey = decryptSecret(Buffer.from(hex, "hex"));
-  }
-  if (settings.provider === "anthropic" && !apiKey) {
-    return NextResponse.json(
-      { error: "no_key", message: "Add your Anthropic API key in Settings." },
-      { status: 409 },
-    );
-  }
-
-  // SSRF guard: the server fetches base_url below, so refuse internal
-  // addresses unless the deployment opts into local endpoints (self-host).
-  if (settings.provider === "openai_compatible" && settings.base_url) {
-    const reason = ssrfReasonForBaseUrl(
-      settings.base_url,
-      process.env.ALLOW_PRIVATE_LLM_ENDPOINTS === "true",
-    );
-    if (reason) {
-      return NextResponse.json(
-        { error: "blocked_endpoint", message: `Provider endpoint refused: ${reason}` },
-        { status: 400 },
-      );
-    }
-  }
-
-  const model =
-    settings.provider === "anthropic"
-      ? createAnthropic({ apiKey: apiKey! })(settings.model)
-      : createOpenAICompatible({
-          name: providerKey,
-          baseURL: settings.base_url!,
-          apiKey: apiKey ?? "sequence-local",
-        })(settings.model);
-
-  const files = await getSubjectProcessedFiles(admin, subject.id);
-
-  const tools = {
-    get_genotype: tool({
-      description:
-        "Look up the user's genotype at a specific rsID in their active file, with reference annotations when available.",
-      inputSchema: z.object({
-        rsid: z
-          .string()
-          .describe("The rsID to look up, e.g. 'rs762551'"),
-      }),
-      execute: async ({ rsid }) => {
-        const n = parseRsid(rsid);
-        if (!n) return { error: "not a valid rsID" };
-        if (files.length === 0) return { error: "no processed file" };
-        const [{ genotypes, conflicts }, { data: ann }] = await Promise.all([
-          getSubjectGenotypesByRsid(admin, subject.id, [n]),
-          admin
-          .from("ref_variants")
-          // Legacy clinical labels/frequencies are rsID-wide, not bound to
-          // the subject's called allele. Do not offer them as personal evidence.
-          .select("rsid, chrom, pos38, ref, alt, gene_symbol")
-          .eq("rsid", n)
-          .maybeSingle(),
-        ]);
-        if (conflicts.has(n)) {
-          return { rsid, covered: false, conflict: true, note: "The subject's files disagree at this position." };
-        }
-        const genotype = genotypes.get(n);
-        if (!genotype) {
-          return {
-            rsid,
-            covered: false,
-            note: "The user's file does not cover this variant.",
-            annotation: ann ?? null,
-          };
-        }
-        return { rsid, genotype, covered: true, annotation: ann ?? null };
-      },
-    }),
-    search_variants: tool({
-      description:
-        "Find the user's genotypes for all known report-relevant variants in a gene (by gene symbol).",
-      inputSchema: z.object({
-        gene: z.string().describe("Gene symbol, e.g. 'CYP1A2'"),
-      }),
-      execute: async ({ gene }) => {
-        const { data: refs } = await admin
-          .from("ref_variants")
-          .select("rsid, chrom, pos38, gene_symbol")
-          .ilike("gene_symbol", gene)
-          .limit(50);
-        if (!refs || refs.length === 0) {
-          return { gene, variants: [], note: "no reference variants known for this gene symbol" };
-        }
-        if (files.length === 0) {
-          return { gene, variants: refs.map((r) => ({ ...r, genotype: null })) };
-        }
-        const { genotypes, conflicts } = await getSubjectGenotypesByRsid(
-          admin,
-          subject.id,
-          refs.map((r) => r.rsid),
-        );
-        return {
-          gene,
-          variants: refs.map((r) => ({
-            ...r,
-            genotype: conflicts.has(r.rsid) ? null : (genotypes.get(r.rsid) ?? null),
-            conflict: conflicts.has(r.rsid),
-          })),
-        };
-      },
-    }),
-    list_reports: tool({
-      description:
-        "List the user's report library with coverage status for their active file. Optionally filter by category.",
-      inputSchema: z.object({
-        category: z
-          .string()
-          .nullish()
-          .describe(
-            `Optional category slug, one of: ${Object.keys(CATEGORY_LABELS).join(", ")}`,
-          ),
-      }),
-      execute: async ({ category }) => {
-        let templates = await getPublishedTemplates(admin);
-        if (category) templates = templates.filter((t) => t.category === category);
-        const { genotypes } = files.length > 0
-          ? await getSubjectGenotypesByRsid(
-              admin,
-              subject.id,
-              templateRsids(templates),
-            )
-          : { genotypes: new Map<number, string>() };
-        return {
-          reports: templates.map((t) => {
-            const r = resolveTemplate(t, (rsid) => genotypes.get(rsid));
-            return {
-              slug: t.slug,
-              title: t.title,
-              category: t.category,
-              evidence: t.evidence,
-              covered: r.covered,
-            };
-          }),
-        };
-      },
-    }),
-    get_report: tool({
-      description:
-        "Get one report resolved against the user's file: their genotype, the interpretation, citations, coverage state.",
-      inputSchema: z.object({
-        slug: z.string().describe("Report slug from list_reports"),
-      }),
-      execute: async ({ slug }) => {
-        const { data: raw } = await admin
-          .from("report_templates")
-          .select(
-            "slug, category, title, summary, evidence, variants, pgs_id, citations",
-          )
-          .eq("slug", slug)
-          .eq("status", "published")
-          .maybeSingle();
-        if (!raw) return { error: "unknown report" };
-        const template = raw as unknown as ReportTemplate;
-        const { genotypes } = files.length > 0
-          ? await getSubjectGenotypesByRsid(
-              admin,
-              subject.id,
-              template.variants.map((v) => v.rsid),
-            )
-          : { genotypes: new Map<number, string>() };
-        const resolved = resolveTemplate(template, (r) => genotypes.get(r));
-        return {
-          slug: template.slug,
-          title: template.title,
-          summary: template.summary,
-          evidence: template.evidence,
-          citations: template.citations,
-          variants: resolved.variants.map((v) => ({
-            rsid: `rs${v.variant.rsid}`,
-            gene: v.variant.gene,
-            outcome: v.outcome,
-          })),
-        };
-      },
-    }),
-    get_prs: tool({
-      description:
-        "Get score-panel coverage and the reason a validated personal score is unavailable. No percentile, rank or risk is available.",
-      inputSchema: z.object({
-        score_id: z.string().describe("PGS Catalog ID, e.g. 'PGS000018'"),
-      }),
-      execute: async ({ score_id }) => loadPrsForChat(admin, subject.id, score_id, files.length > 0),
-    }),
-  };
-
-  // The model sees the one question, already through the intent gate: this
-  // branch keeps no history, and the client sends none.
-  const result = streamText({
-    model,
-    system: ownLegacySystemMessage(subject.displayLabel, files.length),
-    messages: [{ role: "user", content: latest }],
-    tools,
-    stopWhen: stepCountIs(8),
-  });
-
-  // Output guard (brief line 2262): the whole answer is buffered and checked
-  // before its first byte is sent. Reasoning is excluded from this stream
-  // and never sent on. Model-authored text and tool inputs are checked for
-  // prohibited assertions, unsupported numbers and unsupported citations.
-  // A failure replaces the entire answer, including tool parts, with the
-  // matching fixed refusal; no partial completion is serialized.
-  const chunks = await bufferUIMessageStream(
-    toUIMessageStream({ stream: result.stream, sendReasoning: false }),
-  );
-  const { text, toolJson } = foldStreamChunks(chunks);
-  const output = checkResponse(text, toolJson, allowedNumerals as AllowedNumerals, { scope: guardScope.kind });
-  if (!output.ok) {
-    console.info(`[copilot] replaced ${output.violation}`);
-    return refusalResponse(output.violation, refusalFor(output.violation, subject.displayLabel));
-  }
-  // chat-completion-v1: the validated text only; tool parts are not sent on.
-  return NextResponse.json({ chatId: randomUUID(), message: { role: "assistant", content: text, citations: [], embryoFindings: [] } },
-    { headers: COMPATIBILITY_HEADERS });
 }

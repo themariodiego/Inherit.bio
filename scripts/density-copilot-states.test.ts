@@ -3,7 +3,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { densityCapturePlan, densityStateKey } from "./density-capture-plan";
-import { assertUnansweredCopilotRows, copilotDensityRecipe, COPILOT_DENSITY_STATES, COPILOT_DENSITY_TABLES,
+import { assertPermittedUnansweredCopilotRows, assertUnansweredCopilotRows, copilotDensityRecipe, COPILOT_DENSITY_STATES, COPILOT_DENSITY_TABLES,
   DENSITY_COPILOT_ENDPOINT } from "./density-copilot-states";
 import type { DensityRegister } from "./density-current";
 
@@ -24,6 +24,20 @@ const emptyRows = (): Record<string, Record<string, unknown>[]> => ({
   llm_settings: [{ user_id: owner, provider: "openai_compatible", base_url: DENSITY_COPILOT_ENDPOINT,
     model: "synthetic-model", key_last4: null, copilot_recipient: { provider: "openai_compatible", model: "synthetic-model", providerClass: "cloud",
       origin: "https://203.0.114.10:8123", baseUrl: DENSITY_COPILOT_ENDPOINT, revision: 1 } }],
+});
+
+const SUBJECT = "22222222-2222-4222-8222-222222222222";
+/** The same actor after the upload consent and the Copilot permission (G8.5, 24 October 2026). */
+const permittedRows = (): Record<string, Record<string, unknown>[]> => ({
+  ...emptyRows(),
+  consent_signatures: ["insurance_acknowledgement", "store", "copilot.cloud", "copilot.cloud"].map((purpose, index) => ({
+    id: `55555555-5555-4555-8555-55555555555${index}`, signer_account_id: owner, target_id: SUBJECT, purpose })),
+  subject_consents: [{ id: "66666666-6666-4666-8666-666666666661", account_id: owner, subject_id: SUBJECT, consent_type: "upload_class",
+    scope: ["store"], revoked_at: null },
+  { id: "66666666-6666-4666-8666-666666666662", account_id: owner, subject_id: SUBJECT, consent_type: "cloud_model",
+    scope: ["genotypes", "variant_search", "reports", "prs_coverage", "chat_messages"], revoked_at: null }],
+  purpose_grants: [{ grant_id: "77777777-7777-4777-8777-777777777771", purpose: "copilot.cloud", target_kind: "subject", target_id: SUBJECT,
+    revoked_at: null }],
 });
 
 describe("real unanswered Copilot density states", () => {
@@ -74,27 +88,51 @@ describe("real unanswered Copilot density states", () => {
     const otherModel = emptyRows(); otherModel.llm_settings[0].model = "other-model";
     expect(() => assertUnansweredCopilotRows(otherModel, owner)).toThrow();
   });
-  it("uses real settings, native complete-count reads and the original consent refusal", () => {
+  it("accepts exactly the permitted own-chat rows, and refuses a source, key, chat, context or a changed permission", () => {
+    expect(() => assertPermittedUnansweredCopilotRows(permittedRows(), owner)).not.toThrow();
+    // The permission rows are not the unanswered consent-required actor, and the reverse.
+    expect(() => assertUnansweredCopilotRows(permittedRows(), owner)).toThrow();
+    expect(() => assertPermittedUnansweredCopilotRows(emptyRows(), owner)).toThrow();
+    for (const name of ["llm_keys", "consent_grants", "genome_files", "chats", "copilot_context_tokens"]) {
+      const rows = permittedRows(); rows[name] = [{ id: "44444444-4444-4444-8444-444444444444" }];
+      expect(() => assertPermittedUnansweredCopilotRows(rows, owner), name).toThrow();
+    }
+    const revoked = permittedRows(); revoked.purpose_grants[0].revoked_at = "2026-10-24T00:00:00Z";
+    const local = permittedRows(); local.purpose_grants[0].purpose = "copilot.local";
+    const second = permittedRows(); second.purpose_grants.push({ ...second.purpose_grants[0], grant_id: "77777777-7777-4777-8777-777777777772" });
+    const noUpload = permittedRows(); noUpload.subject_consents = noUpload.subject_consents.slice(1);
+    const oldUpload = permittedRows(); oldUpload.subject_consents[0].revoked_at = "2026-10-24T00:00:00Z";
+    const extraSignature = permittedRows(); extraSignature.consent_signatures.push({ ...extraSignature.consent_signatures[0] });
+    const foreignSignature = permittedRows(); foreignSignature.consent_signatures[2].signer_account_id = "44444444-4444-4444-8444-444444444444";
+    for (const rows of [revoked, local, second, noUpload, oldUpload, extraSignature, foreignSignature])
+      expect(() => assertPermittedUnansweredCopilotRows(rows, owner)).toThrow();
+  });
+  it("uses real settings, native complete-count reads, the real permission screens and the intent gate's own refusal", () => {
     for (const text of ["await createConfirmedUser(", "await signIn(", 'pathname === "/api/llm/settings"',
       'select("*", { count: "exact" })', "expect(result.data!.length).toBe(result.count)",
-      "assertUnansweredCopilotRows(rows, accountId)", "expect(response.status()).toBe(403)",
-      'error: "consent_required", provider_key: DENSITY_COPILOT_PROVIDER', 'await page.goto("/copilot/me")'])
+      'if (recipe === "permission") assertUnansweredCopilotRows(rows, accountId)', "else assertPermittedUnansweredCopilotRows(rows, accountId)",
+      'if (recipe !== "permission") await completeOwnUploadConsent(page)', 'if (recipe !== "permission") await allowCopilot(page)',
+      "expect(response.status()).toBe(200)", 'expect(response.headers()["x-copilot-refusal"]).toBe("treatment")', 'await page.goto("/copilot/me")'])
       expect(source).toContain(text);
     expect(source).not.toMatch(/\.fulfill\(|\.abort\(|\.setContent\(|\.addInitScript\(|\.listen\(|\.from\([^)]*\)\.(?:insert|update|upsert)\(/u);
-    const route = read("src/app/api/chat/route.ts");
-    expect(route.indexOf('error: "consent_required"')).toBeLessThan(route.indexOf("const result = streamText("));
-    expect(source).toContain('expect(actual, "the consent refusal stores no conversation or permission").toEqual(original)');
+    // 2026-10-24 (G8.5): the compatibility branch is retired; the own chat's intent gate answers before any provider step.
+    const own = read("src/lib/copilot/own-chat-route.ts");
+    expect(own.indexOf("classifyIntent(input.message")).toBeGreaterThan(0);
+    expect(own.indexOf("classifyIntent(input.message")).toBeLessThan(own.indexOf("prepareOwnCopilotProvider(subject.id)"));
+    expect(source).toContain('expect(actual, "the refusal stores no conversation or permission").toEqual(original)');
   });
-  it("holds exactly one original POST and awaits its real 403 before context disposal", () => {
-    // 2026-10-23 (G8.5): the compatibility panel posts the registered body to /api/chat with no ?scope= query.
+  it("holds exactly one original POST for processing and awaits its real refusal before context disposal", () => {
     expect(source).toContain('page.route("**/api/chat"');
     expect(source).not.toContain("/api/chat?scope=");
     expect(source).toContain('assert(++intercepted === 1, "Exactly one original chat POST required")');
+    expect(source).toContain('if (recipe === "pending") {');
     expect(source).toContain("await route.continue()"); expect(source).toContain("await response.finished() === null");
     expect(source.indexOf("if (release) { release(); if (continuation) await continuation; }")).toBeLessThan(source.indexOf("await context.close()"));
     expect(source).toContain('toHaveText("Ask about You")');
     expect(source).toContain('[data-role="assistant"], [data-figure-kind], [data-claim-block]');
     expect(source).toContain('getByRole("button", { name: "Send", exact: true })).toBeDisabled()');
-    expect(source).toContain('getByRole("button", { name: "Review what would be shared", exact: true })).toBeVisible()');
+    // consent-required names the missing permission, links it, and offers no composer.
+    expect(source).toContain('getByRole("link", { name: "Review Copilot settings", exact: true })).toHaveAttribute("href", "/settings/copilot")');
+    expect(source).toContain('await expect(page.getByLabel("Message the copilot")).toHaveCount(0)');
   });
 });

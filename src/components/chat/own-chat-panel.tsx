@@ -10,9 +10,18 @@ import { useCsrf } from "@/components/security/csrf-provider";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { providerDisplayName } from "@/lib/llm";
-import type { ChatProviderInfo } from "./chat-panel";
 import { route } from "@/lib/primary-routes";
 import { OWN_CHAT_CORRECTION_NOTICE, ownChatCorrectionSchema } from "@/lib/copilot/own-chat-correction";
+
+/** What the page may say about the saved provider: its class and recipient, never a credential. */
+export interface ChatProviderInfo {
+  configured: boolean;
+  provider?: "anthropic" | "openai_compatible";
+  providerKey?: string;
+  model?: string;
+  local?: boolean;
+  hasConsent?: boolean;
+}
 
 const citation = z.object({ id: z.string().min(1).max(2000), label: z.string().min(1).max(100_000),
   href: z.string().max(4000).refine(value => {

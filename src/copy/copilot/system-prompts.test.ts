@@ -16,7 +16,6 @@ import {
   cohortSystemText,
   copilotPromptRules,
   familySystemMessage,
-  ownLegacySystemMessage,
   ownSystemMessage,
   promptRuleTexts,
 } from "./system-prompts";
@@ -32,15 +31,15 @@ const sha256 = (text: string) => createHash("sha256").update(text, "utf8").diges
  * `readableNow` line in src/lib/copilot/family-chat-route.ts, and
  * `COHORT_SYSTEM_PROMPT` with `cohortSystemMessage` in
  * src/lib/copilot/cohort-chat-content.ts. The move to this module must not
- * change one byte of what a model receives.
+ * change one byte of what a model receives. The two legacy `fileNote`
+ * digests left with the compatibility branch, which no longer sends a
+ * message to any model (G8.5, 24 October 2026; docs/test-diff-register.md).
  */
 const BEFORE_MOVE = {
   ownPrompt: "fddf72c0ace91e3425781107d8a59e06fceb1abd97b8dde61e17363078586ffe",
   familyPrompt: "59f66ab6a13ae728c1d405fbe867cb454d3992c328ff9c20b5a4f0ebd749577e",
   cohortPrompt: "72c34adf19f76e615ee250e38e410475729aa1bd3f2f53902d2b776144d7ba7d",
   ownCanonical: "c7083a4d12f6d41744ebf198deb14710967996d1edfc501d9ba51ea3a449cbab",
-  ownLegacyTwoFiles: "8377c4ea8d626647933e2d39ce0a561f66091209c8b71fea8e91d21aeb2e75bd",
-  ownLegacyNoFile: "98394d90483527c69f419379f23007ca9740053a83e2d96e64326ac85a83efb7",
   familyTwoReaders: "81e588a28bed55185e44266ffd1122b7e406c963367e57ab0ae59006d013fb95",
   familyNobody: "02c204967664e3a8fabe50a08a40ce814ddcbb42097719f4e72bd8541a96ba2a",
   cohort: "35ab512de0a940dd2a841346627cc48c51d1694cbc29bd235b73d01c23c1a67a",
@@ -64,11 +63,6 @@ describe("the Copilot system prompts moved without a byte changing", () => {
     );
   });
 
-  it("assembles both legacy own-scope messages as the chat route did", () => {
-    expect(sha256(ownLegacySystemMessage(SUBJECT, 2))).toBe(BEFORE_MOVE.ownLegacyTwoFiles);
-    expect(sha256(ownLegacySystemMessage(SUBJECT, 0))).toBe(BEFORE_MOVE.ownLegacyNoFile);
-  });
-
   it("assembles the Family message for two readers and for nobody", () => {
     expect(sha256(familySystemMessage(READERS))).toBe(BEFORE_MOVE.familyTwoReaders);
     expect(sha256(familySystemMessage([]))).toBe(BEFORE_MOVE.familyNobody);
@@ -83,7 +77,8 @@ describe("the Copilot system prompts moved without a byte changing", () => {
   it("is what every route sends, and no route writes prompt text of its own", () => {
     const chat = readFileSync("src/app/api/chat/route.ts", "utf8");
     expect(chat).toContain("{ systemPrompt: OWN_SYSTEM_PROMPT, refusal: refusalResponse }");
-    expect(chat).toContain("system: ownLegacySystemMessage(subject.displayLabel, files.length),");
+    // G8.5 (24 October 2026): the compatibility branch and its legacy message are retired; the route calls no model itself.
+    expect(chat).not.toContain("streamText(");
     expect(chat).not.toContain("Hard rules:");
     const own = readFileSync("src/lib/copilot/own-chat-route.ts", "utf8");
     expect(own).toContain("system: ownSystemMessage(options.systemPrompt, subject.displayLabel),");

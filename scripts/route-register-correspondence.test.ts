@@ -1281,13 +1281,12 @@ const CLIENT_FORM_REVIEW: ClientFormReview[] = [
   // outline variant at the same 44px and content width. One actionless form,
   // the same fieldset, handler and preventDefault before any field is read.
   { file: "src/components/auth/auth-form.tsx", forms: 1, sha256: "80e1bf6cabad3769c0613561fd8c942f417a024ae8e0f831402b023470f9e8a8" },
-  // G8.5 (2026-10-23): re-reviewed after the compatibility panel moved from the
-  // AI SDK transport to a fetch of the registered { contextToken, message }, and
-  // again after the merge added the one-time X-Inherit-CSRF header to that fetch.
-  // Still one actionless form whose onSubmit handler cancels native submission
-  // before anything is sent; the same composer and the same target, api.chat.
-  { file: "src/components/chat/chat-panel.tsx", forms: 1, sha256: "5166eb3d779fc8db33e375e0dbd4b2fbade64a92997abd0d2161730e7de2cbff" },
-  { file: "src/components/chat/own-chat-panel.tsx", forms: 1, sha256: "36c6e50740012aae40e04835340ea0de716df08e1268f69864f373319b822c7d" },
+  // G8.5 (2026-10-24): the compatibility panel (src/components/chat/chat-panel.tsx)
+  // is retired with its api.chat branch, so its review is removed. The own panel
+  // is re-reviewed after it gained the ChatProviderInfo type the retired panel
+  // exported: still one actionless form whose onSubmit handler cancels native
+  // submission before anything is sent, the same composer and target, api.chat.
+  { file: "src/components/chat/own-chat-panel.tsx", forms: 1, sha256: "197affd16791969010498cc3b1833868d5b715f0afaad6446cfc33ffc9415bbe" },
   { file: "src/components/embryo/co-parent-review-form.tsx", forms: 1, sha256: "37c3a9083994657a9f8c7e5d4639b0c46721ae96bee36662508cf31bdb7f5d84" },
   { file: "src/components/embryo/invitation-refusal-form.tsx", forms: 1, sha256: "037b30d6e19792ea8706f8553b23a7887c1459ed7e39d0a0eb40bcc290272601" },
   // G5.6 (2026-10-23): both re-reviewed after their request gained the page's
@@ -1352,10 +1351,11 @@ describe("native form methods match their registered targets", () => {
     const guardedFlowFiles = new Set(GUARDED_FLOW_CLIENT_FORM_REVIEW.map(review => review.file));
     const futureIntakeFiles = new Set(FUTURE_INTAKE_CLIENT_FORM_REVIEW.map(review => review.file));
     const coreForms = all.filter(form => !futureIntakeFiles.has(form.file));
-    expect(coreForms.filter(form => !guardedFlowFiles.has(form.file))).toHaveLength(14);
-    expect(coreForms).toHaveLength(24);
+    // G8.5 (2026-10-24): the compatibility panel's one form is retired with it (14, 24 and 26 before).
+    expect(coreForms.filter(form => !guardedFlowFiles.has(form.file))).toHaveLength(13);
+    expect(coreForms).toHaveLength(23);
     expect(all.filter(form => futureIntakeFiles.has(form.file))).toHaveLength(2);
-    expect(all).toHaveLength(26);
+    expect(all).toHaveLength(25);
     const submissions = all.filter(form => form.routeId !== null);
     // G8.5 (2026-10-23): sign-out is now the reviewed scripted form above, so
     // the genome search is the one native submission left.
