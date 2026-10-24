@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 // The one-time X-Inherit-CSRF gate is driven on this route by
 // src/lib/security/session-csrf-routes.test.ts; here it admits every request.
@@ -22,6 +23,21 @@ beforeEach(() => {
   mocks.remove.mockResolvedValue({ data: [], error: null });
 });
 describe("owner-authorized file deletion", () => {
+  it("answers the register's file-delete-v1: 202 file_delete_pending while cleanup runs, then 204 with no body (G8.5, 24 October 2026)", async () => {
+    const register = JSON.parse(readFileSync("docs/route-register.json", "utf8")) as {
+      routes: { id: string; successResponseContract?: string }[]; responseContractBindings: { routes: Record<string, string[]> };
+      responseContracts: Record<string, { pending: { status: number; body: { error: { const: string } } }; deleted: { status: number; body: string };
+        headers: Record<string, string> }> };
+    expect(register.routes.find(route => route.id === "api.file-delete")?.successResponseContract).toBe("file-delete-v1");
+    expect(register.responseContractBindings.routes["api.file-delete"]).toContain("file-delete-v1");
+    const contract = register.responseContracts["file-delete-v1"];
+    mocks.rpc.mockResolvedValueOnce({ data: { ...plan, cleanupId: token, preparedComplete: false }, error: null });
+    const pending = await call();
+    expect([pending.status, await pending.json()]).toEqual([contract.pending.status, { error: contract.pending.body.error.const }]);
+    const deleted = await call();
+    expect([deleted.status, await deleted.text(), contract.deleted.body]).toEqual([contract.deleted.status, "", "empty"]);
+    for (const response of [pending, deleted]) expect(response.headers.get("cache-control")).toBe(contract.headers["Cache-Control"]);
+  });
   it("returns explicit pending without touching the original or finishing database deletion", async () => {
     mocks.rpc.mockResolvedValue({ data: { ...plan, cleanupId: token, preparedComplete: false }, error: null });
     const response = await call(); expect(response.status).toBe(202);

@@ -16,6 +16,12 @@ export function ConsentList({
     data_classes: string[];
     granted_at: string;
     revoked_at: string | null;
+    /**
+     * The one-time nonce the revocation consumes, rendered by the page for
+     * this account, session and grant (G8.5, 24 October 2026); null when the
+     * grant is revoked or the page has no session to bind one to.
+     */
+    revokeNonce: string | null;
   }[];
 }) {
   const router = useRouter();
@@ -60,17 +66,18 @@ export function ConsentList({
               {g.data_classes.length} data classes
             </p>
           </div>
-          {!g.revoked_at ? (
+          {!g.revoked_at && g.revokeNonce ? (
             <Button
               variant="outline"
               size="sm"
               data-testid={`revoke-${g.provider_key}`}
               disabled={revoking === g.id}
               onClick={async () => {
+                if (!g.revokeNonce) return;
                 setRevoking(g.id);
                 try {
                   const response = await fetch(`/api/consents/${g.id}/revoke`, {
-                    method: "POST", headers: { "X-Inherit-CSRF": csrf.value() },
+                    method: "POST", headers: { "X-Inherit-Operation-Nonce": g.revokeNonce, "X-Inherit-CSRF": csrf.value() },
                   });
                   csrf.accept(response);
                   router.refresh();

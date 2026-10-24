@@ -29,6 +29,12 @@ import { withAccountCsrf } from "@/lib/security/session-csrf";
  *
  * Like its twin, it carries the page's one-time X-Inherit-CSRF token
  * (`withAccountCsrf`), spent before the handler runs.
+ *
+ * Its refusals are the register's (G8.5, 24 October 2026): another origin is
+ * `authenticated-mutation-v1`'s 403 `request_forbidden`, a body other than
+ * the closed one is `invalid-request-v1` (422), and a request with no live
+ * account and session is `authenticated-api-v1`'s JSON 401 `unauthenticated`.
+ * They were a 400 `invalid_request` and a plain-text 401.
  */
 
 const body = z
@@ -46,14 +52,14 @@ const NO_STORE = {
 export const POST = withAccountCsrf("api.embryo-acknowledge", handlePost);
 async function handlePost(request: Request) {
   if (!isSameOrigin(request)) {
-    return NextResponse.json({ error: "invalid_request" }, { status: 400 });
+    return NextResponse.json({ error: "request_forbidden" }, { status: 403, headers: NO_STORE });
   }
   const parsed = body.safeParse(await request.json().catch(() => null));
   if (!parsed.success) {
-    return NextResponse.json({ error: "invalid_request" }, { status: 400 });
+    return NextResponse.json({ error: "invalid_request", issues: ["body"] }, { status: 422, headers: NO_STORE });
   }
   const context = await getSensitiveAccountContext();
-  if (!context) return new Response("Unauthorized", { status: 401 });
+  if (!context) return NextResponse.json({ error: "unauthenticated" }, { status: 401, headers: NO_STORE });
 
   const response = NextResponse.json(
     { acknowledgement: "embryo-result-gate", acknowledgedAt: new Date().toISOString() },

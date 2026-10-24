@@ -21,9 +21,13 @@ import ts from "typescript";
  * (in the same file, or a named function import from a local module),
  * conditional expressions (as alternatives) and named string constants
  * exported by a local module. A component that hands its submission to a
- * prop is read through every JSX usage that supplies that prop. Anything else
- * is reported as unresolved rather than guessed, so a request the reader
- * cannot see fails the test until a reviewer records it.
+ * prop is read through every JSX usage that supplies that prop. Since 24
+ * October 2026 (G8.5) it also reads string concatenation, a binary body
+ * (`isBinaryValue`), a zod parse's output (`zodShapes`) and, in the client
+ * census, a local function once per call with that call's arguments bound
+ * (`localCallSites`), deciding the conditions those arguments decide.
+ * Anything else is reported as unresolved rather than guessed, so a request
+ * the reader cannot see fails the test until a reviewer records it.
  */
 
 export type RequestTarget =
@@ -44,6 +48,8 @@ export interface BodyShape {
 export type RequestBody =
   | { kind: "none" }
   | { kind: "json"; shape: BodyShape }
+  /** Raw bytes (`isBinaryValue`), with the Content-Type the request labels them with, when the source states one. */
+  | { kind: "binary"; contentType: string | null }
   | { kind: "unresolved"; text: string };
 
 export interface ClientRequest {
@@ -99,6 +105,8 @@ type Value =
   | { k: "fn"; node: ts.FunctionLikeDeclaration; env: Env }
   | { k: "param"; name: string }
   | { k: "nothing" }
+  /** What a zod schema's `parse` or successful `safeParse` returns: the schema, read by `zodShapes`. */
+  | { k: "zod"; schema: ts.Expression }
   | { k: "unknown"; text: string };
 
 type Env = ReadonlyMap<string, { expression: ts.Expression; env: Env }>;
@@ -263,12 +271,18 @@ function transportForwardedCalls(document: ts.SourceFile): Set<ts.CallExpression
  * effect), which the form census leaves out; a value that arrives as a
  * parameter reads as unresolved here. A transport's forwarding `fetch` setting
  * is read as the transport's own request.
+ *
+ * One exception (G8.5, 24 October 2026): a `fetch` that reads a parameter of
+ * the function it is in, where that function is not exported and every
+ * reference to it in the file is a direct call (`localCallSites`), is read
+ * once per call, with that call's arguments bound. Those calls are then every
+ * way the request can be made, so each is held to its own register entry.
  */
 export function fileRequests(file: string, read: SourceReader): ClientRequest[] {
   const text = read(file);
   if (text === null) return [];
   const document = parse(file, text);
-  const reader = new Reader(read);
+  const reader = new Reader(read, true);
   const forwarded = transportForwardedCalls(document);
   const found: ClientRequest[] = [];
   const visit = (node: ts.Node) => {
@@ -277,7 +291,20 @@ export function fileRequests(file: string, read: SourceReader): ClientRequest[] 
       const name = ts.isIdentifier(callee) ? callee.text
         : ts.isPropertyAccessExpression(callee) && ["window", "globalThis", "self"].includes(callee.expression.getText())
           ? callee.name.text : null;
-      if (name === "fetch") found.push(reader.fetchRequest(node));
+      if (name === "fetch") {
+        const sites = localCallSites(node, document);
+        if (sites) {
+          for (const site of sites.calls) {
+            const bound = new Map<string, { expression: ts.Expression; env: Env }>();
+            sites.fn.parameters.forEach((parameter, index) => {
+              if (ts.isIdentifier(parameter.name) && site.arguments[index]) {
+                bound.set(parameter.name.text, { expression: site.arguments[index], env: EMPTY });
+              }
+            });
+            found.push(reader.boundFetchRequest(node, bound));
+          }
+        } else found.push(reader.fetchRequest(node));
+      }
     }
     if (ts.isNewExpression(node) && node.expression.getText(document) === "DefaultChatTransport") {
       const transport = reader.transportRequest(node);
@@ -287,6 +314,46 @@ export function fileRequests(file: string, read: SourceReader): ClientRequest[] 
   };
   visit(document);
   return found;
+}
+
+/**
+ * The direct calls of the function a `fetch` is made in, when the `fetch`
+ * reads one of its parameters and those calls are every way it runs: the
+ * function is a declaration or a `const`-bound function, is not exported,
+ * and every other reference to it in the file is the callee of a call. Null
+ * otherwise, so a function passed as a value or exported keeps its unbound
+ * reading and its parameters read as unresolved.
+ */
+function localCallSites(call: ts.CallExpression, document: ts.SourceFile):
+  { fn: ts.FunctionLikeDeclaration; calls: ts.CallExpression[] } | null {
+  let fn: ts.Node | undefined = call.parent;
+  while (fn && !ts.isFunctionLike(fn)) fn = fn.parent;
+  if (!fn || !(ts.isFunctionDeclaration(fn) || ts.isArrowFunction(fn) || ts.isFunctionExpression(fn))) return null;
+  const holder = ts.isFunctionDeclaration(fn) ? fn
+    : ts.isVariableDeclaration(fn.parent) && ts.isIdentifier(fn.parent.name) && fn.parent.initializer === fn
+      && fn.parent.parent.flags & ts.NodeFlags.Const ? fn.parent : null;
+  const nameNode = holder?.name;
+  if (!holder || !nameNode || !ts.isIdentifier(nameNode)) return null;
+  if (isExported(ts.isFunctionDeclaration(holder) ? holder : holder.parent.parent)) return null;
+  const parameters = new Set<ts.Node>(fn.parameters);
+  let readsParameter = false;
+  const scan = (node: ts.Node) => {
+    if (ts.isIdentifier(node) && parameters.has(declarationOf(node.text, node) as ts.Node)) readsParameter = true;
+    ts.forEachChild(node, scan);
+  };
+  call.arguments.forEach(scan);
+  if (!readsParameter) return null;
+  const calls: ts.CallExpression[] = [];
+  let other = false;
+  const visit = (node: ts.Node) => {
+    if (ts.isIdentifier(node) && node !== nameNode && node.text === nameNode.text && declarationOf(node.text, node) === holder) {
+      if (ts.isCallExpression(node.parent) && node.parent.expression === node) calls.push(node.parent);
+      else other = true;
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(document);
+  return !other && calls.length ? { fn: fn as ts.FunctionLikeDeclaration, calls } : null;
 }
 
 /** Whether a module's source starts with the `"use client"` directive. */
@@ -330,8 +397,151 @@ export function clientModules(files: string[], read: SourceReader): string[] {
   return [...seen].sort();
 }
 
+/** The declaration a name refers to at `at`, searching enclosing scopes outward. */
+function declarationOf(name: string, at: ts.Node): ts.Node | null {
+  for (let scope: ts.Node | undefined = at.parent; scope; scope = scope.parent) {
+    if (ts.isFunctionLike(scope)) {
+      for (const parameter of (scope as ts.SignatureDeclaration).parameters) {
+        if (ts.isIdentifier(parameter.name) && parameter.name.text === name) return parameter;
+        if (ts.isObjectBindingPattern(parameter.name)) {
+          for (const element of parameter.name.elements) {
+            if (ts.isIdentifier(element.name) && element.name.text === name) return element;
+          }
+        }
+      }
+    }
+    const statements = ts.isSourceFile(scope) || ts.isBlock(scope) || ts.isModuleBlock(scope)
+      || ts.isCaseClause(scope) || ts.isDefaultClause(scope) ? scope.statements : null;
+    if (!statements) continue;
+    for (const statement of statements) {
+      if (ts.isFunctionDeclaration(statement) && statement.name?.text === name) return statement;
+      if (ts.isVariableStatement(statement)) {
+        for (const declaration of statement.declarationList.declarations) {
+          if (ts.isIdentifier(declaration.name) && declaration.name.text === name) return declaration;
+          if (ts.isObjectBindingPattern(declaration.name) || ts.isArrayBindingPattern(declaration.name)) {
+            for (const element of declaration.name.elements) {
+              if (ts.isBindingElement(element) && ts.isIdentifier(element.name) && element.name.text === name) return element;
+            }
+          }
+        }
+      }
+      if (ts.isImportDeclaration(statement) && statement.importClause?.namedBindings
+        && ts.isNamedImports(statement.importClause.namedBindings)) {
+        for (const specifier of statement.importClause.namedBindings.elements) {
+          if (specifier.name.text === name) return specifier;
+        }
+      }
+    }
+  }
+  return null;
+}
+
+/** Whether an expression is the `z` namespace imported from zod. */
+function isZodNamespace(expression: ts.Expression): boolean {
+  const node = unwrap(expression);
+  if (!ts.isIdentifier(node)) return false;
+  const declaration = declarationOf(node.text, node);
+  if (!declaration || !ts.isImportSpecifier(declaration)) return false;
+  const specifier = declaration.parent.parent.parent.moduleSpecifier;
+  return ts.isStringLiteral(specifier) && /^zod(\/|$)/u.test(specifier.text)
+    && (declaration.propertyName ?? declaration.name).text === "z";
+}
+
+/**
+ * The schema a value is the zod output of: `S.parse(x)`, or `r.data` where
+ * `r` is a `const` bound to `S.safeParse(x)` (only a successful parse has
+ * `data`). Null for anything else.
+ */
+function zodParseOutput(node: ts.Expression): ts.Expression | null {
+  const parsing = (call: ts.Expression, methods: string[]) => {
+    const bare = unwrap(call);
+    return ts.isCallExpression(bare) && ts.isPropertyAccessExpression(bare.expression)
+      && methods.includes(bare.expression.name.text) ? bare.expression.expression : null;
+  };
+  const direct = parsing(node, ["parse", "parseAsync"]);
+  if (direct) return direct;
+  if (!ts.isPropertyAccessExpression(node) || node.name.text !== "data" || !ts.isIdentifier(node.expression)) return null;
+  const declaration = declarationOf(node.expression.text, node.expression);
+  return declaration && ts.isVariableDeclaration(declaration) && declaration.initializer
+    && declaration.parent.flags & ts.NodeFlags.Const ? parsing(declaration.initializer, ["safeParse", "safeParseAsync"]) : null;
+}
+
+/**
+ * One field schema's method chain, outermost call first: whether it is
+ * optional, whether a default makes it always present, its `z.literal`
+ * value, and its base when that is an object schema to read nested.
+ */
+function zodChain(field: ts.Expression): { optional: boolean; defaulted: boolean; literal: string | boolean | null; base: ts.Expression | null } {
+  let optional = false;
+  let defaulted = false;
+  let node = unwrap(field);
+  for (let guard = 0; guard < MAX_DEPTH; guard += 1) {
+    if (!ts.isCallExpression(node) || !ts.isPropertyAccessExpression(node.expression)) break;
+    const method = node.expression.name.text;
+    const target = node.expression.expression;
+    if (isZodNamespace(target)) {
+      if (method === "optional" && node.arguments[0]) { optional = true; node = unwrap(node.arguments[0]); continue; }
+      if (method === "literal" && node.arguments.length === 1) {
+        const value = unwrap(node.arguments[0]);
+        const literal = ts.isStringLiteral(value) || ts.isNoSubstitutionTemplateLiteral(value) ? value.text
+          : value.kind === ts.SyntaxKind.TrueKeyword ? true : value.kind === ts.SyntaxKind.FalseKeyword ? false : null;
+        return { optional, defaulted, literal, base: null };
+      }
+      return { optional, defaulted, literal: null, base: ["object", "strictObject", "union", "discriminatedUnion"].includes(method) ? node : null };
+    }
+    if (method === "optional" || method === "nullish") optional = true;
+    if (method === "default" || method === "prefault" || method === "catch") defaulted = true;
+    node = unwrap(target);
+  }
+  return { optional, defaulted, literal: null, base: null };
+}
+
+/**
+ * Binary request bodies (G8.5, 24 October 2026). A typed array, an
+ * `ArrayBuffer`, a `DataView` or a `Blob`, as the source states it: a
+ * constructor call, a `slice`/`subarray` of one, or a binding whose `const`
+ * initializer is one or whose declared type names only these (and `null` or
+ * `undefined`, which send no body). TypeScript holds a binding to its declared
+ * type, so the declaration is evidence of what the binding carries.
+ */
+const BINARY_TYPES = new Set(["Uint8Array", "Uint8ClampedArray", "Int8Array", "Uint16Array", "Int16Array",
+  "Uint32Array", "Int32Array", "Float32Array", "Float64Array", "BigInt64Array", "BigUint64Array", "ArrayBuffer",
+  "DataView", "Blob"]);
+
+function binaryType(type: ts.TypeNode): boolean {
+  if (ts.isParenthesizedTypeNode(type)) return binaryType(type.type);
+  if (ts.isUnionTypeNode(type)) {
+    const members = type.types.filter(member => !(member.kind === ts.SyntaxKind.UndefinedKeyword
+      || (ts.isLiteralTypeNode(member) && member.literal.kind === ts.SyntaxKind.NullKeyword)));
+    return members.length > 0 && members.every(binaryType);
+  }
+  return ts.isTypeReferenceNode(type) && ts.isIdentifier(type.typeName) && BINARY_TYPES.has(type.typeName.text);
+}
+
+function isBinaryValue(expression: ts.Expression, depth = 0): boolean {
+  if (depth > MAX_DEPTH) return false;
+  const node = unwrap(expression);
+  if (ts.isNewExpression(node)) return ts.isIdentifier(node.expression) && BINARY_TYPES.has(node.expression.text);
+  if (ts.isCallExpression(node) && ts.isPropertyAccessExpression(node.expression)
+    && ["slice", "subarray"].includes(node.expression.name.text)) return isBinaryValue(node.expression.expression, depth + 1);
+  if (!ts.isIdentifier(node)) return false;
+  const declaration = declarationOf(node.text, node);
+  if (!declaration || !(ts.isVariableDeclaration(declaration) || ts.isParameter(declaration))) return false;
+  if (declaration.type) return binaryType(declaration.type);
+  return ts.isVariableDeclaration(declaration) && Boolean(declaration.initializer)
+    && Boolean(declaration.parent.flags & ts.NodeFlags.Const) && isBinaryValue(declaration.initializer!, depth + 1);
+}
+
 class Reader {
-  constructor(private readonly read: SourceReader) {}
+  /**
+   * `decide`: whether a condition the source decides selects its branch
+   * (`condition`). The client census reads a local function once per call
+   * with that call's arguments bound (`localCallSites`), so each call's
+   * decidable branch is the one it takes. The form census keeps both
+   * branches, as it always has: its handler readings, and the ledger rows
+   * they produce, predate this and stay as they were.
+   */
+  constructor(private readonly read: SourceReader, private readonly decide = false) {}
 
   form(element: ts.JsxElement | ts.JsxSelfClosingElement, opening: ts.JsxOpeningLikeElement): FormSite {
     const document = opening.getSourceFile();
@@ -391,41 +601,7 @@ class Reader {
 
   /** The declaration a name refers to at `at`, searching enclosing scopes outward. */
   private declaration(name: string, at: ts.Node): ts.Node | null {
-    for (let scope: ts.Node | undefined = at.parent; scope; scope = scope.parent) {
-      if (ts.isFunctionLike(scope)) {
-        for (const parameter of (scope as ts.SignatureDeclaration).parameters) {
-          if (ts.isIdentifier(parameter.name) && parameter.name.text === name) return parameter;
-          if (ts.isObjectBindingPattern(parameter.name)) {
-            for (const element of parameter.name.elements) {
-              if (ts.isIdentifier(element.name) && element.name.text === name) return element;
-            }
-          }
-        }
-      }
-      const statements = ts.isSourceFile(scope) || ts.isBlock(scope) || ts.isModuleBlock(scope)
-        || ts.isCaseClause(scope) || ts.isDefaultClause(scope) ? scope.statements : null;
-      if (!statements) continue;
-      for (const statement of statements) {
-        if (ts.isFunctionDeclaration(statement) && statement.name?.text === name) return statement;
-        if (ts.isVariableStatement(statement)) {
-          for (const declaration of statement.declarationList.declarations) {
-            if (ts.isIdentifier(declaration.name) && declaration.name.text === name) return declaration;
-            if (ts.isObjectBindingPattern(declaration.name) || ts.isArrayBindingPattern(declaration.name)) {
-              for (const element of declaration.name.elements) {
-                if (ts.isBindingElement(element) && ts.isIdentifier(element.name) && element.name.text === name) return element;
-              }
-            }
-          }
-        }
-        if (ts.isImportDeclaration(statement) && statement.importClause?.namedBindings
-          && ts.isNamedImports(statement.importClause.namedBindings)) {
-          for (const specifier of statement.importClause.namedBindings.elements) {
-            if (specifier.name.text === name) return specifier;
-          }
-        }
-      }
-    }
-    return null;
+    return declarationOf(name, at);
   }
 
   /** A named export of a local module: a string constant, or a function to follow. */
@@ -460,6 +636,8 @@ class Reader {
     if (ts.isObjectLiteralExpression(node)) return { k: "obj", node, env };
     if (ts.isArrowFunction(node) || ts.isFunctionExpression(node)) return { k: "fn", node, env };
     if (ts.isConditionalExpression(node)) {
+      const decided = this.condition(node.condition, env, depth + 1);
+      if (decided !== null) return this.value(decided ? node.whenTrue : node.whenFalse, env, depth + 1);
       return this.alternatives([this.value(node.whenTrue, env, depth + 1), this.value(node.whenFalse, env, depth + 1)]);
     }
     if (ts.isBinaryExpression(node) && (node.operatorToken.kind === ts.SyntaxKind.QuestionQuestionToken
@@ -467,8 +645,30 @@ class Reader {
       return this.alternatives([this.value(node.left, env, depth + 1), this.value(node.right, env, depth + 1)]);
     }
     if (ts.isBinaryExpression(node) && node.operatorToken.kind === ts.SyntaxKind.AmpersandAmpersandToken) {
+      const decided = this.condition(node.left, env, depth + 1);
+      if (decided === false) return { k: "nothing" };
+      if (decided === true) return this.value(node.right, env, depth + 1);
       return this.alternatives([{ k: "nothing" }, this.value(node.right, env, depth + 1)]);
     }
+    if (ts.isBinaryExpression(node) && node.operatorToken.kind === ts.SyntaxKind.PlusToken) {
+      // String concatenation (G8.5, 24 October 2026): two strings join; a
+      // string beside anything else is a pattern with that part unknown.
+      const pattern = (value: Value): string[] | null => value.k === "str" ? value.values
+        : value.k === "tpl" ? [value.pattern] : null;
+      const left = this.value(node.left, env, depth + 1);
+      const right = this.value(node.right, env, depth + 1);
+      if (left.k === "str" && right.k === "str" && left.values.length * right.values.length <= MAX_ALTERNATIVES) {
+        return { k: "str", values: left.values.flatMap(head => right.values.map(tail => head + tail)) };
+      }
+      const head = pattern(left);
+      const tail = pattern(right);
+      if ((head?.length === 1 || tail?.length === 1) && (head ?? ["[*]"]).length === 1 && (tail ?? ["[*]"]).length === 1) {
+        return { k: "tpl", pattern: (head ?? ["[*]"])[0] + (tail ?? ["[*]"])[0] };
+      }
+      return unknown;
+    }
+    const parsed = zodParseOutput(node);
+    if (parsed) return { k: "zod", schema: parsed };
     if (ts.isCallExpression(node) && ts.isIdentifier(node.expression) && node.expression.text === "route"
       && node.arguments[0] && ts.isStringLiteral(node.arguments[0])) return { k: "route", id: node.arguments[0].text };
     if (ts.isIdentifier(node)) {
@@ -493,6 +693,36 @@ class Reader {
       return unknown;
     }
     return unknown;
+  }
+
+  /**
+   * A condition the source decides: an equality between two values that each
+   * resolve to exactly one string (a bound parameter beside a literal, say),
+   * or `&&`, `||` and `!` of such. Null when it is not decided, so both
+   * branches stay possible. This is what lets a call-bound parameter select
+   * the one body its branch builds (`operation === "confirm" ? a : b`).
+   */
+  private condition(expression: ts.Expression, env: Env, depth: number): boolean | null {
+    if (!this.decide || depth > MAX_DEPTH) return null;
+    const node = unwrap(expression);
+    if (ts.isPrefixUnaryExpression(node) && node.operator === ts.SyntaxKind.ExclamationToken) {
+      const inner = this.condition(node.operand, env, depth + 1);
+      return inner === null ? null : !inner;
+    }
+    if (!ts.isBinaryExpression(node)) return null;
+    const operator = node.operatorToken.kind;
+    if (operator === ts.SyntaxKind.AmpersandAmpersandToken || operator === ts.SyntaxKind.BarBarToken) {
+      const left = this.condition(node.left, env, depth + 1);
+      const right = this.condition(node.right, env, depth + 1);
+      if (operator === ts.SyntaxKind.AmpersandAmpersandToken) return left === false || right === false ? false : left && right ? true : null;
+      return left === true || right === true ? true : left === false && right === false ? false : null;
+    }
+    const equal = [ts.SyntaxKind.EqualsEqualsEqualsToken, ts.SyntaxKind.EqualsEqualsToken].includes(operator);
+    if (!equal && ![ts.SyntaxKind.ExclamationEqualsEqualsToken, ts.SyntaxKind.ExclamationEqualsToken].includes(operator)) return null;
+    const left = this.value(node.left, env, depth + 1);
+    const right = this.value(node.right, env, depth + 1);
+    if (left.k !== "str" || right.k !== "str" || left.values.length !== 1 || right.values.length !== 1) return null;
+    return (left.values[0] === right.values[0]) === equal;
   }
 
   private alternatives(options: Value[]): Value {
@@ -522,6 +752,7 @@ class Reader {
       const all = value.options.filter(option => option.k !== "nothing").map(option => this.shapes(option, depth + 1));
       return all.length && all.every(option => option !== null) ? (all as BodyShape[][]).flat() : null;
     }
+    if (value.k === "zod") return this.zodShapes(value.schema, depth + 1);
     if (value.k !== "obj") return null;
     let shapes: BodyShape[] = [emptyShape()];
     const resolve = (expression: ts.Expression) => this.value(expression, value.env, depth + 1);
@@ -578,6 +809,97 @@ class Reader {
     return shapes;
   }
 
+  /**
+   * The object a zod schema outputs (G8.5, 24 October 2026), as the schema's
+   * source states it: `z.object({...})` and `z.strictObject({...})` with their
+   * keys, a key optional when its schema is `.optional()` or `.nullish()` with
+   * no `.default()`, its literal when it is `z.literal(...)`, spreads of a
+   * `const` object of field schemas, nested objects, and `z.union` or
+   * `z.discriminatedUnion` as alternatives. Zod's object output holds exactly
+   * the keys it declares (an unknown key is stripped, or refused under
+   * `.strict()`), so this is what the parsed value sends. `.passthrough()`,
+   * `.loose()` and `.catchall()` keep unknown keys and read as open; a
+   * `.transform()`, `.pipe()` or anything else this does not name is not read.
+   */
+  private zodShapes(schema: ts.Expression, depth: number): BodyShape[] | null {
+    if (depth > MAX_DEPTH) return null;
+    const node = unwrap(schema);
+    if (ts.isIdentifier(node)) {
+      const initializer = this.constInitializer(node);
+      return initializer ? this.zodShapes(initializer, depth + 1) : null;
+    }
+    if (!ts.isCallExpression(node) || !ts.isPropertyAccessExpression(node.expression)) return null;
+    const method = node.expression.name.text;
+    const target = node.expression.expression;
+    if (isZodNamespace(target)) {
+      if (method === "object" || method === "strictObject") {
+        const fields = node.arguments[0] && unwrap(node.arguments[0]);
+        return fields ? this.zodFields(fields, depth + 1) : null;
+      }
+      const options = method === "union" ? node.arguments[0] : method === "discriminatedUnion" ? node.arguments[1] : undefined;
+      const list = options && unwrap(options);
+      if (!list || !ts.isArrayLiteralExpression(list)) return null;
+      const all = list.elements.map(element => ts.isSpreadElement(element) ? null : this.zodShapes(element, depth + 1));
+      return all.length && all.every(option => option !== null) ? (all as BodyShape[][]).flat() : null;
+    }
+    if (["strict", "strip", "refine", "superRefine", "check", "describe", "meta", "readonly", "brand"].includes(method)) {
+      return this.zodShapes(target, depth + 1);
+    }
+    if (["passthrough", "loose", "catchall"].includes(method)) {
+      return this.zodShapes(target, depth + 1)?.map(shape => ({ ...shape, open: true })) ?? null;
+    }
+    return null;
+  }
+
+  private zodFields(fields: ts.Expression, depth: number): BodyShape[] | null {
+    if (depth > MAX_DEPTH) return null;
+    const node = ts.isIdentifier(fields) ? this.constInitializer(fields) : fields;
+    if (!node || !ts.isObjectLiteralExpression(unwrap(node))) return null;
+    const shape = emptyShape();
+    for (const property of (unwrap(node) as ts.ObjectLiteralExpression).properties) {
+      if (ts.isSpreadAssignment(property)) {
+        const inner = this.zodFields(unwrap(property.expression), depth + 1);
+        if (!inner) { shape.open = true; continue; }
+        for (const each of inner) {
+          Object.assign(shape.keys, each.keys); Object.assign(shape.values, each.values); Object.assign(shape.nested, each.nested);
+          shape.open ||= each.open;
+        }
+        continue;
+      }
+      const name = property.name && (ts.isIdentifier(property.name) || ts.isStringLiteral(property.name)) ? property.name.text : null;
+      const field = ts.isPropertyAssignment(property) ? property.initializer : null;
+      if (!name || !field) { shape.open = true; continue; }
+      const chain = zodChain(field);
+      shape.keys[name] = chain.defaulted ? "required" : chain.optional ? "optional" : "required";
+      if (chain.literal !== null) shape.values[name] = [chain.literal];
+      if (chain.base) {
+        const nested = this.zodShapes(chain.base, depth + 1);
+        if (nested) shape.nested[name] = nested;
+      }
+    }
+    return [shape];
+  }
+
+  /** A `const` binding's initializer, in this module or exported by a local one. */
+  private constInitializer(identifier: ts.Identifier): ts.Expression | null {
+    const declaration = declarationOf(identifier.text, identifier);
+    if (declaration && ts.isVariableDeclaration(declaration) && declaration.initializer
+      && declaration.parent.flags & ts.NodeFlags.Const) return declaration.initializer;
+    if (!declaration || !ts.isImportSpecifier(declaration)) return null;
+    const specifier = declaration.parent.parent.parent.moduleSpecifier;
+    const file = ts.isStringLiteral(specifier) ? localModule(identifier.getSourceFile().fileName, specifier.text, this.read) : null;
+    const text = file ? this.read(file) : null;
+    if (!file || text === null) return null;
+    const symbol = (declaration.propertyName ?? declaration.name).text;
+    for (const statement of parse(file, text).statements) {
+      if (!ts.isVariableStatement(statement) || !isExported(statement) || !(statement.declarationList.flags & ts.NodeFlags.Const)) continue;
+      for (const each of statement.declarationList.declarations) {
+        if (ts.isIdentifier(each.name) && each.name.text === symbol && each.initializer) return each.initializer;
+      }
+    }
+    return null;
+  }
+
   private headerNames(value: Value, depth: number): { names: string[]; resolved: boolean } {
     if (value.k === "nothing") return { names: [], resolved: true };
     if (value.k === "alt") {
@@ -599,6 +921,28 @@ class Reader {
       names.push(...keys.map(key => key.toLowerCase()));
     }
     return { names: [...new Set(names)].sort(), resolved };
+  }
+
+  /** The literal values one header (case-insensitive) can take; null where it is absent or not a literal. */
+  private headerValues(value: Value, header: string, depth: number): (string | null)[] {
+    if (depth > MAX_DEPTH || value.k === "nothing") return [null];
+    if (value.k === "alt") return [...new Set(value.options.flatMap(option => this.headerValues(option, header, depth + 1)))];
+    if (value.k !== "obj") return [null];
+    let found: (string | null)[] = [null];
+    for (const property of value.node.properties) {
+      if (ts.isSpreadAssignment(property)) {
+        const inner = this.headerValues(this.value(property.expression, value.env, depth + 1), header, depth + 1);
+        if (inner.some(entry => entry !== null)) found = inner;
+        continue;
+      }
+      const keys = property.name ? propertyName(property.name, expression => this.value(expression, value.env, depth + 1)) : null;
+      if (!keys?.some(key => key.toLowerCase() === header)) continue;
+      const initializer = ts.isPropertyAssignment(property) ? property.initializer
+        : ts.isShorthandPropertyAssignment(property) ? property.name : null;
+      const resolved = initializer ? this.value(initializer, value.env, depth + 1) : null;
+      found = resolved?.k === "str" ? resolved.values.map(entry => entry.toLowerCase()) : [null];
+    }
+    return found;
   }
 
   /** The values an init member can take, including through `...(cond ? { member } : {})`. */
@@ -627,6 +971,11 @@ class Reader {
     return this.request(call, EMPTY);
   }
 
+  /** One `fetch` call read with the given parameters bound (`localCallSites`). */
+  boundFetchRequest(call: ts.CallExpression, env: Env): ClientRequest {
+    return this.request(call, env);
+  }
+
   private request(call: ts.CallExpression, env: Env): ClientRequest {
     const document = call.getSourceFile();
     const [url, init] = call.arguments;
@@ -647,6 +996,8 @@ class Reader {
       ? { names: [...new Set(headerParts.flatMap(part => part.names))].sort(), resolved: headerParts.every(part => part.resolved) }
       : { names: [], resolved: false };
     const bodies: RequestBody[] = [];
+    const contentTypes = [...new Set(headerMembers.flatMap(member => member.expression
+      ? this.headerValues(this.value(member.expression, member.env, 0), "content-type", 0) : [null]))];
     for (const member of readable ? this.members(initValue, "body") : [{ expression: init, env }]) {
       if (!member.expression) { bodies.push({ kind: "none" }); continue; }
       const expression = unwrap(member.expression);
@@ -654,6 +1005,8 @@ class Reader {
         const shapes = this.shapes(this.value(expression.arguments[0], member.env, 0), 0);
         if (shapes) bodies.push(...shapes.map(shape => ({ kind: "json" as const, shape })));
         else bodies.push({ kind: "unresolved", text: expression.getText(document).slice(0, 120) });
+      } else if (isBinaryValue(expression) && contentTypes.length === 1) {
+        bodies.push({ kind: "binary", contentType: contentTypes[0] });
       } else {
         bodies.push({ kind: "unresolved", text: expression.getText(document).slice(0, 120) });
       }
@@ -795,7 +1148,10 @@ function merge(into: BodyShape, from: BodyShape, mode: "required" | "keep"): Bod
 /**
  * The statuses the code compares a fetch's response with: `r.status === 202`,
  * `r.status !== 201`, `[401, 404].includes(r.status)` and `case` labels of a
- * `switch (r.status)`, searched in the function that makes the call.
+ * `switch (r.status)`, searched in the function that makes the call. Only a
+ * comparison whose `r` is the binding the response was stored in counts
+ * (G8.5, 24 October 2026): a block-scoped `const answer` of another request
+ * in the same function is another binding, and its statuses are its own.
  */
 function responseStatuses(call: ts.CallExpression): number[] {
   let holder: ts.Node = call;
@@ -805,13 +1161,15 @@ function responseStatuses(call: ts.CallExpression): number[] {
     : parent && ts.isBinaryExpression(parent) && parent.operatorToken.kind === ts.SyntaxKind.EqualsToken
       && ts.isIdentifier(parent.left) ? parent.left.text : null;
   if (!name) return [];
+  const binding = ts.isVariableDeclaration(parent) ? parent : declarationOf(name, parent);
   let scope: ts.Node | undefined = call.parent;
   while (scope && !ts.isFunctionLike(scope) && !ts.isSourceFile(scope)) scope = scope.parent;
   if (!scope) return [];
   const isStatus = (node: ts.Node) => {
     const bare = ts.isParenthesizedExpression(node) ? node.expression : node;
     return ts.isPropertyAccessExpression(bare) && bare.name.text === "status"
-      && ts.isIdentifier(bare.expression) && bare.expression.text === name;
+      && ts.isIdentifier(bare.expression) && bare.expression.text === name
+      && declarationOf(name, bare.expression) === binding;
   };
   const statuses = new Set<number>();
   const visit = (node: ts.Node) => {
@@ -946,7 +1304,9 @@ export function requiredHeaderNames(contract: unknown): string[] {
 }
 
 type ClosedBody = Record<string, unknown>;
-interface BodyContract { bodies: ClosedBody[] | null; forbiddenFields: string[]; bodyForbidden: boolean; json: boolean }
+interface BodyContract { bodies: ClosedBody[] | null; forbiddenFields: string[]; bodyForbidden: boolean; json: boolean;
+  /** The registered request Content-Type, when the contract names one. */
+  contentType: string | null }
 
 function bodyContract(contract: unknown, register: RegisterDocument): BodyContract {
   const shape = contract as { closedBody?: ClosedBody; oneOfClosedBodies?: ClosedBody[]; schema?: string;
@@ -961,6 +1321,7 @@ function bodyContract(contract: unknown, register: RegisterDocument): BodyContra
     forbiddenFields: [...(shape?.forbiddenFields ?? []), ...(schema?.forbiddenFields ?? [])],
     bodyForbidden: shape?.body === "forbidden",
     json: shape?.contentType === "application/json",
+    contentType: typeof shape?.contentType === "string" ? shape.contentType : null,
   };
 }
 
@@ -1103,6 +1464,17 @@ function resolveTarget(target: RequestTarget, register: RegisterDocument): Regis
 function bodyIssues(body: RequestBody, entry: RegisterRoute, method: string, headers: string[], register: RegisterDocument): string[] {
   const contract = bodyContract(requestContractFor(entry, method), register);
   if (body.kind === "unresolved") return [`sends a body the census cannot resolve (${body.text})`];
+  if (body.kind === "binary") {
+    // Raw bytes fit only a contract that registers a binary Content-Type, and
+    // only when the request labels them with it.
+    if (contract.bodyForbidden) return ["sends a body the register forbids"];
+    if (contract.json || contract.bodies) return ["sends a binary body where the register declares a JSON body"];
+    if (!contract.contentType) return ["sends a binary body where the register declares no request Content-Type"];
+    if (body.contentType !== contract.contentType.toLowerCase()) {
+      return [`labels its binary body ${body.contentType ?? "with no Content-Type"} where the register declares ${contract.contentType}`];
+    }
+    return [];
+  }
   if (body.kind === "none") {
     if (contract.bodies && contract.bodies.every(candidate => Object.values(candidate).some(value => !isOptional(value) && !isForbidden(value)))) {
       return ["sends no body where the register requires one"];

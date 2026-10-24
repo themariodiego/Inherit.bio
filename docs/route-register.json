@@ -11969,6 +11969,32 @@
         "contentType": "application/json",
         "unknownFieldsRecursively": "forbidden"
       },
+      "keyRequired": {
+        "registeredBy": "owner-decision-2026-10-24-G8.5-Settings-AI-may-omit-apiKey",
+        "status": 409,
+        "contentType": "application/json",
+        "body": {
+          "error": {
+            "const": "key_required"
+          }
+        },
+        "when": "a-POST-without-apiKey-where-no-stored-key-may-be-reused: the-stored-key-belongs-to-another-provider-or-origin-or-the-hosted-provider-has-no-stored-key",
+        "effects": "none; the-stored-setting-key-and-every-permission-are-unchanged",
+        "unknownFieldsRecursively": "forbidden"
+      },
+      "unavailable": {
+        "registeredBy": "owner-decision-2026-10-23-G8.5-the-register-lists-the-harmless-extras",
+        "status": 503,
+        "contentType": "application/json",
+        "body": {
+          "error": {
+            "const": "unavailable"
+          }
+        },
+        "when": "the-settings-writer-or-the-removal-door-failed-or-answered-outside-its-closed-shape",
+        "effects": "none-committed",
+        "unknownFieldsRecursively": "forbidden"
+      },
       "invalid": "invalid-request-v1"
     },
     "embryo-ingest-chunk-v1": {
@@ -13552,6 +13578,61 @@
       },
       "unknownFields": "forbidden"
     },
+    "consent-revocation-v1": {
+      "registeredBy": "owner-decision-2026-10-23-G8.5-the-register-lists-the-harmless-extras",
+      "contentType": "application/json",
+      "outcomes": [
+        {
+          "status": 200,
+          "when": "a-directional-purpose-grant-is-revoked-now-by-revoke_directional_purpose_with_nonce_v1",
+          "body": {
+            "revoked": {
+              "const": true
+            },
+            "effectiveAt": "server-committed-ISO-8601-UTC"
+          }
+        },
+        {
+          "status": 200,
+          "when": "the-own-Copilot-permission-or-a-dispositionCases.cloud-model-provider-grant-is-revoked-now",
+          "body": {
+            "revoked": {
+              "const": true
+            }
+          }
+        },
+        {
+          "status": 202,
+          "when": "every-other-dispositionCases-entry-whose-revocation-completes-asynchronously",
+          "schemaFrom": "responseContracts.lifecycle-accepted-v1"
+        }
+      ],
+      "headers": "private-no-store",
+      "unknownFieldsRecursively": "forbidden"
+    },
+    "file-delete-v1": {
+      "registeredBy": "owner-decision-2026-10-23-G8.5-the-register-lists-the-harmless-extras",
+      "deleted": {
+        "status": 204,
+        "contentType": "empty",
+        "body": "empty",
+        "when": "the-database-prepared-and-authorised-the-cleanup-Storage-removed-the-original-and-finish_genome_file_deletion_v1-committed"
+      },
+      "pending": {
+        "status": 202,
+        "contentType": "application/json",
+        "body": {
+          "error": {
+            "const": "file_delete_pending"
+          }
+        },
+        "when": "the-database-cleanup-has-not-completed; the-client-repeats-the-same-owner-authorized-DELETE-with-its-next-X-Inherit-CSRF-and-a-timeout-never-means-deleted",
+        "unknownFieldsRecursively": "forbidden"
+      },
+      "headers": {
+        "Cache-Control": "private, no-store"
+      }
+    },
     "embryo-disposition-v1": {
       "contentType": "application/json",
       "outcomes": [
@@ -14220,6 +14301,7 @@
         "opaque-public-acceptance-v1"
       ],
       "api.consent-revoke": [
+        "consent-revocation-v1",
         "lifecycle-accepted-v1",
         "resource-not-found-v1"
       ],
@@ -14308,6 +14390,7 @@
       ],
       "api.future-person-claim-document-session": [
         "evidence-session-v1",
+        "public-capacity-limited-v1",
         "resource-not-found-v1"
       ],
       "api.evidence-chunk": [
@@ -14355,6 +14438,7 @@
       ],
       "api.appeal-document-session": [
         "evidence-session-v1",
+        "public-capacity-limited-v1",
         "resource-not-found-v1"
       ],
       "api.appeal-complete": [
@@ -14529,6 +14613,7 @@
         "capability-denied-api-v1"
       ],
       "api.file-delete": [
+        "file-delete-v1",
         "resource-not-found-v1",
         "capability-denied-api-v1"
       ],
@@ -17563,12 +17648,13 @@
         "sameOriginRequired": "sec-fetch-site-must-equal-same-origin-or-the-request-is-refused-before-the-account-context-is-read",
         "scopeSource": "database-owned-file-row",
         "ordering": "the database prepares and authorises the cleanup, the original object is then removed from Storage, and only then is deletion finished; a repeated attempt after a partial failure is idempotent, because the provider's empty removal list is its acknowledgement that a previous attempt already removed the object",
-        "successResponse": "no-content-with-no-body, so this route registers no successResponseContract",
+        "successResponse": "file-delete-v1: 204 with no body once deletion is finished, and 202 file_delete_pending while the database cleanup is still running, which the client repeats (registered 2026-10-24, G8.5)",
         "storageAccessContract": "genomes-server-mediated-v1",
         "contracts": [
           "resource-authorization-v1"
         ]
       },
+      "successResponseContract": "file-delete-v1",
       "disposition": "kept"
     },
     {
@@ -17880,7 +17966,7 @@
               "mode": "hosted",
               "provider": "required-allowlisted-hosted-provider-key",
               "model": "required-allowlisted-provider-model-id",
-              "apiKey": "required-bounded-secret",
+              "apiKey": "optional-bounded-secret-of-4-through-500-characters; absent-keeps-the-stored-key-when-the-stored-setting-is-the-same-hosted-provider-and-origin; with-no-reusable-stored-key-llm-settings-v1.keyRequired",
               "baseUrl": "forbidden"
             },
             {
@@ -17890,7 +17976,7 @@
               },
               "model": "required-bounded-model-id",
               "baseUrl": "required-https-endpoint-URL",
-              "apiKey": "required-bounded-secret"
+              "apiKey": "optional-bounded-secret-of-4-through-500-characters; absent-keeps-the-stored-key-when-the-stored-setting-has-the-same-provider-and-origin; with-no-stored-key-the-HTTPS-endpoint-is-saved-key-free; a-stored-key-is-never-sent-to-another-destination-and-a-changed-destination-with-none-sent-is-llm-settings-v1.keyRequired"
             },
             {
               "mode": "same-host-local",
@@ -17902,6 +17988,10 @@
               "apiKey": "optional-bounded-secret-only-in-model-endpoint-v1.localMode"
             }
           ],
+          "apiKeyOmission": {
+            "registeredBy": "owner-decision-2026-10-24-G8.5-Settings-AI-may-omit-apiKey",
+            "hostedAndRemote": "an-absent-apiKey-keeps-the-stored-key-for-the-same-destination-and-a-remote-HTTPS-endpoint-may-be-saved-with-no-key; the-settings-form-sends-no-apiKey-when-its-key-field-is-empty; an-empty-string-is-not-a-bounded-secret-and-is-invalid-request-v1"
+          },
           "unknownMissingInvalidOrAmbiguous": "invalid-request-v1"
         },
         "DELETE": {
@@ -19038,7 +19128,7 @@
       "requestContract": {
         "body": "forbidden",
         "requiredHeader": "X-Inherit-Operation-Nonce-from-the-consent-page",
-        "operationNonce": "the-directional-purpose-revocation-recorded-in-account_operation_nonces-before-the-writer-in-the-same-transaction-so-its-legal-audit-event-names-the-actor-G5.6-2026-10-23"
+        "operationNonce": "the-directional-purpose-revocation-recorded-in-account_operation_nonces-before-the-writer-in-the-same-transaction-so-its-legal-audit-event-names-the-actor-G5.6-2026-10-23; since-2026-10-24-G8.5-the-cloud-model-provider-grant-and-the-own-Copilot-permission-record-it-the-same-way-revoke_cloud_model_consent_with_nonce_v1-and-revoke_own_copilot_with_nonce_v1"
       },
       "stateProfile": "endpoint",
       "policy": {
@@ -19074,7 +19164,7 @@
           "contradiction-v1"
         ]
       },
-      "successResponseContract": "lifecycle-accepted-v1",
+      "successResponseContract": "consent-revocation-v1",
       "disposition": "kept"
     },
     {

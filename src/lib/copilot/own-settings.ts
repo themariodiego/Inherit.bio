@@ -20,9 +20,17 @@ import { ownCopilotRpc } from "./own-provider-authority";
  * the other two are `openai_compatible`, and the classification is the
  * server's own (`normalizeModelEndpoint`), which the declared mode must
  * match. `apiKey` may be left out to keep the stored key for the same
- * destination, or for a key-free endpoint, as before; the register's hosted
- * and remote bodies require it, which is recorded in
- * docs/register-contract-divergence.json as the owner's question.
+ * destination, or for a key-free endpoint, as before; the register says so
+ * since the owner's decision of 24 October 2026 ("G8.5: Settings → AI may
+ * omit `apiKey`"), and a POST that cannot reuse a stored key answers
+ * `llm-settings-v1.keyRequired` (409).
+ *
+ * Refusals answer the register's own bodies (G8.5, 24 October 2026): a
+ * request from another origin `authenticated-mutation-v1`'s 403
+ * `request_forbidden`, a request with no live account and session
+ * `authenticated-api-v1`'s 401 `unauthenticated`, a destination that fails
+ * validation `invalid-request-v1` (422, `model-endpoint-v1.failure`), and a
+ * failed writer or any other failure `llm-settings-v1.unavailable` (503).
  */
 const secret = z.string().min(4).max(500);
 const model = z.string().trim().min(1).max(200);
@@ -40,20 +48,28 @@ export function sameOriginCopilot(request: Request) {
   return request.headers.get("origin") === new URL(request.url).origin && request.headers.get("sec-fetch-site") === "same-origin";
 }
 export async function saveOwnCopilotSettings(request: Request) {
-  if (!sameOriginCopilot(request)) return ownUploadJson({ error: "forbidden" }, 403);
+  if (!sameOriginCopilot(request)) return ownUploadJson({ error: "request_forbidden" }, 403);
   const body = bodySchema.safeParse(await request.json().catch(() => null));
   if (!body.success) return ownUploadJson({ error: "invalid_request" }, 422);
   const stored = body.data.mode === "hosted" ? "anthropic" as const : "openai_compatible" as const;
   try {
     const actor = await currentOwnUploadAccount();
-    if (!actor) return ownUploadJson({ error: "unauthorized" }, 401);
-    const endpoint = normalizeModelEndpoint(body.data.mode === "hosted" ? HOSTED_BASE_URL : body.data.baseUrl);
+    if (!actor) return ownUploadJson({ error: "unauthenticated" }, 401);
+    let endpoint: ReturnType<typeof normalizeModelEndpoint>;
+    try {
+      endpoint = normalizeModelEndpoint(body.data.mode === "hosted" ? HOSTED_BASE_URL : body.data.baseUrl);
+      // DNS-only validation; saving never sends a credential or a model request.
+      if ((body.data.mode === "same-host-local") === (endpoint.providerClass === "local")) await resolveModelEndpoint(endpoint);
+    } catch {
+      // model-endpoint-v1.failure: a destination that fails validation is a
+      // closed 422, invalid-request-v1 (G8.5, 24 October 2026; it was
+      // { error: "model_endpoint_unavailable" }).
+      return ownUploadJson({ error: "invalid_request" }, 422);
+    }
     // The mode is the client's claim; the classification is the server's.
     if ((body.data.mode === "same-host-local") !== (endpoint.providerClass === "local")) {
       return ownUploadJson({ error: "invalid_request" }, 422);
     }
-    // DNS-only validation; saving never sends a credential or a model request.
-    await resolveModelEndpoint(endpoint);
     const key = body.data.apiKey;
     const result = await ownCopilotRpc("save_own_copilot_settings_v1", {
       p_account_id: actor.accountId, p_session_id: actor.sessionId,
@@ -69,15 +85,15 @@ export async function saveOwnCopilotSettings(request: Request) {
     // llm-settings-v1.post: server-normalized values only, never the key.
     return ownUploadJson({ status: "saved", provider: providerKeyFor(stored, stored === "anthropic" ? null : endpoint.baseUrl),
       endpointOrigin: endpoint.origin, classification: endpoint.providerClass });
-  } catch { return ownUploadJson({ error: "model_endpoint_unavailable" }, 422); }
+  } catch { return ownUploadJson({ error: "unavailable" }, 503); }
 }
 export async function removeOwnCopilotSettings(request: Request) {
-  if (!sameOriginCopilot(request)) return ownUploadJson({ error: "forbidden" }, 403);
+  if (!sameOriginCopilot(request)) return ownUploadJson({ error: "request_forbidden" }, 403);
   // methodRequestContracts.DELETE.body is forbidden.
   if ((await request.text().catch(() => "x")) !== "") return ownUploadJson({ error: "invalid_request" }, 422);
   try {
     const actor = await currentOwnUploadAccount();
-    if (!actor) return ownUploadJson({ error: "unauthorized" }, 401);
+    if (!actor) return ownUploadJson({ error: "unauthenticated" }, 401);
     const nonce = personOperationNonceFrom(request, { accountId: actor.accountId, sessionId: actor.sessionId,
       operation: "provider_setting_delete", targetId: actor.accountId });
     if (!nonce) return ownUploadJson({ error: "invalid_request" }, 422);

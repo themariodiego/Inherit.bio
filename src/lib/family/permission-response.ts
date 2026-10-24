@@ -12,9 +12,14 @@ export interface PermissionCsrf { grant: CsrfHandle; revoke: CsrfHandle }
 
 /** Consume the exact operation receipt before a refresh can replace this row. */
 export async function submitFamilyPermission(action: PermissionAction, csrf: PermissionCsrf): Promise<boolean> {
+  // The registered grant-purpose body, field by field: the minted request is
+  // typed, not closed, so it is never forwarded as it arrived (G8.5).
   const response = action.kind === "grant"
     ? await fetch("/api/consents", { method: "POST", headers: { "content-type": "application/json",
-      "X-Inherit-CSRF": csrf.grant.value() }, body: JSON.stringify(action.request) })
+      "X-Inherit-CSRF": csrf.grant.value() }, body: JSON.stringify({ action: "grant-purpose",
+        subjectId: action.request.subjectId, purposeKey: action.request.purposeKey,
+        artifactVersion: action.request.artifactVersion, artifactPresentationToken: action.request.artifactPresentationToken,
+        affirmed: true, statementKeys: action.request.statementKeys }) })
     : await fetch(`/api/consents/${action.grantId}/revoke`, { method: "POST",
       headers: { "X-Inherit-Operation-Nonce": action.nonce, "X-Inherit-CSRF": csrf.revoke.value() } });
   (action.kind === "grant" ? csrf.grant : csrf.revoke).accept(response);

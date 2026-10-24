@@ -1,4 +1,6 @@
+import { readFileSync } from "node:fs";
 import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
+import { registeredStatuses, type RegisterDocument } from "../../../scripts/form-contract-census";
 const mocks = vi.hoisted(() => ({ actor: vi.fn(), rpc: vi.fn(), resolve: vi.fn(), normalize: vi.fn() }));
 vi.mock("@/lib/uploads/own-upload-context", () => ({ currentOwnUploadAccount: mocks.actor,
   ownUploadJson: (body: unknown, status = 200) => Response.json(body, { status }) }));
@@ -116,6 +118,18 @@ describe("POST /api/llm/settings", () => {
     expect((await saveOwnCopilotSettings(request())).status).toBe(422); expect(mocks.rpc).not.toHaveBeenCalled();
   });
 
+  it("answers a destination that fails validation with invalid-request-v1, and any other failure with llm-settings-v1.unavailable", async () => {
+    mocks.normalize.mockImplementationOnce(() => { throw new Error("model_endpoint_unavailable"); });
+    const refused = await saveOwnCopilotSettings(request());
+    expect([refused.status, await refused.json()]).toEqual([422, { error: "invalid_request" }]);
+    mocks.resolve.mockRejectedValueOnce(new Error("synthetic DNS refusal"));
+    const unresolved = await saveOwnCopilotSettings(request());
+    expect([unresolved.status, await unresolved.json()]).toEqual([422, { error: "invalid_request" }]);
+    mocks.rpc.mockRejectedValueOnce(new Error("synthetic transport failure"));
+    const failed = await saveOwnCopilotSettings(request());
+    expect([failed.status, await failed.json()]).toEqual([503, { error: "unavailable" }]);
+  });
+
   it("refuses cross-origin saves before account or database access", async () => {
     expect((await saveOwnCopilotSettings(request(body, "POST", false))).status).toBe(403);
     expect(mocks.actor).not.toHaveBeenCalled(); expect(mocks.rpc).not.toHaveBeenCalled();
@@ -177,5 +191,67 @@ describe("DELETE /api/llm/settings", () => {
     mocks.rpc.mockResolvedValue({ data: null, error: { message: "private detail" } });
     const response = await remove(); expect(response.status).toBe(503);
     expect(await response.json()).toEqual({ error: "unavailable" });
+  });
+});
+
+/**
+ * The owner's decision of 24 October 2026 ("G8.5: Settings → AI may omit
+ * `apiKey`") and the register's refusal bodies (G8.5, 24 October 2026). The
+ * register is read, not restated, so a change to either side fails here.
+ */
+describe("api.llm-settings answers what the register describes", () => {
+  const register = JSON.parse(readFileSync("docs/route-register.json", "utf8")) as RegisterDocument;
+  const entry = register.routes.find(route => route.id === "api.llm-settings")!;
+  const bodies = (entry.methodRequestContracts!.POST as { oneOfClosedBodies: Record<string, unknown>[] }).oneOfClosedBodies;
+  const byMode = (mode: string) => bodies.find(candidate => (candidate.mode as unknown) === mode
+    || (candidate.mode as { const?: string } | undefined)?.const === mode)!;
+  /** The (status, error) pairs among `expected` the register lets this route answer for `method`. */
+  const registered = (method: string, expected: (readonly [number, string])[]) => {
+    const statuses = registeredStatuses(entry, method, register);
+    const codes = JSON.stringify([register.authContracts, ...(register.responseContractBindings.routes[entry.id] ?? [])
+      .map(name => register.responseContracts[name])]);
+    return expected.filter(([status, code]) => statuses.includes(status) && codes.includes(`{"const":"${code}"}`));
+  };
+
+  it("lets the hosted and remote bodies leave apiKey out, as the handler does", async () => {
+    for (const mode of ["hosted", "remote-openai-compatible", "same-host-local"]) {
+      expect(String(byMode(mode).apiKey), mode).toMatch(/^optional-bounded-secret/);
+    }
+    const hosted = { mode: "hosted", provider: "anthropic", model: HOSTED_MODEL };
+    mocks.normalize.mockReturnValue({ ...CLOUD, baseUrl: "https://api.anthropic.com/v1", origin: "https://api.anthropic.com" });
+    expect((await saveOwnCopilotSettings(request(hosted))).status).toBe(200);
+    mocks.normalize.mockReturnValue(CLOUD);
+    const remote: Record<string, unknown> = { ...body };
+    delete remote.apiKey;
+    expect((await saveOwnCopilotSettings(request(remote))).status).toBe(200);
+    for (const [, args] of mocks.rpc.mock.calls) expect(args).toMatchObject({ p_encrypted_key: null, p_key_last4: null });
+  });
+
+  it("answers every refusal of the POST with a status and error code the register gives it", async () => {
+    const answers = [await saveOwnCopilotSettings(request(body, "POST", false))];
+    mocks.actor.mockResolvedValueOnce(null);
+    answers.push(await saveOwnCopilotSettings(request()));
+    mocks.rpc.mockResolvedValueOnce({ data: null, error: { message: "key_required" } });
+    answers.push(await saveOwnCopilotSettings(request()));
+    mocks.rpc.mockResolvedValueOnce({ data: null, error: { message: "private detail" } });
+    answers.push(await saveOwnCopilotSettings(request()));
+    answers.push(await saveOwnCopilotSettings(request({ ...body, apiKey: "" })));
+    mocks.resolve.mockRejectedValueOnce(new Error("synthetic DNS refusal"));
+    answers.push(await saveOwnCopilotSettings(request()));
+    const refusals = await Promise.all(answers.map(async response => [response.status, (await response.json()).error] as const));
+    expect(refusals).toEqual(registered("POST", [[403, "request_forbidden"], [401, "unauthenticated"], [409, "key_required"],
+      [503, "unavailable"], [422, "invalid_request"], [422, "invalid_request"]]));
+  });
+
+  it("answers every refusal of the DELETE with a status and error code the register gives it", async () => {
+    const answers = [await removeOwnCopilotSettings(request(null, "DELETE", false, { "x-inherit-operation-nonce": nonce() }))];
+    mocks.actor.mockResolvedValueOnce(null);
+    answers.push(await remove());
+    answers.push(await remove(null));
+    mocks.rpc.mockResolvedValueOnce({ data: null, error: { message: "private detail" } });
+    answers.push(await remove());
+    const refusals = await Promise.all(answers.map(async response => [response.status, (await response.json()).error] as const));
+    expect(refusals).toEqual(registered("DELETE", [[403, "request_forbidden"], [401, "unauthenticated"], [422, "invalid_request"],
+      [503, "unavailable"]]));
   });
 });

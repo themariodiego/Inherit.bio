@@ -24,8 +24,16 @@ import { withAccountCsrf } from "@/lib/security/session-csrf";
  * account, session and grant (G5.6, 23 Oct 2026).
  * `revoke_directional_purpose_with_nonce_v1` records its hash before the
  * revocation runs, in the same transaction, so the revocation's audit events
- * name the person who revoked and a replay writes nothing. The own-Copilot
- * and cloud-model cases keep their own authority.
+ * name the person who revoked and a replay writes nothing.
+ *
+ * Since 24 October 2026 (G8.5, owner decision of 23 October, item 1: the code
+ * moves to the register) the other two cases read it too, as the register's
+ * `requiredHeader` says of every request: a cloud-model provider grant is
+ * revoked by `revoke_cloud_model_consent_with_nonce_v1`, and the own-Copilot
+ * permission by `revoke_own_copilot_with_nonce_v1`
+ * (`revokeOwnCopilotConsent`), each recording the nonce /settings/consents or
+ * /settings/copilot rendered before its unchanged writer runs
+ * (20261025200000_consent_revoke_provider_nonce.sql).
  */
 export const POST = withAccountCsrf("api.consent-revoke", handlePost);
 async function handlePost(
@@ -78,10 +86,18 @@ async function handlePost(
     );
   }
 
-  const { data: revoked, error } = await admin.rpc("revoke_cloud_model_consent", {
+  const account = await getSensitiveAccountContext();
+  if (!account || account.user.id !== user.id) return new Response("Unauthorized", { status: 401 });
+  const nonce = personOperationNonceFrom(request, { accountId: user.id, sessionId: account.sessionId,
+    operation: "consent_revoke", targetId: id });
+  if (!nonce) return NextResponse.json({ error: "invalid_request" }, { status: 400 });
+  const { data: revoked, error } = await admin.rpc("revoke_cloud_model_consent_with_nonce_v1", {
     p_account_id: user.id,
+    p_session_id: account.sessionId,
     p_grant_id: id,
+    ...personOperationNonceArgs(nonce),
   });
+  if (isOperationNonceRefusal(error)) return NextResponse.json({ error: "invalid_request" }, { status: 400 });
   if (error) return NextResponse.json({ error: "consent_unavailable" }, { status: 503 });
   if (!revoked) return new Response("Not found", { status: 404 });
   return NextResponse.json({ revoked: true });

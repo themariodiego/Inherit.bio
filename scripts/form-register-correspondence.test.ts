@@ -49,8 +49,10 @@ const SIGN_OUT_FORM = "src/components/site/sign-out-form.tsx";
 
 type DivergenceRow = { file: string; routeId: string; method: string; issues: string[]; why: string; closing: string; closedBy: string };
 type ReviewRow = { file: string; usage: string; submits: string; evidence: { file: string; literal: string }[]; why: string; closing: string };
+type ClientReviewRow = { file: string; issues: string[]; requests: string; evidence: { file: string; literal: string }[]; why: string; closing: string };
 type Ledger = { formRequestDivergence: DivergenceRow[]; formSubmissionReview: ReviewRow[]; csrfTransportNote: string;
-  clientRequestDivergenceNote: string; clientRequestDivergence: DivergenceRow[] };
+  clientRequestDivergenceNote: string; clientRequestDivergence: DivergenceRow[]; clientRequestReviewNote: string;
+  clientRequestReview: ClientReviewRow[] };
 
 const register = JSON.parse(readFileSync(REGISTER, "utf8")) as RegisterDocument & {
   routes: (RegisterDocument["routes"][number] & { requestContract?: unknown; methodRequestContracts?: Record<string, unknown> })[];
@@ -274,24 +276,29 @@ describe("the form census fails on a planted divergence", () => {
     ]);
   });
 
-  it("holds the llm-settings form to its registered bodies: the legacy body fails, an always-sent key closes the one recorded row", () => {
+  it("holds the llm-settings form to its registered bodies: the legacy body fails, and a required apiKey would reopen the closed row", () => {
     const file = "src/components/settings/llm-settings-form.tsx";
     const source = real(file);
     const sent = "body: JSON.stringify(body),";
     expect(source).toContain(sent);
     const legacy = mismatch({ [file]: source.replace(sent,
       "body: JSON.stringify({ provider, base_url, model: chosenModel, api_key: apiKey || null }),") });
+    // Since 2026-10-24 (owner decision, "Settings → AI may omit apiKey") the legacy body no longer "omits apiKey".
     expect(legacy.unrecorded).toEqual([
-      `${file} api.llm-settings POST: omits apiKey, which the registered body requires`,
       `${file} api.llm-settings POST: omits mode, which the registered body requires`,
       `${file} api.llm-settings POST: sends api_key, which the registered body does not declare`,
       `${file} api.llm-settings POST: sends base_url, which the registered body does not declare`,
     ]);
     const optional = /\.\.\.\(apiKey \? \{ apiKey \} : \{\}\)/g;
     expect(source.match(optional)).toHaveLength(3);
-    const required = mismatch({ [file]: source.replace(optional, "apiKey") });
-    expect(required.unrecorded).toEqual([]);
-    expect(required.stale).toEqual([`${file} api.llm-settings POST: may omit apiKey, which the registered body requires`]);
+    expect(mismatch({ [file]: source.replace(optional, "apiKey") })).toEqual({ unrecorded: [], stale: [] });
+    // Planted: the register's hosted and remote bodies require apiKey again, as before the decision.
+    const amended = /"apiKey": "optional-bounded-secret-of-4-through-500-characters; [^"]+"/g;
+    const text = JSON.stringify(register, null, 2);
+    expect(text.match(amended)).toHaveLength(2);
+    const required = JSON.parse(text.replace(amended, '"apiKey": "required-bounded-secret"')) as typeof register;
+    expect(ledgerMismatch(census(files, disk, required, signOutResponse("https://inherit.test")).issues.map(formIssueKey), recordedKeys()))
+      .toEqual({ unrecorded: [`${file} api.llm-settings POST: may omit apiKey, which the registered body requires`], stale: [] });
   });
 
   it("still reads the AI SDK chat transport, so the compatibility panel's former body would fail again", () => {
@@ -558,6 +565,11 @@ const sources = shippedSources();
 const client = clientCensus(sources, disk, register, actual);
 const recordedClientKeys = () => ledger.clientRequestDivergence.flatMap(row =>
   row.issues.map(issue => formIssueKey({ file: row.file, routeId: row.routeId, method: row.method, issue })));
+/** A reviewed request's issues carry no route or method: it is not a request to an Inherit route. */
+const reviewedClientKeys = () => ledger.clientRequestReview.flatMap(row =>
+  row.issues.map(issue => formIssueKey({ file: row.file, routeId: null, method: null, issue })));
+/** Every client issue the ledger accounts for: a recorded divergence or a reviewed request. */
+const accountedClientKeys = () => [...recordedClientKeys(), ...reviewedClientKeys()];
 const CSRF_OMISSION = /X-Inherit-CSRF|x-inherit-csrf/u;
 
 describe("every client request sends what its register entry declares (G8.5)", () => {
@@ -570,12 +582,17 @@ describe("every client request sends what its register entry declares (G8.5)", (
     // calls (the compatibility panel's transport became a fetch, and the
     // Embryo gate's server action became a fetch of api.embryo-acknowledge),
     // 64 of them made by no form.
+    // 2026-10-24 (G8.5): a fetch in a local function that only its own file
+    // calls is read once per call (localCallSites). Ten such fetches are
+    // read 24 times, so 104 requests from the same 90 fetch calls; 74 are
+    // made by no form (the other 14 readings are of three form handlers' fetches).
     expect(client.modules).toHaveLength(226);
     expect(client.modules.filter(file => /^\s*["']use client["']/u.test(readFileSync(file, "utf8")))).toHaveLength(97);
-    expect(client.calls).toHaveLength(90);
+    expect(client.calls).toHaveLength(104);
+    expect(new Set(client.calls.map(request => `${request.file}:${request.line}`)).size).toBe(90);
     expect(client.calls.filter(request => request.via === "ai-sdk-default-chat-transport")).toHaveLength(0);
     expect(new Set(actual.requests.map(request => `${request.file}:${request.line}`)).size).toBe(26);
-    expect(client.unformed).toHaveLength(64);
+    expect(client.unformed).toHaveLength(74);
     // Every request a form makes is one of the client's, read once.
     const calls = new Set(client.calls.map(request => `${request.file}:${request.line}`));
     expect(actual.requests.filter(request => !calls.has(`${request.file}:${request.line}`))).toEqual([]);
@@ -593,9 +610,34 @@ describe("every client request sends what its register entry declares (G8.5)", (
   });
 
   it("records every other divergence of a request no form makes, in both directions", () => {
-    const { unrecorded, stale } = ledgerMismatch(client.issues.map(formIssueKey), recordedClientKeys());
+    // A reviewed request (clientRequestReview) is accounted for there, never twice.
+    const reviewed = new Set(reviewedClientKeys());
+    expect(recordedClientKeys().filter(key => reviewed.has(key))).toEqual([]);
+    const { unrecorded, stale } = ledgerMismatch(client.issues.map(formIssueKey).filter(key => !reviewed.has(key)), recordedClientKeys());
     expect(unrecorded, "divergences no clientRequestDivergence row records").toEqual([]);
     expect(stale, "clientRequestDivergence rows whose divergence no longer exists").toEqual([]);
+  });
+
+  it("names every client request that is not a request to an Inherit route, in both directions, anchored to its code", () => {
+    // G8.5, 24 October 2026: a first-party static asset, and an object URL of
+    // bytes already in the page. Each row's issues are exactly what the census reports for it.
+    const present = new Set(client.issues.map(formIssueKey));
+    expect(reviewedClientKeys().filter(key => !present.has(key)), "reviewed requests the census no longer reports").toEqual([]);
+    expect(new Set(reviewedClientKeys()).size).toBe(reviewedClientKeys().length);
+    expect(ledger.clientRequestReview.map(row => `${row.file}: ${row.requests}`)).toEqual([
+      "src/components/browse/igv-reference.ts: the public first-party chromosome-size reference public/genomes/hg38.chrom.sizes",
+      "src/lib/future-person/review-pdf.ts: the inert PDF viewer's own asset manifest, generated into public/review-document-assets/ at build",
+      "src/lib/future-person/review-pdf.ts: a blob: object URL of a document the reviewer's reader already downloaded and verified",
+    ]);
+    for (const row of ledger.clientRequestReview) {
+      expect(row.why.length, row.file).toBeGreaterThan(150);
+      expect(row.closing.length, row.file).toBeGreaterThan(60);
+      expect(row.evidence.length).toBeGreaterThan(0);
+      for (const evidence of row.evidence) {
+        expect(readFileSync(evidence.file, "utf8").includes(evidence.literal), `${evidence.file}: ${evidence.literal}`).toBe(true);
+      }
+    }
+    expect(ledger.clientRequestReviewNote.length).toBeGreaterThan(200);
   });
 
   it("says why each client divergence exists, what closes it and who has to act", () => {
@@ -629,8 +671,10 @@ describe("the client census fails on a planted divergence", () => {
   it("fails when a button's request drops its token", () => {
     const file = "src/components/settings/consent-list.tsx";
     const source = real(file);
-    expect(source).toContain('method: "POST", headers: { "X-Inherit-CSRF": csrf.value() },');
-    expect(csrfOmissions(run({ [file]: source.replace('method: "POST", headers: { "X-Inherit-CSRF": csrf.value() },', 'method: "POST",') })))
+    // Since 2026-10-24 the revocation also sends the page's operation nonce (G8.5); the token is still what is dropped.
+    const sent = 'method: "POST", headers: { "X-Inherit-Operation-Nonce": g.revokeNonce, "X-Inherit-CSRF": csrf.value() },';
+    expect(source).toContain(sent);
+    expect(csrfOmissions(run({ [file]: source.replace(sent, 'method: "POST", headers: { "X-Inherit-Operation-Nonce": g.revokeNonce },') })))
       .toEqual([`${file} api.consent-revoke POST: omits X-Inherit-CSRF, which mutationSecurityBindings.csrfTransport requires of this state-changing request`]);
   });
 
@@ -701,16 +745,153 @@ describe("the client census fails on a planted divergence", () => {
   });
 
   it("records a new non-CSRF divergence of a request no form makes, and notices a recorded one close", () => {
+    // Re-targeted on 2026-10-24: the consent list's recorded nonce row closed (it sends the nonce now).
+    const browser = "src/components/browse/genome-browser.tsx";
+    const recorded = recordedClientKeys().filter(key => key.startsWith(`${browser} api.browse-region POST:`));
+    expect(recorded).toHaveLength(7);
+    const sent = "body: JSON.stringify({\n        file: region.file, chromosome: region.chromosome, start: region.start, end: region.end,\n      }),";
+    expect(real(browser)).toContain(sent);
+    const fixed = run({ [browser]: real(browser).replace(sent,
+      "body: JSON.stringify({ subject: region.file, region: { chromosome: region.chromosome, start: region.start, end: region.end }, nonce: region.file }),") });
+    expect(ledgerMismatch(fixed.issues.map(formIssueKey), accountedClientKeys()).stale.sort()).toEqual(recorded.sort());
     const file = "src/components/settings/consent-list.tsx";
     const source = real(file);
-    const recorded = `${file} api.consent-revoke POST: omits the required header x-inherit-operation-nonce`;
-    expect(recordedClientKeys()).toContain(recorded);
-    const fixed = run({ [file]: source.replace('method: "POST", headers: { "X-Inherit-CSRF": csrf.value() },',
-      'method: "POST", headers: { "X-Inherit-CSRF": csrf.value(), "X-Inherit-Operation-Nonce": nonce },') });
-    expect(ledgerMismatch(fixed.issues.map(formIssueKey), recordedClientKeys()).stale).toEqual([recorded]);
-    const added = run({ [file]: source.replace('method: "POST", headers: { "X-Inherit-CSRF": csrf.value() },',
-      'method: "POST", headers: { "X-Inherit-CSRF": csrf.value() }, body: JSON.stringify({ grantId: g.id }),') });
-    expect(ledgerMismatch(added.issues.map(formIssueKey), recordedClientKeys()).unrecorded)
+    const headers = 'method: "POST", headers: { "X-Inherit-Operation-Nonce": g.revokeNonce, "X-Inherit-CSRF": csrf.value() },';
+    expect(source).toContain(headers);
+    expect(ledgerMismatch(run({ [file]: source.replace(headers, 'method: "POST", headers: { "X-Inherit-CSRF": csrf.value() },') }).issues
+      .map(formIssueKey), accountedClientKeys()).unrecorded)
+      .toEqual([`${file} api.consent-revoke POST: omits the required header x-inherit-operation-nonce`]);
+    const added = run({ [file]: source.replace(headers, `${headers} body: JSON.stringify({ grantId: g.id }),`) });
+    expect(ledgerMismatch(added.issues.map(formIssueKey), accountedClientKeys()).unrecorded)
       .toEqual([`${file} api.consent-revoke POST: sends a body the register forbids`]);
   });
+
+  /** Only the issues the planted run reports for one file. */
+  const issuesIn = (result: ReturnType<typeof run>, file: string) => [...new Set([...result.formIssues, ...result.issues]
+    .filter(issue => issue.file === file).map(formIssueKey))].sort();
+  /** A copy of the register with one route's bound response contract removed. */
+  const unbound = (routeId: string, contract: string): RegisterDocument => {
+    const copy = JSON.parse(JSON.stringify(register)) as RegisterDocument & { routes: { id: string; successResponseContract?: string }[] };
+    copy.responseContractBindings.routes[routeId] = copy.responseContractBindings.routes[routeId].filter(name => name !== contract);
+    for (const route of copy.routes) if (route.id === routeId && route.successResponseContract === contract) delete route.successResponseContract;
+    return copy;
+  };
+  const runWith = (document: RegisterDocument) => {
+    const forms = census(sources.filter(name => name.endsWith(".tsx")), disk, document, signOutResponse("https://inherit.test"));
+    return clientCensus(sources, disk, document, forms);
+  };
+
+  // G8.5, 24 October 2026: what the census reads now, each with a planted defect.
+  it("reads a binary chunk as the octet-stream body its route registers, and fails one unlabelled or sent where JSON is registered", () => {
+    const file = "src/components/future-person/claim-documents.tsx";
+    const source = real(file);
+    expect(issuesIn(run({}), file)).toEqual([]);
+    const label = 'headers: { "content-type": "application/octet-stream", "x-inherit-csrf": csrf },';
+    expect(source).toContain(label);
+    expect(issuesIn(run({ [file]: source.replace(label, 'headers: { "x-inherit-csrf": csrf },') }), file)).toEqual([
+      `${file} api.evidence-chunk PUT: labels its binary body with no Content-Type where the register declares application/octet-stream`,
+    ]);
+    const helper = "src/lib/planted-binary.ts";
+    const entry = "src/components/planted-binary-entry.tsx";
+    const planted = (body: string) => run({
+      [entry]: '"use client";\nimport { send } from "@/lib/planted-binary";\nexport function Planted() { return <button onClick={() => send()}>Go</button>; }\n',
+      [helper]: `export async function send() { const bytes = new Uint8Array(4); const text = "x"; await fetch("/api/settings/jurisdiction", { method: "PUT",\n`
+        + `  headers: { "content-type": "application/octet-stream", "x-inherit-csrf": "c", "x-inherit-operation-nonce": "n" }, body: ${body} }); }\n`,
+    });
+    expect(issuesIn(planted("bytes.subarray(0, 2)"), helper))
+      .toEqual([`${helper} api.jurisdiction PUT: sends a binary body where the register declares a JSON body`]);
+    // A body that is not bytes is still unresolved, whatever the request labels it.
+    expect(issuesIn(planted("text"), helper)).toEqual([`${helper} api.jurisdiction PUT: sends a body the census cannot resolve (text)`]);
+  });
+
+  it("holds each response binding to its own statuses, and still fails one compared on the chunk's own binding", () => {
+    const file = "src/components/future-person/public-appeal-documents.tsx";
+    const source = real(file);
+    expect(issuesIn(run({}), file)).toEqual([]);
+    const check = 'if (answer.status !== 204) throw new Error("document_unavailable");';
+    expect(source).toContain(check);
+    expect(issuesIn(run({ [file]: source.replace(check, 'if (answer.status !== 204 && answer.status !== 418) throw new Error("document_unavailable");') }), file))
+      .toEqual([`${file} api.evidence-chunk PUT: branches on status 418, which no response contract of api.evidence-chunk declares`]);
+  });
+
+  it("follows a local function's calls with their arguments bound, and only when those calls are every way it runs", () => {
+    const file = "src/components/settings/danger-zone.tsx";
+    const source = real(file);
+    expect(issuesIn(run({}), file)).toEqual([]);
+    expect(source).toContain('"/api/account/delete/cancel",');
+    expect(issuesIn(run({ [file]: source.replace('"/api/account/delete/cancel",', '"/api/account/delete/undo",') }), file))
+      .toEqual([`${file} (unregistered) (method?): sends to /api/account/delete/undo, which no register entry describes`]);
+    // A function that is also passed as a value keeps its unbound reading.
+    const planted = "src/components/planted-passed-helper.tsx";
+    const helper = (extra: string) => run({ [planted]: '"use client";\nexport function Planted() {\n'
+      + '  async function post(path: string) { await fetch(path, { method: "POST", headers: { "x-inherit-csrf": "c" } }); }\n'
+      + `  return <button onClick={() => { void post("/api/consents/revoke-all");${extra} }}>Go</button>;\n}\n` });
+    expect(issuesIn(helper(""), planted).filter(issue => issue.includes("unresolved"))).toEqual([]);
+    expect(issuesIn(helper(" [\"/a\"].forEach(post);"), planted))
+      .toEqual([`${planted} (unregistered) (method?): sends to an unresolved target (path), which no register entry describes`]);
+  });
+
+  it("decides a bound parameter's branch, so each call is held to the one body its branch builds", () => {
+    const file = "src/components/uploads/adult-upload-revision-form.tsx";
+    const source = real(file);
+    expect(issuesIn(run({}), file)).toEqual([]);
+    const confirm = "? { operation, uploadRevisionAffirmed: true, nonce: review.nonce }";
+    expect(source).toContain(confirm);
+    expect(issuesIn(run({ [file]: source.replace(confirm, "? { operation, nonce: review.nonce }") }), file))
+      .toEqual([`${file} api.withdraw POST: omits uploadRevisionAffirmed, which the registered body requires`]);
+  });
+
+  it("joins a concatenated path, so the request it names is held to its entry", () => {
+    const helper = "src/lib/planted-joined-path.ts";
+    const entry = "src/components/planted-joined-entry.tsx";
+    const result = run({
+      [entry]: '"use client";\nimport { put } from "@/lib/planted-joined-path";\nexport function Planted() { return <button onClick={() => put()}>Go</button>; }\n',
+      [helper]: 'const BASE = "/api/settings/";\nexport async function put() { await fetch(BASE + "jurisdiction", { method: "PUT" }); }\n',
+    });
+    expect(csrfOmissions(result)).toEqual([
+      `${helper} api.jurisdiction PUT: omits X-Inherit-CSRF, which mutationSecurityBindings.csrfTransport requires of this state-changing request`,
+    ]);
+  });
+
+  it("reads a zod parse's output as its schema's keys, and fails a key the registered body does not declare", () => {
+    const file = "src/lib/uploads/subject-upload-browser.ts";
+    const contract = "src/lib/uploads/subject-upload-contract.ts";
+    expect(issuesIn(run({}), file)).toEqual([]);
+    const schema = 'z.object({ subjectId: z.union([uuid, z.literal("me")]), declaredFormat: z.enum(SUBJECT_UPLOAD_FORMATS), ...declaration }).strict(),';
+    expect(real(contract)).toContain(schema);
+    expect(issuesIn(run({ [contract]: real(contract).replace(schema, schema.replace("...declaration }", "...declaration, fileName: z.string() }")) }), file))
+      .toEqual([`${file} api.file-upload-session POST: sends fileName, which the registered body does not declare`]);
+    expect(issuesIn(run({ [contract]: real(contract).replace(schema, schema.replace(".strict(),", ".passthrough(),")) }), file))
+      .toEqual([`${file} api.file-upload-session POST: sends a body the census cannot fully resolve`]);
+  });
+
+  it("fails when a request goes back to forwarding a value it cannot read instead of the registered fields", () => {
+    const cases: [string, string, string, string][] = [
+      ["src/lib/family/permission-response.ts", 'body: JSON.stringify({ action: "grant-purpose",', 'body: JSON.stringify({ ...action.request,',
+        "api.consents POST: sends a body the census cannot fully resolve"],
+      ["src/lib/future-person/read-review-document.ts", "body:JSON.stringify({proof,nonce}),", "body:JSON.stringify(proofs[sequence]),",
+        "api.claim-review-chunk-acknowledgement POST: sends a body the census cannot resolve (JSON.stringify(proofs[sequence]))"],
+      ["src/components/future-person/public-appeal-case-rejection.tsx",
+        '? { priorDecisionRevision: reversal.priorDecisionRevision, evidenceRevision: reversal.evidenceRevision } : {})', "? reversal : {})",
+        "api.appeal-review POST: sends a body the census cannot fully resolve"],
+    ];
+    for (const [file, named, forwarded, issue] of cases) {
+      expect(real(file), file).toContain(named);
+      expect(issuesIn(run({ [file]: real(file).replace(named, forwarded) }), file), file).toContain(`${file} ${issue}`);
+    }
+  }, 30_000);
+
+  it("fails again on each status row the register closed, once its answer is unbound", () => {
+    const cases: [string, string, string][] = [
+      ["api.file-delete", "file-delete-v1", "src/lib/uploads/file-delete-browser.ts api.file-delete DELETE: branches on status 204, which no response contract of api.file-delete declares"],
+      ["api.consent-revoke", "consent-revocation-v1", "src/lib/uploads/own-report-choice-browser.ts api.consent-revoke POST: branches on status 200, which no response contract of api.consent-revoke declares"],
+      ["api.future-person-claim-document-session", "public-capacity-limited-v1",
+        "src/components/future-person/claim-documents.tsx api.future-person-claim-document-session POST: branches on status 429, which no response contract of api.future-person-claim-document-session declares"],
+    ];
+    for (const [routeId, contract, issue] of cases) {
+      expect(register.responseContractBindings.routes[routeId], routeId).toContain(contract);
+      expect(runWith(unbound(routeId, contract)).issues.map(formIssueKey), routeId).toContain(issue);
+    }
+  }, 30_000);
+
 });

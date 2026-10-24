@@ -50,8 +50,9 @@ export async function readReviewDocument(documentId:string,openNonce:string,revi
     if(await hash(bytes)!==descriptor.sha256)throw new Error("Document integrity check failed");
     for(let sequence=0;sequence<proofs.length;sequence++) {
       assertActive();
+      const {proof,nonce}=proofs[sequence];
       const settled=await fetch(`/api/downloads/${descriptor.session}/chunks/${sequence}/acknowledge`,{
-        method:"POST",credentials:"same-origin",signal,headers:{"content-type":"application/json","x-inherit-csrf":csrf},body:JSON.stringify(proofs[sequence]),
+        method:"POST",credentials:"same-origin",signal,headers:{"content-type":"application/json","x-inherit-csrf":csrf},body:JSON.stringify({proof,nonce}),
       });
       if(settled.status!==204||(await settled.arrayBuffer()).byteLength!==0)throw new Error("Document receipt unavailable");
     }

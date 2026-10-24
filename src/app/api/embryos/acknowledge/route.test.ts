@@ -1,6 +1,7 @@
 import crypto from "node:crypto";
 import { readFileSync } from "node:fs";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { registeredStatuses, type RegisterDocument } from "../../../../../scripts/form-contract-census";
 
 /**
  * `POST /api/embryos/acknowledge` (register api.embryo-acknowledge), the
@@ -79,8 +80,9 @@ describe("POST /api/embryos/acknowledge", () => {
     const refused: Record<string, string>[] = [{ origin: "https://elsewhere.test" }, {}, { "sec-fetch-site": "cross-site" }, { "sec-fetch-site": "same-site" }];
     for (const headers of refused) {
       const response = await call(GATE, headers);
-      expect(response.status).toBe(400);
-      expect(await response.json()).toEqual({ error: "invalid_request" });
+      // authenticated-mutation-v1's refusal since 2026-10-24 (G8.5); it was a 400 invalid_request.
+      expect(response.status).toBe(403);
+      expect(await response.json()).toEqual({ error: "request_forbidden" });
       expect(response.headers.get("set-cookie")).toBeNull();
     }
     expect(mocks.context).not.toHaveBeenCalled();
@@ -91,7 +93,9 @@ describe("POST /api/embryos/acknowledge", () => {
     for (const body of [{}, null, { acknowledgement: "tier2-result-gate", affirmed: true }, { ...GATE, affirmed: false },
       { acknowledgement: "embryo-result-gate" }, { ...GATE, accountId: ACCOUNT }, { ...GATE, cohortId: ACCOUNT }]) {
       const response = await call(body);
-      expect(response.status).toBe(400);
+      // invalid-request-v1 since 2026-10-24 (G8.5); it was a 400.
+      expect(response.status).toBe(422);
+      expect(await response.json()).toEqual({ error: "invalid_request", issues: ["body"] });
       expect(response.headers.get("set-cookie")).toBeNull();
     }
     expect(mocks.context).not.toHaveBeenCalled();
@@ -101,6 +105,8 @@ describe("POST /api/embryos/acknowledge", () => {
     mocks.context.mockResolvedValue(null);
     const response = await call(GATE);
     expect(response.status).toBe(401);
+    // authenticated-api-v1's JSON body since 2026-10-24 (G8.5); it was plain text.
+    expect(await response.json()).toEqual({ error: "unauthenticated" });
     expect(response.headers.get("set-cookie")).toBeNull();
   });
 });
@@ -122,4 +128,26 @@ describe("the register describes the route that answers", () => {
     expect(response.status).toBe(contract.status);
     expect(Object.keys(await response.json()).sort()).toEqual(Object.keys(contract.body ?? {}).sort());
   });
+
+  it("refuses only with statuses and error codes the register gives this route (G8.5, 24 October 2026)", async () => {
+    const answers = [await call(GATE, { origin: "https://elsewhere.test" }), await call({ ...GATE, affirmed: false })];
+    mocks.context.mockResolvedValue(null);
+    answers.push(await call(GATE));
+    const refusals = await Promise.all(answers.map(async response => [response.status, (await response.json()).error] as const));
+    expect(refusals).toEqual(registeredRefusals(entry, [[403, "request_forbidden"], [422, "invalid_request"], [401, "unauthenticated"]]));
+  });
 });
+
+/**
+ * The (status, error) pairs among `expected` that the register lets this
+ * route answer: its bound response contracts, and the auth contracts every
+ * authenticated mutation carries. A pair the register does not give is left
+ * out, so the comparison above fails on it.
+ */
+function registeredRefusals(entry: { id: string }, expected: (readonly [number, string])[]): (readonly [number, string])[] {
+  const document = register as unknown as RegisterDocument;
+  const statuses = registeredStatuses(document.routes.find(route => route.id === entry.id)!, "POST", document);
+  const codes = JSON.stringify([document.authContracts, ...(document.responseContractBindings.routes[entry.id] ?? [])
+    .map(name => document.responseContracts[name])]);
+  return expected.filter(([status, code]) => statuses.includes(status) && codes.includes(`{"const":"${code}"}`));
+}

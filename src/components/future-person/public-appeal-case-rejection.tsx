@@ -25,7 +25,8 @@ export function PublicAppealCaseRejection({ caseId, reviewRevision, csrf, nonce,
   try {
    const response = await fetch(`/api/reviews/appeals/${caseId}`, { method: "POST", credentials: "same-origin", signal: abort.signal,
     headers: { "content-type": "application/json", "x-inherit-csrf": csrf },
-    body: JSON.stringify({ decision, reviewRevision, reason, nonce, ...(decision === "reverse-prior-decision" ? reversal : {}) }) });
+    body: JSON.stringify({ decision, reviewRevision, reason, nonce, ...(decision === "reverse-prior-decision" && reversal
+     ? { priorDecisionRevision: reversal.priorDecisionRevision, evidenceRevision: reversal.evidenceRevision } : {}) }) });
    const value = receipt.safeParse(await response.json());
    if (abort.signal.aborted || response.status !== 200 || !value.success || value.data.caseId !== caseId
     || value.data.state !== (decision === "needs-more-information" ? "more_information_required" : "resolved")

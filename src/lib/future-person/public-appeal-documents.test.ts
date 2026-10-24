@@ -1,4 +1,5 @@
 import crypto from "node:crypto";
+import { readFileSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("server-only", () => ({}));
 const native = vi.hoisted(() => ({ rpc: vi.fn(), wrapped: [] as Buffer[] }));
@@ -60,6 +61,18 @@ describe("public appeal independent document sessions", () => {
   "refuses expanded authority or bounds before native work %j", async extra => {
    expect((await POST(request(extra))).status).toBe(404);expect(native.rpc).not.toHaveBeenCalled();expect(native.wrapped).toHaveLength(0);
   });
+ it("answers a case at its document limit with the register's public-capacity-limited-v1 and no cookie (G8.5, 24 October 2026)", async () => {
+  native.rpc.mockResolvedValue({ data: { status: "capacity_limited" }, error: null }); const response = await POST(request());
+  const register = JSON.parse(readFileSync("docs/route-register.json", "utf8")) as {
+   responseContracts: Record<string, { status: number; body: { error: { const: string } }; headers: Record<string, string> }>;
+   responseContractBindings: { routes: Record<string, string[]> } };
+  expect(register.responseContractBindings.routes["api.appeal-document-session"]).toContain("public-capacity-limited-v1");
+  const contract = register.responseContracts["public-capacity-limited-v1"];
+  expect(response.status).toBe(contract.status); expect(await response.json()).toEqual({ error: contract.body.error.const });
+  expect(response.headers.get("referrer-policy")).toBe(contract.headers["Referrer-Policy"]);
+  expect(response.headers.get("cache-control")).toContain(contract.headers["Cache-Control"]);
+  expect(response.headers.get("retry-after")).toBe("900"); expect(response.headers.get("set-cookie")).toBeNull();
+ });
  it("does not relabel another native document kind", async () => {
   native.rpc.mockResolvedValue({ data: { ...opened(), documentKind: "appeal-genetic-parent-authority" }, error: null });
   expect((await POST(request())).status).toBe(503);expect(native.rpc).toHaveBeenCalledOnce();expect(native.wrapped[0]!.every(byte => byte === 0)).toBe(true);

@@ -100,7 +100,11 @@ async function open(request: Request): Promise<Response> {
   });
   if (error) return ["42501", "23505", "22023"].includes(error.code ?? "") ? notFound() : unavailable();
   if ((data as { status?: unknown } | null)?.status === "capacity_limited") {
-    return sensitiveJson({ error: "try_again_later" }, 429, { "Retry-After": "900" });
+    // public-capacity-limited-v1, bound to this route since 2026-10-24 (G8.5),
+    // with the same no-referrer answer api.future-person-claim gives.
+    const limited = sensitiveJson({ error: "try_again_later" }, 429, { "Retry-After": "900" });
+    limited.headers.set("Referrer-Policy", "no-referrer");
+    return limited;
   }
   const session = opened.safeParse(data);
   if (!session.success) return unavailable();

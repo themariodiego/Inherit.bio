@@ -42,8 +42,9 @@ export function OwnCopilotPermission({ view }: { view: OwnCopilotPermissionView 
     <div><Button disabled={busy || (!view.granted && !affirmed)} variant={view.granted ? "outline" : "default"} onClick={async () => {
       setBusy(true); setMessage(null);
       try {
-        const response = view.granted && view.grantId
-          ? await fetch(`/api/consents/${view.grantId}/revoke`, { method: "POST", headers: { "X-Inherit-CSRF": revokeCsrf.value() } })
+        const response = view.granted && view.grantId && view.revokeNonce
+          ? await fetch(`/api/consents/${view.grantId}/revoke`, { method: "POST",
+            headers: { "X-Inherit-Operation-Nonce": view.revokeNonce, "X-Inherit-CSRF": revokeCsrf.value() } })
           : await fetch("/api/consents", { method: "POST", headers: { "content-type": "application/json", "x-inherit-csrf": view.token },
             body: JSON.stringify({ action: "grant-purpose", subjectId: view.subjectId, purposeKey: view.purposeKey,
               artifactVersion: purposeArtifact.version, artifactPresentationToken: view.token, affirmed: true,

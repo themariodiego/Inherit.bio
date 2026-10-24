@@ -8,6 +8,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { modelRuntimeRevision } from "./model-endpoint";
 import { ownCopilotAuthoritySchema, ownCopilotConfigurationSchema, ownCopilotRpc } from "./own-provider-authority";
 import { sameOriginCopilot } from "./own-settings";
+import { isOperationNonceRefusal, mintPersonOperationNonce, personOperationNonceArgs, personOperationNonceFrom } from "@/lib/person-operation-nonce";
 
 const CONTEXT = "own-copilot-permission-presentation-v1";
 const artifactsSchema = z.array(z.object({ key: z.string(), version: z.number().int().positive().safe(), body: z.string().max(4096), sha256: z.string().regex(/^[0-9a-f]{64}$/) }).strict()).min(1).max(2);
@@ -64,6 +65,8 @@ export async function ownCopilotConsent(request: Request, payload: unknown): Pro
 
 export type OwnCopilotPermissionView = { kind: "unavailable" } | { kind: "ready"; subjectId: string;
   providerClass: "local" | "cloud"; providerLabel: string; origin: string; model: string; granted: boolean; grantId: string | null;
+  /** The one-time nonce the withdrawal consumes, for this account, session and grant; null with no grant. */
+  revokeNonce: string | null;
   purposeKey: "copilot.local" | "copilot.cloud"; token: string; artifacts: z.infer<typeof artifactsSchema> };
 export async function prepareOwnCopilotPermission(): Promise<OwnCopilotPermissionView> {
   try {
@@ -81,24 +84,42 @@ export async function prepareOwnCopilotPermission(): Promise<OwnCopilotPermissio
     const settings = z.object({ model: z.string(), copilot_recipient: z.object({ revision: z.number(), providerLabel: z.string(), origin: z.string() }) }).safeParse(data);
     if (error || !settings.success || settings.data.copilot_recipient.revision !== snapshot.settingsRevision) return { kind: "unavailable" };
     const current = await ownCopilotRpc("own_copilot_authority_v1", { ...args, p_expected: null });
+    const grantId = !current.error ? ownCopilotAuthoritySchema.safeParse(current.data).data?.copilotGrantId ?? null : null;
     return { kind: "ready", subjectId: target.id, providerClass: snapshot.providerClass,
       providerLabel: settings.data.copilot_recipient.providerLabel, origin: settings.data.copilot_recipient.origin, model: settings.data.model,
       granted: !current.error && ownCopilotAuthoritySchema.safeParse(current.data).success,
-      grantId: !current.error ? ownCopilotAuthoritySchema.safeParse(current.data).data?.copilotGrantId ?? null : null, purposeKey: `copilot.${snapshot.providerClass}`,
+      grantId,
+      // Rendered here, stored nowhere (G8.5, 24 October 2026).
+      revokeNonce: grantId ? mintPersonOperationNonce({ accountId: actor.accountId, sessionId: actor.sessionId,
+        operation: "consent_revoke", targetId: grantId }) : null,
+      purposeKey: `copilot.${snapshot.providerClass}`,
       token: mintOwnCopilotConsent(presentation.data), artifacts };
   } catch { return { kind: "unavailable" }; }
 }
 
+/**
+ * The own-Copilot case of api.consent-revoke. It carries, in
+ * `X-Inherit-Operation-Nonce`, the one-time nonce /settings/copilot rendered
+ * for this account, session and grant (G8.5, 24 October 2026), which
+ * `revoke_own_copilot_with_nonce_v1` records before the unchanged writer
+ * revokes, so a replay writes nothing. A missing or foreign nonce is refused
+ * as the directional case refuses it.
+ */
 export async function revokeOwnCopilotConsent(request: Request, grantId: string, subjectId: string) {
   if (!sameOriginCopilot(request)) return ownUploadJson({ error: "forbidden" }, 403);
   try {
     const actor = await currentOwnUploadAccount();
     if (!actor) return ownUploadJson({ error: "unauthorized" }, 401);
+    const nonce = personOperationNonceFrom(request, { accountId: actor.accountId, sessionId: actor.sessionId,
+      operation: "consent_revoke", targetId: grantId });
+    if (!nonce) return ownUploadJson({ error: "invalid_request" }, 400);
     const args = { p_account_id: actor.accountId, p_session_id: actor.sessionId, p_subject_id: subjectId };
     const current = await ownCopilotRpc("own_copilot_authority_v1", { ...args, p_expected: null });
     const authority = ownCopilotAuthoritySchema.safeParse(current.data);
     if (current.error || !authority.success || authority.data.copilotGrantId !== grantId) return ownUploadJson({ error: "not_found" }, 404);
-    const result = await ownCopilotRpc("revoke_own_copilot_v1", { ...args, p_expected: authority.data });
+    const result = await ownCopilotRpc("revoke_own_copilot_with_nonce_v1", { ...args, p_expected: authority.data,
+      ...personOperationNonceArgs(nonce) });
+    if (isOperationNonceRefusal(result.error)) return ownUploadJson({ error: "invalid_request" }, 400);
     return !result.error && result.data === true ? ownUploadJson({ revoked: true }) : ownUploadJson({ error: "not_found" }, 404);
   } catch { return ownUploadJson({ error: "unavailable" }, 503); }
 }

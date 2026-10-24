@@ -31,6 +31,15 @@ import { withAccountCsrf } from "@/lib/security/session-csrf";
  *
  * The response never carries a jurisdiction, an authority or an account id:
  * only which acknowledgement was recorded and when (family-acknowledged-v1).
+ *
+ * Its refusals are the register's (G8.5, 24 October 2026), as its Embryo twin
+ * answers them: another origin is `authenticated-mutation-v1`'s 403
+ * `request_forbidden`; a body other than the two closed ones, or a portrait
+ * acknowledgement without its page's nonce, is `invalid-request-v1` (422); a
+ * request with no live account and session is `authenticated-api-v1`'s JSON
+ * 401 `unauthenticated`; and a subject that is not the acting account's is
+ * `resource-not-found-v1`'s JSON 404. They were a 400 `invalid_request` and
+ * plain-text 401 and 404 answers.
  */
 
 const body = z.discriminatedUnion("acknowledgement", [
@@ -54,30 +63,31 @@ const NO_STORE = {
   "Referrer-Policy": "no-referrer",
 } as const;
 
+const invalidRequest = (issue: string) =>
+  NextResponse.json({ error: "invalid_request", issues: [issue] }, { status: 422, headers: NO_STORE });
+
 export const POST = withAccountCsrf("api.family-acknowledge", handlePost);
 async function handlePost(request: Request) {
   if (!isSameOrigin(request)) {
-    return NextResponse.json({ error: "invalid_request" }, { status: 400 });
+    return NextResponse.json({ error: "request_forbidden" }, { status: 403, headers: NO_STORE });
   }
   const parsed = body.safeParse(await request.json().catch(() => null));
-  if (!parsed.success) {
-    return NextResponse.json({ error: "invalid_request" }, { status: 400 });
-  }
+  if (!parsed.success) return invalidRequest("body");
   const context = await getSensitiveAccountContext();
-  if (!context) return new Response("Unauthorized", { status: 401 });
+  if (!context) return NextResponse.json({ error: "unauthenticated" }, { status: 401, headers: NO_STORE });
 
   if (parsed.data.acknowledgement === "portrait") {
     const nonce = personOperationNonceFrom(request, { accountId: context.user.id, sessionId: context.sessionId,
       operation: "portrait_acknowledge", targetId: parsed.data.subjectId });
-    if (!nonce) return NextResponse.json({ error: "invalid_request" }, { status: 400 });
+    if (!nonce) return invalidRequest("operationNonce");
     const { data, error } = await createAdminClient().rpc("acknowledge_portrait_with_nonce_v1", {
       p_account_id: context.user.id,
       p_session_id: context.sessionId,
       p_subject_id: parsed.data.subjectId,
       ...personOperationNonceArgs(nonce),
     });
-    if (isOperationNonceRefusal(error)) return NextResponse.json({ error: "invalid_request" }, { status: 400 });
-    if (error || !data) return new Response("Not found", { status: 404 });
+    if (isOperationNonceRefusal(error)) return invalidRequest("operationNonce");
+    if (error || !data) return NextResponse.json({ error: "not_found" }, { status: 404, headers: NO_STORE });
     return NextResponse.json(
       { acknowledgement: "portrait", acknowledgedAt: new Date(data).toISOString() },
       { headers: NO_STORE },

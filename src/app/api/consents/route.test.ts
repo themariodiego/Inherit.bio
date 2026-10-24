@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 // The one-time X-Inherit-CSRF gate is driven on this route by
 // src/lib/security/session-csrf-routes.test.ts; here it admits every request.
@@ -155,5 +156,49 @@ describe("actual revoke POST dispatcher", () => {
     mocks.rpc.mockResolvedValue({ data: null, error: { code: "22023", message: "invalid_operation_nonce" } });
     expect((await revoke(withNonce(revokeNonce()), { params: Promise.resolve({ id: grantId }) })).status).toBe(400);
     expect(mocks.rpc).toHaveBeenCalledTimes(1);
+  });
+  // 20261025200000 (G8.5, 24 Oct 2026): a cloud-model provider grant's revocation
+  // carries /settings/consents' nonce for this account, session and grant too.
+  const cloudGrant = () => mocks.from.mockImplementation((table: string) => row(table === "consent_grants" ? { id: grantId } : null));
+  it("revokes a cloud-model provider grant through the door that records the page's nonce", async () => {
+    cloudGrant();
+    mocks.rpc.mockResolvedValue({ data: true, error: null });
+    const code = revokeNonce();
+    const response = await revoke(withNonce(code), { params: Promise.resolve({ id: grantId }) });
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ revoked: true });
+    expect(mocks.revokeCopilot).not.toHaveBeenCalled();
+    expect(mocks.rpc).toHaveBeenCalledExactlyOnceWith("revoke_cloud_model_consent_with_nonce_v1",
+      { p_account_id: accountId, p_session_id: subjectId, p_grant_id: grantId, p_nonce_hash: expect.stringMatching(/^[0-9a-f]{64}$/), p_nonce_expires_at: expect.any(String) });
+  });
+  it("refuses a cloud-model provider revocation without the nonce for this grant, before any write", async () => {
+    cloudGrant();
+    for (const nonce of [null, "not-a-nonce", revokeNonce(accountId)]) {
+      expect((await revoke(withNonce(nonce), { params: Promise.resolve({ id: grantId }) })).status).toBe(400);
+    }
+    expect(mocks.rpc).not.toHaveBeenCalled();
+    mocks.rpc.mockResolvedValue({ data: null, error: { code: "22023", message: "invalid_operation_nonce" } });
+    expect((await revoke(withNonce(revokeNonce()), { params: Promise.resolve({ id: grantId }) })).status).toBe(400);
+    mocks.rpc.mockResolvedValue({ data: false, error: null });
+    expect((await revoke(withNonce(revokeNonce()), { params: Promise.resolve({ id: grantId }) })).status).toBe(404);
+  });
+  it("answers each revocation with a receipt the register's consent-revocation-v1 lists (G8.5, 24 October 2026)", async () => {
+    const register = JSON.parse(readFileSync("docs/route-register.json", "utf8")) as {
+      routes: { id: string; successResponseContract?: string }[]; responseContractBindings: { routes: Record<string, string[]> };
+      responseContracts: Record<string, { outcomes: { status: number; body?: Record<string, unknown> }[] }> };
+    expect(register.routes.find(route => route.id === "api.consent-revoke")?.successResponseContract).toBe("consent-revocation-v1");
+    expect(register.responseContractBindings.routes["api.consent-revoke"]).toContain("consent-revocation-v1");
+    /** A receipt's status and key set, as the register states them. */
+    const shapes = register.responseContracts["consent-revocation-v1"].outcomes.filter(outcome => outcome.body)
+      .map(outcome => `${outcome.status} ${Object.keys(outcome.body!).sort().join(",")}`);
+    const shape = async (response: Response) => `${response.status} ${Object.keys(await response.json()).sort().join(",")}`;
+    mocks.from.mockImplementation((table: string) => row(table === "purpose_grants" ? { grant_id: grantId, target_id: subjectId, copilot_recipient_revision: null } : null));
+    mocks.rpc.mockResolvedValue({ data: "2026-09-07T10:00:00+00:00", error: null });
+    const directional = await revoke(withNonce(revokeNonce()), { params: Promise.resolve({ id: grantId }) });
+    cloudGrant();
+    mocks.rpc.mockResolvedValue({ data: true, error: null });
+    const cloud = await revoke(withNonce(revokeNonce()), { params: Promise.resolve({ id: grantId }) });
+    expect([await shape(directional), await shape(cloud)]).toEqual(["200 effectiveAt,revoked", "200 revoked"]);
+    expect(shapes).toEqual(["200 effectiveAt,revoked", "200 revoked"]);
   });
 });

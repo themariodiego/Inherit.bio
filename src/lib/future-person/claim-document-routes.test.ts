@@ -1,4 +1,5 @@
 import crypto from "node:crypto";
+import { readFileSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
@@ -183,6 +184,17 @@ describe("POST /api/future-person/claim/session/documents", () => {
     const response = await post(body(mintClaimDocumentNonce(CLAIM_COOKIE_VALUE)!));
     expect(response.status).toBe(429);
     expect(response.headers.get("set-cookie")).toBeNull();
+    // The register's public-capacity-limited-v1, bound to this route since 2026-10-24 (G8.5).
+    const register = JSON.parse(readFileSync("docs/route-register.json", "utf8")) as {
+      responseContracts: Record<string, { status: number; body: { error: { const: string } }; headers: Record<string, string> }>;
+      responseContractBindings: { routes: Record<string, string[]> } };
+    expect(register.responseContractBindings.routes["api.future-person-claim-document-session"]).toContain("public-capacity-limited-v1");
+    const contract = register.responseContracts["public-capacity-limited-v1"];
+    expect(response.status).toBe(contract.status);
+    expect(await response.json()).toEqual({ error: contract.body.error.const });
+    expect(response.headers.get("referrer-policy")).toBe(contract.headers["Referrer-Policy"]);
+    expect(response.headers.get("cache-control")).toContain(contract.headers["Cache-Control"]);
+    expect(response.headers.get("retry-after")).toBe("900");
   });
 
   it.each(["42501", "23505", "22023"])("maps database refusal %s to the opaque 404", async (code) => {

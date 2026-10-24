@@ -9267,6 +9267,27 @@ export type Database = {
         }
         Returns: string
       }
+      revoke_cloud_model_consent_with_nonce_v1: {
+        Args: {
+          p_account_id: string
+          p_grant_id: string
+          p_nonce_expires_at: string
+          p_nonce_hash: string
+          p_session_id: string
+        }
+        Returns: boolean
+      }
+      revoke_own_copilot_with_nonce_v1: {
+        Args: {
+          p_account_id: string
+          p_expected: Json
+          p_nonce_expires_at: string
+          p_nonce_hash: string
+          p_session_id: string
+          p_subject_id: string
+        }
+        Returns: boolean
+      }
       stop_family_sharing_with_nonce_v1: {
         Args: {
           p_account_id: string

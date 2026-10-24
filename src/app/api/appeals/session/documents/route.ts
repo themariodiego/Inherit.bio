@@ -23,7 +23,10 @@ export async function POST(request: Request) {
    p_nonce: proof.nonce, p_document_kind: parsed.data.documentKind, p_media_type: parsed.data.mediaType, p_size_bytes: parsed.data.sizeBytes,
    p_sha256: parsed.data.sha256, p_cookie_hash: evidence.hash, p_wrapped_document_key: `\\x${wrapped.toString("hex")}` }).retry(false).abortSignal(owner.signal)));
   if (error) refused = ["42501", "23505", "22023"].includes(error.code ?? "");
-  else if (limited.safeParse(data).success) response = sensitiveJson({ error: "try_again_later" }, 429, { "Retry-After": "900" });
+  else if (limited.safeParse(data).success) {
+   // public-capacity-limited-v1, bound to this route since 2026-10-24 (G8.5).
+   response = sensitiveJson({ error: "try_again_later" }, 429, { "Retry-After": "900" }); response.headers.set("Referrer-Policy", "no-referrer");
+  }
   else {
    const session = opened.safeParse(data);
    if (session.success && session.data.documentKind === parsed.data.documentKind) {
