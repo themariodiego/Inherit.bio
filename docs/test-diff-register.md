@@ -1,3 +1,46 @@
+## 2026-11-19 — APT admission: admit the observed us-east-2 stock states
+
+On commit `4367aec9`, four hosted jobs held at `Unsupported stock mirror URI, priority or format`, and the step-one report showed what they carry. All four have the same mirror file: 152 bytes, SHA-256 `af9816b5…226a`, the us-east-2 regional row at priority 1. They split on the sources file:
+- image `20261111.127.1` (`font-cache-diagnostic`, `owned-keyfree-smoke`) has the security paragraph direct on `http://security.ubuntu.com/ubuntu`;
+- image `20261116.133.1` (`repository-checks`, `browser (5)`) has both paragraphs on the mirror list.
+
+Each value was checked against the job logs. The guard now admits a closed list of three observed states: the unchanged Azure state, and the us-east-2 mirror with exactly either of those two security routes. The mirror gets the same priority permutation, and the sources file is never modified. `mirror_candidate` now looks up the approved result in that data instead of rewriting tokens. Its output for the Azure state is byte-identical, and its unreachable `Unsupported security mirror` branch is gone. `admit_sources` takes the security routes paired with the mirror; for the Azure state they are only the mirror route, so its checks and reasons are unchanged. A direct route must carry exactly `noble-security` (new reason: `Stock direct security suite required`). Admission is not keyed on the image version or on the sources file's hash. `docs/ci-font-archive-cache.md` loses one sentence that named a single stock mirror. No workflow changed. Nothing here ran on a hosted runner.
+
+**New tests.**
+- `scripts/test_ci_apt_mirror_priority.py`, 64/64 (9 new), with CI's command on Python 3.13 and Noble's 3.12.3, each as root and as an unprivileged user. A new `run_main_admitted` fixture drives the real `main()` through to `PASS`. Root-owned stat views, keyring repair, the census, the config dump and the `apt-get update` process are doubles. Every custody read, the strict fragment write and the mirror rewrite run for real on owned files. The new tests check:
+  - the us-east-2 mirror equals the hosted report exactly, for both image versions;
+  - the admitted states are closed data. Each approved result changes only the three priority digits, to HTTPS archive 1, HTTPS security 2, HTTP regional mirror 3. Duplicated state data refuses rather than choosing a row;
+  - the us-east-2 candidates, and strict pairing and readmission, behave as the Azure state's do;
+  - every one-byte substitution, deletion and insertion of all four admitted mirror files is refused with the same reason;
+  - with the us-east-2 mirror, the second paragraph accepts exactly the two observed URIs. Refused: a trailing slash, `https`, another host, a case change, a prefix, a suffix, an extra URI, the direct URI in paragraph 1 or in both, and a direct paragraph whose suites are not exactly `noble-security`. The mirror route keeps the Azure state's suite latitude;
+  - the Azure state's source rule is unchanged, and refuses the direct security paragraph;
+  - `main` admits both us-east-2 states end to end: exact rewritten bytes, the strict fragment, the signed update command, `PASS`, then readmission with nothing changed. The Azure state does the same;
+  - `main` refuses unobserved pairings (the Azure mirror with the direct paragraph; the us-east-2 mirror with a changed URI) at `Stock mirror route required`, with no write. One-byte mirror variants are refused at the unsupported-mirror reason with the step-one reports.
+
+**Changed assertions (old, new, why).** Only the us-east-2 shape moved, because it is now an observed admitted state. Nothing else was changed, weakened or removed:
+- `test_previously_refused_mirror_states_keep_their_exact_reasons`. Old: `AWS_PRIORITY_ONE` was in the refused shapes, so it had to raise the unsupported-mirror reason with and without the strict fragment. New: it is removed from that list. Two pairing refusals are added: that mirror with the strict fragment, and its approved result without one, each raising `Mirror and strict configuration state differ`. Every other shape, case and reason is unchanged. Its admission without the strict fragment is now asserted in the new tests.
+- `test_three_plausible_new_stock_shapes_are_disclosed_and_still_refused` is renamed `test_unobserved_new_stock_shapes_are_disclosed_and_still_refused`. Old: its loop required the us-east-2 shape to be refused and its report to rebuild the bytes. New: the loop covers the no-priority:1 and slash-less Azure shapes, which are still refused and reported. The standalone check of the us-east-2 report's first row is unchanged, and the new hosted-equality test pins that report more strictly.
+- `test_main_refusal_reports_bounded_shapes_then_reraises_the_same_refusal`. Old: its loop drove `main` on the us-east-2 shape and required the refusal and three reports. New: that shape is dropped from the loop, and the other five shapes keep every assertion. `main` on that mirror is now covered by the end-to-end admission tests, and its one-byte variants by the refusal test.
+- The comment above the plausible shapes said none was observed; it now says the us-east-2 one is. `run_main` gains one line recording the strict file after the run.
+
+**Planted defects, each applied to a scratch copy of the guard, run and reverted.** All fail:
+- the Azure mirror also accepting the direct route;
+- the sources check ignoring the mirror pairing;
+- a prefix match, or a substring match, on the route;
+- admitting the regional row by host pattern;
+- `main` passing every route for any mirror;
+- the direct-suite check removed, or made a membership test;
+- paragraph 1 taking paragraph 2's routes;
+- the wrong permutation for the us-east-2 mirror;
+- readmission only for the Azure result;
+- `main` dropping the paired routes;
+- either state removed, or the us-east-2 mirror-list route removed;
+- the exactly-one-state rule weakened to first-match.
+
+All but one of the step-one defects still fail. Widening admission to the no-priority:1 shape no longer applies, because the gate it targeted is now data. Removing the `raise` is still equivalent.
+
+**Not run.** The hosted runner and the Node gates.
+
 ## 2026-11-19 — APT admission: report the public shape of a refused stock mirror file
 
 On 19 November 2026, CI run 44546883409 for commit `d8dcb61a` passed APT mirror admission on some hosted runners and held it on others at `Unsupported stock mirror URI, priority or format`. The guard said nothing about the file it refused. This change, on top of `d8dcb61a`, adds bounded diagnostics to that refusal path only (see `docs/ci-apt-mirror-priority.md`). `mirror_candidate`, `admit_priority_state` and every other admission check are unchanged, and `main` re-raises the same refusal, so the `HOLD` line and exit code are unchanged. A FIFO at the sources path is refused by `lstat` before `safe_read`, whose blocking open would otherwise turn the `HOLD` into a step timeout. No workflow changed. Nothing here ran on a hosted runner.

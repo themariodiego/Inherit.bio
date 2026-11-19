@@ -9,11 +9,11 @@ The build source for the observed image `ubuntu24/20261004.327` sets one retry a
 HTTP/HTTPS timeouts. Those are connection/data inactivity bounds, not a total
 transfer deadline. The mirror transport starts each requested index with its
 lowest-priority URI, so falling back for InRelease does not permanently demote
-Azure for subsequent Packages files. The existing browser 60-minute deadline
+the regional mirror for subsequent Packages files. The existing browser 60-minute deadline
 and checks 10-minute deadline remain unchanged.
 
 Admission requires Ubuntu 24.04, x86_64, root, explicit public hosted image
-`github-hosted` environment metadata and an observed installed APT 2.8 family version, the exact three original URI/priority rows, the two stock Noble
+`github-hosted` environment metadata and an observed installed APT 2.8 family version, one of the observed stock states below, the two stock Noble
 Deb822 source paragraphs and the existing Ubuntu archive key route. It observes
 only selected public network/security configuration leaves, including apt-get
 binary overrides, and rejects conflicting or unsupported settings. It also
@@ -22,9 +22,29 @@ original fragments. Source and public trust files are read through original
 regular FDs (including all public `/usr/share/keyrings` members) and pinned before and after; authentication configuration is not
 read.
 
+Admission is a closed list of observed stock states. Each is an exact mirror
+file paired with the exact `URIs` of the second source paragraph (the stock
+security paragraph); the first paragraph must always use
+`mirror+file:/etc/apt/apt-mirrors.txt`. Nothing is admitted by pattern, by
+image version or by the sources file's hash:
+
+- Azure: `http://azure.archive.ubuntu.com/ubuntu/` priority 1, HTTPS archive
+  2, HTTPS security 3; both paragraphs on the mirror list. Observed on
+  `ubuntu24/20261004.327`.
+- us-east-2, direct security: `http://us-east-2.ec2.archive.ubuntu.com/ubuntu/`
+  priority 1, HTTPS archive 2, HTTPS security 3; the second paragraph is
+  exactly `http://security.ubuntu.com/ubuntu` with exactly `noble-security`.
+  Observed on `ubuntu24/20261111.127.1`.
+- us-east-2, mirror list: the same us-east-2 mirror file; both paragraphs on
+  the mirror list. Observed on `ubuntu24/20261116.133.1`.
+
+Any other pairing is refused, including the Azure mirror with a direct
+security paragraph, any other mirror bytes and any other second-paragraph URI.
+
 Only the three existing priority tokens change: HTTPS archive first, HTTPS
-security second, HTTP Azure third. URI bytes, row order, suites, repositories,
-keys and trust remain intact. The original mirror bytes, safe selected config,
+security second, the plain HTTP regional mirror (Azure or us-east-2) third.
+URI bytes, row order, suites, repositories, keys and trust remain intact, and
+the sources file is never modified. The original mirror bytes, safe selected config,
 source/trust pins and signed-update outcome are preserved in a fresh root-owned
 0700 directory under `/var/tmp/inherit-ci-apt-*`, whose path appears in the job
 log. A root-owned late fragment retains retry1/timeout15 and adds
@@ -33,17 +53,30 @@ log. A root-owned late fragment retains retry1/timeout15 and adds
 this root configuration even when its sudo invocation drops APT_CONFIG.
 Failed metadata refreshes, installs or tests remain fatal.
 
-These are the three existing official mirrors. Automatic fallback stays in APT;
+On the us-east-2 direct-security state, `noble-security` is fetched straight
+from `http://security.ubuntu.com/ubuntu` over plain HTTP, exactly as that stock
+image configures it, with no mirror fallback. What protects it is APT's check
+of the archive's signed `InRelease` against the Ubuntu archive key and the
+file hashes it lists, with the unchanged authentication, freshness and
+`--error-on=any` checks. There is no transport encryption: the network can see
+what is fetched and can delay or withhold it, and a stall on that one host
+fails the update instead of falling back.
+
+These are each image's own existing official mirrors. Automatic fallback stays in APT;
 there are no new repositories, mirrors, keys, trust exemptions, optional
 installs or retries of the workflow. A failure retains its original state and
 stops the job. Withdrawing this source change returns a future fresh disposable
 runner to its stock priorities; existing runners are not reset or repaired to
 manufacture success. The actual image, effective settings, network improvement,
 complete installer and full hosted suite remain unqualified until observed in
-an original hosted run.
+an original hosted run. By reading, the upstream network configuration script
+is unchanged since `ubuntu24/20261004.327` and still writes `zz-retries` with
+one retry and 15-second timeouts on x64; the newer images' effective values
+are observed only when admission reaches its limited configuration report.
 
-When the mirror file is refused, the driver prints three more JSON lines before
-the unchanged `HOLD` line. The first gives the image name and version and the
+When the mirror file is refused, the driver prints three more JSON lines on
+standard output before it writes the unchanged `HOLD` line to standard error;
+the job log can interleave the two streams. The first gives the image name and version and the
 mirror file's size, line count and SHA-256, then each line. A line is printed
 in full only if it is a plain Ubuntu mirror row: `http` or `https`, an
 `ubuntu.com` host of lowercase letters, digits, dots and hyphens, the path
@@ -65,9 +98,27 @@ still refused with the same reason, and admitted states print nothing new.
 On 19 November 2026, CI run 44546883409 for commit d8dcb61a passed this
 admission on some hosted runners and held it on others at
 `Unsupported stock mirror URI, priority or format`. The upstream source
-configuration script changed after `ubuntu24/20261004.327`. What the holding
-runners' files contain is not yet observed; the diagnostic above exists to
-observe it, and nothing is admitted from the upstream script alone.
+configuration script changed after `ubuntu24/20261004.327`. The refusal report
+then showed what the holding runners carry. On commit 4367aec9, four hosted
+jobs held with the same mirror file (152 bytes, SHA-256
+`af9816b59bc904eaf28838ae673ac2b625b6628bebfc67a7cbeae78ba06e226a`, the
+us-east-2 row at priority 1) and the late fragment `zz-retries`, and split on
+the sources file:
+
+- Image `20261111.127.1`: CI run 44551869930 job `owned-keyfree-smoke` and
+  font cache diagnostic run 44551870219 job `font-cache-diagnostic`. Sources
+  2,992 bytes, SHA-256
+  `fc0fadce467e557a358c63f5532de4590c02933dfff8016028bb0a319b0e8b44`; the
+  second paragraph is `http://security.ubuntu.com/ubuntu`, `noble-security`.
+- Image `20261116.133.1`: CI run 44551869930 jobs `repository-checks` and
+  `browser (5)`. Sources 2,995 bytes, SHA-256
+  `4508181e0dd5578c33d1247db48ab4847910b25da85e0789c8e7b3140d1fb289`; both
+  paragraphs on the mirror list.
+
+By reading, the current upstream script also routes the security paragraph
+through the mirror list; image `20261116.133.1` now shows that by observation.
+Nothing is admitted from the upstream script alone: any later combination is
+refused and reported, and needs its own observed admission.
 
 Primary sources:
 

@@ -77,9 +77,9 @@ source-bound key, restores only that exact key within one minute, and validates
 the restored archives against fresh signed Ubuntu metadata within four minutes.
 Both consumer and publisher authentication explicitly select the existing
 transient root service. The helper has no default client-only refresh path.
-The APT priority operation admits only the exact original stock mirror with no
-strict fragment, or its exact approved priority result paired with the exact
-strict fragment. A repeated invocation preserves both files, rechecks their
+The APT priority operation admits only an exact observed stock mirror (see
+`docs/ci-apt-mirror-priority.md`) with no strict fragment, or that mirror's
+exact approved priority result paired with the exact strict fragment. A repeated invocation preserves both files, rechecks their
 original identities and all source/key/configuration rules, then performs a new
 complete signed update. It never treats an earlier update as fresh admission.
 The same service work, shared deadline, exact-owner cleanup and absent-cgroup
