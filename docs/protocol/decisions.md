@@ -5502,3 +5502,66 @@ The D-136 guard change in commit `a2a4d8e9` is owner-accepted. The release kit
 for the four later migrations
 (`docs/evidence/followup-2-production-apply-20261119/`) is unchanged by this
 entry and still needs its own token and go.
+
+## 2026-11-19 — G8.5: Path A's invitation stays one step
+
+Owner decision (clickable chat answer, "One step; amend register"). Asked: when
+someone invites another adult to upload their own DNA file, the signed route
+register says the inviter must first sign a statement, and that statement says
+the inviter holds the file, which is never true in this flow; the code sends
+the invitation in one step with no statement. Which should stand? Offered: "One
+step; amend register", "Add an inviter statement", "Leave it open". Chosen:
+"One step; amend register".
+
+The register is changed to describe what the code does: on Path A the
+invitation is sent in one call and the inviter signs nothing. No code change
+and no database change. This closes `api.subject-drafts`' Path A row in
+`endpointResponseDivergence`. Path B, where the uploader does hold the file, is
+unchanged.
+
+## 2026-11-19 — G8.5: the provider-key cloud consent request is removed
+
+Owner decision (clickable chat answer, "Remove it, keep withdrawal"). Asked: the
+server still accepts an older request that records a person's permission to
+send Copilot questions to a cloud AI provider without showing them the
+agreement text; no screen sends it any more, only two test fixtures do, and the
+register does not list it. What should happen to it? Offered: "Remove it, keep
+withdrawal", "Register it as it is", "Leave it open". Chosen: "Remove it, keep
+withdrawal".
+
+`api.consents` stops accepting the `{providerKey}` body. Withdrawing a
+permission given that way keeps working, as the register already describes.
+The two test fixtures that sent it are rewritten to use the consent route that
+shows the text. No database change: the function it called stays in the
+database, uncalled, until a later release retires it.
+
+## 2026-11-19 — G8.5: an invited adult's own account declaration counts
+
+Owner decision (clickable chat answer, "Account declaration counts"). Asked:
+when an invited adult accepts in their own account, the register asks for four
+jurisdiction fields, including a signed jurisdiction attestation; that
+attestation document does not exist yet and is with counsel (D-083); the code
+relies on the jurisdiction the person already declared on their account, which
+the register already accepts on the other acceptance path. Which should stand
+for this path? Offered: "Account declaration counts", "Keep the four fields".
+Chosen: "Account declaration counts".
+
+The register's `api.invitation-accept` body for an invited adult drops
+`jurisdictionCode`, `jurisdictionAttestationVersion`,
+`jurisdictionAttestationHash` and `jurisdictionAffirmed`, matching the code and
+Path B's account body (23 October). No code change and no database change. The
+co-parent body on the same route keeps its fields; D-083 stays with counsel.
+
+## 2026-11-19 — G8.5: the retired chat's 409 leaves the register
+
+Owner decision (clickable chat answer, "Delete it from the register"). Asked:
+the register still lists a chat answer, "no model provider saved" (status 409),
+that belonged to the old compatibility chat retired on 24 October; nothing in
+the code gives that answer now, and the Copilot page shows setup instructions
+instead. What should happen to the register entry? Offered: "Delete it from the
+register", "Bring the answer back". Chosen: "Delete it from the register".
+
+`copilot-provider-setup-required-v1` and its two references leave the register.
+No code change. This narrows the 23 October decision that registered
+`api.chat`'s 409s as harmless extras: the scientific-correction 409, which the
+own chat still gives, stays.
