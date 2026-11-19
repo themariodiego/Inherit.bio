@@ -158,11 +158,11 @@ the follow-up's release and merge.
 
 `main` deploys to production, so a branch whose code needs new migrations
 merges only straight after a guarded release has applied them. Three releases
-are outstanding. Neither committed kit records a production run: both
-`results/README.md` files say "Nothing in this directory comes from production
-yet". PR 324's kit starts from the state PR
-323's release left on 22 October (ledger 248 rows, max `20261011010251`), and
-the follow-up's from PR 324's batch-4 post-state. Each runs over the Supabase
+are outstanding. No kit records a production run: each `results/README.md`
+says "Nothing in this directory comes from production yet". PR 324's kit starts from the state PR
+323's release left on 22 October (ledger 248 rows, max `20261011010251`), the
+follow-up's from PR 324's batch-4 post-state, and release 3's from the
+follow-up's batch-2 post-state. Each runs over the Supabase
 Management API with a new short-lived `SUPABASE_ACCESS_TOKEN`, and the owner
 says go by one clickable question asked after the read-only
 pre-checks (step 4) and before the whole-release dry run (step 5). After each,
@@ -190,19 +190,39 @@ the token and deletes the secret (step 8).
    `77d04563`. **At `d8dcb61a` that precondition fails**: the follow-up branch
    adds the four later migrations, so
    `git diff --quiet 77d04563 d8dcb61a -- supabase/migrations` exits 1.
-   How the follow-up and those four are split between releases is not
-   recorded. The D-103 decision (decisions.md 5408-5423) says only that
+   The D-103 decision (decisions.md 5408-5423) says only that
    `20261025400000` "goes into the release after the follow-up, not the
-   follow-up's pinned set".
-3. **Four later migrations: no kit committed.**
+   follow-up's pinned set". A merge after this release and before release 3
+   must be of a commit carrying the follow-up's tree `259a56dd`; the last such
+   commit on the branch is `e81bd2be`. **Open point for the owner, not
+   decided:** (a) merge a `259a56dd` commit after release 2, and the head
+   carrying release 3's files after release 3; (b) run releases 2 and 3 back
+   to back and merge once (PR 324's code is then deployed during both, and the
+   two kits' merge steps need restating); (c) split release 3 at `91b955a7`,
+   whose tree carries its first three migrations and not the fourth.
+   Alternatives in `docs/evidence/followup-2-production-apply-20261119/guarded/README.md`,
+   "Open point for the owner".
+3. **Four later migrations: kit built and rehearsed locally, not run.**
+   `docs/evidence/followup-2-production-apply-20261119/` (`api/RUNBOOK.md`,
+   `guarded/README.md`, `compat-analysis.md`) covers
    `20261024110000_copilot_settings_delete_nonce`,
    `20261024220000_session_csrf_tokens`,
    `20261025200000_consent_revoke_provider_nonce` and
-   `20261025400000_path_a_account_accept_typed_name`, each headed
-   `PRODUCTION RELEASE: GUARDED`. No committed file under `docs/evidence/`
-   names any of the four versions at `d8dcb61a` (`git grep`, 19 November). A
-   kit has to be built, rehearsed against the follow-up release's post-state
-   and committed before they can be applied.
+   `20261025400000_path_a_account_accept_typed_name` in two batches (#1-#3,
+   #4) that end at 284 rows. Its pre-state reproduces the follow-up kit's
+   recorded post-state byte for byte, production's drift included. Its first
+   rehearsal found that `20261025400000` refused there, because it pinned the
+   commented body of `private.current_adult_subject_invitation_v1`, which
+   production holds comment-stripped (D-136). On 19 November the guard was
+   changed to accept exactly those two reviewed bodies. That was an engineering
+   decision of the session that found the defect, not an owner decision, and
+   the owner reviews it before release 3. The kit was then rehearsed again, and
+   both batches apply and read back EQUAL. The kit pins the migrations tree
+   `be49d283`, which the follow-up branch carries from the commit that fixed
+   the guard; the head merged after release 3 must carry it. Batch 2 makes the
+   deployed code's Path A confirmation answer 404 until that merge is
+   deployed, so the merge follows batch 2 at once. It needs its own new token
+   and the owner's go.
 
 Rows by release: PR 324's release and merge unblock G1.7, G1.12, G2.1, G2.2,
 G4.2, G5.3 and G5.4 on main CI; the follow-up's unblock G7.4 and part of G5.6;

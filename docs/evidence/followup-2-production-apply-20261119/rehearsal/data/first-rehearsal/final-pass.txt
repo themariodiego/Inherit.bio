@@ -1,0 +1,7 @@
+# LOCAL ONLY: the kit as it stands, on a rebuilt mirror (mirror build 3: production mirror + PR 324's 4 batches + the follow-up's 2), 2026-11-19.
+generate.py --head HEAD local 1: local/batch-1-apply.sql 587e2ebf..., local/batch-1-dry-run.sql 95b69f84... (byte-identical to the rehearsed files)
+generate.py final: refused: batch 2 (#4-#4) has no measured post-state (Blocked); no production file written
+pre-state read-back: EQUAL batch 1 pre-state summary
+local/batch-1-dry-run.sql (statement_timeout 2min): rc=3, 1 ERROR line: ERROR:  DRY_RUN_COMPLETE_ALL_CHECKS_PASSED
+local/batch-1-apply.sql: rc=0, read-back EQUAL batch 1 post-state summary; ledger 283 / 20261025200000
+final fingerprint 1a152dc5fc974dedecb574f2cc971dc3b285d144949efb71aba0cbc4400d4557 (== the rehearsal's post-batch-1 and fresh 20261025200000 + drift, equivalence.txt)

@@ -186,12 +186,32 @@ owner revokes afterwards. Each commits its evidence under its kit's
    release-time check, `scripts/tools/d081-retirement-precheck.sql`, and its step
    7 the four status-only checks of the retired routes. The follow-up branch now
    carries four more migrations than that tree, so the kit's migration-tree
-   precondition fails until the two are reconciled.
-3. **Four later migrations, no committed kit yet**:
+   precondition fails until the two are reconciled. A merge after this release
+   and before release 3 must be of a commit carrying tree `259a56dd`; the last
+   such commit on the follow-up branch is `e81bd2be`. **Open point for the owner, not decided:**
+   merge a `259a56dd` commit after release 2 and the rest after release 3; or run
+   releases 2 and 3 back to back and merge once; or split release 3 at
+   `91b955a7` (`docs/evidence/followup-2-production-apply-20261119/guarded/README.md`,
+   "Open point for the owner").
+3. **Four later migrations, kit built and rehearsed locally, not run**:
    `20261024110000_copilot_settings_delete_nonce`,
    `20261024220000_session_csrf_tokens`,
    `20261025200000_consent_revoke_provider_nonce` and
    `20261025400000_path_a_account_accept_typed_name`. The owner placed the last
    in the release after the follow-up (D-103, 23 October 2026, in
-   `docs/protocol/decisions.md`). A kit must be built, rehearsed against
-   release 2's post-state and committed before any of them is applied.
+   `docs/protocol/decisions.md`). Kit:
+   `docs/evidence/followup-2-production-apply-20261119/`, two batches (#1-#3,
+   #4) that end at 284 rows, rehearsed against release 2's post-state with
+   production's drift, which it reproduces byte for byte. Its first rehearsal
+   found that `20261025400000` refused there: it pinned the commented body of
+   `private.current_adult_subject_invitation_v1`, which production holds
+   comment-stripped (D-136). The guard now accepts exactly those two reviewed
+   bodies, and the kit was rehearsed again: both batches apply and read back
+   EQUAL. That change was an engineering decision, not an owner decision, and
+   the owner reviews it before this release. The kit pins the migrations tree
+   `be49d283`, which the follow-up branch carries from the commit that fixed the
+   guard; the head that merges after it must carry it too. It runs only after release 2 is
+   complete and code carrying tree `259a56dd` is merged and deployed with its
+   fingerprint unchanged. Batch 2 breaks the deployed code's Path A confirmation
+   until the merge is deployed, so the merge follows batch 2 at once; merging
+   before batch 2 would refuse every request on the 38 CSRF-bound routes.

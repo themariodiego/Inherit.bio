@@ -1,0 +1,22 @@
+# LOCAL ONLY, 2026-11-19. private.current_adult_subject_invitation_v1(uuid,uuid): the two bodies 20261025400000's revised guard accepts.
+# A = the repository body: pg_get_functiondef on a fresh build of HEAD (supabase db reset --local, 281 migrations).
+# B = production's body: the same on the mirror of the follow-up's post-state (build-mirror.sh: production's drift applied, line hashes equal to
+#     the PR 324 kit's prod-linehash.txt, read from production on 15 October). Both read in a psql session with the postgres role's own
+#     search_path, "$user", public, extensions, which the batches restore before each migration.
+
+md5(pg_get_functiondef) by search_path:
+  search_path                      A (repository)                    B (production, comment-stripped)
+  "$user", public, extensions     7fa7e1fe73fc4db2ecf9af8a7b26d265  78d147935e25d657d8df631583c6faea
+  public, extensions               7fa7e1fe73fc4db2ecf9af8a7b26d265  78d147935e25d657d8df631583c6faea
+  public                           7fa7e1fe73fc4db2ecf9af8a7b26d265  78d147935e25d657d8df631583c6faea
+  extensions, public               7fa7e1fe73fc4db2ecf9af8a7b26d265  78d147935e25d657d8df631583c6faea
+  pg_catalog                       51805d7b1352486adb473a3ff4d4c975  e98e44bb5c1f2f88a294e250fc887f0c (= production's 2026-10-22 read-back def_md5)
+  "$user"                         51805d7b1352486adb473a3ff4d4c975  e98e44bb5c1f2f88a294e250fc887f0c
+(The md5 depends on search_path through the return type: RETURNS subject_invitations with public in the path, public.subject_invitations without.)
+
+diff A B (both under the session search_path; A 62 lines, B 60 lines):
+20,21d19
+<     -- Before activation the token is the live one; afterwards the session
+<     -- carries the authority and the token is spent.
+
+Every removed line is a full-line -- comment: True. Lines added: 0. A without its full-line comments == B: True.

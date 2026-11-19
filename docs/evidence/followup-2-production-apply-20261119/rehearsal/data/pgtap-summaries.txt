@@ -1,0 +1,122 @@
+# LOCAL ONLY pgTAP runs, local stack 127.0.0.1:54322, 2026-11-19, against the revised file. Each left the fingerprint and ledger unchanged (pgTAP dropped after each run).
+# The 4 suites of these migrations: pnpm exec supabase test db --local supabase/tests/<file>, after pnpm gate:sql-includes. The follow-up's suite is 77d04563's supabase/tests (rehearsal/scripts/suite.sh).
+== fresh build of the working tree (supabase db reset --local, 281 migrations, the revised 20261025400000 applied): path_a_account_accept_typed_name.sql
+Files=1, Tests=52,  0 wallclock secs ( 0.02 usr  0.00 sys +  0.00 cusr  0.01 csys =  0.03 CPU)
+Result: PASS
+== fresh build of the working tree: the whole suite (pnpm exec supabase test db --local)
+Files=239, Tests=16179, 453 wallclock secs ( 2.11 usr  0.35 sys +  2.31 cusr  1.71 csys =  6.48 CPU)
+Result: PASS
+real	7m35.313s
+== copilot_settings_delete_nonce.sql on the mirror's final state (after both batches, mirror build 7)
+Files=1, Tests=24,  0 wallclock secs ( 0.01 usr  0.01 sys +  0.00 cusr  0.01 csys =  0.03 CPU)
+Result: PASS
+== session_csrf_tokens.sql on the mirror's final state (after both batches, mirror build 7)
+Files=1, Tests=30,  0 wallclock secs ( 0.02 usr  0.01 sys +  0.00 cusr  0.01 csys =  0.04 CPU)
+Result: PASS
+== consent_revoke_provider_nonce.sql on the mirror's final state (after both batches, mirror build 7)
+Files=1, Tests=34,  0 wallclock secs ( 0.01 usr  0.01 sys +  0.01 cusr  0.00 csys =  0.03 CPU)
+Result: PASS
+== path_a_account_accept_typed_name.sql on the mirror's final state (after both batches, mirror build 7)
+Files=1, Tests=52,  0 wallclock secs ( 0.01 usr +  0.01 sys =  0.02 CPU)
+Result: PASS
+== follow-up suite (77d04563) on the mirror's final state: the old contract after both batches
+Test Summary Report
+-------------------
+account_archive_complete.sql                 (Wstat: 768 (exited 3) Tests: 164 Failed: 2)
+  Failed tests:  161-162
+  Non-zero exit status: 3
+  Parse errors: No plan found in TAP output
+adult_subject_invitation.sql                 (Wstat: 0 Tests: 25 Failed: 4)
+  Failed tests:  18-20, 22
+adult_subject_session_response.sql           (Wstat: 0 Tests: 24 Failed: 6)
+  Failed tests:  8-11, 13-14
+export_member_plan.sql                       (Wstat: 0 Tests: 40 Failed: 3)
+  Failed tests:  2-3, 13
+hmac_keyring_rotation.sql                    (Wstat: 0 Tests: 54 Failed: 1)
+  Failed test:  23
+legal_audit_attribution_completeness.sql     (Wstat: 0 Tests: 83 Failed: 1)
+  Failed test:  77
+other_adult_held_upload.sql                  (Wstat: 0 Tests: 179 Failed: 3)
+  Failed tests:  146-148
+own_upload_account_completion.sql            (Wstat: 768 (exited 3) Tests: 32 Failed: 1)
+  Failed test:  32
+  Non-zero exit status: 3
+  Parse errors: No plan found in TAP output
+Files=235, Tests=15904, 445 wallclock secs ( 2.18 usr  0.32 sys +  2.27 cusr  1.84 csys =  6.61 CPU)
+Result: FAIL
+# Failed test 161: "the actual person accepts the existing signed Path A scope in their own account"
+#         have: unavailable
+#         want: accepted
+# Failed test 162: "the real acceptance door, rather than test seeding, records the variants scope"
+#         have: 0
+#         want: 1
+Dubious, test returned 3 (wstat 768, 0x300)
+Failed 2/164 subtests 
+# Failed test 18: "the matching adult account accepts atomically"
+#         have: unavailable
+#         want: accepted
+# Failed test 19: "acceptance binds control to the invited adult"
+#         have: NULL
+#         want: 74000000-0000-0000-0000-000000000002
+# Failed test 20: "acceptance activates the reserved subject"
+#         have: draft
+#         want: active
+# Failed test 22: "acceptance records the exact adult consent artifact"
+#         have: 0
+#         want: 1
+# Looks like you failed 4 tests of 25
+Failed 4/25 subtests 
+# Failed test 8: "the matching adult account accepts through the session"
+#         have: unavailable
+#         want: accepted
+# Failed test 9: "acceptance binds control to the invited adult"
+#         have: NULL
+#         want: 7c000000-0000-0000-0000-000000000002
+# Failed test 10: "acceptance activates the reserved subject"
+#         have: draft
+#         want: active
+# Failed test 11: "acceptance records the exact adult consent artifact once"
+#         have: 0
+#         want: 1
+# Failed test 13: "the invitation is answered"
+#         have: pending
+#         want: accepted
+# Failed test 14: "answering spends the rights session"
+#         have: active
+#         want: consumed
+# Looks like you failed 6 tests of 24
+Failed 6/24 subtests 
+# Failed test 2: "the plan names every table in public and private, and no other"
+#     Extra records:
+#         (private.session_csrf_token_uses)
+# Failed test 3: "no table is missing from the plan"
+#         have: ["private.session_csrf_token_uses"]
+#         want: []
+# Failed test 13: "the plan holds against the catalog"
+# Looks like you failed 3 tests of 40
+Failed 3/40 subtests 
+# Failed test 23: "the revision-1 session still accepts under the rotated keyring"
+#         have: unavailable
+#         want: accepted
+# Looks like you failed 1 test of 54
+Failed 1/54 subtests 
+# Failed test 77: "the rights-session controller is unchanged, and the derived controller, the consumer and the bind are their reviewed bodies"
+#         have: {159a4f50563935de05351b8ef320c6f8,b1e3b29ba8d18d67e1a16aefaf929550,f6201a3830d82dcd8a95d2b8487b59ad,6869593d67ff37d93a6d4caea62f01c3}
+#         want: {159a4f50563935de05351b8ef320c6f8,b1e3b29ba8d18d67e1a16aefaf929550,f6201a3830d82dcd8a95d2b8487b59ad,933df95029c3f1f8a9a306726fccccff}
+# Looks like you failed 1 test of 83
+Failed 1/83 subtests 
+# Failed test 146: "Path A's account acceptance is unchanged"
+#         have: unavailable
+#         want: accepted
+# Failed test 147: "the accepted Path A subject belongs to the invitee alone"
+# Failed test 148: "and its draft is consumed, as before"
+#         have: 1
+#         want: 0
+# Looks like you failed 3 tests of 179
+Failed 3/179 subtests 
+# Failed test 32: "the fixture uses the actual adult acceptance transition"
+#         have: unavailable
+#         want: accepted
+Dubious, test returned 3 (wstat 768, 0x300)
+Failed 1/32 subtests 
+== first rehearsal: the follow-up suite on the pre-state PASS (235 files, 16,034 tests); after batch 1 only export_member_plan 2, 3, 13 and legal_audit_attribution_completeness 77 (first-rehearsal/pgtap-summaries.txt). Batch 1 is the same three files as then.

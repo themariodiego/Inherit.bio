@@ -1,0 +1,7 @@
+# LOCAL ONLY: the kit as it stands, on a rebuilt mirror (mirror build 8), 2026-11-19.
+generate.py --head be49d283ec9a435c635ca54f28986d4676886910 final (LOCAL: the tree, before the revised file is committed); sha256sum -c SHA256SUMS: 14 of 14 lines OK; ../api: api-run.py OK; git status: no tracked file changed
+pre-state read-back: EQUAL batch 1 pre-state summary
+all-batches-dry-run.sql (statement_timeout 2min): rc=3, 1 ERROR line: ERROR:  DRY_RUN_COMPLETE_ALL_CHECKS_PASSED
+batch 1: dry run rc=3 (sentinel), apply rc=0, read-back EQUAL batch 1 post-state summary, ledger 283 / 20261025200000
+batch 2: dry run rc=3 (sentinel), apply rc=0, read-back EQUAL batch 2 post-state summary, ledger 284 / 20261025400000
+final fingerprint 7bef9657d2f2c19e9784d07b8eb22a58ef829b77341b2ceb9471fe8150f6a868 (== the rehearsal's final mirror and fresh 281 + drift, equivalence.txt)
