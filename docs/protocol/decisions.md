@@ -5565,3 +5565,64 @@ register", "Bring the answer back". Chosen: "Delete it from the register".
 No code change. This narrows the 23 October decision that registered
 `api.chat`'s 409s as harmless extras: the scientific-correction 409, which the
 own chat still gives, stays.
+
+## 2026-11-19 — G8.5: Copilot for an adult's own record is built
+
+Owner decision (clickable chat answer, "Build it"). Asked: when an adult accepts
+an invitation and their DNA file is held in their own account, asking Copilot
+about their own results gives a not-found page, because Copilot's permission
+only accepts an account's first `self` record; the signed register already
+describes this case as allowed, on the same terms as anyone's own genome.
+Should it be built? Offered: "Build it", "Build it, local models only", "Keep
+closed; amend register". Chosen: "Build it".
+
+Copilot's own-record permission is widened to an `other_adult` record the
+person holds themselves (`scope-derived-v1`, `subject:adult`, `own-subject`),
+for local models and approved cloud providers. It needs a database migration,
+so it ships in a later guarded release. The existing consent wording is reused;
+any wording that has to change comes back to the owner first.
+
+## 2026-11-19 — G8.5: the genome browser's read is registered as built
+
+Owner decision (clickable chat answer, "Register the read as built"). Asked:
+the genome browser reads a region by file, and only the signed-in person's own
+variants ever come back; the signed register describes a read by person, with a
+separate one-time browse token and paging, which would let a relative with
+access see the shared track. Which should stand? Offered: "Register the read as
+built", "Build the read by person", "Leave it open". Chosen: "Register the read
+as built".
+
+The register's `api.browse-region` is rewritten to the file-based read: the
+closed body `{file, chromosome, start, end}`, the answer the route gives, own
+variants only, protected by the session `X-Inherit-CSRF` token it already
+uses. No code change and no database change. A relative does not see the
+track. This closes the genome browser's row in `clientRequestDivergence`.
+
+## 2026-11-19 — G8.5: the two undescribed `genomes` key shapes
+
+Owner answer, in the owner's own words: "Do what is best for the long term."
+Asked: genome files are stored under random identifiers at the top of the
+storage bucket, with the link to the account and person kept in the database,
+and prepared (derived) files sit under a `prepared/` folder; the brief and the
+register describe folders per account and per person instead and do not
+mention `prepared/`; every upload since 6 September uses the flat form. Which
+side should change? Offered: "Change the documents", "Change the code to
+folders", "Leave it open".
+
+The owner left the choice to engineering. Engineering's judgment, which is the
+session's and not the owner's: change the documents. The reasons:
+- An opaque key carries no account or person identifier, so storage and
+  provider logs show no link between a file and a person. A folder key writes
+  that link into every object name.
+- A record can move between accounts (`api.subject-transfer`). With the link in
+  the database, a transfer moves no stored file; with folder keys it would have
+  to move the file or leave a key that names the wrong account.
+- Access and deletion are already decided from database rows that bind the
+  exact key. Folders would add a second place where that rule lives.
+- Moving stored genome files is the riskiest change this product can make, and
+  it would buy nothing a person can see.
+
+So the register's storage prefixes are to describe the flat key and the
+`prepared/` folder, and the brief's sentence is to be rewritten to match, with
+its pinned hash updated. As offered in the question, the exact brief sentence
+is shown to the owner before it is applied. Nothing is applied by this entry.
