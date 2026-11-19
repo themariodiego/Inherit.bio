@@ -5876,3 +5876,73 @@ probes and pre-checks against production, applies its stop rules, and shows
 the owner the results. This is not the release's go: the owner is asked again
 before any dry run or write. The token is stored on the session's cloud
 environment for the Supabase API host until the owner removes or revokes it.
+
+## 2026-11-19 — Register amendments that only describe decided behaviour
+
+Owner decision (clickable chat answer, "Yes, then list them"). Asked: several
+register amendments are needed only to describe behaviour the owner has
+already decided that day (the brief-outage handling, the whole-route referrer
+rule, sign-out keeping the rights session) and to add the Path A invitation
+route to the register's rate-limit list, a limit the database already
+enforces. May engineering make amendments of this kind and list each one for
+the owner afterwards? Offered: "Yes, then list them", "Show me each first".
+Chosen: "Yes, then list them".
+
+Where an amendment only writes down behaviour the owner has already decided,
+or a limit the system already enforces, engineering edits the register and
+gives the owner the list afterwards. Anything that changes what a person can
+do or see still comes to the owner first.
+
+## 2026-11-19 — The brief's storage sentences are replaced
+
+Owner decision (clickable chat answer, "Apply both"). The owner was shown the
+two proposed sentences of `docs/protocol/brief-corrections-proposed.md` item 22
+(22.1, where a subject file, a prepared file and a cohort file are stored;
+22.2, that legacy objects are read and deleted through their database rows and
+that no Storage policy lets a signed-in person read `genomes`) and asked
+whether to apply them to the brief. Offered: "Apply both", "Apply only the
+first", "Not yet". Chosen: "Apply both".
+
+Both sentences replace the brief's current ones and the brief's pinned hash in
+the register is updated. No code or stored file changes. Item 22.3, the
+sentences about signed download links, is not applied and stays a separate
+open correction.
+
+## 2026-11-19 — G8.5: a withdrawal is built for three kinds of consent
+
+Owner decision (clickable chat answer, "Build withdrawal for each"). Asked:
+three kinds of consent can only be withdrawn today by deleting things: a
+person's consent to upload their own file (deleting a file leaves the consent
+on record; only emptying the whole record or deleting the account ends it); an
+uploader's consent for another adult's file (only by deleting that adult's
+whole record, which also ends that adult's own confirmation); and a non-parent
+uploader's consent for an embryo upload (only by deleting their account). The
+second and third exist only in test mode; the first is live. How should the
+register treat these for now? Offered: "Register as built, list the gap",
+"Build withdrawal for each", "Decide later". Chosen: "Build withdrawal for
+each".
+
+A way to withdraw each kind is built, without deleting more than that consent
+covers: new routes and screens, wording for the owner's approval, database
+changes, and a later guarded release. Until then the three stay in the
+ledger's `consentWithdrawalNotRegistered` list. The design, including what
+withdrawing an uploader's consent does to the other adult's record and
+confirmation, comes back to the owner before it is built.
+
+## 2026-11-19 — PR 324's release: the token, and what the session could not do
+
+Not a decision to proceed. The token saved for release 1's read-only checks was
+refused by Supabase's management API on every request (401, "JWT could not be
+decoded"), so no probe and no pre-check ran. Asked how to continue (offered:
+"Show me the form again", "I'll fix it in settings", "Leave release 1 for
+now"), the owner answered in their own words: "I'm logged into Supabase on
+Brave, just do it yourself please".
+
+The session cannot do that. It runs in a cloud container with no computer
+attached, so it cannot reach the owner's browser; and making an access token
+through a logged-in browser would put the token's value in front of the
+session, which the release's rule against printing, logging or seeing the
+token is there to prevent. Release 1 stays where it is: runbook step 1 passed,
+PR 324's green run is recorded and accepted, and steps 3 and 4 wait for a
+working personal access token entered by the owner in the secure form or in
+the environment's settings.
