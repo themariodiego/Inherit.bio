@@ -11,7 +11,7 @@ import {
   originDenied,
   readJson,
   requestForbidden,
-  unauthorized,
+  unauthenticated,
 } from "@/lib/embryos/guards";
 import {
   COHORT_DRAFT_CREATED_KEYS,
@@ -36,7 +36,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
  */
 export async function POST(request: Request) {
   const context = await getSensitiveAccountContext();
-  if (!context?.user.email || !context.user.email_confirmed_at) return unauthorized();
+  if (!context?.user.email || !context.user.email_confirmed_at) return unauthenticated();
   const forbidden = originDenied(request);
   if (forbidden) return forbidden;
   const denied = await accountJurisdictionDenied(context.user.id);

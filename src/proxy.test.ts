@@ -634,10 +634,13 @@ describe("register no-referrer endpoints keep the strict policy (sensitiveRespon
       expect(mocks.sessionReads).toBe(0);
     });
 
-  it.each(["/api/export/extra", "/api/exports", `/api/files/${FILE}`, `/api/files/${FILE}/download/extra`, `/api/files/${FILE}/process`,
+  // `/api/files/[id]/process` and `/api/embryo-cohorts/[id]/record-key-cards`
+  // left this list on 19 November 2026: the whole-route rule below gives them
+  // no-referrer. Their neighbours `finalize` and `withdraw` stay outside.
+  it.each(["/api/export/extra", "/api/exports", `/api/files/${FILE}`, `/api/files/${FILE}/download/extra`, `/api/files/${FILE}/finalize`,
     "/api/files//download", `/api/files/parent/${FILE}/download`, "/api/consents/grant", "/api/consents/revoke", `/api/consents/${FILE}/revoke`,
     "/api/consents/reaffirm", "/api/consents/revoke/session/extra", "/api/invitations", "/api/invitations/accept/extra", "/api/rights/activate/extra",
-    "/api/rights/embryo-record-key-cards/extra", `/api/embryo-cohorts/${FILE}/record-key-cards`, "/api/subjects/bind",
+    "/api/rights/embryo-record-key-cards/extra", `/api/embryo-cohorts/${FILE}/withdraw`, "/api/subjects/bind",
     "/api/subjects/bind/session/extra", "/api/withdraw/sessions", "/api/withdraw/session/extra"])(
     "leaves the original sensitive policy outside the exact D-138 (a) endpoint: %s", async path => {
       for (const method of ["GET", "POST"]) {
@@ -682,5 +685,195 @@ describe("register no-referrer endpoints keep the strict policy (sensitiveRespon
     for (const [, path] of ENDPOINTS) expect(endpoints.some(route => path === route.path.replace("[token]", "session")), path).toBe(true);
     for (const [method, path] of SAME_ORIGIN_HANDLER_ENDPOINTS) expect(exercised.has(`${method} ${path}`), `${method} ${path}`).toBe(true);
     expect(honoured.size).toBe(endpoints.length);
+  });
+});
+
+/**
+ * D-138 (b) and (c), owner decision of 19 November 2026 ("the strictest
+ * referrer setting applies to the whole route"): where the register names
+ * no-referrer for any answer of an endpoint, through a profile binding or
+ * through a response contract bound to the route, every answer of that
+ * endpoint gets it, the proxy's own refusals included. The proxy's header is
+ * the one the browser receives (Next keeps it over the handler's).
+ */
+describe("the strictest referrer setting applies to the whole route (D-138 (b) and (c))", () => {
+  const strict = (response: Response) => {
+    for (const [name, value] of Object.entries(SENSITIVE_RESPONSE_HEADERS)) {
+      expect(response.headers.get(name), name).toBe(name === "Referrer-Policy" ? "no-referrer" : value);
+    }
+  };
+  const original = (response: Response, label: string) => {
+    for (const [name, value] of Object.entries(SENSITIVE_RESPONSE_HEADERS)) expect(response.headers.get(name), `${label} ${name}`).toBe(value);
+  };
+  const call = (method: string, path: string) => proxy(new NextRequest(`https://inherit.bio${path}`, { method }));
+  const ID = "12345678-1234-4234-8234-00000000000b";
+
+  /** Every registered method of the 24 endpoints the register names no-referrer for on some answers only. */
+  const WHOLE_ROUTE: readonly (readonly [method: string, path: string])[] = [
+    ["POST", "/api/chat"], // api.chat
+    ["GET", `/api/chats/${ID}`], // api.chat-history
+    ["POST", "/api/chromosomal-sex"], // api.chromosomal-sex
+    ["POST", "/api/family/acknowledge"], // api.family-acknowledge
+    ["POST", "/api/embryos/acknowledge"], // api.embryo-acknowledge
+    ["POST", `/api/files/${ID}/process`], // api.file-process
+    ["POST", "/api/files/upload-session"], // api.file-upload-session
+    ["POST", "/api/uploads"], // api.subject-upload-issue
+    ["POST", `/api/embryo-ingest/${ID}/configure`], // api.embryo-ingest-configure
+    ["POST", `/api/embryo-ingest/${ID}/mapping`], // api.embryo-ingest-mapping
+    ["PUT", `/api/embryo-ingest/${ID}/mapping`],
+    ["POST", "/api/embryo-cohorts"], // api.embryo-cohorts (D-138 (b))
+    ["POST", `/api/embryo-cohorts/${ID}/record-key-cards`], // api.embryo-record-key-cards (D-138 (b))
+    ["POST", `/api/embryos/${ID}/disposition`], // api.embryo-disposition (D-138 (b))
+    ["POST", "/api/future-person/claim/session/documents"], // api.future-person-claim-document-session
+    ["GET", `/api/future-person/claim/session/corrections/${ID}/statement`], // api.future-person-own-correction-statement
+    ["GET", "/api/appeals/session/decision"], // api.appeal-decision-notice
+    ["GET", `/api/reviews/future-person/claim-objections/${ID}`], // api.future-person-claim-objection-review
+    ["POST", `/api/reviews/future-person/claim-objections/${ID}`],
+    ["GET", `/api/reviews/future-person/corrections/${ID}`], // api.future-person-correction-review
+    ["POST", `/api/reviews/future-person/corrections/${ID}`],
+    ["GET", "/api/jobs/annotation-refresh"], // jobs.annotation-refresh
+    ["POST", "/api/jobs/annotation-refresh"],
+    ["GET", "/api/jobs/mail"], // jobs.mail
+    ["POST", "/api/jobs/mail"],
+    ["POST", "/api/jobs/research-publish"], // jobs.research-publish
+    ["GET", "/api/jobs/research-refresh"], // jobs.research-refresh
+    ["POST", "/api/jobs/research-refresh"],
+    ["POST", "/api/jobs/retention"], // jobs.retention
+    ["GET", "/api/cron/retention"], // jobs.retention-cron
+  ];
+
+  it.each(WHOLE_ROUTE)("%s %s keeps no-referrer with every other sensitive header, signed in or not", async (method, path) => {
+    for (const user of [{ id: "12345678-1234-4234-8234-000000000001" }, null]) {
+      mocks.user = user;
+      const response = await call(method, path);
+      expect(response.status).toBe(200); strict(response);
+    }
+  });
+
+  // The two under the claimant session read no account on their way, so the
+  // proxy never refuses them for one.
+  const ACCOUNT_READ = WHOLE_ROUTE.filter(([, path]) => !path.startsWith("/api/future-person/claim/session/"));
+  it.each(ACCOUNT_READ)("keeps no-referrer on the proxy's deletion-notice and declared-location refusals for %s %s", async (method, path) => {
+    mocks.profile = { deletion_requested_at: "2026-09-25T00:00:00Z", jurisdiction_code: "GB" };
+    const held = await call(method, path);
+    expect(held.status).toBe(423);
+    expect(await held.json()).toEqual({ error: "account_deletion_notice_period" }); strict(held);
+    mocks.profile = { deletion_requested_at: null, jurisdiction_code: "IR" };
+    const declared = await call(method, path);
+    expect(declared.status).toBe(451);
+    expect(await declared.json()).toEqual({ error: "not_available_in_jurisdiction" }); strict(declared);
+  });
+
+  it.each(WHOLE_ROUTE)("keeps no-referrer on a connection location refusal, before any session read, for %s %s", async (method, path) => {
+    mocks.sessionReads = 0;
+    const located = await proxy(new NextRequest(`https://inherit.bio${path}`, { method, headers: { "x-vercel-ip-country": "IR" } }));
+    expect(located.status).toBe(451);
+    expect(await located.json()).toEqual({ error: "not_available_in_location" }); strict(located);
+    expect(mocks.sessionReads).toBe(0);
+  });
+
+  // Each dynamic segment matches one segment, as the route does; a longer,
+  // shorter or neighbouring path keeps the original policy.
+  it.each(["/api/chat/extra", "/api/chats", "/api/chats/", `/api/chats/${ID}/extra`, "/api/chromosomal-sex/extra",
+    "/api/family/acknowledge/extra", `/api/family/s-${ID}/sharing`, "/api/embryos/acknowledge/extra", `/api/embryos/${ID}/future-person-identity`,
+    `/api/embryos/${ID}/disposition/extra`, `/api/embryos/parent/${ID}/disposition`, "/api/embryos//disposition",
+    `/api/files/${ID}/process/extra`, `/api/files/parent/${ID}/process`, "/api/files//process", `/api/files/${ID}/finalize`,
+    "/api/files/upload-session/extra", "/api/uploads/extra", `/api/uploads/${ID}/complete`,
+    `/api/embryo-ingest/${ID}/configure/extra`, `/api/embryo-ingest/a/${ID}/mapping`, "/api/embryo-ingest//configure",
+    `/api/embryo-ingest/${ID}/chunks/0`, `/api/embryo-ingest/${ID}/complete`, "/api/embryo-cohorts/extra", "/api/embryo-cohort-drafts",
+    `/api/embryo-cohorts/${ID}/record-key-cards/extra`, `/api/embryo-cohorts/${ID}/withdraw`,
+    "/api/future-person/claim/session/documents/extra", "/api/future-person/claim/session/complete",
+    `/api/future-person/claim/session/corrections/${ID}`, `/api/future-person/claim/session/corrections/${ID}/statement/extra`,
+    "/api/appeals/session/decision/extra", "/api/appeals/session", "/api/reviews/future-person/claim-objections",
+    `/api/reviews/future-person/claim-objections/${ID}/extra`, `/api/reviews/future-person/corrections/${ID}/extra`,
+    "/api/jobs", "/api/jobs/account-export", "/api/jobs/mail/extra", "/api/jobs/retention/extra", "/api/cron/retention/extra",
+    "/api/consents", "/api/account/completion"])(
+    "leaves the original sensitive policy outside the exact whole-route endpoint: %s", async path => {
+      for (const method of ["GET", "POST"]) {
+        const response = await call(method, path);
+        expect(response.status).toBe(200); original(response, method);
+      }
+    });
+
+  /**
+   * Endpoints outside the register-derived set that the proxy upgrades
+   * anyway, each for the namespace rule it has always had. Any other
+   * upgrade fails the test below.
+   */
+  const NAMESPACE_REASONS: Readonly<Record<string, string>> = {
+    "api.future-person-claim-release": "/api/reviews/future-person/claims/: reviewer IDs and documentary decisions",
+    "api.claim-review-chunk-acknowledgement": "/api/downloads/: document download sessions",
+    "api.claim-review-receipt": "/api/downloads/: document download sessions",
+  };
+
+  /**
+   * D-138 (c)'s group of 14: their handlers send no-referrer, but the register
+   * names it for none of their answers, so the decision does not cover them
+   * and the browser keeps receiving the proxy's same-origin.
+   */
+  const HANDLER_ONLY = ["api.account-completion", "api.consents", "api.embryo-ingest-chunk", "api.embryo-ingest-complete", "api.evidence-chunk",
+    "api.evidence-complete", "api.file-finalize", "api.future-person-claim-complete", "api.legal-evidence-review",
+    "api.legal-evidence-upload-session", "api.llm-settings", "api.subject-upload-complete", "api.subjects", "jobs.account-export-test"];
+
+  it("gives no-referrer to every /api/ endpoint the register names it for, by profile or bound contract, and to no other without a stated reason", async () => {
+    type Route = { id: string; kind: string; path: string; methods?: string[]; parameterContract?: Record<string, { const?: string } | string> };
+    const register = JSON.parse(readFileSync("docs/route-register.json", "utf8")) as {
+      sensitiveResponseHeaders: Record<string, Record<string, string>>;
+      sensitiveResponseHeaderBindings: Record<string, unknown>;
+      responseContracts: Record<string, unknown>;
+      responseContractBindings: {
+        routes: Record<string, string[]>;
+        allEndpoints: string[];
+        policyContracts: Record<string, { endpoint?: string }>;
+        resourceAuthorizationBindings: { endpoint?: string };
+      };
+      routes: Route[];
+    };
+    // A contract names no-referrer when one of its header statements, at any depth, says so.
+    const namesNoReferrer = (value: unknown): boolean => value !== null && typeof value === "object" && Object.entries(value)
+      .some(([key, inner]) => (key === "headers" && JSON.stringify(inner).includes("no-referrer")) || namesNoReferrer(inner));
+    const contracts = new Set(Object.entries(register.responseContracts).filter(([, contract]) => namesNoReferrer(contract)).map(([id]) => id));
+    // The bindings that name no route must name no such contract, or this test would not see whom they bind.
+    const bindings = register.responseContractBindings;
+    const unrouted = [...bindings.allEndpoints, ...Object.values(bindings.policyContracts).map(binding => binding.endpoint),
+      bindings.resourceAuthorizationBindings.endpoint];
+    expect(unrouted.filter(id => id !== undefined && contracts.has(id))).toEqual([]);
+    const profiles = Object.entries(register.sensitiveResponseHeaders)
+      .filter(([, headers]) => headers["Referrer-Policy"] === "no-referrer").map(([name]) => name);
+    const reasons = (route: Route) => [
+      ...profiles.filter(name => (register.sensitiveResponseHeaderBindings[name] as string[]).includes(route.id)).map(name => `profile:${name}`),
+      ...(bindings.routes[route.id] ?? []).filter(id => contracts.has(id)).map(id => `contract:${id}`),
+    ];
+    const endpoints = register.routes.filter(route => route.kind === "endpoint" && route.path.startsWith("/api/"));
+    const inSet = new Set(endpoints.filter(route => reasons(route).length > 0).map(route => route.id));
+    const upgradedOutside = new Set<string>(), exercised = new Set<string>();
+    for (const route of endpoints) {
+      const path = route.path.replace(/\[([^\]]+)\]/g, (_all, name: string) => {
+        const contract = route.parameterContract?.[name];
+        return typeof contract === "object" && contract.const !== undefined ? contract.const
+          : name === "sequence" ? "0" : name === "person" ? `s-${ID}` : ID;
+      });
+      for (const method of route.methods ?? ["GET"]) {
+        for (const user of [{ id: "12345678-1234-4234-8234-000000000001" }, null]) {
+          mocks.user = user;
+          const policy = (await call(method, path)).headers.get("referrer-policy");
+          const label = `${route.id} ${method} ${path} ${reasons(route).join(", ") || "none"}`;
+          if (inSet.has(route.id)) expect(policy, label).toBe("no-referrer");
+          else if (policy === "no-referrer") upgradedOutside.add(route.id);
+          else expect(policy, label).toBe("same-origin");
+        }
+        exercised.add(`${method} ${path}`);
+      }
+    }
+    expect([...upgradedOutside].sort()).toEqual(Object.keys(NAMESPACE_REASONS).sort());
+    // The explicit list above is the register's: every entry is a derived endpoint, exercised on its method.
+    for (const [method, path] of WHOLE_ROUTE) expect(exercised.has(`${method} ${path}`), `${method} ${path}`).toBe(true);
+    expect(endpoints.filter(route => inSet.has(route.id) && WHOLE_ROUTE.some(([, path]) => path === route.path.replace(/\[[^\]]+\]/g, ID)))
+      .flatMap(route => route.methods ?? ["GET"]).length).toBe(WHOLE_ROUTE.length);
+    // The 14 stay outside the set and receive same-origin (asserted in the loop).
+    for (const id of HANDLER_ONLY) {
+      expect(endpoints.some(route => route.id === id), id).toBe(true);
+      expect(inSet.has(id), id).toBe(false);
+    }
   });
 });

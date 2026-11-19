@@ -12,6 +12,7 @@ import { isPathBDraftPayload, isPathBReviewedDocumentDraftPayload } from "@/lib/
 import { createPathBReviewedDocumentDraft } from "@/lib/uploads/path-b-reviewed-document-server";
 import { createPathBDraft } from "@/lib/uploads/path-b-routes";
 import { admitAccountCsrf } from "@/lib/security/session-csrf";
+import { unauthenticated } from "@/lib/embryos/guards";
 
 /**
  * The register's Path A body (closed-subject-draft-create-v1, owner decision
@@ -65,7 +66,7 @@ export async function POST(request: Request) {
 async function pathAInvitation(request: Request, payload: unknown): Promise<Response> {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user?.email) return new Response("Unauthorized", { status: 401 });
+  if (!user?.email) return unauthenticated();
 
   // The inviter's own declared jurisdiction, read now rather than when the
   // form loaded (G5.1a, G5.1b). Without the acceptance flag every account
@@ -91,7 +92,7 @@ async function pathAInvitation(request: Request, payload: unknown): Promise<Resp
   // is reserved, in the same transaction, so the invitation's audit events
   // name the person who invited and a replay reserves nothing.
   const account = await getSensitiveAccountContext();
-  if (!account || account.user.id !== user.id) return new Response("Unauthorized", { status: 401 });
+  if (!account || account.user.id !== user.id) return unauthenticated();
   const nonce = personOperationNonceFrom(request, { accountId: user.id, sessionId: account.sessionId,
     operation: "adult_invitation_create", targetId: user.id });
   if (!nonce) return NextResponse.json({ error: "invalid_request" }, { status: 400 });

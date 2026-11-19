@@ -21,6 +21,7 @@ import { isOwnReportConsentPayload, ownReportConsent } from "@/lib/uploads/own-r
 import { isPathBPurposeConsentPayload, pathBPurposeConsent } from "@/lib/uploads/path-b-purpose-server";
 import { isOwnCopilotConsentPayload, ownCopilotConsent } from "@/lib/copilot/own-consent";
 import { requireAccountCsrf } from "@/lib/security/session-csrf";
+import { unauthenticated } from "@/lib/embryos/guards";
 
 /**
  * `POST /api/consents` (register api.consents).
@@ -78,7 +79,7 @@ export async function POST(request: Request) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return new Response("Unauthorized", { status: 401 });
+  if (!user) return unauthenticated();
   const payload: unknown = await request.json().catch(() => null);
 
   if (isOwnConsentPayload(payload)) return ownUploadConsent(request, payload);

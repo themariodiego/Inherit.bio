@@ -12,10 +12,10 @@ const failure = (error: string, status: number) => Response.json({ error }, { st
 
 export const DELETE = withAccountCsrf("api.file-delete", handleDelete);
 async function handleDelete(request: Request, context: { params: Promise<{ id: string }> }) {
-  // The cross-origin refusal keeps its own body: the register's
-  // `request_forbidden` is also the CSRF wrapper's refusal, which the Files page
-  // words differently, so moving this one would change what a person reads.
-  if (!isSameOrigin(request)) return failure("file_delete_unauthorized", 403);
+  // `authenticated-mutation-v1`'s refusal, the same body the CSRF wrapper
+  // gives (owner decision of 19 November 2026, "a cross-site file delete is
+  // refused with the register's code").
+  if (!isSameOrigin(request)) return failure("request_forbidden", 403);
   const { id } = await context.params;
   // `resource-not-found-v1` and `authenticated-api-v1.unauthenticated`.
   if (!z.string().uuid().safeParse(id).success) return failure("not_found", 404);

@@ -70,9 +70,19 @@ describe("owner-authorized file deletion", () => {
     }
     expect(mocks.remove).not.toHaveBeenCalled();
   });
-  it("keeps the route's own body on a cross-origin refusal, which the Files page words apart from the CSRF refusal", async () => {
-    const response = await call("https://example.invalid");
-    expect([response.status, await response.json()]).toEqual([403, { error: "file_delete_unauthorized" }]);
+  // Owner decision of 19 November 2026 ("a cross-site file delete is refused
+  // with the register's code"): authenticated-mutation-v1's 403, before the
+  // account or the database is read.
+  it("answers a cross-origin request with authenticated-mutation-v1's request_forbidden, reading nothing", async () => {
+    for (const origin of ["https://example.invalid", "http://localhost.example.invalid"]) {
+      const response = await call(origin);
+      expect([response.status, response.headers.get("content-type"), await response.json()])
+        .toEqual([403, "application/json", { error: "request_forbidden" }]);
+      expect(response.headers.get("cache-control")).toBe("private, no-store");
+    }
+    expect(mocks.context).not.toHaveBeenCalled();
+    expect(mocks.rpc).not.toHaveBeenCalled();
+    expect(mocks.remove).not.toHaveBeenCalled();
   });
   it.each(["file_delete_not_found", "file_delete_processing", "file_delete_subject_unavailable", "file_delete_shared_graph"])("does not touch Storage on %s", async (message) => {
     mocks.rpc.mockResolvedValue({ data: null, error: { message } });

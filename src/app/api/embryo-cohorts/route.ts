@@ -1,7 +1,7 @@
 import { getSensitiveAccountContext } from "@/lib/account-deletion";
 import { notFound, rpcErrorResponse, sensitiveJson } from "@/lib/embryos/api";
 import { cohortCreatedBody, cohortFinalizeBody, ingestCookieParts } from "@/lib/embryos/cohort-create";
-import { accountJurisdictionDenied, originDenied, readJson, unauthorized } from "@/lib/embryos/guards";
+import { accountJurisdictionDenied, originDenied, readJson, unauthenticated } from "@/lib/embryos/guards";
 import { ingestRequestOrigin } from "@/lib/embryos/ingest-http";
 import { ingestCookie } from "@/lib/embryos/ingest-session";
 import { mintIngestSessionOperation, verifyEmbryoOperation } from "@/lib/embryos/operation-token";
@@ -45,7 +45,7 @@ import { withAccountCsrf } from "@/lib/security/session-csrf";
 export const POST = withAccountCsrf("api.embryo-cohorts", handlePost);
 async function handlePost(request: Request) {
   const account = await getSensitiveAccountContext();
-  if (!account) return unauthorized();
+  if (!account) return unauthenticated();
   const forbidden = originDenied(request);
   if (forbidden) return forbidden;
   // The register puts an `embryo_analysis` guard at route scope. Without it

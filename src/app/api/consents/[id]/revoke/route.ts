@@ -6,6 +6,7 @@ import { isOperationNonceRefusal, personOperationNonceArgs, personOperationNonce
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { withAccountCsrf } from "@/lib/security/session-csrf";
+import { originDenied } from "@/lib/embryos/guards";
 
 /**
  * `POST /api/consents/[id]/revoke` (register api.consent-revoke).
@@ -55,6 +56,11 @@ async function handlePost(
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return unauthenticated();
+  // authenticated-mutation-v1's origin and fetch-metadata check, before any
+  // read, as its sibling routes make it (G8.5, 19 November 2026). The CSRF
+  // wrapper spends the session token but reads neither header.
+  const forbidden = originDenied(request);
+  if (forbidden) return forbidden;
 
   const admin = createAdminClient();
   const [{ data: purposeGrant }, { data: cloudGrant }] = await Promise.all([

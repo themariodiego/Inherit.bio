@@ -13,6 +13,7 @@ import { declarationRestriction, isPausedCountry } from "@/lib/legal/service-res
 import { isOperationNonceRefusal, personOperationNonceArgs, personOperationNonceFrom } from "@/lib/person-operation-nonce";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { withAccountCsrf } from "@/lib/security/session-csrf";
+import { unauthenticated } from "@/lib/embryos/guards";
 
 /**
  * `PUT /api/settings/jurisdiction` (register api.jurisdiction, G5.1a): the
@@ -49,7 +50,7 @@ export const PUT = withAccountCsrf("api.jurisdiction", handlePut);
 async function handlePut(request: Request) {
   if (!isSameOrigin(request)) return invalidRequest(["origin"]);
   const context = await getSensitiveAccountContext();
-  if (!context) return new Response("Unauthorized", { status: 401 });
+  if (!context) return unauthenticated();
 
   const parsed = jurisdictionWriteBody.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return invalidRequest(["body"]);

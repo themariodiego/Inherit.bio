@@ -10,7 +10,7 @@ import {
   originDenied,
   readJson,
   requestForbidden,
-  unauthorized,
+  unauthenticated,
 } from "@/lib/embryos/guards";
 import { coParentInvitationBody } from "@/lib/embryos/routes";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -41,7 +41,7 @@ export async function POST(request: Request) {
   if (isPathBInvitationPayload(payload)) return createPathBInvitation(request, payload);
 
   const context = await getSensitiveAccountContext();
-  if (!context) return unauthorized();
+  if (!context) return unauthenticated();
   const forbidden = originDenied(request);
   if (forbidden) return forbidden;
   const denied = await accountJurisdictionDenied(context.user.id);

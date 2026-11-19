@@ -8,7 +8,7 @@ import { submitMail, type MailTemplate } from "@/lib/email";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { drainEmbryoTerminalMail } from "@/lib/embryo/terminal-mail";
 import { drainInvitationTerminalMail } from "@/lib/embryos/invitation-terminal-mail";
-import { machineJobDrained } from "@/lib/jobs/machine-result";
+import { machineJobDrained, machineUnauthenticated } from "@/lib/jobs/machine-result";
 
 export const maxDuration = 300;
 
@@ -276,7 +276,7 @@ function requestHasSelectors(request: Request): boolean {
 
 export async function GET(request: Request) {
   if (!authorized(request)) {
-    return new Response("Unauthorized", { status: 401 });
+    return machineUnauthenticated();
   }
   if (new URL(request.url).search.length > 0) {
     return NextResponse.json({ error: "invalid_request" }, { status: 400 });
@@ -286,7 +286,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   if (!authorized(request)) {
-    return new Response("Unauthorized", { status: 401 });
+    return machineUnauthenticated();
   }
   if (requestHasSelectors(request)) {
     return NextResponse.json({ error: "invalid_request" }, { status: 400 });

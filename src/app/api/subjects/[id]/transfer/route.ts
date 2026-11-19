@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { getSensitiveAccountContext } from "@/lib/account-deletion";
 import { invalidRequest, notFound, unavailable } from "@/lib/embryos/api";
-import { closedResponse, originDenied, readJson, unauthorized } from "@/lib/embryos/guards";
+import { closedResponse, originDenied, readJson, unauthenticated } from "@/lib/embryos/guards";
 import { SUBJECT_OPERATION_NONCE_MAX_LENGTH, verifySubjectOperationNonce } from "@/lib/subject-endpoints/operation-nonce";
 import { isCanonicalSubjectId, isJsonRequest } from "@/lib/subject-endpoints/request";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -47,7 +47,7 @@ async function handlePost(request: Request, context: { params: Promise<{ id: str
   const { id } = await context.params;
   if (!isCanonicalSubjectId(id)) return notFound();
   const account = await getSensitiveAccountContext();
-  if (!account) return unauthorized();
+  if (!account) return unauthenticated();
   const forbidden = originDenied(request);
   if (forbidden) return forbidden;
 

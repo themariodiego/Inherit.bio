@@ -74,6 +74,54 @@ const NO_REFERRER_ENDPOINTS: ReadonlySet<string> = new Set([
 /** api.file-download, `/api/files/[id]/download`: one segment, as the route matches it. */
 const FILE_DOWNLOAD_ENDPOINT = /^\/api\/files\/[^/]+\/download$/;
 
+/**
+ * Endpoints the register names no-referrer for on some of their answers only:
+ * a response contract bound to the route (`responseContractBindings.routes`)
+ * says `private-no-store-no-referrer`. The policy can be set only per path, so
+ * by the owner's decision of 19 November 2026 ("the strictest referrer setting
+ * applies to the whole route", D-138 (b) and (c)) every answer of the route
+ * gets it, the proxy's own refusals included. Each is named by its register id
+ * and the contract that names it; `src/proxy.test.ts` derives the same set
+ * from the register. Endpoints whose handlers send no-referrer while the
+ * register names it for none of their answers are not here.
+ */
+const WHOLE_ROUTE_NO_REFERRER_ENDPOINTS: ReadonlySet<string> = new Set([
+  "/api/chat", // api.chat: copilot-transport-unavailable-v1 and three more
+  "/api/chromosomal-sex", // api.chromosomal-sex: chromosomal-sex-declared-v1
+  "/api/family/acknowledge", // api.family-acknowledge: family-acknowledged-v1
+  "/api/embryos/acknowledge", // api.embryo-acknowledge: embryo-acknowledged-v1
+  "/api/files/upload-session", // api.file-upload-session: upload-session-v1, canonical-uploads-paused-v1
+  "/api/uploads", // api.subject-upload-issue: upload-session-v1, canonical-uploads-paused-v1
+  "/api/embryo-cohorts", // api.embryo-cohorts: cohort-created-v1, embryo-closed-schema-v1 (D-138 (b))
+  "/api/future-person/claim/session/documents", // api.future-person-claim-document-session: public-capacity-limited-v1
+  "/api/appeals/session/decision", // api.appeal-decision-notice: appeal-decision-notice-v1
+  "/api/jobs/annotation-refresh", // jobs.annotation-refresh: machine-job-result-v1
+  "/api/jobs/mail", // jobs.mail: machine-job-result-v1
+  "/api/jobs/research-publish", // jobs.research-publish: machine-job-result-v1
+  "/api/jobs/research-refresh", // jobs.research-refresh: machine-job-result-v1
+  "/api/jobs/retention", // jobs.retention: machine-job-result-v1
+  "/api/cron/retention", // jobs.retention-cron: machine-job-result-v1
+]);
+
+/** The same rule for routes with dynamic segments: one segment each, as the route matches it. */
+const WHOLE_ROUTE_NO_REFERRER_SHAPES: readonly RegExp[] = [
+  /^\/api\/chats\/[^/]+$/, // api.chat-history: copilot-transport-unavailable-v1, embryo-closed-schema-v1
+  /^\/api\/files\/[^/]+\/process$/, // api.file-process: preparation-capacity-v1, preparation-too-large-v1
+  /^\/api\/embryo-ingest\/[^/]+\/configure$/, // api.embryo-ingest-configure: embryo-vcf-transport-v1, embryo-table-configuration-v1
+  /^\/api\/embryo-ingest\/[^/]+\/mapping$/, // api.embryo-ingest-mapping: pgt-mapping-challenge-v1, embryo-ingest-decision-v1
+  /^\/api\/embryo-cohorts\/[^/]+\/record-key-cards$/, // api.embryo-record-key-cards: record-key-card-delivery-v1 (D-138 (b))
+  /^\/api\/embryos\/[^/]+\/disposition$/, // api.embryo-disposition: embryo-disposition-v1 (D-138 (b))
+  /^\/api\/future-person\/claim\/session\/corrections\/[^/]+\/statement$/, // api.future-person-own-correction-statement
+  /^\/api\/reviews\/future-person\/claim-objections\/[^/]+$/, // api.future-person-claim-objection-review: its review-case contract
+  /^\/api\/reviews\/future-person\/corrections\/[^/]+$/, // api.future-person-correction-review: its review-case contract
+];
+
+/** True on every path the register names no-referrer for, on every answer or (by the decision above) on some. */
+function registerNoReferrer(path: string): boolean {
+  return NO_REFERRER_ENDPOINTS.has(path) || FILE_DOWNLOAD_ENDPOINT.test(path)
+    || WHOLE_ROUTE_NO_REFERRER_ENDPOINTS.has(path) || WHOLE_ROUTE_NO_REFERRER_SHAPES.some(shape => shape.test(path));
+}
+
 function withSensitiveHeaders<T extends NextResponse>(response: T, path?: string): T {
   for (const [name, value] of Object.entries(SENSITIVE_RESPONSE_HEADERS)) {
     response.headers.set(name, value);
@@ -84,8 +132,8 @@ function withSensitiveHeaders<T extends NextResponse>(response: T, path?: string
   // stricter policy, including refusals produced by the proxy itself. Next's
   // response sender retains an already-present proxy header, so the download
   // handler's no-referrer policy must also be set here, and so must the
-  // register-bound endpoints' (NO_REFERRER_ENDPOINTS).
-  if ((path !== undefined && (NO_REFERRER_ENDPOINTS.has(path) || FILE_DOWNLOAD_ENDPOINT.test(path))) ||
+  // register-bound endpoints' (NO_REFERRER_ENDPOINTS and the whole-route set).
+  if ((path !== undefined && registerNoReferrer(path)) ||
       path?.startsWith("/reviews/future-person/claims/") ||
       path?.startsWith("/api/reviews/future-person/claims/") ||
       path?.startsWith("/reviews/appeals/") ||

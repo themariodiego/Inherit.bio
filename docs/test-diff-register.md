@@ -1,3 +1,89 @@
+## 2026-11-19 — Code to the register, second batch: `no-referrer` on every answer of 24 more endpoints, the register's 401 on 26 routes, the file-delete cross-origin code, and `api.consent-revoke`'s origin check
+
+This batch follows four owner decisions of today (`docs/protocol/decisions.md`): "G8.5: where the register is stricter, engineering codes to it", "G8.5: the strictest referrer setting applies to the whole route", and "G8.5: a cross-site file delete is refused with the register's code". The fourth, "G8.5: route-specific error answers are registered as they ship", is followed by leaving every route-specific 400, 409, 422 and 503 as it was. No register text is changed. One sentence a person can read changes, as the owner decided: on the Files page, a cross-site delete refusal now reads "Deletion did not finish…" instead of "Please sign in again and try Delete." No check is loosened.
+
+(1) **D-138 (b) and (c).** Where the register names `no-referrer` for any answer of an `/api/` endpoint, every answer now gets it. The register names it either through a `no-referrer` profile in `sensitiveResponseHeaderBindings`, or through a response contract bound to the route in `responseContractBindings.routes` whose `headers` say so. 24 endpoints were not yet honoured:
+- the three embryo routes of (b);
+- the 21 of (c) that the register names on some answers.
+
+`src/proxy.ts` now names 15 exact paths in `WHOLE_ROUTE_NO_REFERRER_ENDPOINTS`. `WHOLE_ROUTE_NO_REFERRER_SHAPES` covers nine dynamic routes, with one segment for each dynamic part, as the route matches it. The proxy's own 423, 451 and location refusals carry `no-referrer` too. Next 16 keeps the proxy's header, so the handler's value is not what the browser sees. (c)'s other 14 endpoints are not covered by the decision and are unchanged: their handlers send `no-referrer`, but the register names it for none of their answers.
+
+(2) **The register's 401.** A missing session, or a missing or wrong job credential, now gets the register's JSON 401 `{"error":"unauthenticated"}` where routes answered plain text `Unauthorized`:
+- 21 authenticated routes (`authenticated-api-v1.unauthenticated`), plus `api.embryo-withdraw`, which re-exports `api.cohort-restrict`. They use `unauthenticated()` in `src/lib/embryos/guards.ts`, with `sensitiveJson`'s headers. The plain-text `unauthorized()` helper is gone.
+- 5 job routes (`machine-api-v1.missingInvalidExpiredOrWrongCredential`), through the new `machineUnauthenticated()` in `src/lib/jobs/machine-result.ts`, with the job-result headers.
+
+The own-Copilot grant (`ownCopilotConsent`) changed too. Its 403 `forbidden` is now `request_forbidden`, and its 401 `unauthorized` is now `unauthenticated`.
+
+Four routes keep plain text, each for the reason given under Open.
+
+(3) **`api.file-delete`'s cross-origin refusal** is now 403 `request_forbidden`. The `file_delete_unauthorized` sentence mapping is removed, because no answer carries that code any more.
+
+(4) **`api.consent-revoke`.** The directional-purpose and cloud-provider branches now run `originDenied` before any read, as `api.consents-revoke-all` and `api.consent-reaffirm` do. The CSRF wrapper spends the session token but reads neither `Origin` nor `Sec-Fetch-Site`.
+
+**New tests.**
+- `src/proxy.test.ts`, 133 new (304 in the file, was 171), in `the strictest referrer setting applies to the whole route (D-138 (b) and (c))`:
+  - For each of the 30 method-and-path pairs of the 24 endpoints, signed in and signed out: 200, `no-referrer`, and every other `SENSITIVE_RESPONSE_HEADERS` value unchanged.
+  - For the 28 pairs that read the account: the proxy's 423 deletion-notice and 451 declared-location refusals keep `no-referrer` and the other headers. The two under `/api/future-person/claim/session/` read no account.
+  - For all 30 pairs: the 451 connection-location refusal keeps `no-referrer`, before any session read.
+  - 44 neighbouring paths keep the original eight headers on GET and POST. They cover longer, shorter and empty segments, parent segments, and sibling routes, including five of the 14.
+  - One register-driven test. It computes the set from the register's `no-referrer` profiles and from every response contract whose `headers` name `no-referrer` and that `responseContractBindings.routes` binds to the route. It requires that no `allEndpoints`, `policyContracts.*.endpoint` or `resourceAuthorizationBindings.endpoint` binding names such a contract. It drives every registered method of every `/api/` endpoint, signed in and signed out. A derived endpoint must receive `no-referrer`. Any other endpoint must receive `same-origin`, unless it is one of three upgraded by the review and download namespaces (`NAMESPACE_REASONS`, each with its reason). The explicit list above must match the derived endpoints and their methods exactly, and the 14 are pinned outside the set.
+- `src/lib/security/unauthenticated-answers.test.ts`, new file, 34 tests. The account context, auth client and database are doubles, and the CSRF gate is passed through, as in the route suites.
+  - It reads the 401 each route owes from the register: `auth`, then `contractDefaults`, then `authContracts`.
+  - It drives 22 handler-and-method pairs of the 21 authenticated routes with no session, and the embryo bodies of `api.consents` through `embryoConsent`. Each must answer the contract's status, content type and body, with `Cache-Control: private, no-store` and `nosniff`.
+  - It drives the eight job handler-and-method pairs with no credential and with a wrong one, and a research-refresh fixture sent with the cron secret.
+  - A source ratchet: no file under `src/app` or `src/lib` builds a plain-text `Unauthorized` except the four listed, each with its reason.
+- `src/lib/copilot/own-consent-grant-refusals.test.ts`, new file, 2 tests. These cases each get 403 `request_forbidden` with no account read and no RPC: another origin, same-site fetch metadata, and a CSRF value other than the presentation. No account gets 401 `unauthenticated` with no RPC.
+- `src/app/api/consents/[id]/revoke/route.test.ts`, 3 new. For a directional grant and for a provider grant, each of five header sets gets 403 `request_forbidden` with no table read and no RPC: a foreign `Origin` with cross-site fetch metadata, a foreign `Origin` alone, cross-site alone, same-site alone, and none. A same-origin provider revocation still returns `{"revoked":true}`. The admin double now records table reads.
+- `src/lib/uploads/file-delete-browser.test.ts`, 1 new: `fileDeletionError("file_delete_unauthorized")` is the generic sentence.
+
+**Changed assertions (old, new, why).** None is weakened.
+- `src/proxy.test.ts`, `leaves the original sensitive policy outside the exact D-138 (a) endpoint: %s`. Old: the list held `/api/files/<id>/process` and `/api/embryo-cohorts/<id>/record-key-cards`, each held to `same-origin`. New: those two are replaced by their neighbours `/api/files/<id>/finalize` and `/api/embryo-cohorts/<id>/withdraw`, which stay outside, so the list still has 21 paths. The two moved paths are now held to `no-referrer` in the new block. Why: both are in the whole-route set (`api.file-process`, `api.embryo-record-key-cards`).
+- `src/app/api/files/[id]/route.test.ts`. Old: `keeps the route's own body on a cross-origin refusal…`, 403 `{"error":"file_delete_unauthorized"}`. New: `answers a cross-origin request with authenticated-mutation-v1's request_forbidden, reading nothing`. For two foreign origins it expects 403, `application/json`, `{"error":"request_forbidden"}` and `Cache-Control: private, no-store`, with no account read, no RPC and no Storage call. Why: the owner's decision.
+- `src/lib/uploads/file-delete-browser.test.ts`, `returns a %i %s refusal without another request`. Old row: 403 `file_delete_unauthorized`, which read "Please sign in again and try Delete." New row: 403 `request_forbidden`, which reads "Deletion did not finish. Please try Delete again. The file will stay listed until deletion is complete." Still one request. The title's "worded as before" is now "worded as decided". Why: the owner chose that sentence for this case.
+
+**Planted defects, each applied, run and reverted.** Each is one exact replacement. Each file was restored byte-identical, with its SHA-256 checked:
+- `/api/chromosomal-sex` removed from `WHOLE_ROUTE_NO_REFERRER_ENDPOINTS`: 4 fail in `src/proxy.test.ts`. They are its endpoint case, its 423/451 case, its location case and the register-driven test.
+- The `api.embryo-disposition` shape removed: the same 4 fail for that path.
+- `/api/consents` (one of the 14) added to the set: 2 fail. They are the register-driven test (an upgrade outside the set with no stated reason) and its neighbour case.
+- `api.chromosomal-sex`'s 401 back to plain text: 2 fail in `unauthenticated-answers.test.ts` (its route case and the ratchet). `session-csrf-routes.test.ts`, run with it, passes, because it checks only that the status is not 403.
+- `jobs.retention`'s 401 back to plain text: 2 fail (its machine case and the ratchet).
+- `api.file-delete`'s cross-origin code back to `file_delete_unauthorized`: 1 fails (`answers a cross-origin request with authenticated-mutation-v1's request_forbidden, reading nothing`).
+- `api.consent-revoke`'s new origin check removed: 2 fail (directional and provider).
+- The own-Copilot grant's 401 back to `unauthorized`: 1 fails.
+
+**Results.**
+- Targeted run, 209 files and 4,631 tests, all passing with `INHERIT_TEST_JURISDICTION` unset and set to `1`. The set:
+  - `src/proxy.test.ts` and every test that reads `src/proxy.ts`;
+  - the tests beside every changed file, and every test that imports a changed module or route;
+  - `src/lib/security/*.test.ts`;
+  - `scripts/route-register-correspondence.test.ts`, `scripts/form-register-correspondence.test.ts` and `scripts/route-gate.test.ts`.
+- The whole unit suite with the flag set to `1`: 789 of 816 files pass. 14,059 tests pass, 39 fail and 196 are skipped. All 39 failures are the container baseline the previous entry records, and none touches anything changed here:
+  - 22 files cannot launch Playwright's missing Chromium build;
+  - five files fail on root-ownership or container-runtime checks: `ci-browser-runtime` (21), `comprehension/owned-lifecycle` (7), `comprehension/manual-reconciliation` (5), `owned-linux-runtime` (3) and `account-archive-root/checkpoint` (2).
+- The four required planted defects were run again with the flag set to `1`, with the same failures.
+- `pnpm typecheck`, `pnpm lint`, `gate:routes`, `gate:secrets`, `gate:readability`, `gate:claims`, `gate:citations` and `gate:names` (placeholder denylist): all pass.
+
+**Not run.** No browser test: Playwright's Chromium build is missing here. By reading, no `e2e/` spec asserts a status, body or header changed here:
+- No spec reads `file_delete_unauthorized` or a plain-text `Unauthorized`.
+- The job specs (`e2e/research.spec.ts`, `e2e/account-deletion-purge.spec.ts`) assert the 401 status only.
+- `e2e/deletion-export.spec.ts` reads `/api/export`'s 401 status. That route is unchanged.
+- No spec asserts `Referrer-Policy` on any of the 24 paths. `e2e/response-headers.spec.ts` holds four pages and `/api/export` only.
+- Every spec that revokes a consent does so with the browser's own `fetch` from a page, including `e2e/copilot-cohort.spec.ts:212`, so `Origin` and `Sec-Fetch-Site` are sent and the new check admits it.
+
+**Open, not changed.**
+- Four routes keep plain text `Unauthorized`:
+  - `api.file-process`, because the Files page prints its error body (`file-row-actions.tsx` shows `res.text()`), so the JSON would be shown;
+  - `api.file-download` and `api.export`'s legacy GET, because the Files and Data pages link to them and a signed-out browser shows the body;
+  - `api.account-delete`, whose source `scripts/tools/historical-account-authority.test.ts` pins to commit `59c97152`, except for the CSRF wrap.
+
+  Moving any of these needs the owner, or a change to that pinned test.
+- These still answer the JSON code `{"error":"unauthorized"}`, not plain text, so they are outside this batch: `api.account-completion` and the `ownUploadJson` branches of `api.consents`, Path B and own-upload. They are in `src/lib/uploads/*`: `own-consent-route`, `other-adult-consent-route`, `path-b-purpose-server`, `own-report-consent-route`, `path-b-routes`, `subject-upload-issuance`, `subject-normalization`, `subject-finalization`, `own-preparation` and `own-report-generation`.
+- Several authenticated routes answer a wrong origin with `invalid_request` instead of `authenticated-mutation-v1`'s 403. `api.account-delete`, `api.account-delete-cancel`, `api.family-sharing`, `api.chromosomal-sex` and `api.consents`' adult grant answer 400. `api.jurisdiction` answers 422 (`invalidRequest(["origin"])`). `api.consents` also answers a plain-text 404 `Not found`, and `api.file-process` plain-text 404s.
+- `isSameOrigin` accepts a matching `Origin` whatever `Sec-Fetch-Site` says, and accepts no `Origin` when `Sec-Fetch-Site` is `same-origin`. `authenticated-mutation-v1` requires both. `api.consent-revoke`'s new check uses it, as its siblings do.
+- `api.file-delete`'s `policy.sameOriginRequired` says the request is refused before the account context is read. But `withAccountCsrf` reads the account and spends the token before the handler checks the origin.
+- D-138 (c)'s 14 endpoints, and D-138 (d) and (e), are unchanged. `/auth/callback` and the `/withdraw/session` page are still open.
+- The register amendment the whole-route decision calls for is not made. The list is in `ctr2-register-amendments-needed.md`.
+
 ## 2026-11-19 — Four G8.5 owner decisions in the register: the genome browser's read as built, the two `genomes` key shapes, route-specific error answers as they ship, and where each kind of consent is withdrawn
 
 The owner recorded four decisions on 19 November (`docs/protocol/decisions.md`, "G8.5: the genome browser's read is registered as built", "G8.5: the two undescribed `genomes` key shapes", "G8.5: route-specific error answers are registered as they ship" and "G8.5: the register names where each kind of consent is withdrawn"). Each is carried out here in `docs/route-register.json`, with its ledgers and tests. (1) **The genome browser's read.** `api.browse-region` is the read the browser sends and `src/app/api/browse/region/route.ts` answers: the closed body `{ file, chromosome, start, end }`, the session `X-Inherit-CSRF` token with no body nonce and no cursor, the two bounds the handler enforces (1,000,000 bases, 500 rows), and the caller's own rows only. The read runs under the caller's session, so `user_variants_select_own` decides: rows whose `user_id` is the caller and whose file is not a file of an `other_adult` subject (`private.is_path_b_file_v1`). A relative's track therefore reads nothing. The new success contract `own-region-variants-v1` (200 `{ variants, truncated }`, the six selected columns) replaces `raw-region-v1`, which had no other user and leaves the register. `resourceAuthorizationBindings.api.browse-region` is rewritten to match. The orphaned `subject-route-v1.operations.raw-variant-region-read`, which described a grantee's region read, leaves too. `raw-export-grant-v1` and `other-adult-mitigation-state-v1` leave the route's policy contracts. The `clientRequestDivergence` row for the genome browser closes, and the ledger now holds no client row. The route file's header comment no longer lists the nonce and cursor as unbuilt (a comment only; no behaviour change). (2) **The two `genomes` key shapes.** `storage.subject-v2` is amended in place to `{object_uuid}`, the flat key every self and other-adult file gets for its staging and final copy. No code in the repository's history wrote the four-segment form it used to name. `storage.prepared-v1` (`prepared/{artifact_uuid}`) is added and joins `genomes-server-mediated-v1.prefixIds`. `storage.cohort-v2` is unchanged: the cohort path's only `genomes` names are the four-segment names the database reserves for embryo ingest fragments. The `genomes-bare-uuid-object` ledger row closes. `prepared-artifact-object` narrows to its Cloudflare R2 half, which the decision did not cover. The brief is not edited: `docs/protocol/brief-corrections-proposed.md` item 22 proposes its sentence for the owner to see first. (3) **Route-specific error answers.** Each is registered as it ships. `file-delete-v1` gains `processing` and `subjectUnavailable` (409) and `failed` (503). `consent-revocation-v1` gains `invalid` (400 `invalid_request`) and `unavailable` (503 `consent_unavailable`). `own-region-variants-v1` carries `invalid` (422 `invalid_request`, no issues list) and `regionTooLarge` (422). A new shared `service-unavailable-v1` (503 `{ error: "unavailable" }`) is bound to `api.browse-region`, `api.consent-revoke` (the own-Copilot case), `api.future-person-claim-document-session` and `api.appeal-document-session`. The existing `embryo-closed-schema-v1`, whose status and body are exactly `blockedResponse`'s fixed 500, is bound to the two document-session routes. No bound contract was removed. (4) **Where each kind of consent is withdrawn.** `api.consent-revoke`'s `policy.withdrawalRoutes.cases` names, for 8 of the 11 `dispositionCases` kinds, the routes that withdraw it today and the database door each calls. Donor attribution is recorded as a consent that cannot be given yet. The other three kinds (self upload, the other-adult uploader's consent, the embryo nonparent uploader's artifact) go back to the owner. Nothing withdraws them short of deleting the whole record or the account. They are rows of a new ledger list, `consentWithdrawalNotRegistered`. No migration, no code change beyond the comment, and `briefSha256` is unchanged.

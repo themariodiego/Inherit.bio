@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { getSensitiveAccountContext } from "@/lib/account-deletion";
 import { bodyIsEmpty, notFound, unavailable } from "@/lib/embryos/api";
-import { closedResponse, originDenied, unauthorized } from "@/lib/embryos/guards";
+import { closedResponse, originDenied, unauthenticated } from "@/lib/embryos/guards";
 import { drainSubjectFileDeletions } from "@/lib/subject-endpoints/file-drain";
 import { verifySubjectOperationNonce } from "@/lib/subject-endpoints/operation-nonce";
 import { isCanonicalSubjectId } from "@/lib/subject-endpoints/request";
@@ -55,7 +55,7 @@ async function handleDelete(request: Request, context: { params: Promise<{ id: s
   const { id } = await context.params;
   if (!isCanonicalSubjectId(id)) return notFound();
   const account = await getSensitiveAccountContext();
-  if (!account) return unauthorized();
+  if (!account) return unauthenticated();
   const forbidden = originDenied(request);
   if (forbidden) return forbidden;
   if (!bodyIsEmpty(request)) return notFound();

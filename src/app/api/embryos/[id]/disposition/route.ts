@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { getSensitiveAccountContext } from "@/lib/account-deletion";
 import { blockedResponse, invalidRequest, notFound, rpcErrorResponse, sensitiveJson } from "@/lib/embryos/api";
-import { originDenied, readJson, unauthorized } from "@/lib/embryos/guards";
+import { originDenied, readJson, unauthenticated } from "@/lib/embryos/guards";
 import { verifyEmbryoOperation } from "@/lib/embryos/operation-token";
 import { dispositionBody, dispositionResponse, dispositionRpcArgs } from "@/lib/embryos/routes";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -22,7 +22,7 @@ async function handlePost(request: Request, context: { params: Promise<{ id: str
   const { id } = await context.params;
   if (!z.uuid().safeParse(id).success) return notFound();
   const account = await getSensitiveAccountContext();
-  if (!account) return unauthorized();
+  if (!account) return unauthenticated();
   const forbidden = originDenied(request);
   if (forbidden) return forbidden;
 

@@ -14,7 +14,7 @@ import {
   accountJurisdictionDenied,
   originDenied,
   requestForbidden,
-  unauthorized,
+  unauthenticated,
 } from "./guards";
 import {
   grantCohortPurposeBody,
@@ -70,7 +70,7 @@ export async function embryoConsent(request: Request, payload: unknown): Promise
   const forbidden = originDenied(request);
   if (forbidden) return forbidden;
   const context = await getSensitiveAccountContext();
-  if (!context) return unauthorized();
+  if (!context) return unauthenticated();
   const denied = await accountJurisdictionDenied(context.user.id);
   if (denied) return denied;
 

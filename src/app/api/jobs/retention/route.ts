@@ -19,7 +19,7 @@ import { drainOwnNormalizationCleanup } from "@/lib/uploads/normalization-cleanu
 import { drainOwnOriginalRetirement } from "@/lib/genome/prepared-source/original-retention";
 import { drainPreparedScratch, prepareAccountCleanup } from "@/lib/genome/prepared-source/cleanup-integration";
 import { drainAccountEmbryoCleanup } from "@/lib/embryos/account-cleanup";
-import { machineJobDrained } from "@/lib/jobs/machine-result";
+import { machineJobDrained, machineUnauthenticated } from "@/lib/jobs/machine-result";
 
 export const maxDuration = 300;
 
@@ -80,7 +80,7 @@ function isMissingAuthUser(error: unknown): boolean {
 
 export async function POST(request: Request) {
   if (!authorized(request)) {
-    return new Response("Unauthorized", { status: 401 });
+    return machineUnauthenticated();
   }
   if (await requestHasSelectors(request)) {
     return NextResponse.json({ error: "invalid_request" }, { status: 400 });

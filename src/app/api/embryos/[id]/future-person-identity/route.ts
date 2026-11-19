@@ -2,7 +2,7 @@ import crypto from "node:crypto";
 import { z } from "zod";
 import { getSensitiveAccountContext } from "@/lib/account-deletion";
 import { invalidRequest,notFound,rpcErrorResponse,sensitiveJson,unavailable,SENSITIVE_HEADERS } from "@/lib/embryos/api";
-import { originDenied } from "@/lib/embryos/guards";
+import { originDenied, unauthenticated } from "@/lib/embryos/guards";
 import { readBoundedBytes,readBoundedJson } from "@/lib/future-person/bounded-body";
 import { futurePersonClaimsOpen } from "@/lib/future-person/claims-open";
 import { identityProfileBody,sealIdentityProfile } from "@/lib/future-person/identity-profile";
@@ -21,7 +21,7 @@ export async function DELETE(request:Request,context:{params:Promise<{id:string}
 }
 async function mutate(request:Request,id:string,operation:"save"|"delete"):Promise<Response> {
   if(!futurePersonClaimsOpen()||!z.uuid().safeParse(id).success||new URL(request.url).search)return notFound();
-  const account=await getSensitiveAccountContext();if(!account)return new Response("Unauthorized",{status:401,headers:SENSITIVE_HEADERS});
+  const account=await getSensitiveAccountContext();if(!account)return unauthenticated();
   const denied=originDenied(request);if(denied)return denied;
   let input:z.infer<typeof identityProfileBody>|null=null;
   if(operation==="save"){

@@ -45,10 +45,10 @@ const bodySchema = z.object({ action: z.literal("grant-purpose"), subjectId: z.u
 export async function ownCopilotConsent(request: Request, payload: unknown): Promise<Response> {
   const body = bodySchema.safeParse(payload);
   if (!body.success) return ownUploadJson({ error: "invalid_request" }, 422);
-  if (!sameOriginCopilot(request) || request.headers.get("x-inherit-csrf") !== body.data.artifactPresentationToken) return ownUploadJson({ error: "forbidden" }, 403);
+  if (!sameOriginCopilot(request) || request.headers.get("x-inherit-csrf") !== body.data.artifactPresentationToken) return ownUploadJson({ error: "request_forbidden" }, 403);
   try {
     const actor = await currentOwnUploadAccount();
-    if (!actor) return ownUploadJson({ error: "unauthorized" }, 401);
+    if (!actor) return ownUploadJson({ error: "unauthenticated" }, 401);
     const presentation = readOwnCopilotConsent(body.data.artifactPresentationToken);
     const c = presentation?.snapshot;
     if (!presentation || !c || c.accountId !== actor.accountId || c.sessionId !== actor.sessionId || c.subjectId !== body.data.subjectId

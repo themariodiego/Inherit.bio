@@ -8,26 +8,24 @@ import {
   resolveCapability,
   type JurisdictionCapability,
 } from "@/lib/legal/jurisdictions";
-import { ClosedShapeError, SENSITIVE_HEADERS, blockedResponse, closedObject, sensitiveJson } from "./api";
+import { ClosedShapeError, blockedResponse, closedObject, sensitiveJson } from "./api";
 import { CSRF_HEADER, verifyEmbryoOperation, type EmbryoOperationClaims } from "./operation-token";
 
 /**
  * The checks every embryo route runs before it reads a body (contract
  * §6.0), in one place so the order and the answers cannot drift between
- * routes: the plain 401 of the existing convention, the 403 of
+ * routes: the JSON 401 of authenticated-api-v1, the 403 of
  * authenticated-mutation-v1, the 403 of capability-denied-api-v1 with the
  * register's own sentence, and the one operation token per request.
  */
 
-/** The existing convention: plain text, with the sensitive headers so no error frames. */
-export function unauthorized(): Response {
-  return new Response("Unauthorized", { status: 401, headers: SENSITIVE_HEADERS });
-}
-
 /**
  * `authenticated-api-v1.unauthenticated`: the register's JSON 401, with the
  * sensitive headers. The upload-session routes answer a request with no live
- * account with it (`authenticated-session-v1.failure.endpoint`).
+ * account with it (`authenticated-session-v1.failure.endpoint`). Since
+ * 19 November 2026 so do the authenticated routes that answered a plain-text
+ * 401 (G8.5, "where the register is stricter, engineering codes to it"); the
+ * four left, and why, are in `src/lib/security/unauthenticated-answers.test.ts`.
  */
 export function unauthenticated(): Response {
   return sensitiveJson({ error: "unauthenticated" }, 401);

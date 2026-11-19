@@ -11,6 +11,7 @@ import {
 } from "@/lib/person-operation-nonce";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { withAccountCsrf } from "@/lib/security/session-csrf";
+import { unauthenticated } from "@/lib/embryos/guards";
 
 /**
  * `POST /api/family/[person]/sharing` (register api.family-sharing;
@@ -63,7 +64,7 @@ async function handlePost(
     return NextResponse.json({ error: "invalid_request" }, { status: 400 });
   }
   const account = await getSensitiveAccountContext();
-  if (!account) return new Response("Unauthorized", { status: 401 });
+  if (!account) return unauthenticated();
   const user = account.user;
 
   const { person: segment } = await context.params;

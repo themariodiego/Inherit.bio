@@ -22,10 +22,12 @@ const mocks = vi.hoisted(() => ({
   rows: {} as Record<string, unknown>,
   rpc: { data: null as unknown, error: null as { code?: string; message?: string } | null },
   rpcCalls: [] as string[],
+  reads: [] as string[],
 }));
 vi.mock("@/lib/supabase/server", () => ({ createClient: async () => ({ auth: { getUser: async () => ({ data: { user: mocks.user } }) } }) }));
 vi.mock("@/lib/supabase/admin", () => ({ createAdminClient: () => ({
-  from: (table: string) => ({ select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: mocks.rows[table] ?? null, error: null }) }) }) }),
+  from: (table: string) => (mocks.reads.push(table),
+    { select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: mocks.rows[table] ?? null, error: null }) }) }) }),
   rpc: async (name: string) => { mocks.rpcCalls.push(name); return mocks.rpc; },
 }) }));
 vi.mock("@/lib/account-deletion", async (importOriginal) => ({
@@ -49,8 +51,44 @@ beforeEach(() => {
   mocks.rows = {};
   mocks.rpc = { data: null, error: null };
   mocks.rpcCalls = [];
+  mocks.reads = [];
 });
 afterEach(() => vi.unstubAllEnvs());
+
+/**
+ * `authenticated-mutation-v1` requires the exact origin and same-origin fetch
+ * metadata on every authenticated mutation. The CSRF wrapper spends the
+ * session token but reads neither header, so the handler checks them, as
+ * api.consents-revoke-all and api.consent-reaffirm do, before it reads which
+ * kind of consent the id names (G8.5, 19 November 2026).
+ */
+describe("api.consent-revoke's origin and fetch-metadata check", () => {
+  const foreign = (headers: Record<string, string>) => POST(new Request(`http://localhost/api/consents/${GRANT}/revoke`, { method: "POST",
+    headers: { ...headers, "x-inherit-operation-nonce": mintPersonOperationNonce({ accountId: ACCOUNT, sessionId: SESSION,
+      operation: "consent_revoke", targetId: GRANT }) } }), { params: Promise.resolve({ id: GRANT }) });
+
+  it.each([["a directional purpose grant", "purpose_grants"], ["a cloud-model provider grant", "consent_grants"]])(
+    "refuses %s from another origin or without same-origin fetch metadata with 403 request_forbidden, reading and writing nothing",
+    async (_label, table) => {
+      mocks.rows = { [table]: table === "purpose_grants" ? { grant_id: GRANT, target_id: null, copilot_recipient_revision: null } : { id: GRANT } };
+      mocks.rpc = { data: table === "purpose_grants" ? "2026-11-19T12:00:00.000Z" : true, error: null };
+      const variants: Record<string, string>[] = [{ origin: "https://elsewhere.example", "sec-fetch-site": "cross-site" },
+        { origin: "http://localhost.example" }, { "sec-fetch-site": "cross-site" }, { "sec-fetch-site": "same-site" }, {}];
+      for (const headers of variants) {
+        expect(await answer(await foreign(headers)), JSON.stringify(headers)).toEqual([403, "application/json", { error: "request_forbidden" }]);
+      }
+      expect(mocks.reads).toEqual([]);
+      expect(mocks.rpcCalls).toEqual([]);
+    });
+
+  it("still revokes from this origin with same-origin fetch metadata", async () => {
+    mocks.rows = { consent_grants: { id: GRANT } };
+    mocks.rpc = { data: true, error: null };
+    const response = await foreign({ origin: "http://localhost", "sec-fetch-site": "same-origin" });
+    expect([response.status, await response.json()]).toEqual([200, { revoked: true }]);
+    expect(mocks.rpcCalls).toEqual(["revoke_cloud_model_consent_with_nonce_v1"]);
+  });
+});
 
 describe("api.consent-revoke's sign-in and not-found refusals", () => {
   it("answers a request with no session with the JSON 401, reading nothing", async () => {

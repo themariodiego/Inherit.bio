@@ -5,6 +5,7 @@ import { CHROMOSOMAL_SEX_VALUES } from "@/lib/family/chromosomal-sex";
 import { personOperationNonceArgs, personOperationNonceFrom } from "@/lib/person-operation-nonce";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { withAccountCsrf } from "@/lib/security/session-csrf";
+import { unauthenticated } from "@/lib/embryos/guards";
 
 /**
  * `POST /api/chromosomal-sex` (register api.chromosomal-sex) — the one writer
@@ -70,7 +71,7 @@ async function handlePost(request: Request) {
     return NextResponse.json({ error: "invalid_request" }, { status: 400 });
   }
   const context = await getSensitiveAccountContext();
-  if (!context) return new Response("Unauthorized", { status: 401 });
+  if (!context) return unauthenticated();
   const nonce = personOperationNonceFrom(request, { accountId: context.user.id, sessionId: context.sessionId,
     operation: "chromosomal_sex_declare", targetId: parsed.data.subjectId });
   if (!nonce) return NextResponse.json({ error: "invalid_request" }, { status: 400 });

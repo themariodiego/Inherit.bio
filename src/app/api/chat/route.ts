@@ -7,6 +7,7 @@ import type { RefusalId } from "@/copy/copilot/refusals";
 import { OWN_SYSTEM_PROMPT } from "@/copy/copilot/system-prompts";
 import { createClient } from "@/lib/supabase/server";
 import { withAccountCsrf } from "@/lib/security/session-csrf";
+import { unauthenticated } from "@/lib/embryos/guards";
 
 export const maxDuration = 300;
 
@@ -56,7 +57,7 @@ async function handlePost(request: Request) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return new Response("Unauthorized", { status: 401 });
+  if (!user) return unauthenticated();
 
   const raw: unknown = await request.json().catch(() => null);
   if (raw && typeof raw === "object" && ("contextToken" in raw || "chatId" in raw || "message" in raw)) {

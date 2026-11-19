@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { getSensitiveAccountContext } from "@/lib/account-deletion";
 import { invalidRequest, notFound, sensitiveJson, unavailable } from "@/lib/embryos/api";
-import { closedResponse, originDenied, readJson, unauthorized } from "@/lib/embryos/guards";
+import { closedResponse, originDenied, readJson, unauthenticated } from "@/lib/embryos/guards";
 import { permits, personCapability } from "@/lib/family/access";
 import { resolveFamilyPerson } from "@/lib/family/graph";
 import { isCanonicalSubjectId, isJsonRequest } from "@/lib/subject-endpoints/request";
@@ -69,7 +69,7 @@ async function handlePost(request: Request, context: { params: Promise<{ id: str
   const { id } = await context.params;
   if (!isCanonicalSubjectId(id)) return notFound();
   const account = await getSensitiveAccountContext();
-  if (!account) return unauthorized();
+  if (!account) return unauthenticated();
   const forbidden = originDenied(request);
   if (forbidden) return forbidden;
 

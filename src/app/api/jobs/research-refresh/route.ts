@@ -7,7 +7,7 @@ import {
   RELEASE_FETCHERS,
   type ResearchSource,
 } from "@/lib/research/sources";
-import { machineJobDrained } from "@/lib/jobs/machine-result";
+import { machineJobDrained, machineUnauthenticated } from "@/lib/jobs/machine-result";
 
 export const maxDuration = 300;
 
@@ -30,7 +30,7 @@ const liveSecrets = () => [process.env.JOBS_SECRET, process.env.CRON_SECRET];
 // Vercel Cron invokes with GET; live mode only (no fixture body).
 export async function GET(request: Request) {
   if (!authorized(request, liveSecrets())) {
-    return new Response("Unauthorized", { status: 401 });
+    return machineUnauthenticated();
   }
   return runRefresh(null);
 }
@@ -42,7 +42,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   // Unauthenticated callers are refused before the body is read at all.
   if (!authorized(request, liveSecrets())) {
-    return new Response("Unauthorized", { status: 401 });
+    return machineUnauthenticated();
   }
   const body = (await request.json().catch(() => null)) as
     | { fixture?: FixturePayload }
@@ -51,7 +51,7 @@ export async function POST(request: Request) {
   // operator secret specifically (brief G8.2(b), `docs/fixture-paths.md`).
   // The cron secret drives the live path and nothing else.
   if (body?.fixture && !authorized(request, [process.env.JOBS_SECRET])) {
-    return new Response("Unauthorized", { status: 401 });
+    return machineUnauthenticated();
   }
   return runRefresh(body?.fixture ?? null);
 }

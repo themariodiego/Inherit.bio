@@ -41,12 +41,14 @@ describe("file deletion progress", () => {
   });
   // The route's sign-in and not-found refusals are the register's generic
   // bodies (G8.5, 19 November 2026); a person reads the sentence the route's
-  // own bodies gave (file_delete_unauthorized, file_delete_not_found).
+  // own bodies gave (file_delete_unauthorized, file_delete_not_found). Its
+  // cross-origin refusal is the register's request_forbidden, which reads as
+  // an unfinished deletion (owner decision of 19 November 2026).
   it.each([
     [401, "unauthenticated", "Please sign in again and try Delete."],
     [404, "not_found", "This file is not available. Please check your files again."],
-    [403, "file_delete_unauthorized", "Please sign in again and try Delete."],
-  ] as const)("returns a %i %s refusal without another request, worded as before", async (status, error, sentence) => {
+    [403, "request_forbidden", "Deletion did not finish. Please try Delete again. The file will stay listed until deletion is complete."],
+  ] as const)("returns a %i %s refusal without another request, worded as decided", async (status, error, sentence) => {
     vi.mocked(fetch).mockResolvedValue(Response.json({ error }, { status }));
     const result = await deleteFileUntilSettled(id, new AbortController().signal, csrf());
     expect(result).toEqual({ status: "failed", code: error }); expect(fetch).toHaveBeenCalledTimes(1);
@@ -54,6 +56,9 @@ describe("file deletion progress", () => {
   });
   it("words the CSRF wrapper's refusal as an unfinished deletion, as before", () => {
     expect(fileDeletionError("request_forbidden")).toBe(fileDeletionError(null));
+  });
+  it("keeps no sentence for file_delete_unauthorized, which no answer of the route carries any more", () => {
+    expect(fileDeletionError("file_delete_unauthorized")).toBe(fileDeletionError(null));
   });
   it("refuses a changed-path identifier before any request", async () => {
     expect((await deleteFileUntilSettled("../other", new AbortController().signal, csrf())).status).toBe("failed"); expect(fetch).not.toHaveBeenCalled();

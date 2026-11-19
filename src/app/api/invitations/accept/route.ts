@@ -10,7 +10,7 @@ import {
   accountJurisdictionDenied,
   originDenied,
   readJson,
-  unauthorized,
+  unauthenticated,
 } from "@/lib/embryos/guards";
 import { verifyEmbryoOperation } from "@/lib/embryos/operation-token";
 import { readRightsSessionHash } from "@/lib/embryos/rights-session";
@@ -85,7 +85,7 @@ function presentationOf(
 export const POST = withAccountCsrf("api.invitation-accept", handlePost);
 async function handlePost(request: Request) {
   const context = await getSensitiveAccountContext();
-  if (!context) return unauthorized();
+  if (!context) return unauthenticated();
   const forbidden = originDenied(request);
   if (forbidden) return forbidden;
   const json = await readJson(request);
