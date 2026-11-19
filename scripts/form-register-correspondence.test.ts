@@ -486,8 +486,9 @@ describe("the form census fails on a planted divergence", () => {
 
   it("fails when the scripted sign-out stops sending its token, or goes back to a native form", () => {
     const source = real(SIGN_OUT_FORM);
-    expect(source).toContain('headers: { "X-Inherit-CSRF": csrf.value() },');
-    expect(mismatch({ [SIGN_OUT_FORM]: source.replace('headers: { "X-Inherit-CSRF": csrf.value() },', "") }).unrecorded)
+    // 2026-11-19: the form sends through its token chain (csrf.send), so the header reads the chain's argument.
+    expect(source).toContain('headers: { "X-Inherit-CSRF": csrfToken },');
+    expect(mismatch({ [SIGN_OUT_FORM]: source.replace('headers: { "X-Inherit-CSRF": csrfToken },', "") }).unrecorded)
       .toEqual([`${SIGN_OUT_FORM} auth.sign-out POST: omits the required header x-inherit-csrf`]);
     expect(mismatch({ [SIGN_OUT_FORM]: source.replace("<form onSubmit={submit}>", '<form action="/auth/sign-out" method="post">') }).unrecorded)
       .toEqual([`${SIGN_OUT_FORM} auth.sign-out POST: cannot send the required header x-inherit-csrf: a native form submission carries no custom header`]);
@@ -629,13 +630,20 @@ describe("every client request sends what its register entry declares (G8.5)", (
     // and deleting keep theirs to api.withdraw, and its imports were client
     // modules already. The new fetch sits in a local function its file calls
     // twice, so it is read twice: 104 requests from 89 fetch calls, 75 made by no form.
+    // 2026-11-19 (G8.5): every session-token request goes through its route's
+    // chain (csrf.send), whose arrow the census reads as the caller's own. The
+    // upload-session request of stageSubjectFile read its csrf parameter only
+    // for the header value, so it was read once per call with identical
+    // results; the value now comes from the chain, so it is read once: 103
+    // requests from the same 89 fetch calls, 74 made by no form (that request
+    // is no form's).
     expect(client.modules).toHaveLength(224);
     expect(client.modules.filter(file => /^\s*["']use client["']/u.test(readFileSync(file, "utf8")))).toHaveLength(95);
-    expect(client.calls).toHaveLength(104);
+    expect(client.calls).toHaveLength(103);
     expect(new Set(client.calls.map(request => `${request.file}:${request.line}`)).size).toBe(89);
     expect(client.calls.filter(request => request.via === "ai-sdk-default-chat-transport")).toHaveLength(0);
     expect(new Set(actual.requests.map(request => `${request.file}:${request.line}`)).size).toBe(25);
-    expect(client.unformed).toHaveLength(75);
+    expect(client.unformed).toHaveLength(74);
     // Every request a form makes is one of the client's, read once.
     const calls = new Set(client.calls.map(request => `${request.file}:${request.line}`));
     expect(actual.requests.filter(request => !calls.has(`${request.file}:${request.line}`))).toEqual([]);
@@ -715,9 +723,10 @@ describe("the client census fails on a planted divergence", () => {
     const file = "src/components/settings/consent-list.tsx";
     const source = real(file);
     // Since 2026-10-24 the revocation also sends the page's operation nonce (G8.5); the token is still what is dropped.
-    const sent = 'method: "POST", headers: { "X-Inherit-Operation-Nonce": g.revokeNonce, "X-Inherit-CSRF": csrf.value() },';
+    // 2026-11-19: it sends through its token chain (csrf.send), and the nonce is read once before the request.
+    const sent = 'method: "POST", headers: { "X-Inherit-Operation-Nonce": revokeNonce, "X-Inherit-CSRF": csrfToken },';
     expect(source).toContain(sent);
-    expect(csrfOmissions(run({ [file]: source.replace(sent, 'method: "POST", headers: { "X-Inherit-Operation-Nonce": g.revokeNonce },') })))
+    expect(csrfOmissions(run({ [file]: source.replace(sent, 'method: "POST", headers: { "X-Inherit-Operation-Nonce": revokeNonce },') })))
       .toEqual([`${file} api.consent-revoke POST: omits X-Inherit-CSRF, which mutationSecurityBindings.csrfTransport requires of this state-changing request`]);
   });
 
@@ -725,7 +734,10 @@ describe("the client census fails on a planted divergence", () => {
     const file = "src/lib/uploads/file-delete-browser.ts";
     const source = real(file);
     expect(source).not.toMatch(/^\s*["']use client["']/u);
-    expect(csrfOmissions(run({ [file]: source.replace('headers: { "X-Inherit-CSRF": csrf.value() } });', "});") })))
+    // 2026-11-19: the request goes through its token chain (csrf.send); the planted copy still drops the header.
+    const sent = 'headers: { "X-Inherit-CSRF": csrfToken } }));';
+    expect(source).toContain(sent);
+    expect(csrfOmissions(run({ [file]: source.replace(sent, "}));") })))
       .toEqual([`${file} api.file-delete DELETE: omits X-Inherit-CSRF, which mutationSecurityBindings.csrfTransport requires of this state-changing request`]);
   });
 
@@ -734,7 +746,8 @@ describe("the client census fails on a planted divergence", () => {
     // the own panel, which now serves its subjects, sends the same header.
     const file = "src/components/chat/own-chat-panel.tsx";
     const source = real(file);
-    const header = 'headers: { "content-type": "application/json", "X-Inherit-CSRF": csrf.value() },';
+    // 2026-11-19: the panel sends through its token chain (csrf.send), so the header reads the chain's argument.
+    const header = 'headers: { "content-type": "application/json", "X-Inherit-CSRF": csrfToken },';
     expect(source).toContain(header);
     expect(csrfOmissions(run({ [file]: source.replace(header, 'headers: { "content-type": "application/json" },') })))
       .toEqual([`${file} api.chat POST: omits X-Inherit-CSRF, which mutationSecurityBindings.csrfTransport requires of this state-changing request`]);
@@ -800,9 +813,10 @@ describe("the client census fails on a planted divergence", () => {
     expect(ledgerMismatch(fixed.issues.map(formIssueKey), accountedClientKeys()).stale.sort()).toEqual(recorded.sort());
     const file = "src/components/settings/consent-list.tsx";
     const source = real(file);
-    const headers = 'method: "POST", headers: { "X-Inherit-Operation-Nonce": g.revokeNonce, "X-Inherit-CSRF": csrf.value() },';
+    // 2026-11-19: the revocation sends through its token chain (csrf.send); the nonce is read once before it.
+    const headers = 'method: "POST", headers: { "X-Inherit-Operation-Nonce": revokeNonce, "X-Inherit-CSRF": csrfToken },';
     expect(source).toContain(headers);
-    expect(ledgerMismatch(run({ [file]: source.replace(headers, 'method: "POST", headers: { "X-Inherit-CSRF": csrf.value() },') }).issues
+    expect(ledgerMismatch(run({ [file]: source.replace(headers, 'method: "POST", headers: { "X-Inherit-CSRF": csrfToken },') }).issues
       .map(formIssueKey), accountedClientKeys()).unrecorded)
       .toEqual([`${file} api.consent-revoke POST: omits the required header x-inherit-operation-nonce`]);
     const added = run({ [file]: source.replace(headers, `${headers} body: JSON.stringify({ grantId: g.id }),`) });

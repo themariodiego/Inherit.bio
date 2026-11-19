@@ -46,12 +46,11 @@ export function DangerZone({ deletion }: { deletion: DeletionControlState | null
     if (!deletion) return;
     setBusy(true);
     setError(null);
-    const response = await fetch(path, {
+    const response = await csrf.send((csrfToken) => fetch(path, {
       method: "POST",
-      headers: { "Content-Type": "application/json", "X-Inherit-CSRF": csrf.value() },
+      headers: { "Content-Type": "application/json", "X-Inherit-CSRF": csrfToken },
       body: JSON.stringify({ confirmation, nonce: deletion.operationNonce }),
-    });
-    csrf.accept(response);
+    }));
     const body = (await response.json().catch(() => null)) as
       | { status?: string; noticeEndsAt?: string; error?: string }
       | null;

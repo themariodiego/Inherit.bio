@@ -21,11 +21,10 @@ export function InvitationRefusalForm({ nonce }: { nonce: string }) {
     if (status === "pending") return;
     setStatus("pending");
     try {
-      const response = await fetch("/api/withdraw/session", {
-        method: "POST", headers: { "content-type": "application/json", "X-Inherit-CSRF": csrf.value() },
+      const response = await csrf.send((csrfToken) => fetch("/api/withdraw/session", {
+        method: "POST", headers: { "content-type": "application/json", "X-Inherit-CSRF": csrfToken },
         body: JSON.stringify({ operation: "refuse", nonce }),
-      });
-      csrf.accept(response);
+      }));
       const body = await response.json();
       if (response.status !== 202 || body.status !== "accepted" || body.operation !== "refuse") {
         setStatus("failed"); return;

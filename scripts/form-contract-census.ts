@@ -324,10 +324,22 @@ export function fileRequests(file: string, read: SourceReader): ClientRequest[] 
  * otherwise, so a function passed as a value or exported keeps its unbound
  * reading and its parameters read as unresolved.
  */
+/**
+ * The request a component hands its route's X-Inherit-CSRF chain
+ * (`csrf.send((token) => fetch(...))`, src/lib/security/session-csrf-client.ts,
+ * 19 November 2026). The chain calls it once, in the function that calls
+ * `send`, so its `fetch` is read as that function's own.
+ */
+function sentThroughChain(node: ts.Node): boolean {
+  if (!ts.isArrowFunction(node) || !ts.isCallExpression(node.parent) || node.parent.arguments[0] !== node) return false;
+  const callee = unwrap(node.parent.expression);
+  return ts.isPropertyAccessExpression(callee) && callee.name.text === "send";
+}
+
 function localCallSites(call: ts.CallExpression, document: ts.SourceFile):
   { fn: ts.FunctionLikeDeclaration; calls: ts.CallExpression[] } | null {
   let fn: ts.Node | undefined = call.parent;
-  while (fn && !ts.isFunctionLike(fn)) fn = fn.parent;
+  while (fn && (!ts.isFunctionLike(fn) || sentThroughChain(fn))) fn = fn.parent;
   if (!fn || !(ts.isFunctionDeclaration(fn) || ts.isArrowFunction(fn) || ts.isFunctionExpression(fn))) return null;
   const holder = ts.isFunctionDeclaration(fn) ? fn
     : ts.isVariableDeclaration(fn.parent) && ts.isIdentifier(fn.parent.name) && fn.parent.initializer === fn
@@ -346,7 +358,9 @@ function localCallSites(call: ts.CallExpression, document: ts.SourceFile):
   const calls: ts.CallExpression[] = [];
   let other = false;
   const visit = (node: ts.Node) => {
-    if (ts.isIdentifier(node) && node !== nameNode && node.text === nameNode.text && declarationOf(node.text, node) === holder) {
+    // A property name (`csrf.send` beside a local `send`) refers to no local binding.
+    const propertyName = node.parent !== undefined && ts.isPropertyAccessExpression(node.parent) && node.parent.name === node;
+    if (ts.isIdentifier(node) && !propertyName && node !== nameNode && node.text === nameNode.text && declarationOf(node.text, node) === holder) {
       if (ts.isCallExpression(node.parent) && node.parent.expression === node) calls.push(node.parent);
       else other = true;
     }
@@ -1156,6 +1170,11 @@ function merge(into: BodyShape, from: BodyShape, mode: "required" | "keep"): Bod
 function responseStatuses(call: ts.CallExpression): number[] {
   let holder: ts.Node = call;
   while (holder.parent && (ts.isAwaitExpression(holder.parent) || ts.isParenthesizedExpression(holder.parent))) holder = holder.parent;
+  // A request handed to its route's token chain: `send` returns this response.
+  if (holder.parent && sentThroughChain(holder.parent) && (holder.parent as ts.ArrowFunction).body === holder) {
+    holder = holder.parent.parent;
+    while (holder.parent && (ts.isAwaitExpression(holder.parent) || ts.isParenthesizedExpression(holder.parent))) holder = holder.parent;
+  }
   const parent = holder.parent;
   const name = parent && ts.isVariableDeclaration(parent) && ts.isIdentifier(parent.name) ? parent.name.text
     : parent && ts.isBinaryExpression(parent) && parent.operatorToken.kind === ts.SyntaxKind.EqualsToken
@@ -1163,7 +1182,7 @@ function responseStatuses(call: ts.CallExpression): number[] {
   if (!name) return [];
   const binding = ts.isVariableDeclaration(parent) ? parent : declarationOf(name, parent);
   let scope: ts.Node | undefined = call.parent;
-  while (scope && !ts.isFunctionLike(scope) && !ts.isSourceFile(scope)) scope = scope.parent;
+  while (scope && ((!ts.isFunctionLike(scope) && !ts.isSourceFile(scope)) || sentThroughChain(scope))) scope = scope.parent;
   if (!scope) return [];
   const isStatus = (node: ts.Node) => {
     const bare = ts.isParenthesizedExpression(node) ? node.expression : node;

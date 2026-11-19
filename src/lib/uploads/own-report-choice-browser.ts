@@ -32,17 +32,15 @@ export async function enableOwnReportChoice(subjectId: string, choice: Choice): 
  */
 export async function disableOwnReportChoice(grantId: string, nonce: string, csrf: CsrfHandle): Promise<void> {
   if (!z.uuid().safeParse(grantId).success) throw new Error("invalid_grant");
-  const response = await fetch(route("api.consent-revoke", { id: grantId }), { method: "POST",
-    headers: { "X-Inherit-Operation-Nonce": nonce, "X-Inherit-CSRF": csrf.value() } });
-  csrf.accept(response);
+  const response = await csrf.send((csrfToken) => fetch(route("api.consent-revoke", { id: grantId }), { method: "POST",
+    headers: { "X-Inherit-Operation-Nonce": nonce, "X-Inherit-CSRF": csrfToken } }));
   if (response.status !== 200 || !revokeReceipt.safeParse(await response.json()).success) throw new Error("choice_not_saved");
 }
 
 export async function generateOwnReports(fileId: string, csrf: CsrfHandle): Promise<"ready" | "not_generated"> {
   if (!z.uuid().safeParse(fileId).success) throw new Error("invalid_file");
-  const response = await fetch(route("api.file-process", { id: fileId }), { method: "POST",
-    headers: { "X-Inherit-CSRF": csrf.value() } });
-  csrf.accept(response);
+  const response = await csrf.send((csrfToken) => fetch(route("api.file-process", { id: fileId }), { method: "POST",
+    headers: { "X-Inherit-CSRF": csrfToken } }));
   const body: unknown = await response.json();
   if (response.status !== 200) throw new Error("generation_unavailable");
   const generated = subjectSynchronousReportReceipt.safeParse(body);

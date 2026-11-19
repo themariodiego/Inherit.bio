@@ -77,12 +77,11 @@ export function OwnChatPanel({ contextToken, info, chats, displayLabel, scopeKin
     setBusy(true); setError(null);
     if (!chatId) setUsedToken(contextToken);
     try {
-      const response = await fetch("/api/chat", {
+      const response = await csrf.send((csrfToken) => fetch("/api/chat", {
         method: "POST", credentials: "same-origin", cache: "no-store", redirect: "error",
-        headers: { "content-type": "application/json", "X-Inherit-CSRF": csrf.value() }, signal: controller.signal,
+        headers: { "content-type": "application/json", "X-Inherit-CSRF": csrfToken }, signal: controller.signal,
         body: JSON.stringify(chatId ? { chatId, message } : { contextToken, message }),
-      });
-      csrf.accept(response);
+      }));
       if (!response.ok) {
         if (response.status === 409) {
           const blocked = ownChatCorrectionSchema.safeParse(await response.clone().json().catch(() => null));

@@ -8,7 +8,7 @@ import { route } from "../primary-routes";
 import { heldFinalizationReceipt } from "./other-adult-upload";
 import type { ReadCallingRefusal } from "../genome/reads/browser-read-calls";
 import type { ReadCallSummary } from "../genome/reads/read-calls";
-import type { CsrfHandle } from "../security/session-csrf-client";
+import { csrfHandle, type CsrfHandle } from "../security/session-csrf-client";
 import { declaredSubjectFormat, directUploadReceipt, subjectFinalizationReceipt, subjectFinalizationRetryBody, subjectNormalizationReceipt, subjectPreparationCapacityRefusal, subjectPreparationTooLargeRefusal, subjectProcessingReceipt, subjectReportGenerationFailure, uploadCeilingBytes, uploadSessionBody, type OwnUploadLimits } from "./subject-upload-contract";
 
 /**
@@ -17,6 +17,9 @@ import { declaredSubjectFormat, directUploadReceipt, subjectFinalizationReceipt,
  * sends its route's current value and keeps the successor its response issues.
  */
 export interface UploadCsrf { session?: CsrfHandle; finalize?: CsrfHandle; process?: CsrfHandle }
+
+/** A route with no handle sends no token, as before: a handle of no rendered value. */
+const UNRENDERED = csrfHandle(undefined);
 
 export type UploadProgress = { step: "checking" | "calling" | "hashing" | "uploading" | "validating"; pct: number };
 /** Read calling's own refusals (TEST-LOCAL only, ADR 0038); a reads file that
@@ -61,11 +64,10 @@ export async function prepareSubjectFile(fileId: string, options: { signal?: Abo
   let jobId: string | undefined;
   for (;;) {
     if (options.signal?.aborted || Date.now() >= deadline) throw new BrowserPreparationError("unavailable");
-    const response = await fetch(route("api.file-process", { id: fileId }), {
+    const response = await (options.csrf ?? UNRENDERED).send((csrfToken) => fetch(route("api.file-process", { id: fileId }), {
       method: "POST", credentials: "same-origin", cache: "no-store", redirect: "error", signal: options.signal,
-      headers: { "X-Inherit-CSRF": options.csrf?.value() ?? "" },
-    }).catch(() => { throw new BrowserPreparationError("unavailable"); });
-    options.csrf?.accept(response);
+      headers: { "X-Inherit-CSRF": csrfToken },
+    })).catch(() => { throw new BrowserPreparationError("unavailable"); });
     const value: unknown = await response.json().catch(() => null);
     if (!response.ok) {
       const reportFailure = subjectReportGenerationFailure.safeParse(value);
@@ -199,10 +201,9 @@ async function stageSubjectFile(file: File, subjectId: string, onProgress: (valu
   // upload authorization. Never substitute a login or server-side credential.
   const apiKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   if (!apiKey || apiKey.length > 4096 || /\s/.test(apiKey)) throw new BrowserUploadError("unavailable");
-  const response = await fetch(route("api.file-upload-session"), { method: "POST", credentials: "same-origin",
-    headers: { "Content-Type": "application/json", "X-Inherit-CSRF": csrf.session?.value() ?? "" },
-    body: JSON.stringify(declaration.data), cache: "no-store", redirect: "error" });
-  csrf.session?.accept(response);
+  const response = await (csrf.session ?? UNRENDERED).send((csrfToken) => fetch(route("api.file-upload-session"), { method: "POST", credentials: "same-origin",
+    headers: { "Content-Type": "application/json", "X-Inherit-CSRF": csrfToken },
+    body: JSON.stringify(declaration.data), cache: "no-store", redirect: "error" }));
   if (response.status !== 201) await responseFailure(response);
   const parsed = directUploadReceipt.safeParse(await response.json().catch(() => null));
   if (!parsed.success || parsed.data.maximumBytes < file.size || Date.parse(parsed.data.expiresAt) <= Date.now()) {
@@ -284,10 +285,9 @@ export async function finishHeldUpload(uploadId: string, csrf: UploadCsrf = {}) 
 async function requestFinalization(uploadId: string, csrf: UploadCsrf): Promise<Response> {
   if (!directUploadReceipt.shape.uploadId.safeParse(uploadId).success) throw new BrowserUploadError("unavailable");
   const staged = (code: UploadFailureCode) => new BrowserUploadError(code, undefined, uploadId);
-  const finalized = await fetch(route("api.file-finalize", { id: uploadId }), { method: "POST",
+  const finalized = await (csrf.finalize ?? UNRENDERED).send((csrfToken) => fetch(route("api.file-finalize", { id: uploadId }), { method: "POST",
     credentials: "same-origin", cache: "no-store", redirect: "error",
-    headers: { "X-Inherit-CSRF": csrf.finalize?.value() ?? "" } }).catch(() => null);
-  if (finalized) csrf.finalize?.accept(finalized);
+    headers: { "X-Inherit-CSRF": csrfToken } })).catch(() => null);
   if (!finalized || NO_DECISION_STATUSES.has(finalized.status)) throw staged("unavailable");
   // Preserve the existing handle on upload-level refusal or on the new explicit
   // retry response. Other application failures make no promise of resumability.

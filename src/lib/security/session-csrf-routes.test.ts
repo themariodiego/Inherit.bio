@@ -136,7 +136,7 @@ const CASES: Case[] = [
   { route: "api.family-acknowledge", method: "POST", path: "/api/family/acknowledge", load: () => import("@/app/api/family/acknowledge/route") },
   { route: "api.embryo-acknowledge", method: "POST", path: "/api/embryos/acknowledge", load: () => import("@/app/api/embryos/acknowledge/route") },
   { route: "api.family-sharing", method: "POST", path: "/api/family/s-person/sharing", params: { person: "s-person" }, load: () => import("@/app/api/family/[person]/sharing/route") },
-  { route: "api.consents", label: "api.consents (the provider and adult grant bodies)", method: "POST", path: "/api/consents", load: () => import("@/app/api/consents/route") },
+  { route: "api.consents", label: "api.consents (the adult grant body)", method: "POST", path: "/api/consents", load: () => import("@/app/api/consents/route") },
   { route: "api.consent-reaffirm", method: "POST", path: "/api/consents/reaffirm", load: () => import("@/app/api/consents/reaffirm/route") },
   { route: "api.consent-revoke", method: "POST", path: `/api/consents/${ID}/revoke`, params: { id: ID }, load: () => import("@/app/api/consents/[id]/revoke/route"), body: null },
   { route: "api.consents-revoke-all", method: "POST", path: "/api/consents/revoke-all", load: () => import("@/app/api/consents/revoke-all/route") },
@@ -150,10 +150,15 @@ const CASES: Case[] = [
   { route: "api.claimed-subject-correction", method: "POST", path: `/api/subjects/${ID}/corrections`, params: { id: ID }, load: () => import("@/app/api/subjects/[id]/corrections/route") },
   { route: "api.claimed-subject-analysis-stop", method: "DELETE", path: `/api/subjects/${ID}/analysis`, params: { id: ID }, load: () => import("@/app/api/subjects/[id]/analysis/route"), body: null },
   { route: "api.jurisdiction", method: "PUT", path: "/api/settings/jurisdiction", load: () => import("@/app/api/settings/jurisdiction/route") },
+  // 2026-11-19 (G8.5 stage one): four csrfOwnDesign rows moved onto the token.
+  { route: "api.subjects", method: "POST", path: "/api/subjects", load: () => import("@/app/api/subjects/route") },
+  { route: "api.future-person-claimant-bind", method: "POST", path: "/api/future-person/claim/session/account", load: () => import("@/app/api/future-person/claim/session/account/route") },
   { route: "api.withdraw", method: "POST", path: "/api/withdraw/session", load: () => import("@/app/api/withdraw/session/route") },
   { route: "api.consent-reaffirm-rights", method: "POST", path: "/api/consents/reaffirm/session", load: () => import("@/app/api/consents/reaffirm/session/route") },
   { route: "api.consent-grant-rights", method: "POST", path: "/api/consents/grant/session", load: () => import("@/app/api/consents/grant/session/route") },
   { route: "api.consent-revoke-rights", method: "POST", path: "/api/consents/revoke/session", load: () => import("@/app/api/consents/revoke/session/route") },
+  { route: "api.future-person-correction", method: "POST", path: "/api/future-person/claim/session/corrections", load: () => import("@/app/api/future-person/claim/session/corrections/route") },
+  { route: "api.appeal-complete", method: "POST", path: "/api/appeals/session/complete", load: () => import("@/app/api/appeals/session/complete/route") },
   { route: "api.rights-activate", method: "POST", path: "/api/rights/activate", load: () => import("@/app/api/rights/activate/route") },
 ];
 
@@ -297,6 +302,35 @@ describe("every bound route requires and spends its one-time X-Inherit-CSRF toke
     });
   });
 
+  it("admits two overlapping requests of one page through the browser's chain, and still refuses a spent token", async () => {
+    const { csrfHandle } = await import("./session-csrf-client");
+    for (const route of ["api.jurisdiction", "api.withdraw"] as const) {
+      state.consumeResults.length = 0;
+      const entry = CASES.find((candidate) => candidate.route === route)!;
+      const rendered = mintSessionCsrf(sessionFor(kindOf(route)), route);
+      // Two copies of the page's rendered value, both sent before either answer
+      // arrived. Without the chain the second is refused: the server's one spend.
+      const [raw, repeated] = await Promise.all([send(entry, rendered), send(entry, rendered)]);
+      expect(raw.headers.get("x-inherit-csrf"), route).not.toBeNull();
+      await expectRefused(entry, repeated);
+      expect(state.consumeResults, route).toEqual([true, false]);
+      // Through the chain, from a newly rendered value, the second waits for the
+      // first answer and carries its successor: both are admitted.
+      state.consumeResults.length = 0;
+      const page = mintSessionCsrf(sessionFor(kindOf(route)), route);
+      const handle = csrfHandle(page), sent: string[] = [];
+      const through = (token: string) => { sent.push(token); return send(entry, token); };
+      const [first, second] = await Promise.all([handle.send(through), handle.send(through)]);
+      expect(sent[0], route).toBe(page);
+      expect(sent[1], `${route}: the second carries the first answer's successor`).toBe(first.headers.get("x-inherit-csrf"));
+      expect(second.headers.get("x-inherit-csrf"), `${route}: the second is admitted`).not.toBeNull();
+      expect(state.consumeResults, route).toEqual([true, true]);
+      // A replay of either spent value is refused before the handler, as before.
+      for (const spent of sent) await expectRefusedBeforeHandler(entry, spent);
+      expect(state.consumeResults, route).toEqual([true, true, false, false]);
+    }
+  });
+
   it("refuses an authenticated token once its auth session has ended", async () => {
     const entry = CASES.find((candidate) => candidate.route === "api.jurisdiction")!;
     const token = mintSessionCsrf(sessionFor("authenticated"), "api.jurisdiction");
@@ -382,7 +416,9 @@ describe("every route the register binds to csrfTransport is accounted for", () 
     for (const row of own.filter(candidate => candidate.branch)) expect(guarded.has(row.routeId), row.routeId).toBe(true);
     // 75 since the merge with G8.5's form shapes: api.embryo-acknowledge replaced the Embryo gate's server action.
     expect(bound).toHaveLength(75);
-    expect(ownWhole).toHaveLength(36);
+    // 32 since 2026-11-19 (G8.5 stage one): api.subjects, api.future-person-claimant-bind,
+    // api.future-person-correction and api.appeal-complete moved onto the session token (36 before).
+    expect(ownWhole).toHaveLength(32);
   });
 
   it("anchors each own-design row to the code it describes", () => {

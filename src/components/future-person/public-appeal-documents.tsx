@@ -1,6 +1,7 @@
 "use client";
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useCsrf } from "@/components/security/csrf-provider";
 import { Button } from "@/components/ui/button";
 import { sniffDocumentType } from "@/lib/future-person/document-sniff";
 import type { PublicAppealView } from "@/lib/future-person/public-appeal-session";
@@ -13,9 +14,10 @@ type Kind = keyof typeof LABELS;
 const hex = (bytes: ArrayBuffer) => [...new Uint8Array(bytes)].map(value => value.toString(16).padStart(2, "0")).join("");
 /** One current case, no target selector or match disclosure. Files never enter
  * browser persistence, a URL, telemetry, or an error message. */
-export function PublicAppealDocuments({ view, documentNonce, completeNonce, documentCsrf, completeCsrf }: {
- view: PublicAppealView; documentNonce: string; completeNonce: string; documentCsrf: string; completeCsrf: string;
+export function PublicAppealDocuments({ view, documentNonce, completeNonce, documentCsrf }: {
+ view: PublicAppealView; documentNonce: string; completeNonce: string; documentCsrf: string;
 }) {
+ const completeCsrf = useCsrf("api.appeal-complete");
  const router = useRouter(); const inputs = useRef<Partial<Record<Kind, HTMLInputElement | null>>>({});
  const [ids, setIds] = useState<Partial<Record<Kind, string>>>(() => Object.fromEntries(view.documents.map(document => [document.documentKind, document.documentId]))); const [messages, setMessages] = useState<Partial<Record<Kind, string>>>({});
  const [busy, setBusy] = useState(false); const [affirmed, setAffirmed] = useState(false); const [finished, setFinished] = useState(false);
@@ -79,9 +81,9 @@ export function PublicAppealDocuments({ view, documentNonce, completeNonce, docu
   const authority = view.documentKinds.includes("appeal-subject-source-control")
    ? { subjectSourceControlDocumentId: ids["appeal-subject-source-control"] }
    : { geneticParentAuthorityDocumentId: ids["appeal-genetic-parent-authority"] };
-  try { const answer = await fetch("/api/appeals/session/complete", { method: "POST", credentials: "same-origin",
-   headers: { "content-type": "application/json", "x-inherit-csrf": completeCsrf },
-   body: JSON.stringify({ photoIdentityDocumentId: ids["appeal-photo-identity"], ...authority, ...(view.caseKind === "access-or-review-appeal" ? { decisionNoticeDocumentId: ids["appeal-decision-notice"] } : {}), affirmed: true, nonce: completeNonce }) });
+  try { const answer = await completeCsrf.send((csrfToken) => fetch("/api/appeals/session/complete", { method: "POST", credentials: "same-origin",
+   headers: { "content-type": "application/json", "x-inherit-csrf": csrfToken },
+   body: JSON.stringify({ photoIdentityDocumentId: ids["appeal-photo-identity"], ...authority, ...(view.caseKind === "access-or-review-appeal" ? { decisionNoticeDocumentId: ids["appeal-decision-notice"] } : {}), affirmed: true, nonce: completeNonce }) }));
    if (answer.status !== 202) throw new Error("appeal_unavailable");
    const result: unknown = await answer.json();
    if (typeof result !== "object" || result === null || !("status" in result) || result.status !== "review_pending") throw new Error("appeal_unavailable");

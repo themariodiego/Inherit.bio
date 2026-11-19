@@ -22,12 +22,11 @@ export function EmbryoWithdrawalForm({ view, nonce }: { view: RightsEmbryoWithdr
     if (status !== "ready" && status !== "failed") return;
     setStatus("pending");
     try {
-      const response = await fetch("/api/withdraw/session", {
+      const response = await csrf.send((csrfToken) => fetch("/api/withdraw/session", {
         method: "POST", credentials: "same-origin", cache: "no-store",
-        headers: { "Content-Type": "application/json", "X-Inherit-CSRF": csrf.value() },
+        headers: { "Content-Type": "application/json", "X-Inherit-CSRF": csrfToken },
         body: JSON.stringify({ operation, nonce }),
-      });
-      csrf.accept(response);
+      }));
       const body = await response.json().catch(() => null);
       if (response.status !== 202 || body?.status !== "accepted" || body?.operation !== operation) {
         setStatus("failed");

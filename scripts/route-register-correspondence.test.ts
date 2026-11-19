@@ -1239,24 +1239,32 @@ type ClientFormReview = { file: string; forms: number; sha256: string };
 // embryo-disposition.tsx re-reviewed after their request gained the route's
 // one-time X-Inherit-CSRF header and its rotation. The same forms, handlers,
 // preventDefault before any field is read, and targets.
+// G8.5 (2026-11-19): both re-reviewed after that request moved into its
+// token chain (`csrf.send((csrfToken) => fetch(...))`), which sends a page's
+// requests to one route one at a time. The same forms, handlers,
+// preventDefault, targets, headers and bodies.
 const GUARDED_FLOW_CLIENT_FORM_REVIEW: ClientFormReview[] = [
   { file: "src/components/embryo/upload/draft-form.tsx", forms: 1, sha256: "c216fd24a0d903e38171cf53079abe439f1656d010560de8f32694a253dfdc2e" },
   { file: "src/components/embryo/upload/signing-form.tsx", forms: 1, sha256: "09ef84e65cf77e765d40d4034fb9b5345a19196857cd1bc4e6781b820eaffcf8" },
-  { file: "src/components/embryo/upload/upload-stage.tsx", forms: 2, sha256: "b1c6d5607ac350757ecb617ccedd85cc76d212e0d30827dbd81cdc15424ef878" },
+  { file: "src/components/embryo/upload/upload-stage.tsx", forms: 2, sha256: "3f1c0589b39c07f6bf5c01a663ce3138bdc9b34fcbd97ecf862f80b416c4ea10" },
   { file: "src/components/future-person/claim-form.tsx", forms: 1, sha256: "15879dd96632b930bcaf494fc2f47cabd9b75bddfc328ab104bc8610be10fbdb" },
   { file: "src/components/future-person/claim-review.tsx", forms: 1, sha256: "ef96f46a4dec3c6cf56759c7699fdcc71613c14d3171f25e549c75ba2d7f3f6c" },
   { file: "src/components/future-person/keyless-pending-review.tsx", forms: 1, sha256: "d44c1530368a229dc5b3f75339ba541cdb04ce0f0f8442558792306f3a5f7c31" },
   { file: "src/components/future-person/owner-objection.tsx", forms: 1, sha256: "77a7bef89da3708b7227c7c22f4fca3d89a60a8cde3c3eba18b003a2a561db7d" },
-  { file: "src/components/settings/embryo-disposition.tsx", forms: 1, sha256: "160248fb03c9bfa4aa681c55598cec84583126c3d3394a3a430763f05122b82b" },
+  { file: "src/components/settings/embryo-disposition.tsx", forms: 1, sha256: "87acb08033b37e93db3859b1bb94883418cf41b3a115afc595f3eae35b51c5d9" },
   { file: "src/components/settings/future-person-profile.tsx", forms: 1, sha256: "44edb4bbd08e2d2ff567aa354b43e4c4f27a8b16d1f77882c9a78670f6169788" },
 ];
 
 // These two published TEST-only intake forms cancel native submission before
 // reading their fields and send JSON to their separate registered POST doors.
 // Bind the complete sources and opening counts; keep the original core census.
+// G8.5 (2026-11-19): correction-request.tsx re-reviewed after its request
+// moved from the claimant page's keyed digest to api.future-person-correction's
+// one-time session token, read from the page's CsrfProvider and sent through
+// its token chain. The same form, handler, preventDefault, target and body.
 const FUTURE_INTAKE_CLIENT_FORM_REVIEW: ClientFormReview[] = [
   { file: "src/components/future-person/appeal-intake-form.tsx", forms: 1, sha256: "dccc4b01bedb410696e2e69113041fa7e59224ce79055ebdd4b60fa71c267d2f" },
-  { file: "src/components/future-person/correction-request.tsx", forms: 1, sha256: "37cd036ad9371ed5fffaef46d844edd8b26b567ea38bef46be99144c0597b99c" },
+  { file: "src/components/future-person/correction-request.tsx", forms: 1, sha256: "bc638aacc9ccd4dd2c85729d58d56ae04cd158a0622d28b09ad9443f2a87bfcf" },
 ];
 
 /**
@@ -1276,7 +1284,13 @@ const CLIENT_FORM_REVIEW: ClientFormReview[] = [
   // target; no body changed. sign-out-form.tsx is new: sign-out moved from
   // the app shell's native form to one actionless form whose onSubmit cancels
   // native submission and posts with the token.
-  { file: "src/components/site/sign-out-form.tsx", forms: 1, sha256: "04c7d9df794c45168f4e8324ef2f48d82e6b74788963effaf309996e90b05d34" },
+  // G8.5 (2026-11-19): sign-out-form, own-chat-panel, co-parent-review-form,
+  // invitation-refusal-form, invite-adult-form, jurisdiction-form,
+  // llm-settings-form and path-b-request-form re-reviewed after each request
+  // moved into its route's token chain (`csrf.send((csrfToken) => fetch(...))`),
+  // which sends a page's requests to one route one at a time. Each keeps the
+  // same forms, handler, preventDefault, target, headers and body.
+  { file: "src/components/site/sign-out-form.tsx", forms: 1, sha256: "ecfa0a19f543c66ed45d59dd2533e891855143ac6ec3028510991344221ec48a" },
   // G2.5 (2026-10-22): re-reviewed after the submit control became the forest
   // outline variant at the same 44px and content width. One actionless form,
   // the same fieldset, handler and preventDefault before any field is read.
@@ -1286,9 +1300,9 @@ const CLIENT_FORM_REVIEW: ClientFormReview[] = [
   // is re-reviewed after it gained the ChatProviderInfo type the retired panel
   // exported: still one actionless form whose onSubmit handler cancels native
   // submission before anything is sent, the same composer and target, api.chat.
-  { file: "src/components/chat/own-chat-panel.tsx", forms: 1, sha256: "197affd16791969010498cc3b1833868d5b715f0afaad6446cfc33ffc9415bbe" },
-  { file: "src/components/embryo/co-parent-review-form.tsx", forms: 1, sha256: "37c3a9083994657a9f8c7e5d4639b0c46721ae96bee36662508cf31bdb7f5d84" },
-  { file: "src/components/embryo/invitation-refusal-form.tsx", forms: 1, sha256: "037b30d6e19792ea8706f8553b23a7887c1459ed7e39d0a0eb40bcc290272601" },
+  { file: "src/components/chat/own-chat-panel.tsx", forms: 1, sha256: "9aef9697d1654b86d7565796b8ca50e59d19e3f96c45df77501e6079b1e53738" },
+  { file: "src/components/embryo/co-parent-review-form.tsx", forms: 1, sha256: "3d53c662bcf1d25f9c27b7658a5495c981e8e5cf8d0669494a29542dd1495b16" },
+  { file: "src/components/embryo/invitation-refusal-form.tsx", forms: 1, sha256: "03e69daa6adbc9d39d555015d2b3a328fb42cddc2a5d6f16cbe48076bb5a0338" },
   // G5.6 (2026-10-23): both re-reviewed after their request gained the page's
   // one-time operation nonce in the X-Inherit-Operation-Nonce header, and the
   // form or its section a data-operation-nonce attribute. Still one actionless
@@ -1298,14 +1312,14 @@ const CLIENT_FORM_REVIEW: ClientFormReview[] = [
   // the registered 403, and after the merge added the one-time X-Inherit-CSRF
   // header. Still one actionless form, the same handler cancelling native
   // submission before any field is read, the same target.
-  { file: "src/components/family/invite-adult-form.tsx", forms: 1, sha256: "32f8d4ce55136593a079e7e2527567583b0e91da5a85d01f76f48c14c208c1c1" },
-  { file: "src/components/settings/jurisdiction-form.tsx", forms: 1, sha256: "0c4b480cf87379c9841358f927f963692ecf3ea964985894b88eebe2cf723643" },
+  { file: "src/components/family/invite-adult-form.tsx", forms: 1, sha256: "3d9320f3d0454196553540ad4e98e252efda2f467c2452ea6f49ce8dcfc24b6b" },
+  { file: "src/components/settings/jurisdiction-form.tsx", forms: 1, sha256: "77fed8d97f299a82f26ce7e85dab915d854408a61b00a01cfb40470b3cfdb8c7" },
   // G8.5 (2026-10-23): re-reviewed after the save moved to the registered
   // bodies by mode and the removal button gained the page's one-time nonce, and
   // after the merge added the one-time X-Inherit-CSRF header to both requests.
   // Still one actionless form whose onSubmit handler cancels native submission
   // first; the same target, and the removal is still a button outside it.
-  { file: "src/components/settings/llm-settings-form.tsx", forms: 1, sha256: "3f4de66a3e0f4ac79078c9ff270dd8b92508356dbd428dfbae9319c153b0a8ec" },
+  { file: "src/components/settings/llm-settings-form.tsx", forms: 1, sha256: "ed910610b21eaa0f3ff2369cef31499a9828c2e8c4acfeabba9481d4c4f95b72" },
   // G2.1 (2026-10-16): re-reviewed after the new-person form gained the
   // reviewed-document flow choice (two radio inputs inside the same form, the
   // same handler and target) and ConsentFields became an export. Still two
@@ -1319,7 +1333,7 @@ const CLIENT_FORM_REVIEW: ClientFormReview[] = [
   // G5.4 (2026-10-16): re-reviewed after two copy lines (the 30/730-day keep
   // line and the contact of last resort). Still one actionless form whose
   // onSubmit handler cancels native submission; no handler, field or target changed.
-  { file: "src/components/uploads/path-b-request-form.tsx", forms: 1, sha256: "6514df70e359d8e5f2cb9254db62a7bee77dbdf6917b5d7dea7bfbfb742da09f" },
+  { file: "src/components/uploads/path-b-request-form.tsx", forms: 1, sha256: "c407b8a5a49c151bf9c3314ecde9cfb3559a057444aa07961b5d9545706826ba" },
   ...GUARDED_FLOW_CLIENT_FORM_REVIEW,
   ...FUTURE_INTAKE_CLIENT_FORM_REVIEW,
 ];

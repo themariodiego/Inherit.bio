@@ -33,8 +33,8 @@ function ChoiceRow({ subjectId, choice, open, onSaved }: {
     inFlight.current = true; setPending(true); setFailed(false);
     try {
       const response = granted
-        ? await fetch(`/api/consents/${choice.grantId}/revoke`, { method: "POST", credentials: "same-origin", cache: "no-store",
-          headers: { "X-Inherit-Operation-Nonce": choice.revokeNonce ?? "", "X-Inherit-CSRF": revokeCsrf.value() } })
+        ? await revokeCsrf.send((csrfToken) => fetch(`/api/consents/${choice.grantId}/revoke`, { method: "POST", credentials: "same-origin", cache: "no-store",
+          headers: { "X-Inherit-Operation-Nonce": choice.revokeNonce ?? "", "X-Inherit-CSRF": csrfToken } }))
         : await fetch("/api/consents", {
           method: "POST", credentials: "same-origin", cache: "no-store",
           headers: { "Content-Type": "application/json", "x-inherit-csrf": choice.offer!.token },
@@ -42,7 +42,6 @@ function ChoiceRow({ subjectId, choice, open, onSaved }: {
             artifactVersion: choice.offer!.artifactVersion, artifactPresentationToken: choice.offer!.token,
             affirmed: true, statementKeys: PATH_B_STATEMENTS[choice.direction] }),
         });
-      if (granted) revokeCsrf.accept(response);
       if (!response.ok) throw new Error("not recorded");
       onSaved();
     } catch { setFailed(true); setAffirmed(false); inFlight.current = false; setPending(false); }

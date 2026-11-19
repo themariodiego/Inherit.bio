@@ -87,9 +87,9 @@ export function JurisdictionForm({
     const data = new FormData(form);
     setState("saving");
     try {
-      const response = await fetch("/api/settings/jurisdiction", {
+      const response = await csrf.send((csrfToken) => fetch("/api/settings/jurisdiction", {
         method: "PUT",
-        headers: { "Content-Type": "application/json", "X-Inherit-Operation-Nonce": operationNonce, "X-Inherit-CSRF": csrf.value() },
+        headers: { "Content-Type": "application/json", "X-Inherit-Operation-Nonce": operationNonce, "X-Inherit-CSRF": csrfToken },
         body: JSON.stringify({
           code: String(data.get("jurisdictionCode") ?? ""),
           ...(stateChoices.length > 0 ? { subdivision: String(data.get("jurisdictionSubdivision") ?? "") } : {}),
@@ -97,8 +97,7 @@ export function JurisdictionForm({
           attestationHash: attestation.sha256,
           affirmed: data.get("affirmed") === "on",
         }),
-      });
-      csrf.accept(response);
+      }));
       // Reading the body also releases it: a response nothing reads stays open.
       await response.json().catch(() => null);
       if (!response.ok) {

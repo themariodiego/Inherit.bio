@@ -101,12 +101,11 @@ export function LlmSettingsForm({
                 ...(apiKey ? { apiKey } : {}) }
               : { mode: "remote-openai-compatible", provider: "openai-compatible", model: chosenModel, baseUrl: address,
                 ...(apiKey ? { apiKey } : {}) };
-          const res = await fetch("/api/llm/settings", {
+          const res = await csrf.send((csrfToken) => fetch("/api/llm/settings", {
             method: "POST",
-            headers: { "content-type": "application/json", "X-Inherit-CSRF": csrf.value() },
+            headers: { "content-type": "application/json", "X-Inherit-CSRF": csrfToken },
             body: JSON.stringify(body),
-          });
-          csrf.accept(res);
+          }));
           const result = await res.json().catch(() => ({}));
           setMessage(res.ok ? "Provider saved. Review the separate Copilot permission below." : result.error === "key_required" ? "Enter the API key for this provider before saving." : "Provider could not be saved. Check the address and deployment availability, then try again.");
           router.refresh();
@@ -249,10 +248,9 @@ export function LlmSettingsForm({
             onClick={async () => {
               setBusy(true);
               try {
-                const response = await fetch("/api/llm/settings", {
-                  method: "DELETE", headers: { "X-Inherit-Operation-Nonce": removeNonce, "X-Inherit-CSRF": csrf.value() },
-                });
-                csrf.accept(response);
+                const response = await csrf.send((csrfToken) => fetch("/api/llm/settings", {
+                  method: "DELETE", headers: { "X-Inherit-Operation-Nonce": removeNonce, "X-Inherit-CSRF": csrfToken },
+                }));
                 setMessage(response.ok ? "Provider and key removed; Copilot permission ended." : "Could not remove the provider. Try again.");
                 router.refresh();
               } catch { setMessage("Could not connect. Try again."); }

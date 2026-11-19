@@ -40,14 +40,16 @@ export default async function RightsSessionPage() {
   const request = new Request("https://inherit.bio/withdraw/session", {
     headers: { cookie: incoming.get("cookie") ?? "" },
   });
-  // The one-time X-Inherit-CSRF tokens this page's forms send: api.withdraw's
-  // for the rights session, and api.invitation-accept's for a signed-in
-  // co-parent or Path A adult accepting. Minted for this render and stored
-  // nowhere.
+  // The one-time X-Inherit-CSRF tokens this page's forms send: for the rights
+  // session, api.withdraw's, a claimant's correction's and an appeal's
+  // completion's; for a signed-in account, api.invitation-accept's (a
+  // co-parent or Path A adult accepting) and a claimant's account binding's.
+  // Minted for this render and stored nowhere.
   const rights = readRightsCsrfSession(request);
   const csrf = {
-    ...(rights ? { "api.withdraw": sessionCsrfToken(rights, "api.withdraw") } : {}),
-    ...(await accountCsrfTokens(["api.invitation-accept"])),
+    ...(rights ? Object.fromEntries((["api.withdraw", "api.future-person-correction", "api.appeal-complete"] as const)
+      .map(route => [route, sessionCsrfToken(rights, route)])) : {}),
+    ...(await accountCsrfTokens(["api.invitation-accept", "api.future-person-claimant-bind"])),
   };
   return <CsrfProvider tokens={csrf}>{await rightsSessionContent(request)}</CsrfProvider>;
 }
@@ -66,8 +68,8 @@ async function rightsSessionContent(request: Request) {
   const claimant=await loadClaimantRights(request);
   if(claimant)return <><ClaimantRights csrf={claimant.csrf} recoveryNonce={claimant.recoveryNonce} analysisNonce={claimant.analysisNonce} deletion={await presentClaimantDeletion(request)}
     exportAction={await presentClaimantExportCreate(request)}/>
-    {claimant.correctionNonce&&<CorrectionRequestForm csrf={claimant.csrf} nonce={claimant.correctionNonce} ownStatementDownloadsEnabled/>}
-    <div className="mx-auto max-w-3xl px-6 pb-16"><ClaimantAccountBinding csrf={claimant.csrf} nonce={await loadAccountBinding(request)}/></div></>;
+    {claimant.correctionNonce&&<CorrectionRequestForm nonce={claimant.correctionNonce} ownStatementDownloadsEnabled/>}
+    <div className="mx-auto max-w-3xl px-6 pb-16"><ClaimantAccountBinding nonce={await loadAccountBinding(request)}/></div></>;
 
   const pathB = await loadPathBRequestReview(request);
   if (pathB) return <PathBRequestForm review={pathB} />;

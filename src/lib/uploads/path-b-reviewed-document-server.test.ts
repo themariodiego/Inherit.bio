@@ -15,7 +15,6 @@ import { legacyContactDigest } from "@/lib/hmac-keyring";
 import { mintPathBDraftNonce, mintPathBOperation } from "./other-adult-upload-server";
 import {
   createPathBReviewedDocumentDraft,
-  finalizeCsrf,
   finalizeReviewedDocumentSubject,
   mintReviewedDocumentOperation,
   openLegalEvidenceUploadSession,
@@ -199,9 +198,14 @@ describe("POST /api/subjects (closed-subject-finalize-v1)", () => {
   const nonce = () => mintReviewedDocumentOperation(accountId, sessionId, "finalize", subjectId);
   const body = () => ({ subjectDraftId: subjectId, permissionEvidenceDocumentId: documentId, legalReviewId: reviewId, nonce: nonce() });
   const receipt = { status: "received", next: "awaiting_subject_confirmation" };
+  // 2026-11-19 (G8.5): api.subjects' X-Inherit-CSRF is the account session's
+  // one-time token, verified and spent by the route before this function runs
+  // (src/app/api/subjects/route.ts); session-csrf-routes.test.ts refuses a
+  // missing, spent, other-session or other-route token there. This function no
+  // longer reads the header.
   function finalize(payload: unknown = body(), headers: Record<string, string> = {}, url = "https://inherit.bio/api/subjects") {
     return finalizeReviewedDocumentSubject(post(url, payload,
-      { "x-inherit-csrf": finalizeCsrf(accountId, sessionId, subjectId), "x-real-ip": "192.0.2.44", ...headers }),
+      { "x-real-ip": "192.0.2.44", ...headers }),
       { capability: (id) => mocks.codes(id, "third_party_adult_analysis") });
   }
   function contact() {
@@ -250,10 +254,10 @@ describe("POST /api/subjects (closed-subject-finalize-v1)", () => {
     expect(mocks.rpc).not.toHaveBeenCalled();
   });
 
-  it("refuses a new address, an approval field, a wrong CSRF, a spent or foreign nonce, and a cross-site request", async () => {
+  it("refuses a new address, an approval field, a spent or foreign nonce, and a cross-site request", async () => {
     expect((await finalize({ ...body(), contactEmail: ADDRESS })).status).toBe(404);
     expect((await finalize({ ...body(), approved: true })).status).toBe(404);
-    expect((await finalize(body(), { "x-inherit-csrf": finalizeCsrf(accountId, sessionId, documentId) })).status).toBe(403);
+    // A wrong X-Inherit-CSRF is the route's refusal now (see finalize above).
     expect((await finalize({ ...body(), nonce: mintReviewedDocumentOperation(accountId, sessionId, "document-session", subjectId) })).status).toBe(404);
     expect((await finalize({ ...body(), nonce: mintReviewedDocumentOperation(accountId, reviewId, "finalize", subjectId) })).status).toBe(404);
     expect((await finalize(body(), { "sec-fetch-site": "cross-site" })).status).toBe(403);
@@ -289,13 +293,14 @@ describe("the reviewed-document one-time tokens", () => {
     expect(readReviewedDocumentOperation(`${documentToken!}x`, expected)).toBeNull();
   });
 
-  it("mints the api.subjects nonce and CSRF only after a named human approved", () => {
+  it("mints the api.subjects nonce only after a named human approved", () => {
     for (const state of ["document-review", "awaiting-signature", "document-refused"] as const) {
       expect(reviewedDocumentTokens(actor, { ...base, signed: true, state })).toEqual({});
     }
     const ready = { ...base, signed: true, state: "awaiting-request" as const, documentId, legalReviewId: reviewId };
     const { finalize } = reviewedDocumentTokens(actor, ready);
-    expect(finalize?.csrf).toBe(finalizeCsrf(accountId, sessionId, subjectId));
+    // 2026-11-19: no per-draft CSRF digest any more; the shell renders api.subjects' session token.
+    expect(Object.keys(finalize!)).toEqual(["nonce"]);
     expect(readReviewedDocumentOperation(finalize!.nonce, { accountId, sessionId, operation: "finalize", targetId: subjectId }))
       .toMatch(/^[A-Za-z0-9_-]{32}$/);
   });

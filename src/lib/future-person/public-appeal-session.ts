@@ -39,17 +39,22 @@ export async function loadPublicAppealSession(request: Request) {
   const settled = owner.disposition();
   if (!view || settled.cleanupHeld || settled.pendingActualTasks !== 0) return null;
   const now = Date.now();
-  return { view, documentCsrf: publicAppealCsrf(hash, "document"), completeCsrf: publicAppealCsrf(hash, "complete"),
+  return { view, documentCsrf: publicAppealCsrf(hash, "document"),
     documentNonce: mintPublicFormToken("appeal-document", now, hash), completeNonce: mintPublicFormToken("appeal-complete", now, hash) };
 }
 /** The document endpoint's closed JSON has no nonce field: its operation token
- * travels in X-Inherit-Operation-Nonce, separately from the CSRF header. */
+ * travels in X-Inherit-Operation-Nonce, separately from the CSRF header. The
+ * completion's X-Inherit-CSRF is the rights session's one-time token
+ * (api.appeal-complete), verified and spent before its handler runs (G8.5);
+ * the document session's stays this keyed digest, because that response's
+ * X-Inherit-CSRF carries the evidence session's own value. */
 export function readPublicAppealMutation(request: Request, operation: "document" | "complete", token: unknown) {
   if (!testAppealIntakeOpen() || typeof token !== "string" || token.length > 2048) return null;
   const url = new URL(request.url); const hash = publicAppealSessionHash(request); const csrf = request.headers.get("x-inherit-csrf");
   if (!hash || url.search || request.headers.get("origin") !== url.origin || request.headers.get("sec-fetch-site") !== "same-origin"
     || request.headers.get("content-encoding") !== null || request.headers.get("content-type")?.split(";")[0]?.trim().toLowerCase() !== "application/json"
-    || !csrf || !/^[0-9a-f]{64}$/u.test(csrf) || !crypto.timingSafeEqual(Buffer.from(csrf), Buffer.from(publicAppealCsrf(hash, operation)))) return null;
+    || (operation === "document" && (!csrf || !/^[0-9a-f]{64}$/u.test(csrf)
+      || !crypto.timingSafeEqual(Buffer.from(csrf), Buffer.from(publicAppealCsrf(hash, operation)))))) return null;
   const proof = readPublicFormToken(token, operation === "document" ? "appeal-document" : "appeal-complete", Date.now(), hash);
   return proof ? { sessionHash: hash, nonce: proof.nonce } : null;
 }

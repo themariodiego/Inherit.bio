@@ -57,12 +57,11 @@ export function SharingActions({
   async function send(operation: "pause" | "resume" | "stop") {
     setPending(true);
     setFailed(false);
-    const response = await fetch(`/api/subjects/${subjectId}/sharing`, {
+    const response = await csrf.send((csrfToken) => fetch(`/api/subjects/${subjectId}/sharing`, {
       method: "POST",
-      headers: { "content-type": "application/json", "X-Inherit-CSRF": csrf.value() },
+      headers: { "content-type": "application/json", "X-Inherit-CSRF": csrfToken },
       body: JSON.stringify({ operation, nonce: nonces[operation] }),
-    });
-    csrf.accept(response);
+    }));
     setPending(false);
     if (!response.ok) {
       setFailed(true);

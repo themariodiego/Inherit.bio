@@ -46,9 +46,9 @@ export function CoParentReviewForm({ review, countries, refusalNonce }: {
     submitting.current = true;
     setStatus("pending");
     try {
-      const response = await fetch("/api/invitations/accept", {
+      const response = await csrf.send((csrfToken) => fetch("/api/invitations/accept", {
         method: "POST", credentials: "same-origin", cache: "no-store",
-        headers: { "Content-Type": "application/json", "X-Inherit-CSRF": csrf.value() },
+        headers: { "Content-Type": "application/json", "X-Inherit-CSRF": csrfToken },
         body: JSON.stringify({
           nonce: review.nonce, jurisdictionCode: form.get("jurisdictionCode"),
           coParentArtifacts: {
@@ -56,8 +56,7 @@ export function CoParentReviewForm({ review, countries, refusalNonce }: {
             parentageAttestation: artifactBody("attestation.embryo-parentage"),
           },
         }),
-      });
-      csrf.accept(response);
+      }));
       if (!response.ok) { setStatus("failed"); return; }
       const receipt = await response.json();
       setStatus(receipt.status === "accepted" && receipt.participantState === "accepted_pending_cohort_finalization" ? "accepted" : "failed");

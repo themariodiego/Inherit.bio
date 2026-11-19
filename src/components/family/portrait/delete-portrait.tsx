@@ -67,9 +67,8 @@ export function DeletePortrait({ grantId, revokeNonce }: {
               onClick={async () => {
                 setPending(true);
                 setFailed(false);
-                const response = await fetch(`/api/consents/${grantId}/revoke`, { method: "POST",
-                  headers: { "X-Inherit-Operation-Nonce": revokeNonce, "X-Inherit-CSRF": csrf.value() } });
-                csrf.accept(response);
+                const response = await csrf.send((csrfToken) => fetch(`/api/consents/${grantId}/revoke`, { method: "POST",
+                  headers: { "X-Inherit-Operation-Nonce": revokeNonce, "X-Inherit-CSRF": csrfToken } }));
                 setPending(false);
                 if (!response.ok) {
                   setFailed(true);

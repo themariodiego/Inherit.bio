@@ -148,8 +148,8 @@ export type ReviewedDocumentTarget = ReviewedDocumentTargetState & {
   consent?: OtherAdultConsentView;
   /** Sealed one-time token for opening the permission document session. */
   documentToken?: string;
-  /** The one-time api.subjects nonce and its session CSRF, once a named human approved. */
-  finalize?: { nonce: string; csrf: string };
+  /** The one-time api.subjects nonce, once a named human approved; the shell renders its X-Inherit-CSRF token. */
+  finalize?: { nonce: string };
   /** Why the uploader cannot sign for this person now (the database's answer). */
   blockedBy?: "account-completion" | "unavailable";
 };

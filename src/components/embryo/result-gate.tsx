@@ -70,12 +70,11 @@ export function EmbryoResultGate() {
           setFailed(false);
           let ok = false;
           try {
-            const response = await fetch("/api/embryos/acknowledge", {
+            const response = await csrf.send((csrfToken) => fetch("/api/embryos/acknowledge", {
               method: "POST",
-              headers: { "content-type": "application/json", "X-Inherit-CSRF": csrf.value() },
+              headers: { "content-type": "application/json", "X-Inherit-CSRF": csrfToken },
               body: JSON.stringify({ acknowledgement: "embryo-result-gate", affirmed: true }),
-            });
-            csrf.accept(response);
+            }));
             ok = response.ok;
           } catch {
             ok = false;

@@ -71,9 +71,9 @@ export function AdultSubjectReviewForm({ review }: { review: AdultSubjectReview 
     if (status !== "ready" || !confirmation || !allTicked || !nameValid) return;
     setStatus("pending");
     try {
-      const response = await fetch("/api/invitations/accept", {
+      const response = await accept.send((csrfToken) => fetch("/api/invitations/accept", {
         method: "POST", credentials: "same-origin", cache: "no-store",
-        headers: { "Content-Type": "application/json", "X-Inherit-CSRF": accept.value() },
+        headers: { "Content-Type": "application/json", "X-Inherit-CSRF": csrfToken },
         body: JSON.stringify({
           nonce: confirmation.nonce,
           subjectArtifact: {
@@ -86,8 +86,7 @@ export function AdultSubjectReviewForm({ review }: { review: AdultSubjectReview 
             typedName: typedName.trim(),
           },
         }),
-      });
-      accept.accept(response);
+      }));
       const body = await response.json().catch(() => null);
       if (response.status !== 200 || body?.invitationKind !== "adult_subject" || body?.status !== "accepted") {
         setStatus("failed");
@@ -102,12 +101,11 @@ export function AdultSubjectReviewForm({ review }: { review: AdultSubjectReview 
     if (status !== "ready") return;
     setStatus("pending");
     try {
-      const response = await fetch("/api/withdraw/session", {
+      const response = await rights.send((csrfToken) => fetch("/api/withdraw/session", {
         method: "POST", credentials: "same-origin", cache: "no-store",
-        headers: { "Content-Type": "application/json", "X-Inherit-CSRF": rights.value() },
+        headers: { "Content-Type": "application/json", "X-Inherit-CSRF": csrfToken },
         body: JSON.stringify({ operation, nonce: review.nonce }),
-      });
-      rights.accept(response);
+      }));
       const body = await response.json().catch(() => null);
       if (response.status !== 202 || body?.status !== "accepted" || body?.operation !== operation) {
         setStatus("failed");

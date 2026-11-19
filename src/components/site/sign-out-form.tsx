@@ -24,13 +24,13 @@ export function SignOutForm() {
     if (pending) return;
     setPending(true);
     try {
-      const response = await fetch("/auth/sign-out", {
+      const response = await csrf.send((csrfToken) => fetch("/auth/sign-out", {
         method: "POST",
         credentials: "same-origin",
         cache: "no-store",
         redirect: "manual",
-        headers: { "X-Inherit-CSRF": csrf.value() },
-      });
+        headers: { "X-Inherit-CSRF": csrfToken },
+      }));
       if (response.type === "opaqueredirect" || response.status === 303) {
         window.location.assign(route("auth.sign-in"));
         return;

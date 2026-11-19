@@ -27,12 +27,11 @@ export function RevokeAllConsents({ nonce }: { nonce: string }) {
     setBusy(true);
     setFailed(false);
     try {
-      const response = await fetch("/api/consents/revoke-all", {
+      const response = await csrf.send((csrfToken) => fetch("/api/consents/revoke-all", {
         method: "POST",
-        headers: { "Content-Type": "application/json", "X-Inherit-CSRF": csrf.value() },
+        headers: { "Content-Type": "application/json", "X-Inherit-CSRF": csrfToken },
         body: JSON.stringify({ confirmation: REVOKE_ALL_CONFIRMATION, nonce }),
-      });
-      csrf.accept(response);
+      }));
       const body = (await response.json().catch(() => null)) as { status?: string } | null;
       if (response.status !== 202 || body?.status !== "accepted") setFailed(true);
     } catch {

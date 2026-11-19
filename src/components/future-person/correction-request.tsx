@@ -1,13 +1,15 @@
 "use client";
 import { useState, type FormEvent } from "react";
 import { z } from "zod";
+import { useCsrf } from "@/components/security/csrf-provider";
 const fields = [
   ["display-label", "Record label"], ["disposition-record", "Disposition record"],
   ["identity-match-profile", "Identity match"], ["report-provenance", "Report source"],
   ["variant-call-source", "Variant source"],
 ] as const;
 const receipt = z.object({ status: z.literal("review_pending"), correctionId: z.uuid() }).strict();
-export function CorrectionRequestForm({ csrf, nonce, ownStatementDownloadsEnabled=false }: { csrf: string; nonce: string; ownStatementDownloadsEnabled?:boolean }) {
+export function CorrectionRequestForm({ nonce, ownStatementDownloadsEnabled=false }: { nonce: string; ownStatementDownloadsEnabled?:boolean }) {
+  const csrf = useCsrf("api.future-person-correction");
   const [field, setField] = useState<string>(fields[0][0]);
   const [statement, setStatement] = useState("");
   const [busy, setBusy] = useState(false), [done, setDone] = useState(false);
@@ -17,11 +19,11 @@ export function CorrectionRequestForm({ csrf, nonce, ownStatementDownloadsEnable
     event.preventDefault(); if (busy || done) return;
     setBusy(true); setMessage("");
     try {
-      const response = await fetch("/api/future-person/claim/session/corrections", {
+      const response = await csrf.send((csrfToken) => fetch("/api/future-person/claim/session/corrections", {
         method: "POST", credentials: "same-origin", cache: "no-store",
-        headers: { "Content-Type": "application/json", "X-Inherit-CSRF": csrf },
+        headers: { "Content-Type": "application/json", "X-Inherit-CSRF": csrfToken },
         body: JSON.stringify({ field, statement, nonce }),
-      });
+      }));
       const parsed = receipt.safeParse(await response.json());
       if (response.status !== 202 || !parsed.success) throw new Error("unavailable");
       setStatement(""); setDone(true); setCorrectionId(parsed.data.correctionId);

@@ -40,12 +40,11 @@ export function PathBRequestForm({ review }: { review: PathBRequestReview }) {
   async function send(operation: Operation, body: Record<string, unknown>) {
     setStatus("pending");
     try {
-      const response = await fetch("/api/withdraw/session", {
+      const response = await csrf.send((csrfToken) => fetch("/api/withdraw/session", {
         method: "POST", credentials: "same-origin", cache: "no-store",
-        headers: { "Content-Type": "application/json", "X-Inherit-CSRF": csrf.value() },
+        headers: { "Content-Type": "application/json", "X-Inherit-CSRF": csrfToken },
         body: JSON.stringify({ operation, nonce: review.nonce, ...body }),
-      });
-      csrf.accept(response);
+      }));
       const receipt = await response.json().catch(() => null);
       setStatus(response.status === 202 && receipt?.status === "accepted" && receipt?.operation === operation
         ? operation : "failed");

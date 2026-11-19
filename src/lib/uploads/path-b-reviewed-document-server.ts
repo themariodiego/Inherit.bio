@@ -120,15 +120,6 @@ export function readReviewedDocumentOperation(token: string | null, expected: { 
   return parsed.data.nonce;
 }
 
-/** api.subjects' X-Inherit-CSRF: bound to the account, its auth session and the draft. */
-export function finalizeCsrf(accountId: string, sessionId: string, subjectDraftId: string): string {
-  return hmacSecret(`${accountId}|${sessionId}|${subjectDraftId}`, "path-b-reviewed-document-csrf-v1");
-}
-
-function sameDigest(presented: string | null, expected: string): boolean {
-  if (!presented || !/^[0-9a-f]{64}$/u.test(presented)) return false;
-  return crypto.timingSafeEqual(Buffer.from(presented), Buffer.from(expected));
-}
 
 const sha256Hex = (value: string) => crypto.createHash("sha256").update(value).digest("hex");
 
@@ -252,9 +243,8 @@ export async function finalizeReviewedDocumentSubject(request: Request, deps: Fi
   const parsed = subjectFinalizeBody.safeParse(payload);
   if (!parsed.success) return notFound();
   const body = parsed.data;
-  if (!sameDigest(request.headers.get("x-inherit-csrf"), finalizeCsrf(actor.accountId, actor.sessionId, body.subjectDraftId))) {
-    return forbidden();
-  }
+  // The account session's one-time X-Inherit-CSRF token (api.subjects) was
+  // verified and spent before this ran (src/app/api/subjects/route.ts, G8.5).
   const nonce = readReviewedDocumentOperation(body.nonce, { accountId: actor.accountId, sessionId: actor.sessionId,
     operation: "finalize", targetId: body.subjectDraftId });
   if (!nonce) return notFound();
@@ -302,8 +292,8 @@ export async function listReviewedDocumentTargets(): Promise<ReviewedDocumentTar
 
 /**
  * The tokens the page renders for each person: the one-time document-session
- * token while a document is due, and the one-time api.subjects nonce with its
- * CSRF once a named human approved. The consent presentation (for a person
+ * token while a document is due, and the one-time api.subjects nonce once a
+ * named human approved (its X-Inherit-CSRF is the shell's session token). The consent presentation (for a person
  * not yet signed for) comes from the shared Path B preparation.
  */
 export function reviewedDocumentTokens(actor: { accountId: string; sessionId: string },
@@ -312,8 +302,7 @@ export function reviewedDocumentTokens(actor: { accountId: string; sessionId: st
     return { documentToken: mintReviewedDocumentOperation(actor.accountId, actor.sessionId, "document-session", target.subjectId) };
   }
   if (target.state === "awaiting-request" && target.signed) {
-    return { finalize: { nonce: mintReviewedDocumentOperation(actor.accountId, actor.sessionId, "finalize", target.subjectId),
-      csrf: finalizeCsrf(actor.accountId, actor.sessionId, target.subjectId) } };
+    return { finalize: { nonce: mintReviewedDocumentOperation(actor.accountId, actor.sessionId, "finalize", target.subjectId) } };
   }
   return {};
 }

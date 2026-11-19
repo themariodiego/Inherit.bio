@@ -73,13 +73,13 @@ export function ConsentList({
               data-testid={`revoke-${g.provider_key}`}
               disabled={revoking === g.id}
               onClick={async () => {
-                if (!g.revokeNonce) return;
+                const revokeNonce = g.revokeNonce;
+                if (!revokeNonce) return;
                 setRevoking(g.id);
                 try {
-                  const response = await fetch(`/api/consents/${g.id}/revoke`, {
-                    method: "POST", headers: { "X-Inherit-Operation-Nonce": g.revokeNonce, "X-Inherit-CSRF": csrf.value() },
-                  });
-                  csrf.accept(response);
+                  await csrf.send((csrfToken) => fetch(`/api/consents/${g.id}/revoke`, {
+                    method: "POST", headers: { "X-Inherit-Operation-Nonce": revokeNonce, "X-Inherit-CSRF": csrfToken },
+                  }));
                   router.refresh();
                 } finally {
                   setRevoking(null);

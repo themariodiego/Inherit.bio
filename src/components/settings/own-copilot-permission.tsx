@@ -42,14 +42,14 @@ export function OwnCopilotPermission({ view }: { view: OwnCopilotPermissionView 
     <div><Button disabled={busy || (!view.granted && !affirmed)} variant={view.granted ? "outline" : "default"} onClick={async () => {
       setBusy(true); setMessage(null);
       try {
-        const response = view.granted && view.grantId && view.revokeNonce
-          ? await fetch(`/api/consents/${view.grantId}/revoke`, { method: "POST",
-            headers: { "X-Inherit-Operation-Nonce": view.revokeNonce, "X-Inherit-CSRF": revokeCsrf.value() } })
+        const revokeNonce = view.granted && view.grantId ? view.revokeNonce : null;
+        const response = revokeNonce
+          ? await revokeCsrf.send((csrfToken) => fetch(`/api/consents/${view.grantId}/revoke`, { method: "POST",
+            headers: { "X-Inherit-Operation-Nonce": revokeNonce, "X-Inherit-CSRF": csrfToken } }))
           : await fetch("/api/consents", { method: "POST", headers: { "content-type": "application/json", "x-inherit-csrf": view.token },
             body: JSON.stringify({ action: "grant-purpose", subjectId: view.subjectId, purposeKey: view.purposeKey,
               artifactVersion: purposeArtifact.version, artifactPresentationToken: view.token, affirmed: true,
               statementKeys: ["model-named", "data-classes-named", "raw-file-excluded", "revocable"] }) });
-        if (view.granted) revokeCsrf.accept(response);
         const receipt: unknown = await response.json().catch(() => null);
         const confirmed = view.granted
           ? response.status === 200 && z.object({ revoked: z.literal(true) }).strict().safeParse(receipt).success

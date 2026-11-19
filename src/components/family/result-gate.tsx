@@ -63,12 +63,11 @@ export function ResultGate() {
             onClick={async () => {
               setPending(true);
               setFailed(false);
-              const response = await fetch("/api/family/acknowledge", {
+              const response = await csrf.send((csrfToken) => fetch("/api/family/acknowledge", {
                 method: "POST",
-                headers: { "content-type": "application/json", "X-Inherit-CSRF": csrf.value() },
+                headers: { "content-type": "application/json", "X-Inherit-CSRF": csrfToken },
                 body: JSON.stringify({ acknowledgement: "tier2-result-gate", affirmed: true }),
-              });
-              csrf.accept(response);
+              }));
               setPending(false);
               if (!response.ok) {
                 setFailed(true);

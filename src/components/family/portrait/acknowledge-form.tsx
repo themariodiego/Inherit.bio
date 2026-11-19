@@ -71,13 +71,12 @@ export function AcknowledgeForm({
           onClick={async () => {
             setPending(true);
             setFailed(false);
-            const response = await fetch("/api/family/acknowledge", {
+            const response = await csrf.send((csrfToken) => fetch("/api/family/acknowledge", {
               method: "POST",
               headers: { "content-type": "application/json", "X-Inherit-Operation-Nonce": operationNonce,
-                "X-Inherit-CSRF": csrf.value() },
+                "X-Inherit-CSRF": csrfToken },
               body: JSON.stringify({ acknowledgement: "portrait", subjectId, affirmed: true }),
-            });
-            csrf.accept(response);
+            }));
             setPending(false);
             if (!response.ok) {
               setFailed(true);

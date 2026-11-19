@@ -86,10 +86,14 @@ export const SESSION_CSRF_ROUTES = Object.freeze({
   "api.claimed-subject-correction": "authenticated",
   "api.claimed-subject-analysis-stop": "authenticated",
   "api.jurisdiction": "authenticated",
+  "api.subjects": "authenticated",
+  "api.future-person-claimant-bind": "authenticated",
   "api.withdraw": "token",
   "api.consent-reaffirm-rights": "token",
   "api.consent-grant-rights": "token",
   "api.consent-revoke-rights": "token",
+  "api.future-person-correction": "token",
+  "api.appeal-complete": "token",
   "api.rights-activate": "token-candidate",
 } as const);
 

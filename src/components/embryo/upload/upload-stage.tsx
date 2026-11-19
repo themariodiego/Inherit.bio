@@ -260,13 +260,12 @@ function FinalizeAndSend({ view }: { view: Extract<UploadStageView, { kind: "ack
     const insurance = ids["disclosure.insurance-and-discrimination"] ?? view.signed["disclosure.insurance-and-discrimination"];
     const charter = ids["charter.future-person"] ?? view.signed["charter.future-person"];
     setFailed(false);
-    const response = await fetch(route("api.embryo-cohorts", {}), {
+    const response = await csrf.send((csrfToken) => fetch(route("api.embryo-cohorts", {}), {
       method: "POST", credentials: "same-origin", cache: "no-store",
-      headers: { "Content-Type": "application/json", "X-Inherit-CSRF": csrf.value() },
+      headers: { "Content-Type": "application/json", "X-Inherit-CSRF": csrfToken },
       body: JSON.stringify({ cohortDraftId: view.draftId, insuranceAcknowledgementId: insurance,
         futurePersonCharterAcknowledgementId: charter, nonce: view.finalizeNonce }),
-    });
-    csrf.accept(response);
+    }));
     if (response.status !== 201) { setFailed(true); return; }
     try { setFinalized(readUploadReceipt(await response.json())); }
     catch { setFailed(true); }

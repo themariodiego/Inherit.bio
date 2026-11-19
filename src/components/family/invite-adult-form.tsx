@@ -63,9 +63,9 @@ export function InviteAdultForm({ operationNonce }: {
         setError(null);
         const data = new FormData(event.currentTarget);
         const note = String(data.get("note") ?? "").trim();
-        const response = await fetch("/api/subject-drafts", {
+        const response = await csrf.send((csrfToken) => fetch("/api/subject-drafts", {
           method: "POST",
-          headers: { "content-type": "application/json", "X-Inherit-Operation-Nonce": operationNonce, "X-Inherit-CSRF": csrf.value() },
+          headers: { "content-type": "application/json", "X-Inherit-Operation-Nonce": operationNonce, "X-Inherit-CSRF": csrfToken },
           body: JSON.stringify({
             kind: "adult",
             adultFlow: "path-a-own-account",
@@ -73,8 +73,7 @@ export function InviteAdultForm({ operationNonce }: {
             requestId: requestId.current,
             ...(note.length > 0 ? { note } : {}),
           }),
-        });
-        csrf.accept(response);
+        }));
         setPending(false);
         if (!response.ok) {
           setError(response.status === 403 ? BLOCKED_HERE_STATUS : REQUEST_FAILED_STATUS);

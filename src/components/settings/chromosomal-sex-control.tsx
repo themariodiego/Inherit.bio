@@ -60,12 +60,11 @@ export function ChromosomalSexControl({
     setFailed(false);
     setChosen(chromosomalSex);
     try {
-      const response = await fetch("/api/chromosomal-sex", {
+      const response = await csrf.send((csrfToken) => fetch("/api/chromosomal-sex", {
         method: "POST",
-        headers: { "Content-Type": "application/json", "X-Inherit-Operation-Nonce": operationNonce, "X-Inherit-CSRF": csrf.value() },
+        headers: { "Content-Type": "application/json", "X-Inherit-Operation-Nonce": operationNonce, "X-Inherit-CSRF": csrfToken },
         body: JSON.stringify({ subjectId, chromosomalSex }),
-      });
-      csrf.accept(response);
+      }));
       if (!response.ok) {
         setFailed(true);
         setChosen(recorded);

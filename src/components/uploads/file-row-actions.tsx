@@ -54,10 +54,9 @@ export function FileRowActions({
             // The route flips status to "parsing" as it starts; refresh
             // early so the status reflects that while the run continues.
             const earlyRefresh = setTimeout(() => router.refresh(), 1500);
-            const res = await fetch(`/api/files/${fileId}/process`, {
-              method: "POST", headers: { "X-Inherit-CSRF": processCsrf.value() },
-            }).catch(() => null);
-            if (res) processCsrf.accept(res);
+            const res = await processCsrf.send((csrfToken) => fetch(`/api/files/${fileId}/process`, {
+              method: "POST", headers: { "X-Inherit-CSRF": csrfToken },
+            })).catch(() => null);
             clearTimeout(earlyRefresh);
             if (!res?.ok) {
               const detail = res ? await res.text().catch(() => "") : "";

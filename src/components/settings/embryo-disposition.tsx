@@ -22,9 +22,8 @@ export function EmbryoDisposition({control}:{control:EmbryoDispositionControl}){
     setBusy(true);setMessage(null);
     const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),20_000);
     try{
-      const response=await fetch(`/api/embryos/${control.embryoId}/disposition`,{method:"POST",credentials:"same-origin",
-        cache:"no-store",signal:controller.signal,headers:{"Content-Type":"application/json","X-Inherit-CSRF":csrf.value()},body:JSON.stringify(body)});
-      csrf.accept(response);
+      const response=await csrf.send((csrfToken) => fetch(`/api/embryos/${control.embryoId}/disposition`,{method:"POST",credentials:"same-origin",
+        cache:"no-store",signal:controller.signal,headers:{"Content-Type":"application/json","X-Inherit-CSRF":csrfToken},body:JSON.stringify(body)}));
       const next=readEmbryoDispositionReceipt(response.status,await response.json(),{embryoId:control.embryoId,action,disposition});
       if(!next){setMessage("We could not confirm the change. Refresh this page and check the record.");return;}
       if("disposition" in next&&next.disposition==="transferred"&&next.recordKeyCard!==null)setReceipt(next);

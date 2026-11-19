@@ -195,7 +195,7 @@ export const SHELL_CSRF_ROUTES = [
   "api.file-process", "api.file-upload-session", "api.file-finalize", "api.file-delete", "api.llm-settings",
   "api.subject-drafts", "api.subject-sharing", "api.chromosomal-sex", "api.family-acknowledge", "api.embryo-acknowledge", "api.consents",
   "api.consent-revoke", "api.consents-revoke-all", "api.embryo-cohorts", "api.embryo-record-key-cards",
-  "api.embryo-disposition", "api.jurisdiction",
+  "api.embryo-disposition", "api.jurisdiction", "api.subjects",
 ] as const satisfies readonly CsrfRoute[];
 
 export type CsrfTokens = Partial<Record<CsrfRoute, string>>;

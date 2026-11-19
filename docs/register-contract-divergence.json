@@ -228,7 +228,7 @@
     }
   ],
   "formRequestDivergenceNote": "2026-10-23 (G8.5, form verification). What every <form> in the shipped app sends, read from source by scripts/form-contract-census.ts and held against docs/route-register.json by scripts/form-register-correspondence.test.ts: the target, method, body keys and literal discriminators, required and CSRF headers, Content-Type and the statuses the code branches on. A native form is read from its markup; an actionless form through its submit handler, following local and imported functions, conditional bodies and the props a form hands its submission to. Each row is one (request file, route, method) and the issues it shows (since 2026-10-23 no request omits X-Inherit-CSRF, and the test fails if one does; see csrfTransportNote); the test computes the issue set and compares it with these rows in both directions, so a new divergence fails until recorded and a fixed one fails until its row is removed. closedBy names who has to act: owner (which document moves), counsel, or engineering. Listing a divergence records it; it does not bless it. 2026-10-23, owner decision (\"G8.5: forms, CSRF, the server action and the Resend webhook\", item 1): the register lists the harmless extras that ship, so five rows close and are removed: genome.browser's q (a closed queryContract), requestId on every subject-draft body, Path B's withAccount confirm body on api.withdraw, api.chat's 409s (copilot-provider-setup-required-v1 and own-chat-scientific-correction-v1) and api.future-person-claim's 404 (resource-not-found-v1). The CSRF rows close with item 2, the one-time session token, the same day (see csrfTransportNote). The Path A row (src/components/family/invite-adult-form.tsx) closes the same day: the form and src/app/api/subject-drafts/route.ts moved to the registered { kind: \"adult\", adultFlow: \"path-a-own-account\", contactEmail, requestId, note? } and answer an unreviewed jurisdiction with capability-denied-api-v1 (403). The compatibility chat row (src/components/chat/chat-panel.tsx) closes the same day: the panel sends the registered { contextToken, message } to api.chat with no query, under a token /copilot/[scope] mints for the account, its auth session and the subject (src/lib/copilot/compat-chat-token.ts), and the route's AI SDK transport branch is gone. 2026-10-24, owner decision (\"G8.5: Settings \u2192 AI may omit `apiKey`\"): the register's hosted and remote-openai-compatible bodies of api.llm-settings say apiKey is optional (an absent key keeps the stored key for the same destination, a remote HTTPS endpoint may be saved with no key, and a POST that cannot reuse a stored key answers llm-settings-v1.keyRequired, 409), so the last Settings row closes and is removed. The co-parent jurisdiction fields (D-083, counsel) are the one row left. 2026-10-24 (G8.5): the compatibility Copilot panel (src/components/chat/chat-panel.tsx) is retired with its api.chat branch; the form census reads 25 forms (1 native, 24 handler-submitted) and 27 requests in 22 files, and this table is unchanged. 2026-11-19, owner decision (\"G8.5: the retired chat's 409 leaves the register\"): copilot-provider-setup-required-v1, which nothing has answered since the compatibility branch of api.chat was retired on 24 October, leaves the register with its two references (api.chat's responseContractBindings entry and its zeroFindingClosedBranches entry). api.chat's one registered 409 is now own-chat-scientific-correction-v1, which the own chat still answers, so a form that branches on 409 still matches a bound contract. This table is unchanged.",
-  "csrfTransportNote": "2026-10-23 (G8.5; owner decision \"CSRF: build the token everywhere\"). The register's csrfTransport stands and is built. src/lib/security/session-csrf-core.ts mints X-Inherit-CSRF as <expiresAt>.<random>.<mac>: a keyed digest of the session kind, the session (the account and its auth session, or the SHA-256 of the rights-session or activation-candidate cookie), the registered route and a twelve-hour expiry, none of which travels in the token. The page or the signed-in shell renders it and stores nothing. The route verifies it against the live request, and public.consume_session_csrf_v1 (20261024220000_session_csrf_tokens.sql, a guarded production release) spends its hash once, refusing a spent token, an expiry beyond the lifetime and an authenticated token whose auth session is no longer live; the response that spends one carries its successor in the same header. A missing, spent, other-session or other-route token is refused before the handler runs: authenticated-mutation-v1's 403 request_forbidden on an authenticated route, the 404 not_found of token-api-v1 or token-candidate-api-v1 on a purpose-session route. Operation nonces are unchanged and separate (operationNonceIsNotCsrf). The 38 routes of SESSION_CSRF_ROUTES require it (37, and api.embryo-acknowledge since the merge with G8.5's form shapes), with api.embryo-withdraw sharing api.cohort-restrict's token as its policy.aliasOf; src/lib/security/session-csrf-routes.test.ts drives each through its handler, and scripts/form-register-correspondence.test.ts finds no client request, form or not, that omits the header. auth.sign-out is a scripted form that sends it and checks the exact Origin. Every other route the register binds keeps an X-Inherit-CSRF of its own design, listed in csrfOwnDesign with what it binds and whether it is one-time; two upload-session routes send none. No formRequestDivergence row records a CSRF omission any more.",
+  "csrfTransportNote": "2026-10-23 (G8.5; owner decision \"CSRF: build the token everywhere\"). The register's csrfTransport stands and is built. src/lib/security/session-csrf-core.ts mints X-Inherit-CSRF as <expiresAt>.<random>.<mac>: a keyed digest of the session kind, the session (the account and its auth session, or the SHA-256 of the rights-session or activation-candidate cookie), the registered route and a twelve-hour expiry, none of which travels in the token. The page or the signed-in shell renders it and stores nothing. The route verifies it against the live request, and public.consume_session_csrf_v1 (20261024220000_session_csrf_tokens.sql, a guarded production release) spends its hash once, refusing a spent token, an expiry beyond the lifetime and an authenticated token whose auth session is no longer live; the response that spends one carries its successor in the same header. A missing, spent, other-session or other-route token is refused before the handler runs: authenticated-mutation-v1's 403 request_forbidden on an authenticated route, the 404 not_found of token-api-v1 or token-candidate-api-v1 on a purpose-session route. Operation nonces are unchanged and separate (operationNonceIsNotCsrf). The 42 routes of SESSION_CSRF_ROUTES require it (37, and api.embryo-acknowledge since the merge with G8.5's form shapes; api.subjects, api.future-person-claimant-bind, api.future-person-correction and api.appeal-complete since 2026-11-19, moved from csrfOwnDesign), with api.embryo-withdraw sharing api.cohort-restrict's token as its policy.aliasOf; src/lib/security/session-csrf-routes.test.ts drives each through its handler, and scripts/form-register-correspondence.test.ts finds no client request, form or not, that omits the header. auth.sign-out is a scripted form that sends it and checks the exact Origin. Every other route the register binds keeps an X-Inherit-CSRF of its own design, listed in csrfOwnDesign with what it binds and whether it is one-time; two upload-session routes send none. No formRequestDivergence row records a CSRF omission any more.",
   "formRequestDivergence": [
     {
       "file": "src/components/embryo/co-parent-review-form.tsx",
@@ -365,7 +365,7 @@
       "closing": "Nothing while both callers pass an object URL. A caller that passes a network URL changes the evidence and fails this entry until it is re-reviewed."
     }
   ],
-  "csrfOwnDesignNote": "2026-10-23 (G8.5). Every route the register binds to csrfTransport whose X-Inherit-CSRF is not the one-time session token of src/lib/security/session-csrf.ts, read from its handler: what the header carries, the kind (digest-not-one-time: a keyed digest of the session that a replay can repeat, so the paired one-time nonce or the session's own rotation is what refuses it; operation-token: the one-time operation or presentation value itself, which operationNonceIsNotCsrf says a CSRF value is not; derived-one-time: a distinct value bound to a one-time token; none), and whether it is one-time. branch marks a route whose other bodies use the session token. src/lib/security/session-csrf-routes.test.ts holds this list to the register in both directions, with SESSION_CSRF_ROUTES, and each row to the literal it cites. Moving a row onto the session token is engineering work once the owner says these designs should go; the two upload-session routes also need a carrier for the first token of a session a response opens.",
+  "csrfOwnDesignNote": "2026-10-23 (G8.5). Every route the register binds to csrfTransport whose X-Inherit-CSRF is not the one-time session token of src/lib/security/session-csrf.ts, read from its handler: what the header carries, the kind (digest-not-one-time: a keyed digest of the session that a replay can repeat, so the paired one-time nonce or the session's own rotation is what refuses it; operation-token: the one-time operation or presentation value itself, which operationNonceIsNotCsrf says a CSRF value is not; derived-one-time: a distinct value bound to a one-time token; none), and whether it is one-time. branch marks a route whose other bodies use the session token. src/lib/security/session-csrf-routes.test.ts holds this list to the register in both directions, with SESSION_CSRF_ROUTES, and each row to the literal it cites. Moving a row onto the session token is engineering work once the owner says these designs should go; the two upload-session routes also need a carrier for the first token of a session a response opens. 2026-11-19 (G8.5 stage one, the owner's \"build the token everywhere\"): the four rows that fit without a migration or a design question moved onto the session token and left this list (api.subjects, api.future-person-claimant-bind, api.future-person-correction, api.appeal-complete); each kept its one-time nonce. The rest stay: each needs a session kind the consume function does not accept, a carrier for a first token, a split of a header or value it shares, or (the claimant page's recovery-key, analysis-stop and delete) a change to the G5.4 browser proof that replays the page's claimant CSRF.",
   "csrfOwnDesign": [
     {
       "routeId": "auth.reset-password-submit",
@@ -422,14 +422,6 @@
       "kind": "derived-one-time",
       "value": "The ingest_complete_csrf token the configure or mapping response issued, distinct from the completion nonce.",
       "oneTime": "Yes: its nonce hash (p_csrf_hash) is recorded once."
-    },
-    {
-      "routeId": "api.subjects",
-      "file": "src/lib/uploads/path-b-reviewed-document-server.ts",
-      "literal": "if (!sameDigest(request.headers.get(\"x-inherit-csrf\"), finalizeCsrf(actor.accountId, actor.sessionId, body.subjectDraftId))) {",
-      "kind": "digest-not-one-time",
-      "value": "A keyed digest of the account, auth session and draft (finalizeCsrf).",
-      "oneTime": "No on its own: the body's one-time finalize nonce refuses a replay."
     },
     {
       "routeId": "api.invitations",
@@ -520,14 +512,6 @@
       "oneTime": "No on its own: the one-time document nonce in X-Inherit-Operation-Nonce refuses a replay."
     },
     {
-      "routeId": "api.appeal-complete",
-      "file": "src/lib/future-person/public-appeal-session.ts",
-      "literal": "return hmacSecret(hash, `public-appeal-${operation}-csrf-v1`);",
-      "kind": "digest-not-one-time",
-      "value": "As api.appeal-document-session, for the completion.",
-      "oneTime": "No on its own: the body's one-time completion nonce refuses a replay."
-    },
-    {
       "routeId": "api.appeal-review",
       "file": "src/app/api/reviews/appeals/[id]/route.ts",
       "literal": "!reviewCsrfMatches(request.headers.get(\"x-inherit-csrf\"), id, account.user.id, account.sessionId)) return notFound();",
@@ -600,25 +584,9 @@
       "oneTime": "No on its own: each operation's one-time nonce refuses a replay."
     },
     {
-      "routeId": "api.future-person-claimant-bind",
-      "file": "src/lib/future-person/account-binding.ts",
-      "literal": "||!csrf||!/^[0-9a-f]{64}$/u.test(csrf)||!crypto.timingSafeEqual(Buffer.from(csrf),Buffer.from(claimantCsrf(hash))))return null;",
-      "kind": "digest-not-one-time",
-      "value": "A keyed digest of the rights session (claimantCsrf), the same value for every request of the session.",
-      "oneTime": "No on its own: each operation's one-time nonce refuses a replay."
-    },
-    {
       "routeId": "api.future-person-recovery-key",
       "file": "src/lib/future-person/rights.ts",
       "literal": "export function claimantCsrf(sessionHash:string):string{return hmacSecret(sessionHash,\"future-person-rights-csrf-v1\");}",
-      "kind": "digest-not-one-time",
-      "value": "A keyed digest of the rights session (claimantCsrf), the same value for every request of the session.",
-      "oneTime": "No on its own: each operation's one-time nonce refuses a replay."
-    },
-    {
-      "routeId": "api.future-person-correction",
-      "file": "src/lib/future-person/correction-intake.ts",
-      "literal": "actual = Buffer.from(csrf, \"utf8\"); expected = Buffer.from(claimantCsrf(sessionHash), \"utf8\");",
       "kind": "digest-not-one-time",
       "value": "A keyed digest of the rights session (claimantCsrf), the same value for every request of the session.",
       "oneTime": "No on its own: each operation's one-time nonce refuses a replay."
@@ -661,7 +629,7 @@
       "literal": "if (request.headers.get(\"x-inherit-csrf\") !== body.artifactPresentationToken) {",
       "kind": "operation-token",
       "value": "On the own-upload, other-adult, Path B, own-report and own-Copilot bodies, the page's one-time presentation token, the same value as artifactPresentationToken; on the embryo bodies, the embryo operation token.",
-      "oneTime": "Yes, but it is the operation or presentation value (operationNonceIsNotCsrf). The provider and adult grant bodies use the session token.",
+      "oneTime": "Yes, but it is the operation or presentation value (operationNonceIsNotCsrf). The adult grant body uses the session token; the provider body was removed on 19 November 2026.",
       "branch": true
     },
     {

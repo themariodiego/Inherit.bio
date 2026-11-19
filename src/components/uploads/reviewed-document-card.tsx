@@ -2,6 +2,7 @@
 
 import { useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
+import { useCsrf } from "@/components/security/csrf-provider";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { OTHER_ADULT_UPLOAD_COPY as COPY, REVIEWED_DOCUMENT_COPY as DOCUMENT } from "@/copy/upload/other-adult";
@@ -40,6 +41,7 @@ export function ReviewedDocumentCard({ target }: { target: ReviewedDocumentTarge
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState(false);
   const [status, setStatus] = useState<DocumentStatus | null>(null);
+  const subjectsCsrf = useCsrf("api.subjects");
 
   const card = (children: ReactNode, slot: string) => <article className="surface surface-pad rec-stack" data-slot={slot}>
     <h3 className="title">{target.label} · {COPY.requestedOn(day(target.requestedAt))}</h3>{children}
@@ -163,17 +165,17 @@ export function ReviewedDocumentCard({ target }: { target: ReviewedDocumentTarge
   }
 
   if (target.state === "awaiting-request" && target.finalize && target.documentId && target.legalReviewId) {
-    const { nonce, csrf } = target.finalize;
+    const { nonce } = target.finalize;
     const documentId = target.documentId, legalReviewId = target.legalReviewId;
     async function request() {
       setBusy(true); setFailed(false);
       try {
-        const response = await fetch("/api/subjects", {
+        const response = await subjectsCsrf.send((csrfToken) => fetch("/api/subjects", {
           method: "POST", credentials: "same-origin", cache: "no-store",
-          headers: { "content-type": "application/json", "x-inherit-csrf": csrf },
+          headers: { "content-type": "application/json", "x-inherit-csrf": csrfToken },
           body: JSON.stringify({ subjectDraftId: target.subjectId, permissionEvidenceDocumentId: documentId,
             legalReviewId, nonce }),
-        });
+        }));
         // subject-created-v1 is the same for every address; anything else is a failure.
         const receipt = (await response.json().catch(() => null)) as { status?: unknown; next?: unknown } | null;
         if (response.status !== 202 || receipt?.status !== "received" || receipt.next !== "awaiting_subject_confirmation") {

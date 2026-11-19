@@ -54,14 +54,13 @@ function readRegion(key: string, csrf: CsrfHandle, region: { file: string; chrom
     // body, never the URL: a query string is written to server logs,
     // referrers and traces, and this request names both a person's file and
     // exactly where in their genome they are looking.
-    const res = await fetch("/api/browse/region", {
+    const res = await csrf.send((csrfToken) => fetch("/api/browse/region", {
       method: "POST",
-      headers: { "content-type": "application/json", "X-Inherit-CSRF": csrf.value() },
+      headers: { "content-type": "application/json", "X-Inherit-CSRF": csrfToken },
       body: JSON.stringify({
         file: region.file, chromosome: region.chromosome, start: region.start, end: region.end,
       }),
-    });
-    csrf.accept(res);
+    }));
     if (!res.ok) {
       throw new Error(`region API responded ${res.status}`);
     }

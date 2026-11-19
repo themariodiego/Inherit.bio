@@ -22,12 +22,11 @@ export function RecordKeyCards({ control }: { control: RecordKeyCardControl }) {
     setAttempted(true); setBusy(true); setMessage(null);
     const controller = new AbortController(), timer = setTimeout(() => controller.abort(), 20_000);
     try {
-      const response = await fetch(`/api/embryo-cohorts/${control.cohortId}/record-key-cards`, {
+      const response = await csrf.send((csrfToken) => fetch(`/api/embryo-cohorts/${control.cohortId}/record-key-cards`, {
         method: "POST", credentials: "same-origin", cache: "no-store", referrerPolicy: "no-referrer",
-        signal: controller.signal, headers: { "Content-Type": "application/json", "X-Inherit-CSRF": csrf.value() },
+        signal: controller.signal, headers: { "Content-Type": "application/json", "X-Inherit-CSRF": csrfToken },
         body: JSON.stringify({ nonce: control.nonce }),
-      });
-      csrf.accept(response);
+      }));
       const next = readRecordKeyCardReceipt(response.status, await response.json(), control);
       if (next) setReceipt(next);
       else setMessage("We could not confirm the cards. Refresh this page to check.");

@@ -21,9 +21,8 @@ export async function deleteFileUntilSettled(fileId: string, external: AbortSign
   }
   try {
     while (!signal.aborted) {
-      const response = await fetch(`/api/files/${fileId}`, { method: "DELETE", signal,
-        headers: { "X-Inherit-CSRF": csrf.value() } });
-      csrf.accept(response);
+      const response = await csrf.send((csrfToken) => fetch(`/api/files/${fileId}`, { method: "DELETE", signal,
+        headers: { "X-Inherit-CSRF": csrfToken } }));
       signal.throwIfAborted();
       if (response.status === 204) return { status: "deleted" };
       const raw: unknown = await response.json().catch(() => null);
