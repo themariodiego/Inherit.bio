@@ -4,7 +4,9 @@
   "builtButNotRegistered": [
     {
       "path": "/session-check-unavailable",
-      "file": "src/app/session-check-unavailable/page.tsx"
+      "file": "src/app/session-check-unavailable/page.tsx",
+      "why": "Recorded, not registered, on 19 November 2026. No person or link reaches it: only the proxy's own rewrite after a twice-failed sign-in check renders it, a direct visit is the ordinary not-found page, and it reads no session, cookie or row; the register describes it in pageAuthContract.authServiceUnavailable.mechanism. A routes[] entry would have to carry one of two things the gates refuse. With its one real state, error, scripts/route-gate.ts would require a browser proof of (/session-check-unavailable, error), which needs the auth service to fail on demand and cannot be written honestly (e2e/session-check-unavailable.spec.ts proves the direct-visit 404 and says why), so UNPROVEN_ROUTE_STATE_PAIRS would rise from 0. With every state waived, the G2.5 density census refuses a page with no measurable state (scripts/density-current.ts, \"No applicable density state\", which scripts/density-current.test.ts pins). Any other state would be untrue.",
+      "closing": "A way to make the auth service fail on demand in a browser test, or a register rule for a page the router serves only to the proxy's rewrite; either is the owner's or engineering's to choose."
     }
   ],
   "permissiveDynamicSegment": [],

@@ -1713,6 +1713,13 @@ ceiling is superseded; no route or task-depth ratchet is raised.
 
 ## 22. The brief's storage sentence: where genome files are kept
 
+**SIGNED 2026-11-19, APPLIED: 22.1 and 22.2; 22.3 is not applied.** On the owner's
+decision of 19 November 2026 ("The brief's storage sentences are replaced", "Apply
+both"), the two sentences replace the brief's own in the **Storage.** paragraph,
+word for word as proposed below, and the register's `briefSha256` moved with them in
+the same change. 22.3 stays a separate open correction. The text below is the
+proposal as the owner saw it.
+
 **PROPOSED 2026-11-19, NOT APPLIED.** Owner decision "G8.5: the two undescribed
 `genomes` key shapes": the owner left the side to engineering, engineering
 chose to change the documents, and the exact brief sentence is shown to the
