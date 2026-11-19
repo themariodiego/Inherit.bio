@@ -5748,3 +5748,73 @@ The function has no caller in `src/`; two browser fixtures and one database
 test call it. The decision itself is carried out as chosen: `api.consents`
 refuses the body, and withdrawal is unchanged. Whoever retires the function
 later rewrites those fixtures and decides what `/settings/consents` lists.
+
+## 2026-11-19 — G8.5: sign-out keeps an open rights session
+
+Owner decision (clickable chat answer, "Keep it at sign-out"). Asked: when
+someone signs out, the register says Inherit should also end any open rights
+session in that browser; a rights session is what a person gets after opening
+a mailed link, for example to accept an invitation, and the link itself works
+only once; today sign-out keeps it, so on a shared computer one person can
+sign out and the invited person can then sign in and finish accepting. Should
+sign-out end it? Offered: "Keep it at sign-out", "End it, as the register
+says". Chosen: "Keep it at sign-out".
+
+Behaviour stays as it is, and the register's `sign-out-v1.sessionEffect` is
+amended to say that the rights cookie is not cleared at sign-out. The session
+recommended this because the mailed link is already used up and it had not
+verified that a person could always get a fresh one; that verification is
+still owed, and the question can be reopened once it is done.
+
+## 2026-11-19 — G8.5: principles for the CSRF register amendments
+
+Owner decision (clickable chat answer, "Yes, on those principles"). Asked: the
+remaining 34 routes of the CSRF work (decided on 23 October: build the one-time
+session token everywhere) need technical amendments to the register, about
+where each one-time value travels in a request. May engineering make them on
+these principles and list each amendment for the owner afterwards?
+1. The `X-Inherit-CSRF` header carries only the session token.
+2. Other one-time values, such as operation or draft tokens, move to their own
+   header or body field and keep working as they do.
+3. File uploads sent in many chunks keep one session-bound value, with each
+   chunk reserved once, instead of a new token per chunk.
+4. Cookie names in the register follow the names the code really sets.
+Offered: "Yes, on those principles", "Bring each amendment to me". Chosen:
+"Yes, on those principles".
+
+Engineering amends the register route by route on the four principles, builds
+the code and the database migration, and gives the owner the list of
+amendments afterwards. The migration ships in a later guarded release, on the
+owner's go. Anything that does not fit the principles comes to the owner as
+its own question.
+
+## 2026-11-19 — G8.5: the strictest referrer setting applies to the whole route
+
+Owner decision (clickable chat answer, "Yes, strictest on the whole route").
+Asked: on three embryo routes the register names "send no referrer" only for
+the success answer and a looser setting for their other answers; the system
+can only set this per route, so today even the success answer gets the looser
+setting; may engineering apply the strictest setting to every answer of such a
+route, which is never less private but is stricter than the register states
+for those other answers? Offered: "Yes, strictest on the whole route", "Keep
+to the register exactly". Chosen: "Yes, strictest on the whole route".
+
+Where the register names `no-referrer` for any answer of a route, every answer
+of that route gets it, and the register is amended to say so. This settles
+D-138 (b) and gives the rule for D-138 (c).
+
+## 2026-11-19 — G8.5: a cross-site file delete is refused with the register's code
+
+Owner decision (clickable chat answer, "Use the register's code"). Asked: if a
+different website tries to make a signed-in person's browser delete one of
+their files, Inherit refuses, with an internal code that differs from the one
+the register names; using the register's code means that in that one case the
+Files page would show "Deletion did not finish. Please try Delete again. The
+file will stay listed until deletion is complete." instead of "Please sign in
+again and try Delete."; a person using Inherit normally never triggers it.
+Which should stand? Offered: "Use the register's code", "Keep the current
+code". Chosen: "Use the register's code".
+
+`api.file-delete`'s cross-origin refusal answers 403 `request_forbidden`, as
+`authenticated-mutation-v1` says. Both sentences already exist; no new wording
+is written.
