@@ -1,3 +1,26 @@
+## 2026-11-19 — APT admission: report the public shape of a refused stock mirror file
+
+On 19 November 2026, CI run 44546883409 for commit `d8dcb61a` passed APT mirror admission on some hosted runners and held it on others at `Unsupported stock mirror URI, priority or format`. The guard said nothing about the file it refused. This change, on top of `d8dcb61a`, adds bounded diagnostics to that refusal path only (see `docs/ci-apt-mirror-priority.md`). `mirror_candidate`, `admit_priority_state` and every other admission check are unchanged, and `main` re-raises the same refusal, so the `HOLD` line and exit code are unchanged. A FIFO at the sources path is refused by `lstat` before `safe_read`, whose blocking open would otherwise turn the `HOLD` into a step timeout. No workflow changed. Nothing here ran on a hosted runner.
+
+**New tests.**
+- `scripts/test_ci_apt_mirror_priority.py`, 55/55 (12 new; the 43 existing methods unchanged), with CI's command `python3 -B -m unittest discover -s scripts -p test_ci_apt_mirror_priority.py` on Python 3.13 and on Noble's 3.12.3, each as root and as an unprivileged user. A new `run_main` fixture drives the real `main()` over owned temporary files. The platform, the `apt-get --version` text and the directory census are doubles, and it stops before `limited_config`, so no APT command runs. The new tests check:
+  - `STOCK`, `PRIORITIZED` and both candidates are the reviewed bytes, written out literally;
+  - every previously refused mirror and strict pairing still raises `RuntimeError` with its exact reason, and so do the three shapes read from upstream `main` (no priority:1 row; a us-east-2 priority:1 row; an Azure row without its slash, without the final newline, or with CRLF);
+  - on those shapes `main` prints the three new events, raises the same refusal, leaves the mirror bytes unchanged and runs only `apt-get --version`. The stock and prioritized states print no new event and list no directory. A strict-file custody refusal and a strict pairing refusal print nothing new;
+  - a mirror line that is not a strict public Ubuntu row (a credential, another or look-alike host, a port, upper case, another scheme or path, extra whitespace, CR, a 64-character label) is index, length and hash only, and its text is absent;
+  - the mirror report's 1,024-byte, eight-line and ASCII bounds, and the sources report's 4,096-byte, eight-paragraph, 16-field and ASCII bounds, at and just past each edge;
+  - the sources report shows only known field names and closed stock tokens, hashes anything else, and counts continuation lines without their text;
+  - fragment names at or after `zz` are masked unless they are 1–64 of `[A-Za-z0-9._-]`, and capped at 16;
+  - a missing, symlinked, group/world-writable or FIFO sources file, a failed listing, a failing description and a failing print each become a fixed label, and the same refusal follows.
+
+**Changed assertions (old, new, why).** None. No existing test method, assertion, fixture or import was changed, weakened, skipped or removed; the test diff only adds lines.
+
+**Planted defects, each applied to a scratch copy of the guard, run and reverted.** All but one fail:
+- (a) every mirror line printed verbatim: 23 failures in three tests. (b) the host pattern loosened to any text ending in `ubuntu.com`: the look-alike host cases fail. (c) the mirror check moved before the strict-file read: 7 failures, among them the earlier strict-file refusal. (d) a diagnostic failure allowed to propagate: the fixed-label cases fail. (e) admission widened to the no-priority:1 shape: 5 failures across the reason, shape and `main` tests. (f) the mirror size and line bounds removed, (i) the sources bounds removed: each bounds test fails. (g) the sources value allow-list removed, (h) unknown field names printed: the closed-token test fails. (j) fragment names unmasked, (n) the `zz` boundary made exclusive: the fragment test fails. (k) the diagnostics also run on admitted states: the admitted-state and ordering tests fail. (m) the sources file read without `safe_read`: 13 failures. (o) the FIFO check removed: the FIFO case fails, because the fixture's `safe_read` double refuses a FIFO instead of blocking.
+- (l) removing the `raise` after the diagnostics passes, and is equivalent: `main` then calls the unchanged `admit_priority_state`, which raises the same refusal.
+
+**Not run.** The hosted runner and the Node gates. For the name and secret gates, the new test hosts are under `archive.ubuntu.com` or `.example`, and no literal credential URL is added.
+
 ## 2026-10-22 — The six embryo route states, named by the TEST-only producers (G1.7, G1.12, G2.2)
 
 Owner decision of 2026-10-22, "The six unproven embryo route states (G1.7, G1.12, G2.2)" (`docs/protocol/decisions.md`). `partial-coverage` and `not-covered` on `/embryos`, `/embryos/compare` and `/embryos/[embryoId]` are now named by browser steps driven by the two TEST-only synthetic producers that already run in `e2e/embryo-ingest-journey.spec.ts`. `UNPROVEN_ROUTE_STATE_PAIRS` goes from 6 to 0. No producer is approved, no seed or demo path is added, no migration is added, and production is unchanged: embryo analysis stays off.

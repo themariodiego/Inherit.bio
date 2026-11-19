@@ -35,6 +35,16 @@ CONFIG_KEYS = LEAVES + tuple('Binary::apt-get::' + key for key in LEAVES)
 ENV = {'PATH': '/usr/sbin:/usr/bin:/sbin:/bin', 'LANG': 'C.UTF-8', 'LC_ALL': 'C.UTF-8'}
 MAX_FILE = 4 * 1024 * 1024
 COMPONENTS = ('main', 'restricted', 'universe', 'multiverse')
+# Refusal diagnostics only: strict public Ubuntu URI shape, sources.list(5) field names and closed stock tokens.
+UBUNTU_URI = r'https?://(?:[a-z0-9-]{1,63}\.)*ubuntu\.com/ubuntu/?'
+SOURCE_FIELDS = ('Types', 'URIs', 'Suites', 'Components', 'Signed-By', 'Enabled', 'Architectures', 'Architectures-Add',
+                 'Architectures-Remove', 'Languages', 'Languages-Add', 'Languages-Remove', 'Targets', 'Targets-Add',
+                 'Targets-Remove', 'PDiffs', 'By-Hash', 'Allow-Insecure', 'Allow-Weak', 'Allow-Downgrade-To-Insecure',
+                 'Trusted', 'Check-Valid-Until', 'Valid-Until-Min', 'Valid-Until-Max', 'Check-Date', 'Date-Max-Future',
+                 'InRelease-Path', 'Snapshot')
+SOURCE_VALUES = {'Types': ('deb', 'deb-src'), 'URIs': ('mirror+file:/etc/apt/apt-mirrors.txt',),
+                 'Suites': ('noble', 'noble-updates', 'noble-backports', 'noble-security'), 'Components': COMPONENTS,
+                 'Signed-By': ('/usr/share/keyrings/ubuntu-archive-keyring.gpg',)}
 KEYRING_PERMISSION_CHAIN = ('/', '/usr', '/usr/share', '/usr/share/keyrings')
 PREFLIGHT_DIRECTORIES = ('/etc/apt/sources.list.d', '/etc/apt/trusted.gpg.d', '/etc/apt/keyrings',
                          '/usr/share/keyrings', '/etc/apt/apt.conf.d')
@@ -108,6 +118,65 @@ def security_representations(values):
     keys = tuple(SECURITY) + tuple('Binary::apt-get::' + key for key in SECURITY)
     return {key: values[key] if values[key] in ('false', '0', 'true', '1') else 'unsupported'
             for key in keys if key in values}
+
+
+def digest(raw):
+    return {'byteLength': len(raw), 'sha256': hashlib.sha256(raw).hexdigest()}
+
+
+def refused_mirror_diagnostics(raw, image_os, image_version):
+    # Only strict public Ubuntu mirror rows are disclosed; any other line is its index, length and hash only.
+    lines = raw.split(b'\n')
+    if lines[-1] == b'':
+        lines.pop()
+    result = {'event': 'REFUSED_MIRROR_OBSERVED', 'imageOS': image_os, 'imageVersion': image_version,
+              'lineCount': len(lines), **digest(raw), 'bounded': raw.isascii() and len(raw) <= 1024 and len(lines) <= 8}
+    if result['bounded']:
+        result['finalNewline'] = raw.endswith(b'\n')
+        result['lines'] = [{'index': index, 'publicRow': line.decode('ascii')}
+                           if re.fullmatch(UBUNTU_URI + r'\tpriority:[0-9]', line.decode('ascii'))
+                           else {'index': index, **digest(line)} for index, line in enumerate(lines, 1)]
+    return result
+
+
+def source_value(key, value):
+    allowed = all(token in SOURCE_VALUES[key] or key == 'URIs' and re.fullmatch(UBUNTU_URI, token)
+                  for token in value.split(' '))
+    return value if allowed else digest(value.encode('ascii'))
+
+
+def source_shape_diagnostics(raw):
+    # Parses as admit_sources does; known field names and closed stock value tokens only, else length and hash.
+    result = {'event': 'SOURCES_SHAPE_OBSERVED', 'observation': 'observed', **digest(raw), 'bounded': False}
+    if not raw.isascii() or len(raw) > 4096:
+        return result
+    paragraphs = []
+    for paragraph in re.split(r'\n\s*\n', raw.decode('ascii').strip()):
+        fields, values, unparsed = [], {}, 0
+        for line in paragraph.splitlines():
+            if not line.strip() or line.lstrip().startswith('#'):
+                continue
+            if line[0].isspace() or ':' not in line:
+                unparsed += 1
+                continue
+            key, value = line.split(':', 1)
+            fields.append(key if key in SOURCE_FIELDS else digest(key.encode('ascii')))
+            if key in SOURCE_VALUES and key not in values:
+                values[key] = source_value(key, value.strip())
+        if fields or unparsed:
+            paragraphs.append({'paragraph': len(paragraphs) + 1, 'fields': fields, 'values': values,
+                               'unparsedLines': unparsed})
+    if len(paragraphs) <= 8 and all(len(item['fields']) <= 16 for item in paragraphs):
+        result.update(bounded=True, paragraphs=paragraphs)
+    return result
+
+
+def late_fragment_diagnostics(names):
+    # Names only, never contents, of config fragments sorting at or after zz (for example zz-snapshot).
+    late = sorted(name for name in names if name >= 'zz')
+    return {'event': 'LATE_APT_FRAGMENTS_OBSERVED', 'observation': 'observed', 'count': len(late),
+            'names': [name if re.fullmatch(r'[A-Za-z0-9._-]{1,64}', name) else 'unsupported' for name in late[:16]],
+            'truncated': len(late) > 16, 'zzSnapshot': 'zz-snapshot' in late}
 
 
 def admit_sources(raw, observe=None):
@@ -477,6 +546,28 @@ def limited_config(observe=None):
     return result.stdout, values
 
 
+def observe_mirror_refusal(image_os, image_version, original, observe):
+    # Mirror refusal only. Each failure becomes a fixed label; nothing raises, and the caller re-raises the refusal.
+    def sources():
+        try:
+            # safe_read's blocking open must never meet a FIFO here, or a HOLD would become a step timeout.
+            require(stat.S_ISREG(os.lstat(SOURCES).st_mode), 'Safe original regular file required')
+            raw, _ = safe_read(SOURCES)
+        except Exception as error:
+            return {'event': 'SOURCES_SHAPE_OBSERVED', 'observation': 'custody-refused', 'errorType': type(error).__name__}
+        return source_shape_diagnostics(raw)
+    for event, build in (('REFUSED_MIRROR_OBSERVED', lambda: refused_mirror_diagnostics(original, image_os, image_version)),
+                         ('SOURCES_SHAPE_OBSERVED', sources),
+                         ('LATE_APT_FRAGMENTS_OBSERVED', lambda: late_fragment_diagnostics(os.listdir(STRICT.parent)))):
+        try:
+            observe(build())
+        except Exception as error:
+            try:
+                observe({'event': event, 'observation': 'unavailable', 'errorType': type(error).__name__})
+            except Exception:
+                pass
+
+
 def main(argv):
     require(len(argv) == 4, 'Only explicit public runner image/environment arguments are accepted')
     release = {}
@@ -494,6 +585,12 @@ def main(argv):
     observe({'event': 'PUBLIC_APT_DIRECTORY_METADATA', 'directories': fixed_directory_diagnostics()})
     original, mirror_identity = safe_read(MIRROR)
     strict_input = safe_read(STRICT) if STRICT.exists() or STRICT.is_symlink() else None
+    try:
+        mirror_candidate(original)
+    except RuntimeError:
+        # Bounded public shape only, after the unchanged strict read; the same refusal then reaches HOLD.
+        observe_mirror_refusal(argv[0], argv[1], original, observe)
+        raise
     candidate, readmission = admit_priority_state(original, strict_input[0] if strict_input else None)
     source, _ = safe_read(SOURCES)
     admit_sources(source, observe)

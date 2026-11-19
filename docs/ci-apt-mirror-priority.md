@@ -42,9 +42,37 @@ manufacture success. The actual image, effective settings, network improvement,
 complete installer and full hosted suite remain unqualified until observed in
 an original hosted run.
 
+When the mirror file is refused, the driver prints three more JSON lines before
+the unchanged `HOLD` line. The first gives the image name and version and the
+mirror file's size, line count and SHA-256, then each line. A line is printed
+in full only if it is a plain Ubuntu mirror row: `http` or `https`, an
+`ubuntu.com` host of lowercase letters, digits, dots and hyphens, the path
+`/ubuntu`, one tab and a one-digit priority. Any other line is shown only by
+its position, size and SHA-256. The second describes
+`/etc/apt/sources.list.d/ubuntu.sources`, read with the same custody checks:
+per paragraph, the known field names, and the type, URI, suite, component and
+key values only when every word is an expected stock word; anything else is
+size and SHA-256 only. The third lists the names, never the contents, of up to
+16 `/etc/apt/apt.conf.d` files that sort at or after `zz`. A file that is not
+ASCII or is too large (over 1,024 bytes or eight lines for the mirror file;
+over 4,096 bytes, eight paragraphs or 16 fields in one paragraph for the
+sources file) gets only its size, SHA-256 and, for the mirror file, line
+count. A sources file or fragment directory that cannot be safely read gets a
+fixed label. A hash can confirm a guessed line, so it is a comparison aid, not
+secrecy. These lines change no admission decision: every refused state is
+still refused with the same reason, and admitted states print nothing new.
+
+On 19 November 2026, CI run 44546883409 for commit d8dcb61a passed this
+admission on some hosted runners and held it on others at
+`Unsupported stock mirror URI, priority or format`. The upstream source
+configuration script changed after `ubuntu24/20261004.327`. What the holding
+runners' files contain is not yet observed; the diagnostic above exists to
+observe it, and nothing is admitted from the upstream script alone.
+
 Primary sources:
 
 - [Exact observed image source configuration](https://github.com/actions/runner-images/blob/ubuntu24/20261004.327/images/ubuntu/scripts/build/configure-apt-sources.sh)
+- [Current upstream source configuration, changed after the observed image](https://github.com/actions/runner-images/blob/main/images/ubuntu/scripts/build/configure-apt-sources.sh)
 - [Exact observed image network configuration](https://github.com/actions/runner-images/blob/ubuntu24/20261004.327/images/ubuntu/scripts/build/configure-apt.sh)
 - [Mirror priorities and fallback](https://manpages.ubuntu.com/manpages/noble/man1/apt-transport-mirror.1.html)
 - [APT configuration order and binary overrides](https://manpages.ubuntu.com/manpages/noble/man5/apt.conf.5.html)
