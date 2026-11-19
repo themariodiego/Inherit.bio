@@ -6012,3 +6012,19 @@ first and then the signed-in account, and spends a one-time token of whichever
 it finds. Nothing changes for people. The token check and its tests change, no
 database change is needed, and the register is amended to say this route takes
 either kind.
+
+## 2026-11-19 — Merges to main happen as the work becomes safe to merge
+
+Owner instruction (typed in chat): "remember to merge to main as you go along
+and feel confident".
+
+This is standing permission to merge to `main` without a further question
+whenever a merge is safe. It does not change when a merge is safe. `main`
+deploys to production, and `docs/release-checklist.md` ("Guarded production
+releases outstanding") says a branch whose code needs a release merges straight
+after that release reads back EQUAL, never before. On 19 November none can be
+merged: production's database is behind every commit on PR 324 and on the
+follow-up, and release 1 waits for a working Supabase access token. Each
+release's database write still needs the owner's go after its read-only
+pre-checks; once a release reads back EQUAL, the matching commit is merged at
+once under this instruction.
