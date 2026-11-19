@@ -19,13 +19,13 @@ function ReportChoice({ choice, subjectId, onSaved }: {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState(false);
   const inFlight = useRef(false);
-  const revokeCsrf = useCsrf("api.consent-revoke");
+  const revokeCsrf = useCsrf("api.consent-revoke"), grantCsrf = useCsrf("api.consents");
   async function save() {
     if (inFlight.current || (!choice.granted && !affirmed)) return;
     inFlight.current = true; setPending(true); setError(false);
     try {
       if (choice.granted && choice.grantId) await disableOwnReportChoice(choice.grantId, choice.revokeNonce ?? "", revokeCsrf);
-      else await enableOwnReportChoice(subjectId, choice);
+      else await enableOwnReportChoice(subjectId, choice, grantCsrf);
       onSaved(choice.granted ? `${choice.label} turned off. Your original file is kept.`
         : `${choice.label} enabled. You can now generate your selected reports.`);
       // The refreshed presentation has a new token/key. Keep this consumed

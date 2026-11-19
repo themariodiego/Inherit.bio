@@ -12,7 +12,7 @@ import { readBoundedJson } from "@/lib/future-person/bounded-body";
 import { newWrappedDocumentKey } from "@/lib/future-person/document-envelope";
 import {
   EVIDENCE_COMPLETE_NONCE_HEADER,
-  EVIDENCE_CSRF_HEADER,
+  EVIDENCE_SESSION_CSRF_HEADER,
   evidenceCompleteNonce,
   evidenceCookie,
   evidenceCsrf,
@@ -133,7 +133,9 @@ export async function createPathBReviewedDocumentDraft(request: Request, payload
   // The same one-time page nonce as the e-signature draft (G5.6, 23 Oct 2026):
   // the door records its hash before the draft is written, so the draft's
   // audit event names the uploader; a spent nonce is refused like a missing one.
-  const nonce = pathBDraftNonce(request.headers.get("x-inherit-csrf"), actor);
+  // It travels in X-Inherit-Operation-Nonce since 19 November 2026 (G8.5): the
+  // route verifies and spends the account session's X-Inherit-CSRF first.
+  const nonce = pathBDraftNonce(request.headers.get("x-inherit-operation-nonce"), actor);
   if (!nonce) return forbidden();
   const parsed = pathBReviewedDocumentDraftBody.safeParse(payload);
   if (!parsed.success || !isAdultOn(parsed.data.dateOfBirth)) return invalid(["body"]);
@@ -179,7 +181,10 @@ export async function openLegalEvidenceUploadSession(request: Request): Promise<
   if (parsed.data.documentKind !== "adult-signed-permission") return notFound();
   if (!(await otherAdultUploadAvailable(actor.accountId))) return notFound();
   const body = parsed.data;
-  const nonce = readReviewedDocumentOperation(request.headers.get("x-inherit-csrf"), { accountId: actor.accountId,
+  // The card's one-time operation token travels in X-Inherit-Operation-Nonce
+  // since 19 November 2026 (G8.5): the route verifies and spends the account
+  // session's X-Inherit-CSRF before this runs.
+  const nonce = readReviewedDocumentOperation(request.headers.get("x-inherit-operation-nonce"), { accountId: actor.accountId,
     sessionId: actor.sessionId, operation: "document-session", targetId: body.subjectDraftId });
   if (!nonce) return forbidden();
   const evidence = newEvidenceSecret();
@@ -205,7 +210,10 @@ export async function openLegalEvidenceUploadSession(request: Request): Promise<
       maximumChunks: 5, maximumDocumentBytes: 20_000_000, chunkRoute: `/api/evidence/${id}/chunks/{sequence}`,
       completeRoute: `/api/evidence/${id}/complete`, expiresAt: expiry.toISOString() }, 201);
     response.headers.set("Set-Cookie", evidenceCookie(evidence.secret, expiry));
-    response.headers.set(EVIDENCE_CSRF_HEADER, evidenceCsrf(id, evidence.hash));
+    // The evidence session's own value, which each chunk and the completion
+    // send in X-Inherit-CSRF, travels in its own answer header: this answer's
+    // X-Inherit-CSRF carries the account session's successor (G8.5).
+    response.headers.set(EVIDENCE_SESSION_CSRF_HEADER, evidenceCsrf(id, evidence.hash));
     response.headers.set(EVIDENCE_COMPLETE_NONCE_HEADER, evidenceCompleteNonce(id, evidence.hash));
     return response;
   } finally {

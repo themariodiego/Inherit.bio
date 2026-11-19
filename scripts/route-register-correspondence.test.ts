@@ -1441,16 +1441,23 @@ type ClientFormReview = { file: string; forms: number; sha256: string };
 // token chain (`csrf.send((csrfToken) => fetch(...))`), which sends a page's
 // requests to one route one at a time. The same forms, handlers,
 // preventDefault, targets, headers and bodies.
+// G8.5 stage two (2026-11-19): draft-form.tsx, signing-form.tsx, upload-stage.tsx
+// (the invitation form) and future-person-profile.tsx re-reviewed after each
+// request moved onto its route's one-time session token, sent through the
+// route's token chain, and its operation value moved to its own header
+// (X-Inherit-Operation-Nonce, or X-Inherit-Operation-Proof for the profile's
+// derived proof), where X-Inherit-CSRF carried it. The same forms, handlers,
+// preventDefault before any field is read, targets and bodies.
 const GUARDED_FLOW_CLIENT_FORM_REVIEW: ClientFormReview[] = [
-  { file: "src/components/embryo/upload/draft-form.tsx", forms: 1, sha256: "c216fd24a0d903e38171cf53079abe439f1656d010560de8f32694a253dfdc2e" },
-  { file: "src/components/embryo/upload/signing-form.tsx", forms: 1, sha256: "09ef84e65cf77e765d40d4034fb9b5345a19196857cd1bc4e6781b820eaffcf8" },
-  { file: "src/components/embryo/upload/upload-stage.tsx", forms: 2, sha256: "3f1c0589b39c07f6bf5c01a663ce3138bdc9b34fcbd97ecf862f80b416c4ea10" },
+  { file: "src/components/embryo/upload/draft-form.tsx", forms: 1, sha256: "c87e9fb89d7259b4b71a45e70a73c3e369af82accc4b47b950cd21073a824879" },
+  { file: "src/components/embryo/upload/signing-form.tsx", forms: 1, sha256: "8c19943823fd5bd495751f5eeeb2c483ab791ac3ec15e82a07468c1cb52243d1" },
+  { file: "src/components/embryo/upload/upload-stage.tsx", forms: 2, sha256: "14552f06d20a94c6cf533ae678dbf7414babd2defde2ff589f6a1a49136d5fce" },
   { file: "src/components/future-person/claim-form.tsx", forms: 1, sha256: "15879dd96632b930bcaf494fc2f47cabd9b75bddfc328ab104bc8610be10fbdb" },
   { file: "src/components/future-person/claim-review.tsx", forms: 1, sha256: "ef96f46a4dec3c6cf56759c7699fdcc71613c14d3171f25e549c75ba2d7f3f6c" },
   { file: "src/components/future-person/keyless-pending-review.tsx", forms: 1, sha256: "d44c1530368a229dc5b3f75339ba541cdb04ce0f0f8442558792306f3a5f7c31" },
   { file: "src/components/future-person/owner-objection.tsx", forms: 1, sha256: "77a7bef89da3708b7227c7c22f4fca3d89a60a8cde3c3eba18b003a2a561db7d" },
   { file: "src/components/settings/embryo-disposition.tsx", forms: 1, sha256: "87acb08033b37e93db3859b1bb94883418cf41b3a115afc595f3eae35b51c5d9" },
-  { file: "src/components/settings/future-person-profile.tsx", forms: 1, sha256: "44edb4bbd08e2d2ff567aa354b43e4c4f27a8b16d1f77882c9a78670f6169788" },
+  { file: "src/components/settings/future-person-profile.tsx", forms: 1, sha256: "20c943b89db53cc30fb0afde17897d3fc6b9c89c571d5ef05bce49b4112cf250" },
 ];
 
 // These two published TEST-only intake forms cancel native submission before
@@ -1522,12 +1529,23 @@ const CLIENT_FORM_REVIEW: ClientFormReview[] = [
   // reviewed-document flow choice (two radio inputs inside the same form, the
   // same handler and target) and ConsentFields became an export. Still two
   // actionless forms whose onSubmit handlers cancel native submission.
-  { file: "src/components/uploads/other-adult-upload-card.tsx", forms: 2, sha256: "db35211e825c620af275dd11ec09004f7c4a9206dc12ed432a5767d4110a2225" },
+  // G8.5 stage two (2026-11-19): re-reviewed after its three requests moved
+  // onto their routes' one-time session tokens through their token chains
+  // (api.subject-drafts, api.consents, api.invitations), the draft nonce and
+  // the request-send token into X-Inherit-Operation-Nonce, and the signature's
+  // presentation token into the body alone. Still two actionless forms whose
+  // onSubmit handlers cancel native submission; the same targets and bodies.
+  { file: "src/components/uploads/other-adult-upload-card.tsx", forms: 2, sha256: "fcb3a5ce65937bc350dc286ab1e72636266dbd0443dc2360584daecbb448a249" },
   // G7.4 (2026-10-22): re-reviewed after the flow gained the server-decided
   // `readCalling` prop it passes to both Uploader renders (ADR 0038). Still one
   // actionless account-completion form whose onSubmit handler cancels native
   // submission; no handler, field or target changed.
-  { file: "src/components/uploads/own-upload-flow.tsx", forms: 1, sha256: "5a3b9baa85e6f6070b0aa90ea6ab599426ddec1107196f4a829fcfd5345aa41b" },
+  // G8.5 stage two (2026-11-19): re-reviewed after both requests moved onto
+  // their routes' one-time session tokens (api.account-completion and
+  // api.consents) through their token chains; the presentation token now
+  // travels in the body alone. Still one actionless account-completion form
+  // whose onSubmit handler cancels native submission; the same targets and bodies.
+  { file: "src/components/uploads/own-upload-flow.tsx", forms: 1, sha256: "ed262cbbece96415aeeefb1644bd1fedd213af15584bb56eb47898ea7d69d776" },
   // G5.4 (2026-10-16): re-reviewed after two copy lines (the 30/730-day keep
   // line and the contact of last resort). Still one actionless form whose
   // onSubmit handler cancels native submission; no handler, field or target changed.

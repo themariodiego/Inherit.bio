@@ -9,7 +9,7 @@ import {
   type JurisdictionCapability,
 } from "@/lib/legal/jurisdictions";
 import { ClosedShapeError, blockedResponse, closedObject, sensitiveJson } from "./api";
-import { CSRF_HEADER, verifyEmbryoOperation, type EmbryoOperationClaims } from "./operation-token";
+import { CSRF_HEADER, OPERATION_HEADER, verifyEmbryoOperation, type EmbryoOperationClaims } from "./operation-token";
 
 /**
  * The checks every embryo route runs before it reads a body (contract
@@ -78,6 +78,20 @@ export function csrfOperation(
   expected: Omit<EmbryoOperationClaims, "nonce" | "expiresAt">,
 ): EmbryoOperationClaims | null {
   return verifyEmbryoOperation(request.headers.get(CSRF_HEADER), expected);
+}
+
+/**
+ * The claims of the `x-inherit-operation-nonce` token when it was minted for
+ * exactly this operation; null otherwise. The same one-time embryo operation
+ * token `csrfOperation` reads, in its own header: on a route whose
+ * `X-Inherit-CSRF` is the session token (G8.5, the owner's principles of
+ * 19 November 2026), the operation token travels here.
+ */
+export function headerOperation(
+  request: Request,
+  expected: Omit<EmbryoOperationClaims, "nonce" | "expiresAt">,
+): EmbryoOperationClaims | null {
+  return verifyEmbryoOperation(request.headers.get(OPERATION_HEADER), expected);
 }
 
 /** The parsed JSON body, or null when there is none or it does not parse. */

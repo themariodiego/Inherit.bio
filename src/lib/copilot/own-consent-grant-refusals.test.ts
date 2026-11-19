@@ -38,12 +38,13 @@ function grant(headers: Record<string, string>, token: string) {
 }
 
 describe("the own-Copilot grant's refusals are the register's", () => {
-  it("answers another origin, other fetch metadata or another CSRF value with 403 request_forbidden, reading nothing", async () => {
+  it("answers another origin or other fetch metadata with 403 request_forbidden, reading nothing", async () => {
     const token = mintOwnCopilotConsent({ snapshot, artifacts });
     for (const headers of [
       { origin: "https://elsewhere.example", "sec-fetch-site": "cross-site", "x-inherit-csrf": token },
       { origin: "http://localhost", "sec-fetch-site": "same-site", "x-inherit-csrf": token },
-      { origin: "http://localhost", "sec-fetch-site": "same-origin", "x-inherit-csrf": `${token}x` },
+      // 2026-11-19 (G8.5): { "x-inherit-csrf": `${token}x` } left this list. The header no longer repeats the
+      // presentation token: api.consents verifies and spends the account session's one-time X-Inherit-CSRF token before this module runs (src/lib/security/session-csrf-routes.test.ts) (403 request_forbidden there too).
     ]) {
       const response = await grant(headers, token);
       expect([response.status, await response.json()]).toEqual([403, { error: "request_forbidden" }]);
@@ -55,7 +56,8 @@ describe("the own-Copilot grant's refusals are the register's", () => {
   it("answers a request with no account with 401 unauthenticated, before any database call", async () => {
     mocks.actor.mockResolvedValue(null);
     const token = mintOwnCopilotConsent({ snapshot, artifacts });
-    const response = await grant({ origin: "http://localhost", "sec-fetch-site": "same-origin", "x-inherit-csrf": token }, token);
+    // 2026-11-19 (G8.5): the account session's one-time token (verified by api.consents first); it was the presentation token.
+    const response = await grant({ origin: "http://localhost", "sec-fetch-site": "same-origin", "x-inherit-csrf": "the-account-session-token-the-gate-admitted" }, token);
     expect([response.status, await response.json()]).toEqual([401, { error: "unauthenticated" }]);
     expect(mocks.rpc).not.toHaveBeenCalled();
   });

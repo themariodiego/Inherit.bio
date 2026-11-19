@@ -41,13 +41,16 @@ export default async function RightsSessionPage() {
     headers: { cookie: incoming.get("cookie") ?? "" },
   });
   // The one-time X-Inherit-CSRF tokens this page's forms send: for the rights
-  // session, api.withdraw's, a claimant's correction's and an appeal's
-  // completion's; for a signed-in account, api.invitation-accept's (a
-  // co-parent or Path A adult accepting) and a claimant's account binding's.
-  // Minted for this render and stored nowhere.
+  // session, api.withdraw's, a claimant's correction's, Recovery Key's,
+  // analysis stop's, deletion's and export's, and an appeal's document
+  // session's and completion's; for a signed-in account,
+  // api.invitation-accept's (a co-parent or Path A adult accepting) and a
+  // claimant's account binding's. Minted for this render and stored nowhere.
   const rights = readRightsCsrfSession(request);
   const csrf = {
-    ...(rights ? Object.fromEntries((["api.withdraw", "api.future-person-correction", "api.appeal-complete"] as const)
+    ...(rights ? Object.fromEntries((["api.withdraw", "api.future-person-correction", "api.appeal-complete",
+      "api.future-person-recovery-key", "api.future-person-analysis-stop", "api.future-person-delete",
+      "api.future-person-export", "api.appeal-document-session"] as const)
       .map(route => [route, sessionCsrfToken(rights, route)])) : {}),
     ...(await accountCsrfTokens(["api.invitation-accept", "api.future-person-claimant-bind"])),
   };
@@ -66,7 +69,7 @@ async function rightsSessionContent(request: Request) {
   if (ownerNotice) return <OwnerObjection summary={ownerNotice.view.safeNoticeSummary} deadline={ownerNotice.view.noticeDeadline}
     explanation={ownerNotice.view.objectionArtifactBody} csrf={ownerNotice.csrf} nonce={ownerNotice.nonce} />;
   const claimant=await loadClaimantRights(request);
-  if(claimant)return <><ClaimantRights csrf={claimant.csrf} recoveryNonce={claimant.recoveryNonce} analysisNonce={claimant.analysisNonce} deletion={await presentClaimantDeletion(request)}
+  if(claimant)return <><ClaimantRights recoveryNonce={claimant.recoveryNonce} analysisNonce={claimant.analysisNonce} deletion={await presentClaimantDeletion(request)}
     exportAction={await presentClaimantExportCreate(request)}/>
     {claimant.correctionNonce&&<CorrectionRequestForm nonce={claimant.correctionNonce} ownStatementDownloadsEnabled/>}
     <div className="mx-auto max-w-3xl px-6 pb-16"><ClaimantAccountBinding nonce={await loadAccountBinding(request)}/></div></>;

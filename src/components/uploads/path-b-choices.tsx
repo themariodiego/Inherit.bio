@@ -23,7 +23,7 @@ function ChoiceRow({ subjectId, choice, open, onSaved }: {
   const [pending, setPending] = useState(false);
   const [failed, setFailed] = useState(false);
   const inFlight = useRef(false);
-  const revokeCsrf = useCsrf("api.consent-revoke");
+  const revokeCsrf = useCsrf("api.consent-revoke"), grantCsrf = useCsrf("api.consents");
   const granted = choice.grantId !== null;
   const layer = COPY.layers[choice.purpose];
   const who = choice.direction === "self" ? COPY.forYou : COPY.forThem;
@@ -35,13 +35,13 @@ function ChoiceRow({ subjectId, choice, open, onSaved }: {
       const response = granted
         ? await revokeCsrf.send((csrfToken) => fetch(`/api/consents/${choice.grantId}/revoke`, { method: "POST", credentials: "same-origin", cache: "no-store",
           headers: { "X-Inherit-Operation-Nonce": choice.revokeNonce ?? "", "X-Inherit-CSRF": csrfToken } }))
-        : await fetch("/api/consents", {
+        : await grantCsrf.send((csrfToken) => fetch("/api/consents", {
           method: "POST", credentials: "same-origin", cache: "no-store",
-          headers: { "Content-Type": "application/json", "x-inherit-csrf": choice.offer!.token },
+          headers: { "Content-Type": "application/json", "x-inherit-csrf": csrfToken },
           body: JSON.stringify({ action: "grant-purpose", subjectId, purposeKey: choice.purpose,
             artifactVersion: choice.offer!.artifactVersion, artifactPresentationToken: choice.offer!.token,
             affirmed: true, statementKeys: PATH_B_STATEMENTS[choice.direction] }),
-        });
+        }));
       if (!response.ok) throw new Error("not recorded");
       onSaved();
     } catch { setFailed(true); setAffirmed(false); inFlight.current = false; setPending(false); }

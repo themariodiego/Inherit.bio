@@ -30,9 +30,9 @@ export async function ownUploadConsent(request: Request, payload: unknown): Prom
     return response({ error: "forbidden" }, 403);
   }
   const body = parsed.data;
-  if (request.headers.get("x-inherit-csrf") !== body.artifactPresentationToken) {
-    return response({ error: "forbidden" }, 403);
-  }
+  // The presentation token is the body's artifactPresentationToken, checked
+  // below; api.consents verifies and spends the account session's
+  // X-Inherit-CSRF before this runs (G8.5, 19 November 2026).
   const client = await createClient();
   const [{ data: userData }, { data: claimsData }] = await Promise.all([
     client.auth.getUser(), client.auth.getClaims(),

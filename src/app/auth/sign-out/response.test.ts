@@ -180,7 +180,7 @@ describe("sign-out", () => {
     }
   });
 
-  it("covers every cookie family sign-out-v1 and the route's policy name, except the two the owner must settle", () => {
+  it("covers every cookie family sign-out-v1 and the route's policy name, and keeps the rights cookie as the register says", () => {
     const register = JSON.parse(readFileSync("docs/route-register.json", "utf8")) as {
       responseContracts: Record<string, { sessionEffect?: string }>; routes: { id: string; policy?: { transaction?: string } }[];
     };
@@ -189,14 +189,20 @@ describe("sign-out", () => {
     const named = /clear-every-Inherit-(.+)-cookie-before-the-response/u.exec(effect)![1]!.replace("-and-", "-").split("-");
     const policy = /clear-the-host-only-(.+)-cookies-and-write/u.exec(transaction)![1]!.replace("-and-", "-")
       .replace("model-capability", "model_capability").split("-").map((family) => family.replace("_", "-"));
-    expect(named).toEqual(["auth", "rights", "upload", "evidence", "claim", "download", "candidate"]);
-    expect(policy).toEqual(["session", "upload", "evidence", "export", "download", "model-capability"]);
+    // 2026-11-19 (G8.5 stage two): the register was amended under the owner's decisions "sign-out keeps an open
+    // rights session" and "principles for the CSRF register amendments" (4: cookie names follow the code). It no
+    // longer names the rights cookie among those cleared and says it is not cleared, and it names no
+    // model-capability cookie, which no code sets. Old: named included "rights" and policy "model-capability".
+    expect(named).toEqual(["auth", "upload", "evidence", "claim", "download", "candidate"]);
+    expect(policy).toEqual(["session", "upload", "evidence", "export", "download"]);
+    expect(effect).toContain("the-rights-cookie-is-not-cleared-at-sign-out");
+    expect(transaction).toContain("the-rights-cookie-is-not-cleared-at-sign-out");
     const cleared = new Set<string>(SIGN_OUT_COOKIES.map((cookie) => cookie.family));
     // The policy's "session" cookies are the Supabase session's, read from the request (above).
     cleared.add("session");
     cleared.add("upload");
-    const open = { rights: "kept: clearing it would strand a rights session whose mailed link is spent (owner decision)",
-      "model-capability": "no such cookie exists in the code" };
+    // 2026-11-19: no family the register names is left open; the two it named before are settled above.
+    const open: Record<string, string> = {};
     for (const family of new Set([...named, ...policy])) {
       expect(cleared.has(family) || Object.hasOwn(open, family), family).toBe(true);
       expect(cleared.has(family) && Object.hasOwn(open, family), family).toBe(false);

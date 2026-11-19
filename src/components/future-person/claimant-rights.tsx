@@ -1,11 +1,16 @@
 "use client";
 import {useRef,useState} from "react";
 import {z} from "zod";
+import {useCsrf} from "@/components/security/csrf-provider";
 import {CLAIMANT_CONTACT_KEEP_DAYS as CONTACT_DAYS,CLAIMANT_DELETION_DAYS as DAYS,CLAIMANT_RIGHTS_COPY as COPY} from "@/copy/rights/claimant-rights";
 const recoveryReceipt=z.object({recoveryKey:z.string().regex(/^[0-9A-HJKMNP-TV-Z]{20}$/u),contactMaterialExpiresOn:z.string().regex(/^\d{4}-\d{2}-\d{2}$/u),
   reverificationBinding:z.literal("retained-until-account-binding-key-rotation-or-claimant-deletion"),
   recordRetention:z.literal("claimed-record-is-not-deleted-by-temporary-contact-expiry")}).strict();
-export function ClaimantRights({csrf,recoveryNonce,analysisNonce,deletion,exportAction}:{csrf:string;recoveryNonce:string;analysisNonce:string;deletion?:{csrf:string;nonce:string}|null;exportAction?:{csrf:string;nonce:string}|null}) {
+/** Each request sends the page's one-time rights-session token for its route
+ * in X-Inherit-CSRF (G8.5); each operation's nonce travels where it did. */
+export function ClaimantRights({recoveryNonce,analysisNonce,deletion,exportAction}:{recoveryNonce:string;analysisNonce:string;deletion?:{nonce:string}|null;exportAction?:{nonce:string}|null}) {
+  const recoveryCsrf=useCsrf("api.future-person-recovery-key"),analysisCsrf=useCsrf("api.future-person-analysis-stop");
+  const deleteCsrf=useCsrf("api.future-person-delete"),exportCsrf=useCsrf("api.future-person-export");
   const [acknowledged,setAcknowledged]=useState(false);const [recoveryKey,setRecoveryKey]=useState<string|null>(null);
   const [busy,setBusy]=useState(false);const [message,setMessage]=useState("");
   const deleteSubmitted=useRef(false);const [deleteAcknowledged,setDeleteAcknowledged]=useState(false);const [deleteAttempted,setDeleteAttempted]=useState(false);
@@ -13,8 +18,8 @@ export function ClaimantRights({csrf,recoveryNonce,analysisNonce,deletion,export
   async function recover(){
     if(busy||!acknowledged||recoveryKey)return;setBusy(true);setMessage("");
     try {
-      const response=await fetch("/api/future-person/claim/session/recovery-key",{method:"POST",credentials:"same-origin",cache:"no-store",
-        headers:{"Content-Type":"application/json","X-Inherit-CSRF":csrf},body:JSON.stringify({nonce:recoveryNonce,acknowledgedWillSaveOffline:true})});
+      const response=await recoveryCsrf.send(csrfToken=>fetch("/api/future-person/claim/session/recovery-key",{method:"POST",credentials:"same-origin",cache:"no-store",
+        headers:{"Content-Type":"application/json","X-Inherit-CSRF":csrfToken},body:JSON.stringify({nonce:recoveryNonce,acknowledgedWillSaveOffline:true})}));
       const parsed=recoveryReceipt.safeParse(await response.json());
       if(response.status!==201||!parsed.success)throw new Error("unavailable");setRecoveryKey(parsed.data.recoveryKey);
       setMessage("Your Recovery Key is shown once. Save it on paper or print this page before leaving.");
@@ -23,8 +28,8 @@ export function ClaimantRights({csrf,recoveryNonce,analysisNonce,deletion,export
   async function stop(){
     if(busy)return;setBusy(true);setMessage("");
     try{
-      const response=await fetch("/api/future-person/claim/session/analysis",{method:"DELETE",credentials:"same-origin",cache:"no-store",
-        headers:{"X-Inherit-CSRF":csrf,"X-Inherit-Operation-Nonce":analysisNonce}});
+      const response=await analysisCsrf.send(csrfToken=>fetch("/api/future-person/claim/session/analysis",{method:"DELETE",credentials:"same-origin",cache:"no-store",
+        headers:{"X-Inherit-CSRF":csrfToken,"X-Inherit-Operation-Nonce":analysisNonce}}));
       const parsed=z.object({status:z.literal("analysis_stopped"),effectiveAt:z.iso.datetime()}).strict().safeParse(await response.json());
       if(response.status!==200||!parsed.success)throw new Error("unavailable");setMessage("Future analysis has stopped. Your record is still retained.");
     }catch{setMessage("This session could not stop analysis. Start a new claim if your session has ended.");}finally{setBusy(false);}
@@ -35,16 +40,16 @@ export function ClaimantRights({csrf,recoveryNonce,analysisNonce,deletion,export
   async function exportRecord(){
     if(!exportAction||busy||exportAttempted)return;setExportAttempted(true);setBusy(true);
     try{
-      await fetch("/api/future-person/claim/session/export",{method:"POST",credentials:"same-origin",cache:"no-store",
-        headers:{"Content-Type":"application/json","X-Inherit-CSRF":exportAction.csrf},body:JSON.stringify({operation:"create",nonce:exportAction.nonce})});
+      await exportCsrf.send(csrfToken=>fetch("/api/future-person/claim/session/export",{method:"POST",credentials:"same-origin",cache:"no-store",
+        headers:{"Content-Type":"application/json","X-Inherit-CSRF":csrfToken},body:JSON.stringify({operation:"create",nonce:exportAction.nonce})}));
     }catch{/* No notice text is approved for an export outcome. */}finally{setBusy(false);}
   }
   async function deleteRecord(){
     if(!deletion||busy||!deleteAcknowledged||deleteSubmitted.current)return;
     deleteSubmitted.current=true;setDeleteAttempted(true);setBusy(true);setMessage("");
     try{
-      const response=await fetch("/api/future-person/claim/session",{method:"DELETE",credentials:"same-origin",cache:"no-store",
-        headers:{"X-Inherit-CSRF":deletion.csrf,"X-Inherit-Operation-Nonce":deletion.nonce}});
+      const response=await deleteCsrf.send(csrfToken=>fetch("/api/future-person/claim/session",{method:"DELETE",credentials:"same-origin",cache:"no-store",
+        headers:{"X-Inherit-CSRF":csrfToken,"X-Inherit-Operation-Nonce":deletion.nonce}}));
       const receipt=z.object({status:z.literal("deletion_accepted")}).strict().safeParse(await response.json());
       if(response.status!==202||!receipt.success)throw new Error("unavailable");
       setMessage("This claimed record has been deleted. Its parental and sibling records have not been deleted.");

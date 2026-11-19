@@ -80,6 +80,18 @@ export async function POST(request: Request) {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return unauthenticated();
+  // Every body carries the page's one-time X-Inherit-CSRF token for the
+  // account session, spent before the body is read (G8.5). Since 19 November
+  // 2026 that includes the bodies answered by their own modules below: each
+  // keeps checking its own one-time value where it travels, the presentation
+  // token in the body's artifactPresentationToken (it was also sent in
+  // X-Inherit-CSRF), and the embryo operation token in X-Inherit-Operation-Nonce.
+  const csrf = await requireAccountCsrf(request, "api.consents");
+  if (csrf instanceof Response) return csrf;
+  return csrf.rotate(await consentBody(request, user.id));
+}
+
+async function consentBody(request: Request, accountId: string): Promise<Response> {
   const payload: unknown = await request.json().catch(() => null);
 
   if (isOwnConsentPayload(payload)) return ownUploadConsent(request, payload);
@@ -91,13 +103,7 @@ export async function POST(request: Request) {
   if (isOwnReportConsentPayload(payload)) return ownReportConsent(request, payload);
   if (isOwnCopilotConsentPayload(payload)) return ownCopilotConsent(request, payload);
   if (isEmbryoConsentPayload(payload)) return embryoConsent(request, payload);
-
-  // The body this route answers itself carries the page's one-time
-  // X-Inherit-CSRF token. Each body above is answered by its own module,
-  // which checks the token its own page rendered for it.
-  const csrf = await requireAccountCsrf(request, "api.consents");
-  if (csrf instanceof Response) return csrf;
-  return csrf.rotate(await accountConsent(request, payload, user.id));
+  return accountConsent(request, payload, accountId);
 }
 
 async function accountConsent(request: Request, payload: unknown, accountId: string): Promise<Response> {

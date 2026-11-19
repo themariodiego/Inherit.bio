@@ -1,7 +1,5 @@
 import "server-only";
-import { timingSafeEqual } from "node:crypto";
 import { z } from "zod";
-import { hmacSecret } from "@/lib/crypto";
 import { hasEmptyRequestBody } from "@/lib/empty-request-body";
 import { mintPublicFormToken, readPublicFormToken } from "@/lib/embryos/operation-token";
 import { readBoundedJson } from "@/lib/future-person/bounded-body";
@@ -27,8 +25,10 @@ import { claimantNotFound, claimantSessionHash } from "@/lib/future-person/right
  *     producer is decided and built.
  *
  * So a POST is validated in full (one rights session, exact origin,
- * same-origin fetch metadata, JSON, the session-bound X-Inherit-CSRF, the
- * closed body and a fresh nonce for this session and operation) and then
+ * same-origin fetch metadata, JSON, the closed body and a fresh nonce for
+ * this session and operation; the rights session's one-time X-Inherit-CSRF
+ * token is verified and spent by the route before this runs, G8.5, where until
+ * 19 November 2026 a keyed digest of the session was compared here) and then
  * answered with that 404. A poll (one rights session, no query, no body)
  * answers the same 404, since no export of this route can exist.
  * Nothing here reads or writes the database, sets a cookie or enqueues work.
@@ -49,11 +49,6 @@ export const thirdPartyExportBody = z.object({
   nonce: z.string().min(1).max(THIRD_PARTY_EXPORT_NONCE_MAX_LENGTH),
 }).strict();
 
-/** The X-Inherit-CSRF value bound to one rights session for this route. */
-export function thirdPartyExportCsrf(sessionHash: string): string {
-  return hmacSecret(sessionHash, "third-party-subject-export-csrf-v1");
-}
-
 /** The rights-session-bound one-time export nonce, distinct per operation, ten minutes fresh. */
 export function mintThirdPartyExportNonce(sessionHash: string, operation: ThirdPartyExportOperation, now = Date.now()): string {
   return mintPublicFormToken(FORMS[operation], now, sessionHash);
@@ -66,17 +61,11 @@ export function readThirdPartyExportNonce(token: string, sessionHash: string, op
 function admitted(request: Request): string | null {
   return new URL(request.url).search === "" ? claimantSessionHash(request) : null;
 }
-function csrfMatches(request: Request, sessionHash: string): boolean {
-  const presented = request.headers.get("x-inherit-csrf");
-  return !!presented && /^[0-9a-f]{64}$/u.test(presented)
-    && timingSafeEqual(Buffer.from(presented), Buffer.from(thirdPartyExportCsrf(sessionHash)));
-}
 export async function postThirdPartyExport(request: Request): Promise<Response> {
   const sessionHash = admitted(request);
   const url = new URL(request.url);
   if (!sessionHash || request.headers.get("origin") !== url.origin || request.headers.get("sec-fetch-site") !== "same-origin"
-    || request.headers.get("content-type")?.split(";")[0]?.trim().toLowerCase() !== "application/json"
-    || !csrfMatches(request, sessionHash)) return claimantNotFound();
+    || request.headers.get("content-type")?.split(";")[0]?.trim().toLowerCase() !== "application/json") return claimantNotFound();
   const body = thirdPartyExportBody.safeParse(await readBoundedJson(request, 4096));
   if (!body.success || !readThirdPartyExportNonce(body.data.nonce, sessionHash, body.data.operation)) return claimantNotFound();
   // withdrawal-target-v1 would now pick the subject or the cohort case for

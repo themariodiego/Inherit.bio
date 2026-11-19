@@ -5,7 +5,7 @@ import { invitationQuotaKeys } from "@/lib/rate-limit-keys";
 import { invalidRequest, notFound, unavailable } from "@/lib/embryos/api";
 import {
   closedResponse,
-  csrfOperation,
+  headerOperation,
   accountJurisdictionDenied,
   originDenied,
   readJson,
@@ -16,6 +16,7 @@ import { coParentInvitationBody } from "@/lib/embryos/routes";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isPathBInvitationPayload } from "@/lib/uploads/other-adult-upload";
 import { createPathBInvitation } from "@/lib/uploads/path-b-routes";
+import { withAccountCsrf } from "@/lib/security/session-csrf";
 
 /**
  * `POST /api/invitations` (register api.invitations; contract §6.3). The
@@ -35,8 +36,15 @@ import { createPathBInvitation } from "@/lib/uploads/path-b-routes";
  * (global-contact-refusal-bar-v1.barKeyring) with the account and network
  * quota bucket keys; the RPC counts the attempt before it matches anything and
  * an exhausted quota is the same receipt as a barred address.
+ *
+ * The shell's one-time X-Inherit-CSRF token for the account session is
+ * verified and spent before either body is read (G8.5). Each body's one-time
+ * operation token, which the page renders for that draft, travels in
+ * X-Inherit-Operation-Nonce and is checked as before; until 19 November 2026
+ * it was sent in X-Inherit-CSRF.
  */
-export async function POST(request: Request) {
+export const POST = withAccountCsrf("api.invitations", handlePost);
+async function handlePost(request: Request) {
   const payload = await readJson(request);
   if (isPathBInvitationPayload(payload)) return createPathBInvitation(request, payload);
 
@@ -50,7 +58,7 @@ export async function POST(request: Request) {
   const parsed = coParentInvitationBody.safeParse(payload);
   if (!parsed.success) return invalidRequest(["body"]);
 
-  const claims = csrfOperation(request, {
+  const claims = headerOperation(request, {
     accountId: context.user.id,
     sessionId: context.sessionId,
     operation: "invitation_create",

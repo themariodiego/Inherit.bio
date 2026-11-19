@@ -10,7 +10,7 @@ import type { OwnCopilotPermissionView } from "@/lib/copilot/own-consent";
 
 export function OwnCopilotPermission({ view }: { view: OwnCopilotPermissionView }) {
   const router = useRouter();
-  const revokeCsrf = useCsrf("api.consent-revoke");
+  const revokeCsrf = useCsrf("api.consent-revoke"), grantCsrf = useCsrf("api.consents");
   const [affirmed, setAffirmed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -46,10 +46,10 @@ export function OwnCopilotPermission({ view }: { view: OwnCopilotPermissionView 
         const response = revokeNonce
           ? await revokeCsrf.send((csrfToken) => fetch(`/api/consents/${view.grantId}/revoke`, { method: "POST",
             headers: { "X-Inherit-Operation-Nonce": revokeNonce, "X-Inherit-CSRF": csrfToken } }))
-          : await fetch("/api/consents", { method: "POST", headers: { "content-type": "application/json", "x-inherit-csrf": view.token },
+          : await grantCsrf.send((csrfToken) => fetch("/api/consents", { method: "POST", headers: { "content-type": "application/json", "x-inherit-csrf": csrfToken },
             body: JSON.stringify({ action: "grant-purpose", subjectId: view.subjectId, purposeKey: view.purposeKey,
               artifactVersion: purposeArtifact.version, artifactPresentationToken: view.token, affirmed: true,
-              statementKeys: ["model-named", "data-classes-named", "raw-file-excluded", "revocable"] }) });
+              statementKeys: ["model-named", "data-classes-named", "raw-file-excluded", "revocable"] }) }));
         const receipt: unknown = await response.json().catch(() => null);
         const confirmed = view.granted
           ? response.status === 200 && z.object({ revoked: z.literal(true) }).strict().safeParse(receipt).success

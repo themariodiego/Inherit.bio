@@ -70,7 +70,7 @@ import {
 import type { CohortCard } from "@/lib/embryos/record-key-cards";
 import type { UploadStageView } from "@/lib/embryos/upload-stage";
 import { EMBRYO_INGEST_SESSION_LIMITS } from "@/lib/genome/ingest-limits";
-import { UPLOAD_CSRF_HEADER, UploadTransportError, sendEmbryoFile, type MappingAnswer, type MappingQuestion,
+import { UploadTransportError, sendEmbryoFile, type MappingAnswer, type MappingQuestion,
   type UploadFailure, type UploadProgress, type UploadSession } from "@/lib/embryos/upload-transport";
 import { readUploadReceipt } from "@/lib/embryos/upload-receipt";
 import { route } from "@/lib/primary-routes";
@@ -191,18 +191,22 @@ function BackToEmbryos() {
 function InviteForm({ draftId, csrfTokens, onSent }: { draftId: string; csrfTokens: string[]; onSent: () => void }) {
   const [status, setStatus] = useState<"ready" | "pending" | "sent" | "failed">("ready");
   const ids = [useId(), useId()];
+  const invitationsCsrf = useCsrf("api.invitations");
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (status === "pending") return;
     const form = new FormData(event.currentTarget);
     setStatus("pending");
     try {
+      // Each invitation's one-time operation token travels in
+      // X-Inherit-Operation-Nonce; X-Inherit-CSRF carries the shell's one-time
+      // session token, the next request its successor (G8.5).
       for (const [index, token] of csrfTokens.entries()) {
-        const response = await fetch("/api/invitations", {
+        const response = await invitationsCsrf.send((sessionToken) => fetch("/api/invitations", {
           method: "POST", credentials: "same-origin", cache: "no-store",
-          headers: { "Content-Type": "application/json", [UPLOAD_CSRF_HEADER]: token },
+          headers: { "Content-Type": "application/json", "X-Inherit-CSRF": sessionToken, "X-Inherit-Operation-Nonce": token },
           body: JSON.stringify({ targetCohortDraftId: draftId, contactEmail: String(form.get(`contact-${index}`) ?? "").trim() }),
-        });
+        }));
         if (response.status !== 202) throw new Error("refused");
       }
       setStatus("sent");

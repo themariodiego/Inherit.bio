@@ -280,8 +280,10 @@ describe("POST /api/consents, the uploader's Tier-2 body", () => {
     const { token } = mintOtherAdultPresentation(input, NOW);
     const payload = { action: "sign-artifact", signatureClass: "tier2", subjectDraftId: subjectId, artifactVersion: 1,
       artifactPresentationToken: token, affirmed: true, statementKeys: KEYS, typedName: "Ada Lovelace", ...overrides };
+    // 2026-11-19 (G8.5): X-Inherit-CSRF is the account session's one-time token, which api.consents verifies and
+    // spends before this module runs (session-csrf-routes.test.ts); it repeated the presentation token.
     return otherAdultUploadConsent(sameOrigin("https://inherit.bio/api/consents", payload,
-      { "x-inherit-csrf": token, ...headers }), payload);
+      { "x-inherit-csrf": "the-account-session-token-the-gate-admitted", ...headers }), payload);
   }
   it("records the signature with the exact presented artifact, keys and an encrypted name", async () => {
     const response = await signing();
@@ -300,9 +302,10 @@ describe("POST /api/consents, the uploader's Tier-2 body", () => {
     expect((await signing()).status).toBe(404);
     expect(mocks.rpc).not.toHaveBeenCalled();
   });
-  it("refuses another origin and a missing CSRF echo before any read", async () => {
+  it("refuses another origin before any read", async () => {
     expect((await signing({}, { origin: "https://foreign.example" })).status).toBe(403);
-    expect((await signing({}, { "x-inherit-csrf": "different" })).status).toBe(403);
+    // 2026-11-19 (G8.5): the { "x-inherit-csrf": "different" } case left: the header no longer echoes the
+    // presentation token (see signing above), which is required in the body (the cases below).
     expect(mocks.getUser).not.toHaveBeenCalled();
   });
   it("refuses a body that disagrees with its presentation", async () => {
@@ -332,8 +335,10 @@ describe("POST /api/subject-drafts, the Path B body", () => {
     expiresAt: "2026-10-28T12:00:00+00:00" };
   function draft(overrides: Record<string, unknown> = {}, headers: Record<string, string> = {}, token = mintPathBDraftNonce(accountId, sessionId)) {
     const payload = { ...body, ...overrides };
+    // 2026-11-19 (G8.5): the draft nonce travels in X-Inherit-Operation-Nonce (it was X-Inherit-CSRF, now the
+    // account session's one-time token, which api.subject-drafts verifies and spends before this runs).
     return createPathBDraft(sameOrigin("https://inherit.bio/api/subject-drafts", payload,
-      { "x-inherit-csrf": token, ...headers }), payload);
+      { "x-inherit-operation-nonce": token, ...headers }), payload);
   }
   it("reserves a draft with an encrypted address keyed under every held revision, and answers the register's receipt", async () => {
     vi.stubEnv("INHERIT_HMAC_KEYRING", `2:${KEY_2}`);
@@ -372,7 +377,9 @@ describe("POST /api/subject-drafts, the Path B body", () => {
     expect((await draft()).status).toBe(403);
   });
   it("refuses without the page's operation token, from another origin, and outside TEST-LOCAL", async () => {
-    expect((await draft({}, { "x-inherit-csrf": "nope" })).status).toBe(403);
+    expect((await draft({}, { "x-inherit-operation-nonce": "nope" })).status).toBe(403);
+    // 2026-11-19 (G8.5): a genuine nonce only in the old header is refused as a missing one.
+    expect((await draft({}, { "x-inherit-operation-nonce": "", "x-inherit-csrf": mintPathBDraftNonce(accountId, sessionId) })).status).toBe(403);
     expect((await draft({}, { origin: "https://foreign.example" })).status).toBe(403);
     vi.stubEnv("INHERIT_TEST_JURISDICTION", "");
     expect((await draft()).status).toBe(404);
@@ -385,7 +392,9 @@ describe("POST /api/invitations, the Path B request", () => {
     const token = mintPathBOperation(accountId, sessionId, "request-send", subjectId);
     const payload = { targetSubjectDraftId: subjectId, contactEmail: "relative@e2e.local" };
     return createPathBInvitation(sameOrigin("https://inherit.bio/api/invitations", payload,
-      { "x-inherit-csrf": token, "x-real-ip": NETWORK, ...headers }), payload);
+      // 2026-11-19 (G8.5): the request-send token travels in X-Inherit-Operation-Nonce (it was X-Inherit-CSRF, now
+      // the account session's one-time token, which api.invitations verifies and spends before this runs).
+      { "x-inherit-operation-nonce": token, "x-real-ip": NETWORK, ...headers }), payload);
   }
   it("sends only to the address the draft holds, keyed, with the same receipt either way", async () => {
     vi.stubEnv("INHERIT_HMAC_KEYRING", `2:${KEY_2}`);
@@ -431,7 +440,10 @@ describe("POST /api/invitations, the Path B request", () => {
     });
   it("refuses a token minted for another target", async () => {
     const token = mintPathBOperation(accountId, sessionId, "request-send", accountId);
-    expect((await send({ "x-inherit-csrf": token })).status).toBe(403);
+    expect((await send({ "x-inherit-operation-nonce": token })).status).toBe(403);
+    // 2026-11-19 (G8.5): a genuine token only in the old header is refused as a missing one.
+    expect((await send({ "x-inherit-operation-nonce": "",
+      "x-inherit-csrf": mintPathBOperation(accountId, sessionId, "request-send", subjectId) })).status).toBe(403);
     expect(mocks.rpc).not.toHaveBeenCalled();
   });
 });

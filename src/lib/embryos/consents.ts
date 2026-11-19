@@ -9,7 +9,7 @@ import { invalidRequest, notFound, rpcErrorResponse, sensitiveJson, unavailable 
 import { typedNameIsValid } from "./basis";
 import {
   closedResponse,
-  csrfOperation,
+  headerOperation,
   encryptedLiteral,
   accountJurisdictionDenied,
   originDenied,
@@ -36,6 +36,10 @@ import {
  * token or the request is answered as an unknown resource with no write.
  * The artifact row is read again so a body that changed since the page was
  * rendered is refused rather than signed unseen.
+ *
+ * Each body's one-time embryo operation token travels in
+ * X-Inherit-Operation-Nonce since 19 November 2026 (G8.5); api.consents
+ * verifies and spends the account session's X-Inherit-CSRF before this runs.
  */
 
 const ARTIFACT_SIGNATURE_KEYS = ["recordKind", "recordId", "artifactKey", "artifactVersion", "signedAt"] as const;
@@ -87,7 +91,7 @@ async function signDraftArtifact(
   sessionId: string,
   body: z.infer<typeof signDraftArtifactBody>,
 ): Promise<Response> {
-  const claims = csrfOperation(request, {
+  const claims = headerOperation(request, {
     accountId,
     sessionId,
     operation: "artifact_sign",
@@ -156,7 +160,7 @@ async function grantCohortPurpose(
   sessionId: string,
   body: z.infer<typeof grantCohortPurposeBody>,
 ): Promise<Response> {
-  const claims = csrfOperation(request, {
+  const claims = headerOperation(request, {
     accountId,
     sessionId,
     operation: "cohort_purpose_grant",

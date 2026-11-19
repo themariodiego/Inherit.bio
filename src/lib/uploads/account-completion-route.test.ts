@@ -3,6 +3,10 @@ import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({ rpc: vi.fn(), getUser: vi.fn(), getClaims: vi.fn() }));
 vi.mock("@/lib/supabase/admin", () => ({ createAdminClient: () => ({ rpc: mocks.rpc }) }));
 vi.mock("@/lib/supabase/server", () => ({ createClient: async () => ({ auth: mocks }) }));
+// The one-time X-Inherit-CSRF gate passes through here; it is tested on this
+// route, through the same handler, in src/lib/security/session-csrf-routes.test.ts.
+vi.mock("@/lib/security/session-csrf", async (importOriginal) =>
+  (await import("@/lib/security/session-csrf.test-support")).admitEverySessionCsrf(await importOriginal()));
 import { POST } from "@/app/api/account/completion/route";
 import { mintOwnAccountCompletionPresentation, mintOwnConsentPresentation } from "./own-consent-token";
 
@@ -20,7 +24,8 @@ function requestCase(snapshot = input) {
   return {
     ...presentation,
     body: { dateOfBirth: "1990-01-01", presentationToken: presentation.token },
-    headers: { origin: "https://inherit.bio", "sec-fetch-site": "same-origin", "x-inherit-csrf": presentation.token },
+    // 2026-11-19 (G8.5): the account session's one-time token, admitted by the gate above; it was presentation.token.
+    headers: { origin: "https://inherit.bio", "sec-fetch-site": "same-origin", "x-inherit-csrf": "the-account-session-token-the-gate-admitted" },
   };
 }
 function send(body: unknown, headers: Record<string, string>) {
@@ -51,14 +56,19 @@ describe("initial account completion route", () => {
       p_nonce_expires_at: new Date(claims.expiresAt).toISOString(),
     });
   });
-  it.each(["origin", "sec-fetch-site", "x-inherit-csrf"])("requires %s", async key => {
+  // 2026-11-19 (G8.5): "x-inherit-csrf" left this list. The header is the account
+  // session's one-time token, required by the gate (the api.account-completion cases of
+  // src/lib/security/session-csrf-routes.test.ts); the presentation token is required
+  // in the body (the foreign, expired and consent-signing cases below).
+  it.each(["origin", "sec-fetch-site"])("requires %s", async key => {
     const c = requestCase(); const headers: Record<string, string> = { ...c.headers }; delete headers[key];
     expect((await send(c.body, headers)).status).toBe(403);
     expect(mocks.rpc).not.toHaveBeenCalled();
   });
-  it("rejects foreign origins and mismatched CSRF headers", async () => {
+  it("rejects foreign origins", async () => {
     const c = requestCase();
-    for (const patch of [{ origin: "http://localhost" }, { "sec-fetch-site": "same-site" }, { "x-inherit-csrf": "wrong" }]) {
+    // 2026-11-19 (G8.5): the { "x-inherit-csrf": "wrong" } patch moved to the gate's cases (see above).
+    for (const patch of [{ origin: "http://localhost" }, { "sec-fetch-site": "same-site" }]) {
       expect((await send(c.body, { ...c.headers, ...patch })).status).toBe(403);
     }
     expect(mocks.rpc).not.toHaveBeenCalled();

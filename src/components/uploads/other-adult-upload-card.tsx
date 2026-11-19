@@ -37,18 +37,19 @@ export function OtherAdultNewPersonForm({ token, documentFlow = false }: { token
   const [birthError, setBirthError] = useState(false);
   const [failed, setFailed] = useState(false);
   const [saving, setSaving] = useState(false);
+  const draftsCsrf = useCsrf("api.subject-drafts");
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!isAdultOn(person.birth)) { setBirthError(true); return; }
     setSaving(true); setFailed(false);
     try {
-      const response = await fetch("/api/subject-drafts", {
+      const response = await draftsCsrf.send((csrfToken) => fetch("/api/subject-drafts", {
         method: "POST", credentials: "same-origin", cache: "no-store",
-        headers: { "content-type": "application/json", "x-inherit-csrf": token },
+        headers: { "content-type": "application/json", "x-inherit-csrf": csrfToken, "x-inherit-operation-nonce": token },
         body: JSON.stringify({ kind: "adult", adultFlow: documentFlow ? flow : "path-b-subject-esignature", displayName: person.name.trim(),
           dateOfBirth: person.birth, contactEmail: person.email.trim(), requestId }),
-      });
+      }));
       if (response.status !== 201) throw new Error("not_saved");
       setPerson(EMPTY_PERSON);
       setRequestId(crypto.randomUUID());
@@ -143,6 +144,7 @@ export function ConsentFields({ consent, checked, setChecked, typedName, setType
 export function OtherAdultUploadCard({ target, limits = null }: { target: OtherAdultTarget; limits?: OwnUploadLimits | null }) {
   const router = useRouter();
   const sessionCsrf = useCsrf("api.file-upload-session"), finalizeCsrf = useCsrf("api.file-finalize");
+  const consentsCsrf = useCsrf("api.consents"), invitationsCsrf = useCsrf("api.invitations");
   // The server preview has no file-change handler. Keep the picker closed
   // until hydration attaches it so an early selection cannot be lost.
   const interactive = useSyncExternalStore(subscribeNever, clientReady, serverReady);
@@ -181,15 +183,15 @@ export function OtherAdultUploadCard({ target, limits = null }: { target: OtherA
   const consent = target.consent;
   async function signIfNeeded(): Promise<boolean> {
     if (!consent) return true;
-    const response = await fetch(route("api.consents"), {
+    const response = await consentsCsrf.send((csrfToken) => fetch(route("api.consents"), {
       method: "POST", credentials: "same-origin", cache: "no-store",
-      headers: { "content-type": "application/json", "x-inherit-csrf": consent.token },
+      headers: { "content-type": "application/json", "x-inherit-csrf": csrfToken },
       body: JSON.stringify({
         action: "sign-artifact", signatureClass: "tier2", subjectDraftId: target.subjectId,
         artifactVersion: consent.version, artifactPresentationToken: consent.token, affirmed: true,
         statementKeys: consent.statements.map(statement => statement.key), typedName: typedName.trim(),
       }),
-    });
+    }));
     return response.status === 201;
   }
 
@@ -204,11 +206,12 @@ export function OtherAdultUploadCard({ target, limits = null }: { target: OtherA
       try {
         if (!(await signIfNeeded())) throw new Error("not_signed");
         if (sending) {
-          const response = await fetch("/api/invitations", {
+          const response = await invitationsCsrf.send((csrfToken) => fetch("/api/invitations", {
             method: "POST", credentials: "same-origin", cache: "no-store",
-            headers: { "content-type": "application/json", "x-inherit-csrf": target.operationToken ?? "" },
+            headers: { "content-type": "application/json", "x-inherit-csrf": csrfToken,
+              "x-inherit-operation-nonce": target.operationToken ?? "" },
             body: JSON.stringify({ targetSubjectDraftId: target.subjectId, contactEmail: email.trim() }),
-          });
+          }));
           if (response.status !== 202) throw new Error("not_sent");
         }
         router.refresh();

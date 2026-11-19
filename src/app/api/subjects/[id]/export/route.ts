@@ -1,4 +1,5 @@
 import {pollSubjectExport,postSubjectExport,subjectExportHttpDependencies} from "@/lib/exports/subject-export-http";
+import {withAccountCsrf} from "@/lib/security/session-csrf";
 
 /**
  * `POST /api/subjects/[id]/export` and `GET` (register api.subject-export):
@@ -12,10 +13,14 @@ import {pollSubjectExport,postSubjectExport,subjectExportHttpDependencies} from 
  * See `src/lib/exports/subject-export-http.ts`.
  */
 export const maxDuration=60;
-export async function POST(request:Request,context:{params:Promise<{id:string}>}){
+/** The shell's one-time X-Inherit-CSRF token for the account session is
+ * verified and spent before `create` or `open-ready` runs (G8.5); the
+ * action's sealed export proof travels in X-Inherit-Operation-Proof and is
+ * bound into the operation exactly as before. GET only polls and needs none. */
+export const POST=withAccountCsrf("api.subject-export",async(request:Request,context:{params:Promise<{id:string}>})=>{
  const {id}=await context.params;
  return postSubjectExport(request,id,subjectExportHttpDependencies());
-}
+});
 export async function GET(request:Request,context:{params:Promise<{id:string}>}){
  const {id}=await context.params;
  return pollSubjectExport(request,id,subjectExportHttpDependencies());

@@ -4,6 +4,7 @@ import { disableOwnReportChoice, enableOwnReportChoice, generateOwnReports } fro
 // The routes' rendered one-time X-Inherit-CSRF tokens (G8.5).
 const REVOKE_CSRF = `1800000000000.${"R".repeat(43)}.${"6".repeat(64)}`;
 const PROCESS_CSRF = `1800000000000.${"P".repeat(43)}.${"7".repeat(64)}`;
+const GRANT_CSRF = `1800000000000.${"G".repeat(43)}.${"8".repeat(64)}`;
 const fetchMock = vi.fn();
 const id = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 const otherId = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
@@ -18,21 +19,23 @@ const reply = (body: unknown, status = 200) => fetchMock.mockResolvedValue(new R
 
 describe("own report choice transport", () => {
   it("sends only the one explicitly chosen purpose and presented artifact", async () => {
-    reply(receipt, 201); await enableOwnReportChoice(id, choice);
+    reply(receipt, 201); await enableOwnReportChoice(id, choice, csrfHandle(GRANT_CSRF));
     expect(fetchMock).toHaveBeenCalledOnce();
     const [url, request] = fetchMock.mock.calls[0];
     expect(url).toBe("/api/consents");
-    expect(request.headers["x-inherit-csrf"]).toBe(choice.token);
+    // 2026-11-19 (G8.5): X-Inherit-CSRF is api.consents' one-time session token (it was choice.token); the
+    // presentation token travels only in the body's artifactPresentationToken, asserted below.
+    expect(request.headers["x-inherit-csrf"]).toBe(GRANT_CSRF);
     expect(JSON.parse(request.body)).toEqual({ action: "grant-purpose", subjectId: id, purposeKey: "reports.polygenic",
       artifactVersion: 2, artifactPresentationToken: choice.token, affirmed: true, statementKeys: ["make-this-result-for-me"] });
   });
   it.each([{ purposeKey: "ancestry" }, { artifactVersion: 1 }, { artifactKey: "consent.own-monogenic" },
     { privateField: "unexpected" }, { recordKind: "signature" }])("refuses a mismatched or open receipt: %j", async patch => {
     reply({ ...receipt, ...patch }, 201);
-    await expect(enableOwnReportChoice(id, choice)).rejects.toThrow("choice_not_saved");
+    await expect(enableOwnReportChoice(id, choice, csrfHandle(GRANT_CSRF))).rejects.toThrow("choice_not_saved");
   });
   it("does not treat a success-shaped error status as permission", async () => {
-    reply(receipt, 409); await expect(enableOwnReportChoice(id, choice)).rejects.toThrow();
+    reply(receipt, 409); await expect(enableOwnReportChoice(id, choice, csrfHandle(GRANT_CSRF))).rejects.toThrow();
   });
   it("withdraws exactly the given grant without a client-selected purpose override", async () => {
     reply({ revoked: true, effectiveAt: "2026-09-06T12:00:00Z" }); await disableOwnReportChoice(otherId, "revoke-nonce", csrfHandle(REVOKE_CSRF));

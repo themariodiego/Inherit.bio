@@ -47,6 +47,18 @@ function normalizedEmail(value: string): string {
 }
 
 export async function POST(request: Request) {
+  // Every body carries the page's one-time X-Inherit-CSRF token for the
+  // account session, spent before the body is read (G8.5). Each body's own
+  // one-time nonce travels in X-Inherit-Operation-Nonce and is checked by the
+  // code that answers it: Path A's below, and since 19 November 2026 the two
+  // Path B bodies' draft nonce too, which was sent in X-Inherit-CSRF.
+  const csrf = await admitAccountCsrf(request, "api.subject-drafts");
+  if (csrf.kind === "refused") return csrf.response;
+  const response = await draftBody(request);
+  return csrf.kind === "admitted" ? csrf.rotate(response) : response;
+}
+
+async function draftBody(request: Request): Promise<Response> {
   const payload: unknown = await request.json().catch(() => null);
   // The register's Path B body ("I have their file"): a draft with the
   // person's name, date of birth and address, TEST-LOCAL only
@@ -55,12 +67,7 @@ export async function POST(request: Request) {
   // The register's third body, path-b-reviewed-document (owner decision
   // 2026-10-16): the same person fields, evidence a named human reviews.
   if (isPathBReviewedDocumentDraftPayload(payload)) return createPathBReviewedDocumentDraft(request, payload);
-  // Path A carries the invite page's one-time X-Inherit-CSRF token, spent
-  // before anything else; the two Path B bodies above check their own page's.
-  const csrf = await admitAccountCsrf(request, "api.subject-drafts");
-  if (csrf.kind === "refused") return csrf.response;
-  const response = await pathAInvitation(request, payload);
-  return csrf.kind === "admitted" ? csrf.rotate(response) : response;
+  return pathAInvitation(request, payload);
 }
 
 async function pathAInvitation(request: Request, payload: unknown): Promise<Response> {

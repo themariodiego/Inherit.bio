@@ -11,14 +11,18 @@ const grantReceipt = z.object({ recordKind: z.literal("purpose_grant"), recordId
 }).strict();
 const revokeReceipt = z.object({ revoked: z.literal(true), effectiveAt: z.iso.datetime({ offset: true }) }).strict();
 
-/** Only closed, target-matching receipts change the permission controls. */
-export async function enableOwnReportChoice(subjectId: string, choice: Choice): Promise<void> {
-  const response = await fetch(route("api.consents"), { method: "POST", headers: {
-    "content-type": "application/json", "x-inherit-csrf": choice.token,
+/**
+ * Only closed, target-matching receipts change the permission controls.
+ * `csrf` is api.consents' one-time X-Inherit-CSRF token; the page's
+ * presentation token travels only in the body (G8.5, 19 November 2026).
+ */
+export async function enableOwnReportChoice(subjectId: string, choice: Choice, csrf: CsrfHandle): Promise<void> {
+  const response = await csrf.send((csrfToken) => fetch(route("api.consents"), { method: "POST", headers: {
+    "content-type": "application/json", "x-inherit-csrf": csrfToken,
   }, body: JSON.stringify({ action: "grant-purpose", subjectId, purposeKey: choice.purposeKey,
     artifactVersion: choice.artifact.version, artifactPresentationToken: choice.token,
     affirmed: true, statementKeys: choice.statementKeys,
-  }) });
+  }) }));
   const receipt = grantReceipt.safeParse(await response.json());
   if (response.status !== 201 || !receipt.success || receipt.data.purposeKey !== choice.purposeKey
     || receipt.data.artifactKey !== choice.artifact.key || receipt.data.artifactVersion !== choice.artifact.version) {

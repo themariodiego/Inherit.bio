@@ -6,6 +6,8 @@ import {keylessSourceProof} from "./keyless-positive-journey";
 
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/u;
 const HASH=/^[0-9a-f]{64}$/u;
+/** The one-time X-Inherit-CSRF token (src/lib/security/session-csrf-core.ts). */
+const SESSION_TOKEN=/^\d{13}\.[A-Za-z0-9_-]{43}\.[0-9a-f]{64}$/u;
 function scope(value:string,shape:RegExp){if(!shape.test(value))throw new Error("Invalid synthetic claimed-record scope");return value;}
 
 export type ClaimedRecordProof={digest:string;source:string;lifecycle:string;deletionPlans:number;untilRequestRows:number;
@@ -54,13 +56,17 @@ export async function claimedRecordProof(input:{subjectId:string;claimId:string;
  * direct superuser database connection, which the isolated CI runtime blocks
  * by design (owner decision 2026-10-22, "How G5.4's claimant delete is
  * proven"). So this app offers no delete control, mints no delete nonce, and
- * the registered DELETE answers the closed 404 to the page's own CSRF. This
+ * the registered DELETE answers the closed 404 to a fresh CSRF token of the
+ * page's own rights session. Since 19 November 2026 (G8.5) that token is the
+ * one-time session token, which the route's gate spends before the closed door
+ * answers: the answer carries its successor, so the 404 is the door's and not
+ * the gate's. Before, the page's claimant digest stood in its place. This
  * proves the closed door only; the working DELETE is proven by
  * supabase/tests/future_person_claimant_erasure_completion.sql and
  * src/lib/future-person/claimant-deletion-route.test.ts. A later runtime that
  * admits the executor replaces this one call, and steps 1-4 stay as they are. */
 export async function proveClaimantDeleteClosed(page:Page,input:{csrf:string;proof:()=>Promise<ClaimedRecordProof>}):Promise<ClaimedRecordProof>{
-  expect(input.csrf,"the page's own claimant CSRF, taken from its real request").toMatch(HASH);
+  expect(input.csrf,"a fresh one-time token for api.future-person-delete, bound to the page's own rights session").toMatch(SESSION_TOKEN);
   await expect(page.getByRole("group",{name:CLAIMANT_DELETE_CONTROL.legend,exact:true})).toHaveCount(0);
   await expect(page.getByRole("button",{name:CLAIMANT_DELETE_CONTROL.button,exact:true})).toHaveCount(0);
   for(const text of [CLAIMANT_DELETE_CONTROL.warning,CLAIMANT_DELETE_CONTROL.acknowledgement])
@@ -75,11 +81,14 @@ export async function proveClaimantDeleteClosed(page:Page,input:{csrf:string;pro
       const reply=await fetch("/api/future-person/claim/session",{method:"DELETE",credentials:"same-origin",cache:"no-store",
         signal:abort.signal,headers:{"X-Inherit-CSRF":csrf}});
       const text=await reply.text();if(text.length>1024)throw new Error("Unexpected native response size");
-      return {status:reply.status,text,cache:reply.headers.get("cache-control"),referrer:reply.headers.get("referrer-policy")};
+      return {response:{status:reply.status,text,cache:reply.headers.get("cache-control"),referrer:reply.headers.get("referrer-policy")},
+        successor:reply.headers.get("x-inherit-csrf")};
     }finally{clearTimeout(timer);abort.abort();}
   },input.csrf);
-  expect(response,"the registered claimant DELETE is the closed 404 on this app").toEqual({status:404,
+  expect(response.response,"the registered claimant DELETE is the closed 404 on this app").toEqual({status:404,
     text:JSON.stringify({error:"not_found"}),cache:"private, no-store",referrer:"no-referrer"});
+  expect(response.successor,"the token gate admitted and spent the token, so the 404 is the closed door's").toMatch(SESSION_TOKEN);
+  expect(response.successor).not.toBe(input.csrf);
   const after=await input.proof();
   expect(after,"nothing the delete would remove has changed, and the sibling and canonical source are untouched").toEqual(before);
   return after;

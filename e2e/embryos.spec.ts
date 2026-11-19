@@ -1008,6 +1008,8 @@ test("/embryos/upload processing: real draft and invitation requests announce pe
     expect(route.request().postDataJSON()).toEqual({ uploadSituation: "own-embryos", basis: "two-evidenced-parents",
       donorAttributionIntent: "none", embryoCount: 2, otherRequiredPrincipalContacts: [parentEmail] });
     expect(route.request().headers()[UPLOAD_CSRF_HEADER]).toEqual(expect.any(String));
+    // 2026-11-19 (G8.5): X-Inherit-CSRF is the shell's one-time session token; the draft's operation token travels here.
+    expect(route.request().headers()["x-inherit-operation-nonce"]).toEqual(expect.any(String));
     draftEntered(); await draftReleasePromise; await route.continue();
   });
   const observation = await observeNativeResponses(page, {
@@ -1075,6 +1077,8 @@ test("/embryos/upload processing: real draft and invitation requests announce pe
     invitationRequests++;
     expect(route.request().postDataJSON()).toEqual({ targetCohortDraftId: receipt.cohortDraftId, contactEmail: parentEmail });
     expect(route.request().headers()[UPLOAD_CSRF_HEADER]).toEqual(expect.any(String));
+    // 2026-11-19 (G8.5): X-Inherit-CSRF is the shell's one-time session token; the invitation's operation token travels here.
+    expect(route.request().headers()["x-inherit-operation-nonce"]).toEqual(expect.any(String));
     invitationEntered(); await invitationReleasePromise; await route.continue();
   });
   const invitationResponse = page.waitForResponse(response => new URL(response.url()).pathname === "/api/invitations"
@@ -1133,7 +1137,8 @@ test("/embryos/upload processing: an actual failed draft request releases pendin
     attempts++;
     expect(route.request().postDataJSON()).toEqual({ uploadSituation: "own-embryos", basis: "two-evidenced-parents",
       donorAttributionIntent: "none", embryoCount: 2, otherRequiredPrincipalContacts: [parentEmail] });
-    spentCandidate = route.request().headers()[UPLOAD_CSRF_HEADER];
+    // 2026-11-19 (G8.5): the draft's one-time operation token travels in X-Inherit-Operation-Nonce; it was X-Inherit-CSRF.
+    spentCandidate = route.request().headers()["x-inherit-operation-nonce"];
     expect(spentCandidate).toEqual(expect.any(String));
     expect(spentCandidate.length).toBeGreaterThan(0);
     entered(); await releasePromise; await route.abort("failed");
@@ -1163,7 +1168,7 @@ test("/embryos/upload processing: an actual failed draft request releases pendin
   const response = await completed;
   expect(response.status()).toBe(201);
   expect(response.headers()["cache-control"]).toContain("no-store");
-  expect(response.request().headers()[UPLOAD_CSRF_HEADER]).not.toBe(spentCandidate);
+  expect(response.request().headers()["x-inherit-operation-nonce"]).not.toBe(spentCandidate);
   const draftBody = await observation.read("draft");
   expect(draftBody.status).toBe(response.status());
   const receipt = JSON.parse(draftBody.text);

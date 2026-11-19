@@ -2,6 +2,12 @@ import {z} from "zod";
 
 export const ACCOUNT_ARCHIVE_FILENAME="inherit-account-export.zip";
 export const ACCOUNT_ARCHIVE_CHUNK_BYTES=4_000_000;
+/** The header the explicit action's sealed, operation-bound export proof
+ * travels in (api.export and api.subject-export). Its hash is the operation's
+ * p_csrf_binding, exactly as before. X-Inherit-CSRF carries the account
+ * session's one-time token instead (G8.5, 19 November 2026); until then it
+ * carried this proof. */
+export const EXPORT_PROOF_HEADER="X-Inherit-Operation-Proof";
 const count=z.number().int().positive().safe(),hash=z.string().regex(/^[a-f0-9]{64}$/u);
 export const accountExportPreparing=z.object({status:z.literal("preparing"),exportId:z.uuid()}).strict();
 export const accountExportReady=z.object({status:z.literal("ready"),exportId:z.uuid(),

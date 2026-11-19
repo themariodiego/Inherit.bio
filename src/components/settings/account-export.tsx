@@ -1,6 +1,7 @@
 "use client";
 import {useEffect,useRef,useState} from "react";
 import {Button} from "@/components/ui/button";
+import {useCsrf} from "@/components/security/csrf-provider";
 import {requestAccountExport,type AccountExportControl} from "@/lib/exports/account-export-control";
 import {chooseAccountArchiveSink,downloadAccountArchive,type AccountArchiveDownloadSink} from "@/lib/exports/account-archive-download";
 
@@ -9,6 +10,8 @@ import {chooseAccountArchiveSink,downloadAccountArchive,type AccountArchiveDownl
  * own server presentation. */
 export function AccountExport({control,route}:{control:AccountExportControl;route?:string}){
  const open=control.available?control.open:undefined;
+ // The route's one-time X-Inherit-CSRF token from the shell (G8.5).
+ const csrf=useCsrf(route?"api.subject-export":"api.export");
  const [busy,setBusy]=useState(false),[used,setUsed]=useState(!!open),[exportId,setExportId]=useState<string|null>(open?.exportId??null);
  const [message,setMessage]=useState<string|null>(null),active=useRef<AbortController|null>(null);
  const attempted=useRef(false);
@@ -21,7 +24,7 @@ export function AccountExport({control,route}:{control:AccountExportControl;rout
   if(busy||active.current||operation==="create"&&(attempted.current||!control.available))return;
   const stop=new AbortController();active.current=stop;setBusy(true);setMessage(null);
   if(operation==="create"){attempted.current=true;setUsed(true);}
-  try{const result=await requestAccountExport({operation,control,expectedExportId:exportId,signal:stop.signal,route});
+  try{const result=await requestAccountExport({operation,control,expectedExportId:exportId,signal:stop.signal,route,csrf});
    if(!stop.signal.aborted&&"exportId" in result){setExportId(result.exportId);setMessage(result.status==="ready"
     ?"Your export is ready. Reload this page to get its download action."
     :"Your export is being prepared. Check its status here.");}
@@ -38,7 +41,7 @@ export function AccountExport({control,route}:{control:AccountExportControl;rout
   const selected=chooseAccountArchiveSink();
   try{
    sink=await selected;if(stop.signal.aborted)throw new Error("account_export_unavailable");
-   const result=await requestAccountExport({operation:"open-ready",control,expectedExportId:open.exportId,signal:stop.signal,route});
+   const result=await requestAccountExport({operation:"open-ready",control,expectedExportId:open.exportId,signal:stop.signal,route,csrf});
    if(!("session" in result))throw new Error("account_export_unavailable");
    handedToDownload=true;await downloadAccountArchive({download:result,sink,signal:stop.signal});
    if(!stop.signal.aborted)setMessage("Your complete export has been saved.");

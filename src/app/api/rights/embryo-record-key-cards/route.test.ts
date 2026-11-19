@@ -7,6 +7,10 @@ vi.stubEnv("NEXT_PUBLIC_APP_URL", "http://localhost");
 
 const mocks = vi.hoisted(() => ({ rpc: vi.fn() }));
 vi.mock("@/lib/supabase/admin", () => ({ createAdminClient: () => ({ rpc: mocks.rpc }) }));
+// The one-time X-Inherit-CSRF gate passes through here; it is tested on this
+// route, through the same handler, in src/lib/security/session-csrf-routes.test.ts.
+vi.mock("@/lib/security/session-csrf", async (importOriginal) =>
+  (await import("@/lib/security/session-csrf.test-support")).admitEverySessionCsrf(await importOriginal()));
 
 const { POST } = await import("./route");
 const { mintRecordKeyCardsRightsForm } = await import("@/lib/embryos/record-key-cards-rights");
@@ -31,7 +35,8 @@ function call(options: {
   if (origin !== null) headers.set("origin", origin);
   const site = options.site === undefined ? "same-origin" : options.site;
   if (site !== null) headers.set("sec-fetch-site", site);
-  const header = options.header === undefined ? nonce : options.header;
+  // 2026-11-19 (G8.5): the rights session's one-time token, admitted by the gate above; it repeated the body nonce.
+  const header = options.header === undefined ? "the-rights-session-token-the-gate-admitted" : options.header;
   if (header !== null) headers.set("x-inherit-csrf", header);
   const cookie = options.cookie === undefined ? `${RIGHTS_COOKIE_NAME}=${secret}` : options.cookie;
   if (cookie !== null) headers.set("cookie", cookie);
@@ -93,7 +98,9 @@ describe("POST /api/rights/embryo-record-key-cards", () => {
     const otherForm = mintPublicFormToken("embryo-parent-withdraw", Date.now(), rightsSessionHash(secret));
     for (const options of [
       { origin: "https://elsewhere.example" }, { origin: null }, { site: "cross-site" }, { site: null },
-      { header: null }, { header: "different-token-value" }, { cookie: null },
+      // 2026-11-19 (G8.5): { header: null } and { header: "different-token-value" } moved to the gate's
+      // api.embryo-record-key-cards-rights cases in session-csrf-routes.test.ts; the nonce is the body's alone.
+      { cookie: null },
       { cookie: `${RIGHTS_COOKIE_NAME}=${secret}; ${RIGHTS_COOKIE_NAME}=${secret}` },
       { nonce: otherSession }, { nonce: otherForm }, { nonce: "forged-token-value-000" },
       { body: { nonce: "x".repeat(20), cohortId: COHORT } }, { body: { recordKey: KEY } },

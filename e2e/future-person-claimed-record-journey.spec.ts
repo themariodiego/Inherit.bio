@@ -11,6 +11,7 @@ import {nativeReviewRequest,openSyntheticReviewPdf,reviewId} from "./helpers/key
 import {expectFullDocumentReceipts,otherCurrentParent} from "./helpers/keyless-positive-journey";
 import {claimedRecordProof,proveClaimantDeleteClosed} from "./helpers/claimant-delete-closed";
 import {observeNativeResponses} from "./helpers/native-response-observer";
+import {rightsCsrf} from "./helpers/session-csrf";
 import {keylessReviewDocument} from "./fixtures/keyless-review-documents";
 import {CLAIMANT_PAGE,RELEASE_LINK_SPENT,RELEASE_MAIL} from "./fixtures/claimant-record-page-text";
 import {reviewPageCase} from "../src/lib/future-person/review-page-contract";
@@ -203,7 +204,7 @@ test("Claimed record without an account: an approved Record Key claim, its captu
           where n.claim_id='${claim}' and n.notice_kind='release'`),"the mail job submitted the release and the provider accepted it").toBe("submitted/accepted");
       });
 
-      let csrf="",sessionHash="";
+      let sessionHash="";
       const claimed=await releaseContext.newPage();
       await test.step("4. /withdraw/[token] complete: the release link opens the claimed record's page on /withdraw/session, with its retention in days and its contact, and no account",async()=>{
         const observed=watchRequests(claimed);
@@ -239,7 +240,10 @@ test("Claimed record without an account: an approved Record Key claim, its captu
         const issued=await observeNativeResponses(claimed,{key:"^/api/future-person/claim/session/recovery-key$"});
         try{
           await recovery.getByRole("button",{name:CLAIMANT_PAGE.recoveryButton,exact:true}).click();
-          csrf=(await sent).headers()["x-inherit-csrf"]??"";
+          // 2026-11-19 (G8.5): the page sends its one-time rights-session token for this route, not the claimant digest
+          // step 5 used to replay; that token is spent here, so step 5 carries a fresh one for the DELETE route.
+          expect((await sent).headers()["x-inherit-csrf"],"the page's one-time rights-session token for the Recovery Key route")
+            .toMatch(/^\d{13}\.[A-Za-z0-9_-]{43}\.[0-9a-f]{64}$/u);
           const reply=await issued.read("key");expect(reply.status).toBe(201);
           const receipt=JSON.parse(reply.text) as Record<string,unknown>;
           expect(Object.keys(receipt).sort()).toEqual(["contactMaterialExpiresOn","recordRetention","recoveryKey","reverificationBinding"]);
@@ -261,8 +265,8 @@ test("Claimed record without an account: an approved Record Key claim, its captu
         await expect(claimed.locator('[data-slot="claimant-retention"]')).toHaveText(CLAIMANT_PAGE.retention);
       });
 
-      await test.step("5. The claimant delete on this app: no delete control is offered, a DELETE with the page's own CSRF gets the closed 404, and nothing is deleted",async()=>{
-        await proveClaimantDeleteClosed(claimed,{csrf,proof:()=>claimedRecordProof({subjectId:subject,claimId:claim,
+      await test.step("5. The claimant delete on this app: no delete control is offered, a DELETE with a fresh one-time CSRF token of the page's own rights session gets the closed 404, and nothing is deleted",async()=>{
+        await proveClaimantDeleteClosed(claimed,{csrf:await rightsCsrf(claimed,"api.future-person-delete"),proof:()=>claimedRecordProof({subjectId:subject,claimId:claim,
           cohortId:seeded.cohortId,siblingId:sibling,sessionHash})});
         await claimed.reload();
         await expect(claimed.getByRole("heading",{name:CLAIMANT_PAGE.heading,exact:true,level:1})).toBeVisible();

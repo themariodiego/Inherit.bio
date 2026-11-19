@@ -45,7 +45,10 @@ const bodySchema = z.object({ action: z.literal("grant-purpose"), subjectId: z.u
 export async function ownCopilotConsent(request: Request, payload: unknown): Promise<Response> {
   const body = bodySchema.safeParse(payload);
   if (!body.success) return ownUploadJson({ error: "invalid_request" }, 422);
-  if (!sameOriginCopilot(request) || request.headers.get("x-inherit-csrf") !== body.data.artifactPresentationToken) return ownUploadJson({ error: "request_forbidden" }, 403);
+  // The presentation token is the body's artifactPresentationToken, checked
+  // below; api.consents verifies and spends the account session's
+  // X-Inherit-CSRF before this runs (G8.5, 19 November 2026).
+  if (!sameOriginCopilot(request)) return ownUploadJson({ error: "request_forbidden" }, 403);
   try {
     const actor = await currentOwnUploadAccount();
     if (!actor) return ownUploadJson({ error: "unauthenticated" }, 401);

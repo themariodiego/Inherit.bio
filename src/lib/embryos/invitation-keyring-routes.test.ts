@@ -48,7 +48,9 @@ vi.mock("@/lib/embryos/adult-subject-review", async (original) => ({
 vi.mock("@/lib/embryos/guards", async (original) => ({
   ...(await original<typeof import("@/lib/embryos/guards")>()),
   accountJurisdictionDenied: async () => null,
-  csrfOperation: () => ({ nonce: "csrf-nonce-aaaaaaaaaaaaaaaa" }),
+  // 2026-11-19 (G8.5): api.invitations reads the operation token from X-Inherit-Operation-Nonce
+  // (headerOperation); it was csrfOperation.
+  headerOperation: () => ({ nonce: "csrf-nonce-aaaaaaaaaaaaaaaa" }),
 }));
 
 const { POST: inviteCoParent } = await import("@/app/api/invitations/route");

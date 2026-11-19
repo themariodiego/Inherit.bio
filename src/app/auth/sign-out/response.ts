@@ -46,31 +46,30 @@ const hostOnly = (family: SignOutCookie["family"], name: string, sameSite: SignO
 export const EXPORT_DOWNLOAD_COOKIE = "__Host-inherit-download";
 
 /**
- * sign-out-v1.sessionEffect: "clear every Inherit auth, rights, upload,
- * evidence, claim, download and candidate cookie before the response", and
- * auth.sign-out.policy.transaction: "clear the host-only session, upload,
- * evidence, export, download and model-capability cookies". Each family maps
- * to the cookie the code sets for that purpose:
+ * sign-out-v1.sessionEffect: "clear every Inherit auth, upload, evidence,
+ * claim, download and candidate cookie before the response; the rights cookie
+ * is not cleared at sign-out", and auth.sign-out.policy.transaction: "clear
+ * the host-only session, upload, evidence, export and download cookies"
+ * (both as amended on 19 November 2026, G8.5). Each family maps to the cookie
+ * the code sets for that purpose:
  *
  * - auth: the auth form, PKCE and reset cookies (`auth-cookies.ts`), and the
  *   Supabase session cookies, which are named per project and so are read
  *   from the request (`SUPABASE_AUTH_COOKIE`).
  * - upload: the embryo upload session, `inherit-ingest-<session>`
- *   (`ingest-session.ts`; the register's upload-session-v1.embryoSetCookie
- *   names it `__Host-inherit-upload`), one per session, read from the request.
+ *   (`ingest-session.ts`; upload-session-v1.embryoSetCookie), one per
+ *   session, read from the request.
  * - evidence, claim (the claim session and its form pair), download,
- *   candidate (the register's token-candidate-api-v1 names it
- *   `__Host-inherit-candidate`; rights.withdraw-request sets
- *   `RIGHTS_CANDIDATE_COOKIE`) and export.
+ *   candidate (`RIGHTS_CANDIDATE_COOKIE`, token-candidate-api-v1) and export.
  * - the two Tier-2 gates, which end with the session.
  *
- * Two families are not cleared. No model-capability cookie exists in the
- * code. The rights cookie (`RIGHTS_COOKIE_NAME`) is kept, because clearing it
+ * The rights cookie (`RIGHTS_COOKIE_NAME`) is kept, as the owner decided on
+ * 19 November 2026 ("sign-out keeps an open rights session"): clearing it
  * would end a co-parent's, adult subject's or claimant's rights session whose
- * mailed link the activation has already consumed: a person who signs another
- * account out of a shared browser to accept could not reopen it (the flow
- * e2e/co-parent-invitation.spec.ts and e2e/adult-subject-invitation.spec.ts
- * walk). Whether sign-out ends it is the owner's decision.
+ * mailed link the activation has already consumed, so a person who signs
+ * another account out of a shared browser to accept could not reopen it (the
+ * flow e2e/co-parent-invitation.spec.ts and e2e/adult-subject-invitation.spec.ts
+ * walk).
  */
 export const SIGN_OUT_COOKIES: readonly SignOutCookie[] = Object.freeze([
   ...SESSION_SCOPED_COOKIES.map((name): SignOutCookie => {

@@ -9,9 +9,13 @@ import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({ database: vi.fn() }));
 vi.mock("@/lib/supabase/admin", () => ({ createAdminClient: mocks.database }));
 vi.mock("@/lib/supabase/server", () => ({ createClient: mocks.database }));
+// The one-time X-Inherit-CSRF gate passes through here; it is tested on this
+// route, through the same handler, in src/lib/security/session-csrf-routes.test.ts.
+vi.mock("@/lib/security/session-csrf", async (importOriginal) =>
+  (await import("@/lib/security/session-csrf.test-support")).admitEverySessionCsrf(await importOriginal()));
 vi.stubEnv("BYOK_ENCRYPTION_KEY", Buffer.alloc(32, 63).toString("base64"));
 const { POST, GET } = await import("@/app/api/withdraw/session/export/route");
-const { mintThirdPartyExportNonce, readThirdPartyExportNonce, thirdPartyExportCsrf, thirdPartyExportBody }
+const { mintThirdPartyExportNonce, readThirdPartyExportNonce, thirdPartyExportBody }
   = await import("./third-party-export-http");
 const { RIGHTS_COOKIE_NAME, rightsSessionHash } = await import("@/lib/embryos/rights-session");
 afterAll(() => vi.unstubAllEnvs());
@@ -23,7 +27,8 @@ const other = rightsSessionHash(Buffer.alloc(32, 8).toString("base64url"));
 const exportCookie = `__Host-inherit-export=88100000-0000-4000-8000-000000000001.${Buffer.alloc(32, 5).toString("base64url")}`;
 function post(body: unknown, headers: Record<string, string> = {}, target = url) {
   return new Request(target, { method: "POST", body: typeof body === "string" ? body : JSON.stringify(body), headers: { origin,
-    "sec-fetch-site": "same-origin", "content-type": "application/json", "x-inherit-csrf": thirdPartyExportCsrf(session),
+    // 2026-11-19 (G8.5): the rights session's one-time token, admitted by the gate above; it was a keyed digest of the session.
+    "sec-fetch-site": "same-origin", "content-type": "application/json", "x-inherit-csrf": "the-rights-session-token-the-gate-admitted",
     cookie: `${RIGHTS_COOKIE_NAME}=${secret}`, ...headers } });
 }
 function get(cookie = `${RIGHTS_COOKIE_NAME}=${secret}; ${exportCookie}`, target = url) {
@@ -56,8 +61,8 @@ describe("POST /api/withdraw/session/export", () => {
       ["cross-site", post({ operation: "create", nonce }, { "sec-fetch-site": "cross-site" })],
       ["foreign origin", post({ operation: "create", nonce }, { origin: "https://elsewhere.example" })],
       ["not JSON", post({ operation: "create", nonce }, { "content-type": "text/plain" })],
-      ["no CSRF", post({ operation: "create", nonce }, { "x-inherit-csrf": "" })],
-      ["foreign CSRF", post({ operation: "create", nonce }, { "x-inherit-csrf": thirdPartyExportCsrf(other) })],
+      // 2026-11-19 (G8.5): "no CSRF" and "foreign CSRF" moved to the gate's api.third-party-subject-export cases
+      // (missing, spent, other session, other purpose) in src/lib/security/session-csrf-routes.test.ts.
       ["unknown operation", post({ operation: "delete", nonce })],
       ["unknown field", post({ operation: "create", nonce, target: "cohort" })],
       ["malformed JSON", post("{")],

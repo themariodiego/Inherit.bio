@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { BACK_BUTTON, DRAFT_CONTACTS_STATUS, DRAFT_NOTE, DRAFT_QUESTION_HEADING, EMBRYO_COUNT_LABEL, SAVE_DRAFT_BUTTON, parentEmailLabel } from "@/copy/embryos/upload";
 import { REQUEST_FAILED_STATUS, SIGNING_STATUS } from "@/copy/embryos/signing";
 import { EMBRYO_COUNT_MAXIMUM, requiredContactCount, type Basis, type UploadSituation } from "@/lib/embryos/basis";
-import { UPLOAD_CSRF_HEADER } from "@/lib/embryos/upload-transport";
+import { useCsrf } from "@/components/security/csrf-provider";
 import { route } from "@/lib/primary-routes";
 
 /** No laboratory name, original sample label or file leaves this form. */
@@ -15,6 +15,7 @@ export function DraftForm({ headingId, situation, basis, csrfToken, onBack }: {
   headingId: string; situation: UploadSituation; basis: Basis; csrfToken: string; onBack: () => void;
 }) {
   const router = useRouter();
+  const draftCsrf = useCsrf("api.embryo-cohort-drafts");
   const id = useId();
   const heading = useRef<HTMLHeadingElement>(null);
   useEffect(() => { heading.current?.focus(); }, []);
@@ -32,10 +33,14 @@ export function DraftForm({ headingId, situation, basis, csrfToken, onBack }: {
     submitting.current = true;
     setStatus("pending");
     try {
-      const response = await fetch(route("api.embryo-cohort-drafts", {}), {
+      // `csrfToken` is the page's one-time operation token for the draft; it
+      // travels in X-Inherit-Operation-Nonce, and X-Inherit-CSRF carries the
+      // shell's one-time session token (G8.5, 19 November 2026).
+      const response = await draftCsrf.send((sessionToken) => fetch(route("api.embryo-cohort-drafts", {}), {
         method: "POST", credentials: "same-origin", cache: "no-store", redirect: "error",
-        headers: { "Content-Type": "application/json", [UPLOAD_CSRF_HEADER]: csrfToken }, body: JSON.stringify(body),
-      });
+        headers: { "Content-Type": "application/json", "X-Inherit-CSRF": sessionToken, "X-Inherit-Operation-Nonce": csrfToken },
+        body: JSON.stringify(body),
+      }));
       if (response.status !== 201) {
         const refusal: unknown = await response.json().catch(() => null);
         setStatus(refusal && typeof refusal === "object" && "issues" in refusal && Array.isArray(refusal.issues)

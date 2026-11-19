@@ -4,10 +4,13 @@ const service=vi.hoisted(()=>({configured:vi.fn(),complete:vi.fn(),rpc:vi.fn(),r
 vi.mock("./claimant-deletion-test",()=>({configuredTestClaimantDeletion:service.configured}));
 vi.mock("./claimant-deletion",()=>({completeClaimantDeletion:service.complete}));
 vi.mock("@/lib/supabase/admin",()=>({createAdminClient:()=>({rpc:service.rpc})}));
+// The one-time X-Inherit-CSRF gate passes through here; it is tested on this
+// route, through the same handler, in src/lib/security/session-csrf-routes.test.ts.
+vi.mock("@/lib/security/session-csrf",async importOriginal=>
+ (await import("@/lib/security/session-csrf.test-support")).admitEverySessionCsrf(await importOriginal()));
 vi.stubEnv("BYOK_ENCRYPTION_KEY",crypto.randomBytes(32).toString("base64"));
 const {RIGHTS_COOKIE_NAME,rightsSessionHash}=await import("@/lib/embryos/rights-session");
 const {mintPublicFormToken,readPublicFormToken}=await import("@/lib/embryos/operation-token");
-const {claimantCsrf}=await import("./rights");
 const {DELETE}=await import("@/app/api/future-person/claim/session/route");
 const {presentClaimantDeletion}=await import("./claimant-deletion-presentation");
 const secret=crypto.randomBytes(32).toString("base64url"),hash=rightsSessionHash(secret),cookie=`${RIGHTS_COOKIE_NAME}=${secret}`;
@@ -15,7 +18,8 @@ const execution={assertReady:service.ready};
 const nonce=()=>mintPublicFormToken("future-person-delete",Date.now(),hash);
 function request(headers:Record<string,string>={},path="/api/future-person/claim/session",body?:string){
  return new Request(`https://example.test${path}`,{method:"DELETE",headers:{cookie,origin:"https://example.test","sec-fetch-site":"same-origin",
-  "x-inherit-csrf":claimantCsrf(hash),"x-inherit-operation-nonce":nonce(),...headers},...(body===undefined?{}:{body})});
+ // 2026-11-19 (G8.5): the rights session's one-time token, admitted by the gate above; it was claimantCsrf(hash).
+  "x-inherit-csrf":"the-rights-session-token-the-gate-admitted","x-inherit-operation-nonce":nonce(),...headers},...(body===undefined?{}:{body})});
 }
 beforeEach(()=>{
  vi.clearAllMocks();service.configured.mockReturnValue(execution);service.ready.mockResolvedValue(undefined);
@@ -35,7 +39,9 @@ describe("registered one-use claimant DELETE and presentation",()=>{
   expect(result.headers.get("cache-control")).toBe("private, no-store");expect(result.headers.get("referrer-policy")).toBe("no-referrer");
  });
  it.each<Record<string,string>>([{cookie:""},{cookie:`${cookie}; ${cookie}`},{cookie:`${RIGHTS_COOKIE_NAME}=${crypto.randomBytes(32).toString("base64url")}`},
-  {origin:"https://foreign.test"},{"sec-fetch-site":"cross-site"},{"x-inherit-csrf":"c".repeat(64)},
+  // 2026-11-19 (G8.5): {"x-inherit-csrf":"c".repeat(64)} left this list; the header is the rights session's one-time
+  // token, refused by the gate before the handler (api.future-person-delete's cases in session-csrf-routes.test.ts).
+  {origin:"https://foreign.test"},{"sec-fetch-site":"cross-site"},
   {"x-inherit-operation-nonce":mintPublicFormToken("future-person-analysis-stop",Date.now(),hash)},
   {"x-inherit-operation-nonce":"x".repeat(2049)}])("refuses crossed/missing destructive control %j before service discovery",async headers=>{
   expect((await DELETE(request(headers))).status).toBe(404);expect(service.configured).not.toHaveBeenCalled();expect(service.complete).not.toHaveBeenCalled();
@@ -46,8 +52,12 @@ describe("registered one-use claimant DELETE and presentation",()=>{
  it("refuses the page's own CSRF without a delete nonce before service discovery, as the standard browser app sends it",async()=>{
   // e2e/future-person-claimed-record-journey.spec.ts step 5: the standard app
   // mints no delete nonce, so the page's same-origin DELETE carries only its CSRF.
+  // 2026-11-19 (G8.5): that CSRF is a fresh one-time token for this route and the
+  // page's rights session, which the gate admits (here passed through; the same
+  // request through the real gate is api.future-person-delete's "admits the same
+  // request with a fresh token" case in session-csrf-routes.test.ts). It was claimantCsrf(hash).
   const r=new Request("https://example.test/api/future-person/claim/session",{method:"DELETE",
-   headers:{cookie,origin:"https://example.test","sec-fetch-site":"same-origin","x-inherit-csrf":claimantCsrf(hash)}});
+   headers:{cookie,origin:"https://example.test","sec-fetch-site":"same-origin","x-inherit-csrf":"the-rights-session-token-the-gate-admitted"}});
   const response=await DELETE(r);expect(response.status).toBe(404);expect(await response.json()).toEqual({error:"not_found"});
   expect(response.headers.get("cache-control")).toBe("private, no-store");expect(response.headers.get("referrer-policy")).toBe("no-referrer");
   expect(service.configured).not.toHaveBeenCalled();expect(service.complete).not.toHaveBeenCalled();
@@ -66,7 +76,8 @@ describe("registered one-use claimant DELETE and presentation",()=>{
  });
  it("presents only a current strict claimed-unbound delete action and bound operation token",async()=>{
   const r=new Request("https://example.test/withdraw/session",{headers:{cookie}}),control=await presentClaimantDeletion(r);
-  expect(control?.csrf).toBe(claimantCsrf(hash));expect(readPublicFormToken(control!.nonce,"future-person-delete",Date.now(),hash)).not.toBeNull();
+  // 2026-11-19 (G8.5): the control carries no claimant digest; the page renders the route's session token.
+  expect(control).not.toHaveProperty("csrf");expect(readPublicFormToken(control!.nonce,"future-person-delete",Date.now(),hash)).not.toBeNull();
   expect(readPublicFormToken(control!.nonce,"future-person-analysis-stop",Date.now(),hash)).toBeNull();
   expect(service.rpc).toHaveBeenCalledExactlyOnceWith("future_person_rights_view_v1",{p_session_hash:hash});
   expect(service.ready).toHaveBeenCalledExactlyOnceWith(r.signal);expect(service.complete).not.toHaveBeenCalled();

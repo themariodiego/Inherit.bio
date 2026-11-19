@@ -22,7 +22,10 @@ import { currentOwnUploadAccount, ownUploadJson } from "./own-upload-context";
  *     reserves a draft with the person's name, date of birth and address;
  *   - `POST /api/invitations` with `targetSubjectDraftId` sends the
  *     e-signature request to the address that draft already holds.
- * Both are same-origin, carry a page-minted operation token, and are refused
+ * Both are same-origin, carry a page-minted operation token in
+ * X-Inherit-Operation-Nonce (its own header since 19 November 2026, G8.5:
+ * X-Inherit-CSRF is the account session's one-time token, which each route
+ * verifies and spends before this runs), and are refused
  * as an unknown resource wherever Path B is not available. Both send the
  * address under every contact key revision this deployment holds, never one
  * bare digest; the request also sends the attempt-quota keys, which the
@@ -42,7 +45,7 @@ export async function createPathBDraft(request: Request, payload: unknown): Prom
   // The page's one-time draft nonce (G5.6, 23 Oct 2026): the door records its
   // hash before the draft is written, so the draft's audit event names the
   // uploader; a spent nonce is refused like a missing one.
-  const nonce = pathBDraftNonce(request.headers.get("x-inherit-csrf"), actor);
+  const nonce = pathBDraftNonce(request.headers.get("x-inherit-operation-nonce"), actor);
   if (!nonce) return ownUploadJson({ error: "forbidden" }, 403);
   const parsed = pathBDraftBody.safeParse(payload);
   if (!parsed.success || !isAdultOn(parsed.data.dateOfBirth)) return ownUploadJson({ error: "invalid_request" }, 422);
@@ -79,7 +82,7 @@ export async function createPathBInvitation(request: Request, payload: unknown):
   const parsed = pathBInvitationBody.safeParse(payload);
   if (!parsed.success) return ownUploadJson({ error: "invalid_request" }, 422);
   const body = parsed.data;
-  if (!verifyPathBOperation(request.headers.get("x-inherit-csrf"), { accountId: actor.accountId,
+  if (!verifyPathBOperation(request.headers.get("x-inherit-operation-nonce"), { accountId: actor.accountId,
     sessionId: actor.sessionId, operation: "request-send", targetId: body.targetSubjectDraftId })) {
     return ownUploadJson({ error: "forbidden" }, 403);
   }

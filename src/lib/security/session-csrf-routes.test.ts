@@ -128,7 +128,8 @@ const CASES: Case[] = [
   { route: "api.file-finalize", method: "POST", path: `/api/files/${ID}/finalize`, params: { id: ID }, load: () => import("@/app/api/files/[id]/finalize/route"), body: null },
   { route: "api.llm-settings", method: "POST", path: "/api/llm/settings", load: () => import("@/app/api/llm/settings/route") },
   { route: "api.llm-settings", method: "DELETE", path: "/api/llm/settings", load: () => import("@/app/api/llm/settings/route"), body: null },
-  { route: "api.subject-drafts", label: "api.subject-drafts (Path A)", method: "POST", path: "/api/subject-drafts", load: () => import("@/app/api/subject-drafts/route") },
+  // 2026-11-19 (G8.5): every body is gated before it is read (it was the Path A body alone).
+  { route: "api.subject-drafts", label: "api.subject-drafts (every body)", method: "POST", path: "/api/subject-drafts", load: () => import("@/app/api/subject-drafts/route") },
   { route: "api.subject-transfer", method: "POST", path: `/api/subjects/${ID}/transfer`, params: { id: ID }, load: () => import("@/app/api/subjects/[id]/transfer/route") },
   { route: "api.subject-delete", method: "DELETE", path: `/api/subjects/${ID}`, params: { id: ID }, load: () => import("@/app/api/subjects/[id]/route"), body: null },
   { route: "api.subject-sharing", method: "POST", path: `/api/subjects/${ID}/sharing`, params: { id: ID }, load: () => import("@/app/api/subjects/[id]/sharing/route") },
@@ -136,7 +137,8 @@ const CASES: Case[] = [
   { route: "api.family-acknowledge", method: "POST", path: "/api/family/acknowledge", load: () => import("@/app/api/family/acknowledge/route") },
   { route: "api.embryo-acknowledge", method: "POST", path: "/api/embryos/acknowledge", load: () => import("@/app/api/embryos/acknowledge/route") },
   { route: "api.family-sharing", method: "POST", path: "/api/family/s-person/sharing", params: { person: "s-person" }, load: () => import("@/app/api/family/[person]/sharing/route") },
-  { route: "api.consents", label: "api.consents (the adult grant body)", method: "POST", path: "/api/consents", load: () => import("@/app/api/consents/route") },
+  // 2026-11-19 (G8.5): every body is gated before it is read (it was the adult grant body alone).
+  { route: "api.consents", label: "api.consents (every body)", method: "POST", path: "/api/consents", load: () => import("@/app/api/consents/route") },
   { route: "api.consent-reaffirm", method: "POST", path: "/api/consents/reaffirm", load: () => import("@/app/api/consents/reaffirm/route") },
   { route: "api.consent-revoke", method: "POST", path: `/api/consents/${ID}/revoke`, params: { id: ID }, load: () => import("@/app/api/consents/[id]/revoke/route"), body: null },
   { route: "api.consents-revoke-all", method: "POST", path: "/api/consents/revoke-all", load: () => import("@/app/api/consents/revoke-all/route") },
@@ -153,6 +155,23 @@ const CASES: Case[] = [
   // 2026-11-19 (G8.5 stage one): four csrfOwnDesign rows moved onto the token.
   { route: "api.subjects", method: "POST", path: "/api/subjects", load: () => import("@/app/api/subjects/route") },
   { route: "api.future-person-claimant-bind", method: "POST", path: "/api/future-person/claim/session/account", load: () => import("@/app/api/future-person/claim/session/account/route") },
+  // 2026-11-19 (G8.5 stage two): fourteen more whole csrfOwnDesign rows moved onto the token, with
+  // api.consents' and api.subject-drafts' branch rows (above).
+  { route: "api.account-completion", method: "POST", path: "/api/account/completion", load: () => import("@/app/api/account/completion/route") },
+  { route: "api.invitations", method: "POST", path: "/api/invitations", load: () => import("@/app/api/invitations/route") },
+  { route: "api.embryo-cohort-drafts", method: "POST", path: "/api/embryo-cohort-drafts", load: () => import("@/app/api/embryo-cohort-drafts/route") },
+  { route: "api.legal-evidence-upload-session", method: "POST", path: "/api/legal-evidence/upload-session", load: () => import("@/app/api/legal-evidence/upload-session/route") },
+  { route: "api.export", method: "POST", path: "/api/export", load: () => import("@/app/api/export/route") },
+  { route: "api.subject-export", method: "POST", path: `/api/subjects/${ID}/export`, params: { id: ID }, load: () => import("@/app/api/subjects/[id]/export/route") },
+  { route: "api.future-person-identity-profile", method: "PUT", path: `/api/embryos/${ID}/future-person-identity`, params: { id: ID }, load: () => import("@/app/api/embryos/[id]/future-person-identity/route") },
+  { route: "api.future-person-identity-profile", method: "DELETE", path: `/api/embryos/${ID}/future-person-identity`, params: { id: ID }, load: () => import("@/app/api/embryos/[id]/future-person-identity/route"), body: null },
+  { route: "api.embryo-record-key-cards-rights", method: "POST", path: "/api/rights/embryo-record-key-cards", load: () => import("@/app/api/rights/embryo-record-key-cards/route") },
+  { route: "api.future-person-export", method: "POST", path: "/api/future-person/claim/session/export", load: () => import("@/app/api/future-person/claim/session/export/route") },
+  { route: "api.future-person-recovery-key", method: "POST", path: "/api/future-person/claim/session/recovery-key", load: () => import("@/app/api/future-person/claim/session/recovery-key/route") },
+  { route: "api.future-person-analysis-stop", method: "DELETE", path: "/api/future-person/claim/session/analysis", load: () => import("@/app/api/future-person/claim/session/analysis/route"), body: null },
+  { route: "api.future-person-delete", method: "DELETE", path: "/api/future-person/claim/session", load: () => import("@/app/api/future-person/claim/session/route"), body: null },
+  { route: "api.appeal-document-session", method: "POST", path: "/api/appeals/session/documents", load: () => import("@/app/api/appeals/session/documents/route") },
+  { route: "api.third-party-subject-export", method: "POST", path: "/api/withdraw/session/export", load: () => import("@/app/api/withdraw/session/export/route") },
   { route: "api.withdraw", method: "POST", path: "/api/withdraw/session", load: () => import("@/app/api/withdraw/session/route") },
   { route: "api.consent-reaffirm-rights", method: "POST", path: "/api/consents/reaffirm/session", load: () => import("@/app/api/consents/reaffirm/session/route") },
   { route: "api.consent-grant-rights", method: "POST", path: "/api/consents/grant/session", load: () => import("@/app/api/consents/grant/session/route") },
@@ -418,7 +437,14 @@ describe("every route the register binds to csrfTransport is accounted for", () 
     expect(bound).toHaveLength(75);
     // 32 since 2026-11-19 (G8.5 stage one): api.subjects, api.future-person-claimant-bind,
     // api.future-person-correction and api.appeal-complete moved onto the session token (36 before).
-    expect(ownWhole).toHaveLength(32);
+    // 18 since stage two, the same day: fourteen more whole rows moved (api.account-completion,
+    // api.invitations, api.embryo-cohort-drafts, api.legal-evidence-upload-session,
+    // api.embryo-record-key-cards-rights, api.export, api.subject-export, api.future-person-export,
+    // api.future-person-identity-profile, api.future-person-recovery-key,
+    // api.future-person-analysis-stop, api.future-person-delete, api.appeal-document-session,
+    // api.third-party-subject-export), and the two branch rows (api.consents, api.subject-drafts) left.
+    expect(ownWhole).toHaveLength(18);
+    expect(own.filter(row => row.branch)).toHaveLength(0);
   });
 
   it("anchors each own-design row to the code it describes", () => {

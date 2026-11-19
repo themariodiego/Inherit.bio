@@ -4,7 +4,12 @@ const m=vi.hoisted(()=>({account:vi.fn(),rpc:vi.fn()}));
 vi.mock("@/lib/account-deletion",()=>({getSensitiveAccountContext:m.account,isSameOrigin:()=>true}));
 vi.mock("@/lib/supabase/admin",()=>({createAdminClient:()=>({rpc:m.rpc})}));
 vi.mock("./guards",async original=>({...await original<typeof import("./guards")>(),
- accountJurisdictionDenied:async()=>null,csrfOperation:()=>({nonce:"synthetic-current-draft-nonce"})}));
+ // 2026-11-19 (G8.5): the operation token is read from X-Inherit-Operation-Nonce (headerOperation); it was csrfOperation.
+ accountJurisdictionDenied:async()=>null,headerOperation:()=>({nonce:"synthetic-current-draft-nonce"})}));
+// The one-time X-Inherit-CSRF gate passes through here; it is tested on this
+// route, through the same handler, in src/lib/security/session-csrf-routes.test.ts.
+vi.mock("@/lib/security/session-csrf",async original=>
+ (await import("@/lib/security/session-csrf.test-support")).admitEverySessionCsrf(await original()));
 const {POST}=await import("@/app/api/embryo-cohort-drafts/route");
 const {contactDigestSet}=await import("@/lib/hmac-keyring");
 const {decryptSecret}=await import("@/lib/crypto");

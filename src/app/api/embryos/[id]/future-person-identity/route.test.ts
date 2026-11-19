@@ -13,6 +13,10 @@ const expected:IdentityProfileContext={embryoId:E,subjectId:P,actorPrincipal:A,b
 const mocks=vi.hoisted(()=>({account:null as null|{user:{id:string};sessionId:string},rpc:vi.fn(),context:null as unknown,write:null as unknown,error:null as null|{code:string}}));
 vi.mock("@/lib/account-deletion",async original=>({...await original<typeof import("@/lib/account-deletion")>(),getSensitiveAccountContext:async()=>mocks.account}));
 vi.mock("@/lib/supabase/admin",()=>({createAdminClient:()=>({rpc:(...args:unknown[])=>mocks.rpc(...args)})}));
+// The one-time X-Inherit-CSRF gate passes through here; it is tested on this
+// route, through the same handler, in src/lib/security/session-csrf-routes.test.ts.
+vi.mock("@/lib/security/session-csrf",async original=>
+  (await import("@/lib/security/session-csrf.test-support")).admitEverySessionCsrf(await original()));
 beforeEach(()=>{
   vi.stubEnv("BYOK_ENCRYPTION_KEY",randomBytes(32).toString("base64"));vi.stubEnv("INHERIT_HMAC_KEYRING","");
   vi.stubEnv("INHERIT_TEST_JURISDICTION","1");vi.stubEnv("NEXT_PUBLIC_APP_URL","https://inherit.bio");
@@ -24,7 +28,10 @@ function req(operation:"save"|"delete",body:unknown=operation==="save"?input:und
   const token=mintIdentityProfileOperation({accountId:A,sessionId:S,embryoId:E,operation},tokenContext);
   return new Request(`https://inherit.bio/api/embryos/${E}/future-person-identity`,{method:operation==="save"?"PUT":"DELETE",
     headers:{origin:"https://inherit.bio","sec-fetch-site":"same-origin","content-type":"application/json",
-      "x-inherit-csrf":token.csrf,"x-inherit-operation-nonce":token.operationNonce,...headers},body:body===undefined?undefined:JSON.stringify(body)});
+      // 2026-11-19 (G8.5): the derived proof travels in X-Inherit-Operation-Proof; X-Inherit-CSRF, where it
+      // travelled, is the account session's one-time token, admitted by the gate above.
+      "x-inherit-csrf":"the-account-session-token-the-gate-admitted","x-inherit-operation-proof":token.csrf,
+      "x-inherit-operation-nonce":token.operationNonce,...headers},body:body===undefined?undefined:JSON.stringify(body)});
 }
 const routeContext={params:Promise.resolve({id:E})};
 describe("closed parent identity profile endpoint",()=>{
@@ -45,13 +52,17 @@ describe("closed parent identity profile endpoint",()=>{
     const response=await DELETE(req("delete"),routeContext);expect(response.status).toBe(204);expect(await response.text()).toBe("");
     expect(mocks.rpc.mock.calls[1][0]).toBe("delete_future_person_profile_v1");
   });
-  it.each(["production","unknown","foreign-origin","missing-operation","missing-csrf","extra-field","invalid-date","body-on-delete","huge"])("refuses %s before the write",async kind=>{
+  it.each(["production","unknown","foreign-origin","missing-operation","missing-csrf","proof-in-old-header","extra-field","invalid-date","body-on-delete","huge"])("refuses %s before the write",async kind=>{
     let request=req("save"),context=routeContext,method=PUT;
     if(kind==="production")vi.stubEnv("INHERIT_TEST_JURISDICTION","");
     if(kind==="unknown")context={params:Promise.resolve({id:"unknown"})};
     if(kind==="foreign-origin")request=req("save",input,{origin:"https://foreign.invalid"});
     if(kind==="missing-operation")request=req("save",input,{"x-inherit-operation-nonce":""});
-    if(kind==="missing-csrf")request=req("save",input,{"x-inherit-csrf":""});
+    // 2026-11-19 (G8.5): "missing-csrf" drops the derived proof from its own header (it was X-Inherit-CSRF), and
+    // "proof-in-old-header" sends it only where it used to travel.
+    if(kind==="missing-csrf")request=req("save",input,{"x-inherit-operation-proof":""});
+    if(kind==="proof-in-old-header"){const proof=mintIdentityProfileOperation({accountId:A,sessionId:S,embryoId:E,operation:"save"},expected);
+      request=req("save",input,{"x-inherit-operation-nonce":proof.operationNonce,"x-inherit-operation-proof":"","x-inherit-csrf":proof.csrf});}
     if(kind==="extra-field")request=req("save",{...input,subjectId:P});
     if(kind==="invalid-date")request=req("save",{...input,childDateOfBirth:"2005-02-30"});
     if(kind==="body-on-delete"){method=DELETE;request=req("delete",{});}

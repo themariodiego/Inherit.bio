@@ -4,6 +4,7 @@ import type { Page } from "@playwright/test";
 import path from "node:path";
 import { adminClient, createConfirmedUser, signIn } from "./helpers";
 import { uploadOwnFilePrepared } from "./own-report-helpers";
+import { accountCsrf } from "./helpers/session-csrf";
 import { SUBJECT_EXPORT_HEADING } from "../src/copy/subjects/subject-export";
 
 /**
@@ -42,18 +43,26 @@ async function selfSubject(accountId: string): Promise<string> {
   return (data as { id: string }).id;
 }
 
-/** A same-origin browser request from the signed-in page; the page reads every body itself. */
-async function call(page: Page, path: string, init: { method: "GET" | "POST"; body?: unknown; csrf?: string }) {
-  return page.evaluate(async ({ path, init }) => {
+/**
+ * A same-origin browser request from the signed-in page; the page reads every body itself.
+ * 2026-11-19 (G8.5): a POST carries a fresh one-time X-Inherit-CSRF token for the page's own
+ * session, so every answer below is the route's own and not the token gate's, and the
+ * action's sealed proof (always forged here) in X-Inherit-Operation-Proof, where X-Inherit-CSRF
+ * carried it.
+ */
+async function call(page: Page, path: string, init: { method: "GET" | "POST"; body?: unknown; proof?: string }) {
+  const csrf = init.method === "POST" ? await accountCsrf(page, "api.subject-export") : "";
+  return page.evaluate(async ({ path, init, csrf }) => {
     const response = await fetch(path, {
       method: init.method, cache: "no-store", credentials: "same-origin", redirect: "error",
-      headers: init.method === "POST" ? { "Content-Type": "application/json", "X-Inherit-CSRF": init.csrf ?? "forged" } : undefined,
+      headers: init.method === "POST" ? { "Content-Type": "application/json", "X-Inherit-CSRF": csrf,
+        "X-Inherit-Operation-Proof": init.proof ?? "forged" } : undefined,
       body: init.method === "POST" ? JSON.stringify(init.body) : undefined,
     });
     const text = await response.text();
     return { status: response.status, referrer: response.headers.get("referrer-policy"), setCookie: response.headers.has("set-cookie"),
       bytes: new TextEncoder().encode(text).byteLength, body: text ? JSON.parse(text) : null };
-  }, { path, init });
+  }, { path, init, csrf });
 }
 
 test.beforeAll(async () => {

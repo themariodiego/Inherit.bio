@@ -14,10 +14,10 @@ type Kind = keyof typeof LABELS;
 const hex = (bytes: ArrayBuffer) => [...new Uint8Array(bytes)].map(value => value.toString(16).padStart(2, "0")).join("");
 /** One current case, no target selector or match disclosure. Files never enter
  * browser persistence, a URL, telemetry, or an error message. */
-export function PublicAppealDocuments({ view, documentNonce, completeNonce, documentCsrf }: {
- view: PublicAppealView; documentNonce: string; completeNonce: string; documentCsrf: string;
+export function PublicAppealDocuments({ view, documentNonce, completeNonce }: {
+ view: PublicAppealView; documentNonce: string; completeNonce: string;
 }) {
- const completeCsrf = useCsrf("api.appeal-complete");
+ const completeCsrf = useCsrf("api.appeal-complete"), documentCsrf = useCsrf("api.appeal-document-session");
  const router = useRouter(); const inputs = useRef<Partial<Record<Kind, HTMLInputElement | null>>>({});
  const [ids, setIds] = useState<Partial<Record<Kind, string>>>(() => Object.fromEntries(view.documents.map(document => [document.documentKind, document.documentId]))); const [messages, setMessages] = useState<Partial<Record<Kind, string>>>({});
  const [busy, setBusy] = useState(false); const [affirmed, setAffirmed] = useState(false); const [finished, setFinished] = useState(false);
@@ -42,14 +42,17 @@ export function PublicAppealDocuments({ view, documentNonce, completeNonce, docu
    if (file.size < 1 || file.size > 20_000_000) throw new Error("document_unavailable");
    bytes = new Uint8Array(await file.arrayBuffer()); const mediaType = sniffDocumentType(bytes); if (!mediaType) throw new Error("document_unavailable");
    const sha256 = hex(await crypto.subtle.digest("SHA-256", bytes));
-   const opened = await fetch("/api/appeals/session/documents", { method: "POST", credentials: "same-origin",
-    headers: { "content-type": "application/json", "x-inherit-csrf": documentCsrf, "x-inherit-operation-nonce": documentNonce },
-    body: JSON.stringify({ documentKind: kind, mediaType, sizeBytes: bytes.length, sha256 }) });
+   const opened = await documentCsrf.send((csrfToken) => fetch("/api/appeals/session/documents", { method: "POST", credentials: "same-origin",
+    headers: { "content-type": "application/json", "x-inherit-csrf": csrfToken, "x-inherit-operation-nonce": documentNonce },
+    body: JSON.stringify({ documentKind: kind, mediaType, sizeBytes: bytes!.length, sha256 }) }));
    router.refresh(); if (opened.status !== 201) throw new Error("document_unavailable");
    const value: unknown = await opened.json();
    if (typeof value !== "object" || value === null || !("session" in value) || typeof value.session !== "string"
     || !/^[0-9a-f-]{36}$/u.test(value.session)) throw new Error("document_unavailable");
-   const session = value.session; const csrf = opened.headers.get("x-inherit-csrf"); const nonce = opened.headers.get("x-inherit-complete-nonce");
+   // The evidence session's own value, which the chunks and the completion
+   // send in x-inherit-csrf; the answer's own x-inherit-csrf is the rights
+   // session's successor, which the chain above keeps (G8.5).
+   const session = value.session; const csrf = opened.headers.get("x-inherit-evidence-csrf"); const nonce = opened.headers.get("x-inherit-complete-nonce");
    if (!csrf || !nonce) throw new Error("document_unavailable");
    const chunkCount = Math.ceil(bytes.length / 4_000_000);
    for (let sequence = 0; sequence < chunkCount; sequence++) {

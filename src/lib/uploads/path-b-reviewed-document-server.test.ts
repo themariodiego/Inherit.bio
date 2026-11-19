@@ -64,8 +64,10 @@ describe("POST /api/subject-drafts, the reviewed-document body", () => {
   // 20261023130000 (G5.6): the page renders a one-time draft nonce.
   function draft(overrides: Record<string, unknown> = {}, headers: Record<string, string> = {}, token = mintPathBDraftNonce(accountId, sessionId)) {
     const payload = { ...body, ...overrides };
+    // 2026-11-19 (G8.5): the draft nonce travels in X-Inherit-Operation-Nonce (it was X-Inherit-CSRF, now the
+    // account session's one-time token, which api.subject-drafts verifies and spends before this runs).
     return createPathBReviewedDocumentDraft(post("https://inherit.bio/api/subject-drafts", payload,
-      { "x-inherit-csrf": token, ...headers }), payload);
+      { "x-inherit-operation-nonce": token, ...headers }), payload);
   }
 
   it("reserves the draft with an encrypted, keyed address and answers the register's receipt", async () => {
@@ -90,7 +92,9 @@ describe("POST /api/subject-drafts, the reviewed-document body", () => {
   it("refuses a person under 18, a foreign origin, a missing page token, and anything outside TEST-LOCAL", async () => {
     expect((await draft({ dateOfBirth: `${new Date().getUTCFullYear() - 10}-01-01` })).status).toBe(422);
     expect((await draft({ evidenceKind: "uploaded_document" })).status).toBe(422);
-    expect((await draft({}, { "x-inherit-csrf": "nope" })).status).toBe(403);
+    expect((await draft({}, { "x-inherit-operation-nonce": "nope" })).status).toBe(403);
+    // 2026-11-19 (G8.5): a genuine nonce only in the old header is refused as a missing one.
+    expect((await draft({}, { "x-inherit-operation-nonce": "", "x-inherit-csrf": mintPathBDraftNonce(accountId, sessionId) })).status).toBe(403);
     expect((await draft({}, { origin: "https://foreign.example" })).status).toBe(403);
     vi.stubEnv("INHERIT_TEST_JURISDICTION", "");
     expect((await draft()).status).toBe(404);
@@ -128,8 +132,10 @@ describe("POST /api/legal-evidence/upload-session", () => {
     sizeBytes: 5_000_000, sha256 };
   const expiresAt = () => new Date(Date.now() + 60 * 60 * 1000).toISOString();
   function open(overrides: Record<string, unknown> = {}, headers: Record<string, string> = {}, url = "https://inherit.bio/api/legal-evidence/upload-session") {
+    // 2026-11-19 (G8.5): the card's operation token travels in X-Inherit-Operation-Nonce (it was X-Inherit-CSRF,
+    // now the account session's one-time token, which the route verifies and spends before this runs).
     return openLegalEvidenceUploadSession(post(url, { ...body, ...overrides },
-      { "x-inherit-csrf": mintReviewedDocumentOperation(accountId, sessionId, "document-session", subjectId), ...headers }));
+      { "x-inherit-operation-nonce": mintReviewedDocumentOperation(accountId, sessionId, "document-session", subjectId), ...headers }));
   }
 
   it("opens evidence-session-v1 with a fresh document key, a session cookie, and the chunk and completion proofs", async () => {
@@ -142,7 +148,10 @@ describe("POST /api/legal-evidence/upload-session", () => {
       chunkRoute: `/api/evidence/${evidenceSession}/chunks/{sequence}`, completeRoute: `/api/evidence/${evidenceSession}/complete`,
       expiresAt: expect.any(String) });
     expect(response.headers.get("set-cookie")).toMatch(/HttpOnly/i);
-    expect(response.headers.get("x-inherit-csrf")).toBeTruthy();
+    // 2026-11-19 (G8.5): the evidence session's value travels in X-Inherit-Evidence-CSRF, so the answer's
+    // X-Inherit-CSRF is free for the account session's successor (it was x-inherit-csrf).
+    expect(response.headers.get("x-inherit-evidence-csrf")).toBeTruthy();
+    expect(response.headers.get("x-inherit-csrf")).toBeNull();
     expect(response.headers.get("x-inherit-complete-nonce")).toBeTruthy();
     expect(response.headers.get("cache-control")).toContain("no-store");
     const [name, args] = mocks.rpc.mock.calls[0]!;
@@ -178,8 +187,11 @@ describe("POST /api/legal-evidence/upload-session", () => {
   });
 
   it("refuses a token for another draft or operation, a cross-site request, a query and a non-JSON body", async () => {
-    expect((await open({}, { "x-inherit-csrf": mintReviewedDocumentOperation(accountId, sessionId, "document-session", documentId) })).status).toBe(403);
-    expect((await open({}, { "x-inherit-csrf": mintReviewedDocumentOperation(accountId, sessionId, "finalize", subjectId) })).status).toBe(403);
+    expect((await open({}, { "x-inherit-operation-nonce": mintReviewedDocumentOperation(accountId, sessionId, "document-session", documentId) })).status).toBe(403);
+    expect((await open({}, { "x-inherit-operation-nonce": mintReviewedDocumentOperation(accountId, sessionId, "finalize", subjectId) })).status).toBe(403);
+    // 2026-11-19 (G8.5): a genuine token only in the old header is refused as a missing one.
+    expect((await open({}, { "x-inherit-operation-nonce": "",
+      "x-inherit-csrf": mintReviewedDocumentOperation(accountId, sessionId, "document-session", subjectId) })).status).toBe(403);
     expect((await open({}, { "sec-fetch-site": "cross-site" })).status).toBe(403);
     expect((await open({}, {}, "https://inherit.bio/api/legal-evidence/upload-session?bucket=x")).status).toBe(422);
     expect((await open({}, { "content-type": "text/plain" })).status).toBe(422);

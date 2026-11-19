@@ -30,6 +30,14 @@ const PRODUCTION = process.env.NODE_ENV === "production";
 export const EVIDENCE_COOKIE = PRODUCTION ? "__Host-inherit-evidence" : "inherit-evidence";
 export const EVIDENCE_CSRF_HEADER = "x-inherit-csrf";
 export const EVIDENCE_COMPLETE_NONCE_HEADER = "x-inherit-complete-nonce";
+/**
+ * The answer header that hands the browser the evidence session's own value,
+ * on an opening route whose own X-Inherit-CSRF carries that route's one-time
+ * session token successor (G8.5, 19 November 2026): api.legal-evidence-upload-session
+ * and api.appeal-document-session. The chunks and the completion still send
+ * the value in `EVIDENCE_CSRF_HEADER`, checked as before.
+ */
+export const EVIDENCE_SESSION_CSRF_HEADER = "x-inherit-evidence-csrf";
 
 const SECRET_SHAPE = /^[A-Za-z0-9_-]{43}$/u;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/u;

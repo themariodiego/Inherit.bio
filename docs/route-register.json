@@ -9973,7 +9973,7 @@
         "issuedBy": {
           "routeFrom": "rights.withdraw-request"
         },
-        "shape": "non-authorizing-secure-httpOnly-sameSite-strict-__Host-inherit-candidate-cookie-plus-a-one-time-form-nonce; it-is-not-bound-to-or-evidence-of-a-token-until-the-activation-transaction"
+        "shape": "non-authorizing-secure-httpOnly-sameSite-strict-__Host-inherit-rights-candidate-cookie-plus-a-one-time-form-nonce; it-is-not-bound-to-or-evidence-of-a-token-until-the-activation-transaction"
       },
       "missingInvalidExpiredScannerPrefetchedOrWrongPurpose": {
         "status": 404,
@@ -10879,7 +10879,7 @@
       "location": {
         "routeFrom": "auth.sign-in"
       },
-      "sessionEffect": "revoke-the-current-server-session-and-clear-every-Inherit-auth-rights-upload-evidence-claim-download-and-candidate-cookie-before-the-response",
+      "sessionEffect": "revoke-the-current-server-session-and-clear-every-Inherit-auth-upload-evidence-claim-download-and-candidate-cookie-before-the-response; the-rights-cookie-is-not-cleared-at-sign-out-so-an-open-rights-session-whose-mailed-link-is-already-spent-survives (owner-decision-2026-11-19-G8.5-sign-out-keeps-an-open-rights-session)",
       "headers": {
         "Cache-Control": "no-store",
         "Referrer-Policy": "no-referrer"
@@ -12595,7 +12595,7 @@
           }
         }
       ],
-      "embryoSetCookie": "secure-httpOnly-sameSite-strict-__Host-inherit-upload",
+      "embryoSetCookie": "secure-httpOnly-sameSite-strict-__Host-inherit-ingest-<session>-one-cookie-per-upload-session-named-by-its-session-id",
       "headers": "private-no-store-no-referrer",
       "directTokenHandling": "ephemeral-browser-memory-and-the-exact-Storage-Authorization-header-only; URL-cookie-browser-persistence-service-worker-cache-logs-analytics-errors-and-use-outside-this-one-INSERT-are-forbidden",
       "embryoHandleHandling": "ephemeral-browser-memory-only-and-rewrite-source-sample-values-before-the-first-byte-is-sent; never-URL-cookie-browser-storage-service-worker-cache-log-analytics-error-audit-export-or-reuse",
@@ -17002,7 +17002,7 @@
       "stateProfile": "endpoint",
       "policy": {
         "sessionContract": "authContracts.authenticated-session-v1",
-        "transaction": "lock-the-exact-current-auth.sessions-row-from-the-validated-JWT-session_id-and-sub-revoke-or-delete-that-row-and-its-refresh-token-and-invalidate-every-authenticatedDerivedCapability-row-originating-from-that-session-before-returning-success-clear-the-host-only-session-upload-evidence-export-download-and-model-capability-cookies-and-write-no-user-session-token-or-capability-detail-to-observability; a-stolen-pre-signout-access-JWT-upload-bearer-or-purpose-cookie-fails-the-database-live-session-check-immediately-even-before-its-bounded-expiry",
+        "transaction": "lock-the-exact-current-auth.sessions-row-from-the-validated-JWT-session_id-and-sub-revoke-or-delete-that-row-and-its-refresh-token-and-invalidate-every-authenticatedDerivedCapability-row-originating-from-that-session-before-returning-success-clear-the-host-only-session-upload-evidence-export-and-download-cookies-and-write-no-user-session-token-or-capability-detail-to-observability; the-rights-cookie-is-not-cleared-at-sign-out (sign-out-v1.sessionEffect); a-stolen-pre-signout-access-JWT-upload-bearer-or-purpose-cookie-fails-the-database-live-session-check-immediately-even-before-its-bounded-expiry",
         "scope": {
           "const": "current-session-only"
         }
@@ -17067,7 +17067,7 @@
         "requiredSignals": [
           "Origin-exactly-canonical-origin",
           "Sec-Fetch-Site-same-origin",
-          "X-Inherit-CSRF-header-matching-the-account-completion-presentation"
+          "X-Inherit-CSRF-header-bound-to-the-current-live-authenticated-session-and-spent-once; the-account-completion-presentation-travels-only-in-body.presentationToken"
         ],
         "forbiddenFields": [
           "accountId",
@@ -17172,7 +17172,8 @@
             "create": "requires-no-current-live-export-for-this-route-principal-or-explicitly-supersedes-only-the-same-principals-terminal-or-expired-row-and-enqueues",
             "open-ready": "requires-one-current-ready-export-cookie-bound-to-this-exact-route-principal-and-revisions-and-creates-only-the-download-session-with-zero-export-enqueue"
           },
-          "unknownMissingInvalidStaleOrInapplicable": "invalid-request-v1"
+          "unknownMissingInvalidStaleOrInapplicable": "invalid-request-v1",
+          "exportProof": "registered-2026-11-19-G8.5: X-Inherit-Operation-Proof-carries-the-sealed-one-time-export-proof-the-page-rendered-with-the-explicit-action-bound-to-the-account-auth-session-origin-authority-receipt-and-operation-whose-hash-the-operation-envelope-and-the-database-bind-as-the-request's-csrf-binding-exactly-as-before-and-not-X-Inherit-CSRF-which-is-the-one-time-account-session-token; a-GET-poll-sends-neither"
         },
         "GET": {
           "body": "forbidden",
@@ -18131,7 +18132,7 @@
         "schema": "closed-subject-draft-create-v1",
         "requiredHeader": "X-Inherit-Operation-Nonce-from-the-invite-page-for-the-path-a-adult-invitation",
         "operationNonce": "recorded-in-account_operation_nonces-before-the-writer-in-the-same-transaction-so-its-legal-audit-event-names-the-actor-G5.6-2026-10-23",
-        "pathBDraftNonce": "both-path-b-bodies-carry-the-upload-page's-one-time-draft-nonce-in-x-inherit-csrf-recorded-in-account_operation_nonces-before-the-draft-is-written-20261023130000"
+        "pathBDraftNonce": "both-path-b-bodies-carry-the-upload-page's-one-time-draft-nonce-in-X-Inherit-Operation-Nonce-recorded-in-account_operation_nonces-before-the-draft-is-written-20261023130000; X-Inherit-CSRF-is-the-one-time-account-session-token-on-every-body"
       },
       "stateProfile": "endpoint",
       "policy": {
@@ -18306,7 +18307,8 @@
             "create": "requires-no-current-live-export-for-this-route-principal-or-explicitly-supersedes-only-the-same-principals-terminal-or-expired-row-and-enqueues",
             "open-ready": "requires-one-current-ready-export-cookie-bound-to-this-exact-route-principal-and-revisions-and-creates-only-the-download-session-with-zero-export-enqueue"
           },
-          "unknownMissingInvalidStaleOrInapplicable": "invalid-request-v1"
+          "unknownMissingInvalidStaleOrInapplicable": "invalid-request-v1",
+          "exportProof": "registered-2026-11-19-G8.5: X-Inherit-Operation-Proof-carries-the-sealed-one-time-export-proof-the-page-rendered-with-the-explicit-action-bound-to-the-account-auth-session-origin-authority-receipt-and-operation-whose-hash-the-operation-envelope-and-the-database-bind-as-the-request's-csrf-binding-exactly-as-before-and-not-X-Inherit-CSRF-which-is-the-one-time-account-session-token; a-GET-poll-sends-neither"
         },
         "GET": {
           "body": "forbidden",
@@ -18755,6 +18757,7 @@
         "POST"
       ],
       "requestContract": {
+        "oneTimeValues": "registered-2026-11-19-G8.5: the-two-embryo-bodies (sign-artifact-with-cohortDraftId-and-grant-purpose-with-cohortId)-carry-the-page's-one-time-embryo-operation-token (artifact_sign-or-cohort_purpose_grant)-in-X-Inherit-Operation-Nonce; every-other-body's-one-time-value-is-its-body.artifactPresentationToken; X-Inherit-CSRF-is-the-one-time-account-session-token-on-every-body-and-never-repeats-either-value (operationNonceIsNotCsrf)",
         "contentType": "application/json",
         "oneOfClosedBodies": [
           {
@@ -19432,6 +19435,7 @@
             "contactEmail": "normalized-valid-address-at-most-254-bytes"
           }
         ],
+        "operationToken": "registered-2026-11-19-G8.5: X-Inherit-Operation-Nonce-carries-the-one-time-operation-token-the-page-rendered-for-the-target-draft (invitation_create-for-a-cohort-draft-or-request-send-for-a-path-b-subject-esignature-draft)-and-not-X-Inherit-CSRF-which-is-the-one-time-account-session-token (operationNonceIsNotCsrf)",
         "mutuallyExclusive": [
           "targetSubjectDraftId",
           "targetCohortDraftId"
@@ -19771,7 +19775,8 @@
       ],
       "requestContract": {
         "contentType": "application/json",
-        "schema": "closed-embryo-cohort-draft-v1"
+        "schema": "closed-embryo-cohort-draft-v1",
+        "operationToken": "registered-2026-11-19-G8.5: X-Inherit-Operation-Nonce-carries-the-one-time-cohort_draft_create-operation-token-the-upload-page-rendered-for-this-account-session-and-not-X-Inherit-CSRF-which-is-the-one-time-account-session-token (operationNonceIsNotCsrf)"
       },
       "stateProfile": "endpoint",
       "policy": {
@@ -20031,6 +20036,7 @@
             "sha256": "required-lowercase-hex"
           }
         ],
+        "operationToken": "registered-2026-11-19-G8.5: X-Inherit-Operation-Nonce-carries-the-one-time-document-session-operation-token-the-reviewed-document-card-rendered-for-this-draft-and-not-X-Inherit-CSRF-which-is-the-one-time-account-session-token (operationNonceIsNotCsrf)",
         "unknownMissingInvalidOrAmbiguous": "invalid-request-v1",
         "forbiddenFields": [
           "bucket",
@@ -20044,6 +20050,7 @@
       },
       "stateProfile": "endpoint",
       "policy": {
+        "evidenceSessionCsrf": "registered-2026-11-19-G8.5: the-201-answer-hands-the-browser-the-new-evidence-session's-X-Inherit-CSRF-value (authContracts.evidence-session-api-v1.csrfHeader)-in-the-X-Inherit-Evidence-CSRF-answer-header-because-this-answer's-own-X-Inherit-CSRF-carries-the-successor-of-this-route's-one-time-account-session-token; each-chunk-and-the-completion-send-that-value-in-X-Inherit-CSRF-unchanged",
         "mode": "resolved",
         "resolver": "evidence-ingest-session-v1",
         "operation": "legal-evidence-upload-session-create",
@@ -20466,6 +20473,7 @@
             "parentNames": "one-through-four-names-each-two-through-120-Unicode-characters",
             "consentSignatureId": "current-artifact-consent-signature-by-the-acting-policyResolvers.embryo-basis-authority-v1.recordKeyRecipients-member"
           },
+          "derivedProof": "registered-2026-11-19-G8.5: X-Inherit-Operation-Proof-carries-the-profile-page's-keyed-proof-derived-from-the-claims-of-its-one-time-operation-token-in-X-Inherit-Operation-Nonce-and-checked-together-with-it-as-before-and-not-X-Inherit-CSRF-which-is-the-one-time-account-session-token",
           "unknownMissingOrInvalid": "invalid-request-v1",
           "forbiddenFields": [
             "subjectId",
@@ -20478,7 +20486,8 @@
         },
         "DELETE": {
           "body": "forbidden",
-          "requiredHeader": "X-Inherit-Operation-Nonce-from-the-profile-page"
+          "requiredHeader": "X-Inherit-Operation-Nonce-from-the-profile-page",
+          "derivedProof": "registered-2026-11-19-G8.5: X-Inherit-Operation-Proof-carries-the-profile-page's-keyed-proof-derived-from-the-claims-of-its-one-time-operation-token-in-X-Inherit-Operation-Nonce-and-checked-together-with-it-as-before-and-not-X-Inherit-CSRF-which-is-the-one-time-account-session-token"
         }
       },
       "stateProfile": "endpoint",
@@ -20681,6 +20690,7 @@
       },
       "stateProfile": "endpoint",
       "policy": {
+        "evidenceSessionCsrf": "registered-2026-11-19-G8.5: the-201-answer-hands-the-browser-the-new-evidence-session's-X-Inherit-CSRF-value (authContracts.evidence-session-api-v1.csrfHeader)-in-the-X-Inherit-Evidence-CSRF-answer-header-because-this-answer's-own-X-Inherit-CSRF-carries-the-successor-of-this-route's-one-time-rights-session-token; each-chunk-and-the-completion-send-that-value-in-X-Inherit-CSRF-unchanged",
         "mode": "appeal-evidence-document-session-create",
         "jurisdictionBypass": true,
         "resolver": "withdrawal-target-v1",

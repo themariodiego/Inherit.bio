@@ -4,7 +4,6 @@ vi.stubEnv("BYOK_ENCRYPTION_KEY", Buffer.alloc(32, 52).toString("base64"));
 const { postClaimantExport, pollClaimantExport, presentClaimantExportCreate, claimantExportCookieHash, claimantExportCsrfBinding }
   = await import("./claimant-export-http");
 const { mintExportOperation } = await import("./export-operation-token");
-const { claimantCsrf } = await import("@/lib/future-person/rights");
 const { RIGHTS_COOKIE_NAME, rightsSessionHash } = await import("@/lib/embryos/rights-session");
 afterAll(() => vi.unstubAllEnvs());
 
@@ -49,7 +48,9 @@ function deps(overrides: Partial<ClaimantExportDependencies> = {}): ClaimantExpo
 const url = "https://test.e2e.local/api/future-person/claim/session/export";
 function post(body: unknown, headers: Record<string, string> = {}, withExportCookie = false) {
   return new Request(url, { method: "POST", body: JSON.stringify(body), headers: { origin: "https://test.e2e.local",
-    "sec-fetch-site": "same-origin", "content-type": "application/json", "x-inherit-csrf": claimantCsrf(session),
+    // 2026-11-19 (G8.5): the rights session's one-time token, which the route's gate verifies and spends before
+    // postClaimantExport runs (src/lib/security/session-csrf-routes.test.ts); it was claimantCsrf(session).
+    "sec-fetch-site": "same-origin", "content-type": "application/json", "x-inherit-csrf": "the-rights-session-token-the-gate-admitted",
     cookie: `${RIGHTS_COOKIE_NAME}=${secret}${withExportCookie ? `; __Host-inherit-export=${EXPORT}.${exportSecret}` : ""}`, ...headers } });
 }
 function get(cookie = `${RIGHTS_COOKIE_NAME}=${secret}; __Host-inherit-export=${EXPORT}.${exportSecret}`, target = url) {
@@ -83,8 +84,8 @@ describe("POST create", () => {
     const cases: [string, Request, Partial<ClaimantExportDependencies>?, (() => void)?][] = [
       ["closed", post({ operation: "create", nonce: createNonce() }), { open: () => false }],
       ["no rights cookie", post({ operation: "create", nonce: createNonce() }, { cookie: "" })],
-      ["missing CSRF", post({ operation: "create", nonce: createNonce() }, { "x-inherit-csrf": "" })],
-      ["foreign CSRF", post({ operation: "create", nonce: createNonce() }, { "x-inherit-csrf": claimantCsrf("e".repeat(64)) })],
+      // 2026-11-19 (G8.5): "missing CSRF" and "foreign CSRF" moved to the gate's api.future-person-export cases
+      // (missing, spent, other session, other purpose) in src/lib/security/session-csrf-routes.test.ts.
       ["cross-site", post({ operation: "create", nonce: createNonce() }, { "sec-fetch-site": "cross-site" })],
       ["cross-origin", post({ operation: "create", nonce: createNonce() }, { origin: "https://other.example" })],
       ["text", post({ operation: "create", nonce: createNonce() }, { "content-type": "text/plain" })],
@@ -186,7 +187,8 @@ describe("presentation", () => {
     // capability is configured.
     const request = new Request(url, { headers: { cookie: `${RIGHTS_COOKIE_NAME}=${secret}` } });
     const withoutGeneration = await presentClaimantExportCreate(request, deps({ generation: null }));
-    expect(withoutGeneration).toMatchObject({ operation: "create", csrf: claimantCsrf(session) });
+    // 2026-11-19 (G8.5): the presentation carries no CSRF digest; the page renders the route's session token.
+    expect(withoutGeneration).toMatchObject({ operation: "create" });expect(withoutGeneration).not.toHaveProperty("csrf");
     expect(calls).toEqual([["capture", session, null, null]]);
     calls = [];
     const refused = await postClaimantExport(post({ operation: "create", nonce: withoutGeneration!.nonce }), deps({ generation: null }));
@@ -194,7 +196,7 @@ describe("presentation", () => {
     expect(refused.headers.get("set-cookie")).toBeNull();
     expect(calls.map(call => call[0])).toEqual(["capture"]);
     const presented = await presentClaimantExportCreate(request, deps());
-    expect(presented).toMatchObject({ operation: "create", csrf: claimantCsrf(session) });
+    expect(presented).toMatchObject({ operation: "create" });expect(presented).not.toHaveProperty("csrf");
     expect((await postClaimantExport(post({ operation: "create", nonce: presented!.nonce }), deps())).status).toBe(202);
   });
 });

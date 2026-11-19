@@ -27,6 +27,7 @@ import { ownSubjectExportContent, renderOwnSubjectReport, type OwnExportRpc, typ
 import { ownSubjectPurposeGranted } from "@/lib/genome/own-analysis-access";
 import {accountExportHttpDependencies,postAccountExport,pollAccountExport} from "@/lib/exports/account-export-http";
 import {hasAccountExportCookie} from "@/lib/exports/account-export-session";
+import {withAccountCsrf} from "@/lib/security/session-csrf";
 
 /** The two report selections the legacy half of this archive answers to (D-099). */
 const REPORT_PURPOSES = ["reports.monogenic", "reports.polygenic"] as const;
@@ -357,7 +358,11 @@ function renderReportsTxt(
 // report results + polygenic scores + ancestry + consents + chat history,
 // as a ZIP stream. Free, forever — there is deliberately no billing,
 // quota, or fee code path here, and never will be (see /terms).
-export async function POST(request:Request){return postAccountExport(request,accountExportHttpDependencies());}
+/** The shell's one-time X-Inherit-CSRF token for the account session is
+ * verified and spent before `create` or `open-ready` runs (G8.5); the
+ * action's sealed export proof travels in X-Inherit-Operation-Proof and is
+ * bound into the operation exactly as before. GET only polls and needs none. */
+export const POST=withAccountCsrf("api.export",async(request:Request)=>postAccountExport(request,accountExportHttpDependencies()));
 
 export async function GET(request?:Request) {
   if(request&&hasAccountExportCookie(request))return pollAccountExport(request,accountExportHttpDependencies());
