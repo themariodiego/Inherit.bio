@@ -5856,3 +5856,23 @@ person sees the existing "This page did not load" page with its "Try again"
 button, not the sign-in page. A person who really has no session still goes to
 sign-in. No new wording is written, and no access is granted without a
 successful check.
+
+## 2026-11-19 — PR 324's release: the green run is accepted and read-only checks begin
+
+Owner decision (clickable chat answer, "Yes, start read-only checks"). Asked:
+PR 324's CI is green on its guard-fixed head `87bb33d8`, with every job, the
+aggregate check and the worker build passing together in one complete run, but
+it was the third attempt of run 44569610024: the first attempt had one browser
+test fail (the intermittent sign-in-service failure recorded as D-142, which
+is unrelated to PR 324's migrations), and the second was a partial re-run that
+cannot count. The release runbook asks for "every required check green on one
+attempt". Does the owner accept this green run and want the read-only checks
+started now? Offered: "Yes, start read-only checks", "Wait for a first-attempt
+green", "Not in this session". Chosen: "Yes, start read-only checks".
+
+The session asks for a new short-lived Supabase access token in a secure form,
+rebuilds and verifies the release kit, runs only the runbook's read-only
+probes and pre-checks against production, applies its stop rules, and shows
+the owner the results. This is not the release's go: the owner is asked again
+before any dry run or write. The token is stored on the session's cloud
+environment for the Supabase API host until the owner removes or revokes it.
