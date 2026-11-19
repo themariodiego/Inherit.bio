@@ -40,11 +40,13 @@ select set_eq($$select store_name from public.purge_target_stores where target_i
  'the generated-artifacts target keeps every prior store, the exact Path B binding, all six archive children and the retained R2 allocation');
 
 -- The single-object form cannot be recorded again. Foreign keys are off so
--- each insert reaches only the check it is aimed at.
+-- each insert reaches only the check it is aimed at. Since 20261119110000 the
+-- column check itself no longer admits the dropped bucket, and checks run in
+-- name order, so it is the one that refuses it.
 set local session_replication_role=replica;
 select throws_like($$insert into public.genome_storage_objects(object_id,object_name,bucket_id,genome_file_id,sha256,byte_count,object_revision,state)
  values(gen_random_uuid(),'7a100000-0000-4000-8000-000000000001','generated-artifacts',gen_random_uuid(),repeat('a',64),1,1,'current')$$,
- '%genome_storage_objects_genomes_only%','no recorded object can name the dropped bucket');
+ '%genome_storage_objects_bucket_id_check%','no recorded object can name the dropped bucket');
 select throws_like($$insert into public.genome_storage_objects(object_id,object_name,bucket_id,generated_export_id,sha256,byte_count,object_revision,state)
  values(gen_random_uuid(),'7a100000-0000-4000-8000-000000000002','genomes',gen_random_uuid(),repeat('a',64),1,1,'current')$$,
  '%genome_storage_objects_genomes_only%','no recorded object can be an export archive, even in genomes');

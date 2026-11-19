@@ -1,5 +1,6 @@
-import { existsSync, readFileSync, readdirSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { createHash } from "node:crypto";
+import { tmpdir } from "node:os";
 import path from "node:path";
 import ts from "typescript";
 import { describe, expect, it } from "vitest";
@@ -527,21 +528,53 @@ describe("storage call-site extraction", () => {
   });
 });
 
-/** The buckets a database row is allowed to name, from the migrations' own check constraints. */
-function databaseBucketAllowlist(): { buckets: string[]; constraints: number } {
+/**
+ * The buckets a database row is allowed to name now, from the migrations' own
+ * check constraints, read in the order the migrations apply. A column check
+ * in a `create table` carries the name PostgreSQL gives it,
+ * `<table>_bucket_id_check`; a later `add constraint <name> check (bucket_id
+ * in (...)` replaces the constraint of that name, and a `drop constraint`
+ * that nothing re-adds removes it. So a check a migration tightened is read
+ * as tightened, and a literal only a superseded definition held no longer
+ * counts. `before` stops the walk at the first file not sorting below it.
+ */
+function databaseBucketAllowlist(directory = MIGRATIONS, before?: string): {
+  buckets: string[]; constraints: number; columnChecks: number; createdColumnChecks: number;
+} {
   // No dot and no `s` flag: the negated classes already span newlines, which
-  // they must, because one of the two constraints is written across lines.
-  const constraint = /bucket_id\s+text[^,]*?check\s*\(\s*bucket_id\s+in\s*\(([^)]*)\)/gi;
-  const buckets = new Set<string>();
-  let constraints = 0;
-  for (const name of readdirSync(MIGRATIONS).filter(file => file.endsWith(".sql"))) {
-    const sql = readFileSync(path.join(MIGRATIONS, name), "utf8");
-    for (const match of sql.matchAll(constraint)) {
-      constraints += 1;
-      for (const literal of match[1].matchAll(/'([^']+)'/g)) buckets.add(literal[1]);
+  // they must, because several of these constraints are written across lines.
+  const columnCheck = /bucket_id\s+text[^,]*?check\s*\(\s*bucket_id\s+in\s*\(([^)]*)\)/gi;
+  const created = /create\s+table\s+(?:\w+\.)?(\w+)\s*\([^;]*?\bbucket_id\s+text[^,]*?check\s*\(\s*bucket_id\s+in\s*\(([^)]*)\)/gi;
+  const added = /add\s+constraint\s+(\w+)\s+check\s*\(\s*bucket_id\s+in\s*\(([^)]*)\)/gi;
+  const dropped = /drop\s+constraint\s+(?:if\s+exists\s+)?(\w+)/gi;
+  const literals = (list: string) => [...list.matchAll(/'([^']+)'/g)].map(literal => literal[1]);
+  const current = new Map<string, string[]>();
+  let columnChecks = 0;
+  let createdColumnChecks = 0;
+  const files = readdirSync(directory).filter(file => file.endsWith(".sql")).sort()
+    .filter(file => before === undefined || file < before);
+  for (const name of files) {
+    const sql = readFileSync(path.join(directory, name), "utf8");
+    columnChecks += [...sql.matchAll(columnCheck)].length;
+    const events: { at: number; apply: () => void }[] = [];
+    for (const match of sql.matchAll(created)) {
+      createdColumnChecks += 1;
+      events.push({ at: match.index, apply: () => current.set(`${match[1]}_bucket_id_check`, literals(match[2])) });
     }
+    for (const match of sql.matchAll(added)) {
+      events.push({ at: match.index, apply: () => current.set(match[1], literals(match[2])) });
+    }
+    for (const match of sql.matchAll(dropped)) {
+      events.push({ at: match.index, apply: () => current.delete(match[1]) });
+    }
+    for (const event of events.sort((left, right) => left.at - right.at)) event.apply();
   }
-  return { buckets: [...buckets].sort(), constraints };
+  return {
+    buckets: [...new Set([...current.values()].flat())].sort(),
+    constraints: current.size,
+    columnChecks,
+    createdColumnChecks,
+  };
 }
 
 /** The retention ids `docs/retention.md` defines, one per table row. */
@@ -733,9 +766,14 @@ describe("the register's storage prefixes and the buckets the code addresses agr
   });
 
   it("keeps the database's own bucket allowlist inside the declared set", () => {
-    const { buckets, constraints } = databaseBucketAllowlist();
-    expect(constraints).toBeGreaterThan(1);
-    expect(buckets.length).toBeGreaterThan(3);
+    const { buckets, constraints, columnChecks, createdColumnChecks } = databaseBucketAllowlist();
+    // Not an empty scan: the bucket checks of the three tables a Storage
+    // manifest is built from, each at its latest definition, and every column
+    // check the walk saw was tied to the table that declares it.
+    expect(constraints).toBe(3);
+    expect(buckets).toEqual(["genomes", "legal-evidence"]);
+    expect(createdColumnChecks).toBe(columnChecks);
+    expect(columnChecks).toBeGreaterThan(1);
     // The three database-selected call sites take their bucket from a manifest
     // this allowlist constrains, so it is the only authority a static walk
     // has for them. An undeclared name here is the same defect the route
@@ -744,14 +782,43 @@ describe("the register's storage prefixes and the buckets the code addresses agr
       ...ledger.storageBucketDivergence
         .filter(known => known.direction === "created-not-declared")
         .map(known => known.bucket),
-      // A dropped bucket a constraint still admits (D-130), recorded rather
-      // than silently allowed. It must really be dropped, or the row is stale.
+      // A dropped bucket a constraint still admits, recorded rather than
+      // silently allowed. It must really be dropped, or the row is stale.
       ...contractLedger.allowlistedBucketNotCreated.map(known => known.bucket),
     ]);
     const created = migrationBuckets(MIGRATIONS);
     for (const known of contractLedger.allowlistedBucketNotCreated) {
       expect(created.has(known.bucket), `${known.bucket} is recorded as not created`).toBe(false);
       expect(readFileSync(known.droppedBy, "utf8"), known.droppedBy).toContain(`delete from storage.buckets where id = '${known.bucket}'`);
+    }
+  });
+
+  it("reads each bucket check at its latest definition, in migration order", () => {
+    // D-130: until 20261119110000 the checks still admitted both dropped
+    // buckets, so a walk that stops before it must still see them.
+    const before = databaseBucketAllowlist(MIGRATIONS, "20261119110000");
+    expect(before.constraints).toBe(3);
+    expect(before.buckets).toEqual(["generated-artifacts", "genomes", "genomes-staging", "legal-evidence"]);
+    const directory = mkdtempSync(path.join(tmpdir(), "bucket-allowlist-"));
+    try {
+      writeFileSync(path.join(directory, "1_create.sql"), "create table public.kept (\n  id uuid,\n"
+        + "  bucket_id text not null check (bucket_id in ('a', 'dropped')),\n  note text\n);\n"
+        + "create table public.gone (\n  bucket_id text not null check (bucket_id in ('b'))\n);\n"
+        + "create table public.other (id uuid);");
+      writeFileSync(path.join(directory, "2_tighten.sql"), "alter table public.kept\n"
+        + "  drop constraint kept_bucket_id_check,\n  add constraint kept_bucket_id_check check (bucket_id in ('a')\n"
+        + "   or bucket_id ~ '^x$');\nalter table public.gone drop constraint gone_bucket_id_check;");
+      expect(databaseBucketAllowlist(directory, "2")).toEqual(
+        { buckets: ["a", "b", "dropped"], constraints: 2, columnChecks: 2, createdColumnChecks: 2 });
+      expect(databaseBucketAllowlist(directory)).toEqual(
+        { buckets: ["a"], constraints: 1, columnChecks: 2, createdColumnChecks: 2 });
+      // Within one file, statement order decides: added then dropped is gone.
+      writeFileSync(path.join(directory, "3_same_file.sql"), "alter table public.kept\n"
+        + "  add constraint kept_bucket_id_check check (bucket_id in ('late'));\n"
+        + "alter table public.kept drop constraint kept_bucket_id_check;");
+      expect(databaseBucketAllowlist(directory).constraints).toBe(0);
+    } finally {
+      rmSync(directory, { recursive: true, force: true });
     }
   });
 

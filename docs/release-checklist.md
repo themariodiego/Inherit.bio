@@ -228,3 +228,16 @@ owner revokes afterwards. Each commits its evidence under its kit's
    fingerprint unchanged. Batch 2 breaks the deployed code's Path A confirmation
    until the merge is deployed, so the merge follows batch 2 at once; merging
    before batch 2 would refuse every request on the 38 CSRF-bound routes.
+4. **One further migration, written and tested locally on 19 November, with
+   no kit yet**: `20261119110000_dropped_bucket_literals_and_guard.sql`. It
+   removes the two dropped buckets from three bucket CHECKs and makes three
+   invitation guards refuse a NULL jurisdiction flag (D-130, D-140). It runs
+   only after release 3 reads back EQUAL, and it needs its own kit, rehearsal,
+   token and go. Its read-only pre-check query, locks and ordering are in
+   `docs/evidence/release-4-notes-20261119.md`. **It changes which commit
+   merges after release 3:** release 3's kit pins the migrations tree
+   `be49d283`, and this file changes that tree, so the head merged after
+   release 3 must be a commit that still carries `be49d283`; the last one on
+   the follow-up branch is `6252566a`. More migrations are expected to join
+   this fourth release (the remaining CSRF routes, D-139, D-141), so its kit
+   is best built once they exist.
