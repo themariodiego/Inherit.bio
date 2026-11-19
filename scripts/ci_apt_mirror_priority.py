@@ -556,8 +556,19 @@ def limited_config(observe=None):
     return result.stdout, values
 
 
+def observe_reports(reports, observe):
+    # Refusal paths only. Each failure becomes a fixed label; nothing raises, and the caller re-raises the refusal.
+    for event, build in reports + (('LATE_APT_FRAGMENTS_OBSERVED', lambda: late_fragment_diagnostics(os.listdir(STRICT.parent))),):
+        try:
+            observe(build())
+        except Exception as error:
+            try:
+                observe({'event': event, 'observation': 'unavailable', 'errorType': type(error).__name__})
+            except Exception:
+                pass
+
+
 def observe_mirror_refusal(image_os, image_version, original, observe):
-    # Mirror refusal only. Each failure becomes a fixed label; nothing raises, and the caller re-raises the refusal.
     def sources():
         try:
             # safe_read's blocking open must never meet a FIFO here, or a HOLD would become a step timeout.
@@ -566,16 +577,8 @@ def observe_mirror_refusal(image_os, image_version, original, observe):
         except Exception as error:
             return {'event': 'SOURCES_SHAPE_OBSERVED', 'observation': 'custody-refused', 'errorType': type(error).__name__}
         return source_shape_diagnostics(raw)
-    for event, build in (('REFUSED_MIRROR_OBSERVED', lambda: refused_mirror_diagnostics(original, image_os, image_version)),
-                         ('SOURCES_SHAPE_OBSERVED', sources),
-                         ('LATE_APT_FRAGMENTS_OBSERVED', lambda: late_fragment_diagnostics(os.listdir(STRICT.parent)))):
-        try:
-            observe(build())
-        except Exception as error:
-            try:
-                observe({'event': event, 'observation': 'unavailable', 'errorType': type(error).__name__})
-            except Exception:
-                pass
+    observe_reports((('REFUSED_MIRROR_OBSERVED', lambda: refused_mirror_diagnostics(original, image_os, image_version)),
+                     ('SOURCES_SHAPE_OBSERVED', sources)), observe)
 
 
 def main(argv):
@@ -603,7 +606,12 @@ def main(argv):
         raise
     candidate, readmission = admit_priority_state(original, strict_input[0] if strict_input else None)
     source, _ = safe_read(SOURCES)
-    admit_sources(source, observe, mirror_state(original)[2])
+    try:
+        admit_sources(source, observe, mirror_state(original)[2])
+    except RuntimeError:
+        # The bytes already read, never re-read; the same refusal then reaches HOLD.
+        observe_reports((('SOURCES_SHAPE_OBSERVED', lambda: source_shape_diagnostics(source)),), observe)
+        raise
     config_raw, config = limited_config(observe)
     if readmission:
         admit_config(config, after=True)
