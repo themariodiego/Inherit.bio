@@ -8419,6 +8419,7 @@ export type Database = {
           p_contact_hmac: string | null
           p_contact_hmac_set?: Json
           p_idempotency_key: string
+          p_note_envelope?: Json
           p_quota_keys?: Json
           p_test_jurisdiction: boolean
         }
@@ -9180,6 +9181,7 @@ export type Database = {
           p_idempotency_key: string
           p_nonce_expires_at: string
           p_nonce_hash: string
+          p_note_envelope?: Json
           p_quota_keys: Json
           p_session_id: string
           p_test_jurisdiction: boolean

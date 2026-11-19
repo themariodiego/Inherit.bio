@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { encryptSecret, hmacSecret } from "@/lib/crypto";
+import { adultInvitationNote, sealAdultInvitationNote } from "@/lib/adult-invitation-note";
 import { contactDigestSet, legacyContactDigest } from "@/lib/hmac-keyring";
 import { invitationQuotaKeys } from "@/lib/rate-limit-keys";
 import { accountCapability } from "@/lib/legal/jurisdictions";
@@ -32,14 +33,9 @@ const requestSchema = z.object({
   requestId: z.uuid(),
   // The optional note the invited person reads in the invitation mail
   // (brief §5 §5.2). Plain text only: no control characters, so the mail
-  // template can render it as words and never as a link.
-  note: z
-    .string()
-    .trim()
-    .min(1)
-    .max(500)
-    .regex(/^[^\u0000-\u0008\u000b-\u001f\u007f]+$/)
-    .optional(),
+  // template can render it as words and never as a link. The worker holds
+  // the opened note to the same rule (src/lib/adult-invitation-note.ts).
+  note: adultInvitationNote.optional(),
 }).strict();
 
 function normalizedEmail(value: string): string {
@@ -114,12 +110,21 @@ async function pathAInvitation(request: Request, payload: unknown): Promise<Resp
     ]),
     "mail-idempotency-v1",
   );
+  // D-139: the note is sealed here, for the invitation this key creates, and
+  // only its envelope leaves this process. The database writes the envelope
+  // onto the invitation's queued mail in the transaction that creates both,
+  // so no worker can claim that mail without it, and a replay of the key
+  // keeps the first note. It travels only in the mail payload: never in the
+  // opaque invitation token, a link, the response or a log.
+  const noteEnvelope = parsed.data.note === undefined
+    ? undefined
+    : sealAdultInvitationNote(parsed.data.note, idempotencyKey);
   const admin = createAdminClient();
   // The address is keyed under every held contact revision, and the RPC
   // counts this attempt against the account and network quotas before it
   // matches anything (global-contact-refusal-bar-v1). An exhausted quota
   // returns no invitation, exactly as a barred address does.
-  const { data, error } = await admin.rpc("create_adult_subject_invitation_with_nonce_v1", {
+  const { error } = await admin.rpc("create_adult_subject_invitation_with_nonce_v1", {
     p_account_id: user.id,
     p_session_id: account.sessionId,
     p_contact_ciphertext: `\\x${encryptSecret(email).toString("hex")}`,
@@ -129,24 +134,14 @@ async function pathAInvitation(request: Request, payload: unknown): Promise<Resp
     p_idempotency_key: idempotencyKey,
     p_test_jurisdiction: true,
     ...personOperationNonceArgs(nonce),
+    // Sent only with a note. A database without the parameter (before
+    // 20261119134500) has no function that takes it, so the call fails and
+    // writes nothing, rather than an invitation going out without its note.
+    ...(noteEnvelope === undefined ? {} : { p_note_envelope: noteEnvelope }),
   });
   if (isOperationNonceRefusal(error)) return NextResponse.json({ error: "invalid_request" }, { status: 400 });
   if (error) {
     return NextResponse.json({ error: "invitation_unavailable" }, { status: 503 });
-  }
-
-  // The note travels in the queued mail's payload, never in the opaque
-  // invitation token and never in a link. The invitation itself is already
-  // recorded, so a payload that cannot be updated leaves the invitation
-  // standing without the note rather than failing the request.
-  const invitationId = data?.[0]?.invitation_id;
-  if (parsed.data.note && invitationId) {
-    await admin
-      .from("mail_outbox")
-      .update({ template_payload: { note: parsed.data.note } })
-      .eq("target_id", invitationId)
-      .eq("template_id", "adult-subject-invitation")
-      .eq("state", "queued");
   }
 
   return NextResponse.json({ accepted: true }, { status: 202 });

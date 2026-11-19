@@ -219,7 +219,8 @@ select ok(has_function_privilege('service_role',f,'execute') and not has_functio
   'public.pause_family_sharing_with_nonce_v1(uuid,uuid,uuid,text,timestamptz)','public.resume_family_sharing_with_nonce_v1(uuid,uuid,uuid,text,timestamptz)',
   'public.stop_family_sharing_with_nonce_v1(uuid,uuid,uuid,text,timestamptz)','public.revoke_directional_purpose_with_nonce_v1(uuid,uuid,uuid,text,timestamptz)',
   'public.acknowledge_portrait_with_nonce_v1(uuid,uuid,uuid,text,timestamptz)',
-  'public.create_adult_subject_invitation_with_nonce_v1(uuid,uuid,bytea,text,text,boolean,jsonb,jsonb,text,timestamptz)',
+  -- 20261119134500 (D-139) gave this door a trailing p_note_envelope jsonb default null.
+  'public.create_adult_subject_invitation_with_nonce_v1(uuid,uuid,bytea,text,text,boolean,jsonb,jsonb,text,timestamptz,jsonb)',
   'public.pause_subject_sharing_v1(uuid,uuid,uuid,uuid,text,timestamptz)','public.resume_subject_sharing_v1(uuid,uuid,uuid,uuid,text,timestamptz)'])f;
 select ok(not has_function_privilege(r,'private.consume_account_operation_nonce_v1(uuid,uuid,text,text,timestamptz)','execute'),
  r||' cannot record a nonce directly') from unnest(array['anon','authenticated','inherit_upload_only','service_role'])r;

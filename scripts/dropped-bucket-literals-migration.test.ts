@@ -116,7 +116,18 @@ describe("the release it belongs to", () => {
   it("is a guarded production release, after every migration whose objects it pins, patches or tightens", () => {
     expect(migration.startsWith("-- =====================================================================\n"
       + "-- PRODUCTION RELEASE: GUARDED.")).toBe(true);
-    expect(files.at(-1)).toBe(NAME);
+    // 2026-11-19 (D-139): 20261119134500 now follows it, so it is no longer the
+    // newest file. What being the newest guaranteed is that nothing later
+    // undoes it: no later migration names one of its three checks or either
+    // dropped bucket (the next case holds its five functions the same way).
+    expect(files).toContain(NAME);
+    for (const later of files.filter(file => file > NAME)) {
+      const sql = read(`supabase/migrations/${later}`);
+      for (const undone of ["account_deletion_storage_entries_bucket_id_check", "embryo_ingest_delete_objects_bucket_id_check",
+        "genome_storage_objects_bucket_id_check", "genomes-staging", "generated-artifacts"]) {
+        expect(sql.includes(undone), `${later}: ${undone}`).toBe(false);
+      }
+    }
     for (const earlier of ["20260906061029", "20260928130100", "20260929101000", "20260930132000", "20260930140000",
       "20260930140100", "20260930235000", "20260930238000", "20261025400000"]) {
       expect(files.some(file => file.startsWith(`${earlier}_`)), earlier).toBe(true);

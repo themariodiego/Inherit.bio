@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { adultInvitationNoteEnvelope, openAdultInvitationNote, type ClaimedInvitationMail } from "@/lib/adult-invitation-note";
 import { applicationOrigin } from "@/lib/app-origin";
 import { hmacSecret } from "@/lib/crypto";
 import { openMailContact } from "@/lib/future-person/claimant-contact";
@@ -45,18 +46,17 @@ const accountDeletionAffectedCancelledPayload = z.object({ cancelledAt: z.iso.da
 
 const adultSubjectInvitationPayload = z
   .object({
-    // The optional note the inviter wrote (brief §5 §5.2); plain words only.
-    note: z
-      .string()
-      .trim()
-      .min(1)
-      .max(500)
-      .regex(/^[^\u0000-\u0008\u000b-\u001f\u007f]+$/)
-      .optional(),
+    // D-139: the optional note the inviter wrote (brief §5 §5.2), only ever
+    // as its sealed envelope. A plain `note` is not this shape, so a row that
+    // holds one fails as an unrenderable payload: the worker never sends a
+    // plaintext note from a row, and never sends the mail without it.
+    noteEnvelope: adultInvitationNoteEnvelope.optional(),
     // The register's Path B request (TEST-LOCAL only): a signature, not an account.
     request: z.literal("esignature").optional(),
   })
-  .strict();
+  .strict()
+  // Path B's request carries no note; the database refuses the pair too.
+  .refine((payload) => payload.noteEnvelope === undefined || payload.request === undefined);
 
 // The upload-time notice for another adult's held file (Path B, TEST-LOCAL
 // only). The native safe uploader label is optional for older queued notices;
@@ -143,6 +143,7 @@ function parseMail(
   templateId: string,
   payload: unknown,
   deliveryToken?: string | null,
+  claim?: Omit<ClaimedInvitationMail, "templateId">,
 ): MailTemplate {
   if (templateId === "appeal-evidence") {
     z.object({}).strict().parse(payload);
@@ -193,6 +194,16 @@ function parseMail(
   }
   if (templateId === "adult-subject-invitation") {
     const parsed = adultSubjectInvitationPayload.parse(payload);
+    // D-139: the note opens here, in memory, only for this template and only
+    // for the exact claimed row it was sealed for. One that does not open
+    // fails the mail like any unrenderable payload (retried, then failed):
+    // it is never sent corrupted, and never sent without its note.
+    let note: string | undefined;
+    if (parsed.noteEnvelope !== undefined) {
+      const opened = claim ? openAdultInvitationNote(parsed.noteEnvelope, { ...claim, templateId }) : null;
+      if (opened === null) throw new Error("mail_note_unavailable");
+      note = opened;
+    }
     // D-081: this was the one template that put a live token in a URL path,
     // where it reaches access logs, referrers and browser history, and where
     // a link scanner following the mail could spend it. It now uses the same
@@ -203,7 +214,7 @@ function parseMail(
       id: templateId,
       payload: {
         invitationUrl: fragmentUrl(deliveryToken),
-        note: parsed.note,
+        note,
         request: parsed.request,
       },
     };
@@ -344,6 +355,7 @@ async function drainMail() {
         row.template_id,
         row.template_payload,
         row.delivery_token,
+        { attemptOrdinal: row.attempt_ordinal, providerAttemptKey: row.idempotency_key },
       );
       // The claim can become stale while payloads are prepared. Recheck the
       // exact recipient, source and invitation bar immediately before send.

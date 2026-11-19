@@ -17,6 +17,7 @@ vi.mock("@/lib/security/session-csrf", async (importOriginal) =>
 const mocks = vi.hoisted(() => ({
   rpc: vi.fn(),
   update: vi.fn(),
+  from: vi.fn(),
   account: vi.fn(),
   user: vi.fn(),
   capability: vi.fn(),
@@ -25,7 +26,10 @@ const mocks = vi.hoisted(() => ({
 vi.mock("@/lib/supabase/admin", () => ({
   createAdminClient: () => ({
     rpc: mocks.rpc,
-    from: () => ({ update: (...args: unknown[]) => { mocks.update(...args); return chain; } }),
+    from: (...table: unknown[]) => {
+      mocks.from(...table);
+      return { update: (...args: unknown[]) => { mocks.update(...args); return chain; } };
+    },
   }),
 }));
 const chain: Record<string, unknown> = {};
@@ -56,6 +60,7 @@ vi.mock("@/lib/embryos/guards", async (original) => ({
 const { POST: inviteCoParent } = await import("@/app/api/invitations/route");
 const { POST: inviteAdult } = await import("@/app/api/subject-drafts/route");
 const { legacyContactDigest } = await import("@/lib/hmac-keyring");
+const { openAdultInvitationNote } = await import("@/lib/adult-invitation-note");
 const { mintPersonOperationNonce } = await import("@/lib/person-operation-nonce");
 
 const ACCOUNT = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
@@ -93,6 +98,17 @@ const adult = (body: Record<string, unknown> = pathA()) => post("/api/subject-dr
 function sentArgs(): Record<string, unknown> {
   expect(mocks.rpc).toHaveBeenCalledTimes(1);
   return mocks.rpc.mock.calls[0]![1] as Record<string, unknown>;
+}
+
+/** The claim the mail worker would receive for the row this idempotency key names, on its first attempt. */
+function claimOf(idempotencyKey: string) {
+  return { templateId: "adult-subject-invitation", attemptOrdinal: 1, providerAttemptKey: crypto.createHash("sha256")
+    .update(`mail-token-attempt-v1|${idempotencyKey}|1`, "utf8").digest("hex") };
+}
+
+/** The note the worker would open from what the route sent, for that invitation's own row. */
+function openedNote(args: Record<string, unknown>): string | null {
+  return openAdultInvitationNote(args.p_note_envelope, claimOf(args.p_idempotency_key as string));
 }
 
 function expectKeyedCall(args: Record<string, unknown>) {
@@ -229,8 +245,83 @@ describe("POST /api/subject-drafts (adult invitation)", () => {
   it("keeps the note optional and passes the normalized address on", async () => {
     mocks.rpc.mockResolvedValue({ data: [{ invitation_id: crypto.randomUUID() }], error: null });
     expect((await inviteAdult(adult(pathA({ contactEmail: ` ${INVITED.toUpperCase()} `, note: "Synthetic note." })))).status).toBe(202);
-    expect(mocks.update).toHaveBeenCalledWith({ template_payload: { note: "Synthetic note." } });
-    expectKeyedCall(sentArgs());
+    // D-139 (2026-11-19): the note reaches the database only sealed, inside
+    // the invitation's own transaction; this was a plain-text update of the
+    // queued mail after the RPC had committed.
+    const args = sentArgs();
+    expect(openedNote(args)).toBe("Synthetic note.");
+    expect(mocks.from).not.toHaveBeenCalled();
+    expect(mocks.update).not.toHaveBeenCalled();
+    expectKeyedCall(args);
+  });
+
+  // D-139: the register's api.subject-drafts says the note "is
+  // envelope-encrypted and may flow only to that invitation template", and
+  // that its plaintext "exists only in bounded request and mail-worker memory".
+  describe("the optional note (D-139)", () => {
+    const NOTE = "Synthetic note for the invited person.";
+
+    it("sends only the sealed envelope: no plaintext, hex, or base64 of the note leaves the route", async () => {
+      mocks.rpc.mockResolvedValue({ data: [{ invitation_id: crypto.randomUUID() }], error: null });
+      const response = await inviteAdult(adult(pathA({ note: NOTE })));
+      expect(response.status).toBe(202);
+      const sent = JSON.stringify(mocks.rpc.mock.calls);
+      for (const plain of [NOTE, Buffer.from(NOTE).toString("hex"), Buffer.from(NOTE).toString("base64")]) {
+        expect(sent).not.toContain(plain);
+      }
+      expect(JSON.stringify(await response.json())).not.toContain(NOTE);
+      expect(Object.keys(sentArgs().p_note_envelope as object)).toEqual(["version", "idempotencyKey", "wrappedKey", "ciphertext"]);
+    });
+
+    it("hands the database the envelope with the invitation, in the one RPC, and writes no table itself", async () => {
+      mocks.rpc.mockResolvedValue({ data: [{ invitation_id: crypto.randomUUID() }], error: null });
+      expect((await inviteAdult(adult(pathA({ note: NOTE })))).status).toBe(202);
+      expect(mocks.rpc).toHaveBeenCalledTimes(1);
+      expect(mocks.rpc.mock.calls[0]![0]).toBe("create_adult_subject_invitation_with_nonce_v1");
+      expect(mocks.from).not.toHaveBeenCalled();
+      expect(mocks.update).not.toHaveBeenCalled();
+    });
+
+    it("binds the envelope to the invitation this request creates: it opens for that key's row and no other", async () => {
+      mocks.rpc.mockResolvedValue({ data: [{ invitation_id: crypto.randomUUID() }], error: null });
+      await inviteAdult(adult(pathA({ note: NOTE })));
+      const args = sentArgs();
+      const envelope = args.p_note_envelope as { idempotencyKey: string };
+      expect(envelope.idempotencyKey).toBe(args.p_idempotency_key);
+      expect(openedNote(args)).toBe(NOTE);
+      // Another invitation's row (another request id gives another key).
+      vi.clearAllMocks();
+      await inviteAdult(adult(pathA()));
+      const other = sentArgs();
+      expect(other.p_idempotency_key).not.toBe(args.p_idempotency_key);
+      expect(openAdultInvitationNote(envelope, claimOf(other.p_idempotency_key as string))).toBeNull();
+      expect(openAdultInvitationNote({ ...envelope, idempotencyKey: other.p_idempotency_key },
+        claimOf(other.p_idempotency_key as string))).toBeNull();
+    });
+
+    it("sends no envelope argument at all without a note, so a database before the migration still serves it", async () => {
+      mocks.rpc.mockResolvedValue({ data: [{ invitation_id: crypto.randomUUID() }], error: null });
+      expect((await inviteAdult(adult(pathA()))).status).toBe(202);
+      expect(sentArgs()).not.toHaveProperty("p_note_envelope");
+    });
+
+    it.each([
+      ["a database without the parameter", { code: "PGRST202", message: "Could not find the function" }],
+      ["a refused envelope", { code: "22023", message: "adult invitation note invalid" }],
+      ["a note the new mail could not take", { code: "55000", message: "adult invitation note unrecorded" }],
+    ])("surfaces %s as the route's 503, and writes nothing else", async (_case, error) => {
+      mocks.rpc.mockResolvedValue({ data: null, error });
+      const response = await inviteAdult(adult(pathA({ note: NOTE })));
+      expect(response.status).toBe(503);
+      expect(await response.json()).toEqual({ error: "invitation_unavailable" });
+      expect(mocks.rpc).toHaveBeenCalledTimes(1);
+      expect(mocks.from).not.toHaveBeenCalled();
+    });
+
+    it("keeps the nonce refusal distinct from a note refusal", async () => {
+      mocks.rpc.mockResolvedValue({ data: null, error: { code: "22023", message: "invalid_operation_nonce" } });
+      expect((await inviteAdult(adult(pathA({ note: NOTE })))).status).toBe(400);
+    });
   });
 
   it("fails closed on a malformed keyring instead of sending fewer revisions", async () => {
