@@ -65,6 +65,7 @@ import { listTraitEntries } from "@/lib/family/traits";
 import { hasFileInPreparation } from "@/lib/genome/load";
 import { route } from "@/lib/primary-routes";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { userForPage } from "@/lib/supabase/auth-check";
 import { createClient } from "@/lib/supabase/server";
 
 /**
@@ -123,9 +124,7 @@ function columnFor(
 export default async function FamilyPortraitPage(props: PageProps<"/family/portrait/[pairId]">) {
   const { pairId } = await props.params;
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await userForPage(supabase.auth);
   if (!user) redirect("/auth/sign-in");
 
   // Idempotent, and a no-op from the session an invitation was accepted in:

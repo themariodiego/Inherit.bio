@@ -1,8 +1,9 @@
 // Every not-found and error boundary rendered directly, to pin the one thing
 // that was actually broken in this work: how many landmarks each contributes.
-import { createElement as h } from "react";
+import { createElement as h, isValidElement, type ReactElement, type ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
+import { ErrorContent } from "@/components/site/error-content";
 import RootNotFound from "./not-found";
 import AppNotFound from "./(app)/not-found";
 import MarketingNotFound from "./(marketing)/not-found";
@@ -15,6 +16,20 @@ import { ERROR_HEADING } from "@/copy/error-state";
 
 const noop = () => {};
 const thrown = Object.assign(new Error("subject 7f3a1b carries BRCA1 c.68_69del"), { digest: "d123" });
+
+/** The `ErrorContent` element a boundary returns, found by walking its element tree. */
+function errorContentIn(node: ReactNode): ReactElement<{ reset: () => void }> | null {
+  if (Array.isArray(node)) {
+    for (const child of node) {
+      const found = errorContentIn(child);
+      if (found) return found;
+    }
+    return null;
+  }
+  if (!isValidElement<{ children?: ReactNode; reset?: () => void }>(node)) return null;
+  if (node.type === ErrorContent) return node as ReactElement<{ reset: () => void }>;
+  return errorContentIn(node.props.children);
+}
 
 /**
  * Next renders the nearest boundary **inside the layouts above it**. A boundary
@@ -31,14 +46,14 @@ const thrown = Object.assign(new Error("subject 7f3a1b carries BRCA1 c.68_69del"
  */
 const SUPPLIES_ITS_OWN_LANDMARK = [
   ["src/app/not-found.tsx", h(RootNotFound), NOT_FOUND_HEADING],
-  ["src/app/error.tsx", h(RootError, { error: thrown, reset: noop }), ERROR_HEADING],
+  ["src/app/error.tsx", h(RootError, { error: thrown, reset: noop, retry: noop }), ERROR_HEADING],
   ["src/app/global-error.tsx", h(GlobalError, { error: thrown, reset: noop }), ERROR_HEADING],
 ] as const;
 
 const INHERITS_ITS_LANDMARK = [
   ["src/app/(app)/not-found.tsx", h(AppNotFound), NOT_FOUND_HEADING],
   ["src/app/(marketing)/not-found.tsx", h(MarketingNotFound), NOT_FOUND_HEADING],
-  ["src/app/(app)/error.tsx", h(AppError, { error: thrown, reset: noop }), ERROR_HEADING],
+  ["src/app/(app)/error.tsx", h(AppError, { error: thrown, reset: noop, retry: noop }), ERROR_HEADING],
   ["src/app/(marketing)/error.tsx", h(MarketingError, { error: thrown, reset: noop }), ERROR_HEADING],
 ] as const;
 
@@ -76,6 +91,24 @@ describe("the not-found and error boundaries", () => {
       expect(html).not.toContain("d123");
     },
   );
+
+  // Owner decision 2026-11-19 (D-142): a sign-in check that failed for a
+  // moment throws from a server component into these two boundaries. Next.js
+  // 16.3's `reset` only clears the boundary and re-renders what the browser
+  // holds, which is the same thrown error; `retry` refreshes the route from
+  // the server first (`next/dist/client/components/error-boundary.js`). So
+  // "Try again" must be `retry` here, or it could never recover.
+  it.each([
+    ["src/app/error.tsx", RootError],
+    ["src/app/(app)/error.tsx", AppError],
+  ] as const)("%s wires Try again to the boundary's retry, which asks the server again", (_file, Boundary) => {
+    const reset = () => {};
+    const retry = () => {};
+    const control = errorContentIn(Boundary({ error: thrown, reset, retry }));
+    expect(control, "the boundary renders the error surface").not.toBeNull();
+    expect(control!.props.reset, "Try again calls retry").toBe(retry);
+    expect(control!.props.reset).not.toBe(reset);
+  });
 
   it("global-error replaces the root layout, so it brings its own html and body", () => {
     const html = renderToStaticMarkup(h(GlobalError, { error: thrown, reset: noop }));

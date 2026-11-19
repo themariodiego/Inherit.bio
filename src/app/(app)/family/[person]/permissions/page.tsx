@@ -38,11 +38,12 @@ import {
   mintGrantPresentation,
   type GrantPurposeRequest,
 } from "@/lib/family/grant-token";
-import { getSensitiveAccountContext } from "@/lib/account-deletion";
+import { getPageAccountContext } from "@/lib/page-account-context";
 import { mintSubjectOperationNonce } from "@/lib/subject-endpoints/operation-nonce";
 import { mintPersonOperationNonce } from "@/lib/person-operation-nonce";
 import { route } from "@/lib/primary-routes";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { userForPage } from "@/lib/supabase/auth-check";
 import { createClient } from "@/lib/supabase/server";
 
 /**
@@ -71,9 +72,7 @@ export async function generateMetadata(
 
 const loadPerson = cache(async (segment: string) => {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await userForPage(supabase.auth);
   if (!user) return null;
   const person = await resolveFamilyPerson(user.id, segment);
   return person ? { user, person } : null;
@@ -92,7 +91,7 @@ export default async function FamilyPermissionsPage(
   if (!context) notFound();
   const { user, person } = context;
   // The single-use stop code is bound to this session, so the page needs it.
-  const account = await getSensitiveAccountContext();
+  const account = await getPageAccountContext();
   if (!account || account.user.id !== user.id) notFound();
   const sessionId = account.sessionId;
 

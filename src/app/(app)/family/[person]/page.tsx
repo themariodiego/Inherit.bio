@@ -37,6 +37,7 @@ import { resolveStoredSharedReport } from "@/lib/family/shared-report-display";
 import type { FindingLayer } from "@/lib/genome/taxonomy";
 import { route } from "@/lib/primary-routes";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { userForPage } from "@/lib/supabase/auth-check";
 import { createClient } from "@/lib/supabase/server";
 
 /**
@@ -55,9 +56,7 @@ import { createClient } from "@/lib/supabase/server";
 
 const loadPerson = cache(async (segment: string) => {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await userForPage(supabase.auth);
   if (!user) return null;
   const person = await resolveFamilyPerson(user.id, segment);
   return person ? { user, person } : null;

@@ -1,6 +1,6 @@
 import "server-only";
 
-import { getSensitiveAccountContext } from "@/lib/account-deletion";
+import { getPageAccountContext } from "@/lib/page-account-context";
 import {
   PERSON_OPERATION_NONCE_HEADER,
   mintPersonOperationNonce,
@@ -39,11 +39,13 @@ export function isOperationNonceRefusal(error: { code?: string; message?: string
 /**
  * What a page renders for one operation on one target: the nonce for the
  * live account and auth session, or null when there is none. It reads the
- * current session and stores nothing.
+ * current session and stores nothing. A sign-in check that failed for a
+ * moment twice throws to the page's error boundary rather than reading as no
+ * session (`getPageAccountContext`).
  */
 export async function pageOperationNonce(operation: PersonOperation, targetId: string | ((accountId: string) => string),
   now = Date.now()): Promise<string | null> {
-  const context = await getSensitiveAccountContext();
+  const context = await getPageAccountContext();
   if (!context) return null;
   const target = typeof targetId === "function" ? targetId(context.user.id) : targetId;
   if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(target)) return null;

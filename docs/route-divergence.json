@@ -1,7 +1,12 @@
 {
   "purpose": "Every place where the live App Router surface and docs/route-register.json disagree. scripts/route-register-correspondence.test.ts checks which routes exist; scripts/route-gate.ts (pnpm gate:routes) checks the methods they export, the status their redirects emit, the storage buckets their prefixes name and the (route, state) pairs a browser test proves. Both fail when a divergence appears that is not listed here, and fail when a listed one is fixed or misdescribed, so this file cannot quietly drift from reality in either direction.",
   "notAnApproval": "Listing a divergence records it; it does not bless it. The register is the binding response-contract authority, so an unregistered live endpoint has no declared auth mode, response contract or policy. Each entry names what is missing and what closing it needs.",
-  "builtButNotRegistered": [],
+  "builtButNotRegistered": [
+    {
+      "path": "/session-check-unavailable",
+      "file": "src/app/session-check-unavailable/page.tsx"
+    }
+  ],
   "permissiveDynamicSegment": [],
   "unregisteredServerActionsNote": "A server action is a live mutation surface that the route register does not describe: Next.js exposes it at a generated endpoint the App Router never shows, so none of the route checks above can see it and a second one could appear without anything noticing. G8.5 asks that every live surface match its register, so the surface is held as a ledger instead, compared in both directions by scripts/route-register-correspondence.test.ts. Empty since 2026-10-23, and still checked: under the owner decision of that day (decisions, \"G8.5: forms, CSRF, the server action and the Resend webhook\"), the one action there was, acknowledgeEmbryoGate in src/app/(app)/embryos/acknowledge.ts, is replaced by the registered route api.embryo-acknowledge (src/app/api/embryos/acknowledge/route.ts), built with the Origin check, closed body, account and session and cookie of its Family twin api.family-acknowledge, and the module is deleted. Its row recorded that the action answered a POST on all three pages that rendered it (copilot.scope, embryos.compare, embryos.detail) and let a request with no Origin through; neither is true of the route. The product now has no server action, the test asserts that, and a planted one fails it until it is recorded here with its reason.",
   "unregisteredServerActions": [],

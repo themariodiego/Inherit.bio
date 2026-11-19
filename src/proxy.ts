@@ -8,6 +8,8 @@ import {APPEAL_FORM_TOKEN_HEADER,appealFormSecret,mintAppealForm} from "@/lib/fu
 import {testAppealIntakeOpen} from "@/lib/future-person/appeals-open";
 import {applyAppealIntakeHeaders} from "@/lib/future-person/appeal-intake-response";
 import { AUTH_FORM_PAGES, AUTH_FORM_TOKEN_HEADER, authFormSecret, mintAuthForm } from "@/lib/auth/auth-form";
+import { unavailable } from "@/lib/embryos/api";
+import { AUTH_UNAVAILABLE_HEADER, AUTH_UNAVAILABLE_PATH, checkUser } from "@/lib/supabase/auth-check";
 
 /**
  * The three public auth endpoints (auth.sign-up-submit,
@@ -180,6 +182,36 @@ function locationUnavailable(path: string): NextResponse {
   return withSensitiveHeaders(response, path);
 }
 
+/**
+ * The answer when the auth service failed to confirm or refuse the session
+ * twice (owner decision 2026-11-19, D-142). An endpoint gets the shared
+ * `{"error":"unavailable"}` 503, which says nothing about the session. A page
+ * is rewritten, at the URL the person asked for, to the route that throws into
+ * the root `error.tsx`: the existing "This page did not load" surface, whose
+ * "Try again" asks for that URL again. Next.js applies no status from a proxy
+ * rewrite, so that document answers 500, as any thrown page does.
+ *
+ * `written` holds what the auth client wrote through `setAll`. Only cookies
+ * carrying a value go on: a refresh that rotated the tokens before the user
+ * read failed must reach the browser, but a removal never does, so a person
+ * whose sign-in check merely failed keeps their session cookies.
+ */
+function authCheckUnavailable(request: NextRequest, path: string, written: NextResponse): NextResponse {
+  let answer: NextResponse;
+  if (path.startsWith("/api/")) {
+    const refusal = unavailable();
+    answer = new NextResponse(refusal.body, { status: refusal.status, headers: refusal.headers });
+  } else {
+    const headers = new Headers(request.headers);
+    headers.set(AUTH_UNAVAILABLE_HEADER, "1");
+    answer = NextResponse.rewrite(new URL(AUTH_UNAVAILABLE_PATH, request.url), { request: { headers } });
+  }
+  for (const cookie of written.cookies.getAll()) {
+    if (cookie.value) answer.cookies.set(cookie);
+  }
+  return withSensitiveHeaders(answer, path);
+}
+
 // Next.js 16 proxy (successor to middleware): keeps the Supabase auth session
 // fresh and gates the authenticated app shell.
 export async function proxy(request: NextRequest) {
@@ -192,6 +224,15 @@ export async function proxy(request: NextRequest) {
     request.headers.get("x-vercel-ip-country-region"),
   )) {
     return locationUnavailable(request.nextUrl.pathname);
+  }
+
+  // The error surface a failed sign-in check is rewritten to renders only for
+  // the proxy's own rewrite, which never comes back through here. A request
+  // that names the path itself loses the marker and is answered not-found.
+  if (request.nextUrl.pathname === AUTH_UNAVAILABLE_PATH) {
+    const headers = new Headers(request.headers);
+    headers.delete(AUTH_UNAVAILABLE_HEADER);
+    return withSensitiveHeaders(NextResponse.next({ request: { headers } }));
   }
 
   if(request.nextUrl.pathname==="/legal/appeals")return appealPage(request);
@@ -249,10 +290,10 @@ export async function proxy(request: NextRequest) {
   );
 
   // Do not run code between createServerClient and getUser: a stale session
-  // could be committed to cookies.
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // could be committed to cookies. A temporary failure of the auth service is
+  // asked once more after a short pause (owner decision 2026-11-19, D-142).
+  const check = await checkUser(supabase.auth, { signal: request.signal });
+  const user = check.kind === "user" ? check.user : null;
 
   const path = request.nextUrl.pathname;
   const isProtected =
@@ -272,6 +313,13 @@ export async function proxy(request: NextRequest) {
 
   const isReviewPage=path.startsWith("/reviews/future-person/claims/") || path.startsWith("/reviews/appeals/");
   const sensitive = isProtected || path.startsWith("/api/") || path.startsWith("/withdraw/") || isReviewPage;
+
+  // Neither signed in nor signed out: the account's own checks below cannot
+  // run, so a protected page or an endpoint is answered here, never with
+  // sign-in and never as if signed in. Elsewhere nothing depends on the answer.
+  if (check.kind === "unavailable" && (isProtected || path.startsWith("/api/"))) {
+    return authCheckUnavailable(request, path, response);
+  }
 
   if (!user && isProtected) {
     const url = request.nextUrl.clone();

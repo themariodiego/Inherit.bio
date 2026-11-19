@@ -66,6 +66,7 @@ import { categoryFor, CATEGORY_TAXONOMY, type FindingLayer } from "@/lib/genome/
 import { route } from "@/lib/primary-routes";
 import { resolveSubjectForAccount } from "@/lib/subjects";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { userForPage } from "@/lib/supabase/auth-check";
 import { createClient } from "@/lib/supabase/server";
 
 /**
@@ -130,9 +131,7 @@ function cellFor(
 
 export default async function FamilyHealthPicturePage() {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await userForPage(supabase.auth);
   if (!user) redirect("/auth/sign-in");
 
   const [self, people] = await Promise.all([

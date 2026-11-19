@@ -1,20 +1,29 @@
 import { readFileSync } from "node:fs";
+import { AuthRetryableFetchError, AuthSessionMissingError } from "@supabase/supabase-js";
 import { NextRequest } from "next/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { AUTH_UNAVAILABLE_HEADER, AUTH_UNAVAILABLE_PATH } from "@/lib/supabase/auth-check";
 
+type CookieWrite = { name: string; value: string; options: Record<string, unknown> };
 const mocks = vi.hoisted(() => ({
   user: null as { id: string } | null,
   profile: null as { deletion_requested_at: string | null; jurisdiction_code: string | null } | null,
   selected: [] as string[],
   sessionReads: 0,
+  // Queued answers of getUser (each may first write cookies through setAll);
+  // once empty, getUser answers `user` as before.
+  answers: [] as { error?: unknown; writes?: CookieWrite[] }[],
 }));
 
 vi.mock("@supabase/ssr", () => ({
-  createServerClient: () => ({
+  createServerClient: (_url: string, _key: string, options: { cookies: { setAll: (cookies: CookieWrite[]) => void } }) => ({
     auth: {
       getUser: async () => {
         mocks.sessionReads += 1;
-        return { data: { user: mocks.user } };
+        const next = mocks.answers.shift();
+        if (!next) return { data: { user: mocks.user } };
+        if (next.writes) options.cookies.setAll(next.writes);
+        return next.error ? { data: { user: null }, error: next.error } : { data: { user: mocks.user }, error: null };
       },
     },
     from: () => ({
@@ -42,6 +51,7 @@ beforeEach(() => {
   mocks.profile = { deletion_requested_at: null, jurisdiction_code: null };
   mocks.selected = [];
   mocks.sessionReads = 0;
+  mocks.answers = [];
 });
 
 describe("the first-sign-in jurisdiction gate (G5.1a)", () => {
@@ -90,6 +100,128 @@ describe("the first-sign-in jurisdiction gate (G5.1a)", () => {
   it("reads the declaration in the same profile query as the deletion notice", async () => {
     await visit("/overview");
     expect(mocks.selected).toEqual(["deletion_requested_at, jurisdiction_code"]);
+  });
+});
+
+/**
+ * Owner decision 2026-11-19, "A brief failure of the sign-in service is not
+ * treated as signed out" (D-142). A temporary answer is asked once more; if it
+ * is temporary again, a protected page is rewritten to the route that throws
+ * into the root error boundary (at the URL asked for) and an endpoint gets the
+ * shared JSON 503. A real "no session" is answered exactly as before.
+ */
+describe("a sign-in check that fails for a moment (D-142)", () => {
+  const temporary = () => ({ error: new AuthRetryableFetchError("fetch failed", 0) });
+  const MARKER = `x-middleware-request-${AUTH_UNAVAILABLE_HEADER}`;
+  const sessionCookie = "sb-127-auth-token";
+  const strict = (response: Response, referrer = "same-origin") => {
+    for (const [name, value] of Object.entries(SENSITIVE_RESPONSE_HEADERS)) {
+      expect(response.headers.get(name), name).toBe(name === "Referrer-Policy" ? referrer : value);
+    }
+  };
+
+  it.each(["/overview", "/family/portrait/pair", "/genome/me/reports", "/settings"])(
+    "rewrites %s to the error surface after asking twice: no sign-in, no account read", async (path) => {
+      mocks.answers = [temporary(), temporary()];
+      const response = await visit(path);
+      expect(mocks.sessionReads).toBe(2);
+      expect(response.headers.get("location")).toBeNull();
+      expect(response.status).toBe(200);
+      expect(response.headers.get("x-middleware-rewrite")).toBe(`https://inherit.bio${AUTH_UNAVAILABLE_PATH}`);
+      expect(response.headers.get(MARKER), "only the proxy's own rewrite carries the marker").toBe("1");
+      expect(mocks.selected, "no profile is read for an unconfirmed session").toEqual([]);
+      strict(response);
+    },
+  );
+
+  it("answers an endpoint with the shared JSON 503, revealing nothing, with the route's own referrer policy", async () => {
+    mocks.answers = [temporary(), temporary()];
+    const response = await visit("/api/search");
+    expect(response.status).toBe(503);
+    expect(await response.json()).toEqual({ error: "unavailable" });
+    expect(response.headers.get("location")).toBeNull();
+    expect(response.headers.get("x-middleware-rewrite")).toBeNull();
+    expect(mocks.selected).toEqual([]);
+    strict(response);
+    mocks.answers = [temporary(), temporary()];
+    const bound = await visit("/api/export");
+    expect(bound.status).toBe(503);
+    strict(bound, "no-referrer");
+  });
+
+  it("lets the request through as signed in when the second answer confirms the user", async () => {
+    mocks.profile = { deletion_requested_at: null, jurisdiction_code: "GB" };
+    mocks.answers = [temporary(), {}];
+    const response = await visit("/overview");
+    expect(mocks.sessionReads).toBe(2);
+    expect(response.status).toBe(200);
+    expect(response.headers.get("location")).toBeNull();
+    expect(response.headers.get("x-middleware-rewrite")).toBeNull();
+    expect(mocks.selected).toEqual(["deletion_requested_at, jurisdiction_code"]);
+  });
+
+  it("still applies the account's own checks after a recovered answer", async () => {
+    mocks.answers = [temporary(), {}];
+    expect(location(await visit("/overview"))).toBe(`/settings?next=${encodeURIComponent("/overview")}`);
+  });
+
+  it("sends a person with no session to sign-in exactly as before, asking once", async () => {
+    mocks.user = null;
+    mocks.answers = [{ error: new AuthSessionMissingError() }];
+    const response = await visit("/family/portrait/pair");
+    expect(mocks.sessionReads).toBe(1);
+    expect(response.status).toBe(307);
+    expect(location(response)).toBe(`/auth/sign-in?next=${encodeURIComponent("/family/portrait/pair")}`);
+    strict(response);
+  });
+
+  it("takes a no-session second answer as no session: sign-in, as before", async () => {
+    mocks.user = null;
+    mocks.answers = [temporary(), { error: new AuthSessionMissingError() }];
+    expect(location(await visit("/overview"))).toBe(`/auth/sign-in?next=${encodeURIComponent("/overview")}`);
+    expect(mocks.sessionReads).toBe(2);
+  });
+
+  it("forwards no cookie removal on a temporary answer, but keeps refreshed tokens", async () => {
+    const removal = { name: sessionCookie, value: "", options: { path: "/", maxAge: 0, sameSite: "lax", httpOnly: false } };
+    const refreshed = { name: sessionCookie, value: "base64-rotated", options: { path: "/", maxAge: 34560000, sameSite: "lax", httpOnly: false } };
+    for (const path of ["/overview", "/api/search"]) {
+      mocks.answers = [{ ...temporary(), writes: [removal] }, temporary()];
+      const cleared = await visit(path);
+      expect(cleared.headers.getSetCookie(), path).toEqual([]);
+      mocks.answers = [{ ...temporary(), writes: [refreshed] }, temporary()];
+      const rotated = await visit(path);
+      expect(rotated.headers.getSetCookie(), path).toEqual([expect.stringMatching(/^sb-127-auth-token=base64-rotated;/)]);
+      expect(rotated.headers.getSetCookie().join(), path).not.toMatch(/Max-Age=0/i);
+    }
+  });
+
+  it("leaves a public page as it was: nothing there depends on the answer", async () => {
+    mocks.answers = [temporary(), temporary()];
+    const response = await visit("/about");
+    expect(response.status).toBe(200);
+    expect(response.headers.get("location")).toBeNull();
+    expect(response.headers.get("x-middleware-rewrite")).toBeNull();
+  });
+
+  it("stops waiting when the browser has gone, without asking again", async () => {
+    const controller = new AbortController();
+    controller.abort();
+    mocks.answers = [temporary(), {}];
+    const response = await proxy(new NextRequest("https://inherit.bio/overview", { signal: controller.signal }));
+    expect(mocks.sessionReads).toBe(1);
+    expect(response.headers.get("x-middleware-rewrite")).toBe(`https://inherit.bio${AUTH_UNAVAILABLE_PATH}`);
+  });
+
+  it("strips the marker from a request that names the error route itself, and reads no session", async () => {
+    const response = await proxy(new NextRequest(`https://inherit.bio${AUTH_UNAVAILABLE_PATH}`, {
+      headers: { [AUTH_UNAVAILABLE_HEADER]: "1" },
+    }));
+    expect(mocks.sessionReads).toBe(0);
+    expect(response.headers.get(MARKER)).toBeNull();
+    expect(response.headers.get("x-middleware-override-headers") ?? "").not.toContain(AUTH_UNAVAILABLE_HEADER);
+    expect(response.headers.get("x-middleware-rewrite")).toBeNull();
+    strict(response);
   });
 });
 

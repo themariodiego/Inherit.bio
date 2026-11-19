@@ -13,6 +13,7 @@ import { modelRuntime } from "@/lib/copilot/model-endpoint";
 import { prepareOwnCopilotChat } from "@/lib/copilot/own-chat";
 import { copilotSubjectScope } from "@/lib/copilot/subject-scope";
 import { resolveSubjectForAccount } from "@/lib/subjects";
+import { userForPage } from "@/lib/supabase/auth-check";
 import { createClient } from "@/lib/supabase/server";
 import { route } from "@/lib/primary-routes";
 
@@ -29,9 +30,7 @@ export default async function ChatPage(
 ) {
   const { scope } = await props.params;
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await userForPage(supabase.auth);
   if (!user) notFound();
   // copilot-route-scope-v1: the fixed literals first, then one prefix per
   // kind; anything else is the same non-enumerating 404.

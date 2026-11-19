@@ -4,6 +4,7 @@ import type { User } from "@supabase/supabase-js";
 import { NAV_LABELS } from "@/copy/navigation";
 import { route } from "@/lib/primary-routes";
 import { resolveSubjectForAccount, type SubjectSummary } from "@/lib/subjects";
+import { userForPage } from "@/lib/supabase/auth-check";
 import { createClient } from "@/lib/supabase/server";
 import type { CapabilityDecision } from "./access";
 import { familyCapability, liveGrantsToViewer, permits } from "./access";
@@ -66,9 +67,9 @@ export async function resolveSubjectRoute(
   options: SubjectRouteOptions = {},
 ): Promise<SubjectRouteResult> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // No session is not-found, as before; a sign-in check that failed for a
+  // moment twice throws to the page's error boundary instead.
+  const user = await userForPage(supabase.auth);
   if (!user) return { kind: "not-found" };
 
   const own = await resolveSubjectForAccount(user.id, segment);

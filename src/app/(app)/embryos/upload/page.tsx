@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { EmbryoUnavailable } from "@/components/embryo/states";
 import { UploadFlow } from "@/components/embryo/upload/upload-flow";
 import { UploadStage } from "@/components/embryo/upload/upload-stage";
-import { getSensitiveAccountContext } from "@/lib/account-deletion";
+import { getPageAccountContext } from "@/lib/page-account-context";
 import { Breadcrumbs } from "@/components/site/breadcrumbs";
 import { EMBRYOS_H1 } from "@/copy/embryos/index";
 import { BACK_TO_EMBRYOS_LINK } from "@/copy/embryos/request-data";
@@ -28,7 +28,7 @@ export default async function EmbryoUploadPage() {
   if (!viewer) redirect("/auth/sign-in");
   const { decision } = viewer;
   const built = permits(decision) && embryoIngestBuilt();
-  const account = built ? await getSensitiveAccountContext() : null;
+  const account = built ? await getPageAccountContext() : null;
   if (built && (!account || account.user.id !== viewer.user.id)) redirect("/auth/sign-in");
   const view = built && account ? await loadUploadStage({ accountId: account.user.id, sessionId: account.sessionId }) : null;
 

@@ -8,6 +8,7 @@ import { NAV_LABELS } from "@/copy/navigation";
 import { accountCapability, permits } from "@/lib/family/access";
 import { pageOperationNonce } from "@/lib/person-operation-nonce";
 import { route } from "@/lib/primary-routes";
+import { userForPage } from "@/lib/supabase/auth-check";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = { title: INVITE_H1 };
@@ -33,9 +34,7 @@ function unbreakable(text: string, word: string): React.ReactNode[] {
 
 export default async function FamilyInvitePage() {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await userForPage(supabase.auth);
   if (!user) redirect("/auth/sign-in");
 
   const decision = await accountCapability(user.id, "third_party_adult_analysis");

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { getSensitiveAccountContext } from "@/lib/account-deletion";
+import { getPageAccountContext } from "@/lib/page-account-context";
 import { futurePersonClaimsOpen } from "@/lib/future-person/claims-open";
 import { isCanonicalId, reviewCaseBody } from "@/lib/future-person/review";
 import { keylessCurrentReview } from "@/lib/future-person/keyless-release";
@@ -17,7 +17,7 @@ export default async function ClaimReviewPage({params,searchParams}:{
 }) {
   const {id}=await params;
   if(!futurePersonClaimsOpen()||!isCanonicalId(id)||Object.keys(await searchParams).length>0)notFound();
-  const account=await getSensitiveAccountContext();
+  const account=await getPageAccountContext();
   if(!account)notFound();
   const ownJwt=await createClient();
   const {data,error}=await ownJwt.rpc("read_claim_review_case_v1",{p_review_id:id});

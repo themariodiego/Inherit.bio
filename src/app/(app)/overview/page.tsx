@@ -54,6 +54,7 @@ import { loadOwnOverviewReports } from "@/components/overview/own-report-summary
 import { route } from "@/lib/primary-routes";
 import { listSubjectsForAccount, resolveSubjectForAccount } from "@/lib/subjects";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { userForPage } from "@/lib/supabase/auth-check";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = { title: "Overview" };
@@ -100,9 +101,7 @@ function boxDomId(id: string): string {
 
 export default async function OverviewPage() {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await userForPage(supabase.auth);
   if (!user) redirect("/auth/sign-in");
 
   const admin = createAdminClient();
