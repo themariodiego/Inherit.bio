@@ -5656,3 +5656,78 @@ What that answer sanctions, as the option was worded:
   rewrites it. Engineering brings the owner the register change and the consent
   wording as that separate decision, and counsel should review it first.
   Until then the hosted site keeps its "not available here" page.
+
+## 2026-11-19 — G8.5: where the register is stricter, engineering codes to it
+
+Owner decision (clickable chat answer, "Yes, code to the register"). Asked:
+several small differences remain where the code answers differently from the
+signed register and the register's version is the stricter or more private
+one; the examples given were ten endpoints that send a looser referrer policy
+than the register names, the embryo upload answering a foreign website with
+"refused" where the register says "not found", and deleting one file without
+the one-time confirmation the register requires for deletions. May engineering
+change the code to match the register in cases like these without asking each
+time? Offered: "Yes, code to the register", "Ask me each time". Chosen: "Yes,
+code to the register".
+
+The rule, as the option was worded: where the register is stricter or more
+private and no wording a person reads changes, engineering changes the code,
+records it in the ledgers and tells the owner afterwards. Anything that
+loosens a rule, changes wording, or changes what a person can do still comes
+to the owner. Some of these need a database migration and ship in a later
+guarded release. This rule does not let engineering edit the register.
+
+## 2026-11-19 — G8.5: route-specific error answers are registered as they ship
+
+Owner decision (clickable chat answer, "List them in the register"). Asked: a
+few routes give specific error answers that the register does not list, for
+example "this file is still processing" on file delete, "region too large" in
+the genome browser, and "service unavailable" on several routes; they tell the
+calling page what went wrong. Should the register list them, or should the
+code stop giving them? Offered: "List them in the register", "Remove them from
+the code". Chosen: "List them in the register".
+
+The register is amended to list each such answer as it ships, the way the
+harmless extras were registered on 23 October. No code change. Sign-in and
+wrong-origin refusals are not part of this; they follow the rule in the entry
+above.
+
+## 2026-11-19 — G8.5: the register names where each kind of consent is withdrawn
+
+Owner decision (clickable chat answer, "Register where each is withdrawn").
+Asked: the register describes one "withdraw consent" address that handles
+eleven kinds of permission; in the code that address withdraws two kinds
+(purpose grants and cloud AI permission), other kinds are withdrawn elsewhere,
+for example by deleting the record, restricting an embryo cohort or stopping
+family sharing, and one kind (donor attribution) cannot be given yet at all.
+Which should stand? Offered: "Register where each is withdrawn", "One address
+for all kinds", "Leave it open". Chosen: "Register where each is withdrawn".
+
+The register is amended to name, for each kind, the route that withdraws it
+today. No code change now. Before the amendment engineering traces every kind,
+and any kind that turns out to have no way to be withdrawn comes back to the
+owner; the amendment does not paper over it.
+
+## 2026-11-19 — G5.6: production exports are kept on Cloudflare R2
+
+Owner decision (clickable chat answer, "Cloudflare R2"). Asked: when a person
+asks for an export of their data, the finished archive must be kept somewhere
+until they download it; on 3 October the owner approved the private Cloudflare
+R2 store for the test flow, and that is the pipeline that was built and
+tested; production has no store chosen, so export requests there answer
+"unavailable". Which store should production use? Offered: "Cloudflare R2",
+"Supabase storage", "Keep exports off for now". Chosen: "Cloudflare R2".
+
+This answers "the export provider remains an unanswered owner choice"
+(`docs/account-archive-orchestration.md`). What it does and does not do:
+- It chooses the store. It does not switch exports on:
+  `approvedAccountArchiveGeneration()` stays closed until the production
+  composition is built and qualified, the deferred export classes and the
+  asynchronous delivery contract are done, and the guarded releases have run.
+- The owner creates the production bucket and its credentials. The question
+  said this is new spending. The repository's notes quote about US$0.015 per
+  GB per month for storage with free downloads
+  (`docs/resumable-originals-options.md`); the session did not verify current
+  prices, and no spending cap was set by this answer.
+- The 3 October conditions still hold for production: deletion is proved by
+  actual provider operations, and retained version history is not assumed.
