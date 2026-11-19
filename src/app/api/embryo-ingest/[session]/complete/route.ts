@@ -1,6 +1,6 @@
 import { getSensitiveAccountContext } from "@/lib/account-deletion";
 import { invalidRequest, notFound, unavailable } from "@/lib/embryos/api";
-import { accountJurisdictionDenied, csrfOperation, requestForbidden, unauthorized } from "@/lib/embryos/guards";
+import { accountJurisdictionDenied, csrfOperation, requestForbidden, unauthenticated } from "@/lib/embryos/guards";
 import { completeAccepted, completeResult, incompleteUpload, readCompleteBody, sha256Hex } from "@/lib/embryos/ingest-complete";
 import { dispatchIngestAttemptFailure } from "@/lib/embryos/ingest-failure";
 import { authorizeIngestHttpRequest } from "@/lib/embryos/ingest-http";
@@ -40,7 +40,7 @@ const withNoReferrer = (response: Response): Response => {
 export async function POST(request: Request, context: { params: Promise<{ session: string }> }) {
   const { session } = await context.params;
   const account = await getSensitiveAccountContext();
-  if (!account) return withNoReferrer(unauthorized());
+  if (!account) return withNoReferrer(unauthenticated());
   const refused = await accountJurisdictionDenied(account.user.id);
   if (refused) return withNoReferrer(refused);
   const authorization = await authorizeIngestHttpRequest(

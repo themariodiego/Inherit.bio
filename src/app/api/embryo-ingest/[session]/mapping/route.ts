@@ -1,6 +1,6 @@
 import { getSensitiveAccountContext } from "@/lib/account-deletion";
 import { invalidRequest, notFound, unavailable } from "@/lib/embryos/api";
-import { accountJurisdictionDenied, unauthorized } from "@/lib/embryos/guards";
+import { accountJurisdictionDenied, unauthenticated } from "@/lib/embryos/guards";
 import { newTransportChallenge, withNoReferrer } from "@/lib/embryos/ingest-configure";
 import { dispatchIngestAttemptFailure } from "@/lib/embryos/ingest-failure";
 import { authorizeIngestHttpRequest, type IngestAuthorization, type IngestAuthorizationArgs } from "@/lib/embryos/ingest-http";
@@ -58,7 +58,7 @@ async function authorize(request: Request, session: string): Promise<
   { kind: "answer"; response: Response } | { kind: "authorized"; authority: Authorized; credentials: IngestAuthorizationArgs }
 > {
   const account = await getSensitiveAccountContext();
-  if (!account) return { kind: "answer", response: withNoReferrer(unauthorized()) };
+  if (!account) return { kind: "answer", response: withNoReferrer(unauthenticated()) };
   // The register's route-scope `embryo_analysis` guard, in this file so the
   // surface shows its own check (scripts/jurisdiction-enforcement.test.ts).
   const refused = await accountJurisdictionDenied(account.user.id);

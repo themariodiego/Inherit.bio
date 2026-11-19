@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { csrfHandle } from "@/lib/security/session-csrf-client";
 import { deleteFileUntilSettled } from "./file-delete-browser";
+import { fileDeletionError } from "@/copy/upload/file-deletion";
 // api.file-delete's rendered one-time X-Inherit-CSRF token (G8.5), and the successors each answer issues.
 const CSRF = `1800000000000.${"D".repeat(43)}.${"3".repeat(64)}`;
 const csrf = () => csrfHandle(CSRF);
@@ -38,9 +39,21 @@ describe("file deletion progress", () => {
     Response.json({ error: "file_delete_failed" }, { status: 202 })])("does not infer success or retry malformed receipts", async response => {
     vi.mocked(fetch).mockResolvedValue(response); expect((await deleteFileUntilSettled(id, new AbortController().signal, csrf())).status).toBe("failed"); expect(fetch).toHaveBeenCalledTimes(1);
   });
-  it("returns an authorization refusal without another request", async () => {
-    vi.mocked(fetch).mockResolvedValue(Response.json({ error: "file_delete_unauthorized" }, { status: 401 }));
-    expect(await deleteFileUntilSettled(id, new AbortController().signal, csrf())).toEqual({ status: "failed", code: "file_delete_unauthorized" }); expect(fetch).toHaveBeenCalledTimes(1);
+  // The route's sign-in and not-found refusals are the register's generic
+  // bodies (G8.5, 19 November 2026); a person reads the sentence the route's
+  // own bodies gave (file_delete_unauthorized, file_delete_not_found).
+  it.each([
+    [401, "unauthenticated", "Please sign in again and try Delete."],
+    [404, "not_found", "This file is not available. Please check your files again."],
+    [403, "file_delete_unauthorized", "Please sign in again and try Delete."],
+  ] as const)("returns a %i %s refusal without another request, worded as before", async (status, error, sentence) => {
+    vi.mocked(fetch).mockResolvedValue(Response.json({ error }, { status }));
+    const result = await deleteFileUntilSettled(id, new AbortController().signal, csrf());
+    expect(result).toEqual({ status: "failed", code: error }); expect(fetch).toHaveBeenCalledTimes(1);
+    expect(fileDeletionError(result.status === "failed" ? result.code : null)).toBe(sentence);
+  });
+  it("words the CSRF wrapper's refusal as an unfinished deletion, as before", () => {
+    expect(fileDeletionError("request_forbidden")).toBe(fileDeletionError(null));
   });
   it("refuses a changed-path identifier before any request", async () => {
     expect((await deleteFileUntilSettled("../other", new AbortController().signal, csrf())).status).toBe("failed"); expect(fetch).not.toHaveBeenCalled();

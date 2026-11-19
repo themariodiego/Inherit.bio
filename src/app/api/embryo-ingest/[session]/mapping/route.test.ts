@@ -119,15 +119,19 @@ beforeEach(() => {
 });
 
 describe("authority before anything is read, on both methods", () => {
-  it.each([["POST", inspect, header()], ["PUT", decide, columns()]] as const)("%s refuses a request with no account", async (_method, send, body) => {
+  it.each([["POST", inspect, header()], ["PUT", decide, columns()]] as const)("%s refuses a request with no account with the JSON 401", async (_method, send, body) => {
     mocks.account = null;
-    expect((await send(body)).status).toBe(401);
+    const response = await send(body);
+    expect(response.status).toBe(401);
+    expect(await response.json()).toEqual({ error: "unauthenticated" });
     expect(mocks.calls).toEqual([]);
   });
 
-  it.each([["POST", inspect, header()], ["PUT", decide, columns()]] as const)("%s refuses a cross-site request", async (_method, send, body) => {
+  it.each([["POST", inspect, header()], ["PUT", decide, columns()]] as const)("%s answers a cross-site request with the opaque 404", async (_method, send, body) => {
     for (const headers of [{ "sec-fetch-site": "cross-site" }, { origin: "https://elsewhere.example" }] as Record<string, string>[]) {
-      expect((await send(body, headers)).status).toBe(403);
+      const response = await send(body, headers);
+      expect(response.status).toBe(404);
+      expect(await response.json()).toEqual({ error: "not_found" });
     }
     expect(mocks.calls).toEqual([]);
   });

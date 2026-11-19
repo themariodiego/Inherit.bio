@@ -12,11 +12,15 @@ const failure = (error: string, status: number) => Response.json({ error }, { st
 
 export const DELETE = withAccountCsrf("api.file-delete", handleDelete);
 async function handleDelete(request: Request, context: { params: Promise<{ id: string }> }) {
+  // The cross-origin refusal keeps its own body: the register's
+  // `request_forbidden` is also the CSRF wrapper's refusal, which the Files page
+  // words differently, so moving this one would change what a person reads.
   if (!isSameOrigin(request)) return failure("file_delete_unauthorized", 403);
   const { id } = await context.params;
-  if (!z.string().uuid().safeParse(id).success) return failure("file_delete_not_found", 404);
+  // `resource-not-found-v1` and `authenticated-api-v1.unauthenticated`.
+  if (!z.string().uuid().safeParse(id).success) return failure("not_found", 404);
   const account = await getSensitiveAccountContext();
-  if (!account) return failure("file_delete_unauthorized", 401);
+  if (!account) return failure("unauthenticated", 401);
   const admin = createAdminClient();
   const args = { p_account_id: account.user.id, p_session_id: account.sessionId, p_file_id: id };
   try {
@@ -24,8 +28,9 @@ async function handleDelete(request: Request, context: { params: Promise<{ id: s
     if (prepared.error) {
       const message = typeof prepared.error === "object" && "message" in prepared.error && typeof prepared.error.message === "string"
         ? prepared.error.message : "file_delete_failed";
-      if (message.includes("file_delete_not_found")) return failure("file_delete_not_found", 404);
-      if (message.includes("file_delete_unauthorized")) return failure("file_delete_unauthorized", 401);
+      if (message.includes("file_delete_not_found")) return failure("not_found", 404);
+      // The database refuses an auth session that is no longer live.
+      if (message.includes("file_delete_unauthorized")) return failure("unauthenticated", 401);
       if (message.includes("file_delete_processing")) return failure("file_delete_processing", 409);
       if (message.includes("file_delete_shared_graph") || message.includes("file_delete_subject_unavailable")) {
         return failure("file_delete_subject_unavailable", 409);

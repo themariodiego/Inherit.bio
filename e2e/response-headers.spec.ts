@@ -19,8 +19,8 @@ const REQUIRED: Record<string, string> = {
   "x-frame-options": "DENY",
 };
 
-function expectSensitiveHeaders(headers: Record<string, string>, label: string) {
-  for (const [name, value] of Object.entries(REQUIRED)) {
+function expectSensitiveHeaders(headers: Record<string, string>, label: string, overrides: Record<string, string> = {}) {
+  for (const [name, value] of Object.entries({ ...REQUIRED, ...overrides })) {
     expect(headers[name], `${label}: ${name}`).toBe(value);
   }
 }
@@ -50,8 +50,10 @@ test("signed-in product pages and API responses carry the sensitive header set",
     expectSensitiveHeaders(res.headers(), path);
   }
   const api = await page.request.get("/api/export", { maxRedirects: 0 });
-  // Whatever the export endpoint answers, its headers are the sensitive set.
-  expectSensitiveHeaders(api.headers(), "/api/export");
+  // Whatever the export endpoint answers, its headers are the sensitive set,
+  // with the no-referrer of `sensitiveResponseHeaderBindings.downloadOrExport`
+  // (D-138 (a)): the proxy sets it, and Next keeps the proxy's header.
+  expectSensitiveHeaders(api.headers(), "/api/export", { "referrer-policy": "no-referrer" });
 });
 
 test("public marketing pages are not forced into the no-store profile", async ({ page }) => {

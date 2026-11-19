@@ -52,6 +52,28 @@ describe("owner-authorized file deletion", () => {
     expect((await call()).status).toBe(401);
     expect(mocks.rpc).not.toHaveBeenCalled();
   });
+  it("answers no session with authenticated-api-v1's JSON 401 and an unreadable file with resource-not-found-v1", async () => {
+    mocks.context.mockResolvedValue(null);
+    const signedOut = await call();
+    expect([signedOut.status, await signedOut.json()]).toEqual([401, { error: "unauthenticated" }]);
+    mocks.context.mockResolvedValue({ user: { id: "owner" }, sessionId: "session" });
+    const malformed = await DELETE(new Request("http://localhost/api/files/not-a-file", { method: "DELETE", headers: { origin: "http://localhost" } }),
+      { params: Promise.resolve({ id: "not-a-file" }) });
+    expect([malformed.status, await malformed.json()]).toEqual([404, { error: "not_found" }]);
+    expect(mocks.rpc).not.toHaveBeenCalled();
+    // The database's own refusals: no such file of this account, and an auth session no longer live.
+    for (const [message, status, error] of [["file_delete_not_found", 404, "not_found"], ["file_delete_unauthorized", 401, "unauthenticated"]] as const) {
+      mocks.rpc.mockResolvedValueOnce({ data: null, error: { message } });
+      const refused = await call();
+      expect([refused.status, await refused.json()]).toEqual([status, { error }]);
+      expect(refused.headers.get("cache-control")).toBe("private, no-store");
+    }
+    expect(mocks.remove).not.toHaveBeenCalled();
+  });
+  it("keeps the route's own body on a cross-origin refusal, which the Files page words apart from the CSRF refusal", async () => {
+    const response = await call("https://example.invalid");
+    expect([response.status, await response.json()]).toEqual([403, { error: "file_delete_unauthorized" }]);
+  });
   it.each(["file_delete_not_found", "file_delete_processing", "file_delete_subject_unavailable", "file_delete_shared_graph"])("does not touch Storage on %s", async (message) => {
     mocks.rpc.mockResolvedValue({ data: null, error: { message } });
     const response = await call();

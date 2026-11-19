@@ -35,6 +35,12 @@ import { withAccountCsrf } from "@/lib/security/session-csrf";
  * /settings/copilot rendered before its unchanged writer runs
  * (20261025200000_consent_revoke_provider_nonce.sql).
  */
+const NO_STORE = { "Cache-Control": "private, no-store" };
+/** `authenticated-api-v1.unauthenticated`. */
+const unauthenticated = () => NextResponse.json({ error: "unauthenticated" }, { status: 401, headers: NO_STORE });
+/** `resource-not-found-v1`. */
+const notFound = () => NextResponse.json({ error: "not_found" }, { status: 404, headers: NO_STORE });
+
 export const POST = withAccountCsrf("api.consent-revoke", handlePost);
 async function handlePost(
   request: Request,
@@ -48,7 +54,7 @@ async function handlePost(
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return new Response("Unauthorized", { status: 401 });
+  if (!user) return unauthenticated();
 
   const admin = createAdminClient();
   const [{ data: purposeGrant }, { data: cloudGrant }] = await Promise.all([
@@ -58,7 +64,7 @@ async function handlePost(
   // One id, one consent kind: an id that names both, or neither, is refused
   // rather than resolved by order.
   if (Boolean(purposeGrant) === Boolean(cloudGrant)) {
-    return new Response("Not found", { status: 404 });
+    return notFound();
   }
 
   if (purposeGrant && "copilot_recipient_revision" in purposeGrant && purposeGrant.copilot_recipient_revision != null
@@ -68,7 +74,7 @@ async function handlePost(
 
   if (purposeGrant) {
     const account = await getSensitiveAccountContext();
-    if (!account || account.user.id !== user.id) return new Response("Unauthorized", { status: 401 });
+    if (!account || account.user.id !== user.id) return unauthenticated();
     const nonce = personOperationNonceFrom(request, { accountId: user.id, sessionId: account.sessionId,
       operation: "consent_revoke", targetId: id });
     if (!nonce) return NextResponse.json({ error: "invalid_request" }, { status: 400 });
@@ -79,7 +85,7 @@ async function handlePost(
       ...personOperationNonceArgs(nonce),
     });
     if (isOperationNonceRefusal(error)) return NextResponse.json({ error: "invalid_request" }, { status: 400 });
-    if (error || !revokedAt) return new Response("Not found", { status: 404 });
+    if (error || !revokedAt) return notFound();
     return NextResponse.json(
       { revoked: true, effectiveAt: new Date(revokedAt).toISOString() },
       { headers: { "Cache-Control": "private, no-store" } },
@@ -87,7 +93,7 @@ async function handlePost(
   }
 
   const account = await getSensitiveAccountContext();
-  if (!account || account.user.id !== user.id) return new Response("Unauthorized", { status: 401 });
+  if (!account || account.user.id !== user.id) return unauthenticated();
   const nonce = personOperationNonceFrom(request, { accountId: user.id, sessionId: account.sessionId,
     operation: "consent_revoke", targetId: id });
   if (!nonce) return NextResponse.json({ error: "invalid_request" }, { status: 400 });
@@ -99,6 +105,6 @@ async function handlePost(
   });
   if (isOperationNonceRefusal(error)) return NextResponse.json({ error: "invalid_request" }, { status: 400 });
   if (error) return NextResponse.json({ error: "consent_unavailable" }, { status: 503 });
-  if (!revoked) return new Response("Not found", { status: 404 });
+  if (!revoked) return notFound();
   return NextResponse.json({ revoked: true });
 }

@@ -55,13 +55,16 @@ function response(body: unknown, status: number) {
 
 export const POST = withAccountCsrf("api.browse-region", handlePost);
 async function handlePost(request: Request) {
+  // The register's generic refusals: `authenticated-mutation-v1.failure` for a
+  // request from anywhere but this origin, `authenticated-api-v1.unauthenticated`
+  // for one with no session.
   if (request.headers.get("origin") !== new URL(request.url).origin
     || request.headers.get("sec-fetch-site") !== "same-origin") {
-    return response({ error: "forbidden" }, 403);
+    return response({ error: "request_forbidden" }, 403);
   }
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return response({ error: "unauthorized" }, 401);
+  if (!user) return response({ error: "unauthenticated" }, 401);
 
   const parsed = regionRequest.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return response({ error: "invalid_request" }, 422);

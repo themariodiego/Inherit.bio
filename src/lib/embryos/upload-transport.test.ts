@@ -148,6 +148,24 @@ describe("sendEmbryoFile", () => {
     expect(refused.log.filter((entry) => entry.url.endsWith("/complete"))).toEqual([]);
   });
 
+  it("reads the register's upload-session refusals as the same closed word as the answers they replaced", async () => {
+    // A request with no live account now gets authenticated-api-v1's JSON 401
+    // (was plain-text 401) and a foreign origin upload-session-api-v1's JSON
+    // 404 (was 403 request_forbidden). Each is "refused", so the person sees
+    // the same sentence after every one, on every step.
+    const answers = [() => new Response("Unauthorized", { status: 401 }), () => Response.json({ error: "request_forbidden" }, { status: 403 }),
+      () => Response.json({ error: "unauthenticated" }, { status: 401 }), () => Response.json({ error: "not_found" }, { status: 404 })];
+    for (const answer of answers) {
+      for (const step of ["/configure", "/chunks/0", "/complete"]) {
+        const fake = server();
+        const refusing = (async (url: string | URL | Request, init?: RequestInit) =>
+          new URL(String(url), "https://inherit.example").pathname.endsWith(step) ? answer() : fake.fetch(url, init)) as typeof fetch;
+        await expect(sendEmbryoFile({ file: new Blob([PAIR]), session: fake.session, fetch: refusing }), step)
+          .rejects.toMatchObject({ failure: "refused", spent: true });
+      }
+    }
+  });
+
   it("refuses a PDF in this browser, and sends nothing", async () => {
     const fake = server();
     await expect(sendEmbryoFile({ file: new Blob(["%PDF-1.7 synthetic"]), session: fake.session, fetch: fake.fetch }))

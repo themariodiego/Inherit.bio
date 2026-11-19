@@ -103,13 +103,15 @@ export async function prepareOwnCopilotPermission(): Promise<OwnCopilotPermissio
  * for this account, session and grant (G8.5, 24 October 2026), which
  * `revoke_own_copilot_with_nonce_v1` records before the unchanged writer
  * revokes, so a replay writes nothing. A missing or foreign nonce is refused
- * as the directional case refuses it.
+ * as the directional case refuses it. Another origin and a missing account get
+ * the register's generic answers, `authenticated-mutation-v1`'s 403
+ * `request_forbidden` and `authenticated-api-v1`'s 401 `unauthenticated`.
  */
 export async function revokeOwnCopilotConsent(request: Request, grantId: string, subjectId: string) {
-  if (!sameOriginCopilot(request)) return ownUploadJson({ error: "forbidden" }, 403);
+  if (!sameOriginCopilot(request)) return ownUploadJson({ error: "request_forbidden" }, 403);
   try {
     const actor = await currentOwnUploadAccount();
-    if (!actor) return ownUploadJson({ error: "unauthorized" }, 401);
+    if (!actor) return ownUploadJson({ error: "unauthenticated" }, 401);
     const nonce = personOperationNonceFrom(request, { accountId: actor.accountId, sessionId: actor.sessionId,
       operation: "consent_revoke", targetId: grantId });
     if (!nonce) return ownUploadJson({ error: "invalid_request" }, 400);

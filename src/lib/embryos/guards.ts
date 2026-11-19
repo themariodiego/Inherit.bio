@@ -24,6 +24,15 @@ export function unauthorized(): Response {
   return new Response("Unauthorized", { status: 401, headers: SENSITIVE_HEADERS });
 }
 
+/**
+ * `authenticated-api-v1.unauthenticated`: the register's JSON 401, with the
+ * sensitive headers. The upload-session routes answer a request with no live
+ * account with it (`authenticated-session-v1.failure.endpoint`).
+ */
+export function unauthenticated(): Response {
+  return sensitiveJson({ error: "unauthenticated" }, 401);
+}
+
 /** authenticated-mutation-v1 failure. */
 export function requestForbidden(): Response {
   return sensitiveJson({ error: "request_forbidden" }, 403);

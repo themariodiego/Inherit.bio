@@ -138,7 +138,7 @@ describe("documentary review response privacy", () => {
     expect(mocks.sessionReads).toBe(0);
   });
 
-  it.each(["/api/export", "/api/reviews/appeals-extra/12345678-1234-4234-8234-000000000002",
+  it.each(["/api/reviews/appeals-extra/12345678-1234-4234-8234-000000000002",
     "/api/reviews/future-person/claims-extra/12345678-1234-4234-8234-000000000002"])(
     "preserves the complete original sensitive header set outside the exact namespaces: %s", async path => {
       const response = await visit(path);
@@ -146,6 +146,14 @@ describe("documentary review response privacy", () => {
       for (const [name, value] of Object.entries(SENSITIVE_RESPONSE_HEADERS)) expect(response.headers.get(name)).toBe(value);
     },
   );
+
+  // Until D-138 (a) this path was in the list above with same-origin. The
+  // register binds api.export to downloadOrExport, whose Referrer-Policy is
+  // no-referrer; every other header of the original set stays.
+  it("gives /api/export no-referrer with every other header of the original set", async () => {
+    const response = await visit("/api/export");
+    expect(response.status).toBe(200); strict(response);
+  });
 });
 
 describe("places under a comprehensive US embargo", () => {
@@ -561,17 +569,91 @@ describe("register no-referrer endpoints keep the strict policy (sensitiveRespon
   });
 
   /**
-   * Every endpoint the register binds to a no-referrer profile is honoured,
-   * except these: their handlers answer with the same-origin of
-   * `sensitiveJson` themselves, so they are a separate, open discrepancy with
-   * the register (not a proxy override of a handler's no-referrer). A new
-   * binding the proxy does not honour fails here, and honouring one of these
-   * removes it from the list.
+   * D-138 (a): ten endpoints the register binds, for every response, to a
+   * no-referrer profile, whose own handlers answer with the same-origin of
+   * `sensitiveJson` and its kin. The proxy's header is the one the browser
+   * receives, so naming them in the proxy is the whole fix, as it was for
+   * D-137. `FILE` is the id the register-driven check below puts in `[id]`.
    */
-  const SAME_ORIGIN_HANDLERS = ["api.adult-subject-bind", "api.consent-grant-rights", "api.consent-reaffirm-rights",
-    "api.consent-revoke-rights", "api.embryo-record-key-cards-rights", "api.export", "api.file-download", "api.invitation-accept",
-    "api.rights-activate", "api.withdraw"];
-  it("honours every endpoint the register binds to a no-referrer profile, except the listed same-origin handlers", async () => {
+  const FILE = "12345678-1234-4234-8234-00000000000a";
+  const SAME_ORIGIN_HANDLER_ENDPOINTS: readonly (readonly [method: string, path: string])[] = [
+    ["POST", "/api/subjects/bind/session"], // api.adult-subject-bind
+    ["POST", "/api/consents/grant/session"], // api.consent-grant-rights
+    ["POST", "/api/consents/reaffirm/session"], // api.consent-reaffirm-rights
+    ["POST", "/api/consents/revoke/session"], // api.consent-revoke-rights
+    ["POST", "/api/rights/embryo-record-key-cards"], // api.embryo-record-key-cards-rights
+    ["POST", "/api/export"], // api.export
+    ["GET", "/api/export"],
+    ["GET", `/api/files/${FILE}/download`], // api.file-download
+    ["POST", "/api/invitations/accept"], // api.invitation-accept
+    ["POST", "/api/rights/activate"], // api.rights-activate
+    ["POST", "/api/withdraw/session"], // api.withdraw
+  ];
+
+  it.each(SAME_ORIGIN_HANDLER_ENDPOINTS)("%s %s keeps no-referrer with every other sensitive header, signed in or not (D-138 (a))",
+    async (method, path) => {
+      for (const user of [{ id: "12345678-1234-4234-8234-000000000001" }, null]) {
+        mocks.user = user;
+        const response = await call(method, path);
+        expect(response.status).toBe(200); strict(response);
+      }
+    });
+
+  // The seven that read the account on their way: the proxy's own refusals
+  // to an account in its deletion notice or with an embargoed declaration.
+  // api.export is a right and is never refused; api.rights-activate and
+  // api.withdraw read no account.
+  const ACCOUNT_READ = SAME_ORIGIN_HANDLER_ENDPOINTS.filter(([, path]) =>
+    path !== "/api/export" && path !== "/api/rights/activate" && path !== "/api/withdraw/session");
+  it.each(ACCOUNT_READ)("keeps no-referrer on the proxy's deletion-notice and declared-location refusals for %s %s (D-138 (a))",
+    async (method, path) => {
+      mocks.profile = { deletion_requested_at: "2026-09-25T00:00:00Z", jurisdiction_code: "GB" };
+      const held = await call(method, path);
+      expect(held.status).toBe(423);
+      expect(await held.json()).toEqual({ error: "account_deletion_notice_period" }); strict(held);
+      mocks.profile = { deletion_requested_at: null, jurisdiction_code: "IR" };
+      const declared = await call(method, path);
+      expect(declared.status).toBe(451);
+      expect(await declared.json()).toEqual({ error: "not_available_in_jurisdiction" }); strict(declared);
+    });
+
+  it("keeps no-referrer on the export a right keeps during the deletion notice (D-138 (a))", async () => {
+    mocks.profile = { deletion_requested_at: "2026-09-25T00:00:00Z", jurisdiction_code: "IR" };
+    for (const method of ["GET", "POST"]) {
+      const response = await call(method, "/api/export");
+      expect(response.status).toBe(200); strict(response);
+    }
+  });
+
+  it.each(SAME_ORIGIN_HANDLER_ENDPOINTS)("keeps no-referrer on a connection location refusal, before any session read, for %s %s (D-138 (a))",
+    async (method, path) => {
+      mocks.sessionReads = 0;
+      const located = await proxy(new NextRequest(`https://inherit.bio${path}`, { method, headers: { "x-vercel-ip-country": "IR" } }));
+      expect(located.status).toBe(451);
+      expect(await located.json()).toEqual({ error: "not_available_in_location" }); strict(located);
+      expect(mocks.sessionReads).toBe(0);
+    });
+
+  it.each(["/api/export/extra", "/api/exports", `/api/files/${FILE}`, `/api/files/${FILE}/download/extra`, `/api/files/${FILE}/process`,
+    "/api/files//download", `/api/files/parent/${FILE}/download`, "/api/consents/grant", "/api/consents/revoke", `/api/consents/${FILE}/revoke`,
+    "/api/consents/reaffirm", "/api/consents/revoke/session/extra", "/api/invitations", "/api/invitations/accept/extra", "/api/rights/activate/extra",
+    "/api/rights/embryo-record-key-cards/extra", `/api/embryo-cohorts/${FILE}/record-key-cards`, "/api/subjects/bind",
+    "/api/subjects/bind/session/extra", "/api/withdraw/sessions", "/api/withdraw/session/extra"])(
+    "leaves the original sensitive policy outside the exact D-138 (a) endpoint: %s", async path => {
+      for (const method of ["GET", "POST"]) {
+        const response = await call(method, path);
+        expect(response.status).toBe(200);
+        for (const [name, value] of Object.entries(SENSITIVE_RESPONSE_HEADERS)) expect(response.headers.get(name), `${method} ${name}`).toBe(value);
+      }
+    });
+
+  /**
+   * Every endpoint the register binds to a no-referrer profile is honoured on
+   * every registered method, with no exception. Until D-138 (a) the ten above
+   * were listed here as an exception; a new binding the proxy does not honour
+   * fails here.
+   */
+  it("honours every endpoint the register binds to a no-referrer profile, with no exception", async () => {
     type Route = { id: string; kind: string; path: string; methods?: string[]; parameterContract?: Record<string, { const?: string } | string> };
     const register = JSON.parse(readFileSync("docs/route-register.json", "utf8")) as {
       sensitiveResponseHeaders: Record<string, Record<string, string>>;
@@ -582,22 +664,23 @@ describe("register no-referrer endpoints keep the strict policy (sensitiveRespon
       .filter(([, headers]) => headers["Referrer-Policy"] === "no-referrer").map(([name]) => name);
     const bound = new Set(profiles.flatMap(name => register.sensitiveResponseHeaderBindings[name] as string[]));
     const endpoints = register.routes.filter(route => bound.has(route.id) && route.kind === "endpoint" && route.path.startsWith("/api/"));
-    const sameOrigin = new Set<string>(), honoured = new Set<string>();
+    const honoured = new Set<string>(), exercised = new Set<string>();
     for (const route of endpoints) {
       const path = route.path.replace(/\[([^\]]+)\]/g, (_all, name: string) => {
         const contract = route.parameterContract?.[name];
         return typeof contract === "object" && contract.const !== undefined ? contract.const
-          : name === "sequence" ? "0" : "12345678-1234-4234-8234-00000000000a";
+          : name === "sequence" ? "0" : FILE;
       });
       for (const method of route.methods ?? ["GET"]) {
         const policy = (await call(method, path)).headers.get("referrer-policy");
-        (policy === "no-referrer" ? honoured : sameOrigin).add(route.id);
-        if (policy !== "no-referrer") expect(policy, `${route.id} ${method} ${path}`).toBe("same-origin");
+        expect(policy, `${route.id} ${method} ${path}`).toBe("no-referrer");
+        honoured.add(route.id);
+        exercised.add(`${method} ${path}`);
       }
     }
-    expect([...sameOrigin].sort()).toEqual(SAME_ORIGIN_HANDLERS);
-    // Every endpoint fixed above is among the register's bindings, so this list is the register's, not a copy of it.
+    // Every endpoint fixed above is among the register's bindings, so these lists are the register's, not a copy of it.
     for (const [, path] of ENDPOINTS) expect(endpoints.some(route => path === route.path.replace("[token]", "session")), path).toBe(true);
-    expect(honoured.size + sameOrigin.size).toBe(endpoints.length);
+    for (const [method, path] of SAME_ORIGIN_HANDLER_ENDPOINTS) expect(exercised.has(`${method} ${path}`), `${method} ${path}`).toBe(true);
+    expect(honoured.size).toBe(endpoints.length);
   });
 });

@@ -97,10 +97,23 @@ beforeEach(() => {
 describe("authority", () => {
   it("refuses with no account or outside TEST-LOCAL, before the database", async () => {
     mocks.account = null;
-    expect((await call(post(body()))).status).toBe(401);
+    const signedOut = await call(post(body()));
+    expect(signedOut.status).toBe(401);
+    expect(await signedOut.json()).toEqual({ error: "unauthenticated" });
     mocks.account = { user: { id: ACCOUNT }, sessionId: AUTH_SESSION };
     vi.stubEnv("INHERIT_TEST_JURISDICTION", "");
     expect((await call(post(body()))).status).toBe(403);
+    expect(mocks.calls).toEqual([]);
+  });
+
+  it("answers a cross-site request or one without exact Origin with the opaque 404, before the database", async () => {
+    for (const headers of [{ "sec-fetch-site": "cross-site" }, { origin: "https://elsewhere.example" }] as Record<string, string>[]) {
+      const request = post(body(), headers);
+      const response = await call(request);
+      expect(response.status).toBe(404);
+      expect(await response.json()).toEqual({ error: "not_found" });
+      expect(request.bodyUsed).toBe(false);
+    }
     expect(mocks.calls).toEqual([]);
   });
 

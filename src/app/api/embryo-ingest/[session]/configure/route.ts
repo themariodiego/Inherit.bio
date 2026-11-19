@@ -1,6 +1,6 @@
 import { getSensitiveAccountContext } from "@/lib/account-deletion";
 import { invalidRequest, notFound, unavailable } from "@/lib/embryos/api";
-import { accountJurisdictionDenied, unauthorized } from "@/lib/embryos/guards";
+import { accountJurisdictionDenied, unauthenticated } from "@/lib/embryos/guards";
 import {
   configuredResponse,
   configureResult,
@@ -72,7 +72,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 export async function POST(request: Request, context: { params: Promise<{ session: string }> }) {
   const { session } = await context.params;
   const account = await getSensitiveAccountContext();
-  if (!account) return withNoReferrer(unauthorized());
+  if (!account) return withNoReferrer(unauthenticated());
   // The register's route-scope `embryo_analysis` guard, called in this file so
   // the surface shows its own check (scripts/jurisdiction-enforcement.test.ts).
   // `authorizeIngestHttpRequest` asks the same question again and gets the

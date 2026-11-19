@@ -5,7 +5,7 @@ import { EMBRYO_INGEST_SESSION_LIMITS as LIMITS, INGEST_CHUNK_MAXIMUM_BYTES } fr
 import { EmbryoTransportError } from "./ingest-lines";
 import { isIngestSessionId, readIngestCookieHash } from "./ingest-session";
 import { notFound, rpcErrorResponse, unavailable } from "./api";
-import { accountJurisdictionDenied, requestForbidden, unauthorized } from "./guards";
+import { accountJurisdictionDenied, unauthenticated } from "./guards";
 
 const uuid = z.string().refine(isIngestSessionId);
 const revision = z.number().int().positive().max(Number.MAX_SAFE_INTEGER);
@@ -48,6 +48,14 @@ type AuthorizationRpc = (args: IngestAuthorizationArgs) => Promise<{
  * This boundary neither reads bytes nor creates/reserves/extends a session.
  * A failure_pending outcome must be dispatched to unwind, not exposed as a
  * successful credential. Keeping it distinct prevents accidental fallthrough.
+ *
+ * The refusals are the register's: no live account is
+ * `authenticated-api-v1.unauthenticated` (JSON 401), the answer
+ * `authenticated-session-v1.failure.endpoint` names for every capability
+ * derived from a signed-in session; a foreign Origin or fetch metadata is
+ * `upload-session-api-v1.invalidExpiredCompletedWrongOriginOrWrongSession`,
+ * the same opaque JSON 404 as an unknown session, so a foreign site cannot
+ * tell that the route exists.
  */
 export async function authorizeIngestHttpRequest(
   request: Request, session: string,
@@ -57,9 +65,9 @@ export async function authorizeIngestHttpRequest(
 ): Promise<{ kind: "denied"; response: Response } | {
   kind: "authorized"; authority: Extract<IngestAuthorization, { status: "authorized" }>; credentials: IngestAuthorizationArgs;
 } | { kind: "failure_pending"; authority: Extract<IngestAuthorization, { status: "failure_pending" }> }> {
-  if (!account) return { kind: "denied", response: unauthorized() };
+  if (!account) return { kind: "denied", response: unauthenticated() };
   const origin = ingestRequestOrigin(request);
-  if (!origin) return { kind: "denied", response: requestForbidden() };
+  if (!origin) return { kind: "denied", response: notFound() };
   const jurisdiction = await accountJurisdictionDenied(account.accountId, "embryo_analysis", env);
   if (jurisdiction) return { kind: "denied", response: jurisdiction };
   if (!isIngestSessionId(session) || new URL(request.url).search !== "") return { kind: "denied", response: notFound() };

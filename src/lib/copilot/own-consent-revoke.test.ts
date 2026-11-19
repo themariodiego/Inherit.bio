@@ -73,6 +73,18 @@ describe("the own-Copilot withdrawal reads the page's nonce", () => {
     expect(await response.json()).toEqual({ error: "invalid_request" });
   });
 
+  it("answers another origin and a missing account with the register's generic refusals, before any database call", async () => {
+    for (const headers of [{ origin: "https://elsewhere.example", "sec-fetch-site": "cross-site" }, { origin: "http://localhost", "sec-fetch-site": "same-site" }]) {
+      const foreign = await revokeOwnCopilotConsent(new Request(`http://localhost/api/consents/${GRANT}/revoke`, {
+        method: "POST", headers: { ...headers, "x-inherit-operation-nonce": nonce() } }), GRANT, SUBJECT);
+      expect([foreign.status, await foreign.json()]).toEqual([403, { error: "request_forbidden" }]);
+    }
+    mocks.actor.mockResolvedValue(null);
+    const signedOut = await withdraw(nonce());
+    expect([signedOut.status, await signedOut.json()]).toEqual([401, { error: "unauthenticated" }]);
+    expect(mocks.rpc).not.toHaveBeenCalled();
+  });
+
   it("still answers another grant as not found, without spending the nonce", async () => {
     mocks.rpc.mockResolvedValue({ data: { ...authority, copilotGrantId: OTHER }, error: null });
     expect((await withdraw(nonce())).status).toBe(404);

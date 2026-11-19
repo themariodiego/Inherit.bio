@@ -42,8 +42,11 @@ export const SENSITIVE_RESPONSE_HEADERS: Readonly<Record<string, string>> = {
 /**
  * Endpoints the route register binds, for every response, to a profile whose
  * Referrer-Policy is no-referrer (`sensitiveResponseHeaderBindings`
- * tokenPageOrEndpoint, downloadOrExport or authOrRecovery), and whose handlers
- * set it. Each is named by its register id.
+ * tokenPageOrEndpoint, downloadOrExport or authOrRecovery). Each is named by
+ * its register id. The proxy's value is the one the browser receives on these
+ * paths, whatever the handler sets: the first eleven handlers set no-referrer
+ * themselves, and the last nine (with api.file-download below) answer through
+ * helpers that set same-origin (D-138 (a)).
  */
 const NO_REFERRER_ENDPOINTS: ReadonlySet<string> = new Set([
   "/api/future-person/claim", // api.future-person-claim
@@ -57,7 +60,19 @@ const NO_REFERRER_ENDPOINTS: ReadonlySet<string> = new Set([
   "/api/appeals/session/complete", // api.appeal-complete
   "/api/appeals/session/documents", // api.appeal-document-session
   "/api/rights/reissue", // api.rights-reissue
+  "/api/export", // api.export
+  "/api/consents/grant/session", // api.consent-grant-rights
+  "/api/consents/reaffirm/session", // api.consent-reaffirm-rights
+  "/api/consents/revoke/session", // api.consent-revoke-rights
+  "/api/invitations/accept", // api.invitation-accept
+  "/api/rights/activate", // api.rights-activate
+  "/api/rights/embryo-record-key-cards", // api.embryo-record-key-cards-rights
+  "/api/subjects/bind/session", // api.adult-subject-bind
+  "/api/withdraw/session", // api.withdraw (its one registered token value)
 ]);
+
+/** api.file-download, `/api/files/[id]/download`: one segment, as the route matches it. */
+const FILE_DOWNLOAD_ENDPOINT = /^\/api\/files\/[^/]+\/download$/;
 
 function withSensitiveHeaders<T extends NextResponse>(response: T, path?: string): T {
   for (const [name, value] of Object.entries(SENSITIVE_RESPONSE_HEADERS)) {
@@ -70,7 +85,7 @@ function withSensitiveHeaders<T extends NextResponse>(response: T, path?: string
   // response sender retains an already-present proxy header, so the download
   // handler's no-referrer policy must also be set here, and so must the
   // register-bound endpoints' (NO_REFERRER_ENDPOINTS).
-  if ((path !== undefined && NO_REFERRER_ENDPOINTS.has(path)) ||
+  if ((path !== undefined && (NO_REFERRER_ENDPOINTS.has(path) || FILE_DOWNLOAD_ENDPOINT.test(path))) ||
       path?.startsWith("/reviews/future-person/claims/") ||
       path?.startsWith("/api/reviews/future-person/claims/") ||
       path?.startsWith("/reviews/appeals/") ||
