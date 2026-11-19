@@ -39,6 +39,26 @@ export const SENSITIVE_RESPONSE_HEADERS: Readonly<Record<string, string>> = {
   "X-Frame-Options": "DENY",
 };
 
+/**
+ * Endpoints the route register binds, for every response, to a profile whose
+ * Referrer-Policy is no-referrer (`sensitiveResponseHeaderBindings`
+ * tokenPageOrEndpoint, downloadOrExport or authOrRecovery), and whose handlers
+ * set it. Each is named by its register id.
+ */
+const NO_REFERRER_ENDPOINTS: ReadonlySet<string> = new Set([
+  "/api/future-person/claim", // api.future-person-claim
+  "/api/future-person/claim/session", // api.future-person-delete
+  "/api/future-person/claim/session/account", // api.future-person-claimant-bind
+  "/api/future-person/claim/session/analysis", // api.future-person-analysis-stop
+  "/api/future-person/claim/session/export", // api.future-person-export
+  "/api/future-person/claim/session/objection", // api.future-person-claim-objection
+  "/api/future-person/claim/session/recovery-key", // api.future-person-recovery-key
+  "/api/withdraw/session/export", // api.third-party-subject-export
+  "/api/appeals/session/complete", // api.appeal-complete
+  "/api/appeals/session/documents", // api.appeal-document-session
+  "/api/rights/reissue", // api.rights-reissue
+]);
+
 function withSensitiveHeaders<T extends NextResponse>(response: T, path?: string): T {
   for (const [name, value] of Object.entries(SENSITIVE_RESPONSE_HEADERS)) {
     response.headers.set(name, value);
@@ -48,8 +68,10 @@ function withSensitiveHeaders<T extends NextResponse>(response: T, path?: string
   // IDs, documentary decisions and document download sessions require the
   // stricter policy, including refusals produced by the proxy itself. Next's
   // response sender retains an already-present proxy header, so the download
-  // handler's no-referrer policy must also be set here.
-  if (path?.startsWith("/reviews/future-person/claims/") ||
+  // handler's no-referrer policy must also be set here, and so must the
+  // register-bound endpoints' (NO_REFERRER_ENDPOINTS).
+  if ((path !== undefined && NO_REFERRER_ENDPOINTS.has(path)) ||
+      path?.startsWith("/reviews/future-person/claims/") ||
       path?.startsWith("/api/reviews/future-person/claims/") ||
       path?.startsWith("/reviews/appeals/") ||
       path?.startsWith("/api/reviews/appeals/") ||

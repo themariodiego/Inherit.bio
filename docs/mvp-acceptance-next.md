@@ -337,7 +337,16 @@ specs passed. G5.4's browser proof ran past line 245 for the first time: steps 1
 to 4 passed, and step 5 failed at `e2e/helpers/claimant-delete-closed.ts:81`,
 where the closed claimant DELETE answered 404 `{"error":"not_found"}` with
 `private, no-store`, as expected, but with `Referrer-Policy: same-origin` where
-the helper expects `no-referrer`. That is not yet diagnosed. It is the one
+the helper expects `no-referrer`. That is not yet diagnosed. *Diagnosed and fixed later
+the same day, in the commit that adds this sentence:* the handler does send
+`no-referrer`, but `src/proxy.ts` put `same-origin` on every `/api/*` response
+and Next keeps a proxy header over a handler's, so the proxy's value reached
+the browser. The register binds the endpoint to `tokenPageOrEndpoint`, so the
+product was wrong and the helper right (D-137). Ten more register-bound
+endpoints had the same fault, and the proxy now upgrades all eleven
+(`docs/test-diff-register.md`, its top entry). Step 5 has still not passed in a
+browser; the next hosted run decides. What that audit found and did not change
+is D-138. It is the one
 failure on this head, so the aggregate `checks` cannot pass: a complete green
 hosted run is still not recorded.
 

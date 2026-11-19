@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { NextRequest } from "next/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -502,5 +503,101 @@ describe("subject download response privacy (sensitiveResponseHeaderBindings.dow
     expect(await download.json()).toEqual({ error: "account_deletion_notice_period" });
     const drafts = await visit("/api/subjects");
     expect(drafts.status).toBe(423);
+  });
+});
+
+/**
+ * The route register binds these endpoints, for every response, to a profile
+ * whose Referrer-Policy is no-referrer (`sensitiveResponseHeaderBindings`), and
+ * their handlers set it. Next's response sender keeps the proxy's header over
+ * the handler's, so the proxy must leave no-referrer too. Hosted run
+ * 44567656560 caught the claimant DELETE answering with same-origin.
+ */
+describe("register no-referrer endpoints keep the strict policy (sensitiveResponseHeaderBindings)", () => {
+  const strict = (response: Response) => {
+    for (const [name, value] of Object.entries(SENSITIVE_RESPONSE_HEADERS)) {
+      expect(response.headers.get(name), name).toBe(name === "Referrer-Policy" ? "no-referrer" : value);
+    }
+  };
+  const call = (method: string, path: string) => proxy(new NextRequest(`https://inherit.bio${path}`, { method }));
+  const ENDPOINTS: readonly (readonly [method: string, path: string])[] = [
+    ["POST", "/api/future-person/claim"],
+    ["DELETE", "/api/future-person/claim/session"],
+    ["POST", "/api/future-person/claim/session/account"],
+    ["DELETE", "/api/future-person/claim/session/analysis"],
+    ["POST", "/api/future-person/claim/session/export"],
+    ["GET", "/api/future-person/claim/session/export"],
+    ["POST", "/api/future-person/claim/session/objection"],
+    ["POST", "/api/future-person/claim/session/recovery-key"],
+    ["POST", "/api/withdraw/session/export"],
+    ["GET", "/api/withdraw/session/export"],
+    ["POST", "/api/appeals/session/complete"],
+    ["POST", "/api/appeals/session/documents"],
+    ["POST", "/api/rights/reissue"],
+  ];
+
+  it.each(ENDPOINTS)("%s %s keeps no-referrer with every other sensitive header, signed in or not", async (method, path) => {
+    for (const user of [{ id: "12345678-1234-4234-8234-000000000001" }, null]) {
+      mocks.user = user;
+      const response = await call(method, path);
+      expect(response.status).toBe(200); strict(response);
+    }
+  });
+
+  it.each([["DELETE", "/api/future-person/claim/session"], ["POST", "/api/rights/reissue"], ["POST", "/api/appeals/session/complete"]])(
+    "keeps no-referrer on a proxy-produced deletion-notice refusal for %s %s", async (method, path) => {
+      mocks.profile = { deletion_requested_at: "2026-09-25T00:00:00Z", jurisdiction_code: "GB" };
+      const response = await call(method, path);
+      expect(response.status).toBe(423);
+      expect(await response.json()).toEqual({ error: "account_deletion_notice_period" }); strict(response);
+    },
+  );
+
+  it.each(["/api/future-person/claim/sessions", "/api/future-person/claim/session/recovery-key/extra", "/api/withdraw/session/export/extra",
+    "/api/rights/reissue/extra", "/api/appeals/session"])("leaves the original sensitive policy outside the exact endpoint: %s", async path => {
+    const response = await call("POST", path);
+    expect(response.status).toBe(200);
+    for (const [name, value] of Object.entries(SENSITIVE_RESPONSE_HEADERS)) expect(response.headers.get(name), name).toBe(value);
+  });
+
+  /**
+   * Every endpoint the register binds to a no-referrer profile is honoured,
+   * except these: their handlers answer with the same-origin of
+   * `sensitiveJson` themselves, so they are a separate, open discrepancy with
+   * the register (not a proxy override of a handler's no-referrer). A new
+   * binding the proxy does not honour fails here, and honouring one of these
+   * removes it from the list.
+   */
+  const SAME_ORIGIN_HANDLERS = ["api.adult-subject-bind", "api.consent-grant-rights", "api.consent-reaffirm-rights",
+    "api.consent-revoke-rights", "api.embryo-record-key-cards-rights", "api.export", "api.file-download", "api.invitation-accept",
+    "api.rights-activate", "api.withdraw"];
+  it("honours every endpoint the register binds to a no-referrer profile, except the listed same-origin handlers", async () => {
+    type Route = { id: string; kind: string; path: string; methods?: string[]; parameterContract?: Record<string, { const?: string } | string> };
+    const register = JSON.parse(readFileSync("docs/route-register.json", "utf8")) as {
+      sensitiveResponseHeaders: Record<string, Record<string, string>>;
+      sensitiveResponseHeaderBindings: Record<string, unknown>;
+      routes: Route[];
+    };
+    const profiles = Object.entries(register.sensitiveResponseHeaders)
+      .filter(([, headers]) => headers["Referrer-Policy"] === "no-referrer").map(([name]) => name);
+    const bound = new Set(profiles.flatMap(name => register.sensitiveResponseHeaderBindings[name] as string[]));
+    const endpoints = register.routes.filter(route => bound.has(route.id) && route.kind === "endpoint" && route.path.startsWith("/api/"));
+    const sameOrigin = new Set<string>(), honoured = new Set<string>();
+    for (const route of endpoints) {
+      const path = route.path.replace(/\[([^\]]+)\]/g, (_all, name: string) => {
+        const contract = route.parameterContract?.[name];
+        return typeof contract === "object" && contract.const !== undefined ? contract.const
+          : name === "sequence" ? "0" : "12345678-1234-4234-8234-00000000000a";
+      });
+      for (const method of route.methods ?? ["GET"]) {
+        const policy = (await call(method, path)).headers.get("referrer-policy");
+        (policy === "no-referrer" ? honoured : sameOrigin).add(route.id);
+        if (policy !== "no-referrer") expect(policy, `${route.id} ${method} ${path}`).toBe("same-origin");
+      }
+    }
+    expect([...sameOrigin].sort()).toEqual(SAME_ORIGIN_HANDLERS);
+    // Every endpoint fixed above is among the register's bindings, so this list is the register's, not a copy of it.
+    for (const [, path] of ENDPOINTS) expect(endpoints.some(route => path === route.path.replace("[token]", "session")), path).toBe(true);
+    expect(honoured.size + sameOrigin.size).toBe(endpoints.length);
   });
 });
