@@ -191,6 +191,17 @@ jobs:
       # thrown away costs a whole investigation and still ends in a guess.
       # Failure only, and every fixture in this suite is synthetic by
       # construction, so nothing here carries a real person's data.
+      # The server's side of a refused signed-in request: this job's own auth
+      # service and gateway logs, reduced to time, method, query-free path,
+      # status, error code and enum-only causes (raw lines can hold emails,
+      # tokens and query keys, so none is copied). An artifact upload is the
+      # only step allowed to be failure-only, so this runs always and returns
+      # at once when the job succeeded.
+      - name: Digest this job's auth and gateway logs for failure evidence
+        if: always()
+        env:
+          INHERIT_JOB_STATUS: ${{ job.status }}
+        run: pnpm exec tsx scripts/ci-browser-service-log-digest.run.mts
       - name: Keep the failing browser evidence
         if: failure()
         uses: actions/upload-artifact@v4
@@ -199,6 +210,7 @@ jobs:
           path: |
             test-results/**/error-context.md
             test-results/**/*.png
+            test-results/service-logs/*.txt
           retention-days: 14
           if-no-files-found: ignore
       - name: Clean up only the owned browser runtime
@@ -322,6 +334,12 @@ jobs:
             test-results/embryo-qc-seed.json
           retention-days: 14
           if-no-files-found: error
+      # See the repository job: digests only, never a raw service log line.
+      - name: Digest this job's auth and gateway logs for failure evidence
+        if: always()
+        env:
+          INHERIT_JOB_STATUS: ${{ job.status }}
+        run: pnpm exec tsx scripts/ci-browser-service-log-digest.run.mts
       - name: Keep safe failing browser evidence
         if: failure()
         uses: actions/upload-artifact@v4
@@ -330,6 +348,7 @@ jobs:
           path: |
             test-results/**/error-context.md
             test-results/**/*.png
+            test-results/service-logs/*.txt
           retention-days: 14
           if-no-files-found: ignore
       - name: Clean up only this job's owned runtime

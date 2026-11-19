@@ -2,7 +2,7 @@ import fs from "node:fs";
 import http from "node:http";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
-import { expect, test, type Browser, type Page } from "@playwright/test";
+import { expect, test, type Browser, type Locator, type Page } from "@playwright/test";
 import { JOBS_SECRET, adminClient, createConfirmedUser, dueMailCount, jobRan, signIn, acceptAdultInvitation, adultInvitationToken, adultInvitationUrl } from "./helpers";
 import {
   generateOwnFileWithChosenReports,
@@ -13,7 +13,7 @@ import { collectFigures, keyed, type CollectedFigure } from "./figure-collector"
 import { assertEveryFigureMoved } from "./figure-differencing";
 import { PERMISSION_ROWS } from "../src/copy/family/permissions";
 import { GATE_BUTTON } from "../src/copy/family/person";
-import { ACKNOWLEDGE_BUTTON } from "../src/copy/family/portrait";
+import { ACKNOWLEDGE_BUTTON, PORTRAIT_H1 } from "../src/copy/family/portrait";
 import type { OwnReportPurpose } from "../src/lib/uploads/own-report-purpose";
 import { REGIONAL_FIGURE_PAIRS } from "./fixtures/regional-figure-fixtures";
 import { REGIONAL_CAVEAT } from "../src/lib/genome/regional-admixture";
@@ -326,6 +326,42 @@ function reportFiguresShown(where: "linked-cells" | "main"): { cell: string; hre
   });
 }
 
+/** The page a refused signed-in request is sent to, by the proxy or by an account check. */
+const SIGN_IN_PATH = "/auth/sign-in";
+
+/**
+ * Open a signed-in page and prove it is the page asked for before anything on
+ * it is read. A refused request still ends on a 200 page with a `main h1` —
+ * the sign-in page, the not-found page, the error page — so "a heading is
+ * visible" cannot tell a report with no figures from a bounce, and on CI
+ * (19 November 2026) a bounce read as 49 missing coverage figures. Checked in
+ * the order that names what happened: sent to sign-in (with `?next=` the
+ * proxy refused the request; without it the app layout or the page did), not
+ * a 200, another path, or not the expected surface. The failure carries the
+ * landed URL, the status and the names — never the values — of the cookies
+ * the context held for the origin, which says whether the session cookie was
+ * still there when the request was refused.
+ */
+async function openSignedInSurface(page: Page, href: string, surface: Locator, what: string): Promise<void> {
+  const requested = new URL(href, "http://requested.invalid").pathname;
+  const response = await page.goto(href);
+  const landed = new URL(page.url());
+  const status = response?.status() ?? null;
+  const held = (await page.context().cookies(landed.origin)).map(cookie => cookie.name).sort();
+  const said = `${what}: requested ${requested}, landed on ${landed.pathname}${landed.search}, `
+    + `status ${status ?? "none"}, cookies held (names only): ${held.join(", ") || "none"}`;
+  expect(landed.pathname, `${said}. The browser was sent to the sign-in page: an account check on this `
+    + `request answered "signed out" (${landed.searchParams.has("next") ? "the proxy" : "the app layout or the page"})`)
+    .not.toBe(SIGN_IN_PATH);
+  expect(status, `${said}. The page did not answer 200`).toBe(200);
+  expect(landed.pathname, `${said}. The browser landed on another page than the one requested`).toBe(requested);
+  await expect(surface, `${said}. This is not the ${what}: a not-found or error page renders a main h1 too`)
+    .toBeVisible();
+}
+
+/** The report page's own reading surface and its heading: a sign-in, not-found or error page has neither. */
+const REPORT_SURFACE = 'main article[data-surface="reading"] h1';
+
 /**
  * The report page a cell links to, read the way its reader reads it. A report
  * in a gated category withholds its result server-side until the reader
@@ -341,14 +377,12 @@ function reportFiguresShown(where: "linked-cells" | "main"): { cell: string; hre
  * would. Returns whether a reveal was needed.
  */
 async function openLinkedReport(page: Page, href: string): Promise<boolean> {
-  await page.goto(href);
-  await expect(page.locator("main h1")).toBeVisible();
+  await openSignedInSurface(page, href, page.locator(REPORT_SURFACE), `report page ${href}`);
   const gate = page.getByTestId("sensitive-gate");
   if (await gate.count() === 0) return false;
   const target = await page.getByTestId("sensitive-gate-reveal").getAttribute("href");
   expect(target, `${href}: a gated report must offer its reveal control`).toMatch(/[?&]reveal=1(?:&|$)/);
-  await page.goto(target!);
-  await expect(page.locator("main h1")).toBeVisible();
+  await openSignedInSurface(page, target!, page.locator(REPORT_SURFACE), `revealed report page ${target}`);
   await expect(gate).toHaveCount(0);
   return true;
 }
@@ -372,13 +406,16 @@ async function pairBetween(selfA: string, selfB: string): Promise<string> {
   return pair!.id;
 }
 
+/** The Portrait page's own heading, rendered in its blocking, gated and result states alike. */
+const portraitHeading = (page: Page) => page.getByRole("heading", { level: 1, name: PORTRAIT_H1, exact: true });
+
 /**
  * One person's own Portrait acknowledgement, through the real checkbox in
  * their own session: the third of the three steps the page names for each
  * adult (independent login, the Portrait grant, this acknowledgement).
  */
 async function acknowledgePortrait(page: Page, pairId: string) {
-  await page.goto(`/family/portrait/${pairId}`);
+  await openSignedInSurface(page, `/family/portrait/${pairId}`, portraitHeading(page), "Portrait page");
   const form = page.locator('[data-slot="portrait-acknowledge"]');
   await expect(form.getByRole("checkbox")).not.toBeChecked();
   await form.getByRole("checkbox").check();
@@ -391,7 +428,8 @@ async function acknowledgePortrait(page: Page, pairId: string) {
 
 /** One signed purpose grant toward one person, through the real permission UI. */
 async function grantPurpose(page: Page, recipientSubjectId: string, purpose: GrantedPurpose) {
-  await page.goto(`/family/s-${recipientSubjectId}/permissions`);
+  await openSignedInSurface(page, `/family/s-${recipientSubjectId}/permissions`,
+    page.locator('[data-slot="permission-column"]').first(), "permissions page");
   const label = PERMISSION_ROWS.find(row => row.id === purpose)!.label;
   const row = page.locator('[data-slot="permission-column"][data-settable="true"] [data-slot="permission-row"]')
     .filter({ has: page.locator('[data-slot="permission-label"]', { hasText: new RegExp(`^${label}$`) }) });
@@ -430,7 +468,7 @@ async function healthPictureFigures(page: Page, label: string, fixture: string, 
   }
 
   await signIn(page, one.email, one.password);
-  await page.goto("/family/invite");
+  await openSignedInSurface(page, "/family/invite", page.getByLabel("Their email address"), "invitation page");
   await page.getByLabel("Their email address").fill(two.email);
   await page.getByRole("checkbox").check();
   await page.getByRole("button", { name: "Send invitation" }).click();
@@ -501,7 +539,7 @@ async function healthPictureFigures(page: Page, label: string, fixture: string, 
   await signIn(page, one.email, one.password);
   await acknowledgePortrait(page, pairId);
 
-  await page.goto(HEALTH_PICTURE);
+  await openSignedInSurface(page, HEALTH_PICTURE, page.getByRole("button", { name: GATE_BUTTON }), "Health Picture gate");
   await page.getByRole("checkbox").check();
   await page.getByRole("button", { name: GATE_BUTTON }).click();
   await expect(page.locator("[data-compare-surface]").first()).toBeVisible();
@@ -543,7 +581,7 @@ async function healthPictureFigures(page: Page, label: string, fixture: string, 
   // could carry one renders only for a shared classified position (D-034) —
   // and this reads that record in a browser under each pair rather than
   // taking it on trust.
-  await page.goto(`/family/portrait/${pairId}`);
+  await openSignedInSurface(page, `/family/portrait/${pairId}`, portraitHeading(page), "Portrait page");
   await expect(page.locator('[data-slot="portrait-header-sentence"]')).toBeVisible();
   await expect(page.locator('[data-slot="portrait-blocking"], [data-slot="portrait-acknowledge"]')).toHaveCount(0);
   await expect(page.locator("[data-figure-kind]")).toHaveCount(0);
