@@ -1710,3 +1710,97 @@ entry recorded separately. The brief, register, bindings, rubric and human proto
 now count click and submit events with the existing registered confirmation
 exclusions. Typed-URL entry is also recorded separately. The former eight-action
 ceiling is superseded; no route or task-depth ratchet is raised.
+
+## 22. The brief's storage sentence: where genome files are kept
+
+**PROPOSED 2026-11-19, NOT APPLIED.** Owner decision "G8.5: the two undescribed
+`genomes` key shapes": the owner left the side to engineering, engineering
+chose to change the documents, and the exact brief sentence is shown to the
+owner before it is applied. The register half is done (`storage.subject-v2`
+amended in place, `storage.prepared-v1` added). 22.1 is that sentence; 22.2
+and 22.3 are neighbouring sentences of the same paragraph that the code also
+contradicts, each to accept or reject on its own.
+
+### What the brief says
+
+`docs/inherit-v2-brief.md`, the **Storage.** paragraph (line 2150), begins:
+
+> New object paths are `{account_id}/{subject_id}/{upload_id}/{filename}` for
+> subject files and `{account_id}/{cohort_id}/{upload_id}/{filename}` for
+> cohort files; the legacy `{user_id}/{uuid}/{name}` layout keeps working
+> under existing policies. Two additional read policies grant `select` on
+> `bucket_id = 'genomes'` when segment 2 parses as a uuid and
+> `subject_can(...,'variants')` or `cohort_can(...,'embryo_scores')` is true.
+> Signed URLs last `SIGNED_URL_TTL_SECONDS`, […]
+
+### What was measured
+
+- Every subject file, self or other adult, is kept under one random UUID at
+  the top of `genomes`, upload copy and final copy alike:
+  `private.issue_own_storage_upload_v1` and the held-upload issuer set the
+  upload key to `gen_random_uuid()::text`, finalization sets the `uuid` column
+  `final_object_name`, and a subject transfer copies to a fresh UUID key.
+  `upload_sessions.staging_object_name` and `genome_storage_objects.object_name`
+  have admitted only a UUID since `20260831224054`. No code in this
+  repository's history wrote the four-segment subject path: the uploader of 28
+  August to 1 September wrote the legacy three segments, and every upload since
+  has used the flat key.
+- Prepared (derived) files are `prepared/<uuid>` in the same bucket
+  (`private.own_preparation_artifacts.object_key`), or the same key on
+  Cloudflare R2.
+- The cohort form is what the database reserves in `genomes` for embryo ingest
+  fragments; persistent embryo sources live on R2. That clause is not
+  contradicted and is not changed.
+
+### The proposal
+
+**22.1, the object-path sentence.** Replace
+
+> New object paths are `{account_id}/{subject_id}/{upload_id}/{filename}` for
+> subject files and `{account_id}/{cohort_id}/{upload_id}/{filename}` for
+> cohort files;
+
+with
+
+> A subject file is stored under one server-generated UUID at the top of the
+> `genomes` bucket, for its upload copy and its final copy, and the database
+> rows, not the object name, link it to its account, person and upload;
+> prepared (derived) files are stored as `prepared/{uuid}`; cohort files use
+> `{account_id}/{cohort_id}/{upload_id}/{filename}`;
+
+**22.2, the read policies (measured; text proposed because the facts leave one
+meaning).** The four per-user Storage policies were dropped in
+`20260831224054_storage_and_download_sessions.sql`. The only policy on
+`storage.objects` in any migration today is `genomes_upload_token_create_only`,
+a create-only insert of the exact upload key for the upload role. No policy
+reads segment 2 or lets a signed-in person `select` from `genomes`; every read
+goes through the server, as the register's `genomes-server-mediated-v1` says
+(`authenticatedSelect: deny-for-new-and-legacy-objects`). Replace "the legacy
+`{user_id}/{uuid}/{name}` layout keeps working under existing policies. Two
+additional read policies grant `select` on `bucket_id = 'genomes'` when
+segment 2 parses as a uuid and `subject_can(...,'variants')` or
+`cohort_can(...,'embryo_scores')` is true." with
+
+> objects in the legacy `{user_id}/{uuid}/{name}` layout are still read and
+> deleted through their database rows, and nothing new is written there. No
+> Storage policy lets a signed-in person read `genomes`; every read goes
+> through the server after a database check of the file's rows and
+> permissions.
+
+**22.3, the signed URLs (measured; no text proposed).** `SIGNED_URL_TTL_SECONDS`
+is read nowhere, `src/lib/config.test.ts` and an `assertReadable` helper do not
+exist, and the five-minute sentence is not in the product. The owner decided on
+16 October that `GET /api/subjects/[id]/download` uses "a revocable genome
+chunk session, with no signed URLs", and the register forbids signed object
+URLs (`revocable-chunk-session-v1.signedUrls`). `GET /api/files/[id]/download`
+streams a prepared original, but still answers an original that is not a
+prepared source with a fixed 300-second signed URL
+(`src/app/api/files/[id]/download/route.ts:37`). Whether that case keeps a
+signed URL or moves to the chunk session is a choice, so these sentences are
+reported, not rewritten.
+
+### Why it is not applied
+
+The brief is not edited until the owner has seen the exact words, as the 19
+November decision says, and the brief and the register's `briefSha256` move in
+one change, which `scripts/route-gate.ts` checks.

@@ -560,6 +560,126 @@ describe("recorded endpoint response divergences stay true in both directions", 
 });
 
 /**
+ * Owner decisions of 2026-11-19 ("G8.5: the genome browser's read is
+ * registered as built" and "G8.5: route-specific error answers are
+ * registered as they ship"). The register now says what these handlers
+ * answer, so each registered answer is held here to the code that gives it:
+ * its status and body against the contract the route binds, and a literal in
+ * the handler carrying the same status and code. A register answer whose
+ * status or code drifts from the handler, or a handler that changes its
+ * answer, fails here. The census cannot catch either, because no client
+ * branches on these statuses.
+ */
+describe("the answers registered on 2026-11-19 are the answers the handlers give", () => {
+  type Answer = { status?: number; body?: { error?: { const?: string } } };
+  const contracts = (register as unknown as { responseContracts: Record<string, Record<string, unknown>> }).responseContracts;
+  /** A bound contract or one of its named answers, as `file-delete-v1.processing`. */
+  const answer = (reference: string): Answer => {
+    const [name, branch] = reference.split(".");
+    const contract = contracts[name]!;
+    return (branch ? contract[branch] : contract) as Answer;
+  };
+  const SHIPPED: { routeId: string; reference: string; status: number; error: string; evidence: { file: string; literal: string }[] }[] = [
+    { routeId: "api.consent-revoke", reference: "consent-revocation-v1.invalid", status: 400, error: "invalid_request", evidence: [
+      { file: "src/app/api/consents/[id]/revoke/route.ts", literal: 'return NextResponse.json({ error: "invalid_request" }, { status: 400 });' },
+      { file: "src/lib/copilot/own-consent.ts", literal: 'if (!nonce) return ownUploadJson({ error: "invalid_request" }, 400);' },
+    ] },
+    { routeId: "api.consent-revoke", reference: "consent-revocation-v1.unavailable", status: 503, error: "consent_unavailable", evidence: [
+      { file: "src/app/api/consents/[id]/revoke/route.ts", literal: 'if (error) return NextResponse.json({ error: "consent_unavailable" }, { status: 503 });' },
+    ] },
+    { routeId: "api.consent-revoke", reference: "service-unavailable-v1", status: 503, error: "unavailable", evidence: [
+      { file: "src/lib/copilot/own-consent.ts", literal: 'catch { return ownUploadJson({ error: "unavailable" }, 503); }' },
+    ] },
+    { routeId: "api.file-delete", reference: "file-delete-v1.processing", status: 409, error: "file_delete_processing", evidence: [
+      { file: "src/app/api/files/[id]/route.ts", literal: 'return failure("file_delete_processing", 409);' },
+    ] },
+    { routeId: "api.file-delete", reference: "file-delete-v1.subjectUnavailable", status: 409, error: "file_delete_subject_unavailable", evidence: [
+      { file: "src/app/api/files/[id]/route.ts", literal: 'return failure("file_delete_subject_unavailable", 409);' },
+    ] },
+    { routeId: "api.file-delete", reference: "file-delete-v1.failed", status: 503, error: "file_delete_failed", evidence: [
+      { file: "src/app/api/files/[id]/route.ts", literal: 'return failure("file_delete_failed", 503);' },
+    ] },
+    { routeId: "api.browse-region", reference: "own-region-variants-v1.invalid", status: 422, error: "invalid_request", evidence: [
+      { file: "src/app/api/browse/region/route.ts", literal: 'if (!parsed.success) return response({ error: "invalid_request" }, 422);' },
+    ] },
+    { routeId: "api.browse-region", reference: "own-region-variants-v1.regionTooLarge", status: 422, error: "region_too_large", evidence: [
+      { file: "src/app/api/browse/region/route.ts", literal: 'return response({ error: "region_too_large" }, 422);' },
+    ] },
+    { routeId: "api.browse-region", reference: "service-unavailable-v1", status: 503, error: "unavailable", evidence: [
+      { file: "src/app/api/browse/region/route.ts", literal: 'if (error) return response({ error: "unavailable" }, 503);' },
+    ] },
+    ...["api.future-person-claim-document-session", "api.appeal-document-session"].flatMap(routeId => {
+      const file = routeId === "api.appeal-document-session" ? "src/app/api/appeals/session/documents/route.ts"
+        : "src/app/api/future-person/claim/session/documents/route.ts";
+      return [
+        { routeId, reference: "service-unavailable-v1", status: 503, error: "unavailable", evidence: [
+          { file, literal: "unavailable()" },
+          { file: "src/lib/embryos/api.ts", literal: 'return sensitiveJson({ error: "unavailable" }, 503);' },
+        ] },
+        // closedResponse's ClosedShapeError branch is blockedResponse's fixed 500.
+        { routeId, reference: "embryo-closed-schema-v1", status: 500, error: "unsafe_response_blocked", evidence: [
+          { file, literal: `closedResponse("${routeId}",` },
+          { file: "src/lib/embryos/guards.ts", literal: "if (error instanceof ClosedShapeError) return blockedResponse(operation);" },
+          { file: "src/lib/embryos/api.ts", literal: 'return sensitiveJson({ error: "unsafe_response_blocked" }, 500);' },
+        ] },
+      ];
+    }),
+  ];
+
+  it.each(SHIPPED.map(row => [`${row.routeId} ${row.reference}`, row] as const))("%s", (_label, row) => {
+    const registered = answer(row.reference);
+    expect(registered.status, "the register's status").toBe(row.status);
+    expect(registered.body?.error?.const, "the register's code").toBe(row.error);
+    expect(register.responseContractBindings.routes[row.routeId], "bound to the route").toContain(row.reference.split(".")[0]);
+    const entry = register.routes.find(route => route.id === row.routeId)!;
+    expect(registeredStatuses(entry, "POST", register).concat(registeredStatuses(entry, "DELETE", register))).toContain(row.status);
+    for (const evidence of row.evidence) {
+      const source = readFileSync(evidence.file, "utf8");
+      expect(source.includes(evidence.literal), `${evidence.file}: ${evidence.literal}`).toBe(true);
+      // A literal that carries a status and a code carries this row's.
+      if (/\b[1-5]\d\d\b/.test(evidence.literal)) expect(evidence.literal, evidence.file).toContain(String(row.status));
+      if (/"[a-z_]+"/.test(evidence.literal) && evidence.literal.includes("error")) expect(evidence.literal).toContain(`"${row.error}"`);
+    }
+  });
+
+  it("holds the genome browser's read to the register: body, bounds, CSRF and answer", () => {
+    const browse = register.routes.find(route => route.id === "api.browse-region")! as (typeof register.routes)[number] & {
+      authRequirements?: string[]; successResponseContract?: string;
+      requestContract?: { closedBody?: Record<string, unknown>; unknownMissingOrInvalid?: string };
+      policy?: { bounds?: Record<string, unknown>; contracts?: string[]; resolver?: string } };
+    const route = readFileSync("src/app/api/browse/region/route.ts", "utf8");
+    // The closed body is the handler's strict schema, key for key, and nothing the browser does not send.
+    expect(Object.keys(browse.requestContract!.closedBody!).sort()).toEqual(["chromosome", "end", "file", "start"]);
+    for (const key of ["file: z.uuid(),", "chromosome: z.string().min(1).max(5),", "start: z.number().int().positive().safe(),",
+      "end: z.number().int().positive().safe(),", "}).strict();"]) expect(route).toContain(key);
+    expect(browse.requestContract!.unknownMissingOrInvalid).toBe("own-region-variants-v1.invalid");
+    // The session token, and no browse nonce or cursor.
+    expect(browse.authRequirements).toEqual(["exact-same-origin", "X-Inherit-CSRF-bound-to-the-authenticated-session"]);
+    expect(route).toContain('export const POST = withAccountCsrf("api.browse-region", handlePost);');
+    expect(JSON.stringify(browse)).not.toMatch(/browse-operation-nonce|"nonce":|"cursor":|raw-region-v1|raw-export-grant-v1|subject-route-v1/u);
+    // The registered bounds are the ones the handler enforces.
+    expect(browse.policy!.bounds!.maximumRequestedSpanBases).toBe(1_000_000);
+    expect(browse.policy!.bounds!.maximumRowsPerPage).toBe(500);
+    expect(route).toContain("const MAXIMUM_SPAN_BASES = 1_000_000;");
+    expect(route).toContain("const MAXIMUM_ROWS_PER_PAGE = 500;");
+    // The answer is { variants, truncated } with the columns the read selects.
+    expect(browse.successResponseContract).toBe("own-region-variants-v1");
+    const success = contracts["own-region-variants-v1"] as { status: number; body: { variants: Record<string, unknown>[]; truncated: unknown } };
+    expect(success.status).toBe(200);
+    expect(Object.keys(success.body).sort()).toEqual(["truncated", "variants"]);
+    expect(Object.keys(success.body.variants[0]!).sort()).toEqual(["alt", "chrom", "genotype", "pos", "ref", "rsid"]);
+    expect(route).toContain('.select("rsid, chrom, pos, ref, alt, genotype")');
+    expect(route).toContain("return response({ variants, truncated: variants.length === MAXIMUM_ROWS_PER_PAGE }, 200);");
+    // raw-region-v1 had no other user, so it left the register with the old body.
+    expect(contracts["raw-region-v1"]).toBeUndefined();
+    expect(register.responseContractBindings.routes["api.browse-region"]).toContain("own-region-variants-v1");
+    // Own variants only: the read runs under the caller's session, never the service role.
+    expect(route).toContain('import { createClient } from "@/lib/supabase/server";');
+    expect(route).not.toMatch(/createAdminClient|supabase\/admin/u);
+  });
+});
+
+/**
  * G8.5 (owner decision 2026-10-23, "CSRF: build the token everywhere"): every
  * request the browser makes, not only the ones a form makes. The client is
  * every `"use client"` module and every local module one imports for a value
@@ -803,14 +923,25 @@ describe("the client census fails on a planted divergence", () => {
 
   it("records a new non-CSRF divergence of a request no form makes, and notices a recorded one close", () => {
     // Re-targeted on 2026-10-24: the consent list's recorded nonce row closed (it sends the nonce now).
+    // 2026-11-19 (owner decision "G8.5: the genome browser's read is registered as built"): the register's
+    // api.browse-region body is the browser's { file, chromosome, start, end }, so the last recorded row (the
+    // browser's seven issues) closed and no client row is left. The browser now proves the first half by going
+    // back to the body the register used to name, and a recorded row the census no longer reports, the second.
     const browser = "src/components/browse/genome-browser.tsx";
-    const recorded = recordedClientKeys().filter(key => key.startsWith(`${browser} api.browse-region POST:`));
-    expect(recorded).toHaveLength(7);
+    expect(ledger.clientRequestDivergence).toEqual([]);
+    expect(run({}).issues.filter(issue => issue.file === browser)).toEqual([]);
     const sent = "body: JSON.stringify({\n        file: region.file, chromosome: region.chromosome, start: region.start, end: region.end,\n      }),";
     expect(real(browser)).toContain(sent);
-    const fixed = run({ [browser]: real(browser).replace(sent,
+    const reverted = run({ [browser]: real(browser).replace(sent,
       "body: JSON.stringify({ subject: region.file, region: { chromosome: region.chromosome, start: region.start, end: region.end }, nonce: region.file }),") });
-    expect(ledgerMismatch(fixed.issues.map(formIssueKey), accountedClientKeys()).stale.sort()).toEqual(recorded.sort());
+    expect(ledgerMismatch(reverted.issues.map(formIssueKey), accountedClientKeys()).unrecorded.sort()).toEqual([
+      "omits chromosome, which the registered body requires", "omits end, which the registered body requires",
+      "omits file, which the registered body requires", "omits start, which the registered body requires",
+      "sends nonce, which the registered body does not declare", "sends region, which the registered body does not declare",
+      "sends subject, which the registered body does not declare",
+    ].map(issue => `${browser} api.browse-region POST: ${issue}`).sort());
+    const closed = `${browser} api.browse-region POST: omits nonce, which the registered body requires`;
+    expect(ledgerMismatch(run({}).issues.map(formIssueKey), [...accountedClientKeys(), closed]).stale).toEqual([closed]);
     const file = "src/components/settings/consent-list.tsx";
     const source = real(file);
     // 2026-11-19: the revocation sends through its token chain (csrf.send); the nonce is read once before it.

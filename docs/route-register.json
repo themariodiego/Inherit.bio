@@ -3321,11 +3321,6 @@
           "requiredGrantContract": "raw-export-grant-v1",
           "grantApplication": "required-only-for-an-uploader-or-grantee; an-own-subject-account-needs-no-grant",
           "projection": "exact-subject-variants-only"
-        },
-        "raw-variant-region-read": {
-          "requiredGrantContract": "raw-export-grant-v1",
-          "grantApplication": "required-only-for-an-uploader-or-grantee; an-own-subject-account-needs-no-grant",
-          "projection": "exact-subject-and-requested-region-only"
         }
       }
     },
@@ -8140,6 +8135,7 @@
       "prefixIds": [
         "storage.subject-v2",
         "storage.cohort-v2",
+        "storage.prepared-v1",
         "storage.raw-legacy"
       ],
       "authenticatedSelect": "deny-for-new-and-legacy-objects",
@@ -8388,10 +8384,11 @@
         "transportAvailabilityResolver": "copilot-transport-availability-v1"
       },
       "api.browse-region": {
-        "targetSource": "required-closed-POST-body.subject-resolved-before-region-validation-and-joined-to-the-subject-row",
-        "operation": "raw-variant-region-read",
-        "resolver": "subject-route-v1",
-        "transport": "subject-region-cursor-and-nonce-never-URL-query-path-log-analytics-trace-error-referrer-or-audit-detail"
+        "registeredBy": "owner-decision-2026-11-19-G8.5-the-genome-browser's-read-is-registered-as-built",
+        "targetSource": "required-closed-POST-body.file-read-under-the-acting-account's-own-Supabase-session-with-no-service-role-and-no-subject-resolver",
+        "operation": "own-variant-region-read",
+        "authorization": "public.user_variants-row-level-security-alone: policy-user_variants_select_own-admits-a-row-only-when-its-user_id-is-the-acting-account-and-its-file-is-not-a-file-of-an-other_adult-subject (private.is_path_b_file_v1, 20260930231000_path_b_normalization.sql); a-file-whose-rows-the-caller-cannot-read-answers-an-empty-variants-list-and-never-another-account's-row",
+        "transport": "file-and-region-never-URL-query-path-log-analytics-trace-error-referrer-or-audit-detail"
       },
       "api.file-download": {
         "targetSource": "route-file-row-joined-to-subject-or-cohort",
@@ -13423,31 +13420,52 @@
       "body": "empty",
       "effects": "atomically-change-the-password-revoke-every-auth-session-of-the-account-and-consume-the-recovery-session; the-response-clears-every-auth-cookie-and-the-person-signs-in-again"
     },
-    "raw-region-v1": {
+    "own-region-variants-v1": {
+      "registeredBy": "owner-decision-2026-11-19-G8.5-the-genome-browser's-read-is-registered-as-built",
       "status": 200,
       "contentType": "application/json",
       "body": {
-        "subjectId": "the-exact-authorized-request-subject-id",
-        "region": {
-          "chromosome": "server-normalized-contig",
-          "start": "positive-integer",
-          "end": "positive-integer"
-        },
         "variants": [
           {
-            "chromosome": "server-normalized-contig",
-            "position": "positive-integer",
-            "reference": "validated-DNA-allele",
-            "alternate": "validated-DNA-allele",
-            "genotype": "validated-subject-genotype",
-            "rsid": "validated-rsid-or-null",
-            "quality": "bounded-number-or-null"
+            "rsid": "stored-numeric-part-of-the-rsID-or-null",
+            "chrom": "stored-chromosome-number-1-through-22-or-23-X-24-Y-25-MT",
+            "pos": "stored-positive-integer-position",
+            "ref": "stored-reference-allele-or-null",
+            "alt": "stored-alternate-allele-or-null",
+            "genotype": "stored-genotype-text-diploid-A/G-haploid-A-or-two-dashes-for-a-no-call"
           }
         ],
-        "nextCursor": "opaque-subject-region-and-revision-bound-cursor-or-null"
+        "truncated": "boolean-true-exactly-when-variants-holds-policy.bounds.maximumRowsPerPage-rows"
+      },
+      "rows": "the-acting-account's-own-public.user_variants-rows-of-the-requested-file-chromosome-and-inclusive-start-to-end-span-in-ascending-position-order-at-most-policy.bounds.maximumRowsPerPage; a-file-whose-rows-the-caller-cannot-read-answers-an-empty-variants-list",
+      "invalid": {
+        "registeredBy": "owner-decision-2026-11-19-G8.5-route-specific-error-answers-are-registered-as-they-ship",
+        "status": 422,
+        "contentType": "application/json",
+        "body": {
+          "error": {
+            "const": "invalid_request"
+          }
+        },
+        "when": "the-body-is-not-JSON-or-not-exactly-the-closed-body-or-names-a-chromosome-the-route-does-not-map-or-ends-before-it-starts; unlike-invalid-request-v1-it-carries-no-issues-list",
+        "effects": "no-row-is-read",
+        "unknownFieldsRecursively": "forbidden"
+      },
+      "regionTooLarge": {
+        "registeredBy": "owner-decision-2026-11-19-G8.5-route-specific-error-answers-are-registered-as-they-ship",
+        "status": 422,
+        "contentType": "application/json",
+        "body": {
+          "error": {
+            "const": "region_too_large"
+          }
+        },
+        "when": "end-minus-start-exceeds-policy.bounds.maximumRequestedSpanBases",
+        "effects": "no-row-is-read",
+        "unknownFieldsRecursively": "forbidden"
       },
       "unknownFields": "forbidden",
-      "objectKeyOriginalFilenameContributorOrOtherSubject": "forbidden"
+      "objectKeyOriginalFilenameSubjectIdContributorOrOtherAccountRow": "forbidden"
     },
     "subject-transfer-v1": {
       "status": 200,
@@ -13601,6 +13619,32 @@
           "schemaFrom": "responseContracts.lifecycle-accepted-v1"
         }
       ],
+      "invalid": {
+        "registeredBy": "owner-decision-2026-11-19-G8.5-route-specific-error-answers-are-registered-as-they-ship",
+        "status": 400,
+        "contentType": "application/json",
+        "body": {
+          "error": {
+            "const": "invalid_request"
+          }
+        },
+        "when": "the-route-id-is-not-a-canonical-UUID-checked-before-the-handler-reads-the-user; or-in-any-case-including-the-own-Copilot-permission-the-X-Inherit-Operation-Nonce-is-missing-or-is-not-a-current-nonce-minted-for-this-account-auth-session-and-grant; or-the-database-door-refuses-it-with-22023-invalid_operation_nonce-because-it-was-already-spent",
+        "effects": "nothing-is-revoked-and-no-nonce-is-recorded",
+        "unknownFieldsRecursively": "forbidden"
+      },
+      "unavailable": {
+        "registeredBy": "owner-decision-2026-11-19-G8.5-route-specific-error-answers-are-registered-as-they-ship",
+        "status": 503,
+        "contentType": "application/json",
+        "body": {
+          "error": {
+            "const": "consent_unavailable"
+          }
+        },
+        "when": "the-cloud-model-provider-grant-case-where-revoke_cloud_model_consent_with_nonce_v1-errors-with-anything-other-than-a-nonce-refusal; the-own-Copilot-case's-failure-is-service-unavailable-v1",
+        "detail": "the-database's-own-message-never-leaves-the-server",
+        "unknownFieldsRecursively": "forbidden"
+      },
       "headers": "private-no-store",
       "unknownFieldsRecursively": "forbidden"
     },
@@ -13621,6 +13665,45 @@
           }
         },
         "when": "the-database-cleanup-has-not-completed; the-client-repeats-the-same-owner-authorized-DELETE-with-its-next-X-Inherit-CSRF-and-a-timeout-never-means-deleted",
+        "unknownFieldsRecursively": "forbidden"
+      },
+      "processing": {
+        "registeredBy": "owner-decision-2026-11-19-G8.5-route-specific-error-answers-are-registered-as-they-ship",
+        "status": 409,
+        "contentType": "application/json",
+        "body": {
+          "error": {
+            "const": "file_delete_processing"
+          }
+        },
+        "when": "the-database-refuses-the-deletion-because-the-file-is-still-uploading-or-being-parsed-or-has-a-queued-or-running-worker-job (file_delete_processing)",
+        "effects": "nothing-is-deleted-or-made-unreadable",
+        "unknownFieldsRecursively": "forbidden"
+      },
+      "subjectUnavailable": {
+        "registeredBy": "owner-decision-2026-11-19-G8.5-route-specific-error-answers-are-registered-as-they-ship",
+        "status": 409,
+        "contentType": "application/json",
+        "body": {
+          "error": {
+            "const": "file_delete_subject_unavailable"
+          }
+        },
+        "when": "the-database-refuses-the-deletion-because-the-file-is-not-on-the-caller's-own-active-self-record (file_delete_subject_unavailable) or-that-record-has-shared-or-generated-material-that-needs-its-subject-level-disposition-a-pending-or-current-family-pair-or-one-with-joint-results-a-current-relationship-to-another-account-a-generated-export-a-report-artifact-an-embryo-variant-from-this-file-or-an-unattributed-legacy-chat (file_delete_shared_graph)",
+        "effects": "nothing-is-deleted-or-made-unreadable",
+        "unknownFieldsRecursively": "forbidden"
+      },
+      "failed": {
+        "registeredBy": "owner-decision-2026-11-19-G8.5-route-specific-error-answers-are-registered-as-they-ship",
+        "status": 503,
+        "contentType": "application/json",
+        "body": {
+          "error": {
+            "const": "file_delete_failed"
+          }
+        },
+        "when": "the-database-preparation-failed-for-any-other-reason-or-answered-a-cleanup-target-outside-its-closed-shape-or-Storage-did-not-acknowledge-the-removal-or-finish_genome_file_deletion_v1-failed-or-the-handler-threw",
+        "effects": "a-file-the-database-already-prepared-stays-unreadable-and-the-source.revocation-7d-backstop-redoes-the-removal-and-finish",
         "unknownFieldsRecursively": "forbidden"
       },
       "headers": {
@@ -13821,6 +13904,19 @@
       },
       "unknownFieldsRecursively": "forbidden",
       "existenceLeak": "forbidden"
+    },
+    "service-unavailable-v1": {
+      "registeredBy": "owner-decision-2026-11-19-G8.5-route-specific-error-answers-are-registered-as-they-ship",
+      "status": 503,
+      "contentType": "application/json",
+      "body": {
+        "error": {
+          "const": "unavailable"
+        }
+      },
+      "when": "a-database-read-or-door-the-bound-route-depends-on-errored-threw-or-answered-outside-its-closed-shape: api.browse-region's-variant-read-errored; the-own-Copilot-case-of-api.consent-revoke-threw; api.future-person-claim-document-session's-door-failed-with-a-code-other-than-42501-23505-or-22023-or-answered-a-session-it-cannot-read; api.appeal-document-session's-door-failed-with-a-code-other-than-42501-23505-or-22023-answered-neither-a-capacity-limit-nor-a-matching-open-session-threw-or-left-its-intake-runtime-holding-cleanup-or-unsettled-work",
+      "detail": "the-database's-own-message-never-leaves-the-server; the-answer-does-not-say-whether-a-write-committed",
+      "unknownFieldsRecursively": "forbidden"
     },
     "revoked-resource-v1": {
       "detail": {
@@ -14153,9 +14249,10 @@
         "search-results-v1"
       ],
       "api.browse-region": [
-        "raw-region-v1",
+        "own-region-variants-v1",
         "invalid-request-v1",
-        "resource-not-found-v1"
+        "resource-not-found-v1",
+        "service-unavailable-v1"
       ],
       "api.file-process": [
         "file-processing-v1",
@@ -14297,7 +14394,8 @@
       "api.consent-revoke": [
         "consent-revocation-v1",
         "lifecycle-accepted-v1",
-        "resource-not-found-v1"
+        "resource-not-found-v1",
+        "service-unavailable-v1"
       ],
       "api.consents-revoke-all": [
         "lifecycle-accepted-v1",
@@ -14385,7 +14483,9 @@
       "api.future-person-claim-document-session": [
         "evidence-session-v1",
         "public-capacity-limited-v1",
-        "resource-not-found-v1"
+        "resource-not-found-v1",
+        "service-unavailable-v1",
+        "embryo-closed-schema-v1"
       ],
       "api.evidence-chunk": [
         "evidence-chunk-v1",
@@ -14433,7 +14533,9 @@
       "api.appeal-document-session": [
         "evidence-session-v1",
         "public-capacity-limited-v1",
-        "resource-not-found-v1"
+        "resource-not-found-v1",
+        "service-unavailable-v1",
+        "embryo-closed-schema-v1"
       ],
       "api.appeal-complete": [
         "appeal-evidence-submitted-v1",
@@ -17272,22 +17374,18 @@
       ],
       "authRequirements": [
         "exact-same-origin",
-        "X-Inherit-CSRF-bound-to-the-authenticated-session",
-        "one-time-browse-operation-nonce"
+        "X-Inherit-CSRF-bound-to-the-authenticated-session"
       ],
       "requestContract": {
+        "registeredBy": "owner-decision-2026-11-19-G8.5-the-genome-browser's-read-is-registered-as-built",
         "contentType": "application/json",
         "closedBody": {
-          "subject": "required-subject-id-or-me-alias",
-          "region": {
-            "chromosome": "required-normalized-autosomal-contig",
-            "start": "required-positive-safe-integer",
-            "end": "required-positive-safe-integer-not-less-than-start"
-          },
-          "cursor": "optional-opaque-server-cursor",
-          "nonce": "required-session-bound-one-time-browse-operation-nonce"
+          "file": "required-canonical-UUID-of-a-genome_files-row",
+          "chromosome": "required-one-through-five-characters-naming-1-through-22-X-Y-M-or-MT-with-or-without-a-chr-prefix-in-any-case",
+          "start": "required-positive-safe-integer",
+          "end": "required-positive-safe-integer-not-less-than-start"
         },
-        "unknownMissingOrInvalid": "invalid-request-v1",
+        "unknownMissingOrInvalid": "own-region-variants-v1.invalid",
         "forbiddenFields": [
           "accountId",
           "ownerId",
@@ -17299,25 +17397,23 @@
       "stateProfile": "endpoint",
       "policy": {
         "mode": "resolved",
-        "resolver": "subject-route-v1",
-        "operation": "raw-variant-region-read",
-        "projection": "exact-authorized-subject-region-and-bounded-page-only",
-        "transport": "subject-region-cursor-and-nonce-are-body-only-and-forbidden-in-the-URL-query-path-logs-analytics-traces-errors-referrers-and-audit-detail; consume-the-browse-nonce-before-the-read",
+        "registeredBy": "owner-decision-2026-11-19-G8.5-the-genome-browser's-read-is-registered-as-built",
+        "operation": "own-variant-region-read",
+        "reach": "own-variants-only: the-read-runs-under-the-acting-account's-own-Supabase-session-so-public.user_variants-row-level-security-alone-decides-which-rows-exist (resourceAuthorizationBindings.api.browse-region.authorization); no-subject-resolver-purpose-grant-raw-export-grant-or-raw.browse-purpose-is-read-and-none-widens-it",
+        "relative": "a-relative-never-sees-the-track: genome.browser-renders-it-for-a-subject-another-account-holds-and-this-read-then-answers-an-empty-variants-list-because-no-row-of-another-account-is-readable",
+        "projection": "the-acting-account's-own-rows-of-the-requested-file-chromosome-and-inclusive-span-only",
+        "transport": "file-and-region-are-body-only-and-forbidden-in-the-URL-query-path-logs-analytics-traces-errors-referrers-and-audit-detail",
+        "csrf": "every-read-spends-the-session's-one-time-X-Inherit-CSRF-token-for-this-route-before-the-handler-runs-and-the-answer-carries-its-successor (mutationSecurityBindings.csrfTransport); no-body-nonce-and-no-cursor",
         "bounds": {
           "maximumRequestedSpanBases": 1000000,
           "maximumRowsPerPage": 500,
-          "maximumEncodedResponseBytes": {
-            "constFrom": "payloadBoundaryContract.ingestChunkMaximumBytes"
-          },
-          "cursor": "opaque-server-signed-and-bound-to-subject-normalized-region-result-revision-page-size-and-principal"
+          "paging": "none: one-read-returns-at-most-maximumRowsPerPage-rows-in-ascending-position-order-and-own-region-variants-v1.truncated-says-whether-it-reached-that-limit"
         },
         "contracts": [
-          "resource-authorization-v1",
-          "raw-export-grant-v1",
-          "other-adult-mitigation-state-v1"
+          "resource-authorization-v1"
         ]
       },
-      "successResponseContract": "raw-region-v1",
+      "successResponseContract": "own-region-variants-v1",
       "disposition": "kept"
     },
     {
@@ -19145,6 +19241,110 @@
           "consent.embryo-donor-attribution-by-the-current-donor-subject-principal": "embryo-donor-attribution-revocation-v1",
           "embryo.analysis-purpose-grant-by-one-current-requiredUploadPrincipal": "purpose-revocation-v1-for-the-exact-cohort-purpose-principal-and-grant-revision-with-zero-source-delete",
           "consent.upload-embryo-or-current-parent-source-authority-artifact-by-one-current-dispositionAuthority": "contradiction-v1-plus-cohort-restriction-v1-for-the-whole-current-parent-controlled-cohort-after-locking-the-current-policyResolvers.embryo-basis-authority-v1-basis-five-set-and-artifact-revisions"
+        },
+        "withdrawalRoutes": {
+          "registeredBy": "owner-decision-2026-11-19-G8.5-the-register-names-where-each-kind-of-consent-is-withdrawn",
+          "basis": "api.consent-revoke-itself-resolves-only-a-public.purpose_grants-row-or-a-public.consent_grants-row-and-answers-resource-not-found-v1-for-any-other-id; cases-names-for-each-dispositionCases-kind-the-routes-that-withdraw-it-today-and-the-database-door-each-of-those-routes-calls, and-a-kind-cases-does-not-name-has-no-registered-withdrawal-route-yet",
+          "cases": {
+            "analytic-purpose-grant-including-cohort-scoped-embryo.analysis": {
+              "routes": [
+                "api.consent-revoke",
+                "api.consents-revoke-all",
+                "api.subject-sharing",
+                "api.family-sharing"
+              ],
+              "doors": [
+                "revoke_directional_purpose_with_nonce_v1",
+                "revoke_all_own_consents_v1",
+                "stop_subject_sharing_v1",
+                "stop_family_sharing_with_nonce_v1"
+              ],
+              "how": "api.consent-revoke-ends-one-public.purpose_grants-row-and-its-direction-row-and-api.consents-revoke-all-every-grant-the-acting-account-signed; a-grant-to-another-account-also-ends-when-sharing-between-the-two-accounts-is-stopped-through-stop_family_sharing_v1"
+            },
+            "raw-export-grant": {
+              "routes": [
+                "api.consent-revoke",
+                "api.consents-revoke-all",
+                "api.subject-sharing",
+                "api.family-sharing"
+              ],
+              "doors": [
+                "revoke_directional_purpose_with_nonce_v1",
+                "revoke_all_own_consents_v1",
+                "stop_subject_sharing_v1",
+                "stop_family_sharing_with_nonce_v1"
+              ],
+              "how": "a-raw.export-or-raw.browse-grant-is-a-public.purpose_grants-row-and-ends-as-an-analytic-purpose-grant-does"
+            },
+            "cloud-model-provider-grant": {
+              "routes": [
+                "api.consent-revoke",
+                "api.consents-revoke-all"
+              ],
+              "doors": [
+                "revoke_cloud_model_consent_with_nonce_v1",
+                "revoke_own_copilot_with_nonce_v1",
+                "revoke_all_own_consents_v1"
+              ],
+              "how": "api.consent-revoke-ends-one-public.consent_grants-provider-grant-or-the-own-Copilot-permission-and-api.consents-revoke-all-every-such-grant-of-the-acting-account"
+            },
+            "family-pair-or-portrait-grant": {
+              "routes": [
+                "api.consent-revoke",
+                "api.subject-sharing",
+                "api.family-sharing",
+                "api.consents-revoke-all"
+              ],
+              "doors": [
+                "revoke_directional_purpose_with_nonce_v1",
+                "stop_subject_sharing_v1",
+                "stop_family_sharing_with_nonce_v1",
+                "revoke_all_own_consents_v1"
+              ],
+              "how": "api.consent-revoke-ends-one-family.portrait-or-family.heritability-grant-and-returns-a-Portrait-pair-to-pending; a-sharing-stop-ends-every-grant-between-the-two-accounts-and-api.consents-revoke-all-every-grant-the-acting-account-signed"
+            },
+            "adult-data-subject-own-consent.subject-adult": {
+              "routes": [
+                "api.withdraw",
+                "api.subject-delete"
+              ],
+              "doors": [
+                "respond_adult_upload_revision_v1",
+                "delete_subject_v1"
+              ],
+              "how": "for-a-path-b-subject-api.withdraw-under-its-adult-upload-revision-rights-session-with-operation-delete-ends-the-subject-through-delete_path_b_subject_v1-and-api.subject-delete-by-the-subject's-own-bound-account-ends-it-through-delete_path_b_subject_for_route_v1-with-the-subject-controlled-contact-bar; for-a-path-a-record-that-holds-no-file-api.subject-delete-by-its-own-account-ends-it-through-purge_path_a_subject_v1"
+            },
+            "consent.embryo-donor-attribution-by-the-current-donor-subject-principal": {
+              "routes": [],
+              "doors": [],
+              "how": "none-because-the-consent-cannot-be-given-yet: no-consent.embryo-donor-attribution-artifact-is-published-and-api.embryo-cohort-drafts-refuses-the-identified-donor-subject-intent-with-identified_donor_attribution_unavailable, so-no-such-consent-exists-to-withdraw"
+            },
+            "embryo.analysis-purpose-grant-by-one-current-requiredUploadPrincipal": {
+              "routes": [
+                "api.consent-revoke",
+                "api.consents-revoke-all"
+              ],
+              "doors": [
+                "revoke_directional_purpose_with_nonce_v1",
+                "revoke_all_own_consents_v1"
+              ],
+              "how": "the-signer's-own-cohort-scoped-public.purpose_grants-row-ends-as-an-analytic-purpose-grant-does; api.consents-revoke-all-first-requires-the-signer-to-be-a-current-required_upload_principals-member; neither-deletes-a-source-byte"
+            },
+            "consent.upload-embryo-or-current-parent-source-authority-artifact-by-one-current-dispositionAuthority": {
+              "routes": [
+                "api.cohort-restrict",
+                "api.embryo-withdraw",
+                "api.withdraw",
+                "api.subject-delete"
+              ],
+              "doors": [
+                "restrict_embryo_cohort_v1",
+                "respond_embryo_parent_withdrawal_v1",
+                "delete_subject_v1"
+              ],
+              "how": "api.cohort-restrict-and-its-alias-api.embryo-withdraw-and-api.withdraw-under-the-embryo-parent-withdrawal-rights-session-with-operation-refuse-or-delete-each-run-private.restrict_embryo_cohort_core_v1-for-the-whole-cohort, as-api.subject-delete-does-for-an-unclaimed-untransferred-embryo"
+            }
+          }
         },
         "mutuallyExclusiveClassifier": "first-match-is-forbidden; derive-one-normalized-consent-kind-principal-role-target-class-and-current-revision-in-the-database-and-require-exactly-one-case",
         "unknownConsentKind": "fail-closed-with-no-write",
@@ -22446,10 +22646,11 @@
     {
       "id": "storage.subject-v2",
       "bucket": "genomes",
-      "prefix": "{account_id}/{subject_id}/{upload_id}/{filename}",
+      "prefix": "{object_uuid}",
       "disposition": "kept",
-      "filenameContract": "the-filename-placeholder-is-one-server-generated-opaque-single-segment-name-with-an-allowlisted-normalized-extension; slash-backslash-dot-segments-control-characters-and-original-filenames-are-forbidden",
-      "authority": "Database-owned upload session; clients never supply an arbitrary object path or object-name segment."
+      "keyShape": "registered-2026-11-19-G8.5: one-flat-segment-at-the-bucket-root-for-the-staging-and-the-final-object-of-every-self-and-other_adult-subject-file; private.issue_own_storage_upload_v1-and-the-other_adult-held-upload-issuer-set-upload_sessions.staging_object_name-to-gen_random_uuid()::text-with-storage_bucket-genomes, finalization-sets-the-uuid-column-final_object_name-to-gen_random_uuid(), and-subject-transfer-relocation-copies-to-a-fresh-uuid-key-the-database-chooses; upload_sessions.staging_object_name-and-genome_storage_objects.object_name-have-admitted-only-a-lowercase-UUID-v4-since-20260831224054; no-released-code-wrote-the-earlier-registered-{account_id}/{subject_id}/{upload_id}/{filename}-form, so-it-is-amended-in-place-rather-than-kept-beside-a-new-entry",
+      "filenameContract": "the-whole-key-is-one-server-generated-opaque-single-segment-lowercase-UUID-v4-with-no-folder-extension-or-account-subject-file-or-upload-identifier; slash-backslash-dot-segments-control-characters-and-original-filenames-are-forbidden",
+      "authority": "Database-owned upload session, genome_files and genome_storage_objects rows bind each exact key to its account, subject, file and upload revision; access, transfer and deletion are decided from those rows and never from the key, and clients never supply an arbitrary object path or object-name segment."
     },
     {
       "id": "storage.cohort-v2",
@@ -22460,6 +22661,22 @@
       "authority": "Database-owned cohort upload session after server-stream autosomal sanitization; every persistent object is one embryo subject projection and unsanitized or multisample embryo bytes never enter persistent Storage.",
       "contracts": [
         "embryo-autosomal-only-v1"
+      ]
+    },
+    {
+      "id": "storage.prepared-v1",
+      "bucket": "genomes",
+      "prefix": "prepared/{artifact_uuid}",
+      "disposition": "kept",
+      "keyShape": "registered-2026-11-19-G8.5: the-literal-prepared-folder-and-one-database-generated-lowercase-UUID-v4; private.own_preparation_artifacts.object_key-defaults-to-prepared/-plus-gen_random_uuid()-and-its-check-admits-nothing-else (20260908164616_own_preparation_job_authority.sql); src/lib/genome/prepared-source/storage-writer.ts-writes-it-create-only-for-a-Supabase-v1-receipt-and-the-Storage-metadata-trigger-keeps-the-namespace-reserved",
+      "filenameContract": "prepared/-then-one-server-generated-opaque-lowercase-UUID-v4-with-no-account-subject-file-job-or-extension-segment-and-no-original-filename; a-raw-original's-flat-UUID-key-is-never-a-prepared-artifact",
+      "authority": "private.own_preparation_artifacts reserves each exact key with its job, attempt, sequence, expected bytes and SHA-256 before the create-only write; reads, publication and cleanup resolve the key from that row and the prepared manifest, never from the folder.",
+      "retentionIds": [
+        "preparation.scratch-2h",
+        "source.revocation-7d"
+      ],
+      "contracts": [
+        "own-prepared-object-v1"
       ]
     },
     {

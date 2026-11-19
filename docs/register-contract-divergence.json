@@ -135,72 +135,28 @@
   "declaredPrefixBucketNotAddressedNote": "The exact exports callsites are now visible through their imported constant, so no declared bucket is unaddressed in this source census. This retires only the scanner's false absence. The archive adapters do not by themselves prove the declared manifest namespace, route integration, authorization, export.generated-artifact-24h cleanup or provider readiness. The real object-key, R2 location and uncreated-bucket divergences remain below; G8.5 is not closed by this precision correction.",
   "declaredPrefixBucketNotAddressed": [],
   "liveCallSiteOnUncreatedBucket": [],
+  "objectKeyShapeNotDescribedByAnyPrefixNote": "2026-11-19, owner decision (\"G8.5: the two undescribed genomes key shapes\"; the owner left the side to engineering, which chose the documents): the register describes both genomes key shapes the code writes. storage.subject-v2 is amended in place to {object_uuid}, the flat key private.issue_own_storage_upload_v1, the held-upload issuer, finalization and subject-transfer relocation generate for every self and other_adult file (no released code wrote the four-segment form it used to name), and storage.prepared-v1 names prepared/{artifact_uuid}, the key private.own_preparation_artifacts reserves. The genomes-bare-uuid-object row closes and is removed; prepared-artifact-object narrows to its Cloudflare R2 half, which the decision did not cover. storage.cohort-v2 is unchanged: the cohort path's only genomes names are the four-segment {account_id}/{cohort_id}/{upload_id}/{object_id}.vcf|.tsv names the database reserves for embryo ingest fragments (20260905203457_embryo_ingest_unwind_runtime.sql), and its persistent sources live on R2. scripts/route-register-correspondence.test.ts now also holds each genomes shape the code writes to the prefix that describes it, anchored to the writer. The brief's sentence is proposed, not applied, in docs/protocol/brief-corrections-proposed.md item 22.",
   "objectKeyShapeNotDescribedByAnyPrefix": [
     {
-      "id": "genomes-bare-uuid-object",
-      "bucket": "genomes",
-      "segments": 1,
-      "shape": "<uuid>",
-      "declaredPrefixIds": [
-        "storage.subject-v2",
-        "storage.cohort-v2",
-        "storage.raw-legacy"
-      ],
-      "declaredSegments": [
-        4,
-        4,
-        3
-      ],
-      "evidence": [
-        {
-          "file": "supabase/migrations/20260906113021_own_upload_storage_authorization.sql",
-          "literal": "values(p_account_id,p_session_id,p_subject_id,gen_random_uuid()::text,p_size_bytes,p_sha256,"
-        },
-        {
-          "file": "supabase/migrations/20260906123327_subject_upload_finalization.sql",
-          "literal": "final_object_name=gen_random_uuid(),finalization_started_at=clock_timestamp()"
-        },
-        {
-          "file": "src/lib/uploads/subject-upload-contract.ts",
-          "literal": "bucket: z.literal(\"genomes\"), stagingKey: uuid,"
-        },
-        {
-          "file": "src/lib/uploads/subject-finalization.ts",
-          "literal": "bucket: z.literal(\"genomes\"), stagingKey: uuid, finalKey: uuid,"
-        }
-      ],
-      "why": "The register declares three prefixes for the genomes bucket and every one of them partitions the bucket by account first: {account_id}/{subject_id}/{upload_id}/{filename}, {account_id}/{cohort_id}/{upload_id}/{filename}, and the legacy {user_id}/{uuid}/{name}. The live own-upload path uses none of them. private.issue_own_storage_upload_v1 sets staging_object_name to gen_random_uuid()::text and storage_bucket to 'genomes', and private finalization sets final_object_name to another bare gen_random_uuid(); both are single-segment keys at the root of the bucket. So the persistent object holding a person's genome sits at /<uuid>, and storage.subject-v2 describes a four-segment path that nothing writes. The filename half of the contract is honoured \u2014 the name is server-generated, opaque and single-segment, and no original filename reaches it \u2014 and the access half does not depend on the folder, because the upload RLS policy binds the exact server-generated key and the upload session's jti rather than a path prefix. What is not honoured is the declared shape itself, and with it the account and subject partition that the prefix, not the policy, is the record of.",
-      "closing": "Decide which document moves. Either the two prefixes are rewritten to the flat server-generated key the database actually issues \u2014 in which case the account and subject binding has to be stated as what it is, a database join rather than a path \u2014 or issuance and finalization are changed to build the declared path. The first is the smaller change and the more honest one; the second is what the register currently claims.",
-      "blocker": "authority \u2014 both halves are binding documents, and which one is wrong is an owner decision, not an implementation one."
-    },
-    {
       "id": "prepared-artifact-object",
-      "bucket": "genomes",
+      "bucket": "inherit-prepared-*",
       "segments": 2,
       "shape": "prepared/<uuid>",
-      "declaredPrefixIds": [
-        "storage.subject-v2",
-        "storage.cohort-v2",
-        "storage.raw-legacy"
-      ],
-      "declaredSegments": [
-        4,
-        4,
-        3
-      ],
+      "declaredPrefixIds": [],
+      "declaredSegments": [],
       "evidence": [
         {
-          "file": "src/lib/genome/prepared-source/storage-common.ts",
-          "literal": "/^prepared\\/[0-9a-f]{8}-"
+          "file": "src/lib/genome/prepared-source/r2-transport.ts",
+          "literal": "bucket: z.string().regex(/^inherit-prepared-[a-z0-9-]{1,40}$/), objectKey: preparedObjectKeySchema,"
         },
         {
-          "file": "src/lib/genome/prepared-source/storage-writer.ts",
-          "literal": "`/storage/v1/object/genomes/${receipt.objectKey}`"
+          "file": "supabase/migrations/20260908233337_own_prepared_r2_provider.sql",
+          "literal": "or (provider='r2' and provider_bucket ~ '^inherit-prepared-[a-z0-9-]{1,40}$' and storage_object_id is null"
         }
       ],
-      "why": "Prepared canonical artifacts are written into the same genomes bucket under a two-segment key whose first segment is the literal \"prepared\" \u2014 outside every declared prefix, and outside the account partition all three of them describe. preparedObjectKeySchema pins the shape and createPreparedArtifactWriter POSTs to /storage/v1/object/genomes/<that key>, so these are real objects holding derived genome data. The register knows the artifacts exist \u2014 policyContracts.own-prepared-object-v1 governs their lifecycle and preparation.scratch-2h their retention \u2014 and storagePrefixes, the file that says where bytes live and under what filename and retention contract, does not mention them. The same artifacts have a second home the register describes even less: the v2 receipt path writes them to Cloudflare R2 under a bucket matching ^inherit-prepared-[a-z0-9-]{1,40}$ (src/lib/genome/prepared-source/r2-transport.ts, served by workers/prepared-artifacts/worker.mjs through an env-bound R2 binding), and no storagePrefixes entry names any R2 bucket at all \u2014 the register's six prefixes cover four Supabase buckets and no second provider.",
-      "closing": "A storagePrefixes entry for prepared/{artifact_id} in genomes with its filename contract and the preparation.scratch-2h and publication retention ids, and a second entry \u2014 or a declared provider field on the first \u2014 for the R2 bucket family, so the two homes of the same artifact are both written down. The R2 half is the larger gap: a whole storage provider holding derived genome data is absent from the file that is supposed to enumerate them.",
-      "blocker": "none known \u2014 the lifecycle is decided and described in policyContracts; only the storage location is undeclared."
+      "why": "Narrowed 2026-11-19 to its R2 half. The genomes half closed when the register gained storage.prepared-v1 (prepared/{artifact_uuid}) by the owner decision \"G8.5: the two undescribed genomes key shapes\". The same prepared artifacts have a second home: the v2 receipt path writes them, under the same prepared/<uuid> key the database reserves, to a private Cloudflare R2 bucket matching ^inherit-prepared-[a-z0-9-]{1,40}$ (src/lib/genome/prepared-source/r2-transport.ts, served by workers/prepared-artifacts/worker.mjs through an env-bound R2 binding; private.own_preparation_artifacts.provider_bucket), and no storagePrefixes entry names any R2 bucket: the register's prefixes cover four Supabase buckets and no second provider. That decision covered the genomes bucket only.",
+      "closing": "A storagePrefixes entry for the R2 bucket family (or a declared provider field on storage.prepared-v1) with its filename contract and the preparation.scratch-2h and source.revocation-7d retention ids, so the two homes of the same artifact are both written down; it is a register amendment, so it needs an owner decision first.",
+      "blocker": "authority: describing a second storage provider in the register is an owner decision, and the 19 November decision named the genomes bucket only."
     }
   ],
   "allowlistedBucketNotCreatedNote": "A bucket a database CHECK constraint still admits, which no migration leaves in place. The three database-selected call sites choose their bucket from rows those constraints govern, so an admitted bucket is one a manifest could still name. scripts/route-register-correspondence.test.ts compares this list in both directions with the admitted, undeclared buckets that are not in the route ledger, and fails if a row's bucket is created again.",
@@ -277,26 +233,8 @@
       "closing": "Nothing while the transport takes its addresses from the session response."
     }
   ],
-  "clientRequestDivergenceNote": "2026-10-23 (G8.5). What every request the browser makes sends when no form makes it. scripts/form-contract-census.ts reads the client module graph (clientModules: every \"use client\" module and every local module one imports for a value) and every fetch call and chat transport in it (fileRequests), with no argument bound; a request a form makes is read by the form census instead and recorded in formRequestDivergence. scripts/form-register-correspondence.test.ts compares these rows with the census in both directions and fails if any request omits X-Inherit-CSRF. Several rows are the reader's limits rather than the product's (a value passed as an argument, a binary body, a status compared through a reused variable name); each says so and names what would let the census read it. Recorded, not fixed: body fields, nonce headers and statuses belong to the G8.5 form-shape work. 2026-10-24 (G8.5, owner decision of 23 October, item 1): of the 19 rows, 14 close and 2 (the IGV reference and the review PDF viewer, 3 issues) become reviewed entries. The code moved to the register where it left out what the register requires (the operation nonce on the provider and own-Copilot revocations, through two guarded doors, 20261025200000_consent_revoke_provider_nonce.sql; the grant, acknowledgement and appeal-reversal bodies named field by field). The register lists the harmless answers that ship (file-delete-v1, consent-revocation-v1, public-capacity-limited-v1 on both document-session routes). The census reads what it could not: binary bodies, a status compared on another block-scoped binding, a local function's calls with their arguments bound, string concatenation and a zod parse's output. The three requests that are not a request to an Inherit route are reviewed in clientRequestReview. Three rows remain: the genome browser's body (owner), the compatibility chat's provider consent (owner, with the compatibility chat) and D-103's Path A confirm (engineering, with Path A). 2026-10-24 (G8.5): the compatibility Copilot panel is retired with its api.chat branch, and with it src/components/chat/consent-dialog.tsx, the one client that sent api.consents the unregistered { providerKey } body; its row is removed (2 rows remain: the genome browser and the Path A adult confirm). The route still accepts that body (grant_cloud_model_consent) and nothing in the browser sends it: whether to retire it or register it is the owner's. 2026-11-19, owner decision (\"G8.5: the provider-key cloud consent request is removed\"): api.consents no longer accepts the { providerKey } body; it is refused as every other unregistered body is (400 invalid_request once the session token is admitted), grant_cloud_model_consent stays in the database with no caller in src/ (the two browser fixtures that sent the body now seed the legacy grant /settings/consents lists by calling it with the service role), and revoking a grant made that way still works (api.consent-revoke's cloud-model-provider-grant case). 2026-11-19, owner decision (\"G8.5: an invited adult's own account declaration counts\"): the register's adult body on api.invitation-accept carries no jurisdiction field (requestContract.adultAcceptBody), as Path B's account body on api.withdraw has not since 23 October, so the Path A adult acceptance row (src/components/embryo/adult-subject-review-form.tsx) closes and is removed. One row remains: the genome browser (owner). D-083's co-parent fields stay with counsel in formRequestDivergence.",
-  "clientRequestDivergence": [
-    {
-      "file": "src/components/browse/genome-browser.tsx",
-      "routeId": "api.browse-region",
-      "method": "POST",
-      "issues": [
-        "omits nonce, which the registered body requires",
-        "omits region, which the registered body requires",
-        "omits subject, which the registered body requires",
-        "sends chromosome, which the registered body does not declare",
-        "sends end, which the registered body does not declare",
-        "sends file, which the registered body does not declare",
-        "sends start, which the registered body does not declare"
-      ],
-      "why": "The genome browser posts { file, chromosome, start, end }, and src/app/api/browse/region/route.ts parses exactly that. The register's api.browse-region closed body is { subject, region: { chromosome, start, end }, cursor?, nonce }, with a one-time browse nonce and a server-signed cursor the route's own comment says still need a nonce-minting page. The browser and the handler agree with each other and not with the register. Reviewed again on 2026-10-24 (G8.5, \"code to the register\") and not moved, because moving it is not a transcription: (1) the closed body names subject, not file, so the server would choose the file; today the read is RLS-scoped to the caller's own rows (user_variants_select_own), so a Family viewer's track reads nothing, and a subject-shaped read through the page's resolver would read the counterpart's rows, which is a reach decision; (2) the one-time browse nonce has no successor channel: raw-region-v1 carries none and no route mints one, so a remount of the same page (the client router cache, back navigation) would spend the page's only nonce and fail; (3) raw-region-v1 asks for a server-signed cursor and another variant shape; (4) the nonce needs a new account operation and a guarded migration.",
-      "closing": "Owner, then engineering: decide the subject-shaped read's reach for a Family viewer and how a one-time browse nonce is renewed (a successor in the answer, a mint route, or a nonce per page render that a remount may reuse); then engineering moves the route, the page that renders the nonce and this request to the registered body and raw-region-v1, with the migration, and these issues go stale. Or the register is rewritten to the file-and-locus body.",
-      "closedBy": "owner"
-    }
-  ],
+  "clientRequestDivergenceNote": "2026-10-23 (G8.5). What every request the browser makes sends when no form makes it. scripts/form-contract-census.ts reads the client module graph (clientModules: every \"use client\" module and every local module one imports for a value) and every fetch call and chat transport in it (fileRequests), with no argument bound; a request a form makes is read by the form census instead and recorded in formRequestDivergence. scripts/form-register-correspondence.test.ts compares these rows with the census in both directions and fails if any request omits X-Inherit-CSRF. Several rows are the reader's limits rather than the product's (a value passed as an argument, a binary body, a status compared through a reused variable name); each says so and names what would let the census read it. Recorded, not fixed: body fields, nonce headers and statuses belong to the G8.5 form-shape work. 2026-10-24 (G8.5, owner decision of 23 October, item 1): of the 19 rows, 14 close and 2 (the IGV reference and the review PDF viewer, 3 issues) become reviewed entries. The code moved to the register where it left out what the register requires (the operation nonce on the provider and own-Copilot revocations, through two guarded doors, 20261025200000_consent_revoke_provider_nonce.sql; the grant, acknowledgement and appeal-reversal bodies named field by field). The register lists the harmless answers that ship (file-delete-v1, consent-revocation-v1, public-capacity-limited-v1 on both document-session routes). The census reads what it could not: binary bodies, a status compared on another block-scoped binding, a local function's calls with their arguments bound, string concatenation and a zod parse's output. The three requests that are not a request to an Inherit route are reviewed in clientRequestReview. Three rows remain: the genome browser's body (owner), the compatibility chat's provider consent (owner, with the compatibility chat) and D-103's Path A confirm (engineering, with Path A). 2026-10-24 (G8.5): the compatibility Copilot panel is retired with its api.chat branch, and with it src/components/chat/consent-dialog.tsx, the one client that sent api.consents the unregistered { providerKey } body; its row is removed (2 rows remain: the genome browser and the Path A adult confirm). The route still accepts that body (grant_cloud_model_consent) and nothing in the browser sends it: whether to retire it or register it is the owner's. 2026-11-19, owner decision (\"G8.5: the provider-key cloud consent request is removed\"): api.consents no longer accepts the { providerKey } body; it is refused as every other unregistered body is (400 invalid_request once the session token is admitted), grant_cloud_model_consent stays in the database with no caller in src/ (the two browser fixtures that sent the body now seed the legacy grant /settings/consents lists by calling it with the service role), and revoking a grant made that way still works (api.consent-revoke's cloud-model-provider-grant case). 2026-11-19, owner decision (\"G8.5: an invited adult's own account declaration counts\"): the register's adult body on api.invitation-accept carries no jurisdiction field (requestContract.adultAcceptBody), as Path B's account body on api.withdraw has not since 23 October, so the Path A adult acceptance row (src/components/embryo/adult-subject-review-form.tsx) closes and is removed. One row remains: the genome browser (owner). D-083's co-parent fields stay with counsel in formRequestDivergence. 2026-11-19, owner decision (\"G8.5: the genome browser's read is registered as built\"): the register's api.browse-region is the file-based read the browser sends and the handler answers: the closed body { file, chromosome, start, end }, the session X-Inherit-CSRF token with no body nonce and no cursor, the caller's own rows only (row-level security decides, so a relative's track reads nothing), and own-region-variants-v1 (200 { variants, truncated }), which replaces raw-region-v1. The genome browser row closes and is removed; no row remains.",
+  "clientRequestDivergence": [],
   "clientRequestReviewNote": "2026-10-24 (G8.5). Requests the client census reads but cannot hold to a register entry because they are not a request to an Inherit route: a first-party static asset, or an object URL of bytes already in the page. Each lists the census issues it accounts for and literal evidence that must still be present, so a reviewed request that changes fails until it is re-reviewed. scripts/form-register-correspondence.test.ts compares them, with clientRequestDivergence, with the census in both directions.",
   "clientRequestReview": [
     {
@@ -691,6 +629,61 @@
       "why": "The POST is built closed on purpose until a provider is approved (docs/account-archive-orchestration.md: \"the export provider remains an unanswered owner choice. The actual POST refuses before durable create\"), and no public page offers it. Its refusal is a status the register does not let the route answer.",
       "closing": "Owner: the same provider decision. Until then either the register binds a closed-capability response to api.export, or the door answers a bound contract, as the other routes built closed do with resource-not-found-v1 (engineering, once the owner picks).",
       "closedBy": "owner"
+    }
+  ],
+  "consentWithdrawalNotRegisteredNote": "2026-11-19 (G8.5, owner decision \"the register names where each kind of consent is withdrawn\"). The decision says any kind that turns out to have no way to be withdrawn comes back to the owner and the amendment does not paper over it. api.consent-revoke's policy.withdrawalRoutes.cases names the routes that withdraw eight of the eleven dispositionCases kinds (donor attribution as a consent that cannot be given yet). These rows are the other three: nothing withdraws them short of deleting the whole record or the account, which also ends more than the consent. scripts/route-register-correspondence.test.ts compares the kinds the register names with these rows in both directions, so a kind gaining a registered route fails until its row is removed. Listing a kind records it; it does not bless it.",
+  "consentWithdrawalNotRegistered": [
+    {
+      "kind": "self-upload-class-consent",
+      "why": "The consent is the account's consent.upload-self signature and the public.subject_consents row of consent_type upload_class on its self subject (20260906102710_own_upload_consent.sql), which every upload session names (upload_sessions.upload_consent_id). Nothing withdraws it on its own: api.consent-revoke resolves only purpose_grants and consent_grants ids and answers not found for any other; api.consents-revoke-all excludes class-upload consents; api.file-delete deletes one file, leaves the consent row live and is refused while the record has shared or generated material (file_delete_shared_graph), though docs/retention.md (source.revocation-7d) calls it the only withdrawal of a self source's store consent. Only emptying the whole self record ends it: api.subject-delete's self case (private.empty_self_subject_v1) revokes every consent on the record and purges every file, result, chat, permission and relationship on it, and no page sends that request; account deletion ends it too. The register's disposition, revocation-and-purge-v1, is whole-subject, but whether withdrawing this consent means emptying the record, and from which screen, has not been decided.",
+      "closing": "Owner: name the withdrawal (per file through api.file-delete, with what happens to the consent row when the last file goes; the whole-record api.subject-delete with a page that offers it; or a withdrawal of the consent itself), then engineering registers it in withdrawalRoutes.cases and this row is removed.",
+      "closedBy": "owner",
+      "evidence": [
+        {
+          "file": "src/app/api/consents/[id]/revoke/route.ts",
+          "literal": "admin.from(\"consent_grants\").select(\"id\").eq(\"id\", id).maybeSingle(),"
+        },
+        {
+          "file": "supabase/migrations/20261016200000_consents_revoke_all.sql",
+          "literal": "-- Excluded, as the register says: class-upload consents"
+        },
+        {
+          "file": "supabase/migrations/20261016181000_subject_delete.sql",
+          "literal": "create function private.empty_self_subject_v1(p_account_id uuid,p_subject_id uuid)"
+        }
+      ]
+    },
+    {
+      "kind": "other-adult-uploader-consent.upload-other-adult",
+      "why": "The uploader's consent.upload-other-adult signature and the upload_class public.subject_consents row on the Path B other_adult subject (20260928150000_other_adult_held_upload.sql). Nothing withdraws it on its own: api.consent-revoke cannot address it and api.consents-revoke-all excludes it. The uploader can end it only by deleting the whole record: api.subject-delete by the owning account (delete_path_b_subject_for_route_v1 with state withdrawn) ends every held file revision, purges the subject and deletes the other adult's principal and contact, so it also ends the other adult's own confirmation; no page sends that request. Account deletion ends it too. The register's disposition names revocation-and-purge-v1.",
+      "closing": "Owner: say whether the uploader's withdrawal is the whole-record delete (and from which screen) or whether the uploader may withdraw a held file or the consent without ending the other adult's record; engineering then registers it and this row is removed.",
+      "closedBy": "owner",
+      "evidence": [
+        {
+          "file": "supabase/migrations/20261016181000_subject_delete.sql",
+          "literal": "case when s.subject_account_id is not distinct from p_account_id then 'deleted' else 'withdrawn' end);"
+        },
+        {
+          "file": "supabase/migrations/20261016200000_consents_revoke_all.sql",
+          "literal": "-- Excluded, as the register says: class-upload consents"
+        }
+      ]
+    },
+    {
+      "kind": "embryo-nonparent-uploader-own-upload-artifact",
+      "why": "A nonparent uploader's own consent.upload-embryo signature for a cohort uploaded with the genetic parents' permission (upload_class embryo_third_party). Nothing withdraws it: api.cohort-restrict and its alias api.embryo-withdraw act only for a current disposition authority (restrict_embryo_cohort_v1 refuses with 'not a disposition authority'), which a nonparent uploader never is; api.withdraw's embryo-parent-withdrawal session is issued only to a disposition authority; api.consent-revoke cannot address an artifact signature. Only deleting the uploader's account ends it, through the owned-cohort purge (20260930235000_account_cohort_purge.sql). Embryo ingest is TEST-LOCAL, so no such cohort exists in production today.",
+      "closing": "Owner: say how a nonparent uploader withdraws their own upload artifact (the register's cohort-restriction-v1 nonparent-required-uploader-basis-loss case); engineering builds and registers it and this row is removed.",
+      "closedBy": "owner",
+      "evidence": [
+        {
+          "file": "supabase/migrations/20260930232000_embryo_parent_withdrawal.sql",
+          "literal": "raise exception using errcode = '42501', message = 'not a disposition authority';"
+        },
+        {
+          "file": "src/lib/embryos/routes.ts",
+          "literal": "uploadSituation: z.literal(\"with-genetic-parents-permission\"),"
+        }
+      ]
     }
   ]
 }

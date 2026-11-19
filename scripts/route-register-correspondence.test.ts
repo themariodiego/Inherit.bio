@@ -299,9 +299,10 @@ describe("the route register and the App Router describe the same surface", () =
  * success status or body at all, which is the same hole as an unregistered
  * route wearing a register entry.
  *
- * The prefix half. `storagePrefixes` declares 6 prefixes over 4 buckets, each
- * with a path shape, a filename contract, an access rule and, for three of
- * them, retention ids. `scripts/route-gate.ts` checks the bucket names against
+ * The prefix half. `storagePrefixes` declares 7 prefixes over 4 buckets (6
+ * until 2026-11-19, when `storage.prepared-v1` was registered), each with a
+ * path shape, a filename contract, an access rule and, for four of them,
+ * retention ids. `scripts/route-gate.ts` checks the bucket names against
  * the buckets migrations create and stops there: nothing compared a prefix
  * with the code that puts bytes under it. So the checks here walk the code for
  * every place that names a Storage bucket, compare that set with the register
@@ -335,6 +336,13 @@ const contractLedger = JSON.parse(readFileSync(CONTRACT_LEDGER, "utf8")) as {
     segments: number;
     declaredPrefixIds: string[];
     declaredSegments: number[];
+    evidence: { file: string; literal: string }[];
+  }[];
+  consentWithdrawalNotRegistered: {
+    kind: string;
+    why: string;
+    closing: string;
+    closedBy: string;
     evidence: { file: string; literal: string }[];
   }[];
 };
@@ -805,6 +813,129 @@ describe("the register's storage prefixes and the buckets the code addresses agr
       for (const evidence of known.evidence) {
         expect(`${known.id} ${evidence.file} ${readFileSync(evidence.file, "utf8").includes(evidence.literal)}`)
           .toBe(`${known.id} ${evidence.file} true`);
+      }
+    }
+  });
+
+  /**
+   * 2026-11-19 (owner decision "G8.5: the two undescribed genomes key shapes";
+   * engineering chose the documents). The two genomes shapes the ledger above
+   * recorded, the flat <uuid> key and prepared/<uuid>, are described now, so
+   * their genomes rows are gone. This holds what those rows proved from the
+   * other side: each key shape the code writes into genomes is described by
+   * the prefix named here, with the same number of segments and the same
+   * literal folder and no account or subject folder the code does not write,
+   * and each is anchored to the writer that produces it. A writer that changes
+   * its key, or a prefix that stops matching it, fails here.
+   */
+  it("describes every genomes key shape the code writes, anchored to the code that writes it", () => {
+    const written: { prefixId: string; segments: number; folder: string | null; evidence: { file: string; literal: string }[] }[] = [
+      // Staging and final keys of every self and other_adult file, and the subject-transfer relocation's new key.
+      { prefixId: "storage.subject-v2", segments: 1, folder: null, evidence: [
+        { file: "supabase/migrations/20260930125000_own_upload_allowance_excludes_embryo.sql",
+          literal: " values(p_account_id,p_session_id,p_subject_id,gen_random_uuid()::text,p_size_bytes,p_sha256," },
+        { file: "supabase/migrations/20260928150000_other_adult_held_upload.sql",
+          literal: "final_object_name=gen_random_uuid(),finalization_started_at=clock_timestamp()" },
+        { file: "supabase/migrations/20260831224054_storage_and_download_sessions.sql",
+          literal: "check (object_name ~ '^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$')," },
+        { file: "src/lib/uploads/subject-finalization.ts", literal: 'bucket: z.literal("genomes"), stagingKey: uuid, finalKey: uuid,' },
+        { file: "supabase/migrations/20261016221000_subject_transfer.sql",
+          literal: "new_object_key text check (new_object_key ~ '^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$')," },
+      ] },
+      // Prepared artifacts on a Supabase v1 receipt.
+      { prefixId: "storage.prepared-v1", segments: 2, folder: "prepared", evidence: [
+        { file: "supabase/migrations/20260908164616_own_preparation_job_authority.sql",
+          literal: "object_key text not null unique default ('prepared/'||gen_random_uuid()::text)" },
+        { file: "src/lib/genome/prepared-source/storage-common.ts", literal: "/^prepared\\/[0-9a-f]{8}-" },
+      ] },
+      // The names the database reserves in genomes for embryo ingest fragments; the cohort path writes no flat key.
+      { prefixId: "storage.cohort-v2", segments: 4, folder: null, evidence: [
+        { file: "supabase/migrations/20260905203457_embryo_ingest_unwind_runtime.sql",
+          literal: "new.object_name:=s.account_id::text||'/'||s.cohort_id::text||'/'||s.upload_id::text||'/'||new.object_id::text||v_suffix;" },
+      ] },
+    ];
+    const genomes = prefixes.filter(prefix => prefix.bucket === "genomes");
+    for (const shape of written) {
+      const prefix = genomes.find(candidate => candidate.id === shape.prefixId);
+      expect(prefix, shape.prefixId).toBeDefined();
+      const segments = prefix!.prefix.split("/");
+      expect(segments.length, shape.prefixId).toBe(shape.segments);
+      expect(segments.filter(segment => !/^\{[a-z_]+\}$/u.test(segment)), shape.prefixId).toEqual(shape.folder ? [shape.folder] : []);
+      for (const evidence of shape.evidence) {
+        expect(readFileSync(evidence.file, "utf8").includes(evidence.literal), `${shape.prefixId} ${evidence.file}: ${evidence.literal}`).toBe(true);
+      }
+    }
+    // Every other genomes prefix is closed to new writes, so no shape the code writes is left to it.
+    expect(genomes.filter(prefix => !written.some(shape => shape.prefixId === prefix.id))
+      .map(prefix => `${prefix.id} ${(prefix as Prefix & { newWrites?: string }).newWrites}`)).toEqual(["storage.raw-legacy forbidden"]);
+    // And no genomes row is left in the ledger: the one object key shape still recorded is the R2 home of the same artifacts.
+    expect(contractLedger.objectKeyShapeNotDescribedByAnyPrefix.filter(known => known.bucket === "genomes")).toEqual([]);
+  });
+});
+
+/**
+ * 2026-11-19 (owner decision "G8.5: the register names where each kind of
+ * consent is withdrawn"). api.consent-revoke lists eleven kinds in
+ * `dispositionCases` and itself resolves only two tables, so the register now
+ * names, in `policy.withdrawalRoutes.cases`, the routes that withdraw each
+ * kind today and the database door each of those routes calls. The decision
+ * says a kind with no way to be withdrawn goes back to the owner rather than
+ * being papered over, so every kind the register does not name is a row of
+ * `docs/register-contract-divergence.json#consentWithdrawalNotRegistered`,
+ * compared here in both directions: a kind that gains a route fails until its
+ * row is removed, and a kind dropped from the map fails until it is recorded.
+ */
+describe("the register names where each kind of consent is withdrawn, and the ledger every kind it does not", () => {
+  type Case = { routes: string[]; doors: string[]; how: string };
+  const document = registerDocument();
+  const entry = document.routes.find(route => route.id === "api.consent-revoke")!;
+  const policy = entry.policy as { dispositionCases: Record<string, string>;
+    withdrawalRoutes: { registeredBy: string; basis: string; cases: Record<string, Case> } };
+  const kinds = Object.keys(policy.dispositionCases);
+  const named = policy.withdrawalRoutes.cases;
+  const open = contractLedger.consentWithdrawalNotRegistered;
+  const shipped = codeFiles().filter(file => file.split(path.sep)[0] === "src").map(file => readFileSync(file, "utf8"));
+
+  it("reads the eleven kinds and the map at all, so a passing run is not an empty scan", () => {
+    expect(kinds).toHaveLength(11);
+    expect(Object.keys(named).length).toBeGreaterThan(5);
+    expect(policy.withdrawalRoutes.registeredBy).toBe("owner-decision-2026-11-19-G8.5-the-register-names-where-each-kind-of-consent-is-withdrawn");
+  });
+
+  it("names only kinds dispositionCases declares, and records every kind it does not name, in both directions", () => {
+    expect(Object.keys(named).filter(kind => !kinds.includes(kind))).toEqual([]);
+    compareBothWays(kinds.filter(kind => !(kind in named)), open.map(row => row.kind));
+  });
+
+  it("names registered routes, each with a database door that shipped code calls by name", () => {
+    const ids = new Set(document.routes.map(route => route.id));
+    for (const [kind, each] of Object.entries(named)) {
+      expect(each.routes.filter(id => !ids.has(id)), kind).toEqual([]);
+      expect(new Set(each.routes).size, kind).toBe(each.routes.length);
+      for (const door of each.doors) {
+        expect(shipped.some(source => source.includes(`"${door}"`)), `${kind}: ${door} is called by no shipped module`).toBe(true);
+      }
+      expect(each.how.length, kind).toBeGreaterThan(60);
+    }
+    // The one kind no route withdraws is the one that cannot be given yet, and it says so.
+    const none = Object.entries(named).filter(([, each]) => each.routes.length === 0);
+    expect(none.map(([kind]) => kind)).toEqual(["consent.embryo-donor-attribution-by-the-current-donor-subject-principal"]);
+    expect(none[0]![1].doors).toEqual([]);
+    expect(none[0]![1].how).toMatch(/^none-because-the-consent-cannot-be-given-yet/u);
+    expect(readFileSync("src/lib/embryos/routes.ts", "utf8")).toContain('return ["identified_donor_attribution_unavailable"];');
+    // api.consent-revoke itself resolves exactly the two tables the map's basis names.
+    const revoke = readFileSync("src/app/api/consents/[id]/revoke/route.ts", "utf8");
+    expect(revoke.match(/admin\.from\("([a-z_]+)"\)/gu)).toEqual(['admin.from("purpose_grants")', 'admin.from("consent_grants")']);
+  });
+
+  it("says why each unnamed kind has no registered route, who decides, and anchors it to the code", () => {
+    for (const row of open) {
+      expect(row.closedBy, row.kind).toBe("owner");
+      expect(row.why.length, row.kind).toBeGreaterThan(300);
+      expect(row.closing.length, row.kind).toBeGreaterThan(60);
+      expect(row.evidence.length, row.kind).toBeGreaterThan(0);
+      for (const evidence of row.evidence) {
+        expect(readFileSync(evidence.file, "utf8").includes(evidence.literal), `${row.kind} ${evidence.file}: ${evidence.literal}`).toBe(true);
       }
     }
   });
