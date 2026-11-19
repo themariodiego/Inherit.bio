@@ -56,8 +56,10 @@ run.** Launch requires:
 - Grading blind and external, against `scripts/comprehension/rubric.md`, with a
   10% independent re-grade reaching at least 90% agreement.
 - **≥ 10/12 per task** on T1, T2, T3, T4, T8, T9; **zero** prohibited answers on
-  T5, T6, T7; zero "no route found" answers on T10; T9 within 8 actions and with
-  no account created.
+  T5, T6, T7; zero "no route found" answers on T10; T9 within six in-app actions
+  and with no account created. Six, not eight: the owner decided this on
+  22 September 2026 (`docs/protocol/decisions.md`), and a mailed-link or
+  typed-URL entry is recorded separately and not counted.
 - Results committed to `docs/comprehension-results-<date>.md`.
 - Where any task returns below 10/12, the simulated threshold for that task rises
   to 29/30, the simulated round is re-run, and the human round is repeated.
@@ -156,3 +158,40 @@ None of these announces itself at launch. That is why they are on a checklist.
 The reserved `20260930240000_future_person_document_keys.sql` migration requires the legacy private claim-document session store to be empty. The guarded release must confirm this read-only prerequisite. If legacy encrypted sessions exist, stop this migration and prepare a separately reviewed re-encryption plan that preserves the current bytes, live authority and fixed deadlines. Do not delete valid sessions or substitute independent keys for ciphertext sealed under the old identity key. Fresh TEST-LOCAL fixtures use independent synthetic wrapped envelopes, and the runtime uses the existing deployment key; no new owner secret is required.
 
 The named-reviewer PDF display requires the generated `public/review-document-assets/6.3.289` directory from the same pinned build. The build and development commands prepare it before starting Next. Hosted browser partitions must carry that directory with the build or run `pnpm exec tsx scripts/prepare-review-pdf-assets.mts` after the frozen dependency install. These files contain library code, fonts and manifests only; document bytes remain in the browser's memory. Missing or mismatched support assets fail closed and cannot enable the human read checkbox. Full app browser execution remains required before release.
+
+### Guarded production releases outstanding · 19 November 2026
+
+Three guarded releases are outstanding, and they run in this order. `main`
+deploys to production, so a branch whose code needs a release merges straight
+after that release reads back EQUAL, never before. Each release runs on the
+owner's go, given by one clickable question after the read-only pre-checks and
+before the dry run, with a new short-lived `SUPABASE_ACCESS_TOKEN` that the
+owner revokes afterwards. Each commits its evidence under its kit's
+`results/run-<UTC date>/`.
+
+1. **PR 324: 25 migrations**, `20261016120000_embryo_table_mapping_route.sql`
+   to `20261016221000_subject_transfer.sql`. Kit:
+   `docs/evidence/pr324-production-apply-20261022/`, rehearsed against the
+   migration tree of `538dcee6`. PR 324 merges straight after its fourth batch.
+2. **The follow-up: 7 migrations**, `20261022100000_neanderthal_ancestry_content`,
+   `20261022110000_read_called_input_provenance`,
+   `20261023100000_subject_export_joint_results`,
+   `20261023110000_export_completeness`,
+   `20261023120000_legal_audit_attribution_completeness`,
+   `20261023130000_legal_audit_attribution_remaining` and
+   `20261023140000_review_download_clock`. Kit:
+   `docs/evidence/followup-production-apply-20261023/`, rehearsed against the
+   migration tree of `77d04563`. It runs only after release 1 is complete and PR
+   324 is merged and deployed. Its step 4 also runs D-081's read-only
+   release-time check, `scripts/tools/d081-retirement-precheck.sql`, and its step
+   7 the four status-only checks of the retired routes. The follow-up branch now
+   carries four more migrations than that tree, so the kit's migration-tree
+   precondition fails until the two are reconciled.
+3. **Four later migrations, no committed kit yet**:
+   `20261024110000_copilot_settings_delete_nonce`,
+   `20261024220000_session_csrf_tokens`,
+   `20261025200000_consent_revoke_provider_nonce` and
+   `20261025400000_path_a_account_accept_typed_name`. The owner placed the last
+   in the release after the follow-up (D-103, 23 October 2026, in
+   `docs/protocol/decisions.md`). A kit must be built, rehearsed against
+   release 2's post-state and committed before any of them is applied.
