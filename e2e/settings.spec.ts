@@ -3,7 +3,6 @@ import { type Page } from "@playwright/test";
 import { expect, test } from "./audited-test";
 import path from "node:path";
 import { adminClient, createConfirmedUser, signIn } from "./helpers";
-import { accountCsrf } from "./helpers/session-csrf";
 import { uploadOwnFilePrepared } from "./own-report-helpers";
 import {
   COPILOT_PRESET_GUIDES,
@@ -11,6 +10,7 @@ import {
   COPILOT_PRESET_NAMES,
 } from "../src/copy/settings/copilot-providers";
 import { COPILOT_PROVIDER_PRESETS } from "../src/lib/copilot/provider-presets";
+import { LLM_DATA_CLASSES, providerKeyFor } from "../src/lib/llm";
 
 /**
  * Three account-management route states, driven on a fresh confirmed account
@@ -60,23 +60,30 @@ async function saveSyntheticCloudProvider(page: Page) {
 }
 
 /**
- * Writes one `consent_grants` row through the only door that writes one: the
- * provider-key body of `POST /api/consents` (`grant_cloud_model_consent`).
- * Until 24 October 2026 the compatibility Copilot panel's dialog sent it,
- * after the chat route's `consent_required`. That panel is retired (G8.5): no
- * screen sends the body any more and no chat reads the table, while the
- * route still accepts it and this page still lists and revokes what it
- * wrote. So the request is the dialog's own, sent from this signed-in page
- * with the route's one-time token, for the provider just saved.
+ * Seeds one legacy `consent_grants` row, for the provider just saved, through
+ * the only thing that ever wrote one: `grant_cloud_model_consent`. Until 24
+ * October 2026 the compatibility Copilot panel's dialog reached it through the
+ * provider-key body of `POST /api/consents`, after the chat route's
+ * `consent_required`. That panel is retired (G8.5), and on the owner's
+ * decision of 19 November 2026 the route no longer accepts the body: it
+ * recorded a cloud permission without showing its text. The consent route
+ * that shows the text writes a purpose grant, which this page does not list.
+ * So a row this page lists and revokes exists only for a person who granted
+ * through the old door, and that person's rows are seeded here by the same
+ * function, with the service role: the signature, the subject consent and
+ * the legacy grant together, as the door wrote them.
  */
-async function grantCloudModelConsent(page: Page) {
-  const origin = new URL(page.url()).origin;
-  const granted = await page.request.post("/api/consents", {
-    headers: { origin, "content-type": "application/json", "x-inherit-csrf": await accountCsrf(page, "api.consents") },
-    data: { providerKey: SYNTHETIC_PROVIDER_KEY },
+async function grantCloudModelConsent(accountId: string) {
+  const admin = adminClient();
+  const saved = await admin.from("llm_settings").select("provider, base_url").eq("user_id", accountId).single();
+  expect(saved.error).toBeNull();
+  expect(providerKeyFor(saved.data!.provider, saved.data!.base_url), "the grant names the provider just saved")
+    .toBe(SYNTHETIC_PROVIDER_KEY);
+  const granted = await admin.rpc("grant_cloud_model_consent", {
+    p_account_id: accountId, p_provider_key: SYNTHETIC_PROVIDER_KEY, p_data_classes: [...LLM_DATA_CLASSES],
   });
-  expect(granted.status()).toBe(200);
-  expect(Object.keys(await granted.json())).toEqual(["grantId"]);
+  expect(granted.error).toBeNull();
+  expect(granted.data).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
 }
 
 test.describe.configure({ mode: "serial" });
@@ -436,6 +443,14 @@ test("the People settings page says it is not built, and blames no jurisdiction"
  * the route's one-time token, and asserts its response. What this test
  * proves about the revoke control is unchanged.
  *
+ * SINCE 19 NOVEMBER 2026 (owner decision, G8.5) the route refuses the
+ * provider-key body too, and nothing in the product writes the row. It is a
+ * person's legacy grant, which this page still lists and withdraws, so
+ * `grantCloudModelConsent` seeds it with the service role through the same
+ * database function the door called, for the provider just saved, and
+ * asserts the function's answer. What this test proves about the revoke
+ * control is still unchanged.
+ *
  * WHICH ALSO SETTLES A QUESTION LEFT OPEN. The empty-state copy above says
  * "No cloud-LLM consent grants. None are needed for local models", and it was
  * unclear whether a local grant could land in a list captioned that way. It
@@ -463,7 +478,7 @@ test("the People settings page says it is not built, and blames no jurisdiction"
 test("/settings/consents processing: the revoke control says Working while its request is in flight", async ({ page }) => {
   const email = `settings-consents-processing-${randomUUID()}@e2e.local`;
   const password = "e2e-settings-consents-processing-pw";
-  await createConfirmedUser(email, password);
+  const accountId = await createConfirmedUser(email, password);
   await signIn(page, email, password);
 
   // The grant this page needs a row for. Both steps assert the RESPONSE, not
@@ -471,7 +486,7 @@ test("/settings/consents processing: the revoke control says Working while its r
   // generic failure the panel shows for anything, so asserting the button
   // alone would have re-proven the bug this fixture found.
   await saveSyntheticCloudProvider(page);
-  await grantCloudModelConsent(page);
+  await grantCloudModelConsent(accountId);
 
   // Now the state under test: one revocable row, and its control held open.
   let release!: () => void;
@@ -559,10 +574,10 @@ test("/settings/data complete: both exit rights render, and the export names wha
 test("/settings/consents complete: the grant names its recipient, its date, its scope and its way out", async ({ page }) => {
   const email = `settings-consents-complete-${randomUUID()}@e2e.local`;
   const password = "e2e-settings-consents-complete-pw";
-  await createConfirmedUser(email, password);
+  const accountId = await createConfirmedUser(email, password);
   await signIn(page, email, password);
   await saveSyntheticCloudProvider(page);
-  await grantCloudModelConsent(page);
+  await grantCloudModelConsent(accountId);
 
   await page.goto("/settings/consents");
   await expect(page.locator("main h1")).toHaveText("Consents");

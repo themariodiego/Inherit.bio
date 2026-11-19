@@ -5,12 +5,12 @@ import path from "node:path";
 import { expect, type Browser, type Page, type Route } from "@playwright/test";
 import { adminClient, completeOwnUploadConsent, createConfirmedUser, signIn, uploadOwnFileThroughUi } from "../helpers";
 import { uploadOwnFilePrepared } from "../own-report-helpers";
-import { accountCsrf } from "./session-csrf";
 import { densityCapturePlan, type DensityStateCase } from "../../scripts/density-capture-plan";
 import { ownedDensityRecipe, type OwnedDensityRecipe } from "../../scripts/density-owned-states";
 import type { DensityRegister } from "../../scripts/density-current";
 import type { DensityStateFixture } from "./density-current-capture";
 import { OWN_UPLOAD_COPY } from "../../src/copy/upload/consent";
+import { LLM_DATA_CLASSES, providerKeyFor } from "../../src/lib/llm";
 import { NOTHING_READ, ANCESTRY_OFF } from "../../src/copy/ancestry";
 import { BROWSER_NO_FILE, BROWSER_PREPARING, SCORE_COVERAGE_NO_FILE, SCORE_COVERAGE_PREPARING } from "../../src/copy/genome/data";
 import { ANCESTRY_PREPARING, HUB_PREPARING, REPORT_PREPARING, REPORTS_PREPARING } from "../../src/copy/genome/preparation";
@@ -133,18 +133,26 @@ async function saveCloudProvider(page: Page) {
   await expect(page.getByText("Provider saved. Review the separate Copilot permission below.", { exact: true })).toBeVisible();
 }
 
-/** The provider-key consent the Consents page lists, through its one door
- * (grant_cloud_model_consent). The compatibility Copilot panel's dialog sent it
- * until 24 October 2026; that panel is retired (G8.5) and no screen sends it,
- * so this sends the dialog's own request with the route's one-time token. */
-async function grantCloudConsent(page: Page) {
+/** The legacy provider-key consent the Consents page lists and withdraws, for
+ * the provider this account saved. The compatibility Copilot panel's dialog sent
+ * its request until 24 October 2026, and api.consents stopped accepting it on
+ * the owner's decision of 19 November 2026 (G8.5): it recorded a cloud
+ * permission without showing its text. The consent route that shows the text
+ * writes a purpose grant, which this page does not list, so the row is seeded by
+ * the one database function that ever wrote it, with the service role: the
+ * signature, the subject consent and the legacy grant together, as the door did.
+ * No model step is requested. */
+async function grantCloudConsent(page: Page, accountId: string) {
   await saveCloudProvider(page);
-  const signed = await page.request.post("/api/consents", {
-    headers: { origin: new URL(page.url()).origin, "content-type": "application/json", "x-inherit-csrf": await accountCsrf(page, "api.consents") },
-    data: { providerKey: CLOUD_PROVIDER },
+  const admin = adminClient();
+  const saved = await admin.from("llm_settings").select("provider, base_url").eq("user_id", accountId).single();
+  expect(saved.error).toBeNull();
+  expect(providerKeyFor(saved.data!.provider, saved.data!.base_url), "the grant names the provider just saved").toBe(CLOUD_PROVIDER);
+  const signed = await admin.rpc("grant_cloud_model_consent", {
+    p_account_id: accountId, p_provider_key: CLOUD_PROVIDER, p_data_classes: [...LLM_DATA_CLASSES],
   });
-  expect(signed.status()).toBe(200); // No model step is requested.
-  expect(Object.keys(await signed.json())).toEqual(["grantId"]);
+  expect(signed.error).toBeNull();
+  expect(signed.data).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
 }
 
 async function assertEmpty(page: Page, row: DensityStateCase) {
@@ -259,7 +267,7 @@ export function realAccountAndOwnDensityFixtures(input: {
             await uploadOwnFilePrepared(holder, path.join(input.root, "e2e/fixtures/tiny-grch38.vcf"), { fileType: "vcf" });
             if (recipe === "model-ready") await saveCloudProvider(holder);
           } else if (recipe === "upload-ready") await completeOwnUploadConsent(holder);
-          else if (recipe === "consents-ready" || recipe === "consents-pending") await grantCloudConsent(holder);
+          else if (recipe === "consents-ready" || recipe === "consents-pending") await grantCloudConsent(holder, accountId);
 
           let peopleSession: (() => Promise<string>) | undefined;
           let originalPeopleSession: string | undefined;

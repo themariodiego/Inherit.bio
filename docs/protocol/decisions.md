@@ -5731,3 +5731,20 @@ This answers "the export provider remains an unanswered owner choice"
   prices, and no spending cap was set by this answer.
 - The 3 October conditions still hold for production: deletion is proved by
   actual provider operations, and retained version history is not assumed.
+
+## 2026-11-19 — Correction: how the two fixtures reach a legacy cloud grant
+
+Not an owner decision. The entry "G8.5: the provider-key cloud consent request
+is removed" said, as the question's option did, that the two test fixtures
+that sent the body "are rewritten to use the consent route that shows the
+text", and that the database function it called stays "uncalled". Engineering
+found that this cannot be done as written: the consent route that shows the
+text writes a purpose grant, and the page those fixtures test,
+`/settings/consents`, lists only the legacy `consent_grants` rows that the
+removed body wrote. So the two fixtures (`e2e/settings.spec.ts` and
+`e2e/helpers/density-owned-state-fixtures.ts`) seed that legacy row with the
+service role through `grant_cloud_model_consent`, for the provider just saved.
+The function has no caller in `src/`; two browser fixtures and one database
+test call it. The decision itself is carried out as chosen: `api.consents`
+refuses the body, and withdrawal is unchanged. Whoever retires the function
+later rewrites those fixtures and decides what `/settings/consents` lists.

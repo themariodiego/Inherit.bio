@@ -1,4 +1,5 @@
 import crypto from "node:crypto";
+import { readFileSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 // The one-time X-Inherit-CSRF gate is driven on this route by
 // src/lib/security/session-csrf-routes.test.ts; here it admits every request.
@@ -165,6 +166,31 @@ describe("POST /api/subject-drafts (adult invitation)", () => {
   it("answers 503 when the database refuses the keys", async () => {
     mocks.rpc.mockResolvedValue({ data: null, error: { code: "55000", message: "keyed digest set incomplete" } });
     expect((await inviteAdult(adult())).status).toBe(503);
+  });
+
+  // Owner decision of 19 November 2026 (G8.5, "Path A's invitation stays one
+  // step"): the register now describes this answer, path-a-invitation-created-v1,
+  // bound to api.subject-drafts. Every outcome of the one call answers its exact
+  // status and body, and nothing that names the draft, the address or a token.
+  it("answers an issued, barred or exhausted invitation with the register's path-a-invitation-created-v1", async () => {
+    const register = JSON.parse(readFileSync("docs/route-register.json", "utf8")) as {
+      responseContracts: Record<string, { status: number; body: Record<string, { const: unknown }> }>;
+      responseContractBindings: { routes: Record<string, string[]> };
+      routes: { id: string; policy?: { pathASuccessResponseContract?: string } }[];
+    };
+    expect(register.routes.find(route => route.id === "api.subject-drafts")?.policy?.pathASuccessResponseContract)
+      .toBe("path-a-invitation-created-v1");
+    expect(register.responseContractBindings.routes["api.subject-drafts"]).toContain("path-a-invitation-created-v1");
+    const contract = register.responseContracts["path-a-invitation-created-v1"]!;
+    const registered = { status: contract.status,
+      body: Object.fromEntries(Object.entries(contract.body).map(([key, rule]) => [key, rule.const])) };
+    expect(registered).toEqual({ status: 202, body: { accepted: true } });
+    for (const data of [[{ invitation_id: crypto.randomUUID(), subject_id: crypto.randomUUID() }],
+      [{ invitation_id: null, subject_id: null }]]) {
+      mocks.rpc.mockResolvedValueOnce({ data, error: null });
+      const response = await inviteAdult(adult());
+      expect({ status: response.status, body: await response.json() }).toEqual(registered);
+    }
   });
 
   it("refuses an invitation without the page's nonce before reserving anything", async () => {

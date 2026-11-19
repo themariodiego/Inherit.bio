@@ -454,6 +454,17 @@ describe("the form census fails on a planted divergence", () => {
     const chat = (after: string) => form('"/api/chat"', '{ method: "POST", headers: { "content-type": "application/json", "x-inherit-csrf": csrf }, body: JSON.stringify({ chatId, message }) }', after);
     expect(issuesOf(chat("if (response.status === 409) return;"))).toEqual([]);
     expect(issuesOf(chat("if (response.status === 410) return;"))).toEqual(["branches on status 410, which no response contract of api.chat declares"]);
+    // 2026-11-19 (owner decision "G8.5: the retired chat's 409 leaves the register"): that 409 is the own chat's
+    // correction refusal alone, which the code still answers; the retired branch's setup 409 left with its branch.
+    expect(register.responseContractBindings.routes["api.chat"]
+      .filter(name => (register.responseContracts[name] as { status?: number } | undefined)?.status === 409))
+      .toEqual(["own-chat-scientific-correction-v1"]);
+    expect(readFileSync("src/lib/copilot/own-chat-route.ts", "utf8")).toContain("return Response.json(ownChatCorrection(), { status: 409, headers });");
+    // Its other reference went with it: every closed branch the embryo shape bindings exempt on api.chat is still bound there.
+    const exempt = (register as unknown as { policyContracts: Record<string, { shapeBindings?: {
+      zeroFindingClosedBranches?: Record<string, string[] | string> } }> })
+      .policyContracts["embryo-autosomal-only-v1"]!.shapeBindings!.zeroFindingClosedBranches!["api.chat"] as string[];
+    expect(exempt.filter(name => !register.responseContractBindings.routes["api.chat"].includes(name))).toEqual([]);
     const claim = (after: string) => form('"/api/future-person/claim"', '{ method: "POST", headers: { "content-type": "application/json", "x-inherit-csrf": token }, body: JSON.stringify(intake) }', after);
     expect(issuesOf(claim("if (response.status === 404) return;")).filter(issue => issue.startsWith("branches"))).toEqual([]);
     expect(issuesOf(claim("if (response.status === 410) return;")).filter(issue => issue.startsWith("branches")))
@@ -503,11 +514,11 @@ describe("recorded endpoint response divergences stay true in both directions", 
   const rows = (JSON.parse(readFileSync(LEDGER, "utf8")) as { endpointResponseDivergence: ResponseRow[] }).endpointResponseDivergence;
   const exportEntry = register.routes.find(route => route.id === "api.export")!;
 
-  it("records exactly the two api.export answers and Path A's draft answer the register does not describe", () => {
-    // 2026-10-24: api.subject-drafts' Path A 202 joins the two api.export rows (owner decision pending).
+  it("records exactly the two api.export answers the register does not describe", () => {
+    // 2026-10-24: api.subject-drafts' Path A 202 joined the two api.export rows (owner decision pending).
+    // 2026-11-19 (owner decision "G8.5: Path A's invitation stays one step"): the register describes it, so its row closed.
     expect(rows.map(row => `${row.routeId} ${row.method} ${row.case}`))
-      .toEqual(["api.export GET no-export-cookie", "api.export POST capability-unconfigured",
-        "api.subject-drafts POST path-a-own-account"]);
+      .toEqual(["api.export GET no-export-cookie", "api.export POST capability-unconfigured"]);
     for (const row of rows) {
       expect(["owner", "counsel", "engineering"]).toContain(row.closedBy);
       expect(row.why.length).toBeGreaterThan(150);
@@ -524,16 +535,26 @@ describe("recorded endpoint response divergences stay true in both directions", 
     // A 503 bound to api.export would make the POST row stale.
     expect(registeredStatuses(exportEntry, "POST", register)).not.toContain(503);
     expect(registeredStatuses(exportEntry, "POST", register)).toContain(202);
-    // The Path A draft row departs from subject-draft-created-v1: the day the
-    // register binds a 202 to api.subject-drafts, or the route answers 201
-    // with the registered body, the row is stale.
-    const drafts = register.routes.find(route => route.id === "api.subject-drafts")!;
-    expect((drafts as { successResponseContract?: string }).successResponseContract).toBe("subject-draft-created-v1");
-    const created = (register as unknown as { responseContracts: Record<string, { status: number; body: Record<string, unknown> }> })
-      .responseContracts["subject-draft-created-v1"]!;
-    expect(created.status).toBe(201);
-    expect(created.body.next).toEqual({ const: "sign_uploader_artifact" });
-    expect(registeredStatuses(drafts, "POST", register)).not.toContain(202);
+    // The Path A draft row departed from subject-draft-created-v1 until the
+    // register bound a 202 to api.subject-drafts (owner decision of
+    // 2026-11-19, "G8.5: Path A's invitation stays one step"). It now names
+    // path-a-invitation-created-v1, 202 { accepted: true }, which is the
+    // answer the route gives, so a Path A row is stale; Path B keeps the 201
+    // and its uploader artifact.
+    const drafts = register.routes.find(route => route.id === "api.subject-drafts")! as (typeof register.routes)[number]
+      & { successResponseContract?: string; policy?: { pathASuccessResponseContract?: string } };
+    const contracts = (register as unknown as { responseContracts: Record<string, { status: number; body: Record<string, unknown> }> })
+      .responseContracts;
+    expect(drafts.successResponseContract).toBe("subject-draft-created-v1");
+    expect(contracts["subject-draft-created-v1"]!.status).toBe(201);
+    expect(contracts["subject-draft-created-v1"]!.body.next).toEqual({ const: "sign_uploader_artifact" });
+    expect(drafts.policy?.pathASuccessResponseContract).toBe("path-a-invitation-created-v1");
+    expect(contracts["path-a-invitation-created-v1"]!.status).toBe(202);
+    expect(contracts["path-a-invitation-created-v1"]!.body).toEqual({ accepted: { const: true } });
+    expect(registeredStatuses(drafts, "POST", register)).toContain(202);
+    expect(readFileSync("src/app/api/subject-drafts/route.ts", "utf8"))
+      .toContain("return NextResponse.json({ accepted: true }, { status: 202 });");
+    expect(rows.filter(row => row.routeId === "api.subject-drafts"), "a row the register now describes").toEqual([]);
   });
 });
 

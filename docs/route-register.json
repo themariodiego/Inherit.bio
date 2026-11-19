@@ -2197,7 +2197,6 @@
             "copilot-denial-v1",
             "copilot-refusal-v1",
             "embryo-closed-schema-v1",
-            "copilot-provider-setup-required-v1",
             "own-chat-scientific-correction-v1"
           ],
           "api.chat-history": [
@@ -11431,24 +11430,6 @@
       "unknownFieldsRecursively": "forbidden",
       "subjectContactObjectPathUploadTokenPurposeOrJobInternalsExceptOpaqueJobId": "forbidden"
     },
-    "copilot-provider-setup-required-v1": {
-      "status": 409,
-      "contentType": "application/json",
-      "body": {
-        "error": {
-          "enum": [
-            "no_provider",
-            "no_key"
-          ]
-        },
-        "message": "fixed-server-copy-naming-the-setting-to-add"
-      },
-      "when": "the-compatibility-branch-of-api.chat-for-a-scope-with-no-canonical-Copilot-authority-finds-no-saved-provider-no_provider-or-a-hosted-provider-with-no-stored-key-no_key; after-the-intent-gate-and-before-any-key-decryption-retrieval-or-model-call",
-      "registeredBy": "owner-decision-2026-10-23-G8.5-the-register-lists-the-harmless-extras",
-      "unknownFieldsRecursively": "forbidden",
-      "writes": 0,
-      "modelCalls": 0
-    },
     "own-chat-scientific-correction-v1": {
       "status": 409,
       "contentType": "application/json",
@@ -13512,6 +13493,19 @@
       "unknownFields": "forbidden",
       "contactOwnerOrReviewState": "never-returned"
     },
+    "path-a-invitation-created-v1": {
+      "registeredBy": "owner-decision-2026-11-19-G8.5-Path-A's-invitation-stays-one-step",
+      "status": 202,
+      "contentType": "application/json",
+      "body": {
+        "accepted": {
+          "const": true
+        }
+      },
+      "when": "a-path-a-own-account-body-on-api.subject-drafts-after-its-one-transaction-reserved-the-draft-and-created-the-invitation-and-its-mail; a-barred-address-or-an-exhausted-attempt-quota-creates-no-draft-invitation-token-or-mail-and-a-repeated-requestId-reserves-nothing-new-and-each-answers-the-identical-status-and-body",
+      "subjectDraftIdContactTokenStateOrExpiry": "never-returned",
+      "unknownFields": "forbidden"
+    },
     "cohort-draft-created-v1": {
       "status": 201,
       "contentType": "application/json",
@@ -14146,7 +14140,6 @@
         "embryo-closed-schema-v1",
         "chat-completion-v1",
         "own-copilot-unavailable-v1",
-        "copilot-provider-setup-required-v1",
         "own-chat-scientific-correction-v1"
       ],
       "api.chat-history": [
@@ -14217,6 +14210,7 @@
       ],
       "api.subject-drafts": [
         "subject-draft-created-v1",
+        "path-a-invitation-created-v1",
         "unsupported-subject-kind-v1",
         "invalid-request-v1",
         "consent-required-v1",
@@ -18053,7 +18047,9 @@
           "immutable-contact-encryption-and-HMAC"
         ],
         "flowDiscriminator": "closed-subject-draft-create-v1.adultFlow-is-stored-once-and-immutably-selects-path-a-account-required-or-path-b-token-or-account-and-for-path-b-exactly-esignature-or-uploaded_document; no-later-request-token-reviewer-or-account-state-may-change-it",
-        "transaction": "reserve-one-no-data-no-analysis-adult-subject-draft-UUID-that-is-also-the-only-future-subject-id-bind-inviter-owner-upload-class-adult-flow-adult-confirmation-mode-evidence-kind-and-envelope-encrypted-contact-with-its-versioned-HMAC-and-fixed-adult.subject-draft-30d-deadline-or-write-nothing; path-b-also-binds-display-name-and-date-of-birth-and-path-a-uses-only-a-neutral-server-label-until-acceptance; an-optional-path-a-note-is-envelope-encrypted-and-may-flow-only-to-that-invitation-template; this-reservation-is-not-consent-and-cannot-accept-an-invitation-evidence-or-file-until-the-acting-account-signs-current-consent.upload-other-adult-against-this-exact-subjectDraftId; only-an-eligible-api.invitations-transaction-may-advance-path-a-or-path-b-esignature-and-only-reviewed-document-api.subjects-may-consume-path-b-reviewed-document; no-flow-may-change-the-UUID-contact-flow-mode-evidence-kind-or-deadline",
+        "transaction": "reserve-one-no-data-no-analysis-adult-subject-draft-UUID-that-is-also-the-only-future-subject-id-bind-inviter-owner-upload-class-adult-flow-adult-confirmation-mode-evidence-kind-and-envelope-encrypted-contact-with-its-versioned-HMAC-and-fixed-adult.subject-draft-30d-deadline-or-write-nothing; path-b-also-binds-display-name-and-date-of-birth-and-path-a-uses-only-a-neutral-server-label-until-acceptance; an-optional-path-a-note-is-envelope-encrypted-and-may-flow-only-to-that-invitation-template; this-reservation-is-not-consent-and-a-path-b-reservation-cannot-accept-an-invitation-evidence-or-file-until-the-acting-account-signs-current-consent.upload-other-adult-against-this-exact-subjectDraftId; only-an-eligible-api.invitations-transaction-may-advance-path-b-esignature-and-only-reviewed-document-api.subjects-may-consume-path-b-reviewed-document; path-a-own-account-is-reserved-and-invited-in-this-one-transaction-under-pathAOneStepInvitation; no-flow-may-change-the-UUID-contact-flow-mode-evidence-kind-or-deadline",
+        "pathAOneStepInvitation": "registered-2026-11-19-G8.5: a-path-a-own-account-body-reserves-the-draft-and-in-the-same-transaction-creates-its-hidden-adult_subject-invitation-token-candidate-and-invitation-mail-row-unless-global-contact-refusal-bar-v1-or-the-attempt-quota-refuses-the-address-then-answers-pathASuccessResponseContract; the-inviter-signs-no-uploader-artifact-because-consent.upload-other-adult-says-its-signer-holds-the-other-adult's-file-and-a-path-a-inviter-never-holds-or-uploads-it (adult-subject-confirmation-v1.pathAOwnershipInvariant); the-draft-UUID-is-never-returned-and-api.invitations-never-advances-a-path-a-draft (create_adult_subject_invitation_with_nonce_v1)",
+        "pathASuccessResponseContract": "path-a-invitation-created-v1",
         "contact": "plaintext-contact-or-note-exists-only-in-bounded-request-and-mail-worker-memory-and-envelope-encrypted-draft-fields-never-response-log-analytics-or-audit; replacement-retargeting-and-cross-account-reuse-are-forbidden",
         "geneticDataPurposeOrAnalysis": "zero-file-source-purpose-grant-variant-derived-chat-or-analysis-writes-and-every-path-a-draft-remains-non-upload-authorizing-until-recipient-account-acceptance",
         "contracts": [
@@ -18089,7 +18085,7 @@
         "globalBar": "before-any-subject-transition-invitation-token-or-invitation-mail-lock-and-recheck-the-drafts-versioned-contact-HMAC-under-invitation.refusal-hash-365d; eligible-and-barred-return-the-identical-subject-created-v1-receipt-timing-and-caller-visible-draft-capabilities; barred-creates-no-subject-invitation-token-or-invitation-mail-but-may-enqueue-only-the-same-minimal-protective-blocked-attempt-notice-as-api.invitations",
         "transition": "for-an-eligible-unbarred-contact-preserve-the-reserved-draft-with-zero-subject-file-or-upload-authority-create-one-hidden-purpose-bound-path-b-reviewed-document-subject-confirmation-invitation-bound-to-the-draft-document-and-review-revisions-enqueue-it-through-mail-token-delivery-v1-and-start-invitation.pending-30d; for-a-barred-contact-create-none-of-those; neither-branch-creates-a-purpose-grant-analysis-row-file-upload-capability-or-caller-visible-pollable-state",
         "recipientActivation": "only-api.invitation-accept-or-the-path-b-token-confirmation-may-atomically-consume-the-reserved-draft-UUID-into-the-uploader-owned-other_adult-subject-after-rechecking-the-global-bar-document-review-and-every-flow-revision; the-uploader-cannot-open-a-file-upload-session-before-that-commit",
-        "otherAdultFlows": "path-a-own-account-and-path-b-subject-esignature-are-rejected-here-and-use-api.invitations; no-flow-may-change-adultFlow-confirmation-mode-or-evidence-kind",
+        "otherAdultFlows": "path-a-own-account-and-path-b-subject-esignature-are-rejected-here; path-b-subject-esignature-uses-api.invitations-and-path-a-own-account-is-invited-by-api.subject-drafts.policy.pathAOneStepInvitation; no-flow-may-change-adultFlow-confirmation-mode-or-evidence-kind",
         "selfCreation": "auth.sign-up-submit-only",
         "embryoCreation": "api.embryo-cohorts-only-and-an-embryo-attempt-returns-embryo-cohort-required-v1",
         "unsupportedKinds": [
@@ -19228,7 +19224,7 @@
         "contentType": "application/json",
         "oneOfClosedBodies": [
           {
-            "targetSubjectDraftId": "required-canonical-lowercase-UUID-for-an-account-owned-path-a-own-account-or-path-b-subject-esignature-adult-draft",
+            "targetSubjectDraftId": "required-canonical-lowercase-UUID-for-an-account-owned-path-b-subject-esignature-adult-draft",
             "contactEmail": "normalized-valid-address-at-most-254-bytes"
           },
           {
@@ -19263,14 +19259,14 @@
         "mode": "resolved",
         "resolver": "invitation-kind-v1",
         "operation": "invitation-create",
-        "actorTargetRule": "actor-owns-the-exact-adult-or-cohort-draft; an-adult-draft-must-have-immutable-adultFlow-path-a-own-account-or-path-b-subject-esignature; for-an-embryo-draft-the-contact-must-match-exactly-one-server-typed-unfilled-parent-or-identified-donor-subject-slot-and-the-client-can-never-select-the-role",
+        "actorTargetRule": "actor-owns-the-exact-adult-or-cohort-draft; an-adult-draft-must-have-immutable-adultFlow-path-b-subject-esignature; for-an-embryo-draft-the-contact-must-match-exactly-one-server-typed-unfilled-parent-or-identified-donor-subject-slot-and-the-client-can-never-select-the-role",
         "kindAndPurpose": "re-derived-from-the-server-draft-target-slot-role-adultFlow-evidenceKind-and-confirmationMode-never-request-data",
         "capabilityRecheck": "in-the-same-transaction-lock-and-recheck-the-acting-draft-owners-current-jurisdiction-declaration-attestation-revision-and-the-selected-invitation-kind-v1-capability-third_party_adult_analysis-or-embryo_analysis-before-any-invitation-or-mail-row; defer-only-the-invited-principals-own-jurisdiction-until-recipient-activation-and-return-capability-denied-api-v1-on-an-acting-principal-denial-with-zero-invitation-token-or-outbox-write",
         "contactBinding": "normalize-and-HMAC-the-submitted-contact-in-bounded-memory-and-require-a-constant-time-exact-match-to-one-immutable-encrypted-contact-reference-and-its-server-typed-slot; never-overwrite-retarget-or-change-the-slot-role-and-return-the-same-opaque-response-on-mismatch",
         "globalBar": "before-any-invitation-row-or-mail-HMAC-the-normalized-newly-submitted-address-lock-the-global-contact-HMAC-bar-and-recheck-it; when-live-create-no-token-or-mail; for-an-identified_donor_subject-slot-atomically-run-identified-donor-refusal-v1.silenceExpiryOrInviterCancellation-without-creating-or-refreshing-the-existing-bar-so-the-optional-intent-normalizes-to-anonymous-and-the-original-draft-deadline-and-parent-capability-remain; for-adult_subject-or-co_parent-preserve-their-existing-nonauthorizing-draft-state; every-branch-enqueues-at-most-the-registered-minimal-protective-notice-and-returns-invitation-created-v1-with-identical-bounded-timing-and-no-cross-account-refusal-projection",
         "blockedAttemptNotice": "may-use-only-the-newly-submitted-address-in-bounded-memory-for-the-required-single-protective-notice-then-discard-it; never-reconstruct-or-retain-the-prior-address-and-never-include-inviter-target-genetic-token-donor-or-parent data",
         "adultFlowMatrix": {
-          "path-a-own-account": "store-adult_confirmation_mode-path-a-account-required-and-evidence-kind-none; api.invitation-accept-requires-an-authenticated-recipient-account-and-transfers-both-owner_account_id-and-subject_account_id-to-that-account-before-any-file-authority",
+          "path-a-own-account": "cannot-enter-this-route-and-is-invited-by-api.subject-drafts.policy.pathAOneStepInvitation; its-draft-stores-adult_confirmation_mode-path-a-account-required-and-evidence-kind-none-and-api.invitation-accept-requires-an-authenticated-recipient-account-and-transfers-both-owner_account_id-and-subject_account_id-to-that-account-before-any-file-authority; registered-2026-11-19-G8.5",
           "path-b-subject-esignature": "store-adult_confirmation_mode-path-b-token-or-account-and-evidence-kind-esignature; the-recipient-may-complete-their-current-subject-artifact-through-the-rights-session-with-or-without-an-account-and-only-that-terminal-completed-confirmation-principal-plus-revision-can-authorize-the-uploader",
           "path-b-reviewed-document": "cannot-enter-this-route-before-api.subjects-and-uses-api.subjects-globalBar"
         },
@@ -19334,12 +19330,6 @@
               "artifactKey": {
                 "const": "consent.subject-adult"
               }
-            },
-            "jurisdictionCode": "normalized-code-valid-under-data/jurisdictions.json-determination.resolutionGrammar",
-            "jurisdictionAttestationVersion": "required-current-server-published-version",
-            "jurisdictionAttestationHash": "required-lowercase-sha256-matching-the-current-server-artifact",
-            "jurisdictionAffirmed": {
-              "const": true
             }
           },
           {
@@ -19399,6 +19389,7 @@
             }
           }
         ],
+        "adultAcceptBody": "registered-2026-11-19-G8.5: the-adult_subject-body-sends-the-subjectArtifact-and-no-jurisdiction-fields-because-the-accepting-account's-own-current-declared-jurisdiction-is-the-one-that-counts-and-the-body-cannot-name-the-account, as-api.withdraw's-accountConfirmBody-registered-2026-10-23; the-co_parent-and-identified_donor_subject-bodies-are-unchanged (src/lib/embryos/adult-subject-review.ts#adultSubjectAcceptBody)",
         "unknownMissingInvalidStaleOrKindMismatch": "resource-not-found-v1",
         "forbiddenFields": [
           "token",

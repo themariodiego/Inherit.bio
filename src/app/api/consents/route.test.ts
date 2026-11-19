@@ -130,6 +130,25 @@ describe("actual consent POST dispatcher", () => {
     expect("signatureClass" in payload ? mocks.upload : mocks.embryo).toHaveBeenCalledExactlyOnceWith(req, payload); expect(mocks.copilot).not.toHaveBeenCalled(); expect(mocks.rpc).not.toHaveBeenCalled();
   });
   it("authenticates before any consent dispatch", async () => { mocks.getUser.mockResolvedValue({ data: { user: null } }); expect((await POST(request({ signatureClass: "tier1-self" }))).status).toBe(401); expect(mocks.upload).not.toHaveBeenCalled(); expect(mocks.copilot).not.toHaveBeenCalled(); });
+  // Owner decision of 19 November 2026 (G8.5, "the provider-key cloud consent
+  // request is removed"): the { providerKey } body recorded a cloud permission
+  // without showing its text. It is now refused exactly as a body the route
+  // has never registered is, before any provider read or write.
+  it("refuses the removed provider-key body exactly as it refuses any unregistered body", async () => {
+    const answer = async (payload: unknown) => {
+      const response = await POST(request(payload));
+      return { status: response.status, body: await response.json() };
+    };
+    const unregistered = await answer({ notARegisteredBody: true });
+    expect(unregistered).toEqual({ status: 400, body: { error: "invalid_request" } });
+    for (const providerKey of ["anthropic", "203.0.114.10:8123"]) {
+      expect(await answer({ providerKey }), providerKey).toEqual(unregistered);
+    }
+    expect(mocks.from).not.toHaveBeenCalled();
+    expect(mocks.rpc).not.toHaveBeenCalled();
+    for (const handler of [mocks.copilot, mocks.report, mocks.upload, mocks.embryo]) expect(handler).not.toHaveBeenCalled();
+    expect(readFileSync("src/app/api/consents/route.ts", "utf8")).not.toMatch(/grant_cloud_model_consent|providerKey:/u);
+  });
 });
 describe("actual revoke POST dispatcher", () => {
   it("already sends a canonical recipient-bound purpose to its own revoker", async () => {
