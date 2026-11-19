@@ -5946,3 +5946,69 @@ token is there to prevent. Release 1 stays where it is: runbook step 1 passed,
 PR 324's green run is recorded and accepted, and steps 3 and 4 wait for a
 working personal access token entered by the owner in the secure form or in
 the environment's settings.
+
+## 2026-11-19 — Withdrawing consent for a person's own DNA file deletes the files and all made from them
+
+Owner decision (clickable chat answer, "Delete files and all made from them").
+Asked: the consent text and the brief already say withdrawal deletes the files
+and everything made from them; an operation that does this exists in the
+database but no screen offers it; which withdrawal should be built? Offered:
+"Delete files and all made from them", "Delete files, keep family links",
+"Decide later". Chosen: "Delete files and all made from them".
+
+One control, in Settings and on the Files page, runs the whole-record emptying
+that the self case of `api.subject-delete` already registers: every file on
+the person's own record, every result, report and Copilot conversation made
+from them, and the sharing permissions and family links built on them. The
+account stays, and a new upload asks for the consent again. Deleting a single
+file stays what it is and is not a withdrawal. The wording of the control, the
+confirmation, the receipt and the email is shown to the owner before it ships.
+Design: `docs/evidence/consent-withdrawal-design-20261119/design.md`, section 1.
+
+## 2026-11-19 — An uploader's withdrawal for another adult's file deletes it, unless that adult holds the record themselves
+
+Owner decision (clickable chat answer, "Delete, unless they hold it
+themselves"). Asked: what should an uploader's withdrawal do to the other
+adult's record and to files they already confirmed as theirs (test mode only
+today)? Offered: "Delete, unless they hold it themselves", "Always delete the
+whole record", "Decide later". Chosen: "Delete, unless they hold it
+themselves".
+
+Where the other adult has no account of their own on the record, everything
+the uploader added is deleted, confirmed or not, and that adult is sent a short
+notice. Where they have taken the record over with their own account, their
+record and the files they confirmed stay theirs; the uploader's consent ends,
+unconfirmed files are deleted, and the uploader can add nothing more and keeps
+no access. Wording goes to the owner first. Design: the same file, section 2.
+
+## 2026-11-19 — A non-parent uploader's withdrawal for an embryo upload stops analysis and deletes, as they signed
+
+Owner decision (clickable chat answer, "Stop analysis and delete, as signed").
+Asked: the statement a non-parent uploader signs says Inherit then stops all
+analysis and deletes what it built; what should their withdrawal do once the
+upload is complete (test mode only; embryo upload is closed on the site)?
+Offered: "Stop analysis and delete, as signed", "Only remove the uploader",
+"Decide later". Chosen: "Stop analysis and delete, as signed".
+
+After the upload is complete the withdrawal runs the existing cohort
+restriction under the register's case `nonparent-required-uploader-basis-loss`:
+analysis stops, results and source files are deleted, permissions end, and the
+genetic parents are notified. Before it is complete the withdrawal deletes the
+draft and its files. It gives the uploader no parent role and no say over any
+other cohort. Wording goes to the owner first. Design: the same file,
+section 3.
+
+## 2026-11-19 — G8.5: the claim-objection address accepts either kind of session
+
+Owner decision (clickable chat answer, "One address accepts both"). Asked: the
+last route not yet on the one-time security token is "object to a claim",
+which a person can send from the emailed link (no account) or signed in from
+Settings, while the token rule ties one address to one kind of session; how
+should it be handled? Offered: "One address accepts both", "Separate address
+for signed-in", "Decide later". Chosen: "One address accepts both".
+
+`api.future-person-claim-objection` checks the emailed-link (rights) session
+first and then the signed-in account, and spends a one-time token of whichever
+it finds. Nothing changes for people. The token check and its tests change, no
+database change is needed, and the register is amended to say this route takes
+either kind.
