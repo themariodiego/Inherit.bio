@@ -22,6 +22,15 @@ URIS = ('http://azure.archive.ubuntu.com/ubuntu/',
         'https://security.ubuntu.com/ubuntu/')
 STOCK = ''.join(f'{uri}\tpriority:{n}\n' for n, uri in enumerate(URIS, 1)).encode()
 PRIORITIZED = ''.join(f'{uri}\tpriority:{n}\n' for uri, n in zip(URIS, (3, 1, 2))).encode()
+# Observed byte for byte on images ubuntu24/20261111.127.1 and 20261116.133.1; same rows after the regional one.
+EC2_URIS = ('http://us-east-2.ec2.archive.ubuntu.com/ubuntu/',) + URIS[1:]
+EC2_STOCK = ''.join(f'{uri}\tpriority:{n}\n' for n, uri in enumerate(EC2_URIS, 1)).encode()
+EC2_PRIORITIZED = ''.join(f'{uri}\tpriority:{n}\n' for uri, n in zip(EC2_URIS, (3, 1, 2))).encode()
+MIRROR_ROUTE = 'mirror+file:/etc/apt/apt-mirrors.txt'
+# Closed observed states: a stock mirror, its one approved result, and each exact paragraph-2 URIs observed with it.
+# The direct route was observed on 20261111.127.1, the mirror route with the regional mirror on 20261116.133.1.
+STATES = ((STOCK, PRIORITIZED, (MIRROR_ROUTE,)),
+          (EC2_STOCK, EC2_PRIORITIZED, ('http://security.ubuntu.com/ubuntu', MIRROR_ROUTE)))
 NETWORK = (b'Acquire::Retries "1";\nAcquire::http::Timeout "15";\n'
            b'Acquire::https::Timeout "15";\nAPT::Update::Error-Mode "any";\n')
 BOUNDS = {'Acquire::Retries': '1', 'Acquire::http::Timeout': '15',
@@ -71,22 +80,20 @@ def admit_apt_version(raw):
     return match.group(1)
 
 
+def mirror_state(original):
+    # Only an exact observed stock input or that state's exact approved result is legal; nothing by pattern.
+    states = [state for state in STATES if original in state[:2]]
+    require(len(states) == 1, 'Unsupported stock mirror URI, priority or format')
+    return states[0]
+
+
 def mirror_candidate(original):
-    # Only the exact stock input and this operation's exact approved result are legal.
-    require(original in (STOCK, PRIORITIZED), 'Unsupported stock mirror URI, priority or format')
-    if original == PRIORITIZED:
-        return PRIORITIZED
-    changed = original.replace(b'priority:1\n', b'priority:3\n', 1)
-    changed = changed.replace(b'priority:2\n', b'priority:1\n', 1)
-    # The security row is the only remaining original priority:3 row.
-    prefix, security = changed.rsplit(b'\n', 2)[0:2]
-    require(security == URIS[2].encode() + b'\tpriority:3', 'Unsupported security mirror')
-    return prefix + b'\n' + security.replace(b'priority:3', b'priority:2') + b'\n'
+    return mirror_state(original)[1]
 
 
 def admit_priority_state(mirror, strict):
     candidate = mirror_candidate(mirror)
-    readmission = mirror == PRIORITIZED
+    readmission = mirror == candidate
     require(strict == (NETWORK if readmission else None), 'Mirror and strict configuration state differ')
     return candidate, readmission
 
@@ -179,7 +186,7 @@ def late_fragment_diagnostics(names):
             'truncated': len(late) > 16, 'zzSnapshot': 'zz-snapshot' in late}
 
 
-def admit_sources(raw, observe=None):
+def admit_sources(raw, observe=None, security=(MIRROR_ROUTE,)):
     text = raw.decode('utf-8', errors='strict')
     records = []
     for paragraph in re.split(r'\n\s*\n', text.strip()):
@@ -198,8 +205,11 @@ def admit_sources(raw, observe=None):
     for ordinal, record in enumerate(records, 1):
         require(set(record) == {'Types', 'URIs', 'Suites', 'Components', 'Signed-By'},
                 'Unsupported Ubuntu source or trust override')
-        require(record['Types'] == 'deb' and record['URIs'] == 'mirror+file:/etc/apt/apt-mirrors.txt',
-                'Stock mirror route required')
+        # Paragraph 2 takes only a route observed with this mirror; a direct route carries exactly the security suite.
+        routes = security if ordinal == 2 else (MIRROR_ROUTE,)
+        require(record['Types'] == 'deb' and record['URIs'] in routes, 'Stock mirror route required')
+        require(record['URIs'] == MIRROR_ROUTE or record['Suites'] == 'noble-security',
+                'Stock direct security suite required')
         components = record['Components'].split()
         if observe is not None:
             observe({'event': 'COMPONENTS_OBSERVED', 'paragraph': ordinal, **component_diagnostics(components)})
@@ -593,7 +603,7 @@ def main(argv):
         raise
     candidate, readmission = admit_priority_state(original, strict_input[0] if strict_input else None)
     source, _ = safe_read(SOURCES)
-    admit_sources(source, observe)
+    admit_sources(source, observe, mirror_state(original)[2])
     config_raw, config = limited_config(observe)
     if readmission:
         admit_config(config, after=True)

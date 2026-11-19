@@ -62,13 +62,22 @@ def keyring_fixture(safe=False):
 
 
 UNSUPPORTED_MIRROR = 'Unsupported stock mirror URI, priority or format'
-# Upstream main's three plausible stock shapes, read from its build script; none is an observed hosted file.
+# Upstream main's three plausible stock shapes, read from its build script. The us-east-2 one was later observed
+# byte for byte on hosted runners and is admitted (EC2_STOCK); the other two remain unobserved and refused.
 NO_PRIORITY_ONE = b'https://archive.ubuntu.com/ubuntu/\tpriority:2\nhttps://security.ubuntu.com/ubuntu/\tpriority:3\n'
 AWS_PRIORITY_ONE = b'http://us-east-2.ec2.archive.ubuntu.com/ubuntu/\tpriority:1\n' + NO_PRIORITY_ONE
 AZURE_CHANGED = (STOCK.replace(b'azure.archive.ubuntu.com/ubuntu/', b'azure.archive.ubuntu.com/ubuntu'),
                  STOCK[:-1], STOCK.replace(b'\n', b'\r\n'))
 # Plain HTTP archive and security rows stay refused whatever a later step admits.
 HTTP_ONLY = STOCK.replace(b'https:', b'http:')
+# The two source shapes observed with the us-east-2 mirror, in their observed component order: paragraph 2 direct
+# (image 20261111.127.1) and both paragraphs on the mirror list (image 20261116.133.1).
+OBSERVED_SOURCE = SOURCE.replace(b'main restricted universe multiverse', b'main universe restricted multiverse')
+DIRECT_SECURITY_SOURCE = OBSERVED_SOURCE.replace(b'URIs: mirror+file:/etc/apt/apt-mirrors.txt\nSuites: noble-security',
+                                                 b'URIs: http://security.ubuntu.com/ubuntu\nSuites: noble-security')
+EC2_PRIORITIZED_BYTES = (b'http://us-east-2.ec2.archive.ubuntu.com/ubuntu/\tpriority:3\n'
+                         b'https://archive.ubuntu.com/ubuntu/\tpriority:1\n'
+                         b'https://security.ubuntu.com/ubuntu/\tpriority:2\n')
 REFUSAL_EVENTS = ['APT_VERSION_OBSERVED', 'PUBLIC_APT_DIRECTORY_METADATA', 'REFUSED_MIRROR_OBSERVED',
                   'SOURCES_SHAPE_OBSERVED', 'LATE_APT_FRAGMENTS_OBSERVED']
 
@@ -126,6 +135,55 @@ def run_main(mirror, strict=None, sources=SOURCE, fragments=('00synthetic', 'zz-
         result.events = [json.loads(line) for line in result.text.splitlines()]
         result.paths = paths
         result.mirror_after = paths.mirror.read_bytes()
+        result.strict_after = paths.strict.read_bytes() if paths.strict.exists() else None
+        return result
+
+
+def run_main_admitted(mirror, strict=None, sources=OBSERVED_SOURCE, fragments=('00synthetic', 'zz-retries')):
+    # run_main through to PASS. Root-owned stat views, keyring repair, census, config dump and the update command are
+    # doubles; every custody read, the strict fragment write and the mirror rewrite run for real on owned files.
+    import json
+    from types import SimpleNamespace
+    from unittest.mock import patch
+    real_mkdtemp, real_path = tempfile.mkdtemp, Path
+    with tempfile.TemporaryDirectory() as directory:
+        aux = Path(directory).resolve()
+        def as_root(original):
+            def observed(*args, **kwargs):
+                info = original(*args, **kwargs)
+                values = {name: getattr(info, name) for name in dir(info) if name.startswith('st_')}
+                values.update(st_uid=0, st_gid=0)
+                return SimpleNamespace(**values)
+            return observed
+        def read(path, uid=0):
+            if stat.S_ISFIFO(os.lstat(path).st_mode):
+                raise AssertionError('blocking open of a FIFO')
+            return safe_read(path, 0)
+        updates, pipes = [], []
+        def update(argv, **kwargs):
+            out, into = os.pipe(); os.close(into)
+            pipes.append(os.fdopen(out, 'rb')); updates.append(argv)
+            return SimpleNamespace(stdout=pipes[-1], wait=lambda: 0)
+        def path(value, *rest):
+            return aux / 'absent-apt.conf' if str(value) == '/etc/apt/apt.conf' else real_path(value, *rest)
+        extra = (patch('ci_apt_mirror_priority.os.fstat', side_effect=as_root(os.fstat)),
+                 patch('ci_apt_mirror_priority.os.lstat', side_effect=as_root(os.lstat)),
+                 patch('ci_apt_mirror_priority.os.stat', side_effect=as_root(os.stat)),
+                 patch('ci_apt_mirror_priority.safe_read', side_effect=read),
+                 patch('ci_apt_mirror_priority.Path', side_effect=path),
+                 patch('ci_apt_mirror_priority.tempfile.mkdtemp', side_effect=lambda prefix, dir: real_mkdtemp(prefix=prefix, dir=aux)),
+                 patch('ci_apt_mirror_priority.limited_config', return_value=(b'synthetic limited config\n', dict(BOUNDS))),
+                 patch('ci_apt_mirror_priority.harden_original_keyring_permissions',
+                       return_value={'decision': 'PERMISSIONS_HARDENED', 'admittedKeyringInputs': []}),
+                 patch('ci_apt_mirror_priority.source_snapshot', return_value=[]),
+                 patch('ci_apt_mirror_priority.subprocess.Popen', side_effect=update))
+        result = run_main(mirror, strict, sources, fragments, prepare=lambda paths: paths.strict.parent.chmod(0o755),
+                          extra=extra)
+        for pipe in pipes:
+            pipe.close()
+        result.updates = updates
+        records = list(aux.glob('inherit-ci-apt-*/admission.json'))
+        result.admission = json.loads(records[0].read_bytes()) if records else None
         return result
 
 
@@ -635,18 +693,21 @@ class AdmissionTests(unittest.TestCase):
         self.assertEqual(admit_priority_state(PRIORITIZED, NETWORK), (prioritized, True))
 
     def test_previously_refused_mirror_states_keep_their_exact_reasons(self):
+        from ci_apt_mirror_priority import EC2_PRIORITIZED
         mismatched = 'Mirror and strict configuration state differ'
         credential = b'user:secret@archive.ubuntu.com/'
         shapes = [STOCK.replace(b'https:', b'http:'), STOCK.replace(b'priority:2', b'priority:1'), STOCK[:-1],
                   STOCK + STOCK.splitlines(keepends=True)[0], STOCK.replace(b'archive.ubuntu.com/', credential),
                   PRIORITIZED.replace(b'https:', b'http:'), PRIORITIZED.replace(b'priority:2', b'priority:3'),
                   PRIORITIZED[:-1], PRIORITIZED + PRIORITIZED.splitlines(keepends=True)[0],
-                  PRIORITIZED.replace(b'archive.ubuntu.com/', credential), NO_PRIORITY_ONE, AWS_PRIORITY_ONE,
+                  PRIORITIZED.replace(b'archive.ubuntu.com/', credential), NO_PRIORITY_ONE,
                   *AZURE_CHANGED, b'', b'\xff']
         cases = [(raw, strict, UNSUPPORTED_MIRROR) for raw in shapes for strict in (None, NETWORK)]
         cases += [(STOCK, NETWORK, mismatched), (PRIORITIZED, None, mismatched),
                   (PRIORITIZED, NETWORK.replace(b'"1"', b'"2"', 1), mismatched),
-                  (PRIORITIZED, NETWORK + b'Acquire::AllowInsecureRepositories "true";\n', mismatched)]
+                  (PRIORITIZED, NETWORK + b'Acquire::AllowInsecureRepositories "true";\n', mismatched),
+                  # The observed us-east-2 mirror is now admitted alone, so only its unpaired states stay refused.
+                  (AWS_PRIORITY_ONE, NETWORK, mismatched), (EC2_PRIORITIZED, None, mismatched)]
         for raw, strict, reason in cases:
             with self.subTest(raw=raw, strict=strict):
                 with self.assertRaises(RuntimeError) as raised:
@@ -657,10 +718,10 @@ class AdmissionTests(unittest.TestCase):
                         mirror_candidate(raw)
                     self.assertEqual(str(direct.exception), UNSUPPORTED_MIRROR)
 
-    def test_three_plausible_new_stock_shapes_are_disclosed_and_still_refused(self):
+    def test_unobserved_new_stock_shapes_are_disclosed_and_still_refused(self):
         import hashlib
         from ci_apt_mirror_priority import refused_mirror_diagnostics
-        for raw in (NO_PRIORITY_ONE, AWS_PRIORITY_ONE, AZURE_CHANGED[0]):
+        for raw in (NO_PRIORITY_ONE, AZURE_CHANGED[0]):
             with self.subTest(raw=raw):
                 with self.assertRaisesRegex(RuntimeError, '^' + UNSUPPORTED_MIRROR + '$'):
                     mirror_candidate(raw)
@@ -814,8 +875,8 @@ class AdmissionTests(unittest.TestCase):
     def test_main_refusal_reports_bounded_shapes_then_reraises_the_same_refusal(self):
         import hashlib
         from ci_apt_mirror_priority import refused_mirror_diagnostics, source_shape_diagnostics
-        for raw in (NO_PRIORITY_ONE, AWS_PRIORITY_ONE, *AZURE_CHANGED, STOCK.replace(b'archive.ubuntu.com/',
-                                                                                    b'user:secret@archive.ubuntu.com/')):
+        for raw in (NO_PRIORITY_ONE, *AZURE_CHANGED, STOCK.replace(b'archive.ubuntu.com/',
+                                                                  b'user:secret@archive.ubuntu.com/')):
             for strict in (None, NETWORK):
                 with self.subTest(raw=raw, strict=strict):
                     result = run_main(raw, strict)
@@ -906,6 +967,172 @@ class AdmissionTests(unittest.TestCase):
                                                         side_effect=failing_print),))
         self.assertEqual((type(result.error), str(result.error)), (RuntimeError, UNSUPPORTED_MIRROR))
         self.assertEqual([event['event'] for event in result.events], REFUSAL_EVENTS[:2])
+
+    def test_us_east_2_mirror_is_exactly_the_hosted_observation(self):
+        import hashlib
+        import json
+        from ci_apt_mirror_priority import EC2_STOCK, refused_mirror_diagnostics
+        hosted = ('{"bounded": true, "byteLength": 152, "event": "REFUSED_MIRROR_OBSERVED", "finalNewline": true, '
+                  '"imageOS": "ubuntu24", "imageVersion": "%s", "lineCount": 3, "lines": [{"index": 1, "publicRow": '
+                  '"http://us-east-2.ec2.archive.ubuntu.com/ubuntu/\\tpriority:1"}, {"index": 2, "publicRow": '
+                  '"https://archive.ubuntu.com/ubuntu/\\tpriority:2"}, {"index": 3, "publicRow": '
+                  '"https://security.ubuntu.com/ubuntu/\\tpriority:3"}], "sha256": '
+                  '"af9816b59bc904eaf28838ae673ac2b625b6628bebfc67a7cbeae78ba06e226a"}')
+        self.assertEqual((EC2_STOCK, len(EC2_STOCK), hashlib.sha256(EC2_STOCK).hexdigest()),
+                         (AWS_PRIORITY_ONE, 152, 'af9816b59bc904eaf28838ae673ac2b625b6628bebfc67a7cbeae78ba06e226a'))
+        for version in ('20261111.127.1', '20261116.133.1'):
+            with self.subTest(version=version):
+                self.assertEqual(refused_mirror_diagnostics(EC2_STOCK, 'ubuntu24', version), json.loads(hosted % version))
+
+    def test_admitted_states_are_closed_data_changing_only_three_priority_tokens(self):
+        from ci_apt_mirror_priority import STATES, EC2_STOCK, EC2_PRIORITIZED, MIRROR_ROUTE, mirror_state
+        self.assertEqual([state[:2] for state in STATES], [(STOCK, PRIORITIZED), (EC2_STOCK, EC2_PRIORITIZED)])
+        self.assertEqual(EC2_PRIORITIZED, EC2_PRIORITIZED_BYTES)
+        self.assertEqual([state[2] for state in STATES],
+                         [(MIRROR_ROUTE,), ('http://security.ubuntu.com/ubuntu', MIRROR_ROUTE)])
+        self.assertEqual(MIRROR_ROUTE, 'mirror+file:/etc/apt/apt-mirrors.txt')
+        for stock, approved, _ in STATES:
+            with self.subTest(stock=stock):
+                before = [line.split(b'\tpriority:') for line in stock.splitlines()]
+                after = [line.split(b'\tpriority:') for line in approved.splitlines()]
+                self.assertEqual([row[0] for row in before], [row[0] for row in after])
+                self.assertEqual(([row[1] for row in before], [row[1] for row in after]), ([b'1', b'2', b'3'], [b'3', b'1', b'2']))
+                changed = [index for index, (a, b) in enumerate(zip(stock, approved)) if a != b]
+                self.assertEqual((len(stock), len(changed)), (len(approved), 3))
+                self.assertTrue(all(chr(stock[index]).isdigit() for index in changed))
+                # HTTPS archive first, HTTPS security second, the plain HTTP regional mirror last.
+                self.assertEqual([row[0].split(b'://')[0] for row in sorted(after, key=lambda row: row[1])],
+                                 [b'https', b'https', b'http'])
+                self.assertEqual(mirror_state(stock), mirror_state(approved))
+        # Ambiguous admission data refuses rather than choosing a row.
+        from unittest.mock import patch
+        with patch('ci_apt_mirror_priority.STATES', STATES + (STATES[1],)), \
+                self.assertRaisesRegex(RuntimeError, '^' + UNSUPPORTED_MIRROR + '$'):
+            mirror_candidate(EC2_STOCK)
+
+    def test_us_east_2_candidates_and_strict_pairing_match_the_azure_state(self):
+        from ci_apt_mirror_priority import EC2_STOCK, EC2_PRIORITIZED
+        self.assertEqual(mirror_candidate(EC2_STOCK), EC2_PRIORITIZED_BYTES)
+        self.assertEqual(mirror_candidate(EC2_PRIORITIZED), EC2_PRIORITIZED_BYTES)
+        self.assertEqual(admit_priority_state(EC2_STOCK, None), (EC2_PRIORITIZED_BYTES, False))
+        self.assertEqual(admit_priority_state(EC2_PRIORITIZED, NETWORK), (EC2_PRIORITIZED_BYTES, True))
+        for mirror, strict in ((EC2_STOCK, NETWORK), (EC2_PRIORITIZED, None), (EC2_PRIORITIZED, NETWORK + b'\n'),
+                               (EC2_PRIORITIZED, NETWORK.replace(b'"15"', b'"16"', 1))):
+            with self.subTest(mirror=mirror, strict=strict), \
+                    self.assertRaisesRegex(RuntimeError, '^Mirror and strict configuration state differ$'):
+                admit_priority_state(mirror, strict)
+
+    def test_every_one_byte_variant_of_an_admitted_mirror_is_refused(self):
+        from ci_apt_mirror_priority import EC2_STOCK, EC2_PRIORITIZED
+        admitted = {STOCK, PRIORITIZED, EC2_STOCK, EC2_PRIORITIZED}
+        for raw in sorted(admitted):
+            variants = {raw[:index] + bytes([byte]) + raw[index + 1:] for index in range(len(raw))
+                        for byte in {raw[index] ^ 1, ord('x'), ord('\n')} if byte != raw[index]}
+            variants |= {raw[:index] + raw[index + 1:] for index in range(len(raw))}
+            variants |= {raw[:index] + extra + raw[index:] for index in range(len(raw) + 1) for extra in (b'x', b'\n', b'/')}
+            self.assertFalse(variants & admitted)
+            for variant in variants:
+                with self.assertRaises(RuntimeError) as raised:
+                    mirror_candidate(variant)
+                self.assertEqual(str(raised.exception), UNSUPPORTED_MIRROR, variant)
+
+    def test_sources_routes_with_the_us_east_2_mirror_are_exactly_the_two_observed(self):
+        from ci_apt_mirror_priority import EC2_STOCK, mirror_state
+        routes = mirror_state(EC2_STOCK)[2]
+        admit_sources(DIRECT_SECURITY_SOURCE, None, routes)
+        admit_sources(OBSERVED_SOURCE, None, routes)
+        direct = b'URIs: http://security.ubuntu.com/ubuntu\nSuites: noble-security'
+        for uri in (b'http://security.ubuntu.com/ubuntu/', b'https://security.ubuntu.com/ubuntu',
+                    b'http://archive.ubuntu.com/ubuntu', b'http://Security.ubuntu.com/ubuntu',
+                    b'http://security.ubuntu.com/ubunt', b'http://security.ubuntu.com/ubuntu-ports',
+                    b'http://security.ubuntu.com', b'http://us-east-2.ec2.archive.ubuntu.com/ubuntu',
+                    b'http://security.ubuntu.com/ubuntu http://archive.ubuntu.com/ubuntu',
+                    b'mirror+file:/etc/apt/apt-mirrors.txt http://security.ubuntu.com/ubuntu',
+                    b'mirror+file:/etc/apt/apt-mirrors', b'mirror+file:/etc/apt/apt-mirrors.txt/', b''):
+            with self.subTest(uri=uri), self.assertRaisesRegex(RuntimeError, '^Stock mirror route required$'):
+                admit_sources(DIRECT_SECURITY_SOURCE.replace(direct, b'URIs: ' + uri + b'\nSuites: noble-security'),
+                              None, routes)
+        first = b'URIs: mirror+file:/etc/apt/apt-mirrors.txt\nSuites: noble noble-updates noble-backports'
+        mirrored, direct_paragraph = DIRECT_SECURITY_SOURCE.split(b'\n\n')
+        swapped = direct_paragraph + b'\n' + mirrored + b'\n'
+        self.assertIn(direct, swapped.split(b'\n\n')[0])
+        both_direct = DIRECT_SECURITY_SOURCE.replace(first, b'URIs: http://security.ubuntu.com/ubuntu\n'
+                                                     b'Suites: noble noble-updates noble-backports')
+        for raw in (swapped, both_direct):
+            with self.subTest(raw=raw), self.assertRaisesRegex(RuntimeError, '^Stock mirror route required$'):
+                admit_sources(raw, None, routes)
+        # The direct route carries exactly noble-security; the mirror route keeps the Azure state's suite latitude.
+        split = DIRECT_SECURITY_SOURCE.replace(b'Suites: noble noble-updates noble-backports', b'Suites: noble noble-backports')
+        for suites in (b'noble-updates noble-security', b'noble-security noble-updates'):
+            with self.subTest(suites=suites), self.assertRaisesRegex(RuntimeError, '^Stock direct security suite required$'):
+                admit_sources(split.replace(b'Suites: noble-security', b'Suites: ' + suites), None, routes)
+        moved = DIRECT_SECURITY_SOURCE.replace(b'Suites: noble noble-updates noble-backports',
+                                               b'Suites: noble noble-updates noble-backports noble-security')
+        with self.assertRaisesRegex(RuntimeError, '^Stock direct security suite required$'):
+            admit_sources(moved.replace(b'Suites: noble-security', b'Suites: noble-proposed'), None, routes)
+        mirrored_split = OBSERVED_SOURCE.replace(b'Suites: noble noble-updates noble-backports', b'Suites: noble noble-backports')
+        admit_sources(mirrored_split.replace(b'Suites: noble-security', b'Suites: noble-updates noble-security'), None, routes)
+
+    def test_azure_state_sources_rule_is_unchanged(self):
+        from ci_apt_mirror_priority import mirror_state, MIRROR_ROUTE
+        self.assertEqual(mirror_state(STOCK)[2], (MIRROR_ROUTE,))
+        self.assertEqual(mirror_state(PRIORITIZED)[2], (MIRROR_ROUTE,))
+        for routes in ((), (mirror_state(STOCK)[2],)):
+            admit_sources(SOURCE, None, *routes)
+            admit_sources(OBSERVED_SOURCE, None, *routes)
+            split = SOURCE.replace(b'Suites: noble noble-updates noble-backports', b'Suites: noble noble-backports')
+            admit_sources(split.replace(b'Suites: noble-security', b'Suites: noble-updates noble-security'), None, *routes)
+            with self.subTest(routes=routes), self.assertRaisesRegex(RuntimeError, '^Stock mirror route required$'):
+                admit_sources(DIRECT_SECURITY_SOURCE, None, *routes)
+
+    def test_main_admits_both_observed_us_east_2_states_end_to_end(self):
+        from ci_apt_mirror_priority import EC2_STOCK, EC2_PRIORITIZED
+        for sources in (DIRECT_SECURITY_SOURCE, OBSERVED_SOURCE):
+            for mirror, strict, state in ((EC2_STOCK, None, 'original-stock'),
+                                          (EC2_PRIORITIZED, NETWORK, 'exact-prioritized-readmission')):
+                with self.subTest(sources=sources, mirror=mirror):
+                    result = run_main_admitted(mirror, strict, sources)
+                    self.assertIsNone(result.error)
+                    self.assertEqual([event.get('event', event.get('decision')) for event in result.events][:6],
+                                     ['APT_VERSION_OBSERVED', 'PUBLIC_APT_DIRECTORY_METADATA', 'COMPONENTS_OBSERVED',
+                                      'COMPONENTS_OBSERVED', 'PERMISSIONS_HARDENED', 'ADMITTED'])
+                    self.assertEqual(result.events[-1]['decision'], 'PASS')
+                    self.assertEqual((result.mirror_after, result.strict_after), (EC2_PRIORITIZED_BYTES, NETWORK))
+                    self.assertEqual((result.admission['priorityState'], result.admission['mirrorOriginal']),
+                                     (state, mirror.decode()))
+                    self.assertEqual(result.updates, [['/usr/bin/apt-get', 'update', '--error-on=any']])
+                    self.assertEqual([call.args[0] for call in result.run.call_args_list], [['/usr/bin/apt-get', '--version']])
+                    self.assertFalse({'REFUSED_MIRROR_OBSERVED', 'SOURCES_SHAPE_OBSERVED'} & {event.get('event') for event in result.events})
+
+    def test_main_admits_the_azure_state_end_to_end_unchanged(self):
+        for mirror, strict, state in ((STOCK, None, 'original-stock'), (PRIORITIZED, NETWORK, 'exact-prioritized-readmission')):
+            with self.subTest(mirror=mirror):
+                result = run_main_admitted(mirror, strict, SOURCE)
+                self.assertIsNone(result.error)
+                self.assertEqual(result.events[-1]['decision'], 'PASS')
+                self.assertEqual((result.mirror_after, result.strict_after), (PRIORITIZED, NETWORK))
+                self.assertEqual((result.admission['priorityState'], result.admission['mirrorOriginal']), (state, mirror.decode()))
+
+    def test_main_refuses_unobserved_mirror_and_sources_pairings(self):
+        from ci_apt_mirror_priority import EC2_STOCK, EC2_PRIORITIZED
+        for mirror, strict, sources in ((STOCK, None, DIRECT_SECURITY_SOURCE), (PRIORITIZED, NETWORK, DIRECT_SECURITY_SOURCE),
+                                        (EC2_STOCK, None, DIRECT_SECURITY_SOURCE.replace(b'security.ubuntu.com/ubuntu\n',
+                                                                                         b'security.ubuntu.com/ubuntu/\n')),
+                                        (EC2_PRIORITIZED, NETWORK, DIRECT_SECURITY_SOURCE.replace(b'URIs: http:', b'URIs: https:'))):
+            with self.subTest(mirror=mirror, sources=sources):
+                result = run_main_admitted(mirror, strict, sources)
+                self.assertEqual((type(result.error), str(result.error)), (RuntimeError, 'Stock mirror route required'))
+                self.assertEqual([event['event'] for event in result.events],
+                                 ['APT_VERSION_OBSERVED', 'PUBLIC_APT_DIRECTORY_METADATA', 'COMPONENTS_OBSERVED'])
+                self.assertEqual((result.mirror_after, result.strict_after, result.updates, result.admission),
+                                 (mirror, strict, [], None))
+        for variant in (EC2_STOCK.replace(b'us-east-2', b'us-east-1'), EC2_STOCK[:-1], EC2_STOCK.replace(b'ubuntu/\t', b'ubuntu\t', 1),
+                        EC2_PRIORITIZED.replace(b'priority:3', b'priority:4')):
+            with self.subTest(variant=variant):
+                result = run_main_admitted(variant, None, DIRECT_SECURITY_SOURCE)
+                self.assertEqual((type(result.error), str(result.error)), (RuntimeError, UNSUPPORTED_MIRROR))
+                self.assertEqual([event['event'] for event in result.events], REFUSAL_EVENTS)
+                self.assertEqual((result.mirror_after, result.strict_after, result.updates), (variant, None, []))
 
 
 if __name__ == '__main__':
