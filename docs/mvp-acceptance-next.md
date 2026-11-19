@@ -235,21 +235,21 @@ two runner states alongside the original Azure state, still as a closed list of
 observed states. `docs/ci-apt-mirror-priority.md` holds the evidence and the
 exact admitted states.
 
-**What the hosted run on `9c0998ff` shows so far** (read at 15:36 UTC on
-19 November). In CI run 44555301634 all eight jobs that carry the admission
-step completed it with success between 15:30:15 and 15:31:59 UTC:
-`repository-checks`, `owned-keyfree-smoke` and `browser (1)` to `browser (6)`.
-Three of those, `repository-checks`, `owned-keyfree-smoke` and `browser (5)`,
-held at that step on `d8dcb61a`. No job of that run had finished, so it has no
-job result yet, and a job's log, which carries the guard's `ADMITTED` record,
-cannot be read before the job finishes. The font-cache diagnostic (run
-44555301667, job 135669653806), which held on `d8dcb61a`, passed, and its log
-records `"decision": "ADMITTED"` on image `20261116.133.1` with the us-east-2
-mirror file and both source paragraphs on the mirror list. That is the only
-admission record read so far: neither the `20261111.127.1` state nor the
-original Azure state has been seen admitted. `real-scanner` (run 44555301661),
-the prepared-worker `build` (run 44555301610) and `guided-first-run` (run
-44555301591) passed; none of them runs the guard.
+**What the hosted run on `9c0998ff` showed.** In CI run 44555301634 all eight
+jobs that carry the admission step passed it, 15:30:15-15:31:59 UTC, including
+`repository-checks`, `owned-keyfree-smoke` and `browser (5)`, which held on
+`d8dcb61a`. The run was then cancelled at 15:39 UTC, when the push of
+`0c6068d6` started a new run of the pull request, so none of its jobs has a
+result. Each job's log records the guard's `ADMITTED` decision, and all three
+admitted states appear: the us-east-2 direct-security state on image
+`20261111.127.1` (`repository-checks`), the us-east-2 mirror-list state on
+`20261116.133.1` (`browser (3)`), and the Azure state on `20261111.370.1`
+(`browser (1)`, `(4)`, `(5)` and `(6)`) and on `20261116.376.1`
+(`owned-keyfree-smoke` and `browser (2)`). The font-cache diagnostic (run
+44555301667) passed, admitted in the us-east-2 mirror-list state on
+`20261116.133.1`. `real-scanner` (run 44555301661), the prepared-worker `build`
+(run 44555301610) and `guided-first-run` (run 44555301591) passed; none of them
+runs the guard.
 
 **What is still unproven.** A complete green hosted run on the follow-up's
 final head. And the fix is on this stacked branch only. On `main` (`12f24475`)

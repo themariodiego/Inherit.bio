@@ -50,31 +50,32 @@ file `scripts/ci_apt_mirror_priority.py` admits. The same step passed on
 passed; `browser (3)` was cancelled during its test step at 15:11:33 UTC, when
 a push to the pull request superseded the run, so the run's conclusion is
 `cancelled`. `guided-first-run` passed (run 44546883657). Because the guard
-comes first, the hosted
-Typecheck, Lint, Unit tests and every gate step of `repository-checks` were
-skipped on this head. Locally, in a root cloud container, which is context and
-not acceptance evidence: `pnpm lint` and `pnpm typecheck` exit 0 (the type
-check with `--max-old-space-size=8192`, since it runs out of heap at Node's
-default); `pnpm test` passes 13,733 cases and fails 42 in 29 of 811 files, 22
-of them on the container's missing Playwright Chromium build and the rest on
-root-uid, CI-runtime and owned-runtime refusals; and `gate:sql-includes`,
-`gate:legal`, `gate:first-glance`, `gate:templates`, `gate:readability`,
-`gate:secrets`, `gate:routes`, `gate:claims`, `gate:citations`, `gate:env` and
-`gate:jurisdictions` exit 0. `gate:names` was not run, because it needs the
-private denylist. Later the same day the guard was fixed on this branch only,
-in `4367aec9` (it reports the public shape of a refused mirror file) and
-`9c0998ff` (it admits the two runner states that report showed, beside the
-original one; `docs/ci-apt-mirror-priority.md`). By 15:36 UTC, in CI run
-44555301634 on `9c0998ff`, all eight jobs that carry the admission step had
+comes first, the hosted Typecheck, Lint, Unit tests and every gate step of
+`repository-checks` were skipped on this head. Locally, in a root cloud
+container, which is context and not acceptance evidence: `pnpm lint` and
+`pnpm typecheck` exit 0 (the type check with `--max-old-space-size=8192`, since
+it runs out of heap at Node's default); `pnpm test` passes 13,733 cases and
+fails 42 in 29 of 811 files, 22 of them on the container's missing Playwright
+Chromium build and the rest on root-uid, CI-runtime and owned-runtime refusals;
+and `gate:sql-includes`, `gate:legal`, `gate:first-glance`, `gate:templates`,
+`gate:readability`, `gate:secrets`, `gate:routes`, `gate:claims`,
+`gate:citations`, `gate:env` and `gate:jurisdictions` exit 0. `gate:names` was
+not run, because it needs the private denylist. Later the same day the guard
+was fixed on this branch only, in `4367aec9` (it reports the public shape of a
+refused mirror file) and `9c0998ff` (it admits the two runner states that
+report showed, beside the original one; `docs/ci-apt-mirror-priority.md`). In
+CI run 44555301634 on `9c0998ff`, all eight jobs that carry the admission step
 passed it, including `repository-checks`, `owned-keyfree-smoke` and
-`browser (5)`, which held on `d8dcb61a`; no job of that run had finished. The
-font-cache diagnostic passed (run 44555301667), with the guard's `ADMITTED`
-record on image `20261116.133.1`, and `real-scanner` (run 44555301661), the
-prepared-worker `build` (run 44555301610) and `guided-first-run` (run
-44555301591) passed. A complete green run on the final head is not yet
-recorded. `main` and PR 324's branch still carry the unfixed guard, so a main
-CI run can still land on a runner it refuses; no decision records how the fix
-reaches `main`, which is open and the owner's call.
+`browser (5)`, which held on `d8dcb61a`, and their logs record `ADMITTED` on
+images `20261111.127.1`, `20261116.133.1`, `20261111.370.1` and
+`20261116.376.1`, covering all three admitted states; the run was then
+cancelled at 15:39 UTC by the push of `0c6068d6`, so none of its jobs has a
+result. The font-cache diagnostic passed (run 44555301667), and `real-scanner`
+(run 44555301661), the prepared-worker `build` (run 44555301610) and
+`guided-first-run` (run 44555301591) passed. A complete green run on the final
+head is not yet recorded. `main` and PR 324's branch still carry the unfixed
+guard, so a main CI run can still land on a runner it refuses; no decision
+records how the fix reaches `main`, which is open and the owner's call.
 
 G5.5 closes on 22 September after the review-history gate passes full CI and
 the row is reconciled with the brief's explicit zero-permitted-jurisdictions
