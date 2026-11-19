@@ -54,8 +54,15 @@ begin
    and md5(pg_get_functiondef(p.oid))='824901bf47066e4e974bd90f2b1c7110'
    and p.proacl::text='{postgres=X/postgres}')
   -- What the door calls, each its reviewed body.
-  or (select count(*) from pg_proc p join (values
+  -- current_adult_subject_invitation_v1 has two reviewed bodies: the repository's,
+  -- and the same body without its two full-line comments, as production holds it
+  -- (one of production's 8 comment-stripped bodies: docs/evidence/
+  -- pr324-production-apply-20261022/guarded/README.md, "Function bodies,
+  -- definitions and the comment-stripping drift"). Distinct signatures are
+  -- counted, so a second body can never stand in for a missing callee.
+  or (select count(distinct x.signature) from pg_proc p join (values
     ('private.current_adult_subject_invitation_v1(uuid,uuid)','7fa7e1fe73fc4db2ecf9af8a7b26d265'),
+    ('private.current_adult_subject_invitation_v1(uuid,uuid)','78d147935e25d657d8df631583c6faea'),
     ('private.consume_embryo_operation_nonce_v1(text,uuid,uuid,text,text,uuid)','db5ce99583d6e1724eae8490eec6a9ef'),
     ('private.lock_invitation_transitions_v1()','3a28aeaf4bf736cbba89e3b209649557'),
     ('private.declare_contact_alias_groups_v1(jsonb)','60f413613a40bc0186e1edfc60518863'),
