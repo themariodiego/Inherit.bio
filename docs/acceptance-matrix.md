@@ -105,6 +105,22 @@ cherry-picked onto PR 324's branch the same day (`c27aa1e1`, `091a9a44`,
 `main` when PR 324 merges; until then `main` keeps the unfixed guard, and PR
 324's CI has to pass again on `87bb33d8`.
 
+Later still on 19 November 2026, with no verdict changed: CI run 44595421706 on
+`fe12150f` is the first complete green hosted run of the follow-up branch. All
+fifteen checks passed in one attempt: `repository-checks` with every gate, the
+production build and Lighthouse; `database-tests`; `owned-keyfree-smoke`;
+`browser (1)` to `(6)`; the aggregate `checks`; and the four side workflows.
+That head carries the fix for D-137, both code-to-register batches (D-138 a to
+c), CSRF stage one, the eight register decisions carried out that day, and the
+failure instrumentation of D-142, so their browser specs, recorded until then
+as read and not run, have now run on a hosted runner and passed. The
+intermittent failure D-142 did not occur in this run; its cause is still not
+proven, and the run says nothing about how often it occurs. PR 324's own head
+`87bb33d8` passed every required check together in the third attempt of run
+44569610024, which the owner accepted for release 1's read-only checks. No row
+closes on either run: each still needs its guarded release, its merge and a
+green run on `main`.
+
 G5.5 closes on 22 September after the review-history gate passes full CI and
 the row is reconciled with the brief's explicit zero-permitted-jurisdictions
 rule. This is repository evidence on the candidate branch, not a production
