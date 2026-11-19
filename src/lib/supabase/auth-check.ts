@@ -96,12 +96,106 @@ export interface CheckUserOptions {
  * Ask who is signed in; on a temporary answer, wait briefly and ask exactly
  * once more, and return the second answer. An aborted request stops the wait
  * and returns the first answer without asking again.
+ *
+ * In a server component the second question reaches the auth service only
+ * because the client's fetch is `userAnswerFetch` (`createClient` in
+ * `./server.ts`): Next.js would otherwise answer it from the render's memo with
+ * the first answer.
  */
 export async function checkUser(reader: UserReader, options: CheckUserOptions = {}): Promise<AuthCheck> {
   const first = classifyUserAnswer(await reader.getUser());
   if (first.kind !== "unavailable") return first;
   if (!(await pause(options.pauseMs ?? AUTH_RECHECK_PAUSE_MS, options.signal))) return first;
   return classifyUserAnswer(await reader.getUser());
+}
+
+/** One answer of `GET /auth/v1/user`, read once and handed to every reader of a render. */
+export interface UserAnswer {
+  status: number;
+  statusText: string;
+  headers: [string, string][];
+  body: ArrayBuffer;
+}
+
+/** The questions one render has asked, by request, with the answer each got or is getting. */
+export type UserAnswers = Map<string, Promise<UserAnswer>>;
+
+/** Headers Next.js leaves out of its own memo key: tracing, not the question. */
+const NOT_THE_QUESTION = new Set(["traceparent", "tracestate"]);
+
+/**
+ * Whether an answer says something about the session, so that a later reader
+ * of the same render may be handed it. Everything `classifyUserAnswer` can
+ * read as temporary is not: no answer, 429, any 5xx, and a success whose body
+ * is not JSON.
+ */
+function isVerdict(answer: UserAnswer): boolean {
+  if (answer.status === 429 || answer.status >= 500) return false;
+  if (answer.status < 200 || answer.status >= 300) return true;
+  try {
+    JSON.parse(new TextDecoder().decode(answer.body));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * The fetch of the server client pages, layouts and their resolvers use.
+ *
+ * Next.js memoizes every `GET` a server component sends for the whole render,
+ * keyed by URL and headers, and keeps a failed answer as well as a good one
+ * (`next/dist/server/lib/dedupe-fetch.js`; "Memoization" in
+ * `node_modules/next/dist/docs/01-app/03-api-reference/04-functions/fetch.md`).
+ * `auth.getUser()` sends the same `GET /auth/v1/user` every time, so in a
+ * render the second question of `checkUser` was answered from that memo with
+ * the first failure without reaching the service, and the page threw the error
+ * surface after one failure (D-142, hosted runs 44607979037 and 44614403733,
+ * reproduced against `next start`). A reader that
+ * asked after a second question succeeded would still have been handed the
+ * first failure: the CSRF tokens would have read it as no session, and the
+ * Family report loaders as not found.
+ *
+ * This fetch replaces that memo for `GET /auth/v1/user` alone, with the one
+ * difference that matters: readers of one render still share one question to
+ * the service while it is pending, and share its answer when it is a verdict;
+ * an answer that is not (see `isVerdict`) is handed to those already waiting
+ * for it and then forgotten, so the next question goes to the service and its
+ * answer is what every later reader of the render reads. Each question it
+ * sends carries an `AbortSignal`, Next's documented opt-out from its memo.
+ * Every other request goes to `ask` untouched. `answersOfThisRender` returns
+ * the map of the current render; outside a render (a route handler, a server
+ * action) it returns a fresh map, and every question goes to the service as
+ * before.
+ */
+export function userAnswerFetch(
+  answersOfThisRender: () => UserAnswers,
+  ask: typeof fetch = (input, init) => fetch(input, init),
+): typeof fetch {
+  return async (input, init) => {
+    const method = (init?.method ?? (input instanceof Request ? input.method : "GET")).toUpperCase();
+    const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
+    if (method !== "GET" || !new URL(url).pathname.endsWith("/auth/v1/user")) return ask(input, init);
+    const headers = new Headers(init?.headers ?? (input instanceof Request ? input.headers : undefined));
+    const key = JSON.stringify([url, [...headers].filter(([name]) => !NOT_THE_QUESTION.has(name)).sort()]);
+    const answers = answersOfThisRender();
+    let pending = answers.get(key);
+    if (!pending) {
+      const question = (async (): Promise<UserAnswer> => {
+        const response = await ask(input, { ...init, signal: init?.signal ?? new AbortController().signal });
+        return { status: response.status, statusText: response.statusText, headers: [...response.headers],
+          body: await response.arrayBuffer() };
+      })();
+      pending = question;
+      answers.set(key, question);
+      const forget = () => { if (answers.get(key) === question) answers.delete(key); };
+      question.then(answer => { if (!isVerdict(answer)) forget(); }, forget);
+    }
+    const answer = await pending;
+    const empty = answer.status === 204 || answer.status === 205 || answer.status === 304;
+    return new Response(empty ? null : answer.body.slice(0),
+      { status: answer.status, statusText: answer.statusText, headers: answer.headers });
+  };
 }
 
 /**

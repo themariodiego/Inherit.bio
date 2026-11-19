@@ -52,7 +52,7 @@ describe("service log digest: what survives", () => {
     expect(lines).toEqual([
       "# digest auth read=10 kept=6 unparsed=1",
       `${at(1)} auth GET /user 200 ms=3`,
-      `${at(2)} auth GET /user 500 error_code=unexpected_failure error_class=db_connections_exhausted ms=12`,
+      `${at(2)} auth GET /user 500 error_code=unexpected_failure error_class=db_connections_exhausted sqlstate=53300 ms=12`,
       `${at(3)} auth GET /user 403 error_code=session_not_found error_class=other`,
       `${at(5)} auth DELETE /admin/users/<id> 500 error_code=unexpected_failure error_class=other`,
       `${at(6)} auth GET /verify 303`,
@@ -87,6 +87,59 @@ describe("service log digest: what survives", () => {
       auth(2, { method: "POST", path: "/token", status: 200 })].join("\n");
     expect(digestServiceLog("auth", raw, 2).trimEnd().split("\n")).toEqual([
       "# digest auth read=3 kept=3 unparsed=0", `${at(2)} auth POST /token 200`, `${at(3)} auth GET /user 200`]);
+  });
+});
+
+describe("service log digest: database causes and their SQLSTATE (D-142, runs 44607979037 and 44614403733)", () => {
+  // Error texts in the shape GoTrue logs them: pgx's `ERROR: ... (SQLSTATE x)`
+  // or `FATAL: ...`, wrapped in GoTrue's own words, quoting values.
+  const failed = (n: number, error: string) => auth(n, { component: "api", duration: 9_000_000, error, error_code: "unexpected_failure",
+    level: "error", method: "GET", msg: "request completed", path: "/user", status: 500 });
+  it.each([
+    // The text the local auth service logged for every 500 of a measured burst (19 November 2026).
+    ["failed to connect to `host=supabase_db_sequence user=supabase_auth_admin database=postgres`: dial error (dial tcp 172.18.0.3:5432: connect: cannot assign requested address)",
+      "local_ports_exhausted", null],
+    ["unable to fetch records: failed to connect to `host=supabase_db_sequence user=supabase_auth_admin database=postgres`: dial error (dial tcp 172.18.0.3:5432: connect: cannot assign requested address)",
+      "local_ports_exhausted", null],
+    [`failed to receive message: FATAL: terminating connection due to administrator command (SQLSTATE 57P01)`, "connection_terminated", "57P01"],
+    ["driver: bad connection", "connection_terminated", null],
+    [`unable to fetch records: conn busy`, "connection_busy", null],
+    [`ERROR: deadlock detected (SQLSTATE 40P01)`, "deadlock", "40P01"],
+    [`ERROR: could not serialize access due to concurrent update (SQLSTATE 40001)`, "serialization_failure", "40001"],
+    [`ERROR: cached plan must not change result type (SQLSTATE 0A000)`, "cached_plan_invalid", "0A000"],
+    [`ERROR: prepared statement "stmtcache_4c1f" does not exist (SQLSTATE 26000)`, "prepared_statement", "26000"],
+    [`ERROR: duplicate key value violates unique constraint "sessions_pkey"; Key (user_id)=(${userId}) (SQLSTATE 23505)`, "duplicate_key", "23505"],
+    [`ERROR: could not obtain lock on row in relation "sessions" (SQLSTATE 55P03)`, "lock_not_available", "55P03"],
+    [`ERROR: canceling statement due to lock timeout (SQLSTATE 55P03)`, "timeout", "55P03"],
+    [`ERROR: canceling statement due to user request (SQLSTATE 57014)`, "canceled", "57014"],
+    [`Database error finding user: ERROR: relation "users" does not exist (SQLSTATE 42P01)`, "other", "42P01"],
+  ])("%s → %s, %s", (error, errorClass, sqlstate) => {
+    const [, line] = digestServiceLog("auth", failed(1, error)).trimEnd().split("\n");
+    expect(line).toBe(`${at(1)} auth GET /user 500 error_code=unexpected_failure error_class=${errorClass}${sqlstate ? ` sqlstate=${sqlstate}` : ""} ms=9`);
+  });
+
+  it("keeps a SQLSTATE on an event line too, after its class", () => {
+    const raw = auth(1, { level: "error", component: "api", msg: `could not refresh session for ${email}`, error: "ERROR: deadlock detected (SQLSTATE 40P01)" });
+    expect(digestServiceLog("auth", raw).trimEnd().split("\n")[1]).toBe(`${at(1)} auth level=error component=api error_class=deadlock sqlstate=40P01`);
+  });
+
+  it("keeps only a well-formed code, and never the text around it", () => {
+    for (const error of ["ERROR: x (SQLSTATE 40p01)", "ERROR: x (SQLSTATE 4000)", "ERROR: x (SQLSTATE 400011)", "ERROR: x SQLSTATE 40P01",
+      `ERROR: x (SQLSTATE ${email})`]) {
+      expect(digestServiceLog("auth", failed(1, error))).not.toContain("sqlstate=");
+    }
+    const digest = digestServiceLog("auth", failed(1, `Key (email)=(${email}) (SQLSTATE 23505) token ${jwt}`));
+    expect(digest).toContain("sqlstate=23505");
+    for (const planted of [email, jwt, "Key", "email"]) expect(digest).not.toContain(planted);
+  });
+
+  it("the closed grammar admits a SQLSTATE only as five characters of its alphabet, in its place", () => {
+    expect(`${at(1)} auth GET /user 500 error_class=deadlock sqlstate=40P01 ms=9`).toMatch(DIGEST_LINE);
+    expect(`${at(1)} auth level=error error_class=deadlock sqlstate=40P01`).toMatch(DIGEST_LINE);
+    for (const line of [`${at(1)} auth GET /user 500 error_class=deadlock sqlstate=40p01`, `${at(1)} auth GET /user 500 sqlstate=4000`,
+      `${at(1)} auth GET /user 500 sqlstate=400011`, `${at(1)} auth GET /user 500 ms=9 sqlstate=40P01`,
+      `${at(1)} auth level=error sqlstate=40P01 error_class=deadlock`])
+      expect(line).not.toMatch(DIGEST_LINE);
   });
 });
 

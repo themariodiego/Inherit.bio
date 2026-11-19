@@ -15,10 +15,10 @@
  * whose query string can hold an `apikey`, a signed-URL `token` or a
  * PostgREST filter on an email. Nothing is copied from a raw line: each
  * output field is rebuilt from an allowlist (method, status, a numeric
- * duration, a lowercase error code) or a fixed enum (the error class, the
- * gateway event), the path loses its query and every segment that is not a
- * short lowercase word, and every output line must match one closed grammar
- * or the digest refuses to produce anything.
+ * duration, a lowercase error code, a five-character SQLSTATE) or a fixed
+ * enum (the error class, the gateway event), the path loses its query and
+ * every segment that is not a short lowercase word, and every output line
+ * must match one closed grammar or the digest refuses to produce anything.
  */
 
 export const SERVICE_LOG_SOURCES = ["auth", "kong"] as const;
@@ -39,15 +39,42 @@ const NUMBER = /^[0-9]{1,6}$/;
 const ERROR_CODE = /^[a-z][a-z0-9_]{0,63}$/;
 const COMPONENT = /^[a-z][a-z0-9_-]{0,31}$/;
 
-/** The causes a free-text error is reduced to; the text itself is never kept. */
+/**
+ * The causes a free-text error is reduced to; the text itself is never kept.
+ * First match wins. D-142's hosted runs 44607979037 and 44614403733 recorded
+ * a burst of simultaneous 500s from the auth service as `other`, so the
+ * causes such a burst can have were added: first the one measured on the
+ * local stack, where the auth service dials a new database connection for its
+ * queries and under load its container runs out of local ports to dial from
+ * ("connect: cannot assign requested address"); then a connection the server
+ * ended or the driver gave up on, a connection used by two queries at once,
+ * the two transaction conflicts, a cached statement the schema invalidated or
+ * a pooler dropped, a unique-key race and a lock wait.
+ */
 const ERROR_CLASSES: ReadonlyArray<[string, RegExp]> = [
+  ["local_ports_exhausted", /cannot assign requested address/i],
   ["db_connections_exhausted", /too many clients|remaining connection slots|too many connections/i],
   ["connection_refused", /connection refused/i],
   ["connection_reset", /connection reset|broken pipe|reset by peer|unexpected eof/i],
+  ["connection_terminated", /terminating connection|server closed the connection|conn closed|connection is closed|closed pool|bad connection|database system is (?:shutting down|starting up|in recovery)/i],
+  ["connection_busy", /conn busy/i],
+  ["deadlock", /deadlock detected/i],
+  ["serialization_failure", /could not serialize access|serialization failure/i],
+  ["cached_plan_invalid", /cached plan must not change result type/i],
+  ["prepared_statement", /prepared statement \S+ (?:does not exist|already exists)/i],
+  ["duplicate_key", /duplicate key value violates unique constraint/i],
+  ["lock_not_available", /could not obtain lock|lock not available/i],
   ["timeout", /deadline exceeded|timed out|timeout/i],
-  ["canceled", /context canceled/i],
+  ["canceled", /context canceled|canceling statement due to user request/i],
   ["dns", /no such host|name resolution|could not resolve|dns/i],
 ];
+/**
+ * Postgres's own code for a failed statement, as pgx prints it inside the
+ * auth service's error text (`... (SQLSTATE 40P01)`): five characters from a
+ * fixed alphabet, which name the condition and nothing else. Only the code is
+ * kept, never the text around it.
+ */
+const SQLSTATE = /\(SQLSTATE ([0-9A-Z]{5})\)/;
 /** nginx error-log causes; the line's text, client and request are never kept. */
 const GATEWAY_CLASSES: ReadonlyArray<[string, RegExp]> = [
   ["upstream_connect_failed", /connect\(\) failed/],
@@ -72,13 +99,19 @@ const ENUM = "[a-z_]{1,40}";
 /** Every line the digest may emit. Anything else refuses the whole digest. */
 export const DIGEST_LINE = new RegExp(
   `^(?:# digest (?:auth|kong) read=\\d{1,9} kept=\\d{1,9} unparsed=\\d{1,9}`
-  + `|${TS} (?:auth|kong) ${METHOD} ${PATH} \\d{3}(?: error_code=[a-z][a-z0-9_]{0,63})?(?: error_class=${ENUM})?(?: ms=\\d{1,9})?`
+  + `|${TS} (?:auth|kong) ${METHOD} ${PATH} \\d{3}(?: error_code=[a-z][a-z0-9_]{0,63})?(?: error_class=${ENUM})?(?: sqlstate=[0-9A-Z]{5})?(?: ms=\\d{1,9})?`
   + `|${TS} (?:auth|kong) level=(?:${LEVELS.join("|")})(?: component=[a-z][a-z0-9_-]{0,31})?`
-  + `(?: (?:error_class|gateway_class|gateway_event)=${ENUM})?(?: ${METHOD} ${PATH})?)$`,
+  + `(?: (?:error_class|gateway_class|gateway_event)=${ENUM})?(?: sqlstate=[0-9A-Z]{5})?(?: ${METHOD} ${PATH})?)$`,
 );
 
 function classify(text: string, classes: ReadonlyArray<[string, RegExp]>): string {
   return classes.find(([, pattern]) => pattern.test(text))?.[0] ?? "other";
+}
+
+/** An error text's class, and its SQLSTATE when it carries one. */
+function errorFields(text: string): string[] {
+  const code = SQLSTATE.exec(text)?.[1];
+  return [`error_class=${classify(text, ERROR_CLASSES)}`, ...(code ? [`sqlstate=${code}`] : [])];
 }
 
 /**
@@ -116,7 +149,7 @@ function digestAuthLine(time: string, body: string): string | null {
   if (method && path && status !== null) {
     const fields = [`${time} auth ${method} ${path} ${status}`];
     if (line.error_code !== undefined) fields.push(`error_code=${typeof line.error_code === "string" && ERROR_CODE.test(line.error_code) ? line.error_code : "other"}`);
-    if (typeof line.error === "string" && line.error.length > 0) fields.push(`error_class=${classify(line.error, ERROR_CLASSES)}`);
+    if (typeof line.error === "string" && line.error.length > 0) fields.push(...errorFields(line.error));
     if (Number.isSafeInteger(line.duration) && (line.duration as number) >= 0) fields.push(`ms=${Math.min(Math.round((line.duration as number) / 1e6), 999_999_999)}`);
     return fields.join(" ");
   }
@@ -125,7 +158,7 @@ function digestAuthLine(time: string, body: string): string | null {
   const fields = [`${time} auth level=${severity}`];
   if (typeof line.component === "string" && COMPONENT.test(line.component)) fields.push(`component=${line.component}`);
   const text = [line.msg, line.error].filter(value => typeof value === "string").join(" ");
-  fields.push(`error_class=${classify(text, ERROR_CLASSES)}`);
+  fields.push(...errorFields(text));
   return fields.join(" ");
 }
 
