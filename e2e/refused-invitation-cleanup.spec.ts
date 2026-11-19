@@ -35,8 +35,10 @@ test("jobs.retention: physically delete refused-draft evidence without deleting 
     expect((await admin.storage.createBucket(bucket, { public: false })).error).toBeNull();
   }
   async function evidence(draftId: string, path: string) {
+    // The registered bucket (storage.legal-evidence-v1) admits only the opaque
+    // application/octet-stream objects the product writes there.
     const upload = await admin.storage.from(bucket).upload(path, Buffer.from("Synthetic legal evidence only"), {
-      contentType: "text/plain", upsert: false,
+      contentType: "application/octet-stream", upsert: false,
     });
     expect(upload.error).toBeNull();
     const d = await admin.from("embryo_cohort_drafts").select("uploader_principal_id").eq("id", draftId).single();

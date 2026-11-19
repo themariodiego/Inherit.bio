@@ -21,7 +21,12 @@ import { readStudyContext } from "../genome/study-context";
 // separate tranche fixture pins the entire retained population and the exact
 // additive union; neither a new source nor a date can hide an old record.
 const citations = allCitations.filter((source) => !primaryTranche.addedSourceIds.includes(source.id));
-const claims = allClaims.filter((claim) => !primaryTranche.addedClaimIds.includes(claim.claim_id));
+// The eleven Copilot system prompt claims (`copilot.*`, 16 October 2026) are
+// not report content and carry no source. src/copy/copilot/system-prompts.test.ts
+// pins exactly which they are, and primary-source-tranche.test.ts pins the
+// total, so this report population stays exactly what it was.
+const claims = allClaims.filter((claim) => !primaryTranche.addedClaimIds.includes(claim.claim_id)
+  && !claim.claim_id.startsWith("copilot."));
 
 // This is an independent seed-text binding fixture, NOT a rendered corpus.
 // No complete-channel or G1.11/G4.7 acceptance is claimed by this test.

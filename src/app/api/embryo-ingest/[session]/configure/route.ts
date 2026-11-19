@@ -7,12 +7,15 @@ import {
   deriveHeaderBuild,
   newTransportChallenge,
   readConfigureBody,
+  tableConfiguredResponse,
+  tableConfigureResult,
   terminalResponse,
   withNoReferrer,
   zeroizeEvidence,
+  type TableConfigureRequest,
 } from "@/lib/embryos/ingest-configure";
 import { dispatchIngestAttemptFailure } from "@/lib/embryos/ingest-failure";
-import { authorizeIngestHttpRequest } from "@/lib/embryos/ingest-http";
+import { authorizeIngestHttpRequest, type IngestAuthorization, type IngestAuthorizationArgs } from "@/lib/embryos/ingest-http";
 import { mintIngestSessionOperation, verifyEmbryoOperation } from "@/lib/embryos/operation-token";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -47,6 +50,16 @@ import { createAdminClient } from "@/lib/supabase/admin";
  *     branch.
  *  6. A terminal branch, or an attempt already failure-pending, dispatches the
  *     identical `attemptFailure` unwind before answering.
+ *
+ * A laboratory table (ADR 0037, owner decision of 16 October 2026) takes the
+ * same steps 1 to 3 with its own closed body. Step 4 reads only the table's
+ * `##reference` and `##contig` header lines through the same header rule: a
+ * stated build is recorded as `explicit-header`, anything else as
+ * `decision-required`, and nothing is inferred from positions. Step 5 is
+ * `configure_embryo_table_ingest_v1`, which records `pgt_table` and stores
+ * the digest of the one mapping-inspection nonce this response carries. The
+ * build question, the transport challenge and the completion credentials
+ * come from the mapping route.
  *
  * `EMBRYO_INGEST_AVAILABLE` stays false and production refuses at step 1 and
  * again inside every database function (`p_test_jurisdiction`).
@@ -96,6 +109,8 @@ export async function POST(request: Request, context: { params: Promise<{ sessio
     zeroizeEvidence(body);
     return withNoReferrer(notFound());
   }
+
+  if (body.format === "pgt_table") return configureTable(body, claims.nonce, authority, credentials);
 
   const build = deriveHeaderBuild(body);
   const expiresAt = new Date(authority.expiresAt);
@@ -160,4 +175,52 @@ export async function POST(request: Request, context: { params: Promise<{ sessio
       await dispatchIngestAttemptFailure(result.data);
       return withNoReferrer(notFound());
   }
+}
+
+/**
+ * The laboratory-table branch, after authority, the closed body and the
+ * operation nonce. The header build is decided in memory and the submitted
+ * lines are zeroized before anything reaches the database.
+ */
+async function configureTable(
+  body: TableConfigureRequest,
+  nonce: string,
+  authority: Extract<IngestAuthorization, { status: "authorized" }>,
+  credentials: IngestAuthorizationArgs,
+): Promise<Response> {
+  const build = deriveHeaderBuild(body);
+  let mapping: { token: string; nonce: string };
+  try {
+    mapping = mintIngestSessionOperation({
+      accountId: credentials.p_account_id, sessionId: credentials.p_auth_session_id,
+      targetId: authority.session, operation: "ingest_mapping_inspect",
+    }, new Date(authority.expiresAt));
+  } catch {
+    return withNoReferrer(notFound());
+  }
+  const { data, error } = await createAdminClient().rpc("configure_embryo_table_ingest_v1", {
+    p_account_id: credentials.p_account_id,
+    p_auth_session_id: credentials.p_auth_session_id,
+    p_ingest_session_id: credentials.p_ingest_session_id,
+    p_cookie_hash: credentials.p_cookie_hash,
+    p_origin: credentials.p_origin,
+    p_cohort_id: authority.cohortId,
+    p_ingest_revision: authority.ingestRevision,
+    p_build: build,
+    p_nonce: nonce,
+    p_mapping_nonce: mapping.nonce,
+    p_test_jurisdiction: credentials.p_test_jurisdiction,
+  });
+  if (error) {
+    return withNoReferrer(["42501", "23505", "55000", "P0002"].includes(error.code ?? "") ? notFound() : unavailable());
+  }
+  const result = tableConfigureResult.safeParse(data);
+  if (!result.success) return withNoReferrer(unavailable());
+  if (result.data.status === "failure_pending") {
+    await dispatchIngestAttemptFailure(result.data);
+    return withNoReferrer(notFound());
+  }
+  // The database records only the build this route derived, or none.
+  if (result.data.build !== build) return withNoReferrer(unavailable());
+  return tableConfiguredResponse(mapping.token);
 }

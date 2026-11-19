@@ -1,7 +1,8 @@
 import {afterEach,beforeEach,describe,expect,it,vi} from "vitest";
-const native=vi.hoisted(()=>({query:vi.fn(),end:vi.fn(),open:vi.fn(),rpc:vi.fn(),retry:vi.fn(),send:vi.fn(),storage:vi.fn(),config:vi.fn()}));
+const native=vi.hoisted(()=>({query:vi.fn(),end:vi.fn(),open:vi.fn(),rpc:vi.fn(),retry:vi.fn(),send:vi.fn(),storage:vi.fn(),config:vi.fn(),
+ bucket:vi.fn(),remove:vi.fn()}));
 vi.mock("postgres",()=>({default:(config:unknown)=>{native.open(config);return {begin:async(work:(tx:unknown)=>Promise<unknown>)=>work(native.query),end:native.end};}}));
-vi.mock("@/lib/supabase/admin",()=>({createAdminClient:()=>({rpc:native.rpc})}));
+vi.mock("@/lib/supabase/admin",()=>({createAdminClient:()=>({rpc:native.rpc,storage:{from:native.bucket}})}));
 vi.mock("@/lib/embryos/fragment-storage",()=>({embryoFragmentStorageConfigured:native.storage}));
 vi.mock("@/lib/uploads/normalization-database",()=>({normalizationDatabaseConfig:native.config}));
 import {configuredTestClaimantDeletion} from "./claimant-deletion-test";
@@ -17,6 +18,7 @@ beforeEach(()=>{
  vi.clearAllMocks();native.storage.mockReturnValue(true);native.config.mockReturnValue({ssl:{rejectUnauthorized:true}});
  native.end.mockResolvedValue(undefined);native.send.mockResolvedValue({data:{status:"source_pending"},error:null});
  native.retry.mockReturnValue({abortSignal:native.send});native.rpc.mockReturnValue({retry:native.retry});
+ native.remove.mockResolvedValue({data:[],error:null});native.bucket.mockReturnValue({remove:native.remove});
  native.query.mockImplementation(async(strings:TemplateStringsArray)=>{
   const text=strings.join("?");
   if(text.includes("current_user="))return [{allowed:true}];
@@ -58,6 +60,26 @@ describe("TEST claimant actual transport ownership",()=>{
   await execution().parts("future_person_deletion_parts_v1",args).abortSignal(signal);
   expect(native.rpc).toHaveBeenCalledExactlyOnceWith("future_person_deletion_parts_v1",args,{get:false,head:false});
   expect(native.retry).toHaveBeenCalledExactlyOnceWith(false);expect(native.send).toHaveBeenCalledExactlyOnceWith(signal);
+ });
+ it.each(["future_person_deletion_objects_v1","claim_embryo_ingest_object_disposals_v1","finish_embryo_ingest_object_disposal_v1",
+  "confirm_embryo_ingest_unwind_storage_v1","complete_embryo_ingest_unwind_v1"])("the sealed continuation reaches the exact closed door %s by POST with no retry",async name=>{
+  const signal=new AbortController().signal,args={p_manifest:id,p_claim_token_hash:token};
+  await execution().parts(name,args).abortSignal(signal);
+  expect(native.rpc).toHaveBeenCalledExactlyOnceWith(name,args,{get:false,head:false});
+  expect(native.retry).toHaveBeenCalledExactlyOnceWith(false);expect(native.send).toHaveBeenCalledExactlyOnceWith(signal);
+ });
+ it.each(["claim_document_objects_due_v1","confirm_claim_document_objects_deleted_v1","account_embryo_unwinds_v1",
+  "embryo_ingest_unwind_work_v1","prepare_future_person_deletion_v1"])("the global queue, account cleanup and native request door %s stay unreachable",name=>{
+  expect(()=>execution().parts(name,{}).abortSignal(new AbortController().signal)).toThrow("claimant_deletion_unavailable");
+  expect(native.rpc).not.toHaveBeenCalled();
+ });
+ it("identity removal acquires only the private claim bucket at call time and removes exactly the listed keys",async()=>{
+  const e=execution();expect(native.bucket).not.toHaveBeenCalled();
+  const keys=["d51f05ba-1130-4b19-a1e5-446297231ce9/d51f05ba-1130-4b19-a1e5-446297231ce8/d51f05ba-1130-4b19-a1e5-446297231ce7"];
+  await e.documents.remove(keys);
+  expect(native.bucket).toHaveBeenCalledExactlyOnceWith("future-person-identity");expect(native.remove).toHaveBeenCalledExactlyOnceWith(keys);
+  native.remove.mockResolvedValueOnce({data:null,error:{message:"private-provider-refusal"}});
+  await expect(e.documents.remove(keys)).rejects.toThrow("claim_object_remove_failed");
  });
  it("refuses an unknown fragment door or already aborted call before client acquisition",async()=>{
   const e=execution(),stop=new AbortController();stop.abort();

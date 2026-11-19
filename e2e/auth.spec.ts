@@ -1,10 +1,11 @@
 import { expect, test } from "@playwright/test";
 import { SIGN_IN_ERRORS, SIGN_IN_STATUS } from "../src/copy/sign-in";
-import { adminClient, clearMailbox, latestEmailTo } from "./helpers";
+import { adminClient, clearMailbox, latestEmailTo, signIn } from "./helpers";
 
 // A2 — the real email flows: sign-up → verification email → verified
-// session; password reset → new password works. Emails are captured by the
-// local stack's Mailpit (production uses Resend SMTP; same templates).
+// session; password reset → every session ends → the new password works.
+// Emails are captured by the local stack's Mailpit (production uses Resend
+// SMTP; same templates).
 
 const USER = {
   email: `authflow-${Date.now()}@e2e.local`,
@@ -50,32 +51,55 @@ test("sign-up sends a verification email; the link yields a signed-in session", 
   await expect(page.getByText(USER.email)).toBeVisible();
 });
 
-test("password reset flow works end-to-end", async ({ page }) => {
-  await clearMailbox();
-  await page.goto("/auth/forgot-password");
-  await page.getByLabel("Email").fill(USER.email);
-  await page.getByRole("button", { name: "Send reset link" }).click();
-  await expect(page.getByText("Check your email")).toBeVisible();
+test("password reset flow works end-to-end", async ({ page, browser }) => {
+  // A session signed in before the reset, in another browser: a successful
+  // reset must end it too (owner decision 2026-10-16).
+  const earlier = await browser.newContext();
+  const earlierPage = await earlier.newPage();
+  try {
+    await signIn(earlierPage, USER.email, USER.password);
 
-  const mail = await latestEmailTo(USER.email);
-  expect(mail).not.toBeNull();
-  const link = /https?:\/\/[^\s"<>]+verify[^\s"<>]*/.exec(mail!.body)?.[0];
-  expect(link).toBeTruthy();
+    await clearMailbox();
+    await page.goto("/auth/forgot-password");
+    await page.getByLabel("Email").fill(USER.email);
+    await page.getByRole("button", { name: "Send reset link" }).click();
+    await expect(page.getByText("Check your email")).toBeVisible();
 
-  await page.goto(link!.replace(/&amp;/g, "&"));
-  await page.waitForURL(/\/auth\/reset-password/, { timeout: 30_000 });
-  const newPassword = "e2e-auth-pw-2";
-  await page.getByLabel("New password").fill(newPassword);
-  await page.getByRole("button", { name: "Update password" }).click();
-  await page.waitForURL(/\/(?:dashboard|overview)/);
+    const mail = await latestEmailTo(USER.email);
+    expect(mail).not.toBeNull();
+    const link = /https?:\/\/[^\s"<>]+verify[^\s"<>]*/.exec(mail!.body)?.[0];
+    expect(link).toBeTruthy();
 
-  // The new password signs in from a fresh context.
-  await page.request.post("/auth/sign-out");
-  await page.goto("/auth/sign-in");
-  await page.getByLabel("Email").fill(USER.email);
-  await page.getByLabel("Password").fill(newPassword);
-  await page.getByRole("button", { name: "Sign in" }).click();
-  await page.waitForURL(/\/(?:dashboard|overview)/);
+    await page.goto(link!.replace(/&amp;/g, "&"));
+    await page.waitForURL(/\/auth\/reset-password/, { timeout: 30_000 });
+    // The recovery link gave this browser a reset session, not a signed-in one.
+    expect(new URL(page.url()).search).toBe("");
+    const sessionCookies = (await page.context().cookies()).filter((cookie) => /^sb-.*-auth-token/.test(cookie.name));
+    expect(sessionCookies).toEqual([]);
+    const newPassword = "e2e-auth-pw-2";
+    await page.getByLabel("New password").fill(newPassword);
+    await page.getByRole("button", { name: "Update password" }).click();
+    // Every session is revoked, so the reader signs in again (owner decision 2026-10-16).
+    await page.waitForURL(/\/auth\/sign-in\?notice=password_changed$/, { timeout: 30_000 });
+    await expect(page.locator("main").getByRole("status")).toHaveText(SIGN_IN_STATUS.password_changed);
+
+    // The session from before the reset no longer opens a private page.
+    await earlierPage.goto("/overview");
+    await earlierPage.waitForURL(/\/auth\/sign-in\?next=/, { timeout: 30_000 });
+
+    // The old password is refused and the new password signs in from a fresh form.
+    await page.getByLabel("Email").fill(USER.email);
+    await page.getByLabel("Password").fill(USER.password);
+    await page.getByRole("button", { name: "Sign in" }).click();
+    await expect(page.locator("form").getByRole("alert")).toBeVisible();
+    await page.goto("/auth/sign-in");
+    await page.getByLabel("Email").fill(USER.email);
+    await page.getByLabel("Password").fill(newPassword);
+    await page.getByRole("button", { name: "Sign in" }).click();
+    await page.waitForURL(/\/(?:dashboard|overview)/);
+  } finally {
+    await earlier.close();
+  }
 });
 
 test("a sign-up link opened in another browser confirms the email and says so", async ({

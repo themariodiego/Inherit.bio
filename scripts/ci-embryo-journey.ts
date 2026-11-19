@@ -343,6 +343,7 @@ export async function withEmbryoJourney<T>(env: Environment, work: (fixture: {
   statisticalProof: (cohortId: string) => Promise<unknown>;
   proof: (cohortId: string) => Promise<unknown>;
   withFittedJourney: <U>(firstCohortId: string, work: (fixture: FittedEmbryoJourney) => Promise<U>) => Promise<U>;
+  withTableJourney: <U>(firstCohortId: string, work: (fixture: TableEmbryoJourney) => Promise<U>) => Promise<U>;
 }) => Promise<T>, io?: EmbryoJourneyIo, platform = process.platform, operator?: OwnedLinuxCapability): Promise<T> {
   assertCiRuntime(env, platform, operator);
   io ??= defaultIo(env, operator);
@@ -391,7 +392,7 @@ export async function withEmbryoJourney<T>(env: Environment, work: (fixture: {
     and not exists(select 1 from private.embryo_canonical_parts))::text;`) === "true",
   "Embryo journey requires an empty split and fragment queue");
   let attempted = false, statisticalAttempted = false;
-  let fittedJourneyAttempted = false;
+  let fittedJourneyAttempted = false, tableJourneyAttempted = false;
   try {
     assert(await sql(`-- embryo-fixture-activate
       do $$ begin ${configLocks}
@@ -542,6 +543,71 @@ export async function withEmbryoJourney<T>(env: Environment, work: (fixture: {
           return result;
         } finally { await checkFirst(); }
       },
+      // ADR 0037: one fresh laboratory-table cohort after the original
+      // publication, through the same production split entrypoint. Its
+      // session must show the table path: pgt_table, a build the reader
+      // answered (decision-required, GRCh38) and a recorded locus kind.
+      withTableJourney: async (firstCohortId, tableWork) => {
+        const first = cohortLiteral(firstCohortId);
+        assert(attempted && statisticalAttempted && !tableJourneyAttempted,
+          "Table journey requires this callback's completed original split and coverage attempts");
+        tableJourneyAttempted = true;
+        const readFirst = async () => {
+          const value = JSON.parse(await sql(completedJourneyHistory(first))) as { complete: unknown; sha256: unknown };
+          assert(value.complete === true && typeof value.sha256 === "string" && /^[0-9a-f]{64}$/.test(value.sha256),
+            "Only the complete original owned terminal publication can precede table work");
+          return value.sha256;
+        };
+        const unchanged = await readFirst();
+        const checkFirst = async () => assert(await readFirst() === unchanged, "Original whole journey history changed");
+        // Earlier publications stay; no embryo job of any other cohort may still be pending.
+        const noPendingJob = (except?: string) => `not exists(select 1 from public.worker_jobs where
+            ${except === undefined ? "" : `cohort_id is distinct from ${except} and `}kind in('split_cohort_vcf','score_embryo')
+            and status in('queued','running'))`;
+        assert(await sql(`-- embryo-table-empty-queue
+          select (${SETTLED_EMBRYO_QUEUES}
+          and ${noPendingJob()})::text;`) === "true", "No unrelated or pending embryo work permitted");
+        let table: string | undefined, splitAttempted = false, splitCompleted = false;
+        try {
+          const result = await tableWork({
+            runWorker: async cohortId => {
+              const cohort = cohortLiteral(cohortId);
+              assert(cohort !== first && !splitAttempted, "One distinct fresh table cohort is required");
+              await checkFirst();
+              assert(await sql(`-- embryo-table-fresh-cohort
+                select (${SETTLED_EMBRYO_QUEUES}
+                and ${noPendingJob(cohort)}
+                and (select count(*) from public.worker_jobs where cohort_id=${cohort})=1
+                and exists(select 1 from public.worker_jobs w join public.embryo_ingest_sessions i
+                  on i.id=w.source_binding_id and i.worker_job_id=w.id
+                  join public.embryo_cohorts c on c.id=i.cohort_id join auth.users u on u.id=c.owner_account_id
+                  where w.cohort_id=${cohort} and i.cohort_id=${cohort} and w.kind='split_cohort_vcf'
+                    and w.status='queued' and w.attempts=0 and i.status='sanitization_pending'
+                    and i.source_format='pgt_table' and i.build_evidence='decision-required'
+                    and i.configured_build is null and i.reference_build='GRCh38' and i.table_locus='chrom-pos'
+                    and c.status='ingesting' and u.email='table-test@e2e.local')
+                and not exists(select 1 from private.embryo_canonical_sources where cohort_id=${cohort}))::text;`) === "true",
+              "Only the untouched laboratory-table cohort may run");
+              table = cohort;splitAttempted = true;
+              await checkIdentity();
+              const output = await io.execute(["exec", "-i", "--user", user, CI_RUNTIME_CONTAINER,
+                "node", "--import", "tsx", "/app/scripts/ci-browser/embryo-worker.mts"],
+              JSON.stringify(worker) + "\n", EMBRYO_WORKER_LIMIT_MS + 20_000);
+              assert(output === "EMBRYO_JOURNEY_WORKER_COMPLETE", "Table split must settle one complete publication");
+              await checkFirst();
+              splitCompleted = true;
+            },
+            proof: async cohortId => {
+              const cohort = cohortLiteral(cohortId);assert(cohort === table && splitAttempted, "Exact table publication required");
+              await checkFirst();return JSON.parse(await sql(embryoProof(cohort)));
+            },
+          });
+          assert(table !== undefined && splitCompleted, "The distinct table journey must complete its actual worker attempt");
+          assert(await sql(`-- embryo-table-settled-queue
+            select (${SETTLED_EMBRYO_QUEUES})::text;`) === "true", "The table journey left pending fragment work");
+          return result;
+        } finally { await checkFirst(); }
+      },
     });
   } finally {
     const restored = await sql(`-- embryo-fixture-restore
@@ -575,6 +641,18 @@ function embryoProof(cohort: string): string {
     'pendingOrdinals',(select count(*) from private.embryo_split_ordinals o join public.embryo_ingest_sessions s on s.id=o.session_id where s.cohort_id=${cohort}),
     'pendingVariants',(select count(*) from private.embryo_split_variants v join public.embryo_ingest_sessions s on s.id=v.session_id where s.cohort_id=${cohort}));`;
 }
+
+/** No fragment, staging row, write intent or canonical part is left unsettled. */
+const SETTLED_EMBRYO_QUEUES = `not exists(select 1 from private.embryo_split_ordinals)
+          and not exists(select 1 from private.embryo_split_variants)
+          and not exists(select 1 from private.embryo_ingest_write_intents where state<>'landed')
+          and not exists(select 1 from private.embryo_canonical_parts where state<>'landed')`;
+
+/** The laboratory-table cohort's own split and proof (ADR 0037). */
+export type TableEmbryoJourney = {
+  runWorker: (cohortId: string) => Promise<void>;
+  proof: (cohortId: string) => Promise<unknown>;
+};
 
 export type FittedEmbryoJourney = {
   runWorker: (cohortId: string) => Promise<void>;

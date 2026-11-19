@@ -39,8 +39,9 @@ const uuid = z.string().uuid();
 const timestamp = z.iso.datetime({ offset: true });
 const sha256 = z.string().regex(/^[0-9a-f]{64}$/);
 export const EMBRYO_PUBLISHED_FILE_SELECT = "id,user_id,subject_id,status,file_type,sample_count,cohort_id,is_cohort_file,source_publication_state,source_publication_revision,source_binding_fingerprint,source_sha256,canonical_build,upload_revision,normalization_completed_at,normalization_source_revision,single_logical_sample_verified_at,processing_started_at,processing_finished_at,bucket_path,sha256,storage_object_id";
-const publishedFile = z.object({
-  id: uuid, user_id: uuid, subject_id: uuid, status: z.literal("stored"), file_type: z.literal("vcf"),
+/** A laboratory table publishes as `pgt_table` (ADR 0037); every other field is the same contract. */
+const publishedFileOf = (fileType: "vcf" | "pgt_table") => z.object({
+  id: uuid, user_id: uuid, subject_id: uuid, status: z.literal("stored"), file_type: z.literal(fileType),
   sample_count: z.literal(1), cohort_id: z.null(), is_cohort_file: z.literal(false),
   source_publication_state: z.literal("published"), source_publication_revision: z.literal(1),
   source_binding_fingerprint: sha256, source_sha256: sha256, canonical_build: z.literal("GRCh38"),
@@ -48,13 +49,14 @@ const publishedFile = z.object({
   single_logical_sample_verified_at: timestamp, processing_started_at: z.null(), processing_finished_at: timestamp,
   bucket_path: z.string(), sha256: z.null(), storage_object_id: z.null(),
 }).strict();
+const publishedFile = publishedFileOf("vcf");
 
 /** Both native fixtures consume the actual publication contract: `stored`
  * is the file status; normalization completion is its exact current receipt. */
 export function publishedEmbryoFiles(value: unknown, expected: {
-  ownerId: string; publishedAt: string; subjectIds: readonly string[];
+  ownerId: string; publishedAt: string; subjectIds: readonly string[]; fileType?: "vcf" | "pgt_table";
 }) {
-  const files = z.array(publishedFile).min(1).max(2).parse(value);
+  const files = z.array(publishedFileOf(expected.fileType ?? "vcf")).min(1).max(2).parse(value);
   if (new Set(expected.subjectIds).size !== expected.subjectIds.length
     || files.length !== expected.subjectIds.length || new Set(files.map(file => file.id)).size !== files.length
     || JSON.stringify(files.map(file => file.subject_id).sort()) !== JSON.stringify([...expected.subjectIds].sort())

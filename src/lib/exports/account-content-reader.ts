@@ -1,6 +1,7 @@
 import "server-only";
 import {z} from "zod";
 import {accountArchiveContextSchema,type AccountMemberRpc} from "./bound-account-archive-worker";
+import {accountArchiveScope} from "./account-archive-scope";
 import {ownExportSnapshotSchema,ownSubjectExportContent,type OwnExportRpc,type OwnExportSnapshot} from "./own-subject-content";
 import {anySignal} from "./abort-signals";
 const unavailable=()=>new Error("account_archive_content_unavailable");
@@ -35,7 +36,7 @@ export async function createAccountContentReader(options:{reference:{exportId:st
  }
  async function context(signal:AbortSignal){
   const parsed=accountArchiveContextSchema.parse(await call("context",null,signal));
-  if(parsed.targetKind!=="account"||parsed.targetId!==parsed.actor.accountId||parsed.authorityReceipt!==options.reference.authorityReceipt
+  if(accountArchiveScope(parsed)===null||parsed.authorityReceipt!==options.reference.authorityReceipt
    ||parsed.deadline!==options.deadline||(captured&&JSON.stringify(parsed)!==JSON.stringify(captured)))throw unavailable();
   captured??=parsed;return parsed;
  }

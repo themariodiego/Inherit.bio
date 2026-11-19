@@ -245,3 +245,33 @@ describe("fitted TEST regions keep their group, original embryo and evidence con
       .toThrow("Embryo group attribution required");
   });
 });
+
+// The DOM the e2e/embryo-ingest-journey.spec.ts coverage steps assert on the
+// three embryo result routes (owner decision 2026-10-22, G1.7, G1.12, G2.2).
+// The browser steps run only in the hosted embryo-ingest job; this holds the
+// same distinguishing targets against the component the three pages render.
+describe("the two embryo route states the ingest journey names", () => {
+  const cellWord = /<span data-slot="cell-word" data-reason="insufficient_coverage"[^>]*>Not read<\/span>/g;
+  const figureValue = (read: number) => new RegExp(`<span data-slot="figure-value">read ${read} of the 10 positions this needs</span>`, "g");
+  it("not-covered: 0 of 10 reads Not read, the shortfall figure and the too-little sentence, and nothing partial coverage shows", () => {
+    const html = renderToStaticMarkup(createElement(StatisticalCoverage, { value: fixture(0), subjectIds }));
+    expect(html).toContain('data-coverage-state="not_covered" data-finding-kind="coverage_failure"');
+    expect(html).toContain("This invented reference tests file coverage. It gives no medical interpretation.");
+    expect(html.match(cellWord)).toHaveLength(1);
+    expect(html.match(figureValue(0))).toHaveLength(1);
+    expect(html).toContain(`<p data-slot="coverage-failure">${INSUFFICIENT_COVERAGE_INTRO}</p>`);
+    expect(html).not.toMatch(/data-test-result|data-slot="observed-test-coverage"|data-slot="modelled-test-interval"|data-within-family/);
+    expect(html).not.toMatch(/data-figure-kind="(?:absolute|relative|interval|percentile)"|data-modelled-marker|aria-sort/);
+  });
+  it("partial-coverage: 8 of 10 reads the observed count, keeps the missing positions in the denominator and shows only the MODELLED interval", () => {
+    const html = fittedHtml();
+    expect(html).toContain('data-coverage-state="not_covered" data-finding-kind="none" data-test-result="fitted"');
+    expect(html.match(figureValue(8))).toHaveLength(1);
+    expect(html).toContain('<p data-slot="observed-test-coverage">OBSERVED own-file coverage. Missing positions remain in the full score denominator.</p>');
+    expect(html).toContain('<p data-slot="modelled-test-interval">MODELLED invented-control probability and range. This is not a clinical result.</p>');
+    expect(html.match(/data-figure-kind="interval" data-figure-class="estimate" data-figure-basis="modelled"/g)).toHaveLength(1);
+    expect(html).not.toMatch(/data-slot="coverage-failure"|data-finding-kind="coverage_failure"|data-slot="cell-word"/);
+    expect(html).not.toContain(INSUFFICIENT_COVERAGE_INTRO);
+    expect(html).not.toMatch(/data-figure-kind="(?:absolute|relative|percentile)"|aria-sort/);
+  });
+});

@@ -4,6 +4,7 @@ import { EmbryoTransportError } from "./ingest-lines";
 import type { EmbryoTransportBinding } from "./ingest-binding";
 import { mapQcReason, qcBand, qcReasons, type QcBand, type QcReasonId } from "./qc-policy";
 import { validateEmbryoVcfFragment } from "./vcf-transport";
+import { validateEmbryoTableFragment } from "./table-transport";
 
 /**
  * The per-embryo half of `split_cohort_vcf`, with no database and no network.
@@ -18,8 +19,12 @@ import { validateEmbryoVcfFragment } from "./vcf-transport";
  * one fails revalidation.
  */
 
-/** [chromosome, position, reference, called alternates or null, genotype]. */
-export type EmbryoSplitRow = [number, number, string, string | null, string];
+/**
+ * [chromosome, position, reference, called alternates or null, genotype].
+ * A laboratory-table row has no reference and no alternates: a table names
+ * the called alleles only, as a consumer array does (ADR 0037).
+ */
+export type EmbryoSplitRow = [number, number, string | null, string | null, string];
 
 export interface EmbryoFragmentMeasure {
   /** Record lines in the fragment. */
@@ -123,6 +128,36 @@ export async function analyseEmbryoFragment(bytes: Uint8Array, ordinal: number,
     await onRow([chrom, pos, ref, alt, genotype]);
   }
   if (!summary) throw new EmbryoTransportError("invalid_chunk");
+  return measure;
+}
+
+const CALLED_BASES = /^[ACGT]+$/;
+
+/**
+ * The laboratory-table counterpart of `analyseEmbryoFragment` (ADR 0037):
+ * revalidate one stored table fragment, measure it and hand each fully
+ * called genotype to `onRow` in file order. A row is one site of this
+ * embryo; a no-call or a partial call counts as not called and is never
+ * written. A table reports no read depth, so depth stays unmeasured. Throws
+ * `EmbryoTransportError`: `build_unknown` when it names another build,
+ * otherwise a format code.
+ */
+export async function analyseEmbryoTableFragment(bytes: Uint8Array, build: EmbryoTransportBinding["build"],
+  onRow: (row: EmbryoSplitRow) => void | Promise<void>): Promise<EmbryoFragmentMeasure> {
+  const rows = validateEmbryoTableFragment(bytes, build);
+  const measure = emptyMeasure();
+  for (const row of rows) {
+    measure.sites++;
+    const alleles = row.genotype.split("/");
+    if (alleles.some((allele) => !CALLED_BASES.test(allele))) continue;
+    measure.called++;
+    if (alleles.length === 2) {
+      measure.diploidCalled++;
+      if (alleles[0] !== alleles[1]) measure.heterozygous++;
+    }
+    measure.rows++;
+    await onRow([row.chrom, row.pos, null, null, row.genotype]);
+  }
   return measure;
 }
 

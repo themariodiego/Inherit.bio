@@ -2,17 +2,19 @@ import { z } from "zod";
 import { closedResponse } from "@/lib/embryos/guards";
 import { invalidRequest, notFound, sensitiveJson, unavailable } from "@/lib/embryos/api";
 import { readBoundedJson } from "@/lib/future-person/bounded-body";
-import { supabaseClaimObjectStore, supabaseAppealObjectStore } from "@/lib/future-person/claim-objects";
+import { supabaseClaimObjectStore, supabaseAppealObjectStore, supabasePermissionObjectStore } from "@/lib/future-person/claim-objects";
 import { sha256Hex } from "@/lib/future-person/claim-session";
 import { testAppealIntakeOpen } from "@/lib/future-person/appeals-open";
 import { futurePersonClaimsOpen } from "@/lib/future-person/claims-open";
 import { composeClaimDocument, compositionPlan } from "@/lib/future-person/document-compose";
 import { completeNonceMatches, readEvidenceRequest } from "@/lib/future-person/evidence-session";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { permissionDocumentsOpen } from "@/lib/uploads/permission-document-open";
 
 /**
  * `POST /api/evidence/[session]/complete` (register api.evidence-complete),
- * for the claim document sessions this deployment issues.
+ * for the claim, appeal and Path B permission document sessions this
+ * deployment issues. The native session row chooses the store.
  *
  * The body is closed: the chunk count and the one-time completion nonce the
  * session was opened with. The database checks the manifest is exactly the
@@ -42,10 +44,16 @@ const status = z.discriminatedUnion("status", [
   z.object({
     status: z.literal("review_pending"),
     documentId: z.uuid(),
-    documentKind: z.enum(["future-photo-identity", "future-birth-record", "appeal-photo-identity", "appeal-subject-source-control", "appeal-genetic-parent-authority", "appeal-decision-notice", "appeal-contradiction-counterevidence"]),
+    documentKind: z.enum(["future-photo-identity", "future-birth-record", "appeal-photo-identity", "appeal-subject-source-control", "appeal-genetic-parent-authority", "appeal-decision-notice", "appeal-contradiction-counterevidence", "adult-signed-permission"]),
   }).strict(),
   z.object({ status: z.literal("refused"), reason: z.enum(REASONS) }).strict(),
 ]);
+
+/** Whether the document kind's own domain is open here. */
+function kindOpen(documentKind: string): boolean {
+  return documentKind.startsWith("appeal-") ? testAppealIntakeOpen()
+    : documentKind === "adult-signed-permission" ? permissionDocumentsOpen() : futurePersonClaimsOpen();
+}
 
 function withoutReferrer(response: Response): Response {
   response.headers.set("Referrer-Policy", "no-referrer");
@@ -71,7 +79,7 @@ export async function POST(request: Request, context: { params: Promise<{ sessio
 }
 
 async function complete(request: Request, session: string): Promise<Response> {
-  if (!futurePersonClaimsOpen() && !testAppealIntakeOpen()) return notFound();
+  if (!futurePersonClaimsOpen() && !testAppealIntakeOpen() && !permissionDocumentsOpen()) return notFound();
   const cookieHash = readEvidenceRequest(request, session, "application/json");
   if (!cookieHash) return notFound();
   const json = await readBoundedJson(request, 1024);
@@ -95,12 +103,13 @@ async function complete(request: Request, session: string): Promise<Response> {
     const known = status.safeParse(begun.data);
     if (!known.success) return unavailable();
     if ((known.data.status === "scanning" || known.data.status === "review_pending")
-      && (known.data.documentKind.startsWith("appeal-") ? !testAppealIntakeOpen() : !futurePersonClaimsOpen())) return notFound();
+      && !kindOpen(known.data.documentKind)) return notFound();
     return answer(known.data);
   }
 
-  if (plan.data.storageKind === "appeal" ? !testAppealIntakeOpen() : !futurePersonClaimsOpen()) return notFound();
-  const store = plan.data.storageKind === "appeal" ? supabaseAppealObjectStore(admin) : supabaseClaimObjectStore(admin);
+  if (!kindOpen(plan.data.documentKind)) return notFound();
+  const store = plan.data.storageKind === "appeal" ? supabaseAppealObjectStore(admin)
+    : plan.data.storageKind === "permission" ? supabasePermissionObjectStore(admin) : supabaseClaimObjectStore(admin);
   const outcome = await composeClaimDocument(plan.data, store);
   const finished = await admin.rpc("finish_claim_document_completion_v1", {
     p_session_id: session, p_cookie_hash: cookieHash, p_complete_nonce_hash: nonceHash,
@@ -113,7 +122,8 @@ async function complete(request: Request, session: string): Promise<Response> {
     const fragmentKeys = plan.data.fragments.map((fragment) => fragment.objectKey);
     try {
       await store.remove(fragmentKeys);
-      await admin.rpc(plan.data.storageKind === "appeal" ? "confirm_appeal_document_objects_deleted_v1" : "confirm_claim_document_objects_deleted_v1", {
+      await admin.rpc(plan.data.storageKind === "appeal" ? "confirm_appeal_document_objects_deleted_v1"
+        : plan.data.storageKind === "permission" ? "confirm_permission_document_objects_deleted_v1" : "confirm_claim_document_objects_deleted_v1", {
         p_object_keys: fragmentKeys, p_route_id: "api.evidence-complete",
       });
     } catch {

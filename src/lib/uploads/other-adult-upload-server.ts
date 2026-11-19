@@ -13,6 +13,7 @@ import {
   artifactWarning,
   otherAdultTargetState,
   subjectHeldFiles,
+  type OtherAdultConsentView,
   type OtherAdultTarget,
   type OtherAdultTargetState,
   type SubjectHeldFiles,
@@ -199,6 +200,24 @@ export async function prepareOtherAdultUploads(): Promise<OtherAdultUploads | nu
   const admin = createAdminClient();
   const targets = await listOtherAdultTargets();
   if (!targets) return null;
+  const artifact = await currentUploaderArtifact(admin);
+  if (!artifact) return null;
+  const result: OtherAdultTarget[] = [];
+  for (const target of targets) {
+    const operationToken = target.state === "awaiting-request"
+      ? mintPathBOperation(actor.accountId, actor.sessionId, "request-send", target.subjectId) : undefined;
+    const needsSignature = !target.signed && (target.state === "awaiting-request" || target.state === "ready");
+    if (!needsSignature) { result.push({ ...target, operationToken }); continue; }
+    const presented = await presentUploaderArtifact(admin, actor, artifact, target.subjectId);
+    result.push(presented.blockedBy ? { ...target, blockedBy: presented.blockedBy } : { ...target, operationToken, ...presented });
+  }
+  return { draftToken: mintPathBOperation(actor.accountId, actor.sessionId, "draft-create", actor.accountId), targets: result };
+}
+
+type UploaderArtifact = Omit<OtherAdultConsentView, "token"> & { bodySha256: string };
+
+/** The current approved consent.upload-other-adult, whole and hash-checked, or null. */
+async function currentUploaderArtifact(admin: Admin): Promise<UploaderArtifact | null> {
   const { data: artifact } = await admin.from("consent_artifacts")
     .select("version, effective_on, summary_markdown, body_markdown, body_sha256")
     .eq("artifact_key", OTHER_ADULT_UPLOAD_ARTIFACT_KEY).is("superseded_at", null).maybeSingle();
@@ -207,34 +226,54 @@ export async function prepareOtherAdultUploads(): Promise<OtherAdultUploads | nu
   }
   const texts = artifactStatements(artifact.body_markdown);
   if (texts.length !== OTHER_ADULT_UPLOAD_STATEMENT_KEYS.length) return null;
-  const statements = OTHER_ADULT_UPLOAD_STATEMENT_KEYS.map((key, index) => ({ key, text: texts[index]! }));
   const warning = artifactWarning(artifact.body_markdown);
   if (!warning) return null;
-  const result: OtherAdultTarget[] = [];
-  for (const target of targets) {
-    const operationToken = target.state === "awaiting-request"
-      ? mintPathBOperation(actor.accountId, actor.sessionId, "request-send", target.subjectId) : undefined;
-    const needsSignature = !target.signed && (target.state === "awaiting-request" || target.state === "ready");
-    if (!needsSignature) { result.push({ ...target, operationToken }); continue; }
-    const presentation = mintOtherAdultPresentation({ accountId: actor.accountId, sessionId: actor.sessionId,
-      subjectId: target.subjectId, artifactVersion: artifact.version, artifactBodySha256: artifact.body_sha256 });
-    const { data, error } = await heldUploadRpc(admin, "present_other_adult_upload_artifact_v1", {
-      p_account_id: actor.accountId, p_session_id: actor.sessionId, p_subject_id: target.subjectId,
-      p_nonce_hash: presentation.nonceHash, p_expires_at: new Date(presentation.claims.expiresAt).toISOString(),
-      p_test_jurisdiction: true,
-    });
-    const presented = z.object({ artifactKey: z.literal(OTHER_ADULT_UPLOAD_ARTIFACT_KEY),
-      artifactVersion: z.literal(artifact.version), artifactBodySha256: z.literal(artifact.body_sha256) }).strict()
-      .safeParse(data);
-    if (error || !presented.success) {
-      result.push({ ...target, blockedBy: error?.message === "adult_account_required" ? "account-completion" : "unavailable" });
-      continue;
-    }
-    result.push({ ...target, operationToken, consent: { token: presentation.token, version: artifact.version,
-      effectiveOn: artifact.effective_on, summary: artifact.summary_markdown, body: artifact.body_markdown, statements,
-      warning } });
+  return { version: artifact.version, effectiveOn: artifact.effective_on, summary: artifact.summary_markdown,
+    body: artifact.body_markdown, bodySha256: artifact.body_sha256, warning,
+    statements: OTHER_ADULT_UPLOAD_STATEMENT_KEYS.map((key, index) => ({ key, text: texts[index]! })) };
+}
+
+/**
+ * Present the artifact once for one draft: a sealed token bound to this
+ * account, session, person and exact artifact hash, whose nonce the database
+ * records now and consumes once at signing. The database decides whether this
+ * draft can be signed for; a refusal only says why nothing can be done.
+ */
+async function presentUploaderArtifact(admin: Admin, actor: { accountId: string; sessionId: string },
+  artifact: UploaderArtifact, subjectId: string): Promise<Pick<OtherAdultTarget, "consent" | "blockedBy">> {
+  const presentation = mintOtherAdultPresentation({ accountId: actor.accountId, sessionId: actor.sessionId,
+    subjectId, artifactVersion: artifact.version, artifactBodySha256: artifact.bodySha256 });
+  const { data, error } = await heldUploadRpc(admin, "present_other_adult_upload_artifact_v1", {
+    p_account_id: actor.accountId, p_session_id: actor.sessionId, p_subject_id: subjectId,
+    p_nonce_hash: presentation.nonceHash, p_expires_at: new Date(presentation.claims.expiresAt).toISOString(),
+    p_test_jurisdiction: true,
+  });
+  const presented = z.object({ artifactKey: z.literal(OTHER_ADULT_UPLOAD_ARTIFACT_KEY),
+    artifactVersion: z.literal(artifact.version), artifactBodySha256: z.literal(artifact.bodySha256) }).strict()
+    .safeParse(data);
+  if (error || !presented.success) {
+    return { blockedBy: error?.message === "adult_account_required" ? "account-completion" : "unavailable" };
   }
-  return { draftToken: mintPathBOperation(actor.accountId, actor.sessionId, "draft-create", actor.accountId), targets: result };
+  const { bodySha256: _hash, ...view } = artifact;
+  void _hash;
+  return { consent: { ...view, token: presentation.token } };
+}
+
+/**
+ * The same one presentation for each of these drafts of the signed-in
+ * account (the reviewed-document Path B's cards use it before the uploader
+ * signs). Null when the section is closed or the artifact is unreadable.
+ */
+export async function presentUploaderArtifactFor(subjectIds: readonly string[]):
+  Promise<Map<string, Pick<OtherAdultTarget, "consent" | "blockedBy">> | null> {
+  const actor = await currentOwnUploadAccount();
+  if (!actor || !(await otherAdultUploadAvailable(actor.accountId))) return null;
+  const admin = createAdminClient();
+  const artifact = await currentUploaderArtifact(admin);
+  if (!artifact) return null;
+  const presented = new Map<string, Pick<OtherAdultTarget, "consent" | "blockedBy">>();
+  for (const subjectId of subjectIds) presented.set(subjectId, await presentUploaderArtifact(admin, actor, artifact, subjectId));
+  return presented;
 }
 
 /**

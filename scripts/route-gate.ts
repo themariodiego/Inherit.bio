@@ -618,12 +618,27 @@ const TASK_BINDINGS = "scripts/comprehension/bindings.json";
  * rather than assumed to be progress.
  */
 // Three genuine native complete proofs passed in the saved 2def all-pass journey.
-// The six scientific partial/not-covered pairs remain unconstructible while
-// no eligible finding producer is approved; file QC is not their substitute.
 // Two appeal states now have substantive authored native journey steps; their
 // actual qualification still requires the complete new-head hosted run.
 // This source ratchet counts authored assertions, not successful executions.
-const UNPROVEN_ROUTE_STATE_PAIRS = 6;
+//
+//  6 -> 0   SIX PROOFS on 2026-10-22, under the owner decision "The six
+//           unproven embryo route states (G1.7, G1.12, G2.2)". `partial-coverage`
+//           and `not-covered` on `/embryos`, `/embryos/compare` and
+//           `/embryos/[embryoId]` were held because no eligible finding producer
+//           is approved, and file QC is not a substitute. The owner allowed the
+//           two TEST-only synthetic producers that already run in
+//           `e2e/embryo-ingest-journey.spec.ts` to prove them under TEST-LOCAL.
+//           `embryo-test-score-coverage-v1` reads a file whose markers miss the
+//           invented ten-position panel (0 of 10: the coverage failure, "Not read"
+//           and no result figure) and proves `not-covered`. The fitted partial
+//           journey reads 8 of the 10 (the observed count, the missing positions
+//           kept in the denominator, the MODELLED invented interval) and proves
+//           `partial-coverage`. Each pair is a step of its own that audits that
+//           route in both themes over one current read. No producer is approved,
+//           the clinical registry stays empty and production embryo analysis
+//           stays off. Test work, not a register correction and not a waiver.
+const UNPROVEN_ROUTE_STATE_PAIRS = 0;
 
 /**
  * The register's task-depth ceilings, unmeasured. This is a ratchet in the

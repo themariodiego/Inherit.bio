@@ -196,7 +196,7 @@ describe("places under a comprehensive US embargo", () => {
       expect((await visit(path)).headers.get("location")).toBeNull();
     });
 
-    it.each(["/api/export", "/api/account/delete", "/api/account/delete/cancel", "/api/consents/abc/revoke", "/api/settings/jurisdiction"])(
+    it.each(["/api/export", "/api/subjects/12345678-1234-4234-8234-000000000004/export", "/api/account/delete", "/api/account/delete/cancel", "/api/consents/abc/revoke", "/api/settings/jurisdiction"])(
       "keeps the right %s",
       async (path) => {
         expect((await visit(path)).status).toBe(200);
@@ -299,6 +299,15 @@ describe("the public Future Person claim (rights.future-person-claim)", () => {
     expect(mocks.selected).toEqual([]);
   });
 
+  it.each(["POST", "GET"])("lets the rights-session export %s through without reading an account", async (method) => {
+    // api.third-party-subject-export: the rights session is its only principal.
+    const response = await claimVisit(method, "/api/withdraw/session/export");
+    expect(response.status).toBe(200);
+    expect(response.headers.get("cache-control")).toBe("private, no-store");
+    expect(mocks.sessionReads).toBe(0);
+    expect(mocks.selected).toEqual([]);
+  });
+
   it("lets the claim start through without reading an account", async () => {
     openClaims();
     try {
@@ -312,6 +321,90 @@ describe("the public Future Person claim (rights.future-person-claim)", () => {
       closeClaims();
     }
   });
+});
+
+describe("the public auth forms and endpoints (auth.sign-up-submit, auth.forgot-password-submit, auth.reset-password-submit)", () => {
+  const authVisit = (method: string, path: string, headers: Record<string, string> = {}) =>
+    proxy(new NextRequest(`https://inherit.bio${path}`, { method, headers }));
+  const forwardedToken = (response: Response) => response.headers.get("x-middleware-request-x-inherit-auth-form-token");
+
+  it.each(["/auth/sign-up", "/auth/forgot-password"])("gives %s a fresh form pair and reads no account", async (path) => {
+    vi.stubEnv("BYOK_ENCRYPTION_KEY", Buffer.alloc(32, 9).toString("base64"));
+    try {
+      const first = await authVisit("GET", path);
+      const second = await authVisit("GET", path);
+      expect(mocks.sessionReads).toBe(0);
+      expect(mocks.selected).toEqual([]);
+      expect(first.headers.get("set-cookie")).toMatch(
+        /^inherit-auth-form=[A-Za-z0-9_-]{43}; Path=\/; Max-Age=600; HttpOnly; SameSite=Strict$/,
+      );
+      expect(forwardedToken(first)).toMatch(/^[A-Za-z0-9_-]+\.[0-9a-f]{64}$/);
+      expect(forwardedToken(first)).not.toBe(forwardedToken(second));
+      expect(first.headers.get("cache-control")).toBe("private, no-store");
+      expect(first.headers.get("referrer-policy")).toBe("no-referrer");
+      // A browser that holds the cookie keeps it when Next.js refreshes the page.
+      const cookie = first.headers.get("set-cookie")!.split(";")[0]!;
+      const refresh = await authVisit("GET", path, { cookie, rsc: "1" });
+      expect(refresh.headers.get("set-cookie")!.split(";")[0]).toBe(cookie);
+      expect(forwardedToken(refresh)).not.toBe(forwardedToken(first));
+    } finally {
+      vi.unstubAllEnvs();
+      vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "http://127.0.0.1:54321");
+      vi.stubEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY", "anon");
+    }
+  });
+
+  it.each(["next-router-prefetch", "next-router-segment-prefetch"])(
+    "sets no auth form cookie for a %s request from a browser that holds none", async (header) => {
+      vi.stubEnv("BYOK_ENCRYPTION_KEY", Buffer.alloc(32, 9).toString("base64"));
+      try {
+        const prefetch = await authVisit("GET", "/auth/sign-up", { rsc: "1", [header]: "1" });
+        expect(prefetch.headers.get("set-cookie")).toBeNull();
+        expect(forwardedToken(prefetch)).toBeNull();
+        expect(prefetch.headers.get("cache-control")).toBe("private, no-store");
+        expect(mocks.sessionReads).toBe(0);
+        const page = await authVisit("GET", "/auth/sign-up");
+        const cookie = page.headers.get("set-cookie")!.split(";")[0]!;
+        const held = await authVisit("GET", "/auth/sign-up", { cookie, rsc: "1", [header]: "1" });
+        expect(held.headers.get("set-cookie")!.split(";")[0]).toBe(cookie);
+        expect(forwardedToken(held)).toMatch(/^[A-Za-z0-9_-]+\.[0-9a-f]{64}$/);
+      } finally {
+        vi.unstubAllEnvs();
+        vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "http://127.0.0.1:54321");
+        vi.stubEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY", "anon");
+      }
+    });
+
+  it("never forwards a form token a client supplied itself", async () => {
+    vi.stubEnv("BYOK_ENCRYPTION_KEY", Buffer.alloc(32, 9).toString("base64"));
+    try {
+      const page = await authVisit("GET", "/auth/sign-up", { "x-inherit-auth-form-token": "forged.token" });
+      expect(forwardedToken(page)).not.toBe("forged.token");
+      const head = await authVisit("HEAD", "/auth/sign-up", { "x-inherit-auth-form-token": "forged.token" });
+      expect(forwardedToken(head)).toBeNull();
+      expect(head.headers.get("set-cookie")).toBeNull();
+    } finally {
+      vi.unstubAllEnvs();
+      vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "http://127.0.0.1:54321");
+      vi.stubEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY", "anon");
+    }
+  });
+
+  it.each(["/api/auth/sign-up", "/api/auth/forgot-password", "/api/auth/reset-password"])(
+    "lets %s through with the authOrRecovery profile, reading and refreshing no account", async (path) => {
+      mocks.profile = { deletion_requested_at: "2026-09-25T00:00:00Z", jurisdiction_code: "CU" };
+      const response = await authVisit("POST", path, { "content-type": "application/json" });
+      expect(response.status).toBe(200);
+      expect(response.headers.get("location")).toBeNull();
+      expect(response.headers.get("cache-control")).toBe("private, no-store");
+      expect(response.headers.get("referrer-policy")).toBe("no-referrer");
+      expect(response.headers.get("x-frame-options")).toBe("DENY");
+      expect(response.headers.get("content-security-policy")).toMatch(/frame-ancestors 'none'/);
+      expect(response.headers.get("content-security-policy")).toMatch(/script-src 'self' 'nonce-/);
+      expect(mocks.sessionReads).toBe(0);
+      expect(mocks.selected).toEqual([]);
+    },
+  );
 });
 
 describe("legal-evidence review-download response privacy", () => {
@@ -368,5 +461,46 @@ describe("legal-evidence review-download response privacy", () => {
     for (const [name, value] of Object.entries(SENSITIVE_RESPONSE_HEADERS)) {
       expect(response.headers.get(name)).toBe(value);
     }
+  });
+});
+
+describe("subject download response privacy (sensitiveResponseHeaderBindings.downloadOrExport)", () => {
+  const subject = "12345678-1234-4234-8234-000000000004";
+  const strict = (response: Response) => {
+    for (const [name, value] of Object.entries(SENSITIVE_RESPONSE_HEADERS)) {
+      expect(response.headers.get(name)).toBe(name === "Referrer-Policy" ? "no-referrer" : value);
+    }
+  };
+
+  it.each([`/api/subjects/${subject}/download`, `/api/subjects/${subject}/export`, "/api/downloads/12345678-1234-4234-8234-000000000005/chunks/0"])(
+    "keeps no-referrer with every other strict header on %s", async path => {
+      const response = await visit(path);
+      expect(response.status).toBe(200); strict(response);
+    },
+  );
+
+  it.each([`/api/subjects/${subject}/download/extra`, `/api/subjects/${subject}/export/extra`, `/api/subjects/${subject}/sharing`, "/api/subjects"])(
+    "leaves the ordinary sensitive policy outside the exact download shape: %s", async path => {
+      const response = await visit(path);
+      expect(response.status).toBe(200);
+      for (const [name, value] of Object.entries(SENSITIVE_RESPONSE_HEADERS)) {
+        expect(response.headers.get(name)).toBe(value);
+      }
+    },
+  );
+
+  it("keeps the one-record export open during the deletion notice period, as a right like the account export", async () => {
+    mocks.profile = { deletion_requested_at: "2026-10-16T00:00:00Z", jurisdiction_code: "GB" };
+    expect((await visit(`/api/subjects/${subject}/export`)).status).toBe(200);
+    expect((await visit("/api/export")).status).toBe(200);
+  });
+
+  it("holds the subject download and api.subjects during the deletion notice period, like every non-rights route", async () => {
+    mocks.profile = { deletion_requested_at: "2026-10-16T00:00:00Z", jurisdiction_code: "GB" };
+    const download = await visit(`/api/subjects/${subject}/download`);
+    expect(download.status).toBe(423);
+    expect(await download.json()).toEqual({ error: "account_deletion_notice_period" });
+    const drafts = await visit("/api/subjects");
+    expect(drafts.status).toBe(423);
   });
 });

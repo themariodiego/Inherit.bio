@@ -1,0 +1,293 @@
+{
+    "context": {
+        "account_archive_r2_enabled": false,
+        "active_download_sessions": 0,
+        "embryo_split_enabled": false,
+        "export_archive_jobs": 0,
+        "family_pairs_ended": 0,
+        "family_pairs_open": 0,
+        "future_person_claim_intakes": 0,
+        "generated_exports": 0,
+        "new_correction_intakes": 0,
+        "path_b_drafts": 0,
+        "pending_account_deletions": 0,
+        "pgt_table_ingest_sessions": 0,
+        "queued_or_claimed_mail": 0
+    },
+    "definitions": {
+        "account_operation_nonces_operation_check": "CHECK ((operation = ANY (ARRAY['account_delete'::text, 'account_delete_cancel'::text, 'own_upload_artifact_sign'::text, 'own_account_completion'::text, 'other_adult_upload_artifact_sign'::text])))",
+        "adult_subject_drafts_adult_flow_check": "CHECK ((adult_flow = ANY (ARRAY['path-a-own-account'::text, 'path-b-subject-esignature'::text])))",
+        "correction_assignments_decision_check": "CHECK ((decision = ANY (ARRAY['approve'::text, 'reject'::text, 'close'::text])))",
+        "other_adult_held_uploads_state_check": "CHECK ((state = ANY (ARRAY['pending'::text, 'confirmed'::text, 'refused'::text, 'deleted'::text, 'expired'::text, 'withdrawn'::text])))",
+        "parsed_like_200000": [
+            "account_delete",
+            "account_delete_cancel",
+            "other_adult_upload_artifact_sign",
+            "own_account_completion",
+            "own_upload_artifact_sign"
+        ],
+        "parsed_like_221000": [
+            "account_delete",
+            "account_delete_cancel",
+            "other_adult_upload_artifact_sign",
+            "own_account_completion",
+            "own_upload_artifact_sign"
+        ],
+        "subjects_self_or_claimant_owner_shape": "CHECK ((((subject_class = 'self'::text) OR ((subject_class = 'embryo'::text) AND (lifecycle = 'claimed_bound'::text))) = ((owner_account_id IS NOT NULL) AND (owner_account_id = subject_account_id))))"
+    },
+    "guards": {
+        "#03 20261016153100_future_person_claimant_erasure_completion line 25": {
+            "function": "private.confirm_claim_document_objects_deleted_v1(text[],text)",
+            "have_md5": "997f8d07edb464cf2999af1b408cb5ca",
+            "language": "plpgsql",
+            "ok": true,
+            "owner": "postgres",
+            "present": true,
+            "proacl": [
+                "postgres=X/postgres",
+                "service_role=X/postgres"
+            ],
+            "proconfig": [
+                "search_path=\"\""
+            ],
+            "prosecdef": true,
+            "want_md5": "997f8d07edb464cf2999af1b408cb5ca"
+        },
+        "#05 20261016175000_future_person_claimant_contact_730_days line 55": {
+            "function": "private.queue_future_person_release_v1(uuid,uuid,bytea,jsonb)",
+            "have_md5": "f1f5e9786d47a0a6102b43276012ae31",
+            "language": "plpgsql",
+            "ok": true,
+            "owner": "postgres",
+            "present": true,
+            "proacl": [
+                "postgres=X/postgres"
+            ],
+            "proconfig": [
+                "search_path=\"\""
+            ],
+            "prosecdef": true,
+            "want_md5": "f1f5e9786d47a0a6102b43276012ae31"
+        },
+        "#05 20261016175000_future_person_claimant_contact_730_days line 74": {
+            "function": "private.purge_future_person_contact_phase_v1(uuid,timestamptz)",
+            "have_md5": "7d06d5f13edc7882cfe4d5a4a73f1922",
+            "language": "plpgsql",
+            "ok": true,
+            "owner": "postgres",
+            "present": true,
+            "proacl": [
+                "postgres=X/postgres"
+            ],
+            "proconfig": [
+                "search_path=\"\"",
+                "lock_timeout=250ms"
+            ],
+            "prosecdef": true,
+            "want_md5": "7d06d5f13edc7882cfe4d5a4a73f1922"
+        },
+        "#07 20261016181000_subject_delete line 43": {
+            "function": "private.prepare_genome_file_deletion_body_v1(uuid,uuid)",
+            "have_md5": "687df80d56b38d2aabeacd4bc1350154",
+            "language": "plpgsql",
+            "ok": true,
+            "owner": "postgres",
+            "present": true,
+            "proacl": [
+                "postgres=X/postgres"
+            ],
+            "proconfig": [
+                "search_path=\"\""
+            ],
+            "prosecdef": true,
+            "want_md5": "687df80d56b38d2aabeacd4bc1350154"
+        },
+        "#10 20261016195000_embryo_table_call_hash line 44": {
+            "function": "private.embryo_call_value_hash_v1(integer,bigint,text,text,text)",
+            "have_md5": "4d2c2b593507c9770df523fca19a93e6",
+            "language": "sql",
+            "ok": true,
+            "owner": "postgres",
+            "present": true,
+            "proacl": [
+                "postgres=X/postgres"
+            ],
+            "proconfig": [
+                "search_path=\"\""
+            ],
+            "prosecdef": true,
+            "want_md5": "4d2c2b593507c9770df523fca19a93e6"
+        },
+        "#16 20261016204000_path_b_no_account_uploader_gate line 85": {
+            "function": "private.other_adult_mitigation_before_public_appeal_v1(uuid,uuid,text)",
+            "have_md5": "a877304153a110c6710edf20019cb647",
+            "language": "plpgsql",
+            "ok": true,
+            "owner": "postgres",
+            "present": true,
+            "proacl": [
+                "postgres=X/postgres"
+            ],
+            "proconfig": [
+                "search_path=pg_catalog"
+            ],
+            "prosecdef": true,
+            "want_md5": "a877304153a110c6710edf20019cb647"
+        },
+        "#20 20261016208000_rights_reissue line 260": {
+            "function": "public.activate_rights_session_v1(text,text,text)",
+            "have_md5": "b9dcb56fbe06146e7b55e98f5f68a25b",
+            "language": "plpgsql",
+            "ok": true,
+            "owner": "postgres",
+            "present": true,
+            "proacl": [
+                "postgres=X/postgres",
+                "service_role=X/postgres"
+            ],
+            "proconfig": [
+                "search_path=\"\"",
+                "lock_timeout=250ms"
+            ],
+            "prosecdef": true,
+            "want_md5": "b9dcb56fbe06146e7b55e98f5f68a25b"
+        },
+        "#25 20261016221000_subject_transfer line 264": {
+            "function": "private.guard_structural_file_identity_v1()",
+            "have_md5": "1081b5ccc70375acffe4f9d61bbce652",
+            "language": "plpgsql",
+            "ok": true,
+            "owner": "postgres",
+            "present": true,
+            "proacl": [
+                "postgres=X/postgres"
+            ],
+            "proconfig": [
+                "search_path=pg_catalog"
+            ],
+            "prosecdef": false,
+            "want_md5": "1081b5ccc70375acffe4f9d61bbce652"
+        },
+        "#25 20261016221000_subject_transfer line 307": {
+            "function": "private.end_path_b_normalized_revision_v1()",
+            "have_md5": "c363f202cabc481aa74f270ebaff56de",
+            "language": "plpgsql",
+            "ok": true,
+            "owner": "postgres",
+            "present": true,
+            "proacl": [
+                "postgres=X/postgres"
+            ],
+            "proconfig": [
+                "search_path=\"\""
+            ],
+            "prosecdef": true,
+            "want_md5": "c363f202cabc481aa74f270ebaff56de"
+        },
+        "#25 20261016221000_subject_transfer line 592": {
+            "function": "private.path_b_result_read_v1(uuid,uuid,text)",
+            "have_md5": "6a11b090fe19408849eef67b55e456e6",
+            "language": "plpgsql",
+            "ok": true,
+            "owner": "postgres",
+            "present": true,
+            "proacl": [
+                "postgres=X/postgres"
+            ],
+            "proconfig": [
+                "search_path=pg_catalog"
+            ],
+            "prosecdef": true,
+            "want_md5": "6a11b090fe19408849eef67b55e456e6"
+        },
+        "#25 20261016221000_subject_transfer line 610": {
+            "function": "private.path_b_report_results_v1(uuid,uuid,uuid,text,boolean)",
+            "have_md5": "15fba855b30040199449da320428e26c",
+            "language": "plpgsql",
+            "ok": true,
+            "owner": "postgres",
+            "present": true,
+            "proacl": [
+                "postgres=X/postgres"
+            ],
+            "proconfig": [
+                "search_path=\"\""
+            ],
+            "prosecdef": true,
+            "want_md5": "15fba855b30040199449da320428e26c"
+        },
+        "#25 20261016221000_subject_transfer line 677": {
+            "function": "private.path_b_report_read_ready_v1(uuid,uuid,text)",
+            "have_md5": "ae73cb79432cb38b5db4b575c08a0a0b",
+            "language": "plpgsql",
+            "ok": true,
+            "owner": "postgres",
+            "present": true,
+            "proacl": [
+                "postgres=X/postgres"
+            ],
+            "proconfig": [
+                "search_path=\"\""
+            ],
+            "prosecdef": true,
+            "want_md5": "ae73cb79432cb38b5db4b575c08a0a0b"
+        }
+    },
+    "ledger": {
+        "above_main_max": 0,
+        "count": 248,
+        "max": "20261011010251",
+        "release_versions_present": 0
+    },
+    "must_be_zero": {
+        "adult_flow_check_already_has_reviewed_document": 0,
+        "claimed_unbound_24mo_clocks_running": 0,
+        "consent_reaffirm_session_purpose_present": 0,
+        "correction_decision_check_not_exact": 0,
+        "guarded_bodies_not_as_rehearsed": 0,
+        "legal_evidence_bucket_present": 0,
+        "legal_evidence_storage_policies": 0,
+        "nonce_check_without_other_adult_upload_artifact_sign": 0,
+        "nonces_outside_subject_delete_list": 0,
+        "prerequisites_missing": 0,
+        "release_columns_present": 0,
+        "release_constraints_present": 0,
+        "release_functions_present": 0,
+        "release_indexes_present": 0,
+        "release_sequence_present": 0,
+        "release_tables_present": 0,
+        "release_triggers_present": 0,
+        "required_registry_rows_missing": 0,
+        "subject_original_download_sessions": 0
+    },
+    "registry_md5": {
+        "purge_target_stores": "cd71da9b3bed2b543b288ae0edde4313",
+        "purge_targets": "c3099e1f82193b86bf928f4aeb05be2b",
+        "retention_phase_registry": "071aa0741f422cad5b3c69a5adadf167",
+        "retention_registry": "d87d020175cc871f9e64d4cc9fd3a29c",
+        "rights_purpose_matrix": "23d8794b7e1c5eb2204e68a392814faf",
+        "rights_session_purposes": "e9d23f763a990a7f62dcc50c91163bae"
+    },
+    "session": {
+        "current_user": "postgres",
+        "lock_timeout": "0",
+        "search_path": "\"\\$user\", public, extensions",
+        "server_version": "17.6",
+        "statement_timeout": "0",
+        "supautils_drop_trigger_grants_lists_auth_users": true,
+        "supautils_policy_grants_lists_auth_users": true
+    },
+    "sizes": {
+        "account_operation_nonces": 0,
+        "adult_subject_drafts": 0,
+        "correction_assignments": 0,
+        "download_sessions": 0,
+        "embryo_ingest_sessions": 0,
+        "embryo_mapping_challenges": 0,
+        "embryo_split_variants": 0,
+        "genome_files": 0,
+        "other_adult_held_uploads": 0,
+        "subjects": 0,
+        "user_variants": 0
+    }
+}

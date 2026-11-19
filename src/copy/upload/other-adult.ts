@@ -58,6 +58,46 @@ export const OTHER_ADULT_UPLOAD_COPY = {
 } as const;
 
 /**
+ * The reviewed-document branch of Path B (owner decision 2026-10-16, "The
+ * subjects endpoints (G2.1)"), TEST-LOCAL only: the uploader sends a
+ * permission document the person signed, a named person at Inherit reviews
+ * it, and only then is the person asked to confirm. Nothing here says the
+ * document is approved until a reviewer has decided.
+ */
+export const REVIEWED_DOCUMENT_COPY = {
+  flowLegend: "How they give permission",
+  flowEsignature: "They sign online. We email them a link.",
+  flowDocument: "They signed a permission document. I will send it.",
+  documentHeading: "Send their written permission",
+  documentDetail:
+    "Send the permission document they signed, as a PDF, JPEG or PNG of at most 20 MB. A person at Inherit reads it. Nothing is sent to them until it is approved.",
+  documentLabel: "Choose their written permission",
+  documentButton: "Send the file",
+  documentStatus: {
+    working: "Saving the file…",
+    scanning: "Checking the file for a virus…",
+    received: "We have the file.",
+    oversize: "Choose a file under 20 MB.",
+    type: "This file is not a PDF, JPEG or PNG.",
+    limited: "You cannot send another file for this person now.",
+    expired: "This page has expired. Open the page again.",
+    integrity: "The file changed as it was sent. Try again.",
+    malware: "This file did not pass the virus check.",
+    unscannable: "This file could not be checked for a virus. Try another copy.",
+    failed: "The file could not be sent. Try again.",
+  },
+  reviewStatus: (label: string) =>
+    `A person at Inherit is reading the document for ${label}. Nothing has been sent to them yet.`,
+  refusedStatus: (label: string) =>
+    `The document for ${label} was not approved. Nothing was sent to them, and their details are deleted.`,
+  requestDetail: (label: string) =>
+    `The document was approved. Send ${label} the request to confirm. Nothing is added until they confirm it.`,
+  requestButton: "Send the request",
+  requestFailed: "We could not send the request. Reload the page to try again.",
+  requestEnds: (date: string) => `This request ends on ${date}.`,
+} as const;
+
+/**
  * The person's side on `/withdraw/session`: the request to sign, then one
  * screen per file added for them.
  */
@@ -73,6 +113,13 @@ export const PATH_B_REQUEST_COPY = {
     `You are signed in, so this is kept with your Inherit account. The country on your account, ${country}, is the one that counts.`,
   typedNameLabel: "Type your full legal name to sign",
   typedNameError: "Type your first and family name, each two letters or more.",
+  // adult.unconfirmed-30d and adult.non-account-holder-24mo (730 days), shown
+  // only to a person signing with no account: a person who signs with their
+  // own account has no 730-day clock (the register's cancelWhen).
+  keep: (days: number) =>
+    `Each file they add is deleted after 30 days unless you say yes to it. If you say yes, we keep that file for at most ${days} days from that day. Then we delete it.`,
+  // The existing registered contact of last resort (the same as the notice's).
+  contact: "If the link does not work, or you did not expect this, write to privacy@inherit.bio.",
   signButton: "Sign",
   saving: "Saving…",
   refuseButton: "Refuse",
@@ -111,6 +158,16 @@ export const ADULT_UPLOAD_REVISION_COPY = {
     `The name they wrote for you (${label}), the day the file was added, and whether you said yes. They see no result.`,
   nothingYet: "Nothing is made from this file until you say yes.",
   deadline: (date: string) => `If you do nothing, it is deleted on ${date}.`,
+  // adult.non-account-holder-24mo: a file confirmed with no account of your
+  // own is kept for exactly 730 days from the yes. Each line is shown only
+  // when the database reports that clock for this file.
+  keepIfYes: (days: number) => `If you say yes, we keep it for at most ${days} days from that day. Then we delete it.`,
+  keptUntil: (days: number, date: string) =>
+    `We keep it for at most ${days} days from the day you said yes. It is deleted on ${date}.`,
+  // The upload-time notice's fixed payload does not say whether the person
+  // signed with an account, so it states the condition the clock depends on.
+  noticeKeep: (days: number) =>
+    `If you signed our request without an Inherit account and you say yes, we keep the file for at most ${days} days from that day. Then we delete it.`,
   confirmedOn: (date: string) => `You said yes to this file on ${date}.`,
   confirmButton: "Yes, this is my file",
   refuseButton: "No, delete this file",
@@ -178,4 +235,39 @@ export const PATH_B_CHOICES_COPY = {
   readyShared: (label: string) => `${label} has shared reports ready to read.`,
   readResults: (layer: string) => `Read your ${layer.toLowerCase()}`,
   openShared: "Read shared reports",
+} as const;
+
+/**
+ * The closed list of what can ever be made from one file added under Path B:
+ * the register's `closed-list-of-what-will-be-derived`
+ * (upload-time-rights-notice-v1.adult.content) and the review projection's
+ * `prospectiveDerivedCategoryLabels` (`closed-server-allowlist-only`). The
+ * upload-time email and the review page on `/withdraw/session` both render
+ * this one list, beside "nothing is made until you say yes", so the two
+ * cannot drift. It names only what the code can produce from that file:
+ *
+ *   - `standard-copy`: the normalization a confirmed revision queues by
+ *     itself, with no purpose grant, and only when the record is bound to
+ *     the person's own account (path_b_normalization_authority_v1). It writes
+ *     the file's private canonical rows; no reader policy admits them.
+ *   - `reports.monogenic`, `reports.polygenic`: the two queued report
+ *     outputs, each only after the person's own current grant for that
+ *     purpose (enqueue_path_b_reports_v1), named as on the person's choices.
+ *
+ * Ancestry is not listed: a Path B ancestry choice can be recorded, but no
+ * job makes an ancestry result from this file. Family pages read the
+ * person's own record, never this file, and Copilot never reads it: the
+ * file's descriptor closes the legacy chat scope (hasCanonicalCopilotScope).
+ */
+export const ADULT_UPLOAD_DERIVED_LIST = {
+  heading: "What can be made from this file",
+  items: [
+    { category: "standard-copy",
+      text: "A private copy of its DNA readings, put in a standard form. This can be made once you say yes." },
+    { category: "reports.monogenic",
+      text: `${PATH_B_CHOICES_COPY.layers["reports.monogenic"]}, only if you turn this on later.` },
+    { category: "reports.polygenic",
+      text: `${PATH_B_CHOICES_COPY.layers["reports.polygenic"]}, only if you turn this on later.` },
+  ],
+  closing: "Each of these needs your own Inherit account. You turn on each kind of result by itself. The person who added it sees a result only if you share it with them. Nothing else is made from this file.",
 } as const;

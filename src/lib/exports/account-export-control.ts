@@ -12,15 +12,19 @@ const unavailable=()=>new Error("account_export_unavailable");
  * is used once by the explicit action; polling uses only the HttpOnly cookie.
  * READY metadata has no action secret. Opening uses only the distinct proof
  * from the server-rendered page; no caller scope or automatic retry exists. */
+/** The two same-origin export routes this transport may address: the account
+ * export, or one record's export (api.subject-export). */
+const EXPORT_ROUTE=/^\/api\/(?:export|subjects\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\/export)$/u;
 export async function requestAccountExport(options:{operation:"create"|"check"|"open-ready";control:AccountExportControl;
- expectedExportId:string|null;signal:AbortSignal;transport?:Transport}){
+ expectedExportId:string|null;signal:AbortSignal;transport?:Transport;route?:string}){
  const transport=options.transport??fetch,stop=new AbortController(),signal=AbortSignal.any([options.signal,stop.signal]);
  let interrupt=()=>{};const timer=setTimeout(()=>stop.abort(),30_000);
  const canceled=new Promise<never>((_,reject)=>{interrupt=()=>reject(unavailable());signal.addEventListener("abort",interrupt,{once:true});});
  let reader:ReadableStreamDefaultReader<Uint8Array>|undefined;
  let response:Response|undefined;
  try{
-  if(signal.aborted||!['create','check','open-ready'].includes(options.operation))throw unavailable();
+  const route=options.route??"/api/export";
+  if(signal.aborted||!['create','check','open-ready'].includes(options.operation)||!EXPORT_ROUTE.test(route))throw unavailable();
   let init:RequestInit={method:"GET",cache:"no-store",credentials:"same-origin",redirect:"error",signal};
   if(options.operation==="create"){
    if(!options.control.available)throw unavailable();const create=proof.parse(options.control.create);
@@ -34,7 +38,7 @@ export async function requestAccountExport(options:{operation:"create"|"check"|"
    init={...init,method:"POST",headers:{"Content-Type":"application/json","X-Inherit-CSRF":open.csrf},
     body:JSON.stringify({operation:open.operation,nonce:open.nonce})};
   }
-  const pending=transport("/api/export",init);
+  const pending=transport(route,init);
   void pending.then(value=>{if(signal.aborted)void value.body?.cancel().catch(()=>{});},()=>{});
   response=await Promise.race([pending,canceled]);
   if(![200,202].includes(response.status)||response.redirected||response.headers.get("content-type")?.split(";")[0].trim().toLowerCase()!=="application/json"

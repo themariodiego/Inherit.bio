@@ -52,9 +52,15 @@ describe("bounded primary-source tranche", () => {
     expect(digest(sources)).toBe("d14d8c6fb69bbe021cf26b07ee71c4a3754e2c4030191c254db7c6710d97c41d");
     expect(digest(added)).toBe("920a7f5259c344cef9f1ac9e38207462ae49c5878d87a866b9d76ce30f8a7a86");
     expect(citations).toHaveLength(53);
-    expect(claims).toHaveLength(120);
+    // The eleven Copilot system prompt claims registered on 2026-10-16 are not
+    // report content and carry no source; src/copy/copilot/system-prompts.test.ts
+    // pins them. Every other claim is this population, exactly as before.
+    const reportClaims = claims.filter((claim) => !claim.claim_id.startsWith("copilot."));
+    expect(claims).toHaveLength(131);
+    expect(claims.length - reportClaims.length).toBe(11);
+    expect(reportClaims).toHaveLength(120);
     const previousSources = citations.filter((source) => !sourceIds.includes(source.id));
-    const previousClaims = claims.filter((claim) => !claimIds.includes(claim.claim_id));
+    const previousClaims = reportClaims.filter((claim) => !claimIds.includes(claim.claim_id));
     expect(previousSources).toHaveLength(41);
     expect(previousClaims).toHaveLength(106);
     expect(digest(previousSources)).toBe("f8092137d11696a5774a8cdd6216c7541717ff2dcd5d56950aab51f8db318fbe");

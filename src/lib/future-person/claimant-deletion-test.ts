@@ -7,10 +7,18 @@ import {createAdminClient} from "@/lib/supabase/admin";
 import {embryoFragmentStorageConfigured,type EmbryoFragmentRpc} from "@/lib/embryos/fragment-storage";
 import {createRequesterStatementRuntime} from "@/lib/exports/requester-statement-runtime";
 import type {ClaimantDeletionExecution} from "./claimant-deletion";
+import {supabaseClaimObjectStore} from "./claim-objects";
 
 const configuration=z.object({bucket:z.string().regex(/^inherit-export-[a-z0-9-]{1,40}$/u),
  bindingSha256:z.string().regex(/^[0-9a-f]{64}$/u),protocol:z.literal("r2-current-object-qualified-all-writer-gateway-v1")}).strict();
 const unavailable=()=>new Error("claimant_deletion_unavailable");
+/** The exact closed service doors a sealed plan's continuation may reach: its
+ * source parts, its own identity objects, and its source session's original
+ * published cleanup through the existing unwind doors. Never the global
+ * document queue, an account cleanup or any caller-selected relation. */
+const SEALED_PLAN_DOORS:ReadonlySet<string>=new Set(["future_person_deletion_parts_v1","future_person_deletion_objects_v1",
+ "claim_embryo_ingest_object_disposals_v1","finish_embryo_ingest_object_disposal_v1",
+ "confirm_embryo_ingest_unwind_storage_v1","complete_embryo_ingest_unwind_v1"]);
 type Environment=Readonly<Record<string,string|undefined>>;
 type Query=(name:string,args:unknown,options:{get:false;head:false})=>{retry(enabled:false):{abortSignal(signal:AbortSignal):PromiseLike<{data:unknown;error:unknown}>}};
 /** No production composition. Fresh requests require a distinct default-OFF
@@ -66,11 +74,13 @@ export function configuredTestClaimantDeletion(env:Environment=process.env,
   });
  }
  const parts:EmbryoFragmentRpc=(name,args)=>({abortSignal:signal=>{
-  if(name!=="future_person_deletion_parts_v1"||signal.aborted)throw unavailable();
+  if(!SEALED_PLAN_DOORS.has(name)||signal.aborted)throw unavailable();
   const admin=createAdminClient(),rpc=admin.rpc.bind(admin) as unknown as Query;
-  return rpc("future_person_deletion_parts_v1",args,{get:false,head:false}).retry(false).abortSignal(signal);
+  return rpc(name,args,{get:false,head:false}).retry(false).abortSignal(signal);
  }});
- return Object.freeze({assertReady,parts,
+ // Removal only, of keys the sealed door listed; the store is acquired per call.
+ const documents=Object.freeze({remove:(keys:readonly string[])=>supabaseClaimObjectStore(createAdminClient()).remove(keys)});
+ return Object.freeze({assertReady,parts,documents,
   prepare:async(sessionHash,operationNonce,signal)=>{
    if(purpose!=="request"||env.INHERIT_TEST_CLAIMANT_RIGHTS!=="1"||env.INHERIT_TEST_ACCOUNT_ARCHIVE_R2!=="1"
     ||!embryoFragmentStorageConfigured()||signal.aborted)throw unavailable();

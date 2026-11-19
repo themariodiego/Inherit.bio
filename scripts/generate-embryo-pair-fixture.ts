@@ -15,6 +15,9 @@ import assert from "node:assert/strict";
 import { readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { buildEmbryoPairTable, EMBRYO_PAIR_TABLE_FIXTURE, TABLE_EMBRYOS } from "./embryo-pair-table-fixture";
+
+export { buildEmbryoPairTable, EMBRYO_PAIR_TABLE_FIXTURE, TABLE_EMBRYOS, TABLE_HEADER } from "./embryo-pair-table-fixture";
 
 export const EMBRYO_PAIR_FIXTURE = "e2e/fixtures/embryo-pair-grch38.vcf";
 const GENERATOR = "scripts/generate-embryo-pair-fixture.ts";
@@ -98,10 +101,14 @@ export function buildEmbryoPairVcf(repositoryRoot: string): string {
 
 export function generateEmbryoPairFixture(repositoryRoot: string, check: boolean): void {
   const text = buildEmbryoPairVcf(repositoryRoot);
-  const target = path.join(repositoryRoot, EMBRYO_PAIR_FIXTURE);
-  if (check) assert.equal(readFileSync(target, "utf8"), text, `${EMBRYO_PAIR_FIXTURE} is not what ${GENERATOR} writes`);
-  else writeFileSync(target, text);
+  const table = buildEmbryoPairTable(text);
+  for (const [fixture, bytes] of [[EMBRYO_PAIR_FIXTURE, text], [EMBRYO_PAIR_TABLE_FIXTURE, table]] as const) {
+    const target = path.join(repositoryRoot, fixture);
+    if (check) assert.equal(readFileSync(target, "utf8"), bytes, `${fixture} is not what ${GENERATOR} writes`);
+    else writeFileSync(target, bytes);
+  }
   console.log(`${EMBRYO_PAIR_FIXTURE}: ${check ? "verified" : "generated"}, ${SITE_COUNT} records, ${SAMPLES.length} samples`);
+  console.log(`${EMBRYO_PAIR_TABLE_FIXTURE}: ${check ? "verified" : "generated"}, ${SITE_COUNT * TABLE_EMBRYOS.length} rows, ${TABLE_EMBRYOS.length} embryos`);
 }
 
 if (process.argv[1] && pathToFileURL(path.resolve(process.argv[1])).href === import.meta.url) {

@@ -2,6 +2,7 @@ import "server-only";
 import {createHash} from "node:crypto";
 import {z} from "zod";
 import {accountArchiveContextSchema} from "./bound-account-archive-worker";
+import {accountArchiveScope} from "./account-archive-scope";
 import {consentRecipientSchema} from "@/lib/export/consent-recipient";
 import {anySignal} from "./abort-signals";
 
@@ -52,7 +53,7 @@ export async function prepareAccountHistoryInventory(options:{reference:{exportI
  context:z.infer<typeof accountArchiveContextSchema>;rpc:AccountInventoryRpc;signal:AbortSignal;
  check:(signal:AbortSignal)=>Promise<unknown>}){
  const context=accountArchiveContextSchema.parse(options.context),subjects=new Set(context.partitions.map(row=>row.subjectId));
- if(context.targetKind!=="account"||context.targetId!==context.actor.accountId
+ if(accountArchiveScope(context)===null
   ||context.authorityReceipt!==options.reference.authorityReceipt)throw unavailable();
  async function call(operation:"context"|"history",signal:AbortSignal,kind:AccountHistoryKind|null=null,after:string|null=null){
   await options.check(signal);if(signal.aborted||Date.now()>=Date.parse(context.deadline))throw unavailable();

@@ -220,6 +220,25 @@ describe("public form token", () => {
     expect(new Set([opened.nonce, completion.nonce, csrf.nonce]).size).toBe(3);
   });
 
+  /** ADR 0037: the two mapping tokens of a laboratory table; neither stands in for another ingest token. */
+  it("mints the mapping inspection and decision tokens bound to the session, distinct from every other", () => {
+    const deadline = new Date(NOW + 23 * 60 * 60 * 1000);
+    const bound = { accountId: EXPECTED.accountId, sessionId: EXPECTED.sessionId, targetId: "dddddddd-dddd-4ddd-8ddd-dddddddddddd" };
+    const expected = { ...bound, targetKind: "ingest_session" as const };
+    const inspect = mintIngestSessionOperation({ ...bound, operation: "ingest_mapping_inspect" }, deadline, NOW);
+    const decide = mintIngestSessionOperation({ ...bound, operation: "ingest_mapping_decide" }, deadline, NOW);
+    expect(verifyEmbryoOperation(inspect.token, { ...expected, operation: "ingest_mapping_inspect" }, NOW)?.nonce).toBe(inspect.nonce);
+    expect(verifyEmbryoOperation(decide.token, { ...expected, operation: "ingest_mapping_decide" }, NOW)?.nonce).toBe(decide.nonce);
+    for (const operation of ["ingest_session_open", "ingest_complete", "ingest_complete_csrf", "ingest_mapping_decide"] as const) {
+      expect(verifyEmbryoOperation(inspect.token, { ...expected, operation }, NOW)).toBeNull();
+    }
+    for (const operation of ["ingest_session_open", "ingest_complete", "ingest_complete_csrf", "ingest_mapping_inspect"] as const) {
+      expect(verifyEmbryoOperation(decide.token, { ...expected, operation }, NOW)).toBeNull();
+    }
+    expect(verifyEmbryoOperation(decide.token, { ...expected, operation: "ingest_mapping_decide" }, deadline.getTime())).toBeNull();
+    expect(inspect.nonce).not.toBe(decide.nonce);
+  });
+
   it("refuses to mint past a deadline that has gone or lies beyond one session lifetime", () => {
     const claims = { accountId: EXPECTED.accountId, sessionId: EXPECTED.sessionId, targetId: EXPECTED.targetId,
       operation: "ingest_complete" as const };

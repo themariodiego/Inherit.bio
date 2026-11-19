@@ -12,7 +12,9 @@ create temporary table contact_retention as select t.id,t.fixed_deadline,p.immut
  join public.purge_manifests m on m.retention_row_id=t.id where t.retention_id='future-person.claimed-unbound-24mo'
  and t.target_id=(select claimant from custody_ids);
 select is((select count(*) from contact_retention),1::bigint,'release commits exactly one fixed claimant-working retention row');
-select ok((select t.fixed_deadline=c.created_at+interval '24 months' and p.phase_deadline=t.fixed_deadline
+-- Owner decision 2026-10-16 (20261016175000): exactly 730 days, not 24 months.
+select ok((select t.fixed_deadline=c.created_at+interval '730 days' and extract(epoch from t.fixed_deadline-c.created_at)=730*86400
+ and p.phase_deadline=t.fixed_deadline
  and p.target_id=(select claimant from custody_ids) and t.target_kind='claim'
  from public.retention_rows t join public.retention_due_phases p on p.retention_row_id=t.id
  join public.encrypted_contact_references c on c.id=(p.immutable_envelope->>'contactReferenceId')::uuid

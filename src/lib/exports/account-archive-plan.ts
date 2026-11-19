@@ -5,6 +5,7 @@ import {accountPathBSourceSchema,type AccountPathBSource} from "./account-path-b
 import {createHash} from "node:crypto";
 import {z} from "zod";
 import {accountArchiveContextSchema} from "./bound-account-archive-worker";
+import {accountArchiveScope} from "./account-archive-scope";
 import type {FuturePersonMemberFactory} from "./future-person-member-plan";
 import type {Zip64Member} from "./archive-zip64";
 import type {RequesterStatementRuntime} from "./requester-statement-runtime";
@@ -52,7 +53,8 @@ export async function prepareAccountArchivePlan(options:{context:z.infer<typeof 
   ||resultSources.some(r=>!context.partitions.some(p=>p.subjectId===r.subjectId&&p.class==="ordinary")
    ||context.partitions.some(p=>p.fileIds.includes(r.fileId))))throw unavailable();
  const fileSubjects=new Map(context.partitions.flatMap(p=>p.fileIds.map(f=>[f,p.subjectId] as const)));
- if(context.targetKind!=="account"||context.targetId!==context.actor.accountId||files.length!==context.fileCount
+ const scope=accountArchiveScope(context);
+ if(scope===null||scope==="subject"&&complete!==undefined||files.length!==context.fileCount
   ||new Set(files.map(f=>f.fileId)).size!==context.fileCount||files.some(f=>fileSubjects.get(f.fileId)!==f.subjectId
    ||context.partitions.find(p=>p.subjectId===f.subjectId)!.class==="claimed-bound"&&f.projection!=="sanitized-embryo"
    ||context.partitions.find(p=>p.subjectId===f.subjectId)!.class==="ordinary"&&f.projection!=="own-upload"
@@ -208,7 +210,9 @@ export async function prepareAccountArchivePlan(options:{context:z.infer<typeof 
  }
  await check(options.signal);
  const manifest=encoder.encode(JSON.stringify({schemaVersion:"subject-partitioned-archive-v1",capturedAt:context.capturedAt,
-  subjectPartitions:context.partitions.map(p=>p.subjectId),files,...(resultSources.length?{resultSources}:{}),
+  subjectPartitions:context.partitions.map(p=>p.subjectId),
+  // A one-record export names its contract and the class it leaves out.
+  ...(scope==="subject"?{exportContract:"subject-export-v1",excludedClasses:[{class:"legal-audit",reasonCode:"audit-events-record-no-subject"}]}:{}),files,...(resultSources.length?{resultSources}:{}),
   ...(complete?{completeReceipt:complete.completeReceipt,dispositions:complete.dispositions}:{}),members:descriptors})+"\n");
  options.sensitiveRuntime?.own(manifest);
  const manifestFactory:FuturePersonMemberFactory={name:"manifest.json",rows:descriptors.length,chunks:async function*(signal){await check(signal);yield manifest;await check(signal);}};

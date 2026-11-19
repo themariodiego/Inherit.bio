@@ -5,6 +5,9 @@
 - Date: 2026-09-28
 - Builds on ADR 0020 (embryo ingest) and ADR 0034 (embryo sex and estimates);
   changes neither
+- Amended by ADR 0037 (16 October 2026): point 1's "for VCF only" no longer
+  holds. The configure route also records a laboratory table as `pgt_table`,
+  and the mapping route asks a table's build question.
 
 ## Context
 

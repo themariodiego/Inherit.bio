@@ -1,0 +1,80 @@
+== pgtap-main-on-pre.log
+Files=201, Tests=13549, 578 wallclock secs ( 4.09 usr  0.55 sys +  4.10 cusr  3.48 csys = 12.22 CPU)
+Result: PASS
+== pgtap-main-on-post-b1.log
+Test Summary Report
+-------------------
+embryo_split_worker.sql                      (Wstat: 0 Tests: 148 Failed: 1)
+  Failed test:  67
+export_member_plan.sql                       (Wstat: 0 Tests: 38 Failed: 3)
+  Failed tests:  2-3, 13
+future_person_claim_contact_retention.sql    (Wstat: 0 Tests: 70 Failed: 1)
+  Failed test:  58
+other_adult_held_upload.sql                  (Wstat: 0 Tests: 173 Failed: 1)
+  Failed test:  63
+Files=201, Tests=13549, 622 wallclock secs ( 4.03 usr  0.66 sys +  4.19 cusr  3.03 csys = 11.91 CPU)
+Files=201, Tests=13549, 622 wallclock secs ( 4.03 usr  0.66 sys +  4.19 cusr  3.03 csys = 11.91 CPU)
+Result: FAIL
+== pgtap-main-on-post-b2.log
+Test Summary Report
+-------------------
+drop_generated_artifacts_bucket.sql          (Wstat: 0 Tests: 22 Failed: 1)
+  Failed test:  2
+drop_genomes_staging_bucket.sql              (Wstat: 0 Tests: 7 Failed: 1)
+  Failed test:  2
+embryo_qc_precise_json.sql                   (Wstat: 0 Tests: 86 Failed: 2)
+  Failed tests:  57, 59
+embryo_split_worker.sql                      (Wstat: 0 Tests: 148 Failed: 1)
+  Failed test:  67
+export_member_plan.sql                       (Wstat: 0 Tests: 38 Failed: 3)
+  Failed tests:  2-3, 13
+future_person_claim_contact_retention.sql    (Wstat: 0 Tests: 70 Failed: 1)
+  Failed test:  58
+other_adult_held_upload.sql                  (Wstat: 0 Tests: 173 Failed: 2)
+  Failed tests:  63, 69
+Files=201, Tests=13549, 583 wallclock secs ( 4.32 usr  0.73 sys +  4.28 cusr  3.90 csys = 13.23 CPU)
+Files=201, Tests=13549, 583 wallclock secs ( 4.32 usr  0.73 sys +  4.28 cusr  3.90 csys = 13.23 CPU)
+Result: FAIL
+== pgtap-main-on-post-b3.log
+Test Summary Report
+-------------------
+drop_generated_artifacts_bucket.sql          (Wstat: 0 Tests: 22 Failed: 1)
+  Failed test:  2
+drop_genomes_staging_bucket.sql              (Wstat: 0 Tests: 7 Failed: 1)
+  Failed test:  2
+embryo_qc_precise_json.sql                   (Wstat: 0 Tests: 86 Failed: 2)
+  Failed tests:  57, 59
+embryo_split_worker.sql                      (Wstat: 0 Tests: 148 Failed: 1)
+  Failed test:  67
+export_member_plan.sql                       (Wstat: 0 Tests: 38 Failed: 3)
+  Failed tests:  2-3, 13
+future_person_claim_contact_retention.sql    (Wstat: 0 Tests: 70 Failed: 1)
+  Failed test:  58
+other_adult_held_upload.sql                  (Wstat: 0 Tests: 173 Failed: 3)
+  Failed tests:  63, 68-69
+Files=201, Tests=13549, 589 wallclock secs ( 4.28 usr  0.74 sys +  4.51 cusr  3.69 csys = 13.22 CPU)
+Files=201, Tests=13549, 589 wallclock secs ( 4.28 usr  0.74 sys +  4.51 cusr  3.69 csys = 13.22 CPU)
+Result: FAIL
+== pgtap-main-on-post-b4.log
+Test Summary Report
+-------------------
+drop_generated_artifacts_bucket.sql          (Wstat: 0 Tests: 22 Failed: 1)
+  Failed test:  2
+drop_genomes_staging_bucket.sql              (Wstat: 0 Tests: 7 Failed: 1)
+  Failed test:  2
+embryo_qc_precise_json.sql                   (Wstat: 0 Tests: 86 Failed: 2)
+  Failed tests:  57, 59
+embryo_split_worker.sql                      (Wstat: 0 Tests: 148 Failed: 1)
+  Failed test:  67
+export_member_plan.sql                       (Wstat: 0 Tests: 38 Failed: 5)
+  Failed tests:  2-3, 9, 13, 30
+future_person_claim_contact_retention.sql    (Wstat: 0 Tests: 70 Failed: 1)
+  Failed test:  58
+other_adult_held_upload.sql                  (Wstat: 0 Tests: 173 Failed: 3)
+  Failed tests:  63, 68-69
+Files=201, Tests=13549, 591 wallclock secs ( 4.19 usr  0.78 sys +  4.32 cusr  3.36 csys = 12.65 CPU)
+Files=201, Tests=13549, 591 wallclock secs ( 4.19 usr  0.78 sys +  4.32 cusr  3.36 csys = 12.65 CPU)
+Result: FAIL
+== pgtap-044601be-on-final.log
+Files=228, Tests=15527, 689 wallclock secs ( 4.54 usr  0.70 sys +  4.85 cusr  2.97 csys = 13.06 CPU)
+Result: PASS

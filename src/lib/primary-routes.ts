@@ -57,6 +57,7 @@ const ROUTE_PATTERNS = {
   "api.embryo-cohort-drafts": "/api/embryo-cohort-drafts",
   "api.embryo-cohorts": "/api/embryo-cohorts",
   "api.embryo-ingest-configure": "/api/embryo-ingest/[session]/configure",
+  "api.embryo-ingest-mapping": "/api/embryo-ingest/[session]/mapping",
   "api.embryo-ingest-chunk": "/api/embryo-ingest/[session]/chunks/[sequence]",
   "api.embryo-ingest-complete": "/api/embryo-ingest/[session]/complete",
   "marketing.providers": "/providers",

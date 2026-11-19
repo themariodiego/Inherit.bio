@@ -1,6 +1,8 @@
 import "server-only";
 import {z} from "zod";
 import {drainClaimantSource} from "./erasure-storage";
+import {disposeClaimantObjects} from "./claimant-object-cleanup";
+import type {ClaimObjectStore} from "./claim-objects";
 import type {EmbryoFragmentRpc} from "@/lib/embryos/fragment-storage";
 
 const hash=z.string().regex(/^[0-9a-f]{64}$/u),nonce=z.string().regex(/^[A-Za-z0-9_-]{16,256}$/u);
@@ -8,11 +10,15 @@ const deleted=z.object({status:z.literal("deleted")}).strict();
 const unavailable=()=>new Error("claimant_deletion_unavailable");
 /** This service capability owns the real existing native prepare/finish doors.
  * The source adapter owns only sealed source-part provider ACKs. Neither a
- * Boolean, preparation, a tombstone alone nor a supplied receipt is completion. */
+ * Boolean, preparation, a tombstone alone nor a supplied receipt is completion.
+ * `parts` reaches only the closed sealed-plan doors (source parts, the plan's
+ * identity objects and its source session's original published cleanup);
+ * `documents` removes only keys those doors listed, in the private bucket. */
 export type ClaimantDeletionExecution=Readonly<{
  assertReady(signal:AbortSignal):Promise<void>;
  prepare(sessionHash:string,operationNonce:string,signal:AbortSignal):Promise<unknown>;
  parts:EmbryoFragmentRpc;
+ documents:Pick<ClaimObjectStore,"remove">;
  finish(manifestId:string,claimTokenHash:string,signal:AbortSignal):Promise<unknown>;
  due(signal:AbortSignal):Promise<unknown>;
 }>;
@@ -38,6 +44,12 @@ async function finishSealedClaimantDeletion(input:{execution:ClaimantDeletionExe
   finish:async(id,claimTokenHash,signal)=>{
    if(id!==manifestId||finished)throw unavailable();
    hash.parse(claimTokenHash);signal.throwIfAborted();
+   // Still inside the same live lease, after every permanent source marker:
+   // the plan's own identity objects and original upload copies. Anything
+   // unresolved refuses here, before the final transaction is attempted.
+   await disposeClaimantObjects({rpc:input.execution.parts,documents:input.execution.documents,
+    manifestId:id,claimTokenHash,signal});
+   signal.throwIfAborted();
    deleted.parse(await input.execution.finish(id,claimTokenHash,signal));
    signal.throwIfAborted();finished=true;
   }});

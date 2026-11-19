@@ -998,11 +998,27 @@ test("/family/[person]/permissions complete: pause, resume and stop render and t
     `Stop sharing with ${B_AS_SEEN_BY_A}? Every result built from the two of you is deleted within 60 seconds. This can’t be undone.`,
   );
   await expect(dialog.locator("li")).toHaveCount(3);
+  // The stop is the UUID-addressed twin (api.subject-sharing) with the
+  // single-use code this page issued for that route and this record.
+  const stopReply = page.waitForResponse((reply) => reply.request().method() === "POST"
+    && new URL(reply.url()).pathname === `/api/subjects/${invitedSubjectId}/sharing`);
   await dialog.getByRole("button", { name: "Stop sharing for good" }).click();
+  const stopped = await stopReply;
+  expect(stopped.status()).toBe(200);
+  const stopBody = stopped.request().postDataJSON() as Record<string, unknown>;
+  expect(Object.keys(stopBody).sort()).toEqual(["nonce", "operation"]);
+  expect(stopBody.operation).toBe("stop");
 
   await expect(page.locator('[data-slot="sharing-tombstone"]')).toContainText(
     /^Sharing ended on .+\. \d+ results built from this pairing were deleted\./,
   );
+  // The same code cannot be spent twice: the database recorded its hash.
+  const replay = await page.request.post(`/api/subjects/${invitedSubjectId}/sharing`, {
+    headers: { origin: new URL(page.url()).origin, "sec-fetch-site": "same-origin", "content-type": "application/json" },
+    data: stopBody,
+  });
+  expect(replay.status()).toBe(422);
+  expect(await replay.json()).toEqual({ error: "invalid_request", issues: ["nonce"] });
 
   // Acceptance 19: every derived surface answers with nothing, from every
   // account that had access, on the very next request.

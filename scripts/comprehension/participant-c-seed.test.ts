@@ -161,6 +161,15 @@ describe("actual stored file and separate normalization receipt", () => {
     const files = [currentFile(0), currentFile(1)]; change(files[0]);
     expect(() => publishedEmbryoFiles(files, expected)).toThrow();
   });
+  it("reads a laboratory table's sources only as pgt_table, and a VCF's only as vcf (ADR 0037)", () => {
+    const tables = [currentFile(0), currentFile(1)].map((file) => ({ ...file, file_type: "pgt_table" }));
+    expect(publishedEmbryoFiles(tables, { ...expected, fileType: "pgt_table" })).toHaveLength(2);
+    expect(() => publishedEmbryoFiles(tables, expected)).toThrow();
+    expect(() => publishedEmbryoFiles([currentFile(0), currentFile(1)], { ...expected, fileType: "pgt_table" })).toThrow();
+    const mixed = [tables[0], currentFile(1)];
+    expect(() => publishedEmbryoFiles(mixed, { ...expected, fileType: "pgt_table" })).toThrow();
+    expect(() => participantCPublication({ ...currentPublication(), files: tables }, ids[1], ids[0])).toThrow();
+  });
   it("refuses a missing receipt, repeated file, extra failed sibling or absent passing source", () => {
     const incomplete: Partial<ReturnType<typeof currentFile>> = currentFile(0);
     delete incomplete.normalization_completed_at;

@@ -61,6 +61,7 @@ export const COMPUTED_MODULES = [
   "family/carrier-pair",
   "family/distribution",
   "family/mendel",
+  "family/own-carrier-status",
   "family/portrait",
   "genome/browser",
   "genome/input-provenance",

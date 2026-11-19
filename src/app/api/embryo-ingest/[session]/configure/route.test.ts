@@ -25,6 +25,7 @@ const mocks = vi.hoisted(() => ({
   calls: [] as Rpc[],
   authorize: null as { data: unknown; error: { code?: string } | null } | null,
   configure: null as { data: unknown; error: { code?: string } | null } | null,
+  configureTable: null as { data: unknown; error: { code?: string } | null } | null,
   unwindThrows: false,
 }));
 
@@ -38,6 +39,7 @@ vi.mock("@/lib/supabase/admin", () => ({
       mocks.calls.push({ name, args });
       if (name === "authorize_embryo_ingest_request_v1") return mocks.authorize;
       if (name === "configure_embryo_vcf_ingest_v1") return mocks.configure;
+      if (name === "configure_embryo_table_ingest_v1") return mocks.configureTable;
       if (name === "prepare_embryo_ingest_unwind_v1") {
         if (mocks.unwindThrows) throw new Error("synthetic dispatch failure");
         return { data: { status: "storage_pending" }, error: null };
@@ -103,6 +105,7 @@ beforeEach(() => {
   mocks.calls = [];
   mocks.authorize = { data: authorized(), error: null };
   mocks.configure = { data: { status: "configured", build: "GRCh38", revision: 912_345_678 }, error: null };
+  mocks.configureTable = { data: { status: "configured", build: null }, error: null };
   mocks.unwindThrows = false;
   nonce = openNonce();
   vi.stubEnv("INHERIT_TEST_JURISDICTION", "1");
@@ -206,7 +209,8 @@ describe("the closed body, refused in memory as a retryable invalid request", ()
     ["a declared reference build", { referenceBuild: "GRCh38" }, ["body"]],
     ["a declared build", { build: "GRCh38" }, ["body"]],
     ["a sex field", { sex: "unknown" }, ["body"]],
-    ["a table format", { format: "pgt_table" }, ["format"]],
+    // ADR 0037: a table has its own closed body, with no sample count.
+    ["a table format carrying a VCF's sample count", { format: "pgt_table" }, ["body"]],
     ["a zero sample count", { sampleCount: 0 }, ["sampleCount"]],
     ["a missing nonce", { nonce: undefined }, ["nonce"]],
     ["65 lines", { buildEvidence: Array.from({ length: 65 }, () => "##reference=GRCh38") }, ["buildEvidence"]],
@@ -382,6 +386,108 @@ describe("database refusals", () => {
     ]) {
       mocks.configure = result;
       expect((await call(post(body()))).status).toBe(503);
+    }
+  });
+});
+
+/**
+ * ADR 0037 (owner decision of 16 October 2026): a laboratory table is
+ * configured here as `pgt_table`. Its build comes from its own header when
+ * the header states one, and is otherwise decision-required; the response
+ * carries only the mapping-inspection nonce.
+ */
+describe("a laboratory table", () => {
+  const table = (overrides: Record<string, unknown> = {}) =>
+    ({ format: "pgt_table", buildEvidence: [], nonce: nonce.token, ...overrides });
+
+  it("records a decision-required build when the header states none, and answers only the inspection nonce", async () => {
+    const response = await call(post(table()));
+    expect(response.status).toBe(200);
+    expect(response.headers.get("referrer-policy")).toBe("no-referrer");
+    expect(response.headers.get("cache-control")).toBe("private, no-store");
+    const answer = await response.json();
+    expect(Object.keys(answer)).toEqual(["nonce"]);
+    const inspection = readEmbryoOperation(answer.nonce);
+    expect(inspection).toMatchObject({ accountId: ACCOUNT, sessionId: AUTH_SESSION, operation: "ingest_mapping_inspect",
+      targetKind: "ingest_session", targetId: SESSION, expiresAt: Date.parse(EXPIRES_AT) });
+    expect(named("configure_embryo_table_ingest_v1")[0].args).toEqual({
+      p_account_id: ACCOUNT, p_auth_session_id: AUTH_SESSION, p_ingest_session_id: SESSION,
+      p_cookie_hash: sha(COOKIE_VALUE), p_origin: ORIGIN, p_cohort_id: COHORT, p_ingest_revision: 4,
+      p_build: null, p_nonce: nonce.nonce, p_mapping_nonce: inspection!.nonce, p_test_jurisdiction: true,
+    });
+    expect(named("configure_embryo_vcf_ingest_v1")).toEqual([]);
+  });
+
+  it.each([
+    [["##reference=GRCh38"], "GRCh38"],
+    [["##contig=<ID=1,length=249250621>"], "GRCh37"],
+    [["##reference=GRCh37", "##reference=GRCh38"], null],
+    [["##reference=NCBI36"], null],
+  ] as const)("sends the build its header %j states, %s, and never a position-based guess", async (lines, build) => {
+    mocks.configureTable = { data: { status: "configured", build }, error: null };
+    expect((await call(post(table({ buildEvidence: [...lines] })))).status).toBe(200);
+    expect(named("configure_embryo_table_ingest_v1")[0].args.p_build).toBe(build);
+  });
+
+  it("refuses VCF-only lines, a sample count and column names before the database", async () => {
+    for (const [overrides, issues] of [
+      [{ buildEvidence: ["##fileformat=VCFv4.2"] }, ["buildEvidence"]],
+      [{ buildEvidence: ["##source=SyntheticLab"] }, ["buildEvidence"]],
+      [{ sampleCount: 2 }, ["body"]],
+      [{ headerColumns: ["Embryo", "Sex"] }, ["body"]],
+    ] as const) {
+      const response = await call(post(table(overrides)));
+      expect(response.status).toBe(422);
+      expect(await response.json()).toEqual({ error: "invalid_request", issues });
+    }
+    expect(named("configure_embryo_table_ingest_v1")).toEqual([]);
+  });
+
+  it("answers a nonce for another session or operation with the opaque 404", async () => {
+    for (const token of [openNonce({ targetId: "12345678-1234-4234-8234-0000000000c2" }).token, openNonce({}, "ingest_complete").token]) {
+      expect((await call(post(table({ nonce: token })))).status).toBe(404);
+    }
+    expect(named("configure_embryo_table_ingest_v1")).toEqual([]);
+  });
+
+  it("never sends a submitted line to the database or back, and logs nothing", async () => {
+    const log = vi.spyOn(console, "error").mockImplementation(() => {});
+    const line = "##reference=file:///synthetic-lab/marker-9Z/GRCh38.fa";
+    mocks.configureTable = { data: { status: "configured", build: "GRCh38" }, error: null };
+    const response = await call(post(table({ buildEvidence: [line] })));
+    expect(response.status).toBe(200);
+    const text = await response.text();
+    for (const fragment of ["marker-9Z", "synthetic-lab", "##reference"]) {
+      expect(JSON.stringify(mocks.calls)).not.toContain(fragment);
+      expect(text).not.toContain(fragment);
+    }
+    expect(log).not.toHaveBeenCalled();
+    log.mockRestore();
+  });
+
+  it("refuses to answer when the database records a build this route did not derive", async () => {
+    mocks.configureTable = { data: { status: "configured", build: "GRCh37" }, error: null };
+    expect((await call(post(table({ buildEvidence: ["##reference=GRCh38"] })))).status).toBe(503);
+    mocks.configureTable = { data: { status: "configured", build: "GRCh38" }, error: null };
+    expect((await call(post(table()))).status).toBe(503);
+  });
+
+  it("dispatches the unwind for an attempt the transaction found failure-pending, and answers 404", async () => {
+    mocks.configureTable = { data: { status: "failure_pending", cohortId: COHORT, ingestRevision: 4 }, error: null };
+    expect((await call(post(table()))).status).toBe(404);
+    expect(named("prepare_embryo_ingest_unwind_v1").map((entry) => entry.args)).toEqual([{ p_cohort_id: COHORT, p_ingest_revision: 4 }]);
+  });
+
+  it.each(["42501", "23505", "55000", "P0002"])("answers %s with the opaque 404", async (code) => {
+    mocks.configureTable = { data: null, error: { code } };
+    expect((await call(post(table()))).status).toBe(404);
+  });
+
+  it("answers contention and an unexpected shape with the retryable 503", async () => {
+    for (const result of [{ data: null, error: { code: "55P03" } },
+      { data: { status: "configured", build: null, nonce: "leak" }, error: null }, { data: null, error: null }]) {
+      mocks.configureTable = result;
+      expect((await call(post(table()))).status).toBe(503);
     }
   });
 });

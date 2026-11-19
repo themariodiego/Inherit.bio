@@ -8,7 +8,9 @@
     "report-A": "e2e/fixtures/tiny-grch38.vcf",
     "report-B": "e2e/fixtures/tiny-b-grch38.vcf",
     "family-pair-A": "e2e/fixtures/carrier-pair-grch38.vcf (both adults of pair A)",
-    "family-pair-B": "e2e/fixtures/carrier-pair-b-grch38.vcf (both adults of pair B)"
+    "family-pair-B": "e2e/fixtures/carrier-pair-b-grch38.vcf (both adults of pair B)",
+    "carrier-status-A": "e2e/fixtures/carrier-pair-grch38.vcf (one account, its own carrier status under one synthetic reviewed condition activated for the test)",
+    "carrier-status-B": "e2e/fixtures/carrier-pair-b-grch38.vcf (one account, its own carrier status under the same synthetic reviewed condition)"
   },
   "seedInvariant": [
     {
@@ -242,6 +244,13 @@
         "status": "differenced",
         "surfaces": [
           "/genome/me/ancestry"
+        ]
+      },
+      {
+        "route": "/genome/[subject]/carrier",
+        "status": "differenced",
+        "surfaces": [
+          "/genome/me/carrier"
         ]
       },
       {

@@ -64,3 +64,12 @@ export function supabaseAppealObjectStore(admin: SupabaseClient): ClaimObjectSto
     async remove(keys) { if (!keys.length) return; const { error } = await bucket().remove([...keys]); if (error) throw new ClaimObjectError("remove"); },
   };
 }
+
+/**
+ * The same registered private legal-evidence bucket for the reviewed-document
+ * Path B's adult-signed permission documents. Only a native permission
+ * document session or review session chooses it; keys come from the database.
+ */
+export function supabasePermissionObjectStore(admin: SupabaseClient): ClaimObjectStore {
+  return supabaseAppealObjectStore(admin);
+}

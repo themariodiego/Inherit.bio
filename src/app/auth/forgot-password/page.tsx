@@ -1,46 +1,14 @@
-"use client";
+import { headers } from "next/headers";
+import { ForgotPasswordForm } from "@/components/auth/forgot-password-form";
+import { AUTH_FORM_TOKEN_HEADER } from "@/lib/auth/auth-form";
 
-import { useState } from "react";
-import { AuthForm } from "@/components/auth/auth-form";
-import { createClient } from "@/lib/supabase/client";
-
-export default function ForgotPasswordPage() {
-  const [sent, setSent] = useState(false);
-
-  if (sent) {
-    return (
-      <div className="space-y-4">
-        <h1 className="display">Check your email</h1>
-        <p className="max-w-measure text-ink">
-          If that address has an account, a password-reset link is on its way.
-        </p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="display">Reset your password</h1>
-        <p className="mt-3 text-sm text-ink-muted">
-          We&apos;ll email you a reset link.
-        </p>
-      </div>
-      <AuthForm
-        fields={[
-          { name: "email", label: "Email", type: "email", autoComplete: "email" },
-        ]}
-        submitLabel="Send reset link"
-        onSubmit={async ({ email }) => {
-          const supabase = createClient();
-          const { error } = await supabase.auth.resetPasswordForEmail(email, {
-            redirectTo: `${window.location.origin}/auth/callback?next=/auth/reset-password`,
-          });
-          if (error) return error.message;
-          setSent(true);
-          return null;
-        }}
-      />
-    </div>
-  );
+/**
+ * `/auth/forgot-password` (register auth.forgot-password). The proxy minted
+ * this render's one-time form token and set the cookie it is bound to
+ * (`src/lib/auth/auth-form.ts`); the form posts it to
+ * `/api/auth/forgot-password`.
+ */
+export default async function ForgotPasswordPage() {
+  const formToken = (await headers()).get(AUTH_FORM_TOKEN_HEADER) ?? "";
+  return <ForgotPasswordForm formToken={formToken} />;
 }

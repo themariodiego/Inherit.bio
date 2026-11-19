@@ -40,6 +40,14 @@
       "disposition": "excluded-protected",
       "reason": "Original case envelopes, wrapped keys and immutable authorship bindings stay private. The authorized native requester pager opens only the current author’s own statement; raw capsules, other people’s statements, contact data and reviewer notes are never archive rows."
     },
+    "private.auth_form_nonces": {
+      "disposition": "excluded-credential",
+      "reason": "Spent sign-up and forgot-password form nonce hashes and their ten-minute expiry. They prevent replay and must never be archive content."
+    },
+    "private.auth_recovery_sessions": {
+      "disposition": "excluded-credential",
+      "reason": "Password reset sessions: the SHA-256 of a reset cookie, the account, the revoked recovery-origin session and a 15-minute expiry. A one-use credential, never archive content."
+    },
     "private.appeal_document_fragments": {
       "disposition": "excluded-protected",
       "reason": "Sealed appeal identity/authority document fragments and reserved private object locators. Evidence bytes are excluded from member exports and retained only for actual cleanup."
@@ -410,13 +418,69 @@
       "disposition": "deferred",
       "reason": "Saved report results for an exact other-adult purpose and recipient. Dedicated current-grant reading exists; the subject-partitioned export projection is still required before these rows can be exported. Source-owner access cannot substitute for that projection."
     },
+    "private.path_b_reviewed_document_nonces": {
+      "disposition": "excluded-credential",
+      "reason": "Hashes of spent one-time operation nonces for the Path B reviewed-document session and finalization. They are credentials, deleted a day after use, never archive content."
+    },
+    "private.path_b_reviewed_document_requests": {
+      "disposition": "excluded-internal",
+      "reason": "The binding between a hidden Path B request and the exact draft, permission document and review it was issued on. It is activation machinery, not the person's record."
+    },
+    "private.permission_document_assignments": {
+      "disposition": "out-of-scope",
+      "reason": "Staff review assignments of an adult-signed permission document. It is not the requester's own record."
+    },
+    "private.permission_document_fragments": {
+      "disposition": "excluded-protected",
+      "reason": "Sealed pieces of an adult-signed permission document in upload, deleted once composed or refused. The export contracts always exclude evidence documents and their bytes."
+    },
+    "private.permission_document_review_downloads": {
+      "disposition": "excluded-credential",
+      "reason": "A named reviewer's revocable chunk sessions for one permission document: a download cookie hash bound to the reviewer's auth session. Exporting it would be a security defect."
+    },
+    "private.permission_document_review_reads": {
+      "disposition": "excluded-internal",
+      "reason": "Temporary staff read receipts used to authorize a permission document decision, as for claim reviews. This is authorization and review machinery, not a member export class."
+    },
+    "private.permission_document_reviews": {
+      "disposition": "excluded-protected",
+      "reason": "Immutable named-human decisions on a permission document: the document hash, kind, decision, the reviewer's sealed reason and their session binding. Evidence decisions and reviewer notes are withheld from member exports."
+    },
+    "private.permission_document_sessions": {
+      "disposition": "excluded-credential",
+      "reason": "Permission document upload sessions: an evidence cookie hash, one-time nonce hashes, an independent wrapped document key and the originating auth session. These credentials never leave in an archive."
+    },
+    "private.permission_documents": {
+      "disposition": "excluded-protected",
+      "reason": "Adult-signed permission documents with their scan verdicts and review states. The export contracts always exclude evidence documents, their locators and their bytes."
+    },
     "private.rights_purpose_matrix": {
       "disposition": "reference",
       "reason": "The rights-purpose matrix the database enforces: purposes, actions and routes. It holds no person's data."
     },
+    "private.rights_recovery_candidates": {
+      "disposition": "excluded-credential",
+      "reason": "Hash-only rights-recovery delivery candidates (api.rights-reissue): the principal, eventual purpose, target, authority revision, fixed deadline and the token hash a future mail issuer would bind. Recovery credential machinery, never archive content."
+    },
+    "private.rights_reissue_form_nonces": {
+      "disposition": "excluded-credential",
+      "reason": "Spent rights-recovery form nonce hashes and their ten-minute expiry. They prevent replay and must never be archive content."
+    },
     "private.rights_session_purposes": {
       "disposition": "excluded-credential",
       "reason": "The purposes a rights session may be issued under, and the target kind each binds. It is rights-session credential machinery and holds no person's data."
+    },
+    "private.subject_ownership_transfers": {
+      "disposition": "excluded-internal",
+      "reason": "The worker's authorization row for one subject transfer: its revision and both account ids. The transfer itself is recorded in the legal audit chain; this row is machinery, and it names another person's account."
+    },
+    "private.subject_transfer_relocation_attempts": {
+      "disposition": "excluded-credential",
+      "reason": "One subject-transfer relocation attempt each, with its worker claim token hash; excluded from person archives."
+    },
+    "private.subject_transfer_relocations": {
+      "disposition": "excluded-credential",
+      "reason": "Exact object relocation locators for a subject transfer, a worker claim token hash and source-version authority; excluded from person archives."
     },
     "private.upload_authorization_config": {
       "disposition": "reference",
@@ -1406,7 +1470,7 @@
     },
     "public.subjects": {
       "disposition": "exported",
-      "reason": "The subjects this account IS. A row never names the account that holds it or a cohort: for an adult held by another uploader, owner_account_id is that other person's account. Claimant authority, verified-age timing and the analysis-stop control are withheld until their separate typed Future Person projection is implemented.",
+      "reason": "The subjects this account IS. A row never names the account that holds it or a cohort: for an adult held by another uploader, owner_account_id is that other person's account. Claimant authority, verified-age timing, the analysis-stop control and when a record's holding passed to its person are withheld until their separate typed Future Person projection is implemented.",
       "scope": "subject_account_id = the requesting account (synchronous); the captured partitions, which are the same subjects (reader).",
       "members": [
         "archive:subject-record.json",
@@ -1431,7 +1495,8 @@
         "cohort_id",
         "claimant_principal_id",
         "earliest_claim_at",
-        "analysis_stopped_at"
+        "analysis_stopped_at",
+        "ownership_transferred_at"
       ]
     },
     "public.suppressions": {

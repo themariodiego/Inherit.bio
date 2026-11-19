@@ -280,21 +280,43 @@ describe("the 2 October release integration preserves measured debt", () => {
   it("reads the current source without assigning a human review", () => {
     const result = runRepositoryGate(ROOT, "2026-10-02");
     expect(result.failures).toEqual([]);
-    expect(result.fileCount).toBe(118);
+    // 119 since 2026-10-16: src/copy/copilot/system-prompts.ts holds the
+    // Copilot system prompts that moved out of three files already scanned here.
+    // 121 since 2026-10-22 (G7.4): the own carrier page adds
+    // src/copy/genome/carrier.ts and src/components/results/carrier/own-carrier-panel.tsx
+    // to the report-copy surface; neither carries a claim-marked sentence, so
+    // the 59 candidates below are unchanged.
+    expect(result.fileCount).toBe(121);
     expect(result.candidates).toHaveLength(59);
     expect(result).toMatchObject({ sourced: 0, open: 59, classified: 0 });
     const inputs = readRepositoryInputs(ROOT);
     expect(inputs.citations).toHaveLength(53);
-    expect(inputs.claims).toHaveLength(120);
+    // The 120 report and export claims, plus the eleven Copilot prompt claims
+    // registered on 2026-10-16 with no citation, which therefore source nothing.
+    expect(inputs.claims.filter(claim => !claim.claim_id.startsWith("copilot."))).toHaveLength(120);
+    expect(inputs.claims).toHaveLength(131);
+    for (const claim of inputs.claims.filter(entry => entry.claim_id.startsWith("copilot."))) {
+      expect(claim.evidence).toEqual([]);
+    }
   });
   it("keeps the exact original unreviewed worklist and debt pin", () => {
     const value = readFileSync(path.join(ROOT, "docs/claim-surface-backlog.json"));
+    // Re-pinned on 2026-10-16: three Copilot prompt sentences moved, unchanged,
+    // from src/app/api/chat/route.ts to src/copy/copilot/system-prompts.ts.
     expect(createHash("sha256").update(value).digest("hex"))
-      .toBe("01e5a1f87ba048359400849793cd0aedcfa0819ecc8e6e7f72df821b2975159d");
+      .toBe("45a15f6fafcb403966c2c5a4a41b1cc098e449a684aa7eac3da017d50c1fcdc7");
     expect(OPEN_BACKLOG).toBe(59);
-    const entries = Object.values(readRepositoryInputs(ROOT).backlog.surfaces)
-      .flatMap(surface => Object.values(surface).flat());
+    const surfaces = readRepositoryInputs(ROOT).backlog.surfaces;
+    const entries = Object.values(surfaces).flatMap(surface => Object.values(surface).flat());
     expect(entries).toHaveLength(59);
+    // The same 59 sentences as the original worklist, whichever file now states them.
+    expect(createHash("sha256").update(entries.map(entry => entry.sha256).sort().join("\n")).digest("hex"))
+      .toBe("d980c939d3df091ac7e737adac15a339a8b5b91c693ebc7baa24337016616ec4");
+    expect(surfaces["copilot-context"]["src/copy/copilot/system-prompts.ts"].map(entry => entry.sha256)).toEqual([
+      "4661ac8ccdffcc1585dde25affc0bfb37dbe80e23af914a7a1c2928dc147cad7",
+      "8fae27cf6edde9da682d59e51911ee8dca51dc62af9d6bc8c18755c170a88c07",
+      "b68bd251517276494a7f86929dedf7deed2062462731083884acc3c390e148d3",
+    ]);
     for (const entry of entries) {
       expect(entry.verdict).toBeNull();
       expect(entry.reviewedBy).toBeUndefined();

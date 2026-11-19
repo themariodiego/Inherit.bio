@@ -33,12 +33,26 @@ const job=z.object({exportId:z.uuid(),principalHash:z.string().regex(/^[a-f0-9]{
 export type AccountArchiveJob=z.infer<typeof job>;
 export type AccountArchiveDueRpc=(name:"export_archive_account_due_v1",args:{p_after:string|null},signal:AbortSignal)
  =>PromiseLike<{data:unknown;error:unknown}>;
+/** The one-record export's due reader (api.subject-export, subject-export-v1). */
+export type SubjectArchiveDueRpc=(name:"export_archive_subject_due_v1",args:{p_after:string|null},signal:AbortSignal)
+ =>PromiseLike<{data:unknown;error:unknown}>;
 const unavailable=()=>new Error("account_archive_generation_unavailable");
 /** One exact bounded account-only page. Discovery does not claim authority;
  * the real complete executor independently preflights, begins and recaptures
  * every source/member/attempt. No ready CAS, mail, retry or provider selection. */
 export async function runAccountArchiveGeneration(options:{capability:AccountArchiveGenerationCapability|null;
  rpc:()=>AccountArchiveDueRpc;signal:AbortSignal}){
+ return generate(options,"account",rpc=>(signal)=>rpc("export_archive_account_due_v1",{p_after:null},signal));
+}
+/** The same bounded page for queued one-record jobs. Each job is built by the
+ * same producer in its subject scope, which never reads the complete account
+ * capture; publication stays the capability's own closed TEST completion. */
+export async function runSubjectArchiveGeneration(options:{capability:AccountArchiveGenerationCapability|null;
+ rpc:()=>SubjectArchiveDueRpc;signal:AbortSignal}){
+ return generate(options,"subject",rpc=>(signal)=>rpc("export_archive_subject_due_v1",{p_after:null},signal));
+}
+async function generate<R>(options:{capability:AccountArchiveGenerationCapability|null;rpc:()=>R;signal:AbortSignal},
+ scope:"account"|"subject",due:(rpc:R)=>(signal:AbortSignal)=>PromiseLike<{data:unknown;error:unknown}>){
  if(!options.capability||options.signal.aborted)throw unavailable();
  const capability=options.capability;
  const bounded=async<T>(work:(signal:AbortSignal)=>PromiseLike<T>):Promise<T>=>{
@@ -50,7 +64,7 @@ export async function runAccountArchiveGeneration(options:{capability:AccountArc
   }finally{clearTimeout(timer);signal.removeEventListener("abort",interrupt);stop.abort();}
  };
  await bounded(signal=>capability.assertReady(signal));
- const rpc=options.rpc(),reply=await bounded(signal=>rpc("export_archive_account_due_v1",{p_after:null},signal));
+ const read=due(options.rpc()),reply=await bounded(signal=>read(signal));
  if(reply.error!==null)throw unavailable();const jobs=z.array(job).max(16).parse(reply.data);
  let last="";for(const value of jobs){const now=Date.now(),deadline=Date.parse(value.deadline);
   if(value.exportId<=last||deadline<=now+30_000||deadline>now+86_400_000)throw unavailable();last=value.exportId;}
@@ -61,7 +75,7 @@ export async function runAccountArchiveGeneration(options:{capability:AccountArc
   await bounded(signal=>capability.assertReady(signal));
   if(options.signal.aborted||Date.now()>=Date.parse(value.deadline))throw unavailable();
   const execution=capability.executionForJob?await bounded(signal=>capability.executionForJob!(value,signal)):capability.execution;
-  const result=await buildAccountArchive({...execution,job:value,signal:options.signal});
+  const result=await buildAccountArchive({...execution,job:value,signal:options.signal,...(scope==="subject"?{scope}:{})});
   if(capability.completeBytes)await bounded(signal=>capability.completeBytes!(value,result,signal));
   completed++;
  }

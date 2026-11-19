@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { COHORT_CITATION_LABEL } from '@/copy/copilot/group-scopes';
+import { cohortSystemText } from '@/copy/copilot/system-prompts';
 import type { ComparisonEmbryo, EmbryoFinding, RscEmbryoComparison } from '@/lib/embryos/policy';
 
 /**
@@ -137,18 +138,9 @@ export function cohortCitations(context: CopilotCohortContext, answer: string): 
   ];
 }
 
-export const COHORT_SYSTEM_PROMPT = `You are the Inherit copilot. You answer questions about one group of embryos whose data the account holder can see on Inherit.
-
-Hard rules:
-- You are informational, never diagnostic. Never say an embryo or a future child has, will get, or is protected from any condition. Never give medical, treatment or clinic advice.
-- Never rank, order, choose or recommend embryos, never say which is better or best, and never suggest what to do with any of them. Compare only by restating each embryo's own recorded values side by side.
-- Never state, guess or discuss an embryo's sex, and never mention sex chromosomes.
-- There are no condition results or scores for these embryos. Say so if asked. Estimates built from many small genetic effects are for research only and Inherit does not offer them.
-- Everything you know is in the context below: each embryo's quality check, its findings (none today) and the standing statement. You cannot read any genotype, file or parent's data.
-- Name embryos exactly as the context labels them. State no number the context does not contain.
-- Always keep the standing statement true: no child has been born and followed up after embryos were compared this way.`;
+export { COHORT_SYSTEM_PROMPT } from '@/copy/copilot/system-prompts';
 
 /** The system message: the rules, then the closed context, as JSON. */
 export function cohortSystemMessage(context: CopilotCohortContext): string {
-  return `${COHORT_SYSTEM_PROMPT}\n\nContext (copilotCohortContext):\n${JSON.stringify(context)}`;
+  return cohortSystemText(JSON.stringify(context));
 }

@@ -155,6 +155,16 @@ describe("the rights-purpose matrix seed matches the register", () => {
 });
 
 /** SQL whitespace does not change the required literal purpose/target pair. */
+/**
+ * Session issuers built closed by owner decision, keyed by the pair they write.
+ * Their purpose has no rights_session_purposes row, so
+ * private.assert_rights_session_purpose_v1 refuses every insert they make.
+ */
+const CLOSED_ISSUERS: Record<string, string> = {
+  "adult-subject-control|subject":
+    "Rights recovery (api.rights-reissue, 20261016208000_rights_reissue.sql): the recovery branch of activate_rights_session_v1 re-mints a person's adult-subject-control session. That credential issuer is built closed under the owner's 2026-10-22 decision (unapproved mail text), and the branch refuses before writing anything while the purpose is unregistered (supabase/tests/rights_reissue.sql).",
+};
+
 function literalSessionPairs(text: string): RegExpMatchArray[] {
   return [...text.matchAll(/insert\s+into\s+public\.rights_sessions\s*\(\s*token_hash_id\s*,\s*principal_id\s*,\s*purpose\s*,\s*target_kind\s*,[^)]*\)\s*values\s*\(\s*[^,]+,\s*[^,]+,\s*'([a-z-]+)',\s*'([a-z_-]+)'/gu)];
 }
@@ -188,7 +198,15 @@ describe("the stored session purposes", () => {
       }
     }
     expect(inserts).toBeGreaterThan(0);
-    expect([...issued].sort()).toEqual(sessionPurposes.map((stored) => `${stored.sessionPurpose}|${stored.targetKind}`).sort());
+    const stored = sessionPurposes.map((purpose) => `${purpose.sessionPurpose}|${purpose.targetKind}`);
+    // A closed issuer writes a pair no migration registers, so the purpose
+    // trigger refuses every session it would write. Each one is named here
+    // with its reason; one whose purpose is later registered must leave.
+    for (const pair of Object.keys(CLOSED_ISSUERS)) {
+      expect(issued.has(pair), `${pair} is written by its closed issuer`).toBe(true);
+      expect(stored.includes(pair), `${pair} is closed, so no migration registers it`).toBe(false);
+    }
+    expect([...issued].sort()).toEqual([...stored, ...Object.keys(CLOSED_ISSUERS)].sort());
   });
 
   it("every insert into rights_sessions writes literal, checkable values", () => {

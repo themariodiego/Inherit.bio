@@ -37,17 +37,27 @@ export type EmbryoOperation =
   | IngestSessionOperation;
 
 /**
- * The three tokens an embryo upload session carries past its first response
- * (ADR 0035). Distinct operations keep the CSRF token and the completion
+ * The tokens an embryo upload session carries past its first response
+ * (ADR 0035, ADR 0037). Distinct operations keep the CSRF token and the completion
  * nonce apart (`mutationSecurityBindings.csrfTransport.operationNonceIsNotCsrf`):
  *
  * - `ingest_session_open`: the upload session's `operationNonce`, good for
- *   exactly one configure request (VCF) or one mapping inspection (table).
- * - `ingest_complete`: the `completionNonce` the configure response issues.
- * - `ingest_complete_csrf`: the `X-Inherit-CSRF` value the configure response
- *   issues for the completion request.
+ *   exactly one configure request, for a VCF or a laboratory table.
+ * - `ingest_complete`: the `completionNonce` the configure response issues
+ *   (VCF), or the mapping response that leaves nothing to decide (table).
+ * - `ingest_complete_csrf`: the `X-Inherit-CSRF` value issued beside it for
+ *   the completion request.
+ * - `ingest_mapping_inspect`: the one mapping-inspection nonce a laboratory
+ *   table's configure response issues (ADR 0037).
+ * - `ingest_mapping_decide`: the nonce a mapping response issues with each
+ *   column or build challenge, for exactly one decision on it.
  */
-export type IngestSessionOperation = "ingest_session_open" | "ingest_complete" | "ingest_complete_csrf";
+export type IngestSessionOperation =
+  | "ingest_session_open"
+  | "ingest_complete"
+  | "ingest_complete_csrf"
+  | "ingest_mapping_inspect"
+  | "ingest_mapping_decide";
 
 export type EmbryoOperationTargetKind =
   | "account"
@@ -87,6 +97,8 @@ const EMBRYO_OPERATIONS: ReadonlySet<string> = new Set<EmbryoOperation>([
   "ingest_session_open",
   "ingest_complete",
   "ingest_complete_csrf",
+  "ingest_mapping_inspect",
+  "ingest_mapping_decide",
 ]);
 
 const TARGET_KINDS: ReadonlySet<string> = new Set<EmbryoOperationTargetKind>([
@@ -115,7 +127,7 @@ const PUBLIC_FORM_DIGEST_CONTEXT = "public-form-v1";
  */
 const HEX_DIGEST = /^[0-9a-f]{64}$/;
 
-type PublicForm = "appeal-review" | "appeal-document" | "appeal-complete" | "future-person-claim-objection-review" | "future-person-claim-release" | "future-person-claim-objection" | "future-person-account-binding" | "future-person-recovery-key" | "future-person-analysis-stop" | "future-person-delete" | "rights-activate" | "invitation-refuse" | "adult-subject-respond" | "future-person-claim" | "future-person-claim-document" | "future-person-claim-complete" | "future-person-claim-review" | "claim-review-keyless-verification" | "claim-review-receipt-open" | "claim-review-receipt-ack" | "embryo-parent-withdraw" | "adult-upload-respond";
+type PublicForm = "appeal-review" | "appeal-document" | "appeal-complete" | "future-person-claim-objection-review" | "future-person-claim-release" | "future-person-claim-objection" | "future-person-account-binding" | "future-person-recovery-key" | "future-person-analysis-stop" | "future-person-delete" | "rights-activate" | "invitation-refuse" | "adult-subject-respond" | "future-person-claim" | "future-person-claim-document" | "future-person-claim-complete" | "future-person-claim-review" | "claim-review-keyless-verification" | "claim-review-receipt-open" | "claim-review-receipt-ack" | "embryo-parent-withdraw" | "adult-upload-respond" | "auth-sign-up" | "auth-forgot-password" | "third-party-subject-export-create" | "third-party-subject-export-open-ready" | "embryo-record-key-cards-rights" | "adult-subject-control" | "consent-reaffirm-rights" | "rights-reissue";
 
 interface PublicFormClaims {
   form: PublicForm;
@@ -173,7 +185,7 @@ export function mintEmbryoOperation(
 
 /**
  * A token bound to one embryo upload session: the acting account, its auth
- * session, one of the three ingest operations and the ingest session id.
+ * session, one of the ingest operations and the ingest session id.
  *
  * Its expiry is the session's own fixed deadline, not the ten-minute page
  * lifetime above. An upload of up to 200 MB can take longer than ten minutes,

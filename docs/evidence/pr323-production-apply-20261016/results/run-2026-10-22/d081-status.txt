@@ -1,0 +1,4 @@
+GET /withdraw/retired-synthetic-invitation-token 404
+GET /withdraw/request 200
+GET /withdraw/session 404
+HEAD /api/withdraw 404

@@ -5,6 +5,8 @@ import { expect, test } from "@playwright/test";
 import { createConfirmedUser, signIn } from "./helpers";
 import { uploadOwnFilePrepared, generateOwnFileWithChosenReports } from "./own-report-helpers";
 import { collectFigures, type CollectedFigure } from "./figure-collector";
+import { claimBlockBasisFindings, collectClaimBlocks, renderedBases, type ClaimBlockCensus } from "./claim-block-basis";
+import { DATA_ATTRIBUTES } from "../src/lib/figures/contract";
 import type { OwnReportPurpose } from "../src/lib/uploads/own-report-purpose";
 
 /**
@@ -29,6 +31,10 @@ import type { OwnReportPurpose } from "../src/lib/uploads/own-report-purpose";
  * on a second surface without a declared source of truth fails, because that
  * is the moment a divergence becomes possible; a registered entry that has
  * stopped repeating fails too, so the file cannot accumulate stale claims.
+ *
+ * The same walk also holds G4.2 on every surface it visits: each claim block
+ * declares each figure's basis and renders that basis's marker once
+ * (`e2e/claim-block-basis.ts`).
  */
 const RUN_ID = randomUUID();
 
@@ -60,6 +66,7 @@ test("every figure that appears on more than one surface shows one value, from o
   await generateOwnFileWithChosenReports(page, fileId, CROSS.purposes);
 
   const collected = new Map<string, CollectedFigure[]>();
+  const blocks = new Map<string, ClaimBlockCensus>();
   for (const { surface } of CROSS.surfaces) {
     await page.goto(surface);
     if (surface === "/genome/me/ancestry") {
@@ -71,6 +78,7 @@ test("every figure that appears on more than one surface shows one value, from o
       await expect(regional.getByRole("dialog")).toHaveCount(0);
     }
     collected.set(surface, await page.evaluate(collectFigures));
+    blocks.set(surface, await page.evaluate(collectClaimBlocks, DATA_ATTRIBUTES));
   }
 
   // Every surface's figure count is registered, so a surface that gains a
@@ -81,6 +89,24 @@ test("every figure that appears on more than one surface shows one value, from o
   expect.soft(CROSS.surfaces.map(({ surface }) => [surface, collected.get(surface)!.length]),
     "each surface renders the number of figures docs/figures-register.json records")
     .toEqual(CROSS.surfaces.map(({ surface, figures }) => [surface, figures]));
+
+  // G4.2 on every surface, per block rather than per figure. Each figure
+  // declares a basis from the contract. A block with a modelled figure shows
+  // the modelled sentence exactly once, and visibly. A block with exact
+  // arithmetic shows the exact sentence once. A block with only observed
+  // figures shows neither, so no model reads as a measurement. The rule was
+  // counted on the ancestry page alone (`e2e/ancestry.spec.ts`). A report,
+  // data or browser surface could drop a marker, or render a figure with no
+  // basis, and stay green.
+  for (const { surface } of CROSS.surfaces) {
+    expect.soft(claimBlockBasisFindings(blocks.get(surface)!),
+      `${surface}: every claim block declares each figure's basis and renders that basis's marker once`)
+      .toEqual([]);
+  }
+  // Both sides of the rule are read in this run: the ancestry shares are
+  // modelled and the source call counts are observed.
+  expect.soft(renderedBases(blocks.values()), "the surfaces render both modelled and observed figures")
+    .toEqual(expect.arrayContaining(["modelled", "observed"]));
 
   // surface -> key -> the values that key rendered there.
   const values = new Map<string, Map<string, string[]>>();

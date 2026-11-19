@@ -6,6 +6,7 @@ import {z} from "zod";
 import {preparedOriginalDownloadSourceSchema,streamVerifiedOriginalRanges,type OriginalRangeOptions} from "@/lib/uploads/prepared-original-download";
 import {originalFileExtension} from "@/lib/uploads/original-download-name";
 import {accountArchiveContextSchema} from "./bound-account-archive-worker";
+import {accountArchiveScope} from "./account-archive-scope";
 import {ownExportSnapshotSchema} from "./own-subject-content";
 import type {Zip64Member} from "./archive-zip64";
 import {anySignal} from "./abort-signals";
@@ -35,7 +36,7 @@ export async function prepareAccountOriginalSource(options:{reference:{exportId:
  readRange?:OriginalRangeOptions<Source>["readRange"]}){
  const context=accountArchiveContextSchema.parse(options.context),snapshot=ownExportSnapshotSchema.parse(options.snapshot),ref=z.object({exportId:uuid,attemptId:uuid,authorityReceipt:hash}).strict().parse(options.reference);
  const partition=context.partitions.find(row=>row.class==="ordinary"&&row.subjectId===snapshot.file.subject_id);
- if(context.targetKind!=="account"||context.targetId!==context.actor.accountId||context.authorityReceipt!==ref.authorityReceipt
+ if(accountArchiveScope(context)===null||context.authorityReceipt!==ref.authorityReceipt
   ||!partition?.fileIds.includes(snapshot.file.id)||snapshot.binding.accountId!==context.actor.accountId
   ||snapshot.binding.sessionId!==context.actor.sessionId)throw unavailable();
  const held:{receipt?:z.infer<typeof receiptSchema>}={};

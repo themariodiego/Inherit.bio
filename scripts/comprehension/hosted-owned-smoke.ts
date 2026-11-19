@@ -116,6 +116,17 @@ export function verifyHostedSmokeArtifact(value: unknown, head: string, tree: st
     const evidence = z.object({ kind: z.literal("live-run"), qualifyingEvidence: z.literal(false), record: browserRecordSchema,
       history: z.array(z.object({ view: viewSchema, action: actionSchema.optional() }).strict()).min(1).max(8),
       response: z.unknown(), processIds: z.array(z.string()).min(3).max(10) }).strict().parse(session.evidence);
+    // A schema-valid empty view once passed here: under tsx every view read
+    // "Page title: (none)" and "The page is still loading." with no control.
+    // The first view must be a read page that lists a page control it offers.
+    const first = evidence.history[0].view, lines = first.visibleText.split("\n");
+    const listed = new Set(lines.flatMap(line => {
+      const control = /^\[([A-Za-z0-9_-]+) ([^\]]+)\]/.exec(line);
+      return control && control[2] !== "mailed-link" ? [control[1]] : [];
+    }));
+    assert(/^Page title: \S/.test(lines[0]) && lines[0] !== "Page title: (none)"
+      && !first.visibleText.includes("The page is still loading.") && first.controls.some(id => listed.has(id)),
+    "Each session must first read a titled, loaded page with at least one control");
     assert.deepEqual(evidence.record, { completed: row.completed, path: row.path, actions: row.actions,
       entries: row.entries, confirmationExclusions: [] });
     const response = { personaId: row.personaId, taskId: row.taskId, sessionId: row.sessionId, completed: row.completed,

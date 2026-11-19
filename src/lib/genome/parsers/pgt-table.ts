@@ -122,6 +122,14 @@ export interface PgtHeader {
  */
 export function detectPgtHeader(line: string): PgtHeader | null {
   const { delimiter, cells } = splitHeaderLine(line);
+  return detectPgtHeaderCells(cells, delimiter);
+}
+
+/**
+ * The same header rule over cells already split from a header line: the
+ * mapping route receives the bounded header copy as cells, never as a line.
+ */
+export function detectPgtHeaderCells(cells: readonly string[], delimiter: PgtDelimiter = ","): PgtHeader | null {
   if (cells.length < PGT_DETECTION_MINIMUM_FIELDS) return null;
   const columns: Record<PgtField, number[]> = { sample: [], embryo: [], rsid: [], genotype: [], chrom: [], pos: [] };
   const forbidden: number[] = [];
@@ -216,4 +224,85 @@ export function planMapping(header: PgtHeader): MappingPlan {
   if (decisions.length > MAXIMUM_MAPPING_DECISIONS) return null;
   if (decisions.some((decision) => decision.candidates.length === 0)) return null;
   return { complete: false, decisions };
+}
+
+/** The locus a mapping plan selects: an rsID column, or a chromosome and position pair. */
+export type PgtLocusKind = CompleteMapping["locus"]["kind"];
+
+/**
+ * The locus kind the plan fixes, whatever the reader then decides. A
+ * decision for `rsid` keeps the rsID locus, a decision for `chrom` or `pos`
+ * keeps the coordinate locus, and with no locus decision the header already
+ * resolved one. The server records this one closed value; it is canonical,
+ * never source text.
+ */
+export function planLocusKind(header: PgtHeader, plan: Exclude<MappingPlan, null>): PgtLocusKind {
+  if (plan.complete) return plan.locus.kind;
+  if (plan.decisions.some((decision) => decision.field === "rsid")) return "rsid";
+  if (plan.decisions.some((decision) => decision.field === "chrom" || decision.field === "pos")) return "chrom-pos";
+  return header.columns.rsid.length === 1 ? "rsid" : "chrom-pos";
+}
+
+/** One column the reader may place, with the fields it may hold: the register's column-oriented challenge. */
+export interface MappingChallengeColumn {
+  columnIndex: number;
+  candidateFields: PgtField[];
+}
+
+/**
+ * The plan's field decisions turned around into one entry per candidate
+ * column, in column order, each naming the fields that column may hold in
+ * the canonical order. Neutral indexes and canonical names only.
+ */
+export function mappingChallengeColumns(plan: PendingMapping): MappingChallengeColumn[] {
+  const byColumn = new Map<number, Set<PgtField>>();
+  for (const decision of plan.decisions) {
+    for (const column of decision.candidates) {
+      const fields = byColumn.get(column) ?? new Set<PgtField>();
+      fields.add(decision.field);
+      byColumn.set(column, fields);
+    }
+  }
+  return [...byColumn.entries()].sort(([left], [right]) => left - right)
+    .map(([columnIndex, fields]) => ({ columnIndex, candidateFields: PGT_FIELDS.filter((field) => fields.has(field)) }));
+}
+
+/** A reader's answer to one decision: this column holds this field. */
+export interface MappingAnswer {
+  field: PgtField;
+  column: number;
+}
+
+/**
+ * The complete mapping the header and the reader's answers give, or null
+ * when the answers do not settle every decision of the plan exactly once,
+ * name a column that was not offered for that field, or leave the header
+ * still ambiguous. Each answered field takes exactly its chosen column; any
+ * other column that resolved to the same field is left unused.
+ */
+export function applyMappingAnswers(header: PgtHeader, answers: readonly MappingAnswer[]): CompleteMapping | null {
+  const plan = planMapping(header);
+  if (!plan) return null;
+  if (plan.complete) return answers.length === 0 ? plan : null;
+  if (answers.length !== plan.decisions.length) return null;
+  const used = new Set<number>();
+  for (const decision of plan.decisions) {
+    const answer = answers.filter((item) => item.field === decision.field);
+    if (answer.length !== 1 || !decision.candidates.includes(answer[0].column) || used.has(answer[0].column)) return null;
+    used.add(answer[0].column);
+  }
+  const resolved = [...header.resolved];
+  const columns = Object.fromEntries(PGT_FIELDS.map((field) => [field, [...header.columns[field]]])) as Record<PgtField, number[]>;
+  for (const { field, column } of answers) {
+    for (const index of columns[field]) if (index !== column) resolved[index] = null;
+    const previous = resolved[column];
+    if (previous) columns[previous] = columns[previous].filter((index) => index !== column);
+    columns[field] = [column];
+    resolved[column] = field;
+  }
+  const settled = planMapping({ ...header, resolved, columns });
+  if (!settled || !settled.complete) return null;
+  const chosen = [settled.identifier.column, settled.genotype,
+    ...(settled.locus.kind === "rsid" ? [settled.locus.column] : [settled.locus.chrom, settled.locus.pos])];
+  return answers.every((answer) => chosen.includes(answer.column)) ? settled : null;
 }

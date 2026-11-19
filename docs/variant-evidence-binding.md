@@ -71,6 +71,14 @@ carrier-pair production reader reads only its rule
 a carrier result. Complex alleles are still not normalized: the rule leaves
 them out rather than keying them.
 
+**Own carrier status, 22 October 2026:** `/genome/[subject]/carrier` reads one
+person's own file against the same rule, by exact allele, at the rule's loci
+only. A position the file does not report, reports as unreadable or reports two
+ways is "not checked", never "no copy", and the page says "This is not a
+negative result." beside the count. Production shows only the unavailable
+sentence, because the rule admits no condition there and the production build
+refuses synthetic rows (`docs/capability-register.md`, "Carrier status").
+
 ## Verification scope
 
 Focused regressions cover exact and different ALT, multiallelic GT indexing,

@@ -46,16 +46,31 @@ import {
   UPLOAD_STOPPED_SENTENCE,
   WAITING_HEADING,
   WAITING_SENTENCE,
+  BUILD_OPTION_GRCH37,
+  BUILD_OPTION_GRCH38,
+  BUILD_OPTION_UNKNOWN,
+  BUILD_QUESTION_HEADING,
+  BUILD_QUESTION_LEDE,
+  BUILD_UNKNOWN_NOTE,
+  MAPPING_CHOOSE_OPTION,
+  MAPPING_COLUMNS_BUTTON,
+  MAPPING_COLUMNS_HEADING,
+  MAPPING_COLUMNS_LEDE,
+  MAPPING_FIELD_QUESTIONS,
+  REQUEST_DATA_BUTTON,
+  TABLE_UNMAPPED_STATUS,
   cardDateNote,
   draftDeadlineNote,
   fileSendingStatus,
+  mappingColumnOption,
   parentEmailLabel,
   stepStatus,
 } from "@/copy/embryos/upload";
 import type { CohortCard } from "@/lib/embryos/record-key-cards";
 import type { UploadStageView } from "@/lib/embryos/upload-stage";
 import { EMBRYO_INGEST_SESSION_LIMITS } from "@/lib/genome/ingest-limits";
-import { UPLOAD_CSRF_HEADER, UploadTransportError, sendEmbryoFile, type UploadFailure, type UploadProgress, type UploadSession } from "@/lib/embryos/upload-transport";
+import { UPLOAD_CSRF_HEADER, UploadTransportError, sendEmbryoFile, type MappingAnswer, type MappingQuestion,
+  type UploadFailure, type UploadProgress, type UploadSession } from "@/lib/embryos/upload-transport";
 import { readUploadReceipt } from "@/lib/embryos/upload-receipt";
 import { route } from "@/lib/primary-routes";
 import { INITIAL_FLOW } from "@/lib/embryos/upload-flow";
@@ -216,8 +231,9 @@ type Finalized = { cards: CohortCard[]; session: UploadSession };
 type FileState =
   | { phase: "choose"; problem: string | null }
   | { phase: "sending"; progress: UploadProgress }
+  | { phase: "question"; question: MappingQuestion; answer: (answer: MappingAnswer) => void }
   | { phase: "processing" }
-  | { phase: "failed"; reason: string };
+  | { phase: "failed"; reason: string; letter: boolean };
 
 /** The sentence for a transport failure, from the refusal copy's one home. */
 function failureSentence(failure: UploadFailure): string {
@@ -227,6 +243,7 @@ function failureSentence(failure: UploadFailure): string {
     case "build-unknown": return INGEST_REFUSALS.build_unknown;
     case "too-large": return INGEST_REFUSALS.too_large(Math.round(EMBRYO_INGEST_SESSION_LIMITS.maximumUncompressedInputBytes / 1_000_000));
     case "sample-count": return FILE_COUNT_MISMATCH_STATUS;
+    case "table-unmapped": return TABLE_UNMAPPED_STATUS;
     case "refused":
     case "network": return FILE_REFUSED_STATUS;
   }
@@ -275,22 +292,35 @@ function FileStep({ finalized }: { finalized: Finalized }) {
     setState({ phase: "sending", progress: { phase: "reading" } });
     try {
       await sendEmbryoFile({ file: chosen, session: finalized.session,
-        onProgress: (progress) => setState({ phase: "sending", progress }) });
+        onProgress: (progress) => setState({ phase: "sending", progress }),
+        // A laboratory table's question, asked on this screen; the upload
+        // waits for the reader's answer and then carries on.
+        decide: (question) => new Promise<MappingAnswer>((resolve) => {
+          setState({ phase: "question", question, answer: (answer) => {
+            setState({ phase: "sending", progress: { phase: "reading" } });
+            resolve(answer);
+          } });
+        }) });
       setState({ phase: "processing" });
     } catch (error) {
       const failure = error instanceof UploadTransportError ? error : new UploadTransportError("network", true);
       setState(failure.spent
-        ? { phase: "failed", reason: failureSentence(failure.failure) }
+        ? { phase: "failed", reason: failureSentence(failure.failure),
+          letter: failure.failure === "build-unknown" || failure.failure === "table-unmapped" }
         : { phase: "choose", problem: failureSentence(failure.failure) });
     }
   }
 
   if (state.phase === "processing") return <ProcessingPanel />;
+  if (state.phase === "question") return <MappingQuestionPanel question={state.question} onAnswer={state.answer} />;
   if (state.phase === "failed") {
     return (
       <section data-slot="upload-stage" data-stage="upload-failed" className="max-w-prose space-y-4 rounded-2xl border border-line bg-card p-5">
         <p role="alert" className="font-medium text-ink">{UPLOAD_STOPPED_SENTENCE}</p>
         <p className="text-sm text-ink">{state.reason}</p>
+        {state.letter ? (
+          <p className="text-sm"><Link href={route("embryos.request-data")} className="link-target quiet-link">{REQUEST_DATA_BUTTON}</Link></p>
+        ) : null}
         <BackToEmbryos />
       </section>
     );
@@ -338,6 +368,65 @@ function FileStep({ finalized }: { finalized: Finalized }) {
         ) : null}
       </form>
     </StageFrame>
+  );
+}
+
+/**
+ * One question of a laboratory table's mapping (ADR 0037). The build
+ * question is three equal actions; the column question is one choice per
+ * unclear item and one action. The file's own column names appear here
+ * only; the route receives column numbers. No native form is used, so
+ * nothing can submit to a URL.
+ */
+function MappingQuestionPanel({ question, onAnswer }: { question: MappingQuestion; onAnswer: (answer: MappingAnswer) => void }) {
+  const headingId = useId();
+  const ids = [useId(), useId(), useId(), useId()];
+  const [chosen, setChosen] = useState<Record<string, string>>({});
+  const ref = useRef<HTMLHeadingElement>(null);
+  useEffect(() => { ref.current?.focus(); }, [question.kind]);
+  if (question.kind === "build") {
+    const options = [["GRCh37", BUILD_OPTION_GRCH37], ["GRCh38", BUILD_OPTION_GRCH38], ["unknown", BUILD_OPTION_UNKNOWN]] as const;
+    return (
+      <section data-slot="upload-stage" data-stage="build-question" aria-labelledby={headingId} className="max-w-prose space-y-4">
+        <h2 id={headingId} ref={ref} tabIndex={-1} className="text-lg font-semibold text-ink outline-none">{BUILD_QUESTION_HEADING}</h2>
+        <p className="text-base leading-relaxed text-ink">{BUILD_QUESTION_LEDE}</p>
+        <div className="flex flex-wrap gap-3">
+          {options.map(([value, label]) => (
+            <Button key={value} type="button" variant="outline" size="lg" data-option={value}
+              onClick={() => onAnswer({ kind: "build", referenceBuild: value })}>{label}</Button>
+          ))}
+        </div>
+        <p className="text-sm text-ink-muted">{BUILD_UNKNOWN_NOTE}</p>
+      </section>
+    );
+  }
+  const decisions = question.decisions.slice(0, ids.length);
+  const values = decisions.map((decision) => chosen[decision.field] ?? "");
+  const ready = values.every((value) => value !== "") && new Set(values).size === values.length;
+  return (
+    <section data-slot="upload-stage" data-stage="columns-question" aria-labelledby={headingId} className="max-w-prose space-y-4">
+      <h2 id={headingId} ref={ref} tabIndex={-1} className="text-lg font-semibold text-ink outline-none">{MAPPING_COLUMNS_HEADING}</h2>
+      <p className="text-base leading-relaxed text-ink">{MAPPING_COLUMNS_LEDE}</p>
+      {decisions.map((decision, index) => (
+        <div key={decision.field} className="space-y-2">
+          <label htmlFor={ids[index]} className="block text-base font-medium text-ink">{MAPPING_FIELD_QUESTIONS[decision.field]}</label>
+          <select id={ids[index]} value={chosen[decision.field] ?? ""} data-field={decision.field}
+            onChange={(event) => setChosen((current) => ({ ...current, [decision.field]: event.target.value }))}
+            className="block min-h-11 max-w-md rounded-md border border-line bg-card px-3 text-sm text-ink">
+            <option value="">{MAPPING_CHOOSE_OPTION}</option>
+            {decision.candidates.map((candidate) => (
+              <option key={candidate.columnIndex} value={String(candidate.columnIndex)}>
+                {mappingColumnOption(candidate.columnIndex, candidate.label)}
+              </option>
+            ))}
+          </select>
+        </div>
+      ))}
+      <Button type="button" size="lg" disabled={!ready} onClick={() => onAnswer({ kind: "columns",
+        mappings: decisions.map((decision) => ({ field: decision.field, columnIndex: Number(chosen[decision.field]) })) })}>
+        {MAPPING_COLUMNS_BUTTON}
+      </Button>
+    </section>
   );
 }
 

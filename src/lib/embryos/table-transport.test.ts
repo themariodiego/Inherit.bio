@@ -2,7 +2,8 @@ import { gzipSync } from "node:zlib";
 import { describe, expect, it } from "vitest";
 import { detectPgtHeader, planMapping, type CompleteMapping } from "../genome/parsers/pgt-table";
 import { INGEST_CHUNK_MAXIMUM_BYTES } from "../genome/ingest-limits";
-import { embryoTableChunks, validateEmbryoTableChunk, type TableBrowserBinding, type TableServerBinding } from "./table-transport";
+import { embryoTableChunks, embryoTableFragmentHeader, embryoTableFragments, validateEmbryoTableChunk, validateEmbryoTableFragment,
+  type TableBrowserBinding, type TableServerBinding } from "./table-transport";
 
 const mapping: CompleteMapping = { complete: true, identifier: { field: "sample", column: 0 },
   genotype: 2, locus: { kind: "rsid", column: 1 } };
@@ -144,5 +145,46 @@ describe("embryo laboratory-table transport", () => {
       count += validated.length;
     }
     expect(count).toBe(80_000);
+  });
+});
+
+/** ADR 0037: a table's own `#` header lines, and the stored per-embryo fragment. */
+describe("laboratory-table header lines and fragments", () => {
+  it("skips the table's own # header lines and never sends one", async () => {
+    const withHeader = `##reference=GRCh38\n#Exported by PRIVATE_LAB\n${source}`;
+    const output = await chunks(withHeader);
+    expect(output).toEqual(await chunks());
+    expect(decoder.decode(output[0])).not.toMatch(/PRIVATE_LAB|Exported by/);
+  });
+
+  it("refuses a PDF even after nothing else was read", async () => {
+    await expect(chunks("%PDF-1.7 synthetic")).rejects.toThrow("pdf_not_data");
+  });
+
+  it("splits validated rows into one neutral fragment per embryo that has one", () => {
+    const fragments = embryoTableFragments([
+      { ordinal: 1, chrom: 2, pos: 456, rsid: null, genotype: "G/G" },
+      { ordinal: 0, chrom: 1, pos: 123, rsid: 123, genotype: "A/G" },
+      { ordinal: 1, chrom: 3, pos: 7, rsid: null, genotype: "." },
+    ], "GRCh37");
+    expect(fragments).toEqual([
+      { ordinal: 0, records: 1, table: "##inheritTableFragment=1\n##reference=GRCh37\nchrom\tpos\trsid\tgenotype\n1\t123\trs123\tA/G\n" },
+      { ordinal: 1, records: 2, table: "##inheritTableFragment=1\n##reference=GRCh37\nchrom\tpos\trsid\tgenotype\n2\t456\t.\tG/G\n3\t7\t.\t.\n" },
+    ]);
+    expect(embryoTableFragments([], "GRCh38")).toEqual([]);
+    expect(() => embryoTableFragmentHeader("hg19" as never)).toThrow("invalid_session");
+  });
+
+  it("revalidates a stored fragment byte for byte before the worker reads it", () => {
+    const [fragment] = embryoTableFragments([{ ordinal: 0, chrom: 22, pos: 9000, rsid: 5, genotype: "C/T" }], "GRCh38");
+    const bytes = encoder.encode(fragment.table);
+    expect(validateEmbryoTableFragment(bytes, "GRCh38")).toEqual([{ chrom: 22, pos: 9000, rsid: 5, genotype: "C/T" }]);
+    expect(() => validateEmbryoTableFragment(bytes, "GRCh37")).toThrow("build_unknown");
+    for (const changed of [
+      fragment.table.replace("C/T", "C|T"), fragment.table.replace("C/T", "CT"), fragment.table.replace("\t9000", "\t09000"),
+      fragment.table.replace("22\t", "chr22\t"), fragment.table.replace("22\t", "23\t"), fragment.table.replace("rs5", "rs5PRIVATE"),
+      fragment.table.replace("C/T\n", "C/T\tXX\n"), fragment.table.replace("chrom\tpos", "sample\tchrom\tpos"),
+      fragment.table.slice(0, -1), "##inheritTableFragment=1\n##reference=GRCh38\nchrom\tpos\trsid\tgenotype\n",
+    ]) expect(() => validateEmbryoTableFragment(encoder.encode(changed), "GRCh38"), changed).toThrow();
   });
 });

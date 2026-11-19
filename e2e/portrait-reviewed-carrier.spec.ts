@@ -14,7 +14,7 @@ import {
   expectAxeClean,
   signIn,
 } from "./helpers";
-import { uploadOwnFilePrepared } from "./own-report-helpers";
+import { generateOwnFileWithChosenReports, uploadOwnFilePrepared } from "./own-report-helpers";
 import { buildCarrierPairVcf, verify, verifyAgainst } from "./fixtures/carrier-pair-fixture";
 import { buildCarrierPairBVcf, CARRIER_B_POSITIONS } from "./fixtures/carrier-pair-b-fixture";
 import {
@@ -602,4 +602,49 @@ test("/family/portrait/[pairId] partial-coverage: a reviewed change the other fi
   await expectBoundedHarm(page);
   // Brief line 1337: both sessions render byte-equal finding text.
   expect(await findingTexts(page)).toEqual(fromA);
+});
+
+/**
+ * Carrier status and carrier-pair arithmetic from the same synthetic activated
+ * conditions (owner decision of 22 October 2026, "Carrier status and
+ * carrier-pair arithmetic (G7.4)"). Each adult now turns on Observed genetic
+ * variants on their own Reports page, and their own `/genome/me/carrier`
+ * (e2e/own-carrier-status.spec.ts proves its states) shows the reading the
+ * pair blocks above were computed from: one copy of the first reviewed change
+ * of condition A for both; for condition B one copy in A's file, and in B's
+ * file the position named as not checked, which is why the pair calculation
+ * for B is the one that cannot be done. Neither own page states a chance.
+ */
+test("each adult's own carrier status shows the same reviewed reading the pair arithmetic used", async ({ page }) => {
+  test.setTimeout(600_000);
+  expect(await ruleGenes()).toEqual([BOTH_COVER.gene, ONE_SIDE_COVERS.gene]);
+  const [first] = BOTH_COVER.assertions;
+  const [change] = ONE_SIDE_COVERS.assertions;
+  for (const [side, account] of [["a", A], ["b", B]] as const) {
+    await signIn(page, account.email, account.password);
+    await generateOwnFileWithChosenReports(page, fileIds[side], ["reports.monogenic"]);
+    await page.goto("/genome/me/carrier");
+    const status = page.locator('[data-slot="carrier-status"]');
+    await expect(status).toHaveAttribute("data-state", side === "a" ? "complete" : "partial-coverage");
+    const both = page.locator(`[data-slot="carrier-status-condition"][data-gene="${BOTH_COVER.gene}"]`);
+    await expect(both.locator('[data-slot="carrier-status-reading"]')).toHaveText("You: one copy");
+    await expect(both.locator('[data-figure-kind="coverage"]')).toHaveText(
+      `Your file was checked at 2 of the 2 positions known for ${BOTH_COVER.conditionName}.`);
+    await expect(both.locator('[data-slot="carrier-variant"]')).toHaveText(variantLine("You", first, BOTH_COVER.gene));
+    await expect(both.locator('[data-slot="lab-confirmation"]')).toHaveText(LAB_CONFIRMATION_LINE);
+    const oneSide = page.locator(`[data-slot="carrier-status-condition"][data-gene="${ONE_SIDE_COVERS.gene}"]`);
+    if (side === "a") {
+      await expect(oneSide.locator('[data-slot="carrier-status-reading"]')).toHaveText("You: one copy");
+      await expect(oneSide.locator('[data-figure-kind="coverage"]')).toHaveText(
+        `Your file was checked at 1 of the 1 positions known for ${ONE_SIDE_COVERS.conditionName}.`);
+      await expect(oneSide.locator('[data-slot="carrier-variant"]')).toHaveText(variantLine("You", change, ONE_SIDE_COVERS.gene));
+    } else {
+      await expect(oneSide.locator('[data-slot="carrier-status-coverage"]')).toHaveText(
+        `This is not a negative result. Your file was checked at 0 of the 1 positions known for ${ONE_SIDE_COVERS.conditionName}.`);
+      await expect(oneSide.locator('[data-figure-kind="carrier-status"], [data-slot="carrier-variant"]')).toHaveCount(0);
+    }
+    const text = await page.locator("main").innerText();
+    expect(text).not.toMatch(/\b1 in 4\b|in 100\b|\d+(\.\d+)?%/);
+    await page.request.post("/auth/sign-out");
+  }
 });

@@ -9,7 +9,8 @@ const env = { CI: "true", GITHUB_ACTIONS: "true", RUNNER_ENVIRONMENT: "github-ho
 const configured = { version: 1, configuredAt: "2026-09-23T09:00:00Z", configSha256: "config", guideSha256: "guide",
   sourceRevision: "commit", project: "sequence", apiOrigin: API, appOrigin: APP, mailOrigin: "http://127.0.0.1:54324",
   authKid: "auth", uploadKid: "upload" };
-const REDIRECT = `${APP}/auth/callback?next=/overview&flow=signup`;
+const STATE = "s".repeat(43);
+const REDIRECT = `${APP}/auth/callback?next=/overview&flow=signup&state=${STATE}`;
 const link = `${API}/auth/v1/verify?token=synthetic&type=signup&redirect_to=${encodeURIComponent(REDIRECT)}`;
 
 describe("remote first-run smoke boundaries (no browser or provider execution)", () => {
@@ -32,14 +33,19 @@ describe("remote first-run smoke boundaries (no browser or provider execution)",
     expect(confirmationLink({ HTML: `<a href="${link.replaceAll("&", "&amp;")}">Confirm</a>` })).toBe(link);
     for (const altered of [link.replace(API, "https://example.invalid"), link.replace("type=signup", "type=recovery"),
       link.replace(encodeURIComponent(REDIRECT), encodeURIComponent("https://example.invalid")),
-      link.replace(encodeURIComponent(REDIRECT), encodeURIComponent(`${APP}/auth/callback?next=/overview`))])
+      link.replace(encodeURIComponent(REDIRECT), encodeURIComponent(`${APP}/auth/callback?next=/overview`)),
+      link.replace(encodeURIComponent(REDIRECT), encodeURIComponent(`${APP}/auth/callback?next=/overview&flow=signup`)),
+      link.replace(encodeURIComponent(REDIRECT), encodeURIComponent(`${APP}/auth/callback?next=/overview&flow=signup&state=short`)),
+      link.replace(encodeURIComponent(REDIRECT), encodeURIComponent(`${REDIRECT}&next=/elsewhere`))])
       expect(() => confirmationLink({ Text: altered })).toThrow();
   });
   it("permits the actual flow but prevents repeated issuance, finalization, storage or generation", () => {
     const fence = requestFence();
     fence.admit(`${APP}/overview?_rsc=read`, "GET");
-    const signup = `${API}/auth/v1/signup?redirect_to=${encodeURIComponent(REDIRECT)}`;
-    fence.admit(signup, "OPTIONS"); fence.admit(signup, "POST");
+    // Sign-up is the app's own endpoint now; the browser never calls the auth service's signup.
+    fence.admit(`${APP}/api/auth/sign-up`, "POST");
+    expect(() => fence.admit(`${APP}/api/auth/sign-up`, "POST")).toThrow();
+    expect(() => fence.admit(`${API}/auth/v1/signup?redirect_to=${encodeURIComponent(REDIRECT)}`, "POST")).toThrow();
     fence.admit(`${API}/auth/v1/token?grant_type=pkce`, "OPTIONS");
     fence.admit(`${API}/auth/v1/user`, "OPTIONS"); fence.admit(`${API}/auth/v1/user`, "GET");
     fence.admit(`${API}/auth/v1/token?grant_type=pkce`, "POST");
@@ -60,6 +66,8 @@ describe("remote first-run smoke boundaries (no browser or provider execution)",
     [`${APP}/api/settings/jurisdiction`, "POST"], [`${APP}/api/settings/jurisdiction?code=GB`, "PUT"],
     [`${APP}/api/account/completion`, "PUT"],
     [`${API}/auth/v1/signup?redirect_to=https://example.invalid`, "OPTIONS"],
+    [`${API}/auth/v1/signup?redirect_to=${encodeURIComponent(REDIRECT)}`, "POST"],
+    [`${APP}/api/auth/sign-up?extra=1`, "POST"],
     [`${API}/auth/v1/token?grant_type=pkce&extra=1`, "OPTIONS"],
     ["http://EXAMPLE_USER:EXAMPLE_PASSWORD@localhost:3000/overview", "GET"],
   ])("refuses non-flow request %s %s", (url, method) => {

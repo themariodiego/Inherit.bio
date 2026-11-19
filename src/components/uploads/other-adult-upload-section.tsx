@@ -16,6 +16,8 @@ import {
 import { readOwnUploadLimits } from "@/lib/uploads/own-upload-limits";
 import { day, heldForYouLine, latestFileLine } from "./other-adult-lines";
 import { OtherAdultNewPersonForm, OtherAdultUploadCard } from "./other-adult-upload-card";
+import { prepareReviewedDocumentTargets } from "@/lib/uploads/path-b-reviewed-document-server";
+import { ReviewedDocumentCard } from "./reviewed-document-card";
 
 /**
  * The register's Path B on the upload page: "Upload with their written
@@ -32,9 +34,12 @@ export async function OtherAdultUploadSection() {
   const uploads = await prepareOtherAdultUploads().catch(() => null);
   if (!uploads) return null;
   const limits = await readOwnUploadLimits().catch(() => null);
+  // The reviewed-document people before activation; after it each one is an
+  // ordinary Path B target above. Unreadable here means none are shown.
+  const reviewed = await prepareReviewedDocumentTargets().catch(() => null);
   return (
     <section aria-labelledby="other-adult-upload-heading" data-slot="other-adult-upload">
-      <details open={uploads.targets.length > 0} className="plate rec-disclosure">
+      <details open={uploads.targets.length > 0 || (reviewed?.length ?? 0) > 0} className="plate rec-disclosure">
         <summary>
           <h2 id="other-adult-upload-heading" className="title inline">{COPY.heading}</h2>
         </summary>
@@ -44,7 +49,11 @@ export async function OtherAdultUploadSection() {
           {uploads.targets.map(target => (
             <OtherAdultUploadCard key={`${target.subjectId}:${target.state}:${target.consent?.token ?? ""}`} target={target} limits={limits} />
           ))}
-          <OtherAdultNewPersonForm token={uploads.draftToken} />
+          {(reviewed ?? []).map(target => (
+            <ReviewedDocumentCard key={`${target.subjectId}:${target.state}:${target.consent?.token ?? ""}:${target.documentToken ?? ""}`}
+              target={target} />
+          ))}
+          <OtherAdultNewPersonForm token={uploads.draftToken} documentFlow={reviewed !== null} />
         </div>
       </details>
     </section>

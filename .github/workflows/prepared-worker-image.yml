@@ -14,6 +14,7 @@ on:
       - "patches/**"
       - "tsconfig.json"
       - "scripts/prepared-worker.run.mts"
+      - "scripts/ci-prepared-worker-build.sh"
       - "scripts/server-only-shim.mjs"
       - "data/**"
       - "docs/route-register.json"
@@ -35,4 +36,4 @@ jobs:
         with:
           persist-credentials: false
       - name: Build the prepared worker image
-        run: docker build --pull --file workers/prepared-worker/Dockerfile --tag inherit-prepared-worker:ci .
+        run: sh scripts/ci-prepared-worker-build.sh

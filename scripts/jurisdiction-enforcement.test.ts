@@ -78,12 +78,32 @@ export const WITHOUT_CHECK: Record<string, string> = {
     "Activates a rights session from a mailed token; rights are not a restricted capability.",
   "src/app/api/cohorts/[id]/restrict/route.ts":
     "Withdrawal-class cohort restriction under an operation token bound to the account, session, operation and target. A cohort exists only through create_embryo_cohort_draft_v1, create_embryo_draft_invitation_v1, accept_embryo_co_parent_invitation_v1 and grant_cohort_purpose_v1, each of which checks jurisdiction in the database, and restriction must work in every jurisdiction.",
+  "src/app/api/subjects/[id]/route.ts":
+    "Subject deletion (api.subject-delete; the register sets jurisdictionBypass) under a single-use code bound to the account, session, operation, route and subject. One database transaction rechecks the caller's authority over the exact record, or the parents' current authority for an embryo, before it empties, purges or restricts. Deletion is a right that must answer in every jurisdiction, and it opens no analysis.",
+  "src/app/api/subjects/[id]/transfer/route.ts":
+    "Subject ownership transfer (api.subject-transfer; the register sets jurisdictionBypass) under a single-use code bound to the account, session, operation, route and subject. One database transaction rechecks that the caller is the record's own verified person account before the record becomes theirs. It is a right that must answer in every jurisdiction, it starts no analysis, and its door is built closed until its notices' wording is approved.",
   "src/app/api/embryos/[id]/disposition/route.ts":
     "Future-person disposition under an operation token bound to the account, session, operation and target, on a cohort that exists only through the database functions that check jurisdiction at creation, invitation, acceptance and grant.",
   "src/app/api/embryos/[id]/future-person-identity/route.ts":
     "Optional parent matching-data save/delete under own recent Auth, exact current evidenced parent/recipient authority, account/session/operation/target proof and a subject-first database recheck. It opens no analytical capability. Saving requires the current signed upload artifact; the parent's deletion right remains independent of a new upload consent and embryo_analysis.",
+  "src/app/api/subjects/[id]/download/route.ts":
+    "Own original only (api.subject-download, owner decision 2026-10-16): self, or an adult record whose own account is the caller, under adult_self_analysis, the one unrestricted capability. The uploader, grantee and embryo cases answer resource-not-found-v1; the database own-right authority rechecks the live session and file before every chunk. It opens no restricted capability.",
+  "src/app/api/subjects/[id]/export/route.ts":
+    "Export right for one own record (api.subject-export, owner decision 2026-10-16, two steps): self, or an adult record whose own account is the caller. The register binds it to jurisdictionBypass because export is a right nothing may block; every embryo case answers resource-not-found-v1 and the database authority rechecks the live session and the record before every step. It opens no restricted capability.",
+  "src/app/api/subjects/[id]/analysis/route.ts":
+    "Bound claimant's analysis-stop right (api.claimed-subject-analysis-stop, owner decision 2026-10-22). The register binds it to jurisdictionBypass because stopping analysis is a right. While claimant binding is closed it answers resource-not-found-v1 after the session and origin checks, before any body is read, and reads nothing else. It opens no capability.",
+  "src/app/api/subjects/[id]/corrections/route.ts":
+    "Bound claimant's correction right (api.claimed-subject-correction, owner decision 2026-10-22). The register binds it to jurisdictionBypass because asking for a correction is a right. While claimant binding is closed it answers resource-not-found-v1 after the session and origin checks, before any body is read, and reads nothing else. It opens no capability.",
+  "src/app/api/withdraw/session/export/route.ts":
+    "Rights-session export right (api.third-party-subject-export, owner decision 2026-10-22). The register binds it to jurisdictionBypass because export is a right. Its subject and cohort cases both answer resource-not-found-v1 until their producers exist; it reads and writes no database row and opens no capability.",
   "src/app/api/embryo-cohorts/[id]/record-key-cards/route.ts":
     "Delivery of Record Key cards under an operation token, on a cohort that exists only through the database functions that check jurisdiction at creation, invitation, acceptance and grant; it opens no analysis.",
+  "src/app/api/rights/reissue/route.ts":
+    "Public rights recovery (api.rights-reissue, jurisdictionBypass): a right, not a restricted capability, and closed under the owner's 2026-10-22 rule for unapproved mail text, so it answers resource-not-found-v1 everywhere. Behind the door it only writes a non-authorizing recovery candidate and opens no analysis; any session it later leads to is rechecked by its own purpose.",
+  "src/app/api/subjects/bind/session/route.ts":
+    "Binding a confirmed Path B record to the person's own account (api.adult-subject-bind) is a right under jurisdictionBypass, not a restricted capability. It is built closed: no adult-subject-control issuer exists, so it answers resource-not-found-v1, and outside TEST-LOCAL always. It opens no analysis, and the account's declared jurisdiction must equal the one the confirmation was signed under, checked in the database.",
+  "src/app/api/rights/embryo-record-key-cards/route.ts":
+    "The no-account twin of the Record Key card door (api.embryo-record-key-cards-rights), built closed: no issuer registers its session purpose, so it answers resource-not-found-v1. Once open, its authority is a purpose-bound rights session on a cohort that exists only through the database functions that check jurisdiction at creation, invitation, acceptance and grant; it opens no analysis.",
 };
 
 const posix = (file: string) => file.split(path.sep).join("/");

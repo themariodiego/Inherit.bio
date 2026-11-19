@@ -1,6 +1,7 @@
 import "server-only";
 import {z} from "zod";
 import {accountArchiveContextSchema} from "./bound-account-archive-worker";
+import {accountArchiveScope} from "./account-archive-scope";
 import {ownExportSnapshotSchema} from "./own-subject-content";
 import {anySignal} from "./abort-signals";
 const uuid=z.uuid(),positive=z.number().int().positive().safe(),count=z.number().int().nonnegative().safe();
@@ -26,7 +27,7 @@ export async function prepareAccountArchiveMetadata(options:{reference:{exportId
  context:z.infer<typeof accountArchiveContextSchema>;files:z.infer<typeof ownExportSnapshotSchema>[];
  rpc:AccountMetadataRpc;signal:AbortSignal;check:(signal:AbortSignal)=>Promise<unknown>}){
  const context=accountArchiveContextSchema.parse(options.context),files=options.files.map(file=>ownExportSnapshotSchema.parse(file));
- if(context.targetKind!=="account"||context.targetId!==context.actor.accountId
+ if(accountArchiveScope(context)===null
   ||context.authorityReceipt!==options.reference.authorityReceipt)throw unavailable();
  const subjects=new Set(context.partitions.map(part=>part.subjectId));
  const expected=new Map(context.partitions.filter(part=>part.class==="ordinary").flatMap(part=>part.fileIds.map(id=>[id,part.subjectId] as const)));

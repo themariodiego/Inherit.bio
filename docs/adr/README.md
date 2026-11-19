@@ -42,3 +42,4 @@ writing a superseding ADR, not silently drifting.
 | [0034](./0034-embryo-sex-and-estimates-scope.md) | Embryo sex only for a serious sex-linked condition; polygenic embryo estimates for research only (amends 0019 point 5) | Accepted by owner decision |
 | [0035](./0035-embryo-vcf-configuration.md) | Embryo VCF configuration: the server reads the build from the header; register entries only | Accepted by owner decision |
 | [0036](./0036-closed-account-archive-test-readers.md) | Closed account archive TEST readers: exact synthetic reader path, explicit opt-ins, production generation null | Implementation decision for default-off draft |
+| [0037](./0037-embryo-table-configuration-and-mapping.md) | Embryo laboratory tables: configure records `pgt_table`, the mapping route asks column and build questions, and its answers rotate the tokens (amends 0035 point 1) | Accepted by owner decision; built TEST-LOCAL |

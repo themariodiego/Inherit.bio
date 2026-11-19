@@ -70,7 +70,7 @@ export async function SiteHeader() {
                 <Link href={route("auth.sign-in")}>Sign in</Link>
               </Button>
               <Button asChild size="sm">
-                <Link href="/auth/sign-up">Get started</Link>
+                <Link href="/auth/sign-up" prefetch={false}>Get started</Link>
               </Button>
             </>
           )}

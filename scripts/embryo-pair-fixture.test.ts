@@ -4,12 +4,16 @@ import { describe, expect, it } from "vitest";
 import { QC_THRESHOLDS } from "../src/lib/embryos/qc-policy";
 import { sniffV2 } from "../src/lib/genome/parsers/sniff";
 import { buildFromHeader } from "../src/lib/genome/parsers/vcf";
+import { embryoTableHeader } from "../src/lib/embryos/table-header";
 import {
+  buildEmbryoPairTable,
   buildEmbryoPairVcf,
   CONTIG_LENGTHS,
   EMBRYO_PAIR_FIXTURE,
+  EMBRYO_PAIR_TABLE_FIXTURE,
   SAMPLES,
   SITE_COUNT,
+  TABLE_EMBRYOS,
 } from "./generate-embryo-pair-fixture";
 
 /**
@@ -80,5 +84,45 @@ describe("the two-embryo synthetic VCF", () => {
     }
     const differing = records.filter((fields) => fields[9] !== fields[10]).length;
     expect(differing, "two embryos, not one sample twice").toBeGreaterThan(records.length / 4);
+  });
+});
+
+/**
+ * The same pair as a laboratory table (ADR 0037), for the browser journey's
+ * column and build questions. Each property is checked on the committed
+ * bytes with the product's own browser header reader.
+ */
+describe("the two-embryo synthetic laboratory table", () => {
+  const table = readFileSync(path.join(ROOT, EMBRYO_PAIR_TABLE_FIXTURE), "utf8");
+  const rows = table.split("\n").filter((line) => line.length > 0 && !line.startsWith("#")).slice(1).map((line) => line.split(","));
+
+  it("is exactly what its generator derives from the committed VCF", () => {
+    expect(table).toBe(buildEmbryoPairTable(text));
+  });
+
+  it("states no build and needs exactly one column decision, for the result column", async () => {
+    const header = await embryoTableHeader(new Blob([table]));
+    expect(header.buildEvidence).toEqual([]);
+    expect(header.copy).toEqual(["Embryo", "Chromosome", "Position", "Bases"]);
+    expect(header.header.forbidden).toEqual([]);
+    expect(header.plan).toEqual({ complete: false, decisions: [{ field: "genotype", candidates: [3] }] });
+  });
+
+  it("carries each VCF locus once per embryo, with the VCF's own call or none", () => {
+    expect(rows).toHaveLength(SITE_COUNT * TABLE_EMBRYOS.length);
+    for (const [index, fields] of records.entries()) {
+      for (const [sample, label] of TABLE_EMBRYOS.entries()) {
+        const [embryo, chrom, pos, bases] = rows[index * TABLE_EMBRYOS.length + sample];
+        expect([embryo, chrom, pos]).toEqual([label, fields[0], fields[1]]);
+        const alleles = [fields[3], fields[4]];
+        const called = fields[9 + sample];
+        expect(bases).toBe(called === "./." ? "--" : called.split("/").map((allele) => alleles[Number(allele)]).join(""));
+      }
+    }
+  });
+
+  it("names no person, sample or laboratory: only the two invented embryo labels", () => {
+    expect(new Set(rows.map(([embryo]) => embryo))).toEqual(new Set(TABLE_EMBRYOS));
+    expect(table).not.toMatch(/SAMPLE1|SAMPLE2|##/);
   });
 });

@@ -205,6 +205,72 @@ describe("independent retention queues", () => {
     expect(mocks.rpc).toHaveBeenCalledWith("claim_due_account_deletion_v1", expect.any(Object));
   });
 
+  it("purges spent auth form nonces and expired reset sessions as independent due work", async () => {
+    vi.stubEnv("JOBS_SECRET", "test-job-secret");
+    mocks.rpc.mockImplementation(async (name: string) => {
+      if (name === "drain_due_new_public_appeals_v1") return { data: { shredded: 0, completed: 0, held: 0 }, error: null };
+      if (name === "prepare_due_prepared_scratch_v1") return { data: 0, error: null };
+      if (name === "reap_expired_own_normalizations_v1") return { data: 0, error: null };
+      if (name === "expire_due_adult_subject_invitations_v1") return { data: 0, error: null };
+      if (name === "purge_expired_auth_credentials_v1") return { data: 2, error: null };
+      return { data: null, error: null };
+    });
+    const response = await run();
+    expect(await response.json()).toEqual({ status: "complete", outcome: "completed" });
+    // No selector: the database alone decides what is past its lifetime.
+    expect(mocks.rpc.mock.calls.filter(call => call[0] === "purge_expired_auth_credentials_v1"))
+      .toEqual([["purge_expired_auth_credentials_v1"]]);
+  });
+
+  it("keeps draining other queues when the auth credential purge fails", async () => {
+    vi.stubEnv("JOBS_SECRET", "test-job-secret");
+    mocks.rpc.mockImplementation(async (name: string) => {
+      if (name === "drain_due_new_public_appeals_v1") return { data: { shredded: 0, completed: 0, held: 0 }, error: null };
+      if (name === "prepare_due_prepared_scratch_v1") return { data: 0, error: null };
+      if (name === "reap_expired_own_normalizations_v1") return { data: 0, error: null };
+      if (name === "expire_due_adult_subject_invitations_v1") return { data: 0, error: null };
+      if (name === "purge_expired_auth_credentials_v1") return { data: null, error: { code: "synthetic" } };
+      return { data: null, error: null };
+    });
+    const response = await run();
+    expect(await response.json()).toEqual({ status: "complete", outcome: "completed_with_failures" });
+    expect(mocks.rpc).toHaveBeenCalledWith("purge_expired_rate_limit_buckets_v1");
+    expect(mocks.rpc).toHaveBeenCalledWith("run_due_embryo_retention_phases_v1");
+  });
+
+  it("purges ended subject original download sessions as independent due work", async () => {
+    vi.stubEnv("JOBS_SECRET", "test-job-secret");
+    mocks.rpc.mockImplementation(async (name: string) => {
+      if (name === "drain_due_new_public_appeals_v1") return { data: { shredded: 0, completed: 0, held: 0 }, error: null };
+      if (name === "prepare_due_prepared_scratch_v1") return { data: 0, error: null };
+      if (name === "reap_expired_own_normalizations_v1") return { data: 0, error: null };
+      if (name === "expire_due_adult_subject_invitations_v1") return { data: 0, error: null };
+      if (name === "purge_ended_subject_original_downloads_v1") return { data: 3, error: null };
+      return { data: null, error: null };
+    });
+    const response = await run();
+    expect(await response.json()).toEqual({ status: "complete", outcome: "completed" });
+    // No selector: the database alone decides which sessions have ended.
+    expect(mocks.rpc.mock.calls.filter(call => call[0] === "purge_ended_subject_original_downloads_v1"))
+      .toEqual([["purge_ended_subject_original_downloads_v1"]]);
+  });
+
+  it("keeps draining other queues when the download session purge fails", async () => {
+    vi.stubEnv("JOBS_SECRET", "test-job-secret");
+    mocks.rpc.mockImplementation(async (name: string) => {
+      if (name === "drain_due_new_public_appeals_v1") return { data: { shredded: 0, completed: 0, held: 0 }, error: null };
+      if (name === "prepare_due_prepared_scratch_v1") return { data: 0, error: null };
+      if (name === "reap_expired_own_normalizations_v1") return { data: 0, error: null };
+      if (name === "expire_due_adult_subject_invitations_v1") return { data: 0, error: null };
+      if (name === "purge_ended_subject_original_downloads_v1") return { data: null, error: { code: "synthetic" } };
+      return { data: null, error: null };
+    });
+    const response = await run();
+    expect(await response.json()).toEqual({ status: "complete", outcome: "completed_with_failures" });
+    expect(mocks.rpc).toHaveBeenCalledWith("run_due_embryo_retention_phases_v1");
+    expect(mocks.rpc).toHaveBeenCalledWith("claim_due_account_deletion_v1", expect.any(Object));
+  });
+
   it("reports an idle sweep as no_work, not as a completed one", async () => {
     vi.stubEnv("JOBS_SECRET", "test-job-secret");
     mocks.rpc.mockImplementation(async (name: string) => {
@@ -329,6 +395,60 @@ describe("Future Person claim document objects", () => {
   });
 });
 
+describe("reviewed-document Path B documents", () => {
+  afterEach(() => { vi.unstubAllEnvs(); vi.clearAllMocks(); });
+  const KEY = "permission/44444444-4444-4444-8444-444444444444/55555555-5555-4555-8555-555555555555";
+  function permissionObjects(due: unknown, expired: unknown = { data: 0, error: null }) {
+    mocks.rpc.mockImplementation(async (name: string) => {
+      if (name === "drain_due_new_public_appeals_v1") return { data: { shredded: 0, completed: 0, held: 0 }, error: null };
+      if (name === "prepare_due_prepared_scratch_v1") return { data: 0, error: null };
+      if (name === "reap_expired_own_normalizations_v1") return { data: 0, error: null };
+      if (name === "expire_due_adult_subject_invitations_v1") return { data: 0, error: null };
+      if (name === "expire_due_path_b_reviewed_documents_v1") return expired as { data: unknown; error: unknown };
+      if (name === "permission_document_objects_due_v1") return due as { data: unknown; error: unknown };
+      if (name === "confirm_permission_document_objects_deleted_v1") return { data: 1, error: null };
+      return { data: null, error: null };
+    });
+  }
+
+  it("expires due requests after the invitation sweep, then removes and confirms the due objects", async () => {
+    vi.stubEnv("JOBS_SECRET", "test-job-secret");
+    permissionObjects({ data: [{ object_key: KEY }], error: null }, { data: 1, error: null });
+    mocks.remove.mockResolvedValue({ data: [], error: null });
+    expect(await (await run()).json()).toEqual({ status: "complete", outcome: "completed" });
+    expect(mocks.remove.mock.calls).toEqual([["legal-evidence", [KEY]]]);
+    const names = mocks.rpc.mock.calls.map(call => call[0] as string).filter(name => [
+      "expire_due_adult_subject_invitations_v1", "expire_due_path_b_reviewed_documents_v1",
+      "permission_document_objects_due_v1", "confirm_permission_document_objects_deleted_v1",
+    ].includes(name));
+    expect(names).toEqual(["expire_due_adult_subject_invitations_v1", "expire_due_path_b_reviewed_documents_v1",
+      "permission_document_objects_due_v1", "confirm_permission_document_objects_deleted_v1"]);
+    // No selector: the database alone decides what is due.
+    expect(mocks.rpc).toHaveBeenCalledWith("expire_due_path_b_reviewed_documents_v1");
+    expect(mocks.rpc).toHaveBeenCalledWith("confirm_permission_document_objects_deleted_v1",
+      { p_object_keys: [KEY], p_route_id: "jobs.retention" });
+  });
+
+  it("confirms nothing when Storage refuses the deletion, and keeps the other queues", async () => {
+    vi.stubEnv("JOBS_SECRET", "test-job-secret");
+    permissionObjects({ data: [{ object_key: KEY }], error: null });
+    mocks.remove.mockResolvedValue({ data: null, error: { message: "private storage failure" } });
+    expect(await (await run()).json()).toEqual({ status: "complete", outcome: "completed_with_failures" });
+    expect(mocks.rpc).not.toHaveBeenCalledWith("confirm_permission_document_objects_deleted_v1", expect.anything());
+    expect(mocks.rpc).toHaveBeenCalledWith("run_due_embryo_retention_phases_v1");
+    expect(mocks.rpc).toHaveBeenCalledWith("claim_due_account_deletion_v1", expect.any(Object));
+  });
+
+  it("reports a failed request expiry and still removes the due objects", async () => {
+    vi.stubEnv("JOBS_SECRET", "test-job-secret");
+    permissionObjects({ data: [{ object_key: KEY }], error: null }, { data: null, error: { code: "synthetic" } });
+    mocks.remove.mockResolvedValue({ data: [], error: null });
+    expect(await (await run()).json()).toEqual({ status: "complete", outcome: "completed_with_failures" });
+    expect(mocks.remove.mock.calls).toEqual([["legal-evidence", [KEY]]]);
+    expect(mocks.rpc).toHaveBeenCalledWith("claim_due_account_deletion_v1", expect.any(Object));
+  });
+});
+
 describe("another adult's held uploads", () => {
   afterEach(() => { vi.unstubAllEnvs(); vi.clearAllMocks(); });
   it("rejects due held files before the upload cleanup, so one run deletes them", async () => {
@@ -349,6 +469,52 @@ describe("another adult's held uploads", () => {
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual({ status: "complete", outcome: "completed_with_failures" });
     expect(mocks.rpc.mock.calls.some(call => call[0] === "claim_own_upload_purge_v1")).toBe(true);
+  });
+  // adult.non-account-holder-24mo: a file confirmed with no account is kept for
+  // exactly 730 days. The database selects the due clocks; this route only
+  // runs the selector-free sweep before the upload cleanup that deletes them.
+  it("ends confirmed files past their 730-day clock before the upload cleanup, with no selector, and counts them", async () => {
+    vi.stubEnv("JOBS_SECRET", "test-job-secret");
+    idleExceptStranded([]);
+    const idle = mocks.rpc.getMockImplementation()!;
+    mocks.rpc.mockImplementation(async (name: string, ...rest: unknown[]) =>
+      name === "expire_due_path_b_confirmed_files_v1" ? { data: 2, error: null } : idle(name, ...rest));
+    const response = await run();
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ status: "complete", outcome: "completed" });
+    expect(mocks.rpc.mock.calls.filter(call => call[0] === "expire_due_path_b_confirmed_files_v1"))
+      .toEqual([["expire_due_path_b_confirmed_files_v1"]]);
+    const names = mocks.rpc.mock.calls.map(call => call[0] as string);
+    expect(names.indexOf("expire_due_other_adult_held_uploads_v1"))
+      .toBeLessThan(names.indexOf("expire_due_path_b_confirmed_files_v1"));
+    expect(names.indexOf("expire_due_path_b_confirmed_files_v1")).toBeLessThan(names.indexOf("claim_own_upload_purge_v1"));
+  });
+  it("reports nothing due as no_work when no 730-day clock has ended", async () => {
+    vi.stubEnv("JOBS_SECRET", "test-job-secret");
+    idleExceptStranded([]);
+    const idle = mocks.rpc.getMockImplementation()!;
+    mocks.rpc.mockImplementation(async (name: string, ...rest: unknown[]) =>
+      name === "expire_due_path_b_confirmed_files_v1" ? { data: 0, error: null } : idle(name, ...rest));
+    expect(await (await run()).json()).toEqual({ status: "complete", outcome: "no_work" });
+    expect(mocks.rpc).toHaveBeenCalledWith("expire_due_path_b_confirmed_files_v1");
+  });
+  it.each(["returned", "thrown"])("keeps the 30-day sweep and the upload cleanup running after a %s 730-day sweep failure", async failure => {
+    vi.stubEnv("JOBS_SECRET", "test-job-secret");
+    idleExceptStranded([]);
+    const idle = mocks.rpc.getMockImplementation()!;
+    mocks.rpc.mockImplementation(async (name: string, ...rest: unknown[]) => {
+      if (name === "expire_due_path_b_confirmed_files_v1") {
+        if (failure === "thrown") throw new Error("synthetic transport failure");
+        return { data: null, error: { code: "synthetic" } };
+      }
+      return idle(name, ...rest);
+    });
+    const response = await run();
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ status: "complete", outcome: "completed_with_failures" });
+    expect(mocks.rpc).toHaveBeenCalledWith("expire_due_other_adult_held_uploads_v1");
+    expect(mocks.rpc.mock.calls.some(call => call[0] === "claim_own_upload_purge_v1")).toBe(true);
+    expect(mocks.rpc).toHaveBeenCalledWith("claim_due_account_deletion_v1", expect.any(Object));
   });
 });
 

@@ -2,7 +2,9 @@ import "server-only";
 import {z} from "zod";
 import {LEGAL_AUDIT_SCHEMA_VERSION,legalAuditEventSchema} from "@/lib/export/legal-audit";
 import {exportLegalAuditNote} from "@/copy/settings/data-export";
+import {SUBJECT_EXPORT_AUDIT_NOTE} from "@/copy/subjects/subject-export";
 import {accountArchiveContextSchema} from "./bound-account-archive-worker";
+import {accountArchiveScope} from "./account-archive-scope";
 import type {FuturePersonMemberFactory} from "./future-person-member-plan";
 import {anySignal} from "./abort-signals";
 
@@ -10,6 +12,14 @@ export const ORDINARY_SUBJECT_AUDIT_NOTE="These audit records do not identify th
 export const ordinarySubjectAuditSchema=z.object({schema_version:z.literal(LEGAL_AUDIT_SCHEMA_VERSION),
  attribution:z.literal("unrecorded"),attribution_started_at:z.null(),note:z.literal(ORDINARY_SUBJECT_AUDIT_NOTE),
  events:z.tuple([])}).strict();
+/** api.subject-export leaves the audit log out, with this stated reason:
+ * an audit event records no subject, so one record's own events cannot be
+ * selected. Both members say so; the legal audit schema is unchanged. */
+export const subjectExportAuditSchema=z.object({schema_version:z.literal(LEGAL_AUDIT_SCHEMA_VERSION),
+ attribution:z.literal("unrecorded"),attribution_started_at:z.null(),note:z.literal(SUBJECT_EXPORT_AUDIT_NOTE),
+ events:z.tuple([])}).strict();
+const subjectExportAudit=subjectExportAuditSchema.parse({schema_version:LEGAL_AUDIT_SCHEMA_VERSION,attribution:"unrecorded",
+ attribution_started_at:null,note:SUBJECT_EXPORT_AUDIT_NOTE,events:[]});
 const auditContext=z.object({version:z.literal("account-archive-audit-v1"),authorityReceipt:z.string().regex(/^[a-f0-9]{64}$/u),
  attributionStartedAt:z.iso.datetime({offset:true}),eventCount:z.number().int().nonnegative().safe()}).strict();
 const page=z.object({events:z.array(legalAuditEventSchema).max(500),nextAfterSeq:z.number().int().positive().safe().nullable()}).strict();
@@ -27,7 +37,15 @@ export async function prepareAccountArchiveAuditMembers(options:{reference:{expo
  context:z.infer<typeof accountArchiveContextSchema>;rpc:AccountAuditRpc;signal:AbortSignal;
  check:(signal:AbortSignal)=>Promise<unknown>}){
  const context=accountArchiveContextSchema.parse(options.context),{reference}=options;
- if(context.targetKind!=="account"||context.targetId!==context.actor.accountId||context.authorityReceipt!==reference.authorityReceipt)throw unavailable();
+ const scope=accountArchiveScope(context);
+ if(scope===null||context.authorityReceipt!==reference.authorityReceipt)throw unavailable();
+ if(scope==="subject"){
+  // No audit door is read: the stated exclusion is fixed text, rechecked
+  // against the current job authority before and after each member.
+  const bytes=()=>encoder.encode(JSON.stringify(subjectExportAudit)+"\n");
+  return [`subjects/${context.targetId}/audit-log.json`,"legal-audit.json"].map(name=>({name,rows:0,
+   chunks:async function*(signal:AbortSignal){await options.check(signal);yield bytes();await options.check(signal);}}));
+ }
  async function call(operation:"context"|"events"|"ordinary-subject",signal:AbortSignal,subject:string|null=null,after:number|null=null){
   await options.check(signal);if(signal.aborted||Date.now()>=Date.parse(context.deadline))throw unavailable();
   const controller=new AbortController(),combined=anySignal([signal,controller.signal]);

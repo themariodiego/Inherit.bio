@@ -1,7 +1,7 @@
 import { type Page } from "@playwright/test";
 import { expect, test } from "./audited-test";
 import { randomUUID } from "node:crypto";
-import { createConfirmedUser, signIn } from "./helpers";
+import { createConfirmedUser, latestEmailTo } from "./helpers";
 
 /**
  * `processing` on the four `/auth/*` routes.
@@ -18,24 +18,32 @@ import { createConfirmedUser, signIn } from "./helpers";
  *
  * HOW THE STATE IS HELD OPEN. It is genuinely transient — the pending flag is
  * cleared the moment the auth call returns — so the test holds the AUTH
- * REQUEST rather than the flag. `page.route` intercepts the call to
- * `/auth/v1/*` and does not release it until the assertion has run, which
- * keeps the product in a state it defines rather than simulating one. Nothing
- * here sets `pending`, stubs the component or fakes a response: the request is
+ * REQUEST rather than the flag. `page.route` intercepts the form's one request
+ * and does not release it until the assertion has run, which keeps the
+ * product in a state it defines rather than simulating one. Nothing here sets
+ * `pending`, stubs the component or fakes a response: the request is
  * eventually continued and the page carries on as it would have.
  *
- * WHY THE CREDENTIALS DO NOT MATTER for three of the four. The pending control
- * renders while the request is in flight, before any answer exists, so a
- * rejected sign-in reaches the same state as an accepted one and leaves
- * nothing behind. Those three create no user and write no row.
+ * WHICH REQUEST. Sign-in still calls the auth service's `/auth/v1/*` from the
+ * browser. Sign-up, forgot-password and reset-password post to their own
+ * endpoint, `/api/auth/*` (owner decision 2026-10-16), so for those three the
+ * held request must be exactly that one POST, and the browser must make no
+ * `/auth/v1/*` call at all: the endpoint is the only way the credentials
+ * leave the page.
+ *
+ * WHY THE CREDENTIALS DO NOT MATTER for sign-in, sign-up and forgot-password.
+ * The pending control renders while the request is in flight, before any
+ * answer exists, so a rejected sign-in reaches the same state as an accepted
+ * one. Sign-in and forgot-password create no user; the released sign-up
+ * request creates one synthetic, unconfirmed account. Sign-up and
+ * forgot-password also spend a form nonce and count a rate-limit bucket.
  *
  * `/auth/reset-password` IS THE EXCEPTION, and finding out why was the point
  * of running this before believing it. Its form renders without a session, so
- * it looked like the same case — but `updateUser` refuses client-side when
- * there is no session and never issues a request at all, so `onSubmit`
- * resolves at once and the pending state is never entered. The route needs a
- * real signed-in account, which this file therefore creates for that one test.
- * The lesson is the general one: a page rendering is not a request being sent.
+ * it looks like the same case — but its endpoint answers only a reset session,
+ * which only a real recovery link can issue. This file therefore creates a
+ * real account for that one test and follows the real mailed link. The lesson
+ * is the general one: a page rendering is not a request being sent.
  */
 
 /**
@@ -47,13 +55,21 @@ async function assertPendingControl(
   path: string,
   fill: (page: Page) => Promise<void>,
   submitLabel: string,
+  endpoint?: "/api/auth/sign-up" | "/api/auth/forgot-password" | "/api/auth/reset-password",
 ) {
   let release!: () => void;
   const held = new Promise<void>((resolve) => { release = resolve; });
   let intercepted = 0;
+  const heldRequests: string[] = [];
+  let directAuthCalls = 0;
+  const observed = (request: import("@playwright/test").Request) => {
+    if (new URL(request.url()).pathname.startsWith("/auth/v1/")) directAuthCalls += 1;
+  };
+  if (endpoint) page.on("request", observed);
 
-  await page.route("**/auth/v1/**", async (route) => {
+  await page.route(endpoint ? `**${endpoint}` : "**/auth/v1/**", async (route) => {
     intercepted += 1;
+    heldRequests.push(`${route.request().method()} ${new URL(route.request().url()).pathname}`);
     await held;
     await route.continue();
   });
@@ -89,7 +105,13 @@ async function assertPendingControl(
     // Polled rather than read once: the pending control renders before the
     // held request reaches this handler, so a single read of the count raced it.
     await expect.poll(() => intercepted, { message: "the pending state is held by a real in-flight request" }).toBeGreaterThan(0);
+    if (endpoint) {
+      // Exactly the endpoint's one POST, and no direct auth-service call.
+      expect(heldRequests).toEqual([`POST ${endpoint}`]);
+      expect(directAuthCalls, "the browser calls no /auth/v1/ endpoint itself").toBe(0);
+    }
   } finally {
+    if (endpoint) page.off("request", observed);
     // Release only. `page.unroute` here raced the held handler and made its
     // `continue` throw "Route is already handled"; the context closes with the
     // test, so removing the handler buys nothing.
@@ -144,7 +166,7 @@ test("/auth/sign-up processing: the submit control says Working and refuses a se
   await assertPendingControl(page, "/auth/sign-up", async (target) => {
     await target.getByLabel("Email").fill(`processing-${randomUUID()}@e2e.local`);
     await target.getByLabel("Password").fill("synthetic-not-a-real-account");
-  }, "Sign up");
+  }, "Sign up", "/api/auth/sign-up");
 });
 
 test("/auth/forgot-password processing: the submit control says Working and refuses a second submission", async ({ page }) => {
@@ -153,23 +175,32 @@ test("/auth/forgot-password processing: the submit control says Working and refu
   });
   await assertPendingControl(page, "/auth/forgot-password", async (target) => {
     await target.getByLabel("Email").fill(`processing-${randomUUID()}@e2e.local`);
-  }, "Send reset link");
+  }, "Send reset link", "/api/auth/forgot-password");
 });
 
 test("/auth/reset-password processing: the submit control says Working and refuses a second submission", async ({ page }) => {
-  // The one route that needs a session; see the header. Without it
-  // `updateUser` refuses before sending anything and the state never opens.
+  // The one route that needs a credential; see the header. Its endpoint
+  // answers only a reset session, which only the real mailed recovery link
+  // issues, so the test follows one.
   const email = `reset-processing-${randomUUID()}@e2e.local`;
   const password = "synthetic-reset-processing-password";
   await createConfirmedUser(email, password);
-  await signIn(page, email, password);
+  await page.goto("/auth/forgot-password");
+  await page.getByLabel("Email").fill(email);
+  await page.getByRole("button", { name: "Send reset link", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Check your email" })).toBeVisible();
+  const mail = await latestEmailTo(email);
+  const link = mail && /https?:\/\/[^\s"<>]+verify[^\s"<>]*/.exec(mail.body)?.[0];
+  expect(link, "the real recovery mail must arrive").toBeTruthy();
+  await page.goto(link!.replace(/&amp;/g, "&"));
+  await page.waitForURL(/\/auth\/reset-password$/, { timeout: 30_000 });
 
-  await test.step("/auth/reset-password initial-form: the signed-in reader sees empty new-password input", async () => {
+  await test.step("/auth/reset-password initial-form: the reader with a reset session sees empty new-password input", async () => {
     await assertInitialForm(page, "/auth/reset-password", "Choose a new password", ["New password"], "Update password");
   });
   await assertPendingControl(page, "/auth/reset-password", async (target) => {
     await target.getByLabel("New password").fill("synthetic-a-different-password");
-  }, "Update password");
+  }, "Update password", "/api/auth/reset-password");
 });
 
 test("auth forms without JavaScript exclude credentials from native submission", async ({ browser, baseURL }) => {
@@ -177,7 +208,8 @@ test("auth forms without JavaScript exclude credentials from native submission",
   const page = await context.newPage();
   let authRequests = 0;
   context.on("request", (request) => {
-    if (new URL(request.url()).pathname.startsWith("/auth/v1/")) authRequests += 1;
+    const pathname = new URL(request.url()).pathname;
+    if (pathname.startsWith("/auth/v1/") || pathname.startsWith("/api/auth/")) authRequests += 1;
   });
   try {
     // The existing sign-in useSearchParams/Suspense subtree is client-only
@@ -226,13 +258,20 @@ test("/auth/forgot-password keeps credentials closed until hydration and then us
   const authHeld = new Promise<void>((resolve) => { releaseAuth = resolve; });
   let scriptRequests = 0;
   let authRequests = 0;
+  const heldRequests: string[] = [];
+  let directAuthCalls = 0;
+  page.on("request", (request) => {
+    if (new URL(request.url()).pathname.startsWith("/auth/v1/")) directAuthCalls += 1;
+  });
   await page.route(/\/_next\/static\/.*\.js(?:\?.*)?$/u, async (route) => {
     scriptRequests += 1;
     await scriptsHeld;
     await route.continue();
   });
-  await page.route("**/auth/v1/**", async (route) => {
+  // The page's own endpoint (owner decision 2026-10-16), not the auth service.
+  await page.route("**/api/auth/forgot-password", async (route) => {
     authRequests += 1;
+    heldRequests.push(`${route.request().method()} ${new URL(route.request().url()).pathname}`);
     await authHeld;
     await route.continue();
   });
@@ -260,6 +299,8 @@ test("/auth/forgot-password keeps credentials closed until hydration and then us
     await expect(working).toBeDisabled();
     await expect(form.getByRole("alert")).toHaveCount(0);
     await expect.poll(() => authRequests).toBeGreaterThan(0);
+    expect(heldRequests).toEqual(["POST /api/auth/forgot-password"]);
+    expect(directAuthCalls, "the browser calls no /auth/v1/ endpoint itself").toBe(0);
     expect(new URL(page.url()).pathname).toBe("/auth/forgot-password");
     expect(new URL(page.url()).search).toBe("");
   } finally {

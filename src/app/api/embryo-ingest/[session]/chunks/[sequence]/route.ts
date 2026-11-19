@@ -10,13 +10,18 @@ import {
   chunkStored,
   headerRejection,
   isPdf,
+  mappingRequired,
   noReferrer,
   reservationFragments,
+  tableChunkBinding,
+  tableLocus,
   validateChunk,
+  validateTableChunk,
   zeroizeChunk,
   type ChunkRejection,
   type ValidatedChunk,
 } from "@/lib/embryos/ingest-chunk";
+import { resolveTableRsid } from "@/lib/embryos/table-reference";
 import { dispatchIngestAttemptFailure, failIngestAttempt } from "@/lib/embryos/ingest-failure";
 import { authorizeIngestHttpRequest, ingestChunkEnvelope, readIngestChunk, type IngestAuthorizationArgs } from "@/lib/embryos/ingest-http";
 import { EmbryoTransportError } from "@/lib/embryos/ingest-lines";
@@ -46,6 +51,16 @@ import { createAdminClient } from "@/lib/supabase/admin";
  * (create-only, read back to EOF, acknowledged by SQL), and commit, which
  * refuses unless every fragment has landed.
  *
+ * A laboratory-table session (ADR 0037) takes the same steps with its own
+ * binding. Until the mapping route has resolved the build and issued the
+ * transport, a table chunk is the nonterminal `mappingRequired` 409: nothing
+ * is read, reserved or failed, and the client is sent back to the mapping
+ * route (owner decision of 16 October 2026: table chunks are refused until
+ * the build is resolved). After that, the chunk must carry the canonical
+ * columns of the locus kind the mapping route recorded, every rsID is
+ * resolved from the server reference store in the resolved build, and only
+ * the embryos with a retained row get a fragment.
+ *
  * Every terminal branch (framing, header, format, a limit, an aborted body)
  * is recorded through `fail_embryo_ingest_attempt_v1` before any reservation
  * or write, and the unwind is dispatched. If that record cannot be made the
@@ -72,6 +87,17 @@ export async function PUT(request: Request, context: { params: Promise<{ session
     return noReferrer(notFound());
   }
   const { authority, credentials } = authorization;
+  const table = authority.format === "pgt_table";
+  let locus: Awaited<ReturnType<typeof tableLocus>> = null;
+  if (table) {
+    if (authority.build === null || authority.challengeHash === null) return mappingRequired();
+    try {
+      locus = await tableLocus(credentials, async (args) => createAdminClient().rpc("embryo_ingest_table_locus_v1", args));
+    } catch {
+      return noReferrer(unavailable());
+    }
+    if (locus === null) return mappingRequired();
+  }
   const reject = async (rejection: ChunkRejection) =>
     (await failIngestAttempt(credentials, authority, rejection.code)) ? rejection.response() : noReferrer(unavailable());
 
@@ -91,14 +117,25 @@ export async function PUT(request: Request, context: { params: Promise<{ session
       return reject(chunkRejection(error, request.signal.aborted));
     }
     if (isPdf(bytes)) return reject(chunkRejection(new EmbryoTransportError("pdf_not_data")));
-    const binding = chunkBinding(bytes, authority);
-    if (!binding) return reject(headerRejection);
-    try {
-      chunk = validateChunk(bytes, binding);
-    } catch (error) {
-      return reject(chunkRejection(error));
+    if (table) {
+      const binding = tableChunkBinding(bytes, authority, locus, resolveTableRsid);
+      if (!binding) return reject(headerRejection);
+      try {
+        chunk = validateTableChunk(bytes, binding);
+      } catch (error) {
+        return reject(chunkRejection(error));
+      }
+    } else {
+      const binding = chunkBinding(bytes, authority);
+      if (!binding) return reject(headerRejection);
+      try {
+        chunk = validateChunk(bytes, binding);
+      } catch (error) {
+        return reject(chunkRejection(error));
+      }
     }
-    return await persistChunk(store, request.signal, credentials, envelope.sequence, chunk, authority);
+    return await persistChunk(store, request.signal, credentials, envelope.sequence, chunk,
+      { cohortId: authority.cohortId, ingestRevision: authority.ingestRevision, everyOrdinal: table ? null : authority.sampleCount });
   } finally {
     zeroizeChunk(bytes, chunk);
   }
@@ -117,7 +154,7 @@ async function persistChunk(
   credentials: IngestAuthorizationArgs,
   sequence: number,
   chunk: ValidatedChunk,
-  authority: { cohortId: string; ingestRevision: number; sampleCount: number },
+  authority: { cohortId: string; ingestRevision: number; everyOrdinal: number | null },
 ): Promise<Response> {
   const session = credentials.p_ingest_session_id;
   const admin = createAdminClient();
@@ -139,7 +176,7 @@ async function persistChunk(
   if (receipt.data.status === "denied") return noReferrer(notFound());
 
   if (receipt.data.status === "reserved") {
-    const written = await writeFragments(store, signal, session, sequence, chunk, authority.sampleCount);
+    const written = await writeFragments(store, signal, session, sequence, chunk, authority.everyOrdinal);
     if (written === "failure_pending") return refusedAttempt();
     if (written === "denied") return noReferrer(notFound());
     if (written === "retry") return noReferrer(unavailable());
@@ -176,10 +213,12 @@ async function writeFragments(
   session: string,
   sequence: number,
   chunk: ValidatedChunk,
-  sampleCount: number,
+  everyOrdinal: number | null,
 ): Promise<"landed" | "retry" | "never" | "failure_pending" | "denied"> {
   const byOrdinal = new Map(chunk.fragments.map((fragment) => [fragment.ordinal, fragment]));
-  if (byOrdinal.size !== sampleCount) return "retry";
+  // A VCF chunk carries every embryo; a table chunk only those it has rows for.
+  if (byOrdinal.size !== chunk.fragments.length || (everyOrdinal !== null && byOrdinal.size !== everyOrdinal)) return "retry";
+  const expected = [...byOrdinal.keys()].sort((a, b) => a - b);
   for (let pass = 0; pass < 2; pass += 1) {
     let answer: FragmentTargets;
     try {
@@ -189,11 +228,12 @@ async function writeFragments(
     }
     if (answer.status === "failure_pending" || answer.status === "denied") return answer.status;
     const targets = answer.targets;
-    // Exactly one receipt per embryo: a VCF chunk splits every record into
-    // every embryo's fragment. A receipt for another session or chunk, or a
+    // Exactly one receipt per validated fragment: a VCF chunk splits every
+    // record into every embryo's fragment, and a table chunk into each embryo
+    // it carries. A receipt for another session, chunk or ordinal, or a
     // non-R2 backend, is a contract breach: write nothing.
     const ordinals = targets.map((target) => target.ordinal).sort((a, b) => a - b);
-    if (ordinals.length !== sampleCount || ordinals.some((ordinal, index) => ordinal !== index)) return "retry";
+    if (ordinals.length !== expected.length || ordinals.some((ordinal, index) => ordinal !== expected[index])) return "retry";
     for (const target of targets) {
       const { receipt } = target;
       if (receipt.sessionId !== session || receipt.sequence !== sequence || receipt.ordinal !== target.ordinal ||

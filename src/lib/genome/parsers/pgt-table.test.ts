@@ -5,12 +5,17 @@ import {
   MAXIMUM_MAPPING_DECISIONS,
   PGT_DETECTION_MINIMUM_FIELDS,
   PGT_FIELDS,
+  applyMappingAnswers,
   detectPgtHeader,
+  detectPgtHeaderCells,
   isForbiddenHeaderCell,
+  mappingChallengeColumns,
   normaliseHeaderCell,
+  planLocusKind,
   planMapping,
   resolveHeaderCell,
   splitHeaderLine,
+  type PendingMapping,
 } from "./pgt-table";
 
 /**
@@ -190,5 +195,97 @@ describe("planMapping", () => {
     const plan = planMapping(header) as { complete: false; decisions: { field: string; candidates: readonly number[] }[] };
     expect(plan.complete).toBe(false);
     expect(plan.decisions).toEqual([{ field: "genotype", candidates: [4] }]);
+  });
+});
+
+/**
+ * ADR 0037: what the mapping route and the browser derive from the same
+ * header rule. Canonical values only: the locus kind, the column-oriented
+ * challenge and the complete mapping a reader's answers settle.
+ */
+describe("the register's proxy headers (biological sex, male, female, X, Y, M, MT)", () => {
+  it.each(["Biological sex", "MALE", "female", "X", "y", "M", "MT", "chromosomal sex"])("forbids %j and never resolves it", (cell) => {
+    expect(isForbiddenHeaderCell(cell)).toBe(true);
+    expect(resolveHeaderCell(cell)).toBeNull();
+  });
+
+  it("still resolves the canonical names that only contain those letters", () => {
+    for (const cell of ["Embryo", "Position", "Chromosome", "Genotype", "Marker"]) expect(isForbiddenHeaderCell(cell)).toBe(false);
+  });
+});
+
+describe("detectPgtHeaderCells", () => {
+  it("is the header rule over cells, exactly as over the line they came from", () => {
+    const line = "Embryo\tChromosome\tPosition\tGenotype";
+    expect(detectPgtHeaderCells(splitHeaderLine(line).cells, "\t")).toEqual(detectPgtHeader(line));
+    expect(detectPgtHeaderCells(["Embryo", "Genotype"])).toBeNull();
+  });
+});
+
+describe("planLocusKind", () => {
+  it("follows the plan's locus, whatever the reader then decides", () => {
+    const complete = detectPgtHeader("Sample,SNP,Call")!;
+    expect(planLocusKind(complete, planMapping(complete)!)).toBe("rsid");
+    const coordinates = detectPgtHeader("Embryo,Chromosome,Position,Call,Result")!;
+    expect(planLocusKind(coordinates, planMapping(coordinates)!)).toBe("chrom-pos");
+    const rsidDecision = detectPgtHeader("Embryo,SNP,Marker,Call")!;
+    expect(planMapping(rsidDecision)).toMatchObject({ complete: false, decisions: [{ field: "rsid" }] });
+    expect(planLocusKind(rsidDecision, planMapping(rsidDecision)!)).toBe("rsid");
+    const chromDecision = detectPgtHeader("Embryo,Chrom,Chromosome,Pos,Call")!;
+    expect(planLocusKind(chromDecision, planMapping(chromDecision)!)).toBe("chrom-pos");
+    const rsidMissing = detectPgtHeader("Embryo,Sample,Call,Well")!;
+    expect(planLocusKind(rsidMissing, planMapping(rsidMissing)!)).toBe("rsid");
+  });
+});
+
+describe("mappingChallengeColumns", () => {
+  it("turns field decisions into one entry per candidate column, in column and canonical order", () => {
+    const plan = planMapping(detectPgtHeader("Well,Chromosome,Position,Call,Result")!) as PendingMapping;
+    expect(mappingChallengeColumns(plan)).toEqual([
+      { columnIndex: 0, candidateFields: ["sample"] },
+      { columnIndex: 3, candidateFields: ["genotype"] },
+      { columnIndex: 4, candidateFields: ["genotype"] },
+    ]);
+    const shared = planMapping(detectPgtHeader("Embryo,Chromosome,Position,Well")!) as PendingMapping;
+    expect(shared.decisions).toEqual([{ field: "genotype", candidates: [3] }]);
+    const both = planMapping(detectPgtHeader("Well,Chromosome,Position,Plate,SNP")!) as PendingMapping;
+    expect(mappingChallengeColumns(both)).toEqual([
+      { columnIndex: 0, candidateFields: ["sample", "genotype"] },
+      { columnIndex: 3, candidateFields: ["sample", "genotype"] },
+    ]);
+    expect(JSON.stringify(mappingChallengeColumns(both))).not.toMatch(/Well|Plate/);
+  });
+});
+
+describe("applyMappingAnswers", () => {
+  const header = detectPgtHeader("Well,Chromosome,Position,Call,Result")!;
+
+  it("settles every decision into one complete mapping", () => {
+    expect(applyMappingAnswers(header, [{ field: "sample", column: 0 }, { field: "genotype", column: 4 }])).toEqual({
+      complete: true, identifier: { field: "sample", column: 0 }, genotype: 4,
+      locus: { kind: "chrom-pos", chrom: 1, pos: 2 },
+    });
+  });
+
+  it("refuses an answer that was not offered, a missing or repeated one, or one column twice", () => {
+    for (const answers of [
+      [{ field: "sample" as const, column: 0 }],
+      [{ field: "sample" as const, column: 0 }, { field: "genotype" as const, column: 1 }],
+      [{ field: "sample" as const, column: 0 }, { field: "genotype" as const, column: 3 }, { field: "genotype" as const, column: 4 }],
+      [{ field: "sample" as const, column: 3 }, { field: "genotype" as const, column: 3 }],
+      [{ field: "embryo" as const, column: 0 }, { field: "genotype" as const, column: 3 }],
+    ]) expect(applyMappingAnswers(header, answers)).toBeNull();
+  });
+
+  it("takes no answer for a complete header, and refuses one", () => {
+    const complete = detectPgtHeader("Sample,SNP,Call")!;
+    expect(applyMappingAnswers(complete, [])).toEqual(planMapping(complete));
+    expect(applyMappingAnswers(complete, [{ field: "genotype", column: 2 }])).toBeNull();
+  });
+
+  it("chooses one of two columns that resolved to the same field and leaves the other unused", () => {
+    const duplicate = detectPgtHeader("Embryo,Chromosome,Position,Genotype,Call")!;
+    expect(applyMappingAnswers(duplicate, [{ field: "genotype", column: 3 }])).toMatchObject({ genotype: 3 });
+    expect(applyMappingAnswers(duplicate, [{ field: "genotype", column: 4 }])).toMatchObject({ genotype: 4 });
   });
 });

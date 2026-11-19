@@ -4,8 +4,9 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { embryoVcfChunks, validateEmbryoVcfChunk } from "./vcf-transport";
 import type { BrowserTransportBinding, ServerTransportBinding } from "./ingest-binding";
-import { addMeasures, analyseEmbryoFragment, embryoOrdinalOutcome, emptyMeasure,
+import { addMeasures, analyseEmbryoFragment, analyseEmbryoTableFragment, embryoOrdinalOutcome, emptyMeasure,
   type EmbryoSplitRow } from "./split-analysis";
+import { embryoTableChunks, embryoTableFragments, validateEmbryoTableChunk } from "./table-transport";
 import { EmbryoSplitFragmentMismatch, runNextEmbryoSplit, type EmbryoCanonicalPartWriter, type EmbryoFragmentRef,
   type EmbryoSplitFragment, type EmbryoSplitRpc } from "./split-worker";
 import type { EmbryoR2WriteTarget, EmbryoStoredFragment } from "./fragment-storage";
@@ -66,7 +67,8 @@ function statedGenotypes(rows: string[], sample: number): Map<string, string | n
 const sha = (bytes: Uint8Array) => createHash("sha256").update(bytes).digest("hex");
 
 /** An in-memory stand-in for the database calls, holding their contract. */
-function fakeDatabase(fragments: { ordinal: number; sequence: number; bytes: Uint8Array }[], embryoCount = 2) {
+function fakeDatabase(fragments: { ordinal: number; sequence: number; bytes: Uint8Array }[], embryoCount = 2,
+  format: "vcf" | "pgt_table" = "vcf") {
   const jobId = randomUUID(), sessionId = randomUUID(), cohortId = randomUUID();
   // The fragment store double, keyed exactly as the reader interface is.
   const objects = new Map<string, Uint8Array>();
@@ -79,7 +81,7 @@ function fakeDatabase(fragments: { ordinal: number; sequence: number; bytes: Uin
   }).sort((a, b) => a.ordinal - b.ordinal || a.sequence - b.sequence);
   const claim = { version: "embryo-split-claim-v1", jobId, attempt: 1,
     claimExpiresAt: new Date(Date.now() + 300_000).toISOString(),
-    deadline: new Date(Date.now() + 3_600_000).toISOString(), sessionId, cohortId, format: "vcf", build: "GRCh38",
+    deadline: new Date(Date.now() + 3_600_000).toISOString(), sessionId, cohortId, format, build: "GRCh38",
     embryoCount, manifestSha256: "a".repeat(64), fragments: listed };
   const state = {
     claim: claim as Record<string, unknown> | null,
@@ -124,7 +126,11 @@ function fakeDatabase(fragments: { ordinal: number; sequence: number; bytes: Uin
           // The database's own refusal: only called alleles of this locus.
           expect(chrom).toBeGreaterThanOrEqual(1); expect(chrom).toBeLessThanOrEqual(22); expect(pos).toBeGreaterThan(0);
           expect(genotype).toMatch(/^[ACGTN]+(\/[ACGTN]+)*$/);
-          for (const allele of genotype.split("/")) expect([ref, ...(alt ?? "").split(",")]).toContain(allele);
+          if (format === "pgt_table") {
+            // A table row: called bases, and no reference or alternate allele claimed.
+            expect([ref, alt]).toEqual([null, null]);
+            expect(genotype).toMatch(/^[ACGT]+(\/[ACGT]+)*$/);
+          } else for (const allele of genotype.split("/")) expect([ref, ...(alt ?? "").split(",")]).toContain(allele);
         }
         list.push({ batch, rows }); state.staged.set(ordinal, list);
         return { status: "staged", batch, rows: rows.length };
@@ -621,5 +627,106 @@ describe("split_cohort_vcf worker protocol (database and Storage doubled)", () =
       .resolves.toMatchObject({ status: "failure_pending", code: "chunk" });
     expect(db.state.written.has("0.1")).toBe(false);
     expect(db.state.outcomes.size).toBe(0);
+  });
+});
+
+/**
+ * ADR 0037: a laboratory table of the same synthetic pair. Each locus's
+ * genotype is written as the letters the fixture itself states, then sent
+ * through the real browser table rewrite and the chunk route's validation,
+ * in two chunks, exactly as an upload would be.
+ */
+function tableOf(rows: string[]): string {
+  const lines = ["#Synthetic laboratory table derived from embryo-pair-grch38.vcf", "Embryo,Chromosome,Position,Genotype"];
+  for (const row of rows) {
+    const f = row.split("\t");
+    const alleles = [f[3], ...f[4].split(",")];
+    for (const sample of [0, 1]) {
+      const gt = f[9 + sample].split(":")[0].split(/[/|]/);
+      lines.push(`SYNTHETIC_EMBRYO_${sample + 1},${f[0]},${f[1]},${gt.includes(".") ? "--" : gt.map((index) => alleles[Number(index)]).join("")}`);
+    }
+  }
+  return `${lines.join("\n")}\n`;
+}
+
+const tableMapping = { complete: true as const, identifier: { field: "embryo" as const, column: 0 }, genotype: 3,
+  locus: { kind: "chrom-pos" as const, chrom: 1, pos: 2 } };
+
+async function tableFragmentsFrom(rows = records): Promise<{ ordinal: number; sequence: number; bytes: Uint8Array }[]> {
+  const halves = [rows.slice(0, rows.length / 2), rows.slice(rows.length / 2)];
+  const out: { ordinal: number; sequence: number; bytes: Uint8Array }[] = [];
+  for (const [sequence, half] of halves.entries()) {
+    const chunks = await Array.fromAsync(embryoTableChunks(new Blob([tableOf(half)]), { ...binding, mapping: tableMapping }));
+    expect(chunks).toHaveLength(1);
+    expect(decoder.decode(chunks[0])).not.toMatch(/SYNTHETIC_EMBRYO|Synthetic laboratory/);
+    const validated = validateEmbryoTableChunk(chunks[0], { ...server, locusKind: "chrom-pos", resolveRsid: () => null });
+    for (const fragment of embryoTableFragments(validated, "GRCh38")) {
+      out.push({ ordinal: fragment.ordinal, sequence, bytes: encoder.encode(fragment.table) });
+    }
+  }
+  return out;
+}
+
+describe("laboratory-table fragments (ADR 0037)", () => {
+  it("reads each embryo's own calls exactly as the table states them, with no reference allele", async () => {
+    const fragments = await tableFragmentsFrom();
+    expect(fragments).toHaveLength(4);
+    for (const sample of [0, 1]) {
+      const rows: EmbryoSplitRow[] = [];
+      let measure = emptyMeasure();
+      for (const fragment of fragments.filter((f) => f.ordinal === sample)) {
+        measure = addMeasures(measure, await analyseEmbryoTableFragment(fragment.bytes, "GRCh38", (row) => { rows.push(row); }));
+      }
+      const stated = statedGenotypes(records, sample);
+      const called = [...stated.values()].filter((genotype) => genotype !== null).length;
+      expect(rows).toHaveLength(called);
+      for (const [chrom, pos, ref, alt, genotype] of rows) {
+        expect([ref, alt]).toEqual([null, null]);
+        expect(genotype.split("/").sort().join("/")).toBe(stated.get(`${chrom}:${pos}`));
+      }
+      const outcome = embryoOrdinalOutcome(measure);
+      expect(outcome.qc).toMatchObject({ sites_expected: records.length, sites_called: called, mean_depth: null });
+      expect(outcome.outcome).toBe("passed");
+    }
+  });
+
+  it("refuses a table fragment for another build, or one changed after it was written", async () => {
+    const [fragment] = await tableFragmentsFrom();
+    await expect(analyseEmbryoTableFragment(fragment.bytes, "GRCh37", () => {})).rejects.toThrow("build_unknown");
+    const changed = encoder.encode(decoder.decode(fragment.bytes).replace(/\n1\t(\d+)\t\.\t/, "\n1\t$1\trsPRIVATE\t"));
+    await expect(analyseEmbryoTableFragment(changed, "GRCh38", () => {})).rejects.toThrow();
+  });
+
+  it("publishes a table attempt through the same worker protocol, staging called bases only", async () => {
+    const db = fakeDatabase(await tableFragmentsFrom(), 2, "pgt_table");
+    const result = await runNextEmbryoSplit({ rpc: db.rpc, readFragment: db.readFragment, writeCanonicalPart: db.writeCanonicalPart, batchSize: 500 });
+    expect(result).toEqual({ status: "published", jobId: db.state.claim!.jobId, passed: 2, failed: 0 });
+    for (const ordinal of [0, 1]) {
+      const stated = statedGenotypes(records, ordinal);
+      expect(db.rowsFor(ordinal)).toHaveLength([...stated.values()].filter((genotype) => genotype !== null).length);
+      expect(db.state.outcomes.get(ordinal)).toMatchObject({ outcome: "passed", qc: { mean_depth: null } });
+    }
+    // Each passing embryo's own table fragments become its canonical parts, byte for byte.
+    expect([...db.state.written.keys()].sort()).toEqual(["0.0", "0.1", "1.0", "1.1"]);
+    for (const fragment of db.listed) {
+      expect(sha(db.state.written.get(`${fragment.ordinal}.${fragment.sequence}`)!)).toBe(fragment.sha256);
+    }
+  });
+
+  it("ends a table attempt as format when a digest-true table fragment no longer validates", async () => {
+    const fragments = await tableFragmentsFrom();
+    fragments[1].bytes = encoder.encode(decoder.decode(fragments[1].bytes).replace("chrom\tpos\trsid\tgenotype", "chrom\tpos\tsex\tgenotype"));
+    const db = fakeDatabase(fragments, 2, "pgt_table");
+    await expect(runNextEmbryoSplit({ rpc: db.rpc, readFragment: db.readFragment, writeCanonicalPart: db.writeCanonicalPart }))
+      .resolves.toMatchObject({ status: "failure_pending", code: "format" });
+  });
+
+  it("never reads a VCF fragment as a table, or a table fragment as a VCF", async () => {
+    const vcf = fakeDatabase(await fragmentsFrom(), 2, "pgt_table");
+    await expect(runNextEmbryoSplit({ rpc: vcf.rpc, readFragment: vcf.readFragment, writeCanonicalPart: vcf.writeCanonicalPart }))
+      .resolves.toMatchObject({ status: "failure_pending", code: "format" });
+    const table = fakeDatabase(await tableFragmentsFrom());
+    await expect(runNextEmbryoSplit({ rpc: table.rpc, readFragment: table.readFragment, writeCanonicalPart: table.writeCanonicalPart }))
+      .resolves.toMatchObject({ status: "failure_pending", code: "format" });
   });
 });

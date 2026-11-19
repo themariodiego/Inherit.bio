@@ -6,16 +6,21 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: () => {} }) }));
 
 import {
+  ADULT_UPLOAD_DERIVED_LIST as DERIVED,
   ADULT_UPLOAD_REVISION_COPY as REVISION,
   HELD_FOR_YOU_COPY as HELD,
   OTHER_ADULT_UPLOAD_COPY as COPY,
+  PATH_B_CHOICES_COPY as CHOICES,
   PATH_B_REQUEST_COPY as REQUEST,
 } from "@/copy/upload/other-adult";
+import { PATH_B_PURPOSES } from "@/lib/uploads/path-b-purpose";
 import { JURISDICTION_AFFIRM, JURISDICTION_SELECT_LABEL } from "@/copy/settings/jurisdiction";
 import { parseArtifactFile } from "@/lib/legal/artifact-file";
 import {
+  ADULT_NON_ACCOUNT_HOLDER_KEEP_DAYS,
   OTHER_ADULT_UPLOAD_STATEMENT_KEYS,
   SUBJECT_ESIGNATURE_STATEMENT_KEYS,
+  adultUploadRevisionRetention,
   artifactStatements,
   artifactWarning,
   type OtherAdultTarget,
@@ -164,8 +169,14 @@ describe("the person's Path B screens", () => {
   });
   const revision = { state: "pending" as const, uploaderName: "Alex Synthetic", label: "Synthetic Relative", fileKind: "vcf" as const,
     addedOn: "2026-09-28T11:00:00Z", deleteBy: "2026-10-28T11:00:00Z", confirmedOn: null };
+  // What adult_upload_revision_retention_v1 answers for a person with no account:
+  // a yes would start the 730-day clock; once confirmed, the clock's fixed end.
+  const KEEP_PENDING = { keepDays: 730 as const, keepUntil: null };
+  const KEEP_CONFIRMED = { keepDays: 730 as const, keepUntil: "2028-09-28T11:00:00Z" };
+  const kept = (state: "pending" | "confirmed") => state === "pending" ? KEEP_PENDING : KEEP_CONFIRMED;
   it("shows one file as the uploader sees it, with three answers and no account", () => {
-    const html = renderToStaticMarkup(createElement(AdultUploadRevisionForm, { review: { nonce: "n".repeat(40), revision } }));
+    const html = renderToStaticMarkup(createElement(AdultUploadRevisionForm, { review: { nonce: "n".repeat(40), revision,
+      retention: KEEP_PENDING } }));
     expect(html).toContain('data-slot="adult-upload-revision"');
     for (const line of [REVISION.heading, REVISION.added("28 September 2026", "vcf"), REVISION.seeHeading,
       REVISION.see("Synthetic Relative"), REVISION.nothingYet, REVISION.deadline("28 October 2026"),
@@ -176,7 +187,7 @@ describe("the person's Path B screens", () => {
   });
   it("shows the anonymous uploader fallback and last-resort contact without identifiers", () => {
     const html = renderToStaticMarkup(createElement(AdultUploadRevisionForm, { review: { nonce: "n".repeat(40),
-      revision: { ...revision, uploaderName: null } } }));
+      revision: { ...revision, uploaderName: null }, retention: KEEP_PENDING } }));
     expect(text(html)).toContain(REVISION.uploader(null));
     expect(text(html)).toContain(REVISION.contact);
     expect(html).not.toContain("Alex Synthetic");
@@ -184,10 +195,53 @@ describe("the person's Path B screens", () => {
   });
   it("after a yes, keeps only the no and the delete", () => {
     const html = renderToStaticMarkup(createElement(AdultUploadRevisionForm, { review: { nonce: "n".repeat(40),
-      revision: { ...revision, state: "confirmed" as const, confirmedOn: "2026-09-29T11:00:00Z" } } }));
+      revision: { ...revision, state: "confirmed" as const, confirmedOn: "2026-09-29T11:00:00Z" }, retention: KEEP_CONFIRMED } }));
     expect(text(html)).toContain(REVISION.confirmedOn("29 September 2026"));
     expect(text(html)).not.toContain(REVISION.confirmButton);
     expect(text(html)).toContain(REVISION.refuseButton);
+  });
+  // The register's prospectiveDerivedCategoryLabels: one closed server list,
+  // the same one the upload-time email renders, and nothing beyond it.
+  const DERIVED_TEXTS = [
+    "A private copy of its DNA readings, put in a standard form. This can be made once you say yes.",
+    "Observed genetic variants, only if you turn this on later.",
+    "Trait reports and estimates, only if you turn this on later.",
+  ];
+  const derivedBlock = (html: string) => {
+    const blocks = [...html.matchAll(/<div data-slot="adult-upload-derived">([\s\S]*?)<\/div>/g)];
+    expect(blocks).toHaveLength(1);
+    return blocks[0]![1]!;
+  };
+  it("is the exact closed list of what can be made, and names no other result", () => {
+    expect(DERIVED.heading).toBe("What can be made from this file");
+    expect(DERIVED.items.map(item => item.category)).toEqual(["standard-copy", "reports.monogenic", "reports.polygenic"]);
+    expect(DERIVED.items.map(item => item.text)).toEqual(DERIVED_TEXTS);
+    expect(DERIVED.closing).toBe("Each of these needs your own Inherit account. You turn on each kind of result by itself. "
+      + "The person who added it sees a result only if you share it with them. Nothing else is made from this file.");
+    // The two results carry the names the person later turns on, one at a time.
+    expect(DERIVED.items[1]!.text.startsWith(`${CHOICES.layers["reports.monogenic"]},`)).toBe(true);
+    expect(DERIVED.items[2]!.text.startsWith(`${CHOICES.layers["reports.polygenic"]},`)).toBe(true);
+    // Ancestry can be chosen but nothing makes it from this file, so it is not listed.
+    expect(PATH_B_PURPOSES.filter(purpose => !DERIVED.items.some(item => item.category === purpose))).toEqual(["ancestry"]);
+    expect(JSON.stringify(DERIVED)).not.toMatch(/ancestry|portrait|health picture|embryo|carrier|copilot/i);
+    // The database's Path B report store holds exactly these two outputs.
+    const reports = fs.readFileSync("supabase/migrations/20260930234000_path_b_queued_reports.sql", "utf8");
+    expect(reports).toContain(" purpose text not null check(purpose in('reports.monogenic','reports.polygenic')),");
+  });
+  it.each([
+    ["pending", revision, REVISION.nothingYet],
+    ["confirmed", { ...revision, state: "confirmed" as const, confirmedOn: "2026-09-29T11:00:00Z" }, REVISION.confirmedOn("29 September 2026")],
+  ] as const)("renders that list on the %s review, after its own line", (_state, shown, line) => {
+    const html = renderToStaticMarkup(createElement(AdultUploadRevisionForm, { review: { nonce: "n".repeat(40), revision: shown,
+      retention: kept(shown.state) } }));
+    const block = derivedBlock(html);
+    expect(block).toContain(`<h2 class="title">${DERIVED.heading}</h2>`);
+    expect([...block.matchAll(/<li data-category="([^"]+)">([^<]*)<\/li>/g)].map(match => [match[1], match[2]]))
+      .toEqual(DERIVED.items.map(item => [item.category, item.text]));
+    expect(block.match(/<li\b/g)).toHaveLength(DERIVED_TEXTS.length);
+    expect(text(block)).toContain(DERIVED.closing);
+    expect(html.indexOf(line)).toBeGreaterThan(-1);
+    expect(html.indexOf(line)).toBeLessThan(html.indexOf('data-slot="adult-upload-derived"'));
   });
   it("leaves the Path A review with its own words: no file is ever added there", () => {
     const html = renderToStaticMarkup(createElement(AdultSubjectReviewForm, { review: { nonce: "n".repeat(40),
@@ -195,5 +249,64 @@ describe("the person's Path B screens", () => {
         bodyMarkdown: "Body.", bodySha256: "a".repeat(64) } } }));
     expect(html).toContain("No genetic data has been shared");
     expect(html).not.toContain(REVISION.heading);
+  });
+
+  // G5.4: retention stated in days, and a contact of last resort, on both
+  // screens. adult.non-account-holder-24mo is exactly 730 days (owner
+  // decision 2026-10-16); the database states it per file, and a person bound
+  // to their own account has no such clock and is not told one.
+  it("states 730 days before a yes, after the 30-day line, only when the database reports that clock", () => {
+    const html = renderToStaticMarkup(createElement(AdultUploadRevisionForm, { review: { nonce: "n".repeat(40), revision,
+      retention: KEEP_PENDING } }));
+    expect(REVISION.keepIfYes(730)).toBe("If you say yes, we keep it for at most 730 days from that day. Then we delete it.");
+    expect(text(html)).toContain(REVISION.keepIfYes(730));
+    expect(html).toContain('data-slot="adult-upload-keep"');
+    expect(html.indexOf(REVISION.deadline("28 October 2026"))).toBeLessThan(html.indexOf(REVISION.keepIfYes(730)));
+    const bound = renderToStaticMarkup(createElement(AdultUploadRevisionForm, { review: { nonce: "n".repeat(40), revision,
+      retention: { keepDays: null, keepUntil: null } } }));
+    expect(bound).not.toContain('data-slot="adult-upload-keep"');
+    expect(text(bound)).not.toContain("730 days");
+    expect(text(bound)).toContain(REVISION.contact);
+  });
+  it("after a yes, states the 730 days and the fixed day the file is deleted", () => {
+    const html = renderToStaticMarkup(createElement(AdultUploadRevisionForm, { review: { nonce: "n".repeat(40),
+      revision: { ...revision, state: "confirmed" as const, confirmedOn: "2026-09-29T11:00:00Z" }, retention: KEEP_CONFIRMED } }));
+    expect(REVISION.keptUntil(730, "28 September 2028"))
+      .toBe("We keep it for at most 730 days from the day you said yes. It is deleted on 28 September 2028.");
+    expect(text(html)).toContain(REVISION.keptUntil(730, "28 September 2028"));
+    expect(text(html)).not.toContain(REVISION.keepIfYes(730));
+    expect(text(html)).toContain(REVISION.contact);
+    const bound = renderToStaticMarkup(createElement(AdultUploadRevisionForm, { review: { nonce: "n".repeat(40),
+      revision: { ...revision, state: "confirmed" as const, confirmedOn: "2026-09-29T11:00:00Z" },
+      retention: { keepDays: null, keepUntil: null } } }));
+    expect(text(bound)).not.toContain("730 days");
+  });
+  it("on the request, states the 30 and 730 days to a person signing with no account, and the contact to everyone", () => {
+    const html = renderToStaticMarkup(createElement(PathBRequestForm, { review }));
+    expect(REQUEST.keep(730)).toBe("Each file they add is deleted after 30 days unless you say yes to it. "
+      + "If you say yes, we keep that file for at most 730 days from that day. Then we delete it.");
+    expect(text(html)).toContain(REQUEST.keep(730));
+    expect(html).toContain('data-slot="path-b-request-keep"');
+    expect(REQUEST.contact).toBe("If the link does not work, or you did not expect this, write to privacy@inherit.bio.");
+    expect(text(html)).toContain(REQUEST.contact);
+    expect(text(html).match(/privacy@inherit\.bio/g)).toHaveLength(1);
+    const account = renderToStaticMarkup(createElement(PathBRequestForm, { review: { ...review, account: { country: "United Kingdom" } } }));
+    expect(account).not.toContain('data-slot="path-b-request-keep"');
+    expect(text(account)).not.toContain("730 days");
+    expect(text(account)).toContain(REQUEST.contact);
+  });
+  it("uses the one number the database, the register and the code share", () => {
+    expect(ADULT_NON_ACCOUNT_HOLDER_KEEP_DAYS).toBe(730);
+    const migration = fs.readFileSync("supabase/migrations/20261016170000_path_b_confirmed_file_retention.sql", "utf8");
+    expect(migration).toContain("create function private.adult_non_account_holder_days_v1()\n"
+      + "returns integer language sql immutable set search_path='' as $$ select 730 $$;");
+    expect(migration).toContain("v_deadline:=new.confirmed_at+make_interval(hours=>24*private.adult_non_account_holder_days_v1());");
+    const register = fs.readFileSync("docs/retention.md", "utf8").split("\n")
+      .find(line => line.startsWith("| `adult.non-account-holder-24mo` |"))!;
+    expect(register).toContain("Exactly 730 days");
+    expect(register).not.toMatch(/24 months/);
+    expect(adultUploadRevisionRetention.safeParse({ keepDays: 731, keepUntil: null }).success).toBe(false);
+    expect(adultUploadRevisionRetention.safeParse({ keepDays: null, keepUntil: "2028-09-28T11:00:00Z" }).success).toBe(false);
+    expect(adultUploadRevisionRetention.safeParse(KEEP_CONFIRMED).success).toBe(true);
   });
 });

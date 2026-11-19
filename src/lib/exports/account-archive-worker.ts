@@ -28,6 +28,7 @@ import {prepareAccountArchivePlan,type AccountArchiveFile,type AccountArchiveSou
 import {prepareAccountCompleteReader,type AccountCompleteRpc} from "./account-complete-reader";
 import {prepareAccountCompleteMembers} from "./account-complete-members";
 import {prepareAccountCompleteFiles} from "./account-complete-files";
+import {accountArchiveScope,type AccountArchiveScope} from "./account-archive-scope";
 import {z} from "zod";
 const unavailable=()=>new Error("account_archive_unavailable");
 
@@ -42,6 +43,10 @@ export async function buildAccountArchive(options:{job:{exportId:string;principa
  inventoryRpc:AccountInventoryRpc;classRpc:AccountClassRpc;auditRpc:AccountAuditRpc;originalRpc:AccountOriginalRpc;
  boundSourceRpc:AccountBoundSourceRpc;graphRpc:AccountRoutedGraphRpc;pathBRpc:AccountPathBRpc;readOriginalRange:NonNullable<Parameters<typeof prepareAccountOriginalSource>[0]["readRange"]>;
  completeRpc?:AccountCompleteRpc;
+ /** The job's target as its due reader selected it. A subject job (one
+  * ordinary subject, subject-export-v1) never reads the complete account
+  * capture, and its consumed context must be exactly that scope. */
+ scope?:AccountArchiveScope;
  statementRuntime?:RequesterStatementRuntime;
  write:ArchiveSegmentationOptions["write"];signal:AbortSignal}){
  const statementRuntime=options.statementRuntime??createRequesterStatementRuntime();
@@ -83,10 +88,12 @@ export async function buildAccountArchive(options:{job:{exportId:string;principa
   if(!attempt||currentAttempt.attemptId!==attempt.attemptId)throw unavailable();
   workingSignal=AbortSignal.any([options.signal,signal]);
   const reference={exportId:options.job.exportId,attemptId:attempt.attemptId,authorityReceipt:options.job.authorityReceipt};
-  const complete=options.completeRpc?await prepareAccountCompleteReader({reference,rpc:options.completeRpc,
+  const scope=options.scope??"account";
+  const complete=scope==="account"&&options.completeRpc?await prepareAccountCompleteReader({reference,rpc:options.completeRpc,
    signal:workingSignal,deadline:options.job.deadline,check,runtime:statementRuntime}):undefined;
   const reader=await createAccountContentReader({reference,deadline:options.job.deadline,memberRpc:memberRpc,
    contentRpc:contentRpc,signal:workingSignal,check});context=reader.context;
+  if(accountArchiveScope(context)!==scope)throw unavailable();
   if(complete&&JSON.stringify(complete.context.legacyCapture.context)!==JSON.stringify(context))throw unavailable();
   const common={reference,context,signal:workingSignal,check};
   const metadata=await prepareAccountArchiveMetadata({...common,files:reader.files,rpc:metadataRpc});

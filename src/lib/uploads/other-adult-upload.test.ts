@@ -34,8 +34,13 @@ import {
   isPathBInvitationPayload,
   otherAdultConsentBody,
   otherAdultTypedNameIsValid,
+  isPathBReviewedDocumentDraftPayload,
+  legalEvidenceSessionBody,
   pathBDraftBody,
   pathBInvitationBody,
+  pathBReviewedDocumentDraftBody,
+  subjectCreatedReceipt,
+  subjectFinalizeBody,
   pathBAccountConfirmBody,
   pathBSubjectConfirmBody,
 } from "./other-adult-upload";
@@ -147,10 +152,58 @@ describe("the Path B draft and request bodies", () => {
     expect(parsed.success && parsed.data.contactEmail).toBe("relative@e2e.local");
     expect(isPathBDraftPayload(draft)).toBe(true);
     expect(isPathBDraftPayload({ ...draft, adultFlow: "path-a-own-account" })).toBe(false);
+    // 2026-10-16 (G2.1): path-b-reviewed-document is now built, under its own
+    // closed body (pathBReviewedDocumentDraftBody, below). This e-signature
+    // body still refuses it, so neither flow can be read as the other.
     for (const patch of [{ kind: "other_adult" }, { adultFlow: "path-b-reviewed-document" }, { displayName: "A" },
       { displayName: "Bad\u0007Name" }, { dateOfBirth: "05/05/1980" }, { contactEmail: "not-an-address" },
       { note: "hello" }, { ownerId: accountId }]) {
       expect(pathBDraftBody.safeParse({ ...draft, ...patch }).success).toBe(false);
+    }
+  });
+  it("accepts the reviewed-document body under its own closed schema, and only that flow", () => {
+    const reviewed = { ...draft, adultFlow: "path-b-reviewed-document" };
+    const parsed = pathBReviewedDocumentDraftBody.safeParse(reviewed);
+    expect(parsed.success && parsed.data.contactEmail).toBe("relative@e2e.local");
+    expect(isPathBReviewedDocumentDraftPayload(reviewed)).toBe(true);
+    expect(isPathBReviewedDocumentDraftPayload(draft)).toBe(false);
+    expect(isPathBDraftPayload(reviewed)).toBe(false);
+    for (const patch of [{ adultFlow: "path-b-subject-esignature" }, { adultFlow: "path-a-own-account" },
+      { kind: "other_adult" }, { displayName: "A" }, { dateOfBirth: "05/05/1980" }, { contactEmail: "not-an-address" },
+      { evidenceKind: "uploaded_document" }, { documentId: subjectId }, { approved: true }, { ownerId: accountId }]) {
+      expect(pathBReviewedDocumentDraftBody.safeParse({ ...reviewed, ...patch }).success).toBe(false);
+    }
+  });
+  it("finalizes with closed-subject-finalize-v1 only, and receipts only subject-created-v1", () => {
+    const body = { subjectDraftId: subjectId, permissionEvidenceDocumentId: recordId, legalReviewId: requestId, nonce: "n" };
+    expect(subjectFinalizeBody.safeParse(body).success).toBe(true);
+    for (const patch of [{ contactEmail: "relative@e2e.local" }, { kind: "adult" }, { approved: true },
+      { subjectDraftId: "not-a-uuid" }, { nonce: "" }, { reviewer: accountId }]) {
+      expect(subjectFinalizeBody.safeParse({ ...body, ...patch }).success).toBe(false);
+    }
+    const { legalReviewId: _review, ...withoutReview } = body;
+    expect(_review).toBe(requestId);
+    expect(subjectFinalizeBody.safeParse(withoutReview).success).toBe(false);
+    expect(subjectCreatedReceipt.safeParse({ status: "received", next: "awaiting_subject_confirmation" }).success).toBe(true);
+    for (const receipt of [{ status: "received", next: "awaiting_subject_confirmation", subjectId },
+      { status: "barred", next: "awaiting_subject_confirmation" }, { status: "received", next: "upload" }]) {
+      expect(subjectCreatedReceipt.safeParse(receipt).success).toBe(false);
+    }
+  });
+  it("opens evidence sessions only from the three closed bodies, refusing every forbidden field", () => {
+    const sha256 = "a".repeat(64);
+    const adult = { documentKind: "adult-signed-permission", subjectDraftId: subjectId, mediaType: "application/pdf",
+      sizeBytes: 1000, sha256 };
+    expect(legalEvidenceSessionBody.safeParse(adult).success).toBe(true);
+    const { subjectDraftId: _draft, ...withoutDraft } = adult;
+    expect(_draft).toBe(subjectId);
+    expect(legalEvidenceSessionBody.safeParse({ ...withoutDraft, documentKind: "parent-death-certificate",
+      cohortDraftId: subjectId }).success).toBe(true);
+    for (const patch of [{ bucket: "legal-evidence" }, { objectPath: "x" }, { filename: "a.pdf" }, { ownerId: accountId },
+      { reviewer: accountId }, { approved: true }, { retentionDeadline: "2030-01-01" }, { mediaType: "text/plain" },
+      { sizeBytes: 0 }, { sizeBytes: 20_000_001 }, { sha256: "A".repeat(64) }, { documentKind: "future-photo-identity" },
+      { cohortDraftId: subjectId }]) {
+      expect(legalEvidenceSessionBody.safeParse({ ...adult, ...patch }).success).toBe(false);
     }
   });
   it("checks 18 or older on the UTC calendar", () => {

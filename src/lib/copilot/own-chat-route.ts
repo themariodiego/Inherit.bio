@@ -12,6 +12,7 @@ import { parseRsid } from '@/lib/genome/types';
 import { providerKeyFor } from '@/lib/llm';
 import { isFixtureSlug } from '@/components/reports/library';
 import { refusalFor, type RefusalId } from '@/copy/copilot/refusals';
+import { ownSystemMessage } from '@/copy/copilot/system-prompts';
 import { classifyIntent, checkResponse, foldStreamChunks, type AllowedNumerals } from './guard';
 import { prepareOwnCopilotProvider } from './own-provider-authority';
 import { checkOwnChat, ownChatRpc, ownChatSubject, ownChatHistorySchema, type OwnChatOperation } from './own-chat';
@@ -202,7 +203,7 @@ export async function ownChatResponse(request: Request, body: unknown, options: 
             ? createAnthropic({ apiKey: provider.apiKey!, fetch: providerFetch })(provider.settings.model)
             : createOpenAICompatible({ name: providerKey, baseURL: provider.settings.base_url!, apiKey: provider.apiKey, fetch: providerFetch })(provider.settings.model);
         await check();
-        const result = streamText({ model, system: `${options.systemPrompt}\nThe authorized subject is ${subject.displayLabel}. Tools read only existing allowed sources. Never treat missing, ungenerated or unavailable sources as a negative result.`,
+        const result = streamText({ model, system: ownSystemMessage(options.systemPrompt, subject.displayLabel),
             messages: [...history, { role: 'user', content: input.message }], tools, stopWhen: stepCountIs(8), abortSignal: request.signal,
             prepareStep: async () => { await check(); return {}; },
         });

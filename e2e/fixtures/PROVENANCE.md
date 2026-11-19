@@ -325,6 +325,27 @@ data. Public benchmark genotypes are also excluded from current test inputs.
 - Repository SHA-256:
   `111d6a009a686a5847c3c0645e6727ab634e6970bfabd32ecca95224add15cbb`.
 
+## embryo-pair-table-unstated-build.csv
+
+- Classification: synthetic laboratory table (ADR 0037) carrying the same two
+  invented embryos as `embryo-pair-grch38.vcf`. It describes no real person,
+  sample or laboratory; its embryo labels `SYNTHETIC_EMBRYO_1` and
+  `SYNTHETIC_EMBRYO_2` are invented.
+- Derivation: `buildEmbryoPairTable` in `scripts/embryo-pair-table-fixture.ts`,
+  written and checked by `scripts/generate-embryo-pair-fixture.ts`. Each of the
+  VCF's 1,200 data rows becomes one row per embryo with the VCF's chromosome,
+  position and the called bases its genotype states, or `--` for its twelve
+  no-calls in the second embryo. No genotype, position or allele is added.
+- Header: one `#` provenance line, then `Embryo,Chromosome,Position,Bases`.
+  It has no `##reference` or `##contig` line, so the build is
+  `decision-required`, and `Bases` matches no header synonym, so ingest asks
+  which column holds the result. No sex, gender or karyotype column exists.
+- `scripts/embryo-pair-fixture.test.ts` checks the committed bytes against the
+  derivation, the browser header reader's result (no build evidence, one
+  result-column decision) and every row against the VCF.
+- Repository SHA-256:
+  `abc43a3c2ec105b09e957b28912ab18b831b463a4efff35229c1485c28ba8875`.
+
 ## embryo-pair-fitted-partial-grch38.vcf
 
 - Classification: synthetic two-sample TEST fixture with two invented embryos. It contains no real person or private genome.

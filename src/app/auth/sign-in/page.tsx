@@ -71,13 +71,13 @@ function SignInInner() {
       </Button>
       <div className="flex flex-col items-center gap-1 border-t border-line pt-4 text-center text-sm text-ink-muted">
         <p>
-          <Link href="/auth/forgot-password" className="link-target quiet-link">
+          <Link href="/auth/forgot-password" prefetch={false} className="link-target quiet-link">
             Forgot your password?
           </Link>
         </p>
         <p className="py-2">
           New here?{" "}
-          <Link href="/auth/sign-up" className="quiet-link">
+          <Link href="/auth/sign-up" prefetch={false} className="quiet-link">
             Create an account
           </Link>
         </p>

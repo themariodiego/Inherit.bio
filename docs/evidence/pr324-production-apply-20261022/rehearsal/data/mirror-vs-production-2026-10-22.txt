@@ -1,0 +1,11 @@
+extensions: equal (6)
+functions: equal (1245)
+schema_acls: equal (2)
+sequences: equal (8)
+storage_buckets: equal (3)
+storage_policies: equal (1)
+tables: equal (251)
+types: equal (5)
+views: equal (0)
+summary: equal
+RESULT EQUAL

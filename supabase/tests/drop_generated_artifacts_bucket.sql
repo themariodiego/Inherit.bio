@@ -8,8 +8,10 @@ select no_plan();
 -- anything is there, so on a fresh database this is its whole effect.
 
 select is((select count(*) from storage.buckets where id='generated-artifacts'),0::bigint,'the generated-artifacts bucket is gone');
-select set_eq('select id from storage.buckets',array['genomes','exports','future-person-identity'],
- 'the exact surviving buckets are genomes, exports and private claim identity');
+-- 20261016190000_path_b_reviewed_document.sql creates the declared private
+-- legal-evidence bucket (storage.legal-evidence-v1); it is the one addition.
+select set_eq('select id from storage.buckets',array['genomes','exports','future-person-identity','legal-evidence'],
+ 'the exact surviving buckets are genomes, exports, private claim identity and private legal evidence');
 select ok((select not public and file_size_limit=20000028
  and allowed_mime_types=array['application/octet-stream'] from storage.buckets
  where id='future-person-identity'),'claim identity stays private with its exact sealed-byte limit');

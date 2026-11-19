@@ -319,7 +319,52 @@ export const STAGE_READ_FAILED_STATUS = "Inherit could not read this upload. Loa
 
 export const UPLOAD_STOPPED_SENTENCE = "The upload stopped. No results are shown. Inherit will clear this attempt.";
 
-export const FILE_FORMAT_BODY = "For now, choose one VCF file with at least two embryos. Other file types cannot be added here yet.";
+export const FILE_FORMAT_BODY = "Choose one VCF file, or one table from your laboratory, with at least two embryos.";
+
+/**
+ * A laboratory table's column question (ADR 0037). The answer is sent as a
+ * column number; the column names shown beside it are read on this device.
+ */
+export const MAPPING_COLUMNS_HEADING = "Which column is which?";
+
+export const MAPPING_COLUMNS_LEDE =
+  "Inherit could not tell which column holds each item. Choose one column for each.";
+
+/** One question per item the table left unclear, keyed by its canonical field. */
+export const MAPPING_FIELD_QUESTIONS = {
+  sample: "Which column names each embryo?",
+  embryo: "Which column names each embryo?",
+  rsid: "Which column holds the marker name?",
+  genotype: "Which column holds the result?",
+  chrom: "Which column holds the chromosome?",
+  pos: "Which column holds the position?",
+} as const;
+
+export function mappingColumnOption(columnIndex: number, label: string): string {
+  const name = `${label}`.trim();
+  return name === "" ? `Column ${columnIndex + 1}` : `Column ${columnIndex + 1}: ${name}`;
+}
+
+export const MAPPING_CHOOSE_OPTION = "Choose a column";
+
+export const MAPPING_COLUMNS_BUTTON = "Use these choices";
+
+/** The build question (register copy ids upload.build.question, .grch37, .grch38, .unknown). */
+export const BUILD_QUESTION_HEADING = "Which genome version does this file use?";
+
+export const BUILD_QUESTION_LEDE = "The file does not say. Your laboratory can tell you.";
+
+export const BUILD_OPTION_GRCH37 = "GRCh37";
+
+export const BUILD_OPTION_GRCH38 = "GRCh38";
+
+export const BUILD_OPTION_UNKNOWN = "I don’t know";
+
+export const BUILD_UNKNOWN_NOTE = "If you choose “I don’t know”, the upload ends and nothing is kept.";
+
+/** A table whose columns need more than four choices. Nothing was sent. */
+export const TABLE_UNMAPPED_STATUS =
+  "Inherit could not tell which column is which in this table. Ask the clinic that tested the embryos for a table where each column is named.";
 
 export const ANALYSIS_PERMISSION_HEADING = "Agree to see results";
 export const ANALYSIS_PERMISSION_BUTTON = "Agree";

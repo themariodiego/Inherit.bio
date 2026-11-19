@@ -78,7 +78,7 @@ export default function LandingPage() {
           </p>
           <div className="rise mt-10 flex flex-wrap gap-3" style={stagger(4)}>
             <Button asChild size="lg">
-              <Link href="/auth/sign-up">Start with your raw data</Link>
+              <Link href="/auth/sign-up" prefetch={false}>Start with your raw data</Link>
             </Button>
             <Button asChild variant="outline" size="lg">
               <Link href={route("marketing.providers")}>Find a sequencing provider</Link>

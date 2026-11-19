@@ -441,16 +441,31 @@ select is((select count(*) from public.purpose_grants where target_id=pg_temp.si
  'no analytic purpose exists for it');
 -- Only these reviewed lifecycle functions name the held table. The Path B
 -- normalization/read gates inspect current source evidence without granting
--- browser access to the held table or returning its raw descriptor.
+-- browser access to the held table or returning its raw descriptor. The
+-- one-record class inventory (20261016196000_subject_export.sql) counts the
+-- record's own held uploads the way the account inventory counts them. The
+-- closed account bind (20261016207000_adult_subject_bind.sql) refuses while a
+-- file is pending and moves confirmed files to the new binding revision. The
+-- subject transfer (20261016221000_subject_transfer.sql) detaches each
+-- confirmed revision into the person's file, and its relocation retirement
+-- marks the revision's held working row deleted once the old object is gone.
 select is((select string_agg(n.nspname||'.'||p.proname,', ' order by n.nspname,p.proname)
  from pg_proc p join pg_namespace n on n.oid=p.pronamespace
  where n.nspname in ('public','private') and p.prosrc like '%other_adult_held_uploads%'),
  case when to_regprocedure('private.account_archive_complete_class_census_v1(jsonb,jsonb,jsonb)') is null then ''
   else 'private.account_archive_complete_class_census_v1, private.account_archive_complete_class_kinds_v1, private.account_archive_complete_source_rows_v1, private.account_archive_legacy_classes_v1, ' end ||
  'private.adult_upload_mail_current_v1, private.adult_upload_revision_session_v1, ' || case when to_regprocedure('private.assert_account_path_b_deletion_supported_v1(uuid)') is null
-   then '' else 'private.assert_account_path_b_deletion_supported_v1, ' end || 'private.begin_own_upload_finalization_v2, private.complete_own_upload_finalization_v1, private.delete_path_b_subject_v1, private.end_other_adult_held_upload_v1, private.enqueue_path_b_normalization_v1, ' || case when to_regprocedure('private.export_account_class_inventory_v1(uuid,jsonb)') is null
-   then '' else 'private.export_account_class_inventory_v1, ' end || case when to_regprocedure('private.export_account_path_b_snapshot_v1(jsonb,uuid)') is null then '' else 'private.export_account_path_b_snapshot_v1, ' end || 'private.issue_other_adult_held_upload_v1, private.other_adult_upload_targets_v1, private.own_upload_finalization_v1, private.path_b_normalization_authority_v1, private.path_b_normalization_v1, private.path_b_result_read_v1, private.subject_held_files_v1, ' || case when to_regprocedure('public.activate_rights_session_before_keyless_objection_v1(text,text,text)') is null
-   then 'public.activate_rights_session_v1' else 'public.activate_rights_session_before_keyless_objection_v1' end || ', public.expire_due_other_adult_held_uploads_v1, public.read_adult_upload_revision_v1, public.respond_adult_upload_revision_v1','the held table is named only by the exact reviewed lifecycle functions');
+   then '' else 'private.assert_account_path_b_deletion_supported_v1, ' end || 'private.begin_own_upload_finalization_v2, private.complete_own_upload_finalization_v1, ' || case when to_regprocedure('private.delete_path_b_subject_for_route_v1(uuid,text)') is null
+   then '' else 'private.delete_path_b_subject_for_route_v1, ' end || 'private.delete_path_b_subject_v1, private.end_other_adult_held_upload_v1, private.enqueue_path_b_normalization_v1, ' || case when to_regprocedure('private.export_account_class_inventory_v1(uuid,jsonb)') is null
+   then '' else 'private.export_account_class_inventory_v1, ' end || case when to_regprocedure('private.export_account_path_b_snapshot_v1(jsonb,uuid)') is null then '' else 'private.export_account_path_b_snapshot_v1, ' end || case when to_regprocedure('private.export_subject_class_inventory_v1(uuid,jsonb)') is null
+   then '' else 'private.export_subject_class_inventory_v1, ' end || 'private.issue_other_adult_held_upload_v1, private.other_adult_upload_targets_v1, private.own_upload_finalization_v1, private.path_b_normalization_authority_v1, private.path_b_normalization_v1, private.path_b_result_read_v1, ' || case when to_regprocedure('private.purge_path_a_subject_v1(uuid,uuid)') is null
+   then '' else 'private.purge_path_a_subject_v1, ' end || 'private.subject_held_files_v1, ' || case when to_regprocedure('private.transfer_subject_v1(uuid,uuid,uuid,text,timestamptz)') is null
+   then '' else 'private.transfer_subject_v1, ' end || case when to_regprocedure('public.activate_rights_session_before_keyless_objection_v1(text,text,text)') is null
+   then 'public.activate_rights_session_v1' else 'public.activate_rights_session_before_keyless_objection_v1' end || case when to_regprocedure('public.adult_upload_revision_retention_v1(text)') is null
+   then '' else ', public.adult_upload_revision_retention_v1' end || case when to_regprocedure('public.bind_adult_subject_account_v1(text,text,uuid,uuid,boolean)') is null
+   then '' else ', public.bind_adult_subject_account_v1' end || ', public.expire_due_other_adult_held_uploads_v1' || case when to_regprocedure('public.expire_due_path_b_confirmed_files_v1()') is null
+   then '' else ', public.expire_due_path_b_confirmed_files_v1' end || case when to_regprocedure('public.finish_subject_transfer_retirement_v1(uuid,text,boolean)') is null
+   then '' else ', public.finish_subject_transfer_retirement_v1' end || ', public.read_adult_upload_revision_v1, public.respond_adult_upload_revision_v1','the held table is named only by the exact reviewed lifecycle functions');
 -- Four reviewed complete-account helpers inspect the held source only for
 -- internal whole-source comparison/excluded census. No API may execute them.
 select ok(to_regprocedure(x.signature) is null or (select md5(p.prosrc)=x.body_md5
@@ -488,7 +503,7 @@ select ok((select md5(prosrc)='7c176e100123ecbdf9aedd8ee41b0539' from pg_proc
        where oid=coalesce(to_regprocedure('public.activate_rights_before_appeal_information_v1(text,text,text)'),
         to_regprocedure('public.activate_rights_session_v1(text,text,text)')))
       and (to_regprocedure('public.activate_rights_before_appeal_information_v1(text,text,text)') is null
-       or ((select md5(prosrc)='b9dcb56fbe06146e7b55e98f5f68a25b' from pg_proc
+       or ((select md5(prosrc)='f4c47723ec1c65454514a5b8d08ec0e0' from pg_proc
         where oid='public.activate_rights_session_v1(text,text,text)'::regprocedure)
         and not exists(select 1 from unnest(array['anon','authenticated','inherit_upload_only','service_role'])r
          where has_function_privilege(r,to_regprocedure('public.activate_rights_before_appeal_information_v1(text,text,text)'),'execute'))))
@@ -498,8 +513,10 @@ select ok((select md5(prosrc)='7c176e100123ecbdf9aedd8ee41b0539' from pg_proc
         'public.activate_rights_before_appeal_notice_v1(text,text,text)'])f
        where has_function_privilege(r,f,'execute')))))),
  'the exact held, keyless, evidence, notice and information bodies form the reviewed service door; every preserved delegate remains API-denied');
+-- 20261016190000_path_b_reviewed_document.sql extends this exact helper to the
+-- reviewed-document flow's graph; the pin follows the reviewed body.
 select ok(to_regprocedure('private.assert_account_path_b_deletion_supported_v1(uuid)') is null
- or ((select md5(prosrc)='6382fbb06d5525dc983806ecefebb629' from pg_proc
+ or ((select md5(prosrc)='cd6a5921924d50f1857ac8d8b545b30d' from pg_proc
     where oid=to_regprocedure('private.assert_account_path_b_deletion_supported_v1(uuid)'))
    and not exists(select 1 from unnest(array['anon','authenticated','inherit_upload_only','service_role'])r
     where has_function_privilege(r,to_regprocedure('private.assert_account_path_b_deletion_supported_v1(uuid)'),'execute'))),
@@ -511,6 +528,13 @@ select ok(to_regprocedure('private.export_account_class_inventory_v1(uuid,jsonb)
   and not exists(select 1 from unnest(array['anon','authenticated','inherit_upload_only','service_role'])r
    where has_function_privilege(r,to_regprocedure('private.export_account_class_inventory_v1(uuid,jsonb)'),'execute'))),
  'only the exact installed account class inventory may inspect held custody, behind every API denial');
+select ok(to_regprocedure('private.export_subject_class_inventory_v1(uuid,jsonb)') is null
+ or ((select md5(prosrc)='355f419486531042756e6e47e3f573dc' and prosecdef and proconfig=array['search_path=""','lock_timeout=250ms']::text[]
+  and proowner=(select oid from pg_roles where rolname='postgres') from pg_proc
+  where oid=to_regprocedure('private.export_subject_class_inventory_v1(uuid,jsonb)'))
+  and not exists(select 1 from unnest(array['anon','authenticated','inherit_upload_only','service_role'])r
+   where has_function_privilege(r,to_regprocedure('private.export_subject_class_inventory_v1(uuid,jsonb)'),'execute'))),
+ 'only the exact installed one-record class inventory may inspect the record''s held custody, behind every API denial');
 select is((select jsonb_agg(distinct k order by k) from jsonb_array_elements(
  public.other_adult_upload_targets_v1('0a5e0000-0000-4000-8000-000000000001','0a5e0000-0000-4000-8000-000000000011',true)) t,
  jsonb_object_keys(t) k),

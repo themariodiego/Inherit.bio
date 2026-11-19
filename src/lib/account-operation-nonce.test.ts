@@ -26,6 +26,15 @@ describe("the rendered account operation nonce (brief X1.5)", () => {
     expect(verifyAccountOperationNonce(nonce, { ...DELETE, accountId: "cccccccc-cccc-4ccc-8ccc-cccccccccccc" }, NOW)).toBeNull();
     expect(verifyAccountOperationNonce(nonce, { ...DELETE, sessionId: "cccccccc-cccc-4ccc-8ccc-cccccccccccc" }, NOW)).toBeNull();
     expect(verifyAccountOperationNonce(nonce, { ...DELETE, operation: "account_delete_cancel" }, NOW)).toBeNull();
+    expect(verifyAccountOperationNonce(nonce, { ...DELETE, operation: "consents_revoke_all" }, NOW)).toBeNull();
+  });
+
+  it("binds the revoke-all operation as its own operation", () => {
+    const revokeAll = { ...DELETE, operation: "consents_revoke_all" as const };
+    const nonce = mintAccountOperationNonce(revokeAll, NOW);
+    expect(verifyAccountOperationNonce(nonce, revokeAll, NOW)?.nonceHash).toBe(hashOperationNonce(nonce));
+    expect(verifyAccountOperationNonce(nonce, DELETE, NOW)).toBeNull();
+    expect(() => mintAccountOperationNonce({ ...DELETE, operation: "consents_grant" as never }, NOW)).toThrow();
   });
 
   it("carries no identity: the account and session appear nowhere in it", () => {
