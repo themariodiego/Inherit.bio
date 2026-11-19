@@ -27,7 +27,7 @@ const AUTH_RAW = [
     user_agent: "Mozilla/5.0", traits: { provider: "email" } }, level: "info", msg: "audit_event", time: "t" }),
   auth(5, { component: "api", method: "DELETE", path: `/admin/users/${userId}`, status: 500, error_code: "unexpected_failure",
     error: `ERROR: update or delete on table "users" violates foreign key constraint; Key (email)=(${email})` }),
-  auth(6, { component: "api", method: "GET", path: `/verify?token=${refresh}&type=recovery&redirect_to=http://x/?pw=${password}`, status: 303 }),
+  auth(6, { component: "api", method: "GET", path: `/verify?token=${refresh}&type=recovery&redirect_to=/next&pw=${password}`, status: 303 }),
   auth(7, { level: "error", component: "api", msg: `refresh token ${refresh} reuse detected for ${email}` }),
   auth(8, { level: "info", msg: "GoTrue API started on: 0.0.0.0:9999" }),
   "not a docker-stamped line",

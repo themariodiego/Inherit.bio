@@ -5818,3 +5818,41 @@ code". Chosen: "Use the register's code".
 `api.file-delete`'s cross-origin refusal answers 403 `request_forbidden`, as
 `authenticated-mutation-v1` says. Both sentences already exist; no new wording
 is written.
+
+## 2026-11-19 — Correction: Copilot for an adult's own record is shelved
+
+Owner decision (clickable chat answer, "Shelve it"), after a correction. The
+entry "G8.5: Copilot for an adult's own record is built" rested on a premise
+the session gave the owner and got wrong: that an invited adult gets a
+not-found page when asking Copilot about their own results. The owner was told
+so and asked again. As put to the owner: after accepting an invitation the
+person's file sits on their main record, and Copilot already works for them
+there; the not-found page is only for a second, empty record that no screen
+links to; the builder built what the register describes anyway, with no
+visible effect, changes to three production database functions, and no way to
+reach it until a file can be uploaded to that second record. What should
+happen to that work? Offered: "Shelve it", "Merge it anyway", "Build the
+missing screen too". Chosen: "Shelve it".
+
+The work is not merged and not shipped. It is saved, unapplied, in
+`docs/evidence/own-adult-copilot-shelved-20261119/`. The person's own Copilot
+works on their main record (`/copilot/me`). The register's `own-subject` case
+for a second record stays unbuilt, and the difference is recorded in the G8.5
+row; it can be picked up if a second-record upload is ever built.
+
+## 2026-11-19 — A brief failure of the sign-in service is not treated as signed out
+
+Owner decision (clickable chat answer, "Retry, then the error page"). Asked:
+when Inherit's sign-in service fails for a moment (not when it says the person
+is not signed in), a signed-in person is sent to the sign-in page, or shown
+"not found", as if they had been signed out; their session is still valid and
+reloading usually works; this is the most likely cause of the test that fails
+now and then on CI, though that is not proven yet. What should a signed-in
+person see in that moment? Offered: "Retry, then the error page", "Keep it as
+it is", "Wait for proof first". Chosen: "Retry, then the error page".
+
+The server checks once more after a short pause. If the check still fails, the
+person sees the existing "This page did not load" page with its "Try again"
+button, not the sign-in page. A person who really has no session still goes to
+sign-in. No new wording is written, and no access is granted without a
+successful check.
