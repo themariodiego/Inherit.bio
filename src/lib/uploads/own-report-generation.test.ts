@@ -15,7 +15,7 @@ import { AIMS } from "../genome/admixture";
 import { ownAncestryCapturedContentSchema } from "./own-ancestry-captured-content";
 import { hasEmptyRequestBody } from "../empty-request-body";
 import { ALL_PRS_SCORES } from "../genome/prs-data";
-import { NEANDERTHAL_SITES } from "../genome/neanderthal";
+import { NEANDERTHAL_SITES, neanderthalLoci } from "../genome/neanderthal";
 import { NEANDERTHAL_PANEL } from "../genome/neanderthal-panel";
 
 const account = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", session = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
@@ -54,6 +54,9 @@ async function rpc(_name: string, args: { p_operation: string; p_purpose: string
 }
 beforeEach(() => {
   vi.stubEnv("BYOK_ENCRYPTION_KEY", Buffer.alloc(32, 7).toString("base64"));
+  // Every case below runs in production (the Neanderthal estimate off) unless
+  // it sets the TEST-LOCAL flag itself; the process environment never decides.
+  vi.stubEnv("INHERIT_TEST_JURISDICTION", "");
   ancestryFileType = "vcf"; prepared = false;
   vi.resetAllMocks(); selected = new Set(["reports.polygenic"]); finished = new Set();
   mocks.profile.mockResolvedValue({ data: { mail_contact_revision: 1 }, error: null });
@@ -181,6 +184,39 @@ describe("independent synchronous own reports", () => {
       panel: { id: "aims-hgdp-tgp-168", version: "hgdp-1kg-v3.1.2-cap30-168-v1", minimumMarkers: 168 },
     });
     expect(completed.ancestry.panelPositions.noCall).toBe(1);
+    expect(mocks.rpc.mock.calls.some(([, a]) => a.p_operation.startsWith("read-"))).toBe(false);
+  });
+  it("TEST-LOCAL (flag set): feeds the same prepared observations into revision 5, whose revision-4 half is the production result", async () => {
+    prepared = true; selected = new Set(["ancestry"]); preparedRpc();
+    const marker = AIMS[0], asked: { chrom: number; pos: number }[] = [];
+    mocks.prepared.mockImplementation(async function* (_actor, _source, loci, options) {
+      asked.push(...loci);
+      await options.checkOperation(new AbortController().signal);
+      const observations = loci.some((p: { chrom: number; pos: number }) => p.chrom === marker.chrom && p.pos === marker.pos38)
+        ? [{ sourceLine: 10, call: { file_id: fileId, chrom: marker.chrom, pos: marker.pos38,
+          rsid: null, ref: "A", alt: "C", genotype: "--", usable: false } }] : [];
+      yield { variants: [], observations };
+    });
+    expect((await generateOwnReports(request(), fileId)).status).toBe(200);
+    const production = mocks.rpc.mock.calls.find(([, a]) => a.p_operation === "complete")![1].p_payload.ancestry;
+    expect(production.schemaVersion).toBe(4);
+    const productionLoci = asked.length;
+    finished.clear(); mocks.rpc.mockClear(); vi.stubEnv("INHERIT_TEST_JURISDICTION", "1");
+    expect((await generateOwnReports(request(), fileId)).status).toBe(200);
+    const completed = mocks.rpc.mock.calls.find(([, a]) => a.p_operation === "complete")![1].p_payload;
+    expect(ownAncestryCapturedContentSchema.parse(completed.ancestry)).toMatchObject({
+      schemaVersion: 5, computationRevision: "own-ancestry-content-v5",
+      figureBasis: { shares: { version: 1, basis: "modelled" }, coverage: { version: 1, basis: "observed" } },
+      panel: { id: "aims-hgdp-tgp-168", version: "hgdp-1kg-v3.1.2-cap30-168-v1", minimumMarkers: 168 },
+      neanderthal: { panelSites: NEANDERTHAL_PANEL.siteCount, coveredSites: 0, archaicSites: 0, estimate: null, interval: null },
+    });
+    const revision4Half: Record<string, unknown> = { ...completed.ancestry, schemaVersion: 4, computationRevision: "own-ancestry-content-v4" };
+    delete revision4Half.neanderthal;
+    expect(revision4Half).toEqual(production);
+    expect(completed.ancestry.panelPositions.noCall).toBe(1);
+    // The production loci again, then every panel locus once, from the prepared pages only.
+    expect(asked.slice(productionLoci, 2 * productionLoci)).toEqual(asked.slice(0, productionLoci));
+    expect(asked.slice(2 * productionLoci)).toEqual(neanderthalLoci());
     expect(mocks.rpc.mock.calls.some(([, a]) => a.p_operation.startsWith("read-"))).toBe(false);
   });
 
@@ -518,5 +554,99 @@ describe("Neanderthal estimate: the writer's revision choice", () => {
     const askedNeanderthal = reads.flatMap(read => read[1].p_payload.loci as { chrom: number; pos: number }[])
       .filter(point => NEANDERTHAL_SITES.some(entry => entry.chrom === point.chrom && entry.pos38 === point.pos));
     expect(askedNeanderthal).toHaveLength(NEANDERTHAL_PANEL.siteCount);
+  });
+});
+
+/**
+ * The canonical ancestry cases above, under TEST-LOCAL as well as production.
+ * With the flag set the writer also reads the Neanderthal panel. The database
+ * answers every read with only the rows at the loci it asked for, 1,000 per
+ * page from the offset, so this double does the same; serving one row set to
+ * every read, as `withAncestryRows` does, hands the panel read rows it never
+ * asked for, which the writer refuses (the last case). Each case runs in both
+ * states and proves that revision 5 is the production revision 4 plus the
+ * estimate, and that the only extra reads are the panel's loci, once each,
+ * with the encoding's own operation.
+ */
+describe("TEST-LOCAL (flag set): canonical ancestry keeps its revision-4 half and adds the estimate", () => {
+  beforeEach(() => { selected = new Set(["ancestry"]); });
+  type Locus = { chrom: number; pos: number };
+  const panelKeys = new Set(neanderthalLoci().map(point => `${point.chrom}:${point.pos}`));
+  function withDatabaseRows(rows: Locus[]) {
+    mocks.rpc.mockImplementation(async (name, args) => {
+      if (args.p_purpose !== "ancestry" || !args.p_operation.startsWith("read-")) return rpc(name, args);
+      if (args.p_operation === "read-lineage") return { data: [], error: null };
+      const asked = new Set((args.p_payload.loci as Locus[]).map(point => `${point.chrom}:${point.pos}`));
+      const offset = args.p_payload.offset as number;
+      return { data: rows.filter(row => asked.has(`${row.chrom}:${row.pos}`)).slice(offset, offset + 1000), error: null };
+    });
+  }
+  /** One generation in the given state from an empty journal: its response, completed payload and reads. */
+  async function generateIn(flag: "" | "1") {
+    vi.stubEnv("INHERIT_TEST_JURISDICTION", flag);
+    finished.clear(); mocks.rpc.mockClear();
+    const response = await generateOwnReports(request(), fileId);
+    return { response, payload: ancestryPayload(),
+      reads: mocks.rpc.mock.calls.filter(call => call[1].p_operation.startsWith("read-")).map(call => call[1]) };
+  }
+  const second = { ...ancestryObservation, chrom: AIMS[1].chrom, pos: AIMS[1].pos38, ref: AIMS[1].ref, alt: AIMS[1].alt };
+  const third = { ...ancestryObservation, chrom: AIMS[2].chrom, pos: AIMS[2].pos38, ref: AIMS[2].ref, alt: AIMS[2].alt };
+  it.each([
+    { name: "checked literal VCF observations", fileType: "vcf", operation: "read-observed", rows: [ancestryObservation],
+      shows: { source: { callEncoding: "vcf-literal" }, admixture: { result_state: "partial", result: { markersUsed: 1 }, coverage: 1 / 168 } } },
+    { name: "a checked gVCF source", fileType: "gvcf", operation: "read-observed", rows: [ancestryObservation],
+      shows: { source: { callEncoding: "vcf-literal" } } },
+    ...["array_23andme", "array_ancestry", "array_myheritage", "array_ftdna"].map(fileType => ({ name: `checked ${fileType} variant observations`,
+      fileType, operation: "read-variants", rows: [{ ...ancestryObservation, ref: null, alt: null }], shows: { source: { callEncoding: "array-genotype" } } })),
+    { name: "no-call, filtered and conflicting evidence", fileType: "vcf", operation: "read-observed",
+      rows: [{ ...ancestryObservation, genotype: "--" }, { ...second, usable: false },
+        { ...third, genotype: `${AIMS[2].ref}/${AIMS[2].ref}` }, { ...third, genotype: `${AIMS[2].alt}/${AIMS[2].alt}` }],
+      shows: { panelPositions: { called: 0, missing: 165, noCall: 1, filtered: 1, conflicting: 1, unsupported: 0 } } },
+    { name: "observations paged past 1,000 rows", fileType: "vcf", operation: "read-observed",
+      rows: [...Array(1000).fill(ancestryObservation), { ...ancestryObservation, genotype: `${marker.alt}/${marker.alt}` }],
+      shows: { panelPositions: { conflicting: 1 } } },
+  ])("$name: revision 5 is the production revision 4 plus an estimate, read with the same operation", async ({ fileType, operation, rows, shows }) => {
+    ancestryFileType = fileType; withDatabaseRows(rows);
+    const production = await generateIn("");
+    expect(production.response.status).toBe(200);
+    expect(production.payload.ancestry).toMatchObject({ schemaVersion: 4, ...shows });
+    expect("neanderthal" in production.payload.ancestry).toBe(false);
+    expect(production.reads.some(read => (read.p_payload.loci as Locus[]).some(point => panelKeys.has(`${point.chrom}:${point.pos}`)))).toBe(false);
+
+    const testLocal = await generateIn("1");
+    expect(await testLocal.response.json()).toEqual({ fileId, status: "processed", analysisState: "active" });
+    expect(mocks.templates).not.toHaveBeenCalled();
+    expect(Object.keys(testLocal.payload).sort()).toEqual(["ancestry", "readyMail"]);
+    expect(ownAncestryCapturedContentSchema.parse(testLocal.payload.ancestry)).toMatchObject({
+      schemaVersion: 5, computationRevision: "own-ancestry-content-v5", ...shows });
+    const revision4Half: Record<string, unknown> = { ...testLocal.payload.ancestry, schemaVersion: 4, computationRevision: "own-ancestry-content-v4" };
+    delete revision4Half.neanderthal;
+    expect(revision4Half).toEqual(production.payload.ancestry);
+    // None of these files carries a panel site: the estimate is the not-covered one, and generation still completes.
+    expect(testLocal.payload.ancestry.neanderthal).toMatchObject({ panelSites: NEANDERTHAL_PANEL.siteCount,
+      coveredSites: 0, archaicSites: 0, estimate: null, interval: null });
+    // The production reads first and unchanged, then the whole panel once, in loci of at most 200, one page each.
+    expect(testLocal.reads.slice(0, production.reads.length)).toEqual(production.reads);
+    const panelReads = testLocal.reads.slice(production.reads.length);
+    expect(panelReads.every(read => read.p_operation === operation && read.p_payload.offset === 0
+      && (read.p_payload.loci as Locus[]).length <= 200)).toBe(true);
+    expect(panelReads.flatMap(read => read.p_payload.loci)).toEqual(neanderthalLoci());
+    expect(mocks.rpc.mock.calls.filter(call => call[1].p_operation === "ready")).toHaveLength(1);
+  });
+  it("refuses a panel read answered with a row it did not ask for, and completes nothing", async () => {
+    // The writer's guard on every panel read, here on the Neanderthal one: an
+    // AIMs row returned to a read of panel loci is refused, not counted.
+    mocks.rpc.mockImplementation(async (name, args) => {
+      if (args.p_purpose !== "ancestry" || !args.p_operation.startsWith("read-")) return rpc(name, args);
+      const panelRead = (args.p_payload.loci as Locus[]).some(point => panelKeys.has(`${point.chrom}:${point.pos}`));
+      return { data: panelRead && args.p_payload.offset === 0 ? [ancestryObservation] : [], error: null };
+    });
+    expect(panelKeys.has(`${ancestryObservation.chrom}:${ancestryObservation.pos}`)).toBe(false);
+    expect((await generateIn("")).response.status).toBe(200);
+    const testLocal = await generateIn("1");
+    expect(testLocal.response.status).toBe(503);
+    expect(testLocal.payload).toBeUndefined();
+    expect(mocks.rpc.mock.calls.some(call => call[1].p_operation === "fail")).toBe(true);
+    expect(mocks.rpc.mock.calls.some(call => call[1].p_operation === "ready")).toBe(false);
   });
 });

@@ -1,10 +1,11 @@
-import { beforeEach, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import Page from "./page";
 import { AncestryAbsent } from "@/components/results/ancestry/ancestry-absent";
 import { AncestryRegions } from "@/components/results/ancestry/ancestry-regions";
 import { RegionalAncestryRegions } from "@/components/results/ancestry/regional-ancestry-regions";
 import { LineageCard } from "@/components/results/ancestry/lineage-card";
+import { NeanderthalCard } from "@/components/results/ancestry/neanderthal-card";
 import { InputProvenance } from "@/components/reports/input-provenance";
 import type { OwnReportChoicesPanel } from "@/lib/uploads/own-report-purpose";
 const mocks = vi.hoisted(() => ({ resolve: vi.fn(), own: vi.fn(), shared: vi.fn(), inputs: vi.fn(), count: vi.fn(), preparing: vi.fn(), choices: vi.fn() }));
@@ -23,7 +24,7 @@ vi.mock("@/components/results/ancestry/ancestry-absent", () => ({ AncestryAbsent
 vi.mock("@/components/results/ancestry/ancestry-regions", () => ({ AncestryRegions: vi.fn(() => null) }));
 vi.mock("@/components/results/ancestry/regional-ancestry-regions", () => ({ RegionalAncestryRegions: vi.fn(() => null) }));
 vi.mock("@/components/results/ancestry/lineage-card", () => ({ LineageCard: vi.fn(() => null) }));
-vi.mock("@/components/results/ancestry/neanderthal-card", () => ({ NeanderthalCard: () => null }));
+vi.mock("@/components/results/ancestry/neanderthal-card", () => ({ NeanderthalCard: vi.fn(() => null) }));
 vi.mock("@/components/reports/input-provenance", () => ({ InputProvenance: vi.fn(() => null) }));
 vi.mock("@/components/subjects/subject-bar", () => ({ SubjectBar: () => null }));
 vi.mock("next/navigation", () => ({ notFound: () => { throw new Error("not_found"); }, redirect: () => { throw new Error("gate"); } }));
@@ -44,10 +45,14 @@ function choicesPanel(ancestryGranted: boolean): OwnReportChoicesPanel {
 const lineageProps = () => vi.mocked(LineageCard).mock.calls.map(([card]) => ({
   parent: card.parent, absence: card.absence, reportsHref: card.reportsHref }));
 beforeEach(() => {
+  // Production (the Neanderthal estimate off) unless a case sets the TEST-LOCAL
+  // flag itself; the process environment never decides.
+  vi.stubEnv("INHERIT_TEST_JURISDICTION", "");
   vi.clearAllMocks(); mocks.resolve.mockResolvedValue(context); mocks.count.mockResolvedValue(2); mocks.preparing.mockResolvedValue(false);
   mocks.choices.mockResolvedValue(choicesPanel(true));
   mocks.inputs.mockImplementation(async (_db, _subject, ids: string[]) => ids.map(fileId => ({ fileId, fileType: "vcf", processedAt: null, snapshot: null })));
 });
+afterEach(() => { vi.unstubAllEnvs(); });
 it("preserves own selected-row identity when A disappears and older B survives final confirmation", async () => {
   const a = row(fileA), b = row(fileB);
   mocks.own.mockResolvedValue({ rows: [a, b], confirm: async () => [b] });
@@ -157,4 +162,78 @@ it("withholds only unclassified historical numbers and preserves their record co
   expect(AncestryAbsent).not.toHaveBeenCalled();
   expect(vi.mocked(InputProvenance).mock.calls[0][0]).toMatchObject({ sources: [{ fileId: fileA }] });
   expect(html).toContain("2026-08-28");
+});
+
+/**
+ * The Neanderthal card's inputs, in both states of the TEST-LOCAL flag. The
+ * loader (`loadAncestryResultSnapshot`) always returns a `neanderthal` array:
+ * one row per confirmed revision-5 capture and none for anything older, so a
+ * revision-4 capture or a legacy row reaches the page as `neanderthal: []`
+ * (pinned in `src/lib/ancestry/own-results.test.ts`). These doubles return
+ * that shape.
+ */
+const neanderthalProps = () => vi.mocked(NeanderthalCard).mock.calls.map(([card]) => card);
+const estimateRow = (file_id: string) => ({ file_id, created_at: "2026-10-22T00:01:00Z", panelId: "panel", panelVersion: "panel-v1",
+  panelSites: 3110, coveredSites: 180, archaicSites: 73, estimate: 73 / 180, interval: { low: 0.333, high: 0.461 }, basis: "modelled" as const });
+it("TEST-LOCAL: a historical unclassified record still renders its record context, and the Neanderthal card gets no estimate", async () => {
+  vi.stubEnv("INHERIT_TEST_JURISDICTION", "1");
+  const saved = { ...row(fileA), basis: undefined };
+  mocks.own.mockResolvedValue({ rows: [saved], neanderthal: [], confirm: async () => [saved] });
+  const html = renderToStaticMarkup(await Page(props));
+  expect(html).toContain('data-slot="ancestry-unclassified-result"');
+  expect(html).toContain("Its record does not say how they were made.");
+  expect(AncestryRegions).not.toHaveBeenCalled();
+  expect(AncestryAbsent).not.toHaveBeenCalled();
+  expect(vi.mocked(InputProvenance).mock.calls[0][0]).toMatchObject({ sources: [{ fileId: fileA }] });
+  expect(html).toContain("2026-08-28");
+  expect(neanderthalProps()).toEqual([{ built: true, estimate: null, absence: "nothing-read", reportsHref: "/genome/me/reports" }]);
+});
+it("TEST-LOCAL: the card shows the estimate captured with the confirmed file, and nothing for a withdrawn or other file", async () => {
+  vi.stubEnv("INHERIT_TEST_JURISDICTION", "1");
+  const a = row(fileA);
+  mocks.own.mockResolvedValue({ rows: [a], neanderthal: [estimateRow(fileA)], confirm: async () => [a] });
+  renderToStaticMarkup(await Page(props));
+  expect(neanderthalProps()).toEqual([{ built: true, absence: "nothing-read", reportsHref: "/genome/me/reports", estimate: {
+    subjectId, share: 73 / 180, interval: { low: 0.333, high: 0.461 }, coveredSites: 180, panelSites: 3110, panelVersion: "panel-v1" } }]);
+  // Withdrawn between the read and the final confirmation: no estimate either.
+  vi.mocked(NeanderthalCard).mockClear();
+  mocks.own.mockResolvedValue({ rows: [a], neanderthal: [estimateRow(fileA)], confirm: async () => [] });
+  renderToStaticMarkup(await Page(props));
+  expect(neanderthalProps()).toEqual([{ built: true, estimate: null, absence: "not-generated", reportsHref: "/genome/me/reports" }]);
+  // An estimate captured with a file whose rows are not the ones shown is not shown.
+  vi.mocked(NeanderthalCard).mockClear();
+  mocks.own.mockResolvedValue({ rows: [a], neanderthal: [estimateRow(fileB)], confirm: async () => [a] });
+  renderToStaticMarkup(await Page(props));
+  expect(neanderthalProps()[0]).toMatchObject({ built: true, estimate: null });
+});
+it("production: the card is not built and receives no estimate, even when a revision-5 capture holds one", async () => {
+  const a = row(fileA);
+  mocks.own.mockResolvedValue({ rows: [a], neanderthal: [estimateRow(fileA)], confirm: async () => [a] });
+  renderToStaticMarkup(await Page(props));
+  expect(neanderthalProps()).toEqual([{ built: false, estimate: null, absence: "nothing-read", reportsHref: "/genome/me/reports" }]);
+});
+it("TEST-LOCAL: a Family record never reads or shows the estimate", async () => {
+  vi.stubEnv("INHERIT_TEST_JURISDICTION", "1");
+  mocks.resolve.mockResolvedValue({ ...context, person: { counterpartAccountId: "owner", displayLabel: "Relative" } });
+  const b = row(fileB), source = { fileId: fileB, fileType: "vcf", processedAt: null, snapshot: null };
+  mocks.shared.mockResolvedValue({ rows: [b], confirm: async () => ({ authorized: true, rows: [b], sources: [source], fileCount: 1,
+    preparing: false, confirmationRequired: false, preparedUnavailable: false }) });
+  renderToStaticMarkup(await Page(props));
+  expect(mocks.own).not.toHaveBeenCalled();
+  expect(neanderthalProps()).toEqual([{ built: true, estimate: null, absence: "nothing-read", reportsHref: "/genome/me/reports" }]);
+});
+/** The four ancestry panels' state in each no-result state, in both flag states. What each renders is in `page-panels.test.ts`. */
+it.each([
+  { flag: "", built: false }, { flag: "1", built: true },
+])("every ancestry panel is given the same absence in each no-result state (flag $flag)", async ({ flag, built }) => {
+  vi.stubEnv("INHERIT_TEST_JURISDICTION", flag);
+  mocks.own.mockResolvedValue({ rows: [], neanderthal: [], confirm: async () => [] });
+  for (const [panel, absence] of [[{ kind: "hidden" }, "nothing-read"], [choicesPanel(false), "permission-off"], [choicesPanel(true), "not-generated"]] as const) {
+    vi.mocked(AncestryAbsent).mockClear(); vi.mocked(LineageCard).mockClear(); vi.mocked(NeanderthalCard).mockClear();
+    mocks.choices.mockResolvedValue(panel);
+    renderToStaticMarkup(await Page(props));
+    expect(vi.mocked(AncestryAbsent).mock.calls.map(([regions]) => regions.absence)).toEqual([absence]);
+    expect(lineageProps().map(card => card.absence)).toEqual([absence, absence]);
+    expect(neanderthalProps()).toEqual([{ built, estimate: null, absence, reportsHref: "/genome/me/reports" }]);
+  }
 });

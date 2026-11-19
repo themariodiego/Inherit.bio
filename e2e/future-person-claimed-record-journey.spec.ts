@@ -242,7 +242,7 @@ test("Claimed record without an account: an approved Record Key claim, its captu
           csrf=(await sent).headers()["x-inherit-csrf"]??"";
           const reply=await issued.read("key");expect(reply.status).toBe(201);
           const receipt=JSON.parse(reply.text) as Record<string,unknown>;
-          expect(Object.keys(receipt).sort()).toEqual(["contactMaterialExpiresOn","reverificationBinding","recordRetention","recoveryKey"]);
+          expect(Object.keys(receipt).sort()).toEqual(["contactMaterialExpiresOn","recordRetention","recoveryKey","reverificationBinding"]);
           expect({contactMaterialExpiresOn:receipt.contactMaterialExpiresOn,reverificationBinding:receipt.reverificationBinding,
             recordRetention:receipt.recordRetention}).toEqual({contactMaterialExpiresOn:contactDay,
             reverificationBinding:"retained-until-account-binding-key-rotation-or-claimant-deletion",

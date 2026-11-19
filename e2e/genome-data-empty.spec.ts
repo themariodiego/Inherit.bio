@@ -115,8 +115,14 @@ test("/genome/[subject]/ancestry empty: no file, so every ancestry panel says no
   await page.goto("/genome/me/ancestry");
   await expect(page.locator('[data-slot="ancestry-map"]')).toHaveAttribute("data-mode", "grey");
   await expect(page.locator('[data-slot="nothing-read"]')).toHaveText(NOTHING_READ);
-  // The regions panel and both parent lines each say it for themselves.
-  await expect(page.getByText(NOTHING_READ, { exact: true })).toHaveCount(3);
+  // The regions panel, both parent lines and the Neanderthal card (which this
+  // suite, TEST-LOCAL, renders in the page's state) each say it for
+  // themselves. Each is found by its own identity, so a missing panel fails,
+  // and the page-wide count fails on an extra one. The flag-off set is
+  // rendered in `src/app/(app)/genome/[subject]/ancestry/page-panels.test.ts`.
+  const panels = ['[data-testid="admixture"]', '[data-testid="mtdna"]', '[data-testid="ydna"]', "#neanderthal"];
+  for (const panel of panels) await expect(page.locator(panel).getByText(NOTHING_READ, { exact: true })).toHaveCount(1);
+  await expect(page.getByText(NOTHING_READ, { exact: true })).toHaveCount(panels.length);
   // The two neighbours this account is not in: a file in preparation, and a
   // processed file with Ancestry off. Either would tell someone who has sent
   // nothing that something of theirs is here.

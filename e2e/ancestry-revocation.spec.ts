@@ -68,6 +68,11 @@ const USER = { email: `ancestry-revoke-${RUN_ID}@e2e.local`, password: "e2e-ance
 const ANCESTRY = "/genome/me/ancestry";
 const MIXED_FIXTURE = "e2e/fixtures/aims-mixed-grch38.vcf";
 const LABEL = "Ancestry";
+/** Every ancestry panel by its own identity: the regions, the two parent lines
+ * and the Neanderthal card, which this suite (TEST-LOCAL) renders in the
+ * page's state; `src/app/(app)/genome/[subject]/ancestry/page-panels.test.ts`
+ * renders the same set in both flag states. */
+const ANCESTRY_PANELS = ['[data-testid="admixture"]', '[data-testid="mtdna"]', '[data-testid="ydna"]', "#neanderthal"] as const;
 
 test.beforeAll(async () => {
   await createConfirmedUser(USER.email, USER.password);
@@ -133,19 +138,26 @@ test("/genome/[subject]/ancestry consent-required: revoking ancestry deletes the
   await page.goto(ANCESTRY);
   expect(await page.locator('[data-slot="ancestry-map"][data-mode="shown"]').count(),
     "a revoked result must not still be shown").toBe(0);
-  // Three panels - the regions and the two parent lines below them - and each
-  // says it for itself, so every ancestry output is accounted for rather than
-  // only the first. Counted without waiting, like the check above.
+  // Four panels - the regions, the two parent lines below them and the
+  // Neanderthal card - and each says it for itself, so every ancestry output
+  // is accounted for rather than only the first. Each panel is found by its own
+  // identity, so a missing one fails, and the page-wide count fails on an extra
+  // one. Counted without waiting, like the check above.
+  for (const panel of ANCESTRY_PANELS) {
+    expect(await page.locator(panel).locator('[data-slot="ancestry-off"]').count(),
+      `${panel} says Ancestry is off`).toBe(1);
+  }
   expect(await page.locator('[data-slot="ancestry-off"]').count(),
-    "every ancestry panel says Ancestry is off").toBe(3);
+    "every ancestry panel says Ancestry is off, and nothing else does").toBe(ANCESTRY_PANELS.length);
   // Read the state from the product's own naming of it: the map drops to its
   // grey mode, and every panel carries the off sentence verbatim and a link
   // to this subject's Reports page.
   await expect(page.locator('[data-slot="ancestry-map"]')).toHaveAttribute("data-mode", "grey");
   const off = page.locator('[data-slot="ancestry-off"]');
-  for (let panel = 0; panel < 3; panel += 1) {
-    await expect(off.nth(panel).getByText(ANCESTRY_OFF, { exact: true })).toBeVisible();
-    await expect(off.nth(panel).getByRole("link", { name: ANCESTRY_REPORTS_LINK, exact: true }))
+  for (const panel of ANCESTRY_PANELS) {
+    const said = page.locator(panel).locator('[data-slot="ancestry-off"]');
+    await expect(said.getByText(ANCESTRY_OFF, { exact: true })).toBeVisible();
+    await expect(said.getByRole("link", { name: ANCESTRY_REPORTS_LINK, exact: true }))
       .toHaveAttribute("href", "/genome/me/reports");
   }
   // The no-file sentence would be false here: a file was processed.
@@ -178,12 +190,16 @@ test("/genome/[subject]/ancestry consent-required: revoking ancestry deletes the
   expect((await signed).status()).toBe(201);
   await page.goto(ANCESTRY);
   expect(await ancestryRunCount(fileId), "turning the choice on generates nothing by itself").toBe("0");
+  for (const panel of ANCESTRY_PANELS) {
+    expect(await page.locator(panel).locator('[data-slot="ancestry-not-generated"]').count(),
+      `${panel} says the result follows the generate step`).toBe(1);
+  }
   expect(await page.locator('[data-slot="ancestry-not-generated"]').count(),
-    "every ancestry panel says the result follows the generate step").toBe(3);
-  const notGenerated = page.locator('[data-slot="ancestry-not-generated"]');
-  for (let panel = 0; panel < 3; panel += 1) {
-    await expect(notGenerated.nth(panel).getByText(ANCESTRY_NOT_GENERATED, { exact: true })).toBeVisible();
-    await expect(notGenerated.nth(panel).getByRole("link", { name: ANCESTRY_REPORTS_LINK, exact: true }))
+    "every ancestry panel says the result follows the generate step, and nothing else does").toBe(ANCESTRY_PANELS.length);
+  for (const panel of ANCESTRY_PANELS) {
+    const notGenerated = page.locator(panel).locator('[data-slot="ancestry-not-generated"]');
+    await expect(notGenerated.getByText(ANCESTRY_NOT_GENERATED, { exact: true })).toBeVisible();
+    await expect(notGenerated.getByRole("link", { name: ANCESTRY_REPORTS_LINK, exact: true }))
       .toHaveAttribute("href", "/genome/me/reports");
   }
   await expect(page.locator('[data-slot="ancestry-off"]')).toHaveCount(0);
