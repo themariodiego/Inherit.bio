@@ -9150,6 +9150,24 @@ export type Database = {
         }
         Returns: Json
       }
+      empty_self_subject_with_notice_v1: {
+        Args: {
+          p_account_id: string
+          p_nonce_expires_at: string
+          p_nonce_hash: string
+          p_notice: Json
+          p_session_id: string
+          p_subject_id: string
+        }
+        Returns: Json
+      }
+      self_subject_withdrawal_readiness_v1: {
+        Args: {
+          p_account_id: string
+          p_subject_id: string
+        }
+        Returns: string
+      }
       transfer_subject_v1: {
         Args: {
           p_account_id: string

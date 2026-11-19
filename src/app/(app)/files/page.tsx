@@ -4,6 +4,7 @@ import { OwnUploadEntry } from "@/components/uploads/own-upload-entry";
 import { HeldForYouRows, OtherAdultHeldRows, PathBChoicesSection } from "@/components/uploads/other-adult-upload-section";
 import { AutoRefresh } from "@/components/uploads/auto-refresh";
 import { FileRowActions } from "@/components/uploads/file-row-actions";
+import { OwnUploadWithdrawal } from "@/components/uploads/own-upload-withdrawal";
 import { RecordHead } from "@/components/records/record-head";
 import { Breadcrumbs } from "@/components/site/breadcrumbs";
 import { NAV_LABELS } from "@/copy/navigation";
@@ -14,6 +15,7 @@ import { createClient } from "@/lib/supabase/server";
 import { formatBytes } from "@/lib/limits";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { fileStatusLabel } from "@/lib/uploads/file-status";
+import { prepareOwnUploadWithdrawal } from "@/lib/uploads/own-upload-withdrawal";
 
 const FILES_TITLE = "My files";
 
@@ -34,7 +36,12 @@ export default async function UploadsPage() {
   // subject, read only for its label (round-2 M8).
   const self = user ? await resolveSubjectForAccount(user.id, "me") : null;
 
-  const { data: stats } = await createAdminClient().rpc("processing_time_stats");
+  const [{ data: stats }, ownUpload] = await Promise.all([
+    createAdminClient().rpc("processing_time_stats"),
+    // The withdrawal of the consent to store these files (owner decision of
+    // 19 November 2026); nothing when that consent is not live.
+    prepareOwnUploadWithdrawal(),
+  ]);
   const tier1 = stats?.find((s: { file_tier: number }) => s.file_tier === 1);
 
   const inFlight = (files ?? []).some(
@@ -191,6 +198,8 @@ export default async function UploadsPage() {
       ) : (
         timing
       )}
+
+      <OwnUploadWithdrawal view={ownUpload} />
     </div>
   );
 }

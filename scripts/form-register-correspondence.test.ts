@@ -757,13 +757,19 @@ describe("every client request sends what its register entry declares (G8.5)", (
     // results; the value now comes from the chain, so it is read once: 103
     // requests from the same 89 fetch calls, 74 made by no form (that request
     // is no form's).
-    expect(client.modules).toHaveLength(224);
-    expect(client.modules.filter(file => /^\s*["']use client["']/u.test(readFileSync(file, "utf8")))).toHaveLength(95);
-    expect(client.calls).toHaveLength(103);
-    expect(new Set(client.calls.map(request => `${request.file}:${request.line}`)).size).toBe(89);
+    // 2026-11-19 (owner decision "Withdrawing consent for a person's own DNA
+    // file deletes the files and all made from them"): the withdrawal control
+    // is one "use client" module, and it imports two more, its copy and the
+    // browser half that holds its one fetch (api.subject-delete, no form's):
+    // 227 modules (96 "use client"), 104 requests from 90 fetch calls, 75 made
+    // by no form.
+    expect(client.modules).toHaveLength(227);
+    expect(client.modules.filter(file => /^\s*["']use client["']/u.test(readFileSync(file, "utf8")))).toHaveLength(96);
+    expect(client.calls).toHaveLength(104);
+    expect(new Set(client.calls.map(request => `${request.file}:${request.line}`)).size).toBe(90);
     expect(client.calls.filter(request => request.via === "ai-sdk-default-chat-transport")).toHaveLength(0);
     expect(new Set(actual.requests.map(request => `${request.file}:${request.line}`)).size).toBe(25);
-    expect(client.unformed).toHaveLength(74);
+    expect(client.unformed).toHaveLength(75);
     // Every request a form makes is one of the client's, read once.
     const calls = new Set(client.calls.map(request => `${request.file}:${request.line}`));
     expect(actual.requests.filter(request => !calls.has(`${request.file}:${request.line}`))).toEqual([]);

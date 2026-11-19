@@ -120,6 +120,11 @@ const cohortRestrictionNoticePayload = z.object({ embryoCount }).strict();
 
 const embryoDraftExpiredPayload = z.object({}).strict();
 
+// The confirmation of a withdrawn own-upload consent
+// (20261119150000_own_upload_consent_withdrawal.sql): the moment the database
+// recorded, nothing else.
+const uploadConsentWithdrawnPayload = z.object({ withdrawnAt: z.iso.datetime({ offset: true }) }).strict();
+
 function applicationUrl(path: string): string {
   // Off the hosted deployment an unset NEXT_PUBLIC_APP_URL throws rather than
   // mailing a rights token to someone else's origin. See src/lib/app-origin.ts.
@@ -264,6 +269,9 @@ function parseMail(
   if (templateId === "embryo-draft-expired") {
     embryoDraftExpiredPayload.parse(payload);
     return { id: templateId, payload: {} };
+  }
+  if (templateId === "upload-consent-withdrawn") {
+    return { id: templateId, payload: uploadConsentWithdrawnPayload.parse(payload) };
   }
   throw new Error("mail_template_unknown");
 }

@@ -272,6 +272,28 @@ describe("independent mail queues", () => {
     expect(mocks.submit).toHaveBeenCalledWith("synthetic@example.test", { id, payload }, row.idempotency_key);
     expect(mocks.rpc).toHaveBeenCalledWith("authorize_mail_submission_v1", { p_outbox_id: row.outbox_id, p_attempt_ordinal: 2 });
   });
+  // 20261119150000: the own-upload withdrawal's confirmation carries only the moment it committed.
+  it("sends the strict token-free upload-consent-withdrawn payload, and refuses one with anything more or less", async () => {
+    const payload = { withdrawnAt: "2026-11-19T21:38:54.744129+00:00" };
+    for (const [templatePayload, sent] of [[payload, true], [{ ...payload, subjectId: "forbidden" }, false],
+      [{}, false], [{ withdrawnAt: "yesterday" }, false]] as const) {
+      vi.clearAllMocks();
+      mocks.submit.mockResolvedValue("synthetic-provider-id");
+      let claimed = false;
+      mocks.rpc.mockImplementation(async (name: string) => {
+        if (name === "claim_mail_outbox") {
+          const data = claimed ? [] : [{ ...row, template_id: "upload-consent-withdrawn", template_payload: templatePayload, delivery_token: null }];
+          claimed = true; return { data, error: null };
+        }
+        if (name === "authorize_mail_submission_v1") return { data: true, error: null };
+        if (name === "complete_mail_attempt") return { data: null, error: null };
+        throw new Error(`Unexpected RPC ${name}`);
+      });
+      expect(await (await POST(workerRequest())).json()).toEqual({ status: "complete", outcome: sent ? "completed" : "completed_with_failures" });
+      if (sent) expect(mocks.submit).toHaveBeenCalledWith("synthetic@example.test", { id: "upload-consent-withdrawn", payload }, row.idempotency_key);
+      else expect(mocks.submit).not.toHaveBeenCalled();
+    }
+  });
   it.each(["cancelPath", "exportPath", "contact", "subjectId", "genotype"])("refuses an affected notice with extra %s", async (field) => {
     let claimed = false;
     mocks.rpc.mockImplementation(async (name: string) => {

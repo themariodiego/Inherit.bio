@@ -18,8 +18,8 @@ const resolvers = { registry: noCanonicalRegistry, resolveSeed: () => false, res
 describe("independent production email fixture inventory", () => {
   it("covers all actual named exports and both account-deletion entrypoints", () => {
     const discovered = readEmailInventory(projectRoot), fixtures = emailFixtures(readPublicDigestCatalog(projectRoot));
-    expect(discovered).toHaveLength(20);
-    expect(new Set(discovered.map((e) => e.path)).size).toBe(18);
+    expect(discovered).toHaveLength(21);
+    expect(new Set(discovered.map((e) => e.path)).size).toBe(19);
     expect(discovered).toContainEqual({ path: "src/emails/appeal-evidence.tsx", exportName: "AppealEvidenceEmail" });
     expect(discovered.filter((e) => e.path.endsWith("account-deletion.tsx")).map((e) => e.exportName)).toEqual([
       "AccountDeletionCancelledEmail", "AccountDeletionNoticeEmail",
@@ -51,7 +51,7 @@ describe("independent production email fixture inventory", () => {
   });
   it("expands all current conditional branches and explicitly distinguishes empty digest scope", () => {
     const fixtures = emailFixtures(readPublicDigestCatalog(projectRoot));
-    expect(fixtures).toHaveLength(39);
+    expect(fixtures).toHaveLength(40);
     expect(fixtures.filter((fixture) => fixture.mail.id === "appeal-evidence")).toEqual([
       expect.objectContaining({ entrypoint: "src/emails/appeal-evidence.tsx", exportName: "AppealEvidenceEmail",
         mail: { id: "appeal-evidence", payload: { continueUrl: "https://example.test/fixture#synthetic-appeal" } } }),

@@ -61,6 +61,8 @@ import { FuturePersonOwnerNoticeEmail, type FuturePersonOwnerNoticeProps } from 
 import { InvitationTerminalNoticeEmail, type InvitationTerminalNoticeProps } from "@/emails/invitation-terminal-notice";
 import { AccountDeletionAffectedEmail, AccountDeletionAffectedCancelledEmail,
   type AccountDeletionAffectedProps, type AccountDeletionAffectedCancelledProps } from "@/emails/account-deletion-affected";
+import { UploadConsentWithdrawnEmail, type UploadConsentWithdrawnProps } from "@/emails/upload-consent-withdrawn";
+import { OWN_UPLOAD_WITHDRAWAL_EMAIL_COPY } from "@/copy/upload/withdrawal";
 
 /** Every template id, paired with the props its component renders. */
 interface MailPayloads {
@@ -84,6 +86,7 @@ interface MailPayloads {
   "embryo-draft-expired": EmbryoDraftExpiredProps;
   "embryo-ingest-abandoned": EmbryoIngestAbandonedProps;
   "invitation-terminal-notice": InvitationTerminalNoticeProps;
+  "upload-consent-withdrawn": UploadConsentWithdrawnProps;
 }
 
 export type MailTemplateId = keyof MailPayloads;
@@ -128,6 +131,7 @@ const renderers: {
   "embryo-draft-expired": () => createElement(EmbryoDraftExpiredEmail),
   "embryo-ingest-abandoned": () => createElement(EmbryoIngestAbandonedEmail),
   "invitation-terminal-notice": (payload) => createElement(InvitationTerminalNoticeEmail, payload),
+  "upload-consent-withdrawn": (payload) => createElement(UploadConsentWithdrawnEmail, payload),
 };
 
 // Subjects are fixed per template. The Record Key addendum is the one
@@ -152,6 +156,7 @@ const subjects: { [K in Exclude<MailTemplateId, "record-key-addendum">]: string 
   "embryo-draft-expired": "An embryo upload draft expired",
   "embryo-ingest-abandoned": "The embryo upload did not complete",
   "invitation-terminal-notice": "An invitation on Inherit has ended",
+  "upload-consent-withdrawn": OWN_UPLOAD_WITHDRAWAL_EMAIL_COPY.emailSubject,
 };
 
 const addendumSubjects: Record<RecordKeyAddendumProps["kind"], string> = {

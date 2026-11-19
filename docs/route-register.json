@@ -18457,7 +18457,8 @@
           "self": {
             "actorRole": "owning-account",
             "scope": "route-subject-only",
-            "dispositionContract": "revocation-and-purge-v1"
+            "dispositionContract": "revocation-and-purge-v1",
+            "withdrawal": "registered-2026-11-19-owner-decision-withdrawing-consent-for-a-person's-own-DNA-file-deletes-the-files-and-all-made-from-them: this-case-is-the-withdrawal-of-the-self-upload-class-consent; the-route-sends-a-self-record-to-empty_self_subject_with_notice_v1-which-runs-this-door's-self-case-unchanged-and-in-the-same-transaction-queues-one-upload-consent-withdrawn-email-per-spent-nonce-to-the-account's-own-principal-at-the-confirmed-address-the-route-sealed-from-the-signed-in-account; no-confirmed-address-or-an-address-changed-since-the-route-read-it-refuses-the-whole-request-with-resource-not-found-v1-and-deletes-nothing"
           },
           "adult": {
             "actorRoleAnyOf": [
@@ -19358,6 +19359,15 @@
                 "revoke_all_own_consents_v1"
               ],
               "how": "api.consent-revoke-ends-one-family.portrait-or-family.heritability-grant-and-returns-a-Portrait-pair-to-pending; a-sharing-stop-ends-every-grant-between-the-two-accounts-and-api.consents-revoke-all-every-grant-the-acting-account-signed"
+            },
+            "self-upload-class-consent": {
+              "routes": [
+                "api.subject-delete"
+              ],
+              "doors": [
+                "empty_self_subject_with_notice_v1"
+              ],
+              "how": "registered-2026-11-19-owner-decision-withdrawing-consent-for-a-person's-own-DNA-file-deletes-the-files-and-all-made-from-them: one-control-on-settings.consents-and-on-files.index-shown-only-while-the-account-holds-a-live-upload_class-consent-on-its-own-self-record leads-to-one-confirmation-that-names-what-is-deleted-and-what-is-kept-and-sends-api.subject-delete-for-that-record-with-the-page's-one-time-X-Inherit-Operation-Nonce-and-the-route's-X-Inherit-CSRF-token; the-route-sends-a-self-record-only-to-empty_self_subject_with_notice_v1, which-runs-delete_subject_v1's-unchanged-self-case-private.empty_self_subject_v1 (every-file-on-the-record, every-result-report-and-Copilot-conversation-made-from-them, the-sharing-permissions-family-links-and-other-accounts'-copies-built-on-them-end, every-consent-on-the-record-is-marked-withdrawn-and-kept, the-account-and-its-record-stay) and-queues-the-upload-consent-withdrawn-confirmation-email-to-the-account's-own-confirmed-address-in-the-same-transaction; a-later-upload-asks-for-consent.upload-self-again; api.file-delete-deletes-one-file-and-is-not-a-withdrawal"
             },
             "adult-data-subject-own-consent.subject-adult": {
               "routes": [

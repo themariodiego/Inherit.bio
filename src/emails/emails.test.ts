@@ -4,6 +4,7 @@ import { createElement } from "react";
 import { render, toPlainText } from "@react-email/components";
 import { describe, expect, it } from "vitest";
 import { ADULT_UPLOAD_DERIVED_LIST as DERIVED, ADULT_UPLOAD_REVISION_COPY as REVISION } from "@/copy/upload/other-adult";
+import { OWN_UPLOAD_WITHDRAWAL_EMAIL_COPY as WITHDRAWN } from "@/copy/upload/withdrawal";
 import { ReportReadyEmail } from "./report-ready";
 import { ResearchDigestEmail } from "./research-digest";
 import { AdultSubjectInvitationEmail } from "./adult-subject-invitation";
@@ -348,6 +349,24 @@ describe("embryo draft expired email", () => {
     expect(html).toContain("closed after 30 days");
     expect(html).toContain("Nothing was uploaded, and nothing is kept.");
     expect(html).toContain("no longer works");
+    expect(html).not.toContain("href=");
+    expectSafeBody(html);
+  });
+});
+
+// Owner decision of 19 November 2026: withdrawing the consent to store one's
+// own DNA file sends a confirmation (brief §2.7). Its words are drafts for the
+// owner (src/copy/upload/withdrawal.ts); this pins that they are the ones sent.
+describe("own-upload consent withdrawn email", () => {
+  it("states the day, what is deleted, what ends and what stays, with no link, address or genetic value", async () => {
+    const mail = { id: "upload-consent-withdrawn", payload: { withdrawnAt: "2026-11-19T23:30:00.123456+00:00" } } as const;
+    expect(mailSubject(mail)).toBe(WITHDRAWN.emailSubject);
+    expect(mailSubject(mail).length).toBeLessThanOrEqual(78);
+    const html = stripMarkers(await renderMail(mail));
+    for (const line of [WITHDRAWN.heading, WITHDRAWN.withdrawnOn("19 November 2026"), WITHDRAWN.deleting,
+      WITHDRAWN.sharing, WITHDRAWN.afterwards, WITHDRAWN.security]) {
+      expect(html).toContain(line);
+    }
     expect(html).not.toContain("href=");
     expectSafeBody(html);
   });

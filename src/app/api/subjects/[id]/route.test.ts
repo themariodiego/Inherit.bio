@@ -7,12 +7,18 @@ vi.mock("@/lib/security/session-csrf", async (importOriginal) =>
 
 vi.stubEnv("BYOK_ENCRYPTION_KEY", crypto.randomBytes(32).toString("base64"));
 
-const mocks = vi.hoisted(() => ({ context: vi.fn(), rpc: vi.fn(), drain: vi.fn() }));
+const mocks = vi.hoisted(() => ({ context: vi.fn(), rpc: vi.fn(), drain: vi.fn(), subject: vi.fn(), notice: vi.fn(),
+  reads: [] as unknown[][] }));
 vi.mock("@/lib/account-deletion", async (load) => ({
   ...await load<typeof import("@/lib/account-deletion")>(), getSensitiveAccountContext: mocks.context,
 }));
-vi.mock("@/lib/supabase/admin", () => ({ createAdminClient: () => ({ rpc: mocks.rpc }) }));
+// The route reads the record's class to choose its door (20261119150000):
+// every read is recorded, and answers what `mocks.subject` says.
+vi.mock("@/lib/supabase/admin", () => ({ createAdminClient: () => ({ rpc: mocks.rpc,
+  from: (table: string) => ({ select: (columns: string) => ({ eq: (column: string, value: string) => ({
+    maybeSingle: () => { mocks.reads.push([table, columns, column, value]); return mocks.subject(); } }) }) }) }) }));
 vi.mock("@/lib/subject-endpoints/file-drain", () => ({ drainSubjectFileDeletions: mocks.drain }));
+vi.mock("@/lib/uploads/own-upload-withdrawal", () => ({ selfWithdrawalNotice: mocks.notice }));
 
 const { DELETE } = await import("./route");
 const { mintSubjectOperationNonce } = await import("@/lib/subject-endpoints/operation-nonce");
@@ -25,6 +31,7 @@ const SUBJECT = "cccccccc-cccc-4ccc-8ccc-cccccccccccc";
 const OTHER = "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee";
 const FILES = ["11111111-1111-4111-8111-111111111111", "22222222-2222-4222-8222-222222222222"];
 const ORIGIN = "http://localhost";
+const NOTICE = { contactRevision: 3, contactCiphertext: "ab".repeat(40), contactHmac: "c".repeat(64) };
 
 type CodeContext = Partial<{ accountId: string; sessionId: string; subjectId: string; operation: "subject_delete" | "subject_sharing_stop" }>;
 function deleteCode(overrides: CodeContext = {}) {
@@ -45,9 +52,13 @@ function call(options: { id?: string; origin?: string | null; nonce?: string | n
 
 beforeEach(() => {
   vi.resetAllMocks();
+  mocks.reads.length = 0;
   mocks.context.mockResolvedValue({ user: { id: ACCOUNT }, sessionId: SESSION });
   mocks.rpc.mockResolvedValue({ data: { case: "adult" }, error: null });
   mocks.drain.mockResolvedValue({ finished: 0, deferred: 0 });
+  // Every test written before the self door reads a record that is not a self record.
+  mocks.subject.mockResolvedValue({ data: { subject_class: "other_adult" }, error: null });
+  mocks.notice.mockResolvedValue(NOTICE);
 });
 
 describe("DELETE /api/subjects/[id]", () => {
@@ -142,5 +153,88 @@ describe("DELETE /api/subjects/[id]", () => {
       expect((await call()).status).toBe(503);
     }
     expect(mocks.drain).not.toHaveBeenCalled();
+  });
+});
+
+/**
+ * The self case is the withdrawal of the account's consent to store its own
+ * DNA file (owner decision of 19 November 2026, "Withdrawing consent for a
+ * person's own DNA file deletes the files and all made from them"). It goes
+ * to its own door, which runs delete_subject_v1 unchanged and queues the
+ * confirmation email in the same transaction (20261119150000).
+ */
+describe("DELETE /api/subjects/[id] for the account's own record: the withdrawal", () => {
+  beforeEach(() => {
+    mocks.subject.mockResolvedValue({ data: { subject_class: "self" }, error: null });
+    mocks.rpc.mockResolvedValue({ data: { case: "self", files: FILES }, error: null });
+  });
+
+  it("calls only the notice door, with the code's hash and the sealed address, then drains the files", async () => {
+    const code = deleteCode();
+    const response = await call({ nonce: code });
+    expect(response.status).toBe(202);
+    expect(await response.json()).toEqual({ status: "accepted" });
+    expect(mocks.reads).toEqual([["subjects", "subject_class", "id", SUBJECT]]);
+    expect(mocks.notice).toHaveBeenCalledWith(ACCOUNT);
+    expect(mocks.rpc).toHaveBeenCalledTimes(1);
+    expect(mocks.rpc).toHaveBeenCalledWith("empty_self_subject_with_notice_v1", {
+      p_account_id: ACCOUNT, p_session_id: SESSION, p_subject_id: SUBJECT,
+      p_nonce_hash: hashOperationNonce(code), p_nonce_expires_at: new Date(Number(code.split(".")[0])).toISOString(),
+      p_notice: NOTICE,
+    });
+    expect(mocks.drain).toHaveBeenCalledTimes(1);
+    expect(mocks.drain.mock.calls[0].slice(1, 3)).toEqual([{ accountId: ACCOUNT, sessionId: SESSION }, FILES]);
+  });
+
+  it("never sends a self record to delete_subject_v1, so no emptying goes without its email", async () => {
+    mocks.notice.mockResolvedValue(null);
+    const response = await call();
+    expect(response.status).toBe(404);
+    expect(await response.json()).toEqual({ error: "not_found" });
+    expect(mocks.rpc).not.toHaveBeenCalled();
+    mocks.notice.mockRejectedValue(new Error("unavailable"));
+    expect((await call()).status).toBe(503);
+    expect(mocks.rpc).not.toHaveBeenCalled();
+    expect(mocks.drain).not.toHaveBeenCalled();
+  });
+
+  it("answers 503 and writes nothing when the record's class cannot be read", async () => {
+    mocks.subject.mockResolvedValue({ data: null, error: { message: "unavailable" } });
+    expect((await call()).status).toBe(503);
+    expect(mocks.notice).not.toHaveBeenCalled();
+    expect(mocks.rpc).not.toHaveBeenCalled();
+  });
+
+  it("answers every database refusal of the withdrawal with the opaque 404, and drains nothing", async () => {
+    for (const message of ["subject_delete_processing", "subject_delete_unsupported_graph", "file_delete_processing",
+      "withdrawal_notice_unavailable", "withdrawal_notice_recipient_stale", "invalid_request", "not_found"]) {
+      mocks.rpc.mockResolvedValue({ data: null, error: { code: message === "not_found" ? "42501"
+        : message === "invalid_request" ? "22023" : "55000", message } });
+      const response = await call();
+      expect(response.status, message).toBe(404);
+      expect(await response.json()).toEqual({ error: "not_found" });
+    }
+    expect(mocks.drain).not.toHaveBeenCalled();
+  });
+
+  it("checks the code, the origin and the session before it reads anything", async () => {
+    expect((await call({ nonce: null })).status).toBe(404);
+    expect((await call({ origin: "https://attacker.example" })).status).toBe(403);
+    mocks.context.mockResolvedValue(null);
+    expect((await call()).status).toBe(401);
+    expect(mocks.reads).toEqual([]);
+    expect(mocks.notice).not.toHaveBeenCalled();
+    expect(mocks.rpc).not.toHaveBeenCalled();
+  });
+
+  it("still sends a record that is not a self record to delete_subject_v1, with no address", async () => {
+    for (const subjectClass of ["other_adult", "embryo", null]) {
+      mocks.rpc.mockClear();
+      mocks.subject.mockResolvedValue({ data: subjectClass ? { subject_class: subjectClass } : null, error: null });
+      mocks.rpc.mockResolvedValue({ data: { case: "adult" }, error: null });
+      expect((await call()).status).toBe(202);
+      expect(mocks.rpc.mock.calls.map(([name, args]) => [name, "p_notice" in args])).toEqual([["delete_subject_v1", false]]);
+    }
+    expect(mocks.notice).not.toHaveBeenCalled();
   });
 });
