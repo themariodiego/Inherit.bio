@@ -1,3 +1,28 @@
+## 2026-11-19 — APT admission: report the shape of a refused sources file
+
+Until now a sources-file refusal printed no shape; only a mirror refusal did. When `admit_sources` refuses in `main`, for any of its `RuntimeError` reasons and on any admitted mirror, the driver now prints the existing `SOURCES_SHAPE_OBSERVED` report for the bytes `safe_read` already returned, and `LATE_APT_FRAGMENTS_OBSERVED`. It does not read the file again. It then re-raises the identical refusal, so the `HOLD` line and exit code are unchanged. The never-raise loop of the mirror-refusal report moved unchanged into a shared `observe_reports`, which both refusal paths use. Nothing new is disclosed. No admission decision changed. Admitted runs print nothing new. Nothing here ran on a hosted runner.
+
+**New tests.**
+- `scripts/test_ci_apt_mirror_priority.py`, 67/67 (3 new), with CI's command on Python 3.13 and Noble's 3.12.3, each as root and as an unprivileged user:
+  - Through `main`, each `admit_sources` reason prints both reports, then the same refusal, with no mirror or strict write. The cases are: an unobserved second-paragraph URI with the us-east-2 mirror; the Azure mirror with a direct security paragraph; a direct paragraph with the wrong suites; a trust field; a missing component. The `safe_read` double replaces the file with private bytes right after reading it, so any re-read would report different bytes.
+  - Admitted states A, B1 and B2, first run and readmission, print neither report.
+  - A failing shape report, a failing fragment listing and a failing print each become a fixed label or are dropped, and the same refusal follows.
+
+**Changed assertions (old, new, why).**
+- `test_main_refuses_unobserved_mirror_and_sources_pairings`, its sources-pairing loop. Old: the events after a sources refusal were exactly `APT_VERSION_OBSERVED`, `PUBLIC_APT_DIRECTORY_METADATA`, `COMPONENTS_OBSERVED`. New: the same three, then `SOURCES_SHAPE_OBSERVED` and `LATE_APT_FRAGMENTS_OBSERVED`, and the shape report must equal `source_shape_diagnostics` of the refused bytes. Why: this change adds exactly those two reports on that path. The refusal reason, the no-write assertion and every other case are unchanged.
+
+**Planted defects, each applied to a scratch copy of the guard, run and reverted.** All fail:
+- the report printed on admitted states too;
+- the refusal swallowed after the report;
+- the file re-read with `Path.read_bytes`, or again through `safe_read`;
+- a report failure allowed to propagate;
+- no report on a sources refusal;
+- the fragment-name report dropped.
+
+The step-two and step-one defect sets still fail as before.
+
+**Not run.** The hosted runner and the Node gates.
+
 ## 2026-11-19 — APT admission: admit the observed us-east-2 stock states
 
 On commit `4367aec9`, four hosted jobs held at `Unsupported stock mirror URI, priority or format`, and the step-one report showed what they carry. All four have the same mirror file: 152 bytes, SHA-256 `af9816b5…226a`, the us-east-2 regional row at priority 1. They split on the sources file:

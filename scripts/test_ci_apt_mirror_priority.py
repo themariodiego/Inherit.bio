@@ -1114,7 +1114,7 @@ class AdmissionTests(unittest.TestCase):
                 self.assertEqual((result.admission['priorityState'], result.admission['mirrorOriginal']), (state, mirror.decode()))
 
     def test_main_refuses_unobserved_mirror_and_sources_pairings(self):
-        from ci_apt_mirror_priority import EC2_STOCK, EC2_PRIORITIZED
+        from ci_apt_mirror_priority import EC2_STOCK, EC2_PRIORITIZED, source_shape_diagnostics
         for mirror, strict, sources in ((STOCK, None, DIRECT_SECURITY_SOURCE), (PRIORITIZED, NETWORK, DIRECT_SECURITY_SOURCE),
                                         (EC2_STOCK, None, DIRECT_SECURITY_SOURCE.replace(b'security.ubuntu.com/ubuntu\n',
                                                                                          b'security.ubuntu.com/ubuntu/\n')),
@@ -1123,7 +1123,9 @@ class AdmissionTests(unittest.TestCase):
                 result = run_main_admitted(mirror, strict, sources)
                 self.assertEqual((type(result.error), str(result.error)), (RuntimeError, 'Stock mirror route required'))
                 self.assertEqual([event['event'] for event in result.events],
-                                 ['APT_VERSION_OBSERVED', 'PUBLIC_APT_DIRECTORY_METADATA', 'COMPONENTS_OBSERVED'])
+                                 ['APT_VERSION_OBSERVED', 'PUBLIC_APT_DIRECTORY_METADATA', 'COMPONENTS_OBSERVED',
+                                  'SOURCES_SHAPE_OBSERVED', 'LATE_APT_FRAGMENTS_OBSERVED'])
+                self.assertEqual(result.events[3], source_shape_diagnostics(sources))
                 self.assertEqual((result.mirror_after, result.strict_after, result.updates, result.admission),
                                  (mirror, strict, [], None))
         for variant in (EC2_STOCK.replace(b'us-east-2', b'us-east-1'), EC2_STOCK[:-1], EC2_STOCK.replace(b'ubuntu/\t', b'ubuntu\t', 1),
@@ -1133,6 +1135,74 @@ class AdmissionTests(unittest.TestCase):
                 self.assertEqual((type(result.error), str(result.error)), (RuntimeError, UNSUPPORTED_MIRROR))
                 self.assertEqual([event['event'] for event in result.events], REFUSAL_EVENTS)
                 self.assertEqual((result.mirror_after, result.strict_after, result.updates), (variant, None, []))
+
+    def test_main_sources_refusal_reports_the_bytes_read_then_reraises_the_same_refusal(self):
+        from unittest.mock import patch
+        from ci_apt_mirror_priority import EC2_STOCK, EC2_PRIORITIZED, source_shape_diagnostics
+        owner = os.getuid()
+        def read_then_replace(path, uid=0):
+            # Any re-read would see these private bytes instead of the bytes admission refused.
+            raw = safe_read(path, owner)
+            if path.name == 'ubuntu.sources':
+                path.write_bytes(b'private_fixture_text\n')
+            return raw
+        split = DIRECT_SECURITY_SOURCE.replace(b'Suites: noble noble-updates noble-backports', b'Suites: noble noble-backports')
+        cases = ((EC2_STOCK, None, DIRECT_SECURITY_SOURCE.replace(b'ubuntu.com/ubuntu\nSuites: noble-security',
+                                                                  b'ubuntu.com/ubuntu/\nSuites: noble-security'), 'Stock mirror route required'),
+                 (STOCK, None, DIRECT_SECURITY_SOURCE, 'Stock mirror route required'),
+                 (EC2_PRIORITIZED, NETWORK, split.replace(b'Suites: noble-security', b'Suites: noble-updates noble-security'),
+                  'Stock direct security suite required'),
+                 (STOCK, None, SOURCE + b'Trusted: yes\n', 'Unsupported Ubuntu source or trust override'),
+                 (EC2_STOCK, None, OBSERVED_SOURCE.replace(b' multiverse', b'', 1), 'Stock Ubuntu components required'))
+        for mirror, strict, sources, reason in cases:
+            with self.subTest(mirror=mirror, sources=sources):
+                result = run_main(mirror, strict, sources, extra=(patch('ci_apt_mirror_priority.safe_read',
+                                                                        side_effect=read_then_replace),))
+                self.assertEqual((type(result.error), str(result.error)), (RuntimeError, reason))
+                self.assertEqual([event['event'] for event in result.events][-2:],
+                                 ['SOURCES_SHAPE_OBSERVED', 'LATE_APT_FRAGMENTS_OBSERVED'])
+                self.assertEqual(result.events[-2], source_shape_diagnostics(sources))
+                self.assertEqual(result.events[-1]['names'], ['zz-snapshot'] + (['zzzz-inherit-ci-network.conf'] if strict else []))
+                self.assertNotIn('REFUSED_MIRROR_OBSERVED', result.text)
+                self.assertNotIn('private_fixture_text', result.text)
+                self.assertEqual((result.mirror_after, result.strict_after), (mirror, strict))
+                self.assertEqual([call.args[0] for call in result.run.call_args_list], [['/usr/bin/apt-get', '--version']])
+
+    def test_main_admitted_states_print_no_sources_refusal_report(self):
+        from ci_apt_mirror_priority import EC2_STOCK, EC2_PRIORITIZED
+        for mirror, strict, sources in ((STOCK, None, SOURCE), (PRIORITIZED, NETWORK, SOURCE),
+                                        (EC2_STOCK, None, DIRECT_SECURITY_SOURCE), (EC2_PRIORITIZED, NETWORK, DIRECT_SECURITY_SOURCE),
+                                        (EC2_STOCK, None, OBSERVED_SOURCE), (EC2_PRIORITIZED, NETWORK, OBSERVED_SOURCE)):
+            with self.subTest(mirror=mirror, sources=sources):
+                result = run_main_admitted(mirror, strict, sources)
+                self.assertIsNone(result.error)
+                self.assertFalse({'SOURCES_SHAPE_OBSERVED', 'LATE_APT_FRAGMENTS_OBSERVED', 'REFUSED_MIRROR_OBSERVED'}
+                                 & {event.get('event') for event in result.events})
+
+    def test_main_sources_report_failures_are_fixed_labels_and_never_replace_the_refusal(self):
+        import builtins
+        from unittest.mock import patch
+        failures = {'shape': (patch('ci_apt_mirror_priority.source_shape_diagnostics', side_effect=ValueError('private_fixture_text')),
+                              'SOURCES_SHAPE_OBSERVED', 'ValueError'),
+                    'listing': (patch('ci_apt_mirror_priority.os.listdir', side_effect=PermissionError('private_fixture_text')),
+                                'LATE_APT_FRAGMENTS_OBSERVED', 'PermissionError')}
+        for name, (patcher, event, error_type) in failures.items():
+            with self.subTest(failure=name):
+                result = run_main(STOCK, None, DIRECT_SECURITY_SOURCE, extra=(patcher,))
+                self.assertEqual((type(result.error), str(result.error)), (RuntimeError, 'Stock mirror route required'))
+                self.assertIn({'event': event, 'observation': 'unavailable', 'errorType': error_type}, result.events)
+                self.assertEqual([item['event'] for item in result.events][-2:], ['SOURCES_SHAPE_OBSERVED', 'LATE_APT_FRAGMENTS_OBSERVED'])
+                self.assertNotIn('private_fixture_text', result.text)
+        original_print = builtins.print
+        def failing_print(*args, **kwargs):
+            if 'SHAPE' in args[0] or 'LATE_APT' in args[0]:
+                raise OSError('private_fixture_text')
+            original_print(*args, **kwargs)
+        result = run_main(STOCK, None, DIRECT_SECURITY_SOURCE,
+                          extra=(patch('ci_apt_mirror_priority.print', create=True, side_effect=failing_print),))
+        self.assertEqual((type(result.error), str(result.error)), (RuntimeError, 'Stock mirror route required'))
+        self.assertEqual([item['event'] for item in result.events],
+                         ['APT_VERSION_OBSERVED', 'PUBLIC_APT_DIRECTORY_METADATA', 'COMPONENTS_OBSERVED'])
 
 
 if __name__ == '__main__':

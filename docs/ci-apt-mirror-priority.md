@@ -92,7 +92,10 @@ over 4,096 bytes, eight paragraphs or 16 fields in one paragraph for the
 sources file) gets only its size, SHA-256 and, for the mirror file, line
 count. A sources file or fragment directory that cannot be safely read gets a
 fixed label. A hash can confirm a guessed line, so it is a comparison aid, not
-secrecy. These lines change no admission decision: every refused state is
+secrecy. When an admitted mirror is paired with a refused sources file, the
+driver prints the same sources and fragment-name reports for the bytes it
+already read, without reading the file again, and then the unchanged `HOLD`.
+These lines change no admission decision: every refused state is
 still refused with the same reason, and admitted states print nothing new.
 
 On 19 November 2026, CI run 44546883409 for commit d8dcb61a passed this
