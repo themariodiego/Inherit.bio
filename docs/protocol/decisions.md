@@ -5626,3 +5626,33 @@ So the register's storage prefixes are to describe the flat key and the
 `prepared/` folder, and the brief's sentence is to be rewritten to match, with
 its pinned hash updated. As offered in the question, the exact brief sentence
 is shown to the owner before it is applied. Nothing is applied by this entry.
+
+## 2026-11-19 — G8.5: Copilot for another adult's record opens
+
+Owner answer, in the owner's own words, to "Should a person who uploaded
+another adult's DNA file, or was given access to it, be able to ask Copilot
+about that adult's results?" (offered: "Keep closed; amend register", "Build it
+for self-hosted", "Leave it open"): "a person who uploaded another adult's DNA
+file, or was given access to it, should be able to ask Copilot about that
+adult's results".
+
+Asked then where it should work, because the signed register allows it only on
+a self-hosted install with its own model and forbids sending another adult's
+results to a cloud AI provider, and the hosted service has only cloud
+providers. Offered: "As the register says", "On the hosted service too", "Hold
+this one for now". Owner decision (clickable chat answer): "On the hosted
+service too".
+
+What that answer sanctions, as the option was worded:
+- The self-hosted part is built now, as the register already describes it
+  (`scope-derived-v1`, `subject:adult`, `uploader-or-grantee`): a local model
+  only, after that adult gives their own `copilot.local` permission for this
+  relationship. It needs a permission route, a reader, conversation storage, a
+  database migration and a guarded release. The permission wording comes to
+  the owner for approval before it ships.
+- The cloud path on the hosted service is the owner's stated intent and is
+  **not** sanctioned to ship by this entry. The register's `cloudProvider`
+  `absolute-deny` for this relationship stays until a separate decision
+  rewrites it. Engineering brings the owner the register change and the consent
+  wording as that separate decision, and counsel should review it first.
+  Until then the hosted site keeps its "not available here" page.
