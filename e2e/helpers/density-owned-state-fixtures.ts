@@ -25,6 +25,13 @@ const realPath: Readonly<Record<string, string>> = {
   "genome.report": REPORT_PATH, "genome.ancestry": "/genome/me/ancestry",
   "genome.data": "/genome/me/data", "genome.browser": "/genome/me/data/browser",
 };
+/** Every ancestry panel by its own identity: the regions, the two parent lines
+ * and the Neanderthal card. This provider's origin is the 3100 service, which
+ * `checkedAppEnvironment` admits only with `INHERIT_TEST_JURISDICTION=1`, so
+ * the card states the page's no-result state itself (TEST-LOCAL);
+ * `src/app/(app)/genome/[subject]/ancestry/page-panels.test.ts` renders the
+ * same set in both flag states. */
+const ANCESTRY_PANELS = ['[data-testid="admixture"]', '[data-testid="mtdna"]', '[data-testid="ydna"]', "#neanderthal"] as const;
 interface NativeRows { [table: string]: Record<string, unknown>[] }
 
 /** Complete rows of this one fresh synthetic actor. Exact counts reject a
@@ -153,7 +160,10 @@ async function assertEmpty(page: Page, row: DensityStateCase) {
     await expect(page.getByText(REPORT_PREPARING, { exact: true })).toHaveCount(0);
     await expect(page.getByText("Choose this result type in", { exact: false })).toHaveCount(0);
   } else if (row.route.id === "genome.ancestry") {
-    await expect(page.getByText(NOTHING_READ, { exact: true })).toHaveCount(3);
+    // Each panel says it once, found by its own identity, so a missing panel
+    // fails; the page-wide count fails on an extra one.
+    for (const panel of ANCESTRY_PANELS) await expect(page.locator(panel).getByText(NOTHING_READ, { exact: true })).toHaveCount(1);
+    await expect(page.getByText(NOTHING_READ, { exact: true })).toHaveCount(ANCESTRY_PANELS.length);
     await expect(page.locator('[data-slot="ancestry-map"]')).toHaveAttribute("data-mode", "grey");
     await expect(page.getByText(ANCESTRY_OFF, { exact: true })).toHaveCount(0);
     await expect(page.getByText(ANCESTRY_PREPARING, { exact: true })).toHaveCount(0);

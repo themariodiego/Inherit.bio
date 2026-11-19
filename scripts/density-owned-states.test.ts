@@ -72,6 +72,18 @@ describe("real owned density state coverage", () => {
     expect(source).not.toMatch(/\.from\([^)]*\)\.(?:insert|update|upsert)\(/u);
   });
 
+  it("requires the empty ancestry sentence once in each of the four panels, found by identity, and nowhere else", () => {
+    // The 3100 service this provider uses runs under TEST-LOCAL, where the
+    // Neanderthal card says the page's state itself.
+    const source = read("e2e/helpers/density-owned-state-fixtures.ts");
+    for (const fragment of [
+      `const ANCESTRY_PANELS = ['[data-testid="admixture"]', '[data-testid="mtdna"]', '[data-testid="ydna"]', "#neanderthal"] as const;`,
+      "for (const panel of ANCESTRY_PANELS) await expect(page.locator(panel).getByText(NOTHING_READ, { exact: true })).toHaveCount(1);",
+      "await expect(page.getByText(NOTHING_READ, { exact: true })).toHaveCount(ANCESTRY_PANELS.length);"])
+      expect(source).toContain(fragment);
+    expect(source).not.toContain("getByText(NOTHING_READ, { exact: true })).toHaveCount(3)");
+  });
+
   it("requires complete actor rows, native absence and measured timing rather than labels alone", () => {
     const source = read("e2e/helpers/density-owned-state-fixtures.ts");
     expect(source).toContain('select("*", { count: "exact" })');

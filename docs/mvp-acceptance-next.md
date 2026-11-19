@@ -51,7 +51,7 @@ wording that is not yet recorded, counsel or another human act, and an external
 resource. Each row sits below in the group of its nearest blocker, and its
 sentence names any other.
 
-### A. Close on main CI after a merge (7)
+### A. Close on main CI after a merge (8)
 
 PR 324's head `cf79b1b6` passed hosted CI run 39836851305 and the
 prepared-worker run 39836851331 on 22 October, each on its first attempt. These
@@ -59,7 +59,11 @@ rows wait for PR 324 to merge, which first needs its guarded release (see "The
 release order" below), and then for a green main CI run. The APT guard fix is
 on the follow-up branch only, so a main CI run can still land on a runner the
 guard on `main` refuses (see "What hosted CI needs first"). G7.4 also waits for
-the follow-up's release and merge.
+the follow-up's release and merge. Later on 19 November the guard fix was
+cherry-picked onto PR 324's branch (new head `87bb33d8`), as the owner decided
+that day (decisions.md, "2026-11-19 — The APT guard fix reaches PR 324's
+branch"), so it reaches `main` when PR 324 merges; until then `main` keeps the
+unfixed guard.
 
 - **G1.7** — Every registered route state is now named by a browser test
   (`UNPROVEN_ROUTE_STATE_PAIRS = 0`, `scripts/route-gate.ts:641`, commit
@@ -85,23 +89,30 @@ the follow-up's release and merge.
   passes" (decisions.md 5111-5122), judged on the brief's minimum under
   TEST-LOCAL (4819-4829). Real email-provider delivery is a release-checklist
   item under that decision, not a condition of the row, and
-  `docs/release-checklist.md` does not list it yet.
+  `docs/release-checklist.md` does not list it yet. *Later on 19 November:*
+  the checklist lists it as B8. The row's browser proof,
+  `e2e/future-person-claimed-record-journey.spec.ts`, came in `a35312a0` on the
+  follow-up branch, after PR 324's head `cf79b1b6`, so PR 324's merge alone does
+  not bring it to main CI. It never ran past line 245 until `29d393d5`, and on
+  that head it fails at its step 5 (see "What hosted CI needs first").
 - **G7.4** — No capability carries `not shipped`, and "G7.4 turns YES only on
   main CI evidence after this revision merges" (`docs/capability-register.md`
   227-229). That revision (`4e8cfa72`) is on the follow-up branch, so the row
   waits for both releases and both merges; its migrations `20261022100000` and
   `20261022110000` are in the follow-up kit's first batch.
+- **G5.3** — *Moved here from group B later on 19 November.* The closed list
+  of what will be derived, which the 16 October decision required
+  (decisions.md 4740-4751), is built (commit `07d83891`), and its browser and
+  email assertions passed on PR 324's head in run 39836851305. The owner
+  decided on 19 November that the 30-day expiry case, which moves the deadline
+  back with a database update and then runs the real executor, meets the row's
+  own "the 30-day expiry proven in a browser" (decisions.md, "2026-11-19 —
+  G5.3: the expiry case meets "the 30-day expiry proven in a browser""). That
+  case passed on main CI run 39811043683. What is left is PR 324's release,
+  merge and main CI.
 
-### B. Waiting on an owner decision or owner-approved wording (3)
+### B. Waiting on an owner decision or owner-approved wording (2)
 
-- **G5.3** — The closed list of what will be derived, which the 16 October
-  decision required (decisions.md 4740-4751), is built (commit `07d83891`), and
-  its browser and email assertions passed on PR 324's head in run 39836851305.
-  Open for the owner and not recorded: whether the 30-day expiry case, which
-  moves the deadline back with a database update and then runs the real
-  executor, meets the row's own "the 30-day expiry proven in a browser". That
-  case passed on main CI run 39811043683. Then PR 324's release, merge and main
-  CI.
 - **G5.6** — Open for the owner: the export provider ("the export provider
   remains an unanswered owner choice", `docs/account-archive-orchestration.md`
   109-110), which the asynchronous delivery contract and `api.export`'s POST
@@ -178,7 +189,15 @@ the token and deletes the secret (step 8).
    39836851305 and 39836851331; its migration tree equal to the rehearsed
    `538dcee6`, which `git diff --quiet` confirmed on 19 November; a new token,
    since the 22 October one is to be revoked; and the owner's go. PR 324
-   merges straight after batch 4 reads back EQUAL.
+   merges straight after batch 4 reads back EQUAL. *Later on 19 November:* PR
+   324's head is now `87bb33d8`, which carries the guard fix and must pass CI
+   on one attempt in its turn; its migration tree still equals `538dcee6`
+   (`git diff --quiet 538dcee6 87bb33d8 -- supabase/migrations` exits 0). The
+   owner chose that day to begin this release with its read-only pre-checks
+   once PR 324's CI is green on that head (decisions.md, "2026-11-19 — PR
+   324's guarded release: read-only pre-checks first"). That answer is not the
+   go, which is asked after the pre-check results are shown. No production
+   step has been run.
 2. **The follow-up: 7 migrations, kit exists.**
    `docs/evidence/followup-production-apply-20261023/` covers
    `20261022100000`, `20261022110000`, `20261023100000`, `20261023110000`,
@@ -215,8 +234,10 @@ the token and deletes the secret (step 8).
    commented body of `private.current_adult_subject_invitation_v1`, which
    production holds comment-stripped (D-136). On 19 November the guard was
    changed to accept exactly those two reviewed bodies. That was an engineering
-   decision of the session that found the defect, not an owner decision, and
-   the owner reviews it before release 3. The kit was then rehearsed again, and
+   decision of the session that found the defect, not an owner decision. The
+   owner accepted it later on 19 November
+   (`docs/protocol/decisions.md`,
+   "2026-11-19 — D-136: the owner accepts the guard change"). The kit was then rehearsed again, and
    both batches apply and read back EQUAL. The kit pins the migrations tree
    `be49d283`, which the follow-up branch carries from the commit that fixed
    the guard; the head merged after release 3 must carry it. Batch 2 makes the
@@ -278,6 +299,59 @@ neither `EC2_STOCK` nor `STATES`, and `ci.yml` runs the same guard step, so a
 main CI run, including the one every group A row closes on, can still land on a
 runner that guard refuses, and so can a fresh run of PR 324's head. No decision
 records how the fix reaches `main`. That is open, and it is the owner's call.
+
+**The first complete hosted run of the follow-up code (later on 19 November).**
+CI run 44557217046 on `0c6068d6` ran every job to an end, and the admission
+step passed in every job that carries it. `database-tests`,
+`owned-keyfree-smoke` and `browser (1)`, `(2)`, `(3)`, `(4)` and `(6)` passed,
+and so did `guided-first-run` (run 44557216893), `real-scanner` (44557217048),
+the prepared-worker `build` (44557217131) and the font-cache diagnostic
+(44557216856). `repository-checks` passed Typecheck, Lint and the
+browser-inventory steps, then failed at "Unit tests": 16 failed and 13,955
+passed, in `src/lib/uploads/own-report-generation.test.ts` (9) and
+`src/app/(app)/genome/[subject]/ancestry/page.test.ts` (7), so its later steps
+(every gate, the production build and Lighthouse) were skipped. `browser (5)`
+failed 3 of 72: `e2e/ancestry-revocation.spec.ts:106`,
+`e2e/genome-data-empty.spec.ts:104` and
+`e2e/future-person-claimed-record-journey.spec.ts:71`. The same 16 and 3 failed
+again on `61ffc6ee`, a documentation-only commit (run 44562960472, cancelled at
+16:31 UTC before `browser (2)` and `(3)` finished), so they were deterministic.
+
+**Why, and the fix.** `ci.yml` sets `INHERIT_TEST_JURISDICTION=1` for the whole
+workflow, which switches on the Neanderthal estimate of `672f28ac` and
+`c6753173`; local runs leave it unset, and the follow-up branch had no hosted
+run before 19 November. All 19 failures were test faults, none a product fault:
+unit tests that took the flag from the environment or used incomplete doubles,
+two browser specs that counted three ancestry panels where the flag gives four,
+and G5.4's browser proof, which compared sorted keys with an unsorted literal and
+so had never run past line 245. `29d393d5` fixes them with no product code
+change (`docs/test-diff-register.md`, its top entry).
+
+**On `29d393d5` (CI run 44567656560).** `repository-checks` passed in full:
+unit tests, every gate step, the production build and Lighthouse.
+`database-tests`, `owned-keyfree-smoke` and `browser (1)`, `(2)`, `(3)`, `(4)`
+and `(6)` passed, and so did `real-scanner` (run 44567656511), the
+prepared-worker `build` (44567656413), `guided-first-run` (44567656429) and the
+font-cache diagnostic (44567656638). `browser (5)` failed 1 of 72. Both ancestry
+specs passed. G5.4's browser proof ran past line 245 for the first time: steps 1
+to 4 passed, and step 5 failed at `e2e/helpers/claimant-delete-closed.ts:81`,
+where the closed claimant DELETE answered 404 `{"error":"not_found"}` with
+`private, no-store`, as expected, but with `Referrer-Policy: same-origin` where
+the helper expects `no-referrer`. That is not yet diagnosed. It is the one
+failure on this head, so the aggregate `checks` cannot pass: a complete green
+hosted run is still not recorded.
+
+**Not CI.** A local rehearsal found D-136 (`docs/protocol/defects.md`, and the
+kit `docs/evidence/followup-2-production-apply-20261119/`): fixed in
+`a2a4d8e9`, kit in `fe1a6d48`.
+
+**The guard on PR 324's branch.** Later on 19 November `4367aec9`, `9c0998ff`
+and `f85a856e` were cherry-picked onto PR 324's branch as `c27aa1e1`,
+`091a9a44` and `87bb33d8`, its new head. The guard files are byte-identical to
+this branch's, and its migration tree still equals `538dcee6`. Its earlier
+green run (39836851305) was for `cf79b1b6`; CI run 44569610024 on `87bb33d8` had
+not finished at the time of writing. `main` keeps the unfixed guard until PR 324
+merges.
 
 ## What blocks each of the 27 remaining rows · 20 September 2026
 

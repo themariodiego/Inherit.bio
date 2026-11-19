@@ -53,8 +53,9 @@ body's md5 as well as the repository's for this callee; guard it by a comment-in
 digest; or drop the md5 pin on this callee.
 
 OUTCOME (same day). The choice below was an engineering decision made in the session that
-ran this rehearsal. It is NOT an owner decision: the owner has not reviewed it, and reviews
-it before saying go for this release.
+ran this rehearsal. It was NOT an owner decision when it was made.
+Later on 19 November 2026 the owner reviewed it and accepted it
+(docs/protocol/decisions.md, "2026-11-19 - D-136: the owner accepts the guard change").
 
 6. Decision: the first option. For this one callee the predecessor block accepts exactly
    two reviewed bodies, the repository body (7fa7e1fe...) and the same body without its

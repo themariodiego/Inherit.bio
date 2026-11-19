@@ -5429,3 +5429,76 @@ remote bodies of `api.llm-settings`, an empty or absent `apiKey` keeps the store
 key, and a remote HTTPS endpoint may be saved with no key. The register is
 amended to say so. The code already behaves this way. This closes the last
 Settings row in `formRequestDivergence`.
+
+## 2026-11-19 — The APT guard fix reaches PR 324's branch
+
+Owner decision (clickable chat answer, "Add to PR 324"). Asked: hosted CI on
+`main` and on PR 324's branch still runs an APT guard that refuses GitHub's
+newer runner images, so those runs fail at random; the fix exists only on the
+PR 326 branch; seven acceptance rows can close only on a green `main` CI run.
+How should the guard fix reach those branches? Offered: "Add to PR 324",
+"Separate PR to main", "Leave it for now". Chosen: "Add to PR 324". The three
+guard commits are cherry-picked onto PR 324's branch
+`claude/magical-bohr-2qgad6`. They touch only a CI script, its tests and docs,
+so PR 324's migrations and its rehearsed release kit stay valid; its CI reruns
+on the new head, and `main` gets the fix when PR 324 merges.
+
+Done the same day and pushed: `c27aa1e1`, `091a9a44` and `87bb33d8` on that
+branch are cherry-picks of `4367aec9`, `9c0998ff` and `f85a856e`, and its head
+moved from `cf79b1b6` to `87bb33d8`. The four guard files
+(`scripts/ci_apt_mirror_priority.py`, `scripts/test_ci_apt_mirror_priority.py`,
+`docs/ci-apt-mirror-priority.md`, `docs/ci-font-archive-cache.md`) are
+byte-identical to those on the PR 326 branch. The only conflict was
+`docs/test-diff-register.md`, resolved by keeping PR 324's register with the
+three new entries at its top. `git diff --quiet 538dcee6 87bb33d8 --
+supabase/migrations` succeeds, so the PR 324 kit's migration-tree precondition
+still holds. PR 324's earlier green run (39836851305) was for `cf79b1b6`, so its
+CI has to pass again on `87bb33d8`. `main` keeps the unfixed guard until PR 324
+merges.
+
+## 2026-11-19 — PR 324's guarded release: read-only pre-checks first
+
+Owner decision (clickable chat answer, "Read-only checks first"). Asked: seven
+acceptance rows (G1.7, G1.12, G2.1, G2.2, G4.2, G5.4, and G7.4 after the
+follow-up) close only after PR 324's guarded production release of 25
+migrations, then its merge; that release needs a fresh short-lived Supabase
+access token and the owner's go. Does the owner want to begin it? Offered:
+"Read-only checks first", "In a new session", "Not now". Chosen: "Read-only
+checks first". Once PR 324's CI is green on a head that has the guard fix, the
+session runs only the runbook's read-only pre-checks against production, shows
+the owner the results, and asks again before any dry run or write. The owner
+enters the token in a secure form; the session never sees its value.
+
+This answer is not the release's go. The go is still asked separately, as the
+PR 324 runbook requires, after the pre-check results are shown. As of this
+entry no production step has been run.
+
+## 2026-11-19 — G5.3: the expiry case meets "the 30-day expiry proven in a browser"
+
+Owner decision (clickable chat answer, "Yes, it meets it"). Asked: G5.3 still
+asks for "the 30-day expiry proven in a browser". The existing browser test
+moves a held upload's deadline 31 days into the past with a database update,
+then runs the real expiry job and checks the upload is gone; it passed on main
+CI. No browser actually waits 30 days. Does that test meet the row? Offered:
+"Yes, it meets it", "No, it needs more". Chosen: "Yes, it meets it".
+
+The expiry clause of G5.3 is met by the expiry case of
+`e2e/other-adult-upload.spec.ts` as it stands. The row stays NO until PR 324's
+release, its merge and a green main CI run, as its own reconciliation paragraph
+says.
+
+## 2026-11-19 — D-136: the owner accepts the guard change
+
+Owner decision (clickable chat answer, "Accept the fix"). Asked: a local
+rehearsal found defect D-136: migration `20261025400000` would have refused on
+production, because it checked one function against its commented source while
+production holds that function with two comment lines stripped. The session
+changed its guard to accept exactly those two versions and still refuse any
+other. That was the session's engineering decision, not the owner's. Does the
+owner accept it? Offered: "Accept the fix", "Use another approach", "Review it
+later". Chosen: "Accept the fix".
+
+The D-136 guard change in commit `a2a4d8e9` is owner-accepted. The release kit
+for the four later migrations
+(`docs/evidence/followup-2-production-apply-20261119/`) is unchanged by this
+entry and still needs its own token and go.

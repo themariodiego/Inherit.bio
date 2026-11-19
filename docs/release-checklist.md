@@ -134,6 +134,17 @@ issued, the derived rows gone inside 60 seconds, the source bytes gone inside
 seven days, and unrelated data of the same account and of other accounts intact
 afterwards. A local pgTAP assertion is necessary and is not this.
 
+### B8. Real email-provider delivery is observed on the hosted system
+
+The owner decided on 16 October 2026 that G5.4 is judged under TEST-LOCAL with
+local mail capture accepted as delivery proof, and that real email-provider
+delivery becomes a release-checklist item (`docs/protocol/decisions.md`,
+"2026-10-16 — G5.4 is judged on the brief's minimum under TEST-LOCAL"). The
+browser suite proves the accountless rights mail only through a local capture
+mock. Launch requires that mail observed on hosted infrastructure, sent through
+the real email provider and received by its addressee. A captured message is
+necessary and is not this.
+
 ---
 
 ## What launching without one of these means
@@ -207,8 +218,10 @@ owner revokes afterwards. Each commits its evidence under its kit's
    `private.current_adult_subject_invitation_v1`, which production holds
    comment-stripped (D-136). The guard now accepts exactly those two reviewed
    bodies, and the kit was rehearsed again: both batches apply and read back
-   EQUAL. That change was an engineering decision, not an owner decision, and
-   the owner reviews it before this release. The kit pins the migrations tree
+   EQUAL. That change was an engineering decision, not an owner decision. The
+   owner accepted it later on 19 November 2026
+   (`docs/protocol/decisions.md`,
+   "2026-11-19 — D-136: the owner accepts the guard change"). The kit pins the migrations tree
    `be49d283`, which the follow-up branch carries from the commit that fixed the
    guard; the head that merges after it must carry it too. It runs only after release 2 is
    complete and code carrying tree `259a56dd` is merged and deployed with its

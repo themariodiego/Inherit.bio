@@ -54,7 +54,7 @@ predecessor block with `55000 path a typed name prerequisite differs`
   (`guarded_bodies_not_as_rehearsed = 1`).
 
 **Fix (the same day; an engineering decision of the session that ran this rehearsal, not
-an owner decision, and for the owner to review before this release).** For that one callee the predecessor block
+an owner decision; the owner accepted it later on 19 November 2026, `docs/protocol/decisions.md`, "2026-11-19 — D-136: the owner accepts the guard change").** For that one callee the predecessor block
 accepts exactly two reviewed bodies: the repository's and the same body without its two
 full-line comments, as production holds it. The block counts distinct signatures, so a
 second body can never stand in for a missing callee. Nothing else in the file changed:

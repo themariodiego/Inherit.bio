@@ -28,6 +28,13 @@ const fixturePaths: Record<ReportDensityRecipe, string> = { tiny: "e2e/fixtures/
   "ancestry-off": "e2e/fixtures/aims-mixed-grch38.vcf", "reports-off": "e2e/fixtures/tiny-grch38.vcf" };
 const genomePaths: Record<string, string> = { "genome.subject": "/genome/me", "genome.reports": "/genome/me/reports",
   "genome.data": "/genome/me/data", "genome.ancestry": "/genome/me/ancestry" };
+/** Every ancestry panel by its own identity: the regions, the two parent lines
+ * and the Neanderthal card. This provider's origin is the 3100 service, which
+ * `checkedAppEnvironment` admits only with `INHERIT_TEST_JURISDICTION=1`, so
+ * the card states the page's no-result state itself (TEST-LOCAL);
+ * `src/app/(app)/genome/[subject]/ancestry/page-panels.test.ts` renders the
+ * same set in both flag states. */
+const ANCESTRY_PANELS = ['[data-testid="admixture"]', '[data-testid="mtdna"]', '[data-testid="ydna"]', "#neanderthal"] as const;
 
 async function snapshot(accountId: string, fileId: string): Promise<Facts> {
   const admin = adminClient(), facts: Facts = {};
@@ -361,12 +368,15 @@ async function assertState(page: Page, row: DensityStateCase, recipe: ReportDens
     await expect(map).toHaveAttribute("data-mode", recipe === "ancestry-shown" ? "shown" : "grey");
     if (recipe === "ancestry-off") {
       expect(facts.runs).toEqual([]);
-      const off = page.locator('[data-slot="ancestry-off"]'); await expect(off).toHaveCount(3);
-      for (let panel = 0; panel < 3; panel++) {
-        await expect(off.nth(panel).getByText(ANCESTRY_OFF, { exact: true })).toBeVisible();
-        await expect(off.nth(panel).getByRole("link", { name: ANCESTRY_REPORTS_LINK, exact: true }))
+      // Each panel says it once, found by its own identity, so a missing panel
+      // fails; the page-wide count fails on an extra one.
+      for (const panel of ANCESTRY_PANELS) {
+        const said = page.locator(panel).locator('[data-slot="ancestry-off"]'); await expect(said).toHaveCount(1);
+        await expect(said.getByText(ANCESTRY_OFF, { exact: true })).toBeVisible();
+        await expect(said.getByRole("link", { name: ANCESTRY_REPORTS_LINK, exact: true }))
           .toHaveAttribute("href", "/genome/me/reports");
       }
+      const off = page.locator('[data-slot="ancestry-off"]'); await expect(off).toHaveCount(ANCESTRY_PANELS.length);
       await expect(page.locator('[data-figure-kind="ancestry-share"], [data-slot="ancestry-not-generated"], [data-slot="nothing-read"]')).toHaveCount(0);
       await expect(page.getByText(NOTHING_READ, { exact: true })).toHaveCount(0);
     } else if (recipe === "nothing") {
