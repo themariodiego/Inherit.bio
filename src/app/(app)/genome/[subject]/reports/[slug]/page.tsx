@@ -2,7 +2,7 @@ import { loadOwnStoredReportSnapshot } from "@/lib/genome/own-stored-report";
 import { reportScientificCorrections } from "@/lib/genome/report-scientific-corrections";
 import { ScientificCorrectionNotice } from "@/components/reports/scientific-correction-notice";
 import type { Metadata } from "next";
-import Link from "next/link";
+import { IntentLink } from "@/components/site/intent-link";
 import { notFound, redirect } from "next/navigation";
 import { cache, type ReactNode } from "react";
 import { CapabilityUnavailable } from "@/components/capability-unavailable";
@@ -352,7 +352,7 @@ export default async function ReportDetailPage(
     return <section role="status" className="page-stack mx-auto max-w-measure space-y-6">
       <h1 className="display">Saved result unavailable</h1>
       <p className="text-ink">This saved result is missing the source details needed to show it.</p>
-      <Link className="link-target prose-link" href={route("family.person", { person: subjectSegment })}>Back to shared results</Link>
+      <IntentLink className="link-target prose-link" href={route("family.person", { person: subjectSegment })}>Back to shared results</IntentLink>
     </section>;
   }
   // The Family domain has one gate, on the person page; a report reached
@@ -486,7 +486,7 @@ export default async function ReportDetailPage(
       </div>
     ) : (
       <p className="max-w-measure text-base leading-relaxed text-ink">{person ? "No completed result is shared for this report yet." : fileCount === 0 ? NO_FILE_YET : preparing ? REPORT_PREPARING : (
-        <>Choose this result type in <Link className="prose-link" href={reportsHref}>Reports</Link> to see what your file supports.</>
+        <>Choose this result type in <IntentLink className="prose-link" href={reportsHref}>Reports</IntentLink> to see what your file supports.</>
       )}</p>
     );
   } else {
@@ -563,20 +563,20 @@ export default async function ReportDetailPage(
           <h1 className="display">{reportName}</h1>
         </div>
         {sharedChoices.length + Number(sharedLegacyAvailable) > 1 ? <nav aria-label="Saved result source" className="flex flex-wrap gap-x-6 gap-y-1 text-sm">
-          {sharedChoices.map((row, index) => <Link key={row.fileId}
+          {sharedChoices.map((row, index) => <IntentLink key={row.fileId}
             href={route("genome.report", { ...subjectParams, slug }, { query: {
               source: row.fileId, ...(revealParam === "1" ? { reveal: "1" } : {}),
             } })}
             aria-current={sharedReport?.fileId === row.fileId ? "page" : undefined}
             className="link-target prose-link aria-[current=page]:font-medium">
             <span data-ui-chrome-kind="item-count">Saved result {index + 1}</span>
-          </Link>)}
-          {sharedLegacyAvailable ? <Link
+          </IntentLink>)}
+          {sharedLegacyAvailable ? <IntentLink
             href={route("genome.report", { ...subjectParams, slug }, { query: {
               source: "legacy", ...(revealParam === "1" ? { reveal: "1" } : {}),
             } })}
             aria-current={!sharedReport ? "page" : undefined}
-            className="link-target prose-link aria-[current=page]:font-medium">Other files</Link> : null}
+            className="link-target prose-link aria-[current=page]:font-medium">Other files</IntentLink> : null}
         </nav> : null}
         {sharedReport ? <p className="caption">Saved on <time dateTime={sharedReport.completedAt}>
           {sharedReport.completedAt.slice(0, 10)}</time>. Each saved result uses one source file.</p> : null}
@@ -591,13 +591,13 @@ export default async function ReportDetailPage(
             <span className="min-w-0 max-w-measure flex-1 basis-64 text-ink-muted">{LAYER_DEFINITIONS[layer]}</span>
           </li>
           <li className="flex flex-wrap items-center gap-x-3 gap-y-1">
-            <Link
+            <IntentLink
               href={route("science.index", { hash: "evidence" })}
               data-chip="evidence"
               className="link-target underline-offset-2 hover:underline"
             >
               <Badge variant="outline">{evidenceLabel}</Badge>
-            </Link>
+            </IntentLink>
             <span className="min-w-0 max-w-measure flex-1 basis-64 text-ink-muted">{evidenceDefinition}</span>
           </li>
           <li>
@@ -696,7 +696,7 @@ export default async function ReportDetailPage(
               </details>
             ) : null}
             <ReportSummarySources sourceIds={summarySourceIds} existingIds={existingSourceIds} />
-            {summarySourceIds.length > 0 ? <Link href={route("science.index", { hash: "sources" })} className="link-target prose-link">About these sources</Link> : null}
+            {summarySourceIds.length > 0 ? <IntentLink href={route("science.index", { hash: "sources" })} className="link-target prose-link">About these sources</IntentLink> : null}
             {reportMethod(template) === "polygenic-score" ? (
               <p data-slot="score-method-source">
                 {SCORE_METHOD_LABEL}: {" "}
@@ -733,10 +733,10 @@ export default async function ReportDetailPage(
       {showResults && showSupport ? <SupportPanel carrier={carrier} /> : null}
 
       <footer className="rule flex flex-wrap gap-x-6 gap-y-2 pt-6 text-sm">
-        <Link href={route("genome.data", subjectParams)} className="link-target prose-link">
+        <IntentLink href={route("genome.data", subjectParams)} className="link-target prose-link">
           {DATA_AND_METHODS}
-        </Link>
-        <Link
+        </IntentLink>
+        <IntentLink
           href={route(
             "copilot.scope",
             { scope: subject.routeSegment },
@@ -745,10 +745,10 @@ export default async function ReportDetailPage(
           className="link-target prose-link"
         >
           {ASK_ABOUT_THIS}
-        </Link>
-        <Link href={reportsHref} className="link-target prose-link">
+        </IntentLink>
+        <IntentLink href={reportsHref} className="link-target prose-link">
           {ALL_REPORTS}
-        </Link>
+        </IntentLink>
       </footer>
     </article>
   );

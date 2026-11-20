@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import { IntentLink } from "@/components/site/intent-link";
 import { InputProvenance } from "@/components/reports/input-provenance";
 import { loadInputSources, type InputSourceView } from "@/lib/genome/input-sources";
 import { redirect } from "next/navigation";
@@ -372,12 +372,12 @@ export default async function FamilyHealthPicturePage() {
               {pausedBoth.map((person) => (
                 <p key={person.handle.routeSegment}>
                   {pausedWith(person.displayLabel)}{" "}
-                  <Link
+                  <IntentLink
                     href={route("family.permissions", { person: person.handle.routeSegment })}
                     className="link-target quiet-link"
                   >
                     {OPEN_PERMISSIONS_LINK}
-                  </Link>
+                  </IntentLink>
                 </p>
               ))}
             </div>
@@ -387,7 +387,7 @@ export default async function FamilyHealthPicturePage() {
         <EmptyState
           action={
             <Button asChild variant="outline" size="lg">
-              <Link href={route("family.invite")}>{ADD_ANOTHER_ADULT_BUTTON}</Link>
+              <IntentLink href={route("family.invite")}>{ADD_ANOTHER_ADULT_BUTTON}</IntentLink>
             </Button>
           }
         >

@@ -24,7 +24,9 @@ function sources(directory: string): string[] {
 describe("links to an auth form page", () => {
   const formPaths = Object.keys(AUTH_FORM_PAGES);
   const links = sources(SOURCE).flatMap((file) =>
-    [...readFileSync(file, "utf8").matchAll(/<Link\b[^>]*>/g)]
+    // `IntentLink` (src/components/site/intent-link.tsx) prefetches on hover
+    // and takes no `prefetch` prop, so one pointing at a form page fails here.
+    [...readFileSync(file, "utf8").matchAll(/<(?:Intent)?Link\b[^>]*>/g)]
       .map((match) => match[0])
       .filter((tag) => formPaths.some((formPath) => tag.includes(`href="${formPath}"`)))
       .map((tag) => ({ file: path.relative(SOURCE, file), tag })));

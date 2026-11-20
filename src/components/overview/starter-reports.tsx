@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { IntentLink } from "@/components/site/intent-link";
 import { ArrowUpRight } from "lucide-react";
 import { Count } from "@/components/reports/count";
 import { STARTER } from "@/copy/overview";
@@ -33,11 +33,11 @@ export function StarterReports({ reports }: { reports: readonly ReportTemplate[]
         <ol className="mt-5 divide-y divide-line border-y border-line">
           {reports.map((template) => (
             <li key={template.slug}>
-              <Link href={route("genome.report", { subject: "me", slug: template.slug })}
+              <IntentLink href={route("genome.report", { subject: "me", slug: template.slug })}
                 className="link-row flex min-h-row items-center justify-between gap-4 py-2 text-base text-ink">
                 <span>{template.title}</span>
                 <ArrowUpRight aria-hidden="true" className="link-arrow size-4 shrink-0 text-forest" />
-              </Link>
+              </IntentLink>
             </li>
           ))}
         </ol>

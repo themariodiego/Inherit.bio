@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { IntentLink } from "@/components/site/intent-link";
 import { AutoRefresh } from "@/components/uploads/auto-refresh";
 import { Button } from "@/components/ui/button";
 import { PRIMARY, STATE_B } from "@/copy/overview";
@@ -64,7 +64,7 @@ export function ProcessingPanel({
           {timing ? STATE_B.timing(timing.p50, timing.p95) : STATE_B.notEnough}
         </p>
         <Button asChild size="lg" className="mt-6">
-          <Link href={route("files.upload")}>{PRIMARY.addFile}</Link>
+          <IntentLink href={route("files.upload")}>{PRIMARY.addFile}</IntentLink>
         </Button>
       </div>
     </section>

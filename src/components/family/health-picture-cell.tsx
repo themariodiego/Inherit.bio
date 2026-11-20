@@ -13,7 +13,7 @@
  * carries no figure at all: a missing result is never rendered as a value,
  * and a result the viewer has not been granted is never rendered at all.
  */
-import Link from "next/link";
+import { IntentLink } from "@/components/site/intent-link";
 import { InputProvenance } from "@/components/reports/input-provenance";
 import type { InputSourceView } from "@/lib/genome/input-sources";
 import { ClaimBlock } from "@/components/figures/claim-block";
@@ -141,7 +141,7 @@ export function HealthPictureCell({
         {absenceWord(entry.state, personName) ? <p data-slot="cell-absence">{absenceWord(entry.state, personName)}</p> : null}
         {entry.conflictingCalls && entry.state.kind !== "conflicting-calls" ? <p>{CELL_CONFLICTING_CALLS}</p> : null}
         {entry.state.kind === "letters" ? <p data-chip="layer" aria-describedby={captionId} className="text-sm text-ink-muted">{LAYER_CHIP_LABELS[layer]}</p> : null}
-        <Link href={entry.href} aria-label={`${openReportLabel(reportTitle, personName)} · ${entry.sourceLabel}`} className="link-target quiet-link text-sm">{SAVED_SOURCE_LINK}</Link>
+        <IntentLink href={entry.href} aria-label={`${openReportLabel(reportTitle, personName)} · ${entry.sourceLabel}`} className="link-target quiet-link text-sm">{SAVED_SOURCE_LINK}</IntentLink>
       </ClaimBlock>
       <InputProvenance nested sources={[entry.source]} sourceLabels={{ [entry.fileId]: entry.sourceLabel }} subject={{ subjectId: dataSubjectId }} coverage={entry.coverage}
         state={entry.conflictingCalls ? "conflict" : entry.state.kind === "no-call" ? "noCall" : entry.state.kind === "not-covered" ? "absent" : "recorded"} />
@@ -167,13 +167,13 @@ export function HealthPictureCell({
           </p>
         ) : null}
         {href ? (
-          <Link
+          <IntentLink
             href={href}
             aria-label={openReportLabel(reportTitle, personName)}
             className="link-target quiet-link text-sm"
           >
             {OPEN_LINK}
-          </Link>
+          </IntentLink>
         ) : null}
       </ClaimBlock>
     </td>

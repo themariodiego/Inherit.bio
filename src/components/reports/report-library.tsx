@@ -7,7 +7,7 @@
 // the page renders one <ReportLibrary> per layer.
 
 import { useRef, useState, useSyncExternalStore, type MouseEvent as ReactMouseEvent } from "react";
-import Link from "next/link";
+import { IntentLink } from "@/components/site/intent-link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -97,13 +97,13 @@ function CardLink({ card, subject }: { card: LibraryCard; subject: string }) {
   // The link's accessible name is title + evidence; the summary stays
   // adjacent, outside the link.
   return (
-    <Link
+    <IntentLink
       href={route("genome.report", { subject, slug: card.slug })}
       aria-label={`${card.title}, ${card.evidenceLabel}`}
       className="after:absolute after:inset-0"
     >
       {card.title}
-    </Link>
+    </IntentLink>
   );
 }
 

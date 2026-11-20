@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import { IntentLink } from "@/components/site/intent-link";
 import { redirect } from "next/navigation";
 import { DomainSection } from "@/components/overview/domain-section";
 import type { EntryBox } from "@/components/overview/entry-box";
@@ -302,7 +302,7 @@ export default async function OverviewPage() {
           <div className="plate-body">
             <p className="max-w-measure text-base text-ink">{PREPARED_REPORTS.description}</p>
             <Button asChild size="lg" className="mt-5">
-              <Link href={route("genome.reports", { subject: "me" })}>{PREPARED_REPORTS.action}</Link>
+              <IntentLink href={route("genome.reports", { subject: "me" })}>{PREPARED_REPORTS.action}</IntentLink>
             </Button>
           </div>
         </section>
@@ -367,9 +367,9 @@ export default async function OverviewPage() {
                 ) : null}
                 {state === "C" || state === "D" ? (
                   <Button asChild size="lg" className="mt-3">
-                    <Link href={route("genome.reports", { subject: "me" })}>
+                    <IntentLink href={route("genome.reports", { subject: "me" })}>
                       {PRIMARY.openReports}
-                    </Link>
+                    </IntentLink>
                   </Button>
                 ) : null}
               </>
@@ -379,7 +379,7 @@ export default async function OverviewPage() {
                 <p className="text-sm text-ink-muted">See the covered markers, broad regions and what remains unknown.</p>
                 {ancestryTooFew ? <p className="text-base leading-relaxed text-ink">{STATE_C.ancestryTooFew}</p> : null}
                 <Button asChild size="lg">
-                  <Link href={route("genome.ancestry", { subject: "me" })}>View ancestry</Link>
+                  <IntentLink href={route("genome.ancestry", { subject: "me" })}>View ancestry</IntentLink>
                 </Button>
               </div>
             ) : (
@@ -406,12 +406,12 @@ export default async function OverviewPage() {
                     {...subjectAttributes({ subjectPair: line.pair })}
                     className="text-base leading-relaxed"
                   >
-                    <Link
+                    <IntentLink
                       href={route("family.health-picture", { hash: CARRIER_MATCHES_ID })}
                       className="quiet-link"
                     >
                       {STATE_D.carrierMatches(line.count)}
-                    </Link>{" "}
+                    </IntentLink>{" "}
                     <span className="text-ink-muted">{STATE_D.carrierMeaning}</span>
                   </p>
                 ))}
@@ -438,7 +438,7 @@ export default async function OverviewPage() {
                 note={STATE_E.notMeasuredNote}
               />
               <Button asChild size="lg" className="mt-3">
-                <Link href={route("embryos.compare")}>{PRIMARY.compareEmbryos}</Link>
+                <IntentLink href={route("embryos.compare")}>{PRIMARY.compareEmbryos}</IntentLink>
               </Button>
             </>
           ) : hasReports ? (

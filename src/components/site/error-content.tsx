@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { IntentLink } from "@/components/site/intent-link";
 import { Button } from "@/components/ui/button";
 import {
   ERROR_HEADING,
@@ -45,9 +45,9 @@ export function ErrorContent({ reset }: { reset: () => void }) {
       <ul className="quiet-links mt-8 border-t border-line pt-4">
         {ERROR_LINKS.map(link => (
           <li key={link.href}>
-            <Link href={link.href} className="quiet-link">
+            <IntentLink href={link.href} className="quiet-link">
               {link.label}
-            </Link>
+            </IntentLink>
           </li>
         ))}
       </ul>

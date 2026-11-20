@@ -763,8 +763,11 @@ describe("every client request sends what its register entry declares (G8.5)", (
     // browser half that holds its one fetch (api.subject-delete, no form's):
     // 227 modules (96 "use client"), 104 requests from 90 fetch calls, 75 made
     // by no form.
-    expect(client.modules).toHaveLength(227);
-    expect(client.modules.filter(file => /^\s*["']use client["']/u.test(readFileSync(file, "utf8")))).toHaveLength(96);
+    // 2026-11-19 (D-142): `src/components/site/intent-link.tsx`, the link that
+    // prefetches on intent, is one more "use client" module with no request:
+    // 228 modules (97 "use client"), every request count unchanged.
+    expect(client.modules).toHaveLength(228);
+    expect(client.modules.filter(file => /^\s*["']use client["']/u.test(readFileSync(file, "utf8")))).toHaveLength(97);
     expect(client.calls).toHaveLength(104);
     expect(new Set(client.calls.map(request => `${request.file}:${request.line}`)).size).toBe(90);
     expect(client.calls.filter(request => request.via === "ai-sdk-default-chat-transport")).toHaveLength(0);

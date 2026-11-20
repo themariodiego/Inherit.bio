@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { IntentLink } from "@/components/site/intent-link";
 import { usePathname } from "next/navigation";
 import type { ComponentProps } from "react";
 
@@ -9,8 +9,8 @@ import type { ComponentProps } from "react";
  * pathname and mark the current route with `aria-current="page"`, which
  * globals.css already underlines; the header itself stays a server component.
  */
-export function SiteNavLink({ href, ...props }: ComponentProps<typeof Link> & { href: string }) {
+export function SiteNavLink({ href, ...props }: ComponentProps<typeof IntentLink> & { href: string }) {
   const pathname = usePathname();
   const current = pathname === href || pathname.startsWith(`${href}/`);
-  return <Link href={href} aria-current={current ? "page" : undefined} {...props} />;
+  return <IntentLink href={href} aria-current={current ? "page" : undefined} {...props} />;
 }

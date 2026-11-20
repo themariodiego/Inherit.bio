@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import { IntentLink } from "@/components/site/intent-link";
 import { OwnUploadEntry } from "@/components/uploads/own-upload-entry";
 import { HeldForYouRows, OtherAdultHeldRows, PathBChoicesSection } from "@/components/uploads/other-adult-upload-section";
 import { AutoRefresh } from "@/components/uploads/auto-refresh";
@@ -114,9 +114,9 @@ export default async function UploadsPage() {
           <p>
             Your own DNA only — files from children or relatives aren&rsquo;t
             allowed (
-            <Link href="/terms#eligibility" className="prose-link">
+            <IntentLink href="/terms#eligibility" className="prose-link">
               Terms
-            </Link>
+            </IntentLink>
             ).
           </p>
           {/* <wbr /> after each slash lets the provider token wrap on narrow
@@ -170,19 +170,19 @@ export default async function UploadsPage() {
                     {fileStatusLabel(f)}
                   </span>
                   {f.status === "annotated" ? (
-                    <Link
+                    <IntentLink
                       href="/genome/me/reports"
                       className="link-target prose-link whitespace-nowrap text-sm"
                     >
                       See your reports →
-                    </Link>
+                    </IntentLink>
                   ) : f.status === "stored" && f.tier === 1 && f.normalization_completed_at !== null ? (
-                    <Link
+                    <IntentLink
                       href="/genome/me/reports"
                       className="link-target prose-link whitespace-nowrap text-sm"
                     >
                       Choose reports →
-                    </Link>
+                    </IntentLink>
                   ) : null}
                   <FileRowActions
                     fileId={f.id}

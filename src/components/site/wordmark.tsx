@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { IntentLink } from "@/components/site/intent-link";
 import { cn } from "@/lib/utils";
 
 // The Inherit wordmark: Fraunces, two-tone (ink "In" + forest "herit" tail,
@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 // recreated; Inherit carries its own mark within the shared design language.
 export function Wordmark({ className }: { className?: string }) {
   return (
-    <Link
+    <IntentLink
       href="/"
       data-slot="wordmark"
       // The wordmark is a link home on every layout, so it is a tap target
@@ -26,7 +26,7 @@ export function Wordmark({ className }: { className?: string }) {
       <span aria-hidden className="text-forest">
         .
       </span>
-    </Link>
+    </IntentLink>
   );
 }
 

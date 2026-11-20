@@ -4,7 +4,7 @@
  * subject crumb is always the full display name, never an initial. The last
  * crumb is text with aria-current="page". Server component.
  */
-import Link from "next/link";
+import { IntentLink } from "@/components/site/intent-link";
 import { cn } from "@/lib/utils";
 
 export interface Crumb {
@@ -44,12 +44,12 @@ export function Breadcrumbs({ items, className }: BreadcrumbsProps) {
                 // padding, not centring in a minimum width, keeps the gap to
                 // the slash the same for "You" and for "My Genome"; the
                 // minimum width only ever catches a two-letter crumb.
-                <Link
+                <IntentLink
                   href={item.href}
                   className="-mx-2.5 inline-flex min-h-11 min-w-11 items-center justify-center px-2.5 underline-offset-[0.2em] transition-colors hover:text-ink hover:underline"
                 >
                   {item.label}
-                </Link>
+                </IntentLink>
               ) : (
                 <span>{item.label}</span>
               )}
