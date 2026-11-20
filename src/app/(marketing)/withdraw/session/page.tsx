@@ -29,6 +29,8 @@ import { jurisdictionChoices } from "@/lib/legal/jurisdiction-declaration";
 import { loadAdultUploadRevisionReview, loadPathBRequestReview } from "@/lib/uploads/path-b-review";
 import { AdultUploadRevisionForm } from "@/components/uploads/adult-upload-revision-form";
 import { PathBRequestForm } from "@/components/uploads/path-b-request-form";
+import { CsrfProvider } from "@/components/security/csrf-provider";
+import { accountCsrfTokens, readRightsCsrfSession, sessionCsrfToken } from "@/lib/security/session-csrf";
 
 export const metadata: Metadata = { title: "Review your request", robots: { index: false, follow: false } };
 
@@ -38,6 +40,24 @@ export default async function RightsSessionPage() {
   const request = new Request("https://inherit.bio/withdraw/session", {
     headers: { cookie: incoming.get("cookie") ?? "" },
   });
+  // The one-time X-Inherit-CSRF tokens this page's forms send: for the rights
+  // session, api.withdraw's, a claimant's correction's, Recovery Key's,
+  // analysis stop's, deletion's and export's, an appeal's document
+  // session's and completion's, and a record owner's claim objection; for a signed-in account,
+  // api.invitation-accept's (a co-parent or Path A adult accepting) and a
+  // claimant's account binding's. Minted for this render and stored nowhere.
+  const rights = readRightsCsrfSession(request);
+  const csrf = {
+    ...(rights ? Object.fromEntries((["api.withdraw", "api.future-person-correction", "api.appeal-complete",
+      "api.future-person-recovery-key", "api.future-person-analysis-stop", "api.future-person-delete",
+      "api.future-person-export", "api.appeal-document-session", "api.future-person-claim-objection"] as const)
+      .map(route => [route, sessionCsrfToken(rights, route)])) : {}),
+    ...(await accountCsrfTokens(["api.invitation-accept", "api.future-person-claimant-bind"])),
+  };
+  return <CsrfProvider tokens={csrf}>{await rightsSessionContent(request)}</CsrfProvider>;
+}
+
+async function rightsSessionContent(request: Request) {
   // The purpose stored on the session decides what this page is about. Each
   // loader returns null for a session that is not its own, so a co-parent
   // cookie can never reach another purpose screen.
@@ -47,12 +67,12 @@ export default async function RightsSessionPage() {
   if (appeal) return <PublicAppealDocuments {...appeal} />;
   const ownerNotice = await loadOwnerObjection(request);
   if (ownerNotice) return <OwnerObjection summary={ownerNotice.view.safeNoticeSummary} deadline={ownerNotice.view.noticeDeadline}
-    explanation={ownerNotice.view.objectionArtifactBody} csrf={ownerNotice.csrf} nonce={ownerNotice.nonce} />;
+    explanation={ownerNotice.view.objectionArtifactBody} nonce={ownerNotice.nonce} />;
   const claimant=await loadClaimantRights(request);
-  if(claimant)return <><ClaimantRights csrf={claimant.csrf} recoveryNonce={claimant.recoveryNonce} analysisNonce={claimant.analysisNonce} deletion={await presentClaimantDeletion(request)}
+  if(claimant)return <><ClaimantRights recoveryNonce={claimant.recoveryNonce} analysisNonce={claimant.analysisNonce} deletion={await presentClaimantDeletion(request)}
     exportAction={await presentClaimantExportCreate(request)}/>
-    {claimant.correctionNonce&&<CorrectionRequestForm csrf={claimant.csrf} nonce={claimant.correctionNonce} ownStatementDownloadsEnabled/>}
-    <div className="mx-auto max-w-3xl px-6 pb-16"><ClaimantAccountBinding csrf={claimant.csrf} nonce={await loadAccountBinding(request)}/></div></>;
+    {claimant.correctionNonce&&<CorrectionRequestForm nonce={claimant.correctionNonce} ownStatementDownloadsEnabled/>}
+    <div className="mx-auto max-w-3xl px-6 pb-16"><ClaimantAccountBinding nonce={await loadAccountBinding(request)}/></div></>;
 
   const pathB = await loadPathBRequestReview(request);
   if (pathB) return <PathBRequestForm review={pathB} />;
@@ -69,7 +89,7 @@ export default async function RightsSessionPage() {
   if (!review || review.kind === "sign-in") return (
     <section className="mx-auto max-w-6xl px-6 py-section">
       <header className="reading-head">
-        <h1 className="display display-lg">Sign in to review this invitation</h1>
+        <h1 className="display">Sign in to review this invitation</h1>
         <p className="lede reading-intro">Use the email address that received the invitation. Signing in does not accept it.</p>
       </header>
       <p className="mt-8">

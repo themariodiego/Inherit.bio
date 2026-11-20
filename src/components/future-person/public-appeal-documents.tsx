@@ -1,9 +1,12 @@
 "use client";
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useCsrf } from "@/components/security/csrf-provider";
 import { Button } from "@/components/ui/button";
 import { sniffDocumentType } from "@/lib/future-person/document-sniff";
 import type { PublicAppealView } from "@/lib/future-person/public-appeal-session";
+import { readEvidenceSessionCsrf } from "@/lib/security/opened-session-csrf";
+import { csrfHandle } from "@/lib/security/session-csrf-client";
 const LABELS = {
  "appeal-photo-identity": "Photo identity document", "appeal-subject-source-control": "Evidence that the source is yours",
  "appeal-genetic-parent-authority": "Evidence of your genetic parent role", "appeal-decision-notice": "The decision notice",
@@ -13,9 +16,10 @@ type Kind = keyof typeof LABELS;
 const hex = (bytes: ArrayBuffer) => [...new Uint8Array(bytes)].map(value => value.toString(16).padStart(2, "0")).join("");
 /** One current case, no target selector or match disclosure. Files never enter
  * browser persistence, a URL, telemetry, or an error message. */
-export function PublicAppealDocuments({ view, documentNonce, completeNonce, documentCsrf, completeCsrf }: {
- view: PublicAppealView; documentNonce: string; completeNonce: string; documentCsrf: string; completeCsrf: string;
+export function PublicAppealDocuments({ view, documentNonce, completeNonce }: {
+ view: PublicAppealView; documentNonce: string; completeNonce: string;
 }) {
+ const completeCsrf = useCsrf("api.appeal-complete"), documentCsrf = useCsrf("api.appeal-document-session");
  const router = useRouter(); const inputs = useRef<Partial<Record<Kind, HTMLInputElement | null>>>({});
  const [ids, setIds] = useState<Partial<Record<Kind, string>>>(() => Object.fromEntries(view.documents.map(document => [document.documentKind, document.documentId]))); const [messages, setMessages] = useState<Partial<Record<Kind, string>>>({});
  const [busy, setBusy] = useState(false); const [affirmed, setAffirmed] = useState(false); const [finished, setFinished] = useState(false);
@@ -40,26 +44,29 @@ export function PublicAppealDocuments({ view, documentNonce, completeNonce, docu
    if (file.size < 1 || file.size > 20_000_000) throw new Error("document_unavailable");
    bytes = new Uint8Array(await file.arrayBuffer()); const mediaType = sniffDocumentType(bytes); if (!mediaType) throw new Error("document_unavailable");
    const sha256 = hex(await crypto.subtle.digest("SHA-256", bytes));
-   const opened = await fetch("/api/appeals/session/documents", { method: "POST", credentials: "same-origin",
-    headers: { "content-type": "application/json", "x-inherit-csrf": documentCsrf, "x-inherit-operation-nonce": documentNonce },
-    body: JSON.stringify({ documentKind: kind, mediaType, sizeBytes: bytes.length, sha256 }) });
+   const opened = await documentCsrf.send((csrfToken) => fetch("/api/appeals/session/documents", { method: "POST", credentials: "same-origin",
+    headers: { "content-type": "application/json", "x-inherit-csrf": csrfToken, "x-inherit-operation-nonce": documentNonce },
+    body: JSON.stringify({ documentKind: kind, mediaType, sizeBytes: bytes!.length, sha256 }) }));
    router.refresh(); if (opened.status !== 201) throw new Error("document_unavailable");
    const value: unknown = await opened.json();
    if (typeof value !== "object" || value === null || !("session" in value) || typeof value.session !== "string"
     || !/^[0-9a-f-]{36}$/u.test(value.session)) throw new Error("document_unavailable");
-   const session = value.session; const csrf = opened.headers.get("x-inherit-csrf"); const nonce = opened.headers.get("x-inherit-complete-nonce");
+   // The evidence session's first values (the chunk stream's one value and
+   // the completion's first one-time token); the answer's own x-inherit-csrf is the rights
+   // session's successor, which the chain above keeps (G8.5).
+   const session = value.session; const csrf = readEvidenceSessionCsrf(opened.headers); const nonce = opened.headers.get("x-inherit-complete-nonce");
    if (!csrf || !nonce) throw new Error("document_unavailable");
-   const chunkCount = Math.ceil(bytes.length / 4_000_000);
+   const completion = csrfHandle(csrf.complete); const chunkCount = Math.ceil(bytes.length / 4_000_000);
    for (let sequence = 0; sequence < chunkCount; sequence++) {
     const chunk = bytes.slice(sequence * 4_000_000, (sequence + 1) * 4_000_000);
     try { const answer = await fetch(`/api/evidence/${session}/chunks/${sequence}`, { method: "PUT", credentials: "same-origin",
-     headers: { "content-type": "application/octet-stream", "x-inherit-csrf": csrf }, body: chunk });
+     headers: { "content-type": "application/octet-stream", "x-inherit-csrf": csrf.chunk }, body: chunk });
      if (answer.status !== 204) throw new Error("document_unavailable");
     } finally { chunk.fill(0); }
    }
    for (let poll = 0; poll < 60; poll++) {
-    const answer = await fetch(`/api/evidence/${session}/complete`, { method: "POST", credentials: "same-origin",
-     headers: { "content-type": "application/json", "x-inherit-csrf": csrf }, body: JSON.stringify({ chunkCount, nonce }) });
+    const answer = await completion.send((token) => fetch(`/api/evidence/${session}/complete`, { method: "POST", credentials: "same-origin",
+     headers: { "content-type": "application/json", "x-inherit-csrf": token }, body: JSON.stringify({ chunkCount, nonce }) }));
     if (answer.status === 201) {
      const result: unknown = await answer.json();
      if (typeof result !== "object" || result === null || !("documentId" in result) || typeof result.documentId !== "string"
@@ -79,16 +86,16 @@ export function PublicAppealDocuments({ view, documentNonce, completeNonce, docu
   const authority = view.documentKinds.includes("appeal-subject-source-control")
    ? { subjectSourceControlDocumentId: ids["appeal-subject-source-control"] }
    : { geneticParentAuthorityDocumentId: ids["appeal-genetic-parent-authority"] };
-  try { const answer = await fetch("/api/appeals/session/complete", { method: "POST", credentials: "same-origin",
-   headers: { "content-type": "application/json", "x-inherit-csrf": completeCsrf },
-   body: JSON.stringify({ photoIdentityDocumentId: ids["appeal-photo-identity"], ...authority, ...(view.caseKind === "access-or-review-appeal" ? { decisionNoticeDocumentId: ids["appeal-decision-notice"] } : {}), affirmed: true, nonce: completeNonce }) });
+  try { const answer = await completeCsrf.send((csrfToken) => fetch("/api/appeals/session/complete", { method: "POST", credentials: "same-origin",
+   headers: { "content-type": "application/json", "x-inherit-csrf": csrfToken },
+   body: JSON.stringify({ photoIdentityDocumentId: ids["appeal-photo-identity"], ...authority, ...(view.caseKind === "access-or-review-appeal" ? { decisionNoticeDocumentId: ids["appeal-decision-notice"] } : {}), affirmed: true, nonce: completeNonce }) }));
    if (answer.status !== 202) throw new Error("appeal_unavailable");
    const result: unknown = await answer.json();
    if (typeof result !== "object" || result === null || !("status" in result) || result.status !== "review_pending") throw new Error("appeal_unavailable");
    setFinished(true);
   } catch { setFailure(true); } finally { setBusy(false); }
  }
- if (finished) return <section className="mx-auto max-w-3xl px-6 py-section"><h1 className="display display-lg">Your files were sent</h1>
+ if (finished) return <section className="mx-auto max-w-3xl px-6 py-section"><h1 className="display">Your files were sent</h1>
   <p className="mt-6">A named reviewer will review your request. This does not grant access or decide the outcome.</p>
   <p className="mt-4">Your request keeps its original deadline: {new Date(view.deadline).toLocaleDateString("en-GB", { timeZone: "UTC" })}.</p>
   <Button type="button" onClick={() => void readNotice()} disabled={busy}>Check review</Button>
@@ -97,7 +104,7 @@ export function PublicAppealDocuments({ view, documentNonce, completeNonce, docu
   </div>)}
   {failure && <p role="status">This link is not available. No new link or access has been created.</p>}
  </section>;
- return <section className="mx-auto max-w-3xl px-6 py-section"><h1 className="display display-lg">Files for your request</h1>
+ return <section className="mx-auto max-w-3xl px-6 py-section"><h1 className="display">Files for your request</h1>
   {view.informationRequested && <p className="mt-4">You were asked for more files for this same request. Its original deadline has not changed.</p>}
   <p className="mt-6">These documents are used only to review your request. They do not give you access to a record.</p>
   <p className="mt-3">Original deadline: {new Date(view.deadline).toLocaleDateString("en-GB", { timeZone: "UTC" })}.</p>

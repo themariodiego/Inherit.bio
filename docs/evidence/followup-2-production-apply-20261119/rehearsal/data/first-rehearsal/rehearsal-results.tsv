@@ -1,0 +1,20 @@
+# LOCAL ONLY rehearsal (rehearsal/scripts/rehearse.sh, SUITES=1), local stack 127.0.0.1:54322, 2026-11-19, on the mirror of the follow-up's post-state (mirror build 2). Batch 1 from local/ (generate.py local 1); batch 2 has no file (Blocked). Read-backs against local/expected-summaries.json.
+pre	read-back of the mirror	EQUAL batch 1 pre-state summary	ledger 280 20261023140000
+pre	prechecks	rc=0	must_be_zero nonzero: {'guarded_bodies_not_as_rehearsed': 1} | guards ok 10 / 11 | not ok: ['#04 20261025400000_path_a_account_accept_typed_name line 58']
+all	whole release in one block (measure-all.sql, both batches; statement_timeout 2min)	rc=3	1 ERROR line(s): ERROR:  path a typed name prerequisite differs|	0.376s	unchanged
+neg	batch-1 dry run without a session statement_timeout	rc=3	ERROR:  session: set statement_timeout to at most 180s for the session before this statement (a SET inside the block does not bound it)
+neg	batch-1 dry run with statement_timeout 190s	rc=3	ERROR:  session: set statement_timeout to at most 180s for the session before this statement (a SET inside the block does not bound it)
+neg	batch-1 apply with one byte of the embedded 20261024110000 changed	rc=3	ERROR:  integrity: embedded 20261024110000_copilot_settings_delete_nonce.sql is not the reviewed file
+neg	batch-1 apply with the embedded fingerprint query changed	rc=3	ERROR:  integrity: the embedded fingerprint query is not fingerprint.sql
+neg	state after the negative checks	unchanged
+b1	lock probe	rc=3	1 PROBE_LOCKS line	unchanged
+b1	dry run	rc=3	1 ERROR line(s): ERROR:  DRY_RUN_COMPLETE_ALL_CHECKS_PASSED|	0.315s	unchanged	EQUAL batch 1 pre-state summary
+b1	apply	rc=0	SET DO 	0.320s	EQUAL batch 1 post-state summary
+b1	ledger	283 rows, max 20261025200000; new rows: 20261024110000|copilot_settings_delete_nonce|1 20261024220000|session_csrf_tokens|1 20261025200000|consent_revoke_provider_nonce|1 
+b1	re-apply	rc=3	ERROR:  predecessor: ledger has 283 rows, max 20261025200000; expected 280 rows, max 20261023140000	unchanged
+b1	dry run again after the apply	rc=3	ERROR:  predecessor: ledger has 283 rows, max 20261025200000; expected 280 rows, max 20261023140000
+b2	20261025400000 (psql -1 -f) on batch 1's post-state	rc=3	ERROR:  path a typed name prerequisite differs	unchanged
+pgtap	copilot_settings_delete_nonce.sql on batch 1's post-state	rc=0	Files=1, Tests=24,  0 wallclock secs  Result: PASS 		unchanged
+pgtap	session_csrf_tokens.sql on batch 1's post-state	rc=0	Files=1, Tests=30,  0 wallclock secs  Result: PASS 		unchanged
+pgtap	consent_revoke_provider_nonce.sql on batch 1's post-state	rc=0	Files=1, Tests=34,  0 wallclock secs  Result: PASS 		unchanged
+pgtap	path_a_account_accept_typed_name.sql on batch 1's post-state	rc=1	Files=1, Tests=1,  0 wallclock secs  Result: FAIL 		unchanged

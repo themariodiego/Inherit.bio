@@ -24,6 +24,7 @@ import { normalizeSubjectFile } from "@/lib/uploads/subject-normalization";
 import { generateOwnReports } from "@/lib/uploads/own-report-generation";
 import { subjectNormalizationReceipt, subjectReportGenerationFailure } from "@/lib/uploads/subject-upload-contract";
 import { ownUploadJson } from "@/lib/uploads/own-upload-context";
+import { withAccountCsrf } from "@/lib/security/session-csrf";
 
 export const maxDuration = 300;
 
@@ -37,7 +38,8 @@ const ARRAY_KINDS = new Set([
 // Tier-1 processing: storage -> streaming parse -> (liftover) -> canonical
 // variant store -> ancestry results -> report-ready email. Runs entirely
 // inside this deployment: user genotypes never leave it.
-export async function POST(
+export const POST = withAccountCsrf("api.file-process", handlePost);
+async function handlePost(
   request: Request,
   ctx: RouteContext<"/api/files/[id]/process">,
 ) {

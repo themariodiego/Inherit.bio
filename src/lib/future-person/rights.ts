@@ -1,5 +1,4 @@
 import "server-only";
-import crypto from "node:crypto";
 import { z } from "zod";
 import { hmacSecret } from "@/lib/crypto";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -41,19 +40,23 @@ export async function loadClaimantRights(request:Request) {
     finally{await owner.finish();}
     const settled=owner.disposition();
     if(!view||settled.cleanupHeld||settled.pendingActualTasks!==0||settled.ownedMutableBuffers!==0)return null;
-    return {view,csrf:claimantCsrf(hash),recoveryNonce:mintPublicFormToken("future-person-recovery-key",Date.now(),hash),
+    return {view,recoveryNonce:mintPublicFormToken("future-person-recovery-key",Date.now(),hash),
       analysisNonce:mintPublicFormToken("future-person-analysis-stop",Date.now(),hash),
       correctionNonce:view.allowedActionIds.includes("correct")?mintCorrectionIntakeNonce(hash):null};
   }
   const {data,error}=await createAdminClient().rpc("future_person_rights_view_v1",{p_session_hash:hash});
   const parsed=claimantRightsView.safeParse(data);if(error||!parsed.success)return null;
-  return {view:parsed.data,csrf:claimantCsrf(hash),recoveryNonce:mintPublicFormToken("future-person-recovery-key",Date.now(),hash),
+  return {view:parsed.data,recoveryNonce:mintPublicFormToken("future-person-recovery-key",Date.now(),hash),
     analysisNonce:mintPublicFormToken("future-person-analysis-stop",Date.now(),hash),correctionNonce:null};
 }
+/** The claimant session and the operation's one-time nonce, or null. Each of
+ * the three routes verifies and spends the rights session's one-time
+ * X-Inherit-CSRF token before this runs (G8.5, 19 November 2026); until then
+ * the header carried claimantCsrf(hash), compared here. The operation token
+ * travels where it always did: the body nonce or X-Inherit-Operation-Nonce. */
 export function claimantMutation(request:Request,token:string,operation:"future-person-recovery-key"|"future-person-analysis-stop"|"future-person-delete") {
-  const url=new URL(request.url);const hash=claimantSessionHash(request);const csrf=request.headers.get("x-inherit-csrf");
-  if(!hash||url.search!==""||request.headers.get("origin")!==url.origin||request.headers.get("sec-fetch-site")!=="same-origin"
-    ||!csrf||!/^[0-9a-f]{64}$/u.test(csrf)||!crypto.timingSafeEqual(Buffer.from(csrf),Buffer.from(claimantCsrf(hash))))return null;
+  const url=new URL(request.url);const hash=claimantSessionHash(request);
+  if(!hash||url.search!==""||request.headers.get("origin")!==url.origin||request.headers.get("sec-fetch-site")!=="same-origin")return null;
   if(token.length>2048)return null;
   const claims=readPublicFormToken(token,operation,Date.now(),hash);
   return claims?{sessionHash:hash,nonce:claims.nonce}:null;

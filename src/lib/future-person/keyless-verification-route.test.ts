@@ -1,5 +1,6 @@
 import crypto from "node:crypto";
 import {afterAll,beforeEach,describe,expect,it,vi} from "vitest";
+vi.mock("@/lib/security/session-csrf",async importOriginal=>(await import("@/lib/security/session-csrf.test-support")).admitEverySessionCsrf(await importOriginal()));
 const mocks=vi.hoisted(()=>({account:vi.fn(),rpc:vi.fn(),open:vi.fn(()=>true)}));
 vi.mock("@/lib/account-deletion",()=>({getSensitiveAccountContext:mocks.account}));
 vi.mock("@/lib/supabase/server",()=>({createClient:async()=>({rpc:mocks.rpc})}));
@@ -8,7 +9,9 @@ vi.stubEnv("BYOK_ENCRYPTION_KEY",crypto.randomBytes(32).toString("base64"));
 vi.stubEnv("INHERIT_HMAC_KEYRING","");
 const {POST}=await import("@/app/api/reviews/future-person/claims/[id]/verify-documents/route");
 const {sealClaimIntake}=await import("./claim-intake");
-const {reviewCsrf,mintReviewNonce}=await import("./review");
+const {mintReviewNonce}=await import("./review");
+// The gate is driven on this route in src/lib/security/session-csrf-routes.test.ts (G8.5, the migration stage).
+const REVIEWER_GATE_STAND_IN="reviewer-session-token-checked-by-the-gate";
 const {mintKeylessLookupNonce,shapeKeylessVerification}=await import("./keyless-verification");
 const {keylessVerificationProofMatches}=await import("./keyless-verification-proof");
 afterAll(()=>vi.unstubAllEnvs());
@@ -29,7 +32,7 @@ const lookup={case:row,scope,profile:null};
 function request(body:unknown={reviewRevision:1,documentaryAttestation:human,nonce:mintKeylessLookupNonce(ID,ACCOUNT,SESSION)},
   headers:Record<string,string>={},url=`https://test.e2e.local/api/reviews/future-person/claims/${ID}/verify-documents`) {
   return new Request(url,{method:"POST",headers:{origin:"https://test.e2e.local","sec-fetch-site":"same-origin",
-    "content-type":"application/json","x-inherit-csrf":reviewCsrf(ID,ACCOUNT,SESSION),...headers},body:JSON.stringify(body)});
+    "content-type":"application/json","x-inherit-csrf":REVIEWER_GATE_STAND_IN,...headers},body:JSON.stringify(body)});
 }
 const call=(req:Request)=>POST(req,{params:Promise.resolve({id:ID})});
 beforeEach(()=>{
@@ -66,7 +69,8 @@ describe("assigned-review documentary verification route",()=>{
     mocks.open.mockReturnValue(true);
     const normal={reviewRevision:1,documentaryAttestation:human,nonce:mintKeylessLookupNonce(ID,ACCOUNT,SESSION)};
     for(const req of [request(normal,{origin:"https://foreign.e2e.local"}),request(normal,{"sec-fetch-site":"cross-site"}),
-      request(normal,{"content-type":"text/plain"}),request(normal,{"x-inherit-csrf":reviewCsrf(ID,id(99),SESSION)}),
+      request(normal,{"content-type":"text/plain"}),
+      // 2026-11-19 (G8.5): the foreign case digest left this list; the gate refuses a foreign token (session-csrf-routes.test.ts).
       request({...normal,selectedSubject:id(99)}),request({...normal,documentaryAttestation:{...human,parentLink:true}}),
       request({...normal,nonce:mintReviewNonce(ID,ACCOUNT,SESSION)}),
       request({...normal,nonce:mintKeylessLookupNonce(ID,ACCOUNT,SESSION,Date.now()-600001)}),

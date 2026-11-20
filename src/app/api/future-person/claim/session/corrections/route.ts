@@ -7,6 +7,7 @@ import { readCorrectionIntakeJson } from "@/lib/future-person/correction-intake-
 import { applyAppealIntakeHeaders } from "@/lib/future-person/appeal-intake-response";
 import { requesterStatementsOpen } from "@/lib/future-person/requester-statement";
 import { claimantNotFound, claimantResponse } from "@/lib/future-person/rights";
+import { readRightsCsrfSession, withPurposeCsrf } from "@/lib/security/session-csrf";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 const received = z.object({ status: z.literal("review_pending"), correctionId: z.uuid() }).strict();
@@ -48,8 +49,11 @@ async function receive(request: Request, owner: CorrectionIntakeRuntime): Promis
 }
 
 /** Accountless claimant POST. TEST/default guards are independent of a valid
- * token or ciphertext. No cancellation ABI, expiry ACK or rollback is invented. */
-export async function POST(request: Request): Promise<Response> {
+ * token or ciphertext. No cancellation ABI, expiry ACK or rollback is invented.
+ * The page's one-time X-Inherit-CSRF token for the rights session is verified
+ * and spent before this runs (G8.5); the intake nonce is checked as before. */
+export const POST = withPurposeCsrf("api.future-person-correction", readRightsCsrfSession, handlePost);
+async function handlePost(request: Request): Promise<Response> {
   if (!requesterStatementsOpen()) return privateResponse(claimantNotFound());
   const owner = createCorrectionIntakeRuntime(request.signal);
   let response: Response;

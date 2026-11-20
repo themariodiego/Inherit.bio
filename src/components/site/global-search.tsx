@@ -12,7 +12,7 @@
  * is plain text beside the label. Search returns destinations only.
  */
 import { Search as SearchIcon } from "lucide-react";
-import Link from "next/link";
+import { IntentLink } from "@/components/site/intent-link";
 import { useRouter } from "next/navigation";
 import {
   useCallback,
@@ -241,7 +241,7 @@ export function GlobalSearch() {
                   <ul className="flex flex-col">
                     {group.results.map((result) => (
                       <li key={result.href}>
-                        <Link
+                        <IntentLink
                           href={result.href}
                           onClick={close}
                           className="flex min-h-11 items-center gap-3 rounded-sm px-3 py-2 text-sm text-ink transition-colors hover:bg-tint focus-visible:bg-tint"
@@ -255,7 +255,7 @@ export function GlobalSearch() {
                               {result.chip}
                             </span>
                           ) : null}
-                        </Link>
+                        </IntentLink>
                       </li>
                     ))}
                   </ul>

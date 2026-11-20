@@ -27,6 +27,8 @@ import { cn } from "@/lib/utils";
 import { loadCohorts, loadViewer } from "./context";
 import { acknowledged } from "@/lib/embryos/tier2";
 import { loadSavedEmbryoStatisticalCoverage } from "@/lib/embryos/statistical-read";
+import { prepareCohortUploaderWithdrawals, type EmbryoUploaderWithdrawalView } from "@/lib/embryos/uploader-withdrawal";
+import { getPageAccountContext } from "@/lib/page-account-context";
 
 export const metadata: Metadata = { title: EMBRYOS_H1 };
 
@@ -50,6 +52,14 @@ export default async function EmbryosPage() {
   const allowed = permits(decision);
 
   const cohorts = allowed ? await loadCohorts(user.id) : [];
+  // The non-parent uploader's withdrawal of its upload permission, on each
+  // cohort it uploaded as such (owner decision of 19 November 2026); none
+  // for a parent, and none without a live account session to bind its code to.
+  const account = allowed && cohorts.some((cohort) => cohort.viewerRole === "nonparent_uploader_owner")
+    ? await getPageAccountContext() : null;
+  const uploaderWithdrawals = account && account.user.id === user.id
+    ? await prepareCohortUploaderWithdrawals({ accountId: account.user.id, sessionId: account.sessionId }, cohorts)
+    : new Map<string, EmbryoUploaderWithdrawalView>();
   const cohortDecisions = new Map(
     await Promise.all(
       cohorts.map(async (cohort) => [cohort.id, await cohortCapability(user.id, cohort, EMBRYO_ANALYSIS)] as const),
@@ -128,6 +138,7 @@ export default async function EmbryosPage() {
                   statisticalCoverage={statisticalCoverage.get(cohort.id)}
                   coverage={coverage.get(cohort.id)?.rows}
                   coverageReadFailed={coverage.get(cohort.id)?.failed}
+                  uploaderWithdrawal={uploaderWithdrawals.get(cohort.id) ?? null}
                 />
               );
             })}

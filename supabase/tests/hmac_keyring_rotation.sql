@@ -142,14 +142,20 @@ select throws_ok($$select public.respond_adult_subject_invitation_session_v1(
  '7e000000-0000-0000-0000-000000000003', pg_temp.h('r1'))$$,
  '55000', 'keyed digest set required',
  'after rotation the account address must be presented under every usable revision');
-select is(public.respond_adult_subject_invitation_session_v1(
- repeat('5',64), 'confirm', 'keyring-session-wrong-aaaaaaaa',
- '7e000000-0000-0000-0000-000000000003', null, pg_temp.pair('q')),
- 'unavailable', 'a different address still cannot accept');
-select is(public.respond_adult_subject_invitation_session_v1(
- repeat('5',64), 'confirm', 'keyring-session-accept-aaaaaaa',
- '7e000000-0000-0000-0000-000000000003', null, pg_temp.pair('r')),
- 'accepted', 'the revision-1 session still accepts under the rotated keyring');
+-- 20261025400000 (D-103): Path A's acceptance includes the typed name and goes
+-- through the account door api.invitation-accept calls, which keys the
+-- address exactly as the session door does.
+insert into auth.sessions (id, user_id, created_at, updated_at, aal) values
+ ('7e000000-0000-0000-0000-000000000013','7e000000-0000-0000-0000-000000000003',now(),now(),'aal1');
+select is(public.accept_adult_subject_invitation_v1(
+ repeat('5',64), 'keyring-session-wrong-aaaaaaaa', '7e000000-0000-0000-0000-000000000003',
+ '7e000000-0000-0000-0000-000000000013', pg_temp.pair('q'), decode(repeat('5a',28),'hex')),
+ null::uuid, 'a different address still cannot accept');
+select is(public.accept_adult_subject_invitation_v1(
+ repeat('5',64), 'keyring-session-accept-aaaaaaa', '7e000000-0000-0000-0000-000000000003',
+ '7e000000-0000-0000-0000-000000000013', pg_temp.pair('r'), decode(repeat('5a',28),'hex')),
+ (select target_id from public.subject_invitations where id=(select invitation_id from inv_r)),
+ 'the revision-1 session still accepts under the rotated keyring');
 
 -- A refusal under revision 2 bars the address under revision 1 as well, so the
 -- other inviter's pending revision-1 invitation stops working.

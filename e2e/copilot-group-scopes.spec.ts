@@ -4,6 +4,7 @@ import { createConfirmedUser, signIn } from "./helpers";
 import { COPY_IDS, FAMILY_SCOPE_LABEL } from "../src/copy/copilot/group-scopes";
 import { HUB_TILES } from "../src/copy/family/index";
 import { grantAnalysis, seedPublishedCohort } from "./cohort-copilot-seed";
+import { accountCsrf } from "./helpers/session-csrf";
 
 /**
  * The Copilot group scopes on a deployment that cannot run a local model:
@@ -79,7 +80,9 @@ test("a chat request for the Family scope is refused here before any read, with 
   await page.goto("/overview");
   // No page on this deployment mints a Family context, so a forged one is
   // not even recognised as Family; the own scope then refuses it as well.
-  const response = await page.request.post("/api/chat", { headers: { origin: new URL(page.url()).origin },
+  // The page's own fresh X-Inherit-CSRF token, so the refusal is the chat's own (G8.5).
+  const response = await page.request.post("/api/chat", { headers: { origin: new URL(page.url()).origin,
+    "x-inherit-csrf": await accountCsrf(page, "api.chat") },
     data: { contextToken: "forged-family-context-token-value", message: "What did they share?" } });
   expect([403, 404]).toContain(response.status());
   expect(await response.text()).not.toContain("What did they share?");

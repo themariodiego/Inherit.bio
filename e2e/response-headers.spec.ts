@@ -19,8 +19,8 @@ const REQUIRED: Record<string, string> = {
   "x-frame-options": "DENY",
 };
 
-function expectSensitiveHeaders(headers: Record<string, string>, label: string) {
-  for (const [name, value] of Object.entries(REQUIRED)) {
+function expectSensitiveHeaders(headers: Record<string, string>, label: string, overrides: Record<string, string> = {}) {
+  for (const [name, value] of Object.entries({ ...REQUIRED, ...overrides })) {
     expect(headers[name], `${label}: ${name}`).toBe(value);
   }
 }
@@ -37,21 +37,30 @@ test("signed-out request to a protected page redirects with the sensitive header
   const res = await page.request.get("/overview", { maxRedirects: 0 });
   expect(res.status()).toBe(307);
   expect(res.headers()["location"]).toMatch(/\/auth\/sign-in\?next=%2Foverview/);
-  expectSensitiveHeaders(res.headers(), "redirect");
+  // authenticated-page-signin-redirect-v1 names no-referrer for this redirect,
+  // which the proxy builds itself (register wholeRouteReferrerRuleOutsideApi).
+  expectSensitiveHeaders(res.headers(), "redirect", { "referrer-policy": "no-referrer" });
 });
 
 test("signed-in product pages and API responses carry the sensitive header set", async ({
   page,
 }) => {
   await signIn(page, USER.email, USER.password);
+  // genome.reports is bound to two contracts that name no-referrer
+  // (owned-file-redirect-response-v1, resource-not-found-page-v1), so by the
+  // whole-route rule every answer of the page carries it; the other three keep
+  // same-origin.
+  const referrer: Record<string, string> = { "/genome/me/reports": "no-referrer" };
   for (const path of ["/overview", "/genome/me", "/genome/me/reports", "/settings"]) {
     const res = await page.request.get(path);
     expect(res.ok(), path).toBe(true);
-    expectSensitiveHeaders(res.headers(), path);
+    expectSensitiveHeaders(res.headers(), path, path in referrer ? { "referrer-policy": referrer[path]! } : {});
   }
   const api = await page.request.get("/api/export", { maxRedirects: 0 });
-  // Whatever the export endpoint answers, its headers are the sensitive set.
-  expectSensitiveHeaders(api.headers(), "/api/export");
+  // Whatever the export endpoint answers, its headers are the sensitive set,
+  // with the no-referrer of `sensitiveResponseHeaderBindings.downloadOrExport`
+  // (D-138 (a)): the proxy sets it, and Next keeps the proxy's header.
+  expectSensitiveHeaders(api.headers(), "/api/export", { "referrer-policy": "no-referrer" });
 });
 
 test("public marketing pages are not forced into the no-store profile", async ({ page }) => {

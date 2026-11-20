@@ -171,14 +171,6 @@ export function ownSystemMessage(prompt: string, subjectLabel: string): string {
   return `${prompt}\nThe authorized subject is ${subjectLabel}. ${OWN_SOURCE_RULES}`;
 }
 
-/** The legacy own-scope system message (src/app/api/chat/route.ts), with the subject's processed-file count. */
-export function ownLegacySystemMessage(subjectLabel: string, processedFiles: number): string {
-  const fileNote = processedFiles > 0
-    ? `The resolved subject is "${subjectLabel}". Combine ${processedFiles} processed files; if files disagree at a position, return no genotype.`
-    : `The resolved subject is "${subjectLabel}" and has no processed genome file yet; tools will return empty results.`;
-  return `${OWN_SYSTEM_PROMPT}\n\n${fileNote}`;
-}
-
 /** The Family group scope's system message, naming whose shared reports the tools may read this turn. */
 export function familySystemMessage(readable: readonly { displayLabel: string; ref: string }[]): string {
   const readableNow = readable.length ? readable.map((member) => `${member.displayLabel} (${member.ref})`).join(", ") : "nobody";

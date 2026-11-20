@@ -31,6 +31,8 @@ import { CARRIER_LIBRARY_READ_FAILED } from "@/copy/embryos/carrier-library";
 import { route } from "@/lib/primary-routes";
 import type { StatisticalCoverageRead } from "@/lib/embryos/statistical-read";
 import { StatisticalCoverage } from "./statistical-coverage";
+import { EmbryoUploaderWithdrawal } from "./uploader-withdrawal";
+import type { EmbryoUploaderWithdrawalView } from "@/lib/embryos/uploader-withdrawal-client";
 
 export interface CohortCardProps {
   cohort: EmbryoCohortView;
@@ -41,6 +43,12 @@ export interface CohortCardProps {
   cohortNumber?: number;
   coverage?: readonly CarrierLibraryCoverageRow[] | null;
   coverageReadFailed?: boolean;
+  /**
+   * The non-parent uploader's withdrawal of its upload permission (owner
+   * decision of 19 November 2026), only on a cohort the viewer uploaded as
+   * its non-parent uploader; absent for every parent.
+   */
+  uploaderWithdrawal?: EmbryoUploaderWithdrawalView | null;
 }
 
 /** The role word the analysis line names; nobody is named. */
@@ -48,7 +56,8 @@ export function analysisRole(cohort: EmbryoCohortView): string | null {
   return waitingRole(analysisConsent(cohort));
 }
 
-export function CohortCard({ cohort, jurisdictionCopy, coverage = null, coverageReadFailed = false, statisticalCoverage, cohortNumber }: CohortCardProps) {
+export function CohortCard({ cohort, jurisdictionCopy, coverage = null, coverageReadFailed = false, statisticalCoverage, cohortNumber,
+  uploaderWithdrawal = null }: CohortCardProps) {
   const role = analysisRole(cohort);
   const dispositions = new Set(cohort.embryos.map((embryo) => embryo.status));
   const conditionNames = new Map(allowedConditions().map(entry => [entry.condition_id, entry.condition_name]));
@@ -127,6 +136,7 @@ export function CohortCard({ cohort, jurisdictionCopy, coverage = null, coverage
           {RETENTION_TRANSFERRED}
         </p>
       ) : null}
+      {uploaderWithdrawal ? <EmbryoUploaderWithdrawal view={uploaderWithdrawal} /> : null}
     </li>
   );
 }

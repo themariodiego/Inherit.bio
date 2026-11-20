@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useCsrf } from "@/components/security/csrf-provider";
+import type { CsrfHandle } from "@/lib/security/session-csrf-client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,24 +15,28 @@ import type { OwnUploadView } from "@/lib/uploads/own-upload-view";
 import type { OwnUploadLimits } from "@/lib/uploads/subject-upload-contract";
 import { OWN_UPLOAD_COPY as COPY } from "@/copy/upload/consent";
 
-export function OwnUploadFlow({ view, limits = null }: { view: OwnUploadView; limits?: OwnUploadLimits | null }) {
+export function OwnUploadFlow({ view, limits = null, readCalling = false }: { view: OwnUploadView;
+  limits?: OwnUploadLimits | null; /** TEST-LOCAL read calling (ADR 0038), server-decided. */ readCalling?: boolean }) {
   const router = useRouter();
   const [checked, setChecked] = useState(false);
   const [pending, setPending] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Each request sends the shell's one-time X-Inherit-CSRF token for its
+  // route; the page's presentation token travels only in the body (G8.5).
+  const completionCsrf = useCsrf("api.account-completion"), consentsCsrf = useCsrf("api.consents");
   if (view.kind === "unavailable" || view.kind === "underage") {
     return <p role="status" className="surface-inset surface-pad-sm max-w-measure text-ink">
       {view.kind === "underage" ? COPY.underage : COPY.unavailable}</p>;
   }
-  if (view.kind === "ready") return <Uploader subjectId={view.subjectId} limits={limits} />;
+  if (view.kind === "ready") return <Uploader subjectId={view.subjectId} limits={limits} readCalling={readCalling} />;
 
-  async function submit(path: string, body: unknown, token: string, refresh: boolean) {
+  async function submit(path: string, body: unknown, csrf: CsrfHandle, refresh: boolean) {
     setPending(true); setError(null);
     try {
-      const res = await fetch(path, { method: "POST", headers: {
-        "content-type": "application/json", "x-inherit-csrf": token,
-      }, body: JSON.stringify(body) });
+      const res = await csrf.send((csrfToken) => fetch(path, { method: "POST", headers: {
+        "content-type": "application/json", "x-inherit-csrf": csrfToken,
+      }, body: JSON.stringify(body) }));
       if (!res.ok) throw new Error("not_saved");
       setSaved(true);
       if (refresh) router.refresh();
@@ -42,7 +48,7 @@ export function OwnUploadFlow({ view, limits = null }: { view: OwnUploadView; li
       event.preventDefault();
       const dateOfBirth = String(new FormData(event.currentTarget).get("dateOfBirth") ?? "");
       if (!isAdultOnUtcDate(dateOfBirth)) { setError(COPY.adultRequired); return; }
-      await submit(route("api.account-completion"), { dateOfBirth, presentationToken: view.token }, view.token, true);
+      await submit(route("api.account-completion"), { dateOfBirth, presentationToken: view.token }, completionCsrf, true);
     }}>
       <div className="plate-head"><h2 className="eyebrow">{COPY.accountHeading}</h2></div>
       <div className="plate-body rec-stack">
@@ -87,7 +93,7 @@ export function OwnUploadFlow({ view, limits = null }: { view: OwnUploadView; li
     action: "sign-artifact", signatureClass: "tier1-self", subjectId: view.subjectId,
     artifactVersion: view.artifact.version, artifactPresentationToken: view.token, affirmed: true,
     statementKeys: [...OWN_UPLOAD_STATEMENTS[view.artifact.key]],
-  }, view.token, true);
+  }, consentsCsrf, true);
   return <section className="plate">
     <div className="plate-head">
       <h2 className="eyebrow">{own ? COPY.ownHeading : COPY.insuranceHeading}</h2>
@@ -103,7 +109,7 @@ export function OwnUploadFlow({ view, limits = null }: { view: OwnUploadView; li
         }} /><span>{own ? COPY.ownCheckbox : COPY.insuranceCheckbox}</span></label>
       {error ? <p role="alert" className="text-sm text-danger">{error}</p> : null}
       {saved ? <p role="status" className="text-sm">{COPY.saved}</p> : null}
-      {own ? <Uploader subjectId={view.subjectId} limits={limits} disabled framed={false} /> : <div><Button onClick={() => void sign()}
+      {own ? <Uploader subjectId={view.subjectId} limits={limits} readCalling={readCalling} disabled framed={false} /> : <div><Button onClick={() => void sign()}
         disabled={!checked || pending || saved}>{pending ? COPY.saving : COPY.insuranceContinue}</Button></div>}
     </div>
   </section>;

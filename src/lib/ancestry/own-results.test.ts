@@ -3,9 +3,11 @@ import type { Db } from "../genome/load";
 import { computeOwnAncestryContent, CURRENT_OWN_ANCESTRY_PANEL } from "../uploads/own-ancestry-content";
 import { computeOwnAncestryContentV3, SEVEN_OWN_ANCESTRY_PANEL } from "../uploads/own-ancestry-content-v3";
 import { computeOwnAncestryContentV4 } from "../uploads/own-ancestry-content-v4";
+import { computeOwnAncestryContentV5 } from "../uploads/own-ancestry-content-v5";
+import { NEANDERTHAL_PANEL } from "../genome/neanderthal-panel";
 import { REGIONAL_AIMS, REGIONAL_CAVEAT } from "../genome/regional-admixture";
 import { LINEAGE_NO_POSITIONS } from "@/copy/ancestry";
-import { loadAncestryResults, loadOwnAncestryRows, UNCOMPUTED_LINEAGE } from "./own-results";
+import { loadAncestryResultSnapshot, loadAncestryResults, loadOwnAncestryRows, UNCOMPUTED_LINEAGE } from "./own-results";
 
 const mocks = vi.hoisted(() => ({ actor: vi.fn(), rpc: vi.fn(), candidates: vi.fn(), filter: vi.fn() }));
 vi.mock("../uploads/own-upload-context", () => ({ currentOwnUploadAccount: mocks.actor }));
@@ -159,5 +161,39 @@ describe("checked own ancestry result projection", () => {
     expect(rows[0].file_id).toBe(fileId);
     expect(rows.at(-1)?.file_id).toBe(siblingId);
     expect(JSON.stringify(rows)).not.toContain("unexpected");
+  });
+
+  // The ancestry page reads `neanderthal` from this snapshot whenever the
+  // TEST-LOCAL flag is set, for every record it shows. A record saved before
+  // revision 5 (a revision-4 capture, or a legacy row) has no estimate, and
+  // must reach the page as an empty list, never as a missing one.
+  it("returns the Neanderthal estimate only from a revision-5 capture, and an empty list on every other path", async () => {
+    const v4 = computeOwnAncestryContentV4({ source: content().source, calls: [], panel: SEVEN_OWN_ANCESTRY_PANEL });
+    const legacy = { id: siblingId, single_logical_sample_verified_at: null };
+    const table = { select: vi.fn(), eq: vi.fn(), in: vi.fn(), order: vi.fn() };
+    table.select.mockReturnValue(table); table.eq.mockReturnValue(table); table.in.mockReturnValue(table);
+    table.order.mockResolvedValue({ data: [{ kind: "admixture", file_id: siblingId, created_at: "2026-09-07T00:30:00Z", result: {} }], error: null });
+    const reader = { from: vi.fn().mockReturnValue(table) } as unknown as Db;
+    // A serialized revision-4 capture beside a legacy row: both shown, no estimate.
+    mocks.candidates.mockResolvedValue([file, legacy]);
+    mocks.rpc.mockResolvedValue({ data: { ...receipt(), content: JSON.parse(JSON.stringify(v4)) }, error: null });
+    const saved = await loadAncestryResultSnapshot(db, reader, subjectId);
+    expect(saved.rows.map(row => row.file_id)).toEqual([fileId, fileId, fileId, siblingId]);
+    expect(saved.neanderthal).toEqual([]);
+    // A legacy row alone, no account, and no file at all: the early returns.
+    mocks.candidates.mockResolvedValue([legacy]);
+    expect((await loadAncestryResultSnapshot(db, reader, subjectId)).neanderthal).toEqual([]);
+    mocks.candidates.mockResolvedValue([file]); mocks.actor.mockResolvedValue(null);
+    expect((await loadAncestryResultSnapshot(db, reader, subjectId)).neanderthal).toEqual([]);
+    mocks.candidates.mockResolvedValue([]);
+    expect((await loadAncestryResultSnapshot(db, reader, subjectId)).neanderthal).toEqual([]);
+    // Revision 5: the estimate, as display fields only.
+    mocks.actor.mockResolvedValue({ accountId: "account", sessionId: "session" }); mocks.candidates.mockResolvedValue([file]);
+    const v5 = computeOwnAncestryContentV5(v4, { panelSites: NEANDERTHAL_PANEL.siteCount, coveredSites: 180, archaicSites: 73,
+      estimate: 73 / 180, interval: { low: 0.333, high: 0.461 }, resamples: 200 });
+    mocks.rpc.mockResolvedValue({ data: { ...receipt(), content: JSON.parse(JSON.stringify(v5)) }, error: null });
+    expect((await loadAncestryResultSnapshot(db, db, subjectId)).neanderthal).toEqual([{ file_id: fileId, created_at: "2026-09-07T01:00:00Z",
+      panelId: NEANDERTHAL_PANEL.id, panelVersion: NEANDERTHAL_PANEL.version, panelSites: NEANDERTHAL_PANEL.siteCount,
+      coveredSites: 180, archaicSites: 73, estimate: 73 / 180, interval: { low: 0.333, high: 0.461 }, basis: "modelled" }]);
   });
 });

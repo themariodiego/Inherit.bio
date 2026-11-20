@@ -111,7 +111,27 @@ select g.grant_id,1,r.recipient_principal_id,r.recipient_account_id,r.id,1,'subj
 from nb_grant g cross join public.subject_relationships r where r.subject_id=pg_temp.sid('nb') and r.relationship_kind='uploader';
 grant select on nb_grant to service_role;
 
+-- G5.6 (20261023130000): the bind records its one nonce, the rights
+-- session's, with the signed-in account and its auth session, so its event
+-- names the account. Planted first: the nonce recorded with no account, as
+-- before, names no one.
+savepoint unproven_bind;
+create or replace function private.adult_subject_control_for_account_v1(p_session_hash text,p_nonce text,p_action text,
+ p_route_id text,p_test_jurisdiction boolean,p_account_id uuid,p_auth_session_id uuid) returns jsonb language sql
+ security definer set search_path='' as $f$
+ select private.adult_subject_control_v1(p_session_hash,p_nonce,p_action,p_route_id,p_test_jurisdiction) $f$;
+select set_config('request.jwt.claims','{"role":"service_role"}',true),set_config('inherit.legal_audit_actor','',true);
+select pg_temp.bind('current','bind-nonce-good-00000000001');
+select is((select audit_principal_id from public.legal_audit_log where event_code='subject.account-bound' and route_id='api.adult-subject-bind' order by seq desc limit 1),null::uuid,
+ 'planted: a bind whose nonce is recorded with no account names no one');
+rollback to unproven_bind;
+select set_config('request.jwt.claims','{"role":"service_role"}',true),set_config('inherit.legal_audit_actor','',true);
 create temporary table bound as select pg_temp.bind('current','bind-nonce-good-00000000001') r;
+select ok(coalesce((select audit_principal_id from public.legal_audit_log where event_code='subject.account-bound' and route_id='api.adult-subject-bind' order by seq desc limit 1)
+  =(select audit_principal_id from private.legal_audit_account_principals where account_id=pg_temp.a('2')),false),'the bind names the account that bound the record');
+select ok((select account_id=pg_temp.a('2') and session_id=pg_temp.s('2') and operation='adult_subject_control_bind_account'
+ from public.embryo_operation_nonces where nonce_hash=encode(extensions.digest(convert_to('bind-nonce-good-00000000001','UTF8'),'sha256'),'hex')),
+ 'its one nonce is recorded once, with the account and its auth session');
 select is((select r from bound),jsonb_build_object('status','account_bound','subjectId',pg_temp.sid('nb'),
  'next','review_purposes_and_optionally_transfer_ownership'),'the bind answers adult-subject-bound-v1');
 select ok((select s.subject_account_id=pg_temp.a('2') and s.owner_account_id=pg_temp.a('1')

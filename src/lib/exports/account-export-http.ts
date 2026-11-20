@@ -11,7 +11,7 @@ import {accountExportActor,mintAccountExportCsrf,verifyAccountExportCsrf,createA
 import {approvedAccountArchiveGeneration,type AccountArchiveGenerationCapability} from "./account-archive-generation";
 import {randomBytes,createHash} from "node:crypto";
 import {currentAccountExportReady,publicAccountExportReady,type AccountExportDeliveryCapability} from "./account-export-delivery";
-import {ACCOUNT_ARCHIVE_CHUNK_BYTES,ACCOUNT_ARCHIVE_FILENAME,accountExportDownload} from "./account-export-delivery-contract";
+import {ACCOUNT_ARCHIVE_CHUNK_BYTES,ACCOUNT_ARCHIVE_FILENAME,EXPORT_PROOF_HEADER,accountExportDownload} from "./account-export-delivery-contract";
 import {configuredTestAccountArchive} from "./account-archive-test-capabilities";
 
 const uuid=z.uuid(),hash=z.string().regex(/^[a-f0-9]{64}$/u),revision=z.number().int().positive().safe();
@@ -120,7 +120,7 @@ export async function postAccountExport(request:Request,deps:AccountExportHttpDe
   if(url.search||request.headers.get("content-type")?.split(";")[0].trim().toLowerCase()!=="application/json")return invalid();
   const body=bodySchema.safeParse(await readBody(request));if(!body.success)return invalid();
   const rpc=deps.rpc(),capture=captureSchema.parse(await invoke(rpc,actor,"capture",request.signal));
-  const csrf=verifyAccountExportCsrf(request.headers.get("x-inherit-csrf"),{actor,originBinding:capture.originBinding,
+  const csrf=verifyAccountExportCsrf(request.headers.get(EXPORT_PROOF_HEADER),{actor,originBinding:capture.originBinding,
    authorityReceipt:capture.authorityReceipt,operation:body.data.operation});if(!csrf)return forbidden();
   if(body.data.operation==="open-ready"){
    const cookie=readAccountExportCookie(request,actor);if(!cookie)return notFound();

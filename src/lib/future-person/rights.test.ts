@@ -2,10 +2,14 @@ import crypto from "node:crypto";
 import {afterAll,beforeEach,describe,expect,it,vi} from "vitest";
 const mocks=vi.hoisted(()=>({rpc:vi.fn()}));
 vi.mock("@/lib/supabase/admin",()=>({createAdminClient:()=>({rpc:mocks.rpc})}));
+// The one-time X-Inherit-CSRF gate passes through here; it is tested on these
+// routes, through the same handlers, in src/lib/security/session-csrf-routes.test.ts.
+vi.mock("@/lib/security/session-csrf",async importOriginal=>
+ (await import("@/lib/security/session-csrf.test-support")).admitEverySessionCsrf(await importOriginal()));
 vi.stubEnv("BYOK_ENCRYPTION_KEY",crypto.randomBytes(32).toString("base64"));
 const {RIGHTS_COOKIE_NAME,rightsSessionHash}=await import("@/lib/embryos/rights-session");
 const {mintPublicFormToken}=await import("@/lib/embryos/operation-token");
-const {claimantMutation,claimantCsrf,loadClaimantRights}=await import("./rights");
+const {claimantMutation,loadClaimantRights}=await import("./rights");
 const {POST}=await import("@/app/api/future-person/claim/session/recovery-key/route");
 const {DELETE}=await import("@/app/api/future-person/claim/session/analysis/route");
 afterAll(()=>vi.unstubAllEnvs());beforeEach(()=>mocks.rpc.mockReset());
@@ -13,15 +17,19 @@ const secret=crypto.randomBytes(32).toString("base64url");const hash=rightsSessi
 const cookie=`${RIGHTS_COOKIE_NAME}=${secret}`;
 function request(path:string,method:string,body?:unknown,extra:Record<string,string>={}) {
  return new Request(`https://example.test${path}`,{method,headers:{cookie,origin:"https://example.test","sec-fetch-site":"same-origin",
-  "x-inherit-csrf":claimantCsrf(hash),...(body?{"content-type":"application/json"}:{}),...extra},...(body?{body:JSON.stringify(body)}:{})});
+ // 2026-11-19 (G8.5): the rights session's one-time token, admitted by the gate above; it was claimantCsrf(hash).
+  "x-inherit-csrf":"the-rights-session-token-the-gate-admitted",...(body?{"content-type":"application/json"}:{}),...extra},...(body?{body:JSON.stringify(body)}:{})});
 }
 describe("claimant controls bind each operation and current cookie without account authority",()=>{
- it("refuses changed operations, cookies, origin, site and CSRF before any RPC",()=>{
+ it("refuses changed operations, cookies, origin and site before any RPC",()=>{
   const token=mintPublicFormToken("future-person-recovery-key",Date.now(),hash);
   expect(claimantMutation(request("/api/future-person/claim/session/recovery-key","POST"),token,"future-person-recovery-key")).toMatchObject({sessionHash:hash});
   expect(claimantMutation(request("/api/future-person/claim/session/recovery-key","POST"),token,"future-person-analysis-stop")).toBeNull();
   const refusedHeaders:Record<string,string>[]=[{cookie:`${cookie}; ${cookie}`},{cookie:`${RIGHTS_COOKIE_NAME}=${crypto.randomBytes(32).toString("base64url")}`},
-   {origin:"https://other.test"},{"sec-fetch-site":"cross-site"},{"x-inherit-csrf":"a".repeat(64)}];
+   // 2026-11-19 (G8.5): {"x-inherit-csrf":"a".repeat(64)} left this list: the header is the rights session's
+   // one-time token, refused by the gate before claimantMutation runs (the claimant routes' cases of
+   // src/lib/security/session-csrf-routes.test.ts), and claimantMutation no longer reads it.
+   {origin:"https://other.test"},{"sec-fetch-site":"cross-site"}];
   for(const headers of refusedHeaders)
    expect(claimantMutation(request("/api/future-person/claim/session/recovery-key","POST",undefined,headers),token,"future-person-recovery-key")).toBeNull();
   expect(mocks.rpc).not.toHaveBeenCalled();
@@ -32,7 +40,8 @@ describe("claimant controls bind each operation and current cookie without accou
   const loaded=await loadClaimantRights(new Request("https://example.test/withdraw/session",{headers:{cookie}}));
   expect(loaded?.view.safeClaimedSubjectLabel).toBe("Your claimed record");
   expect(mocks.rpc.mock.calls).toEqual([["future_person_rights_view_v1",{p_session_hash:hash}]]);
-  expect(loaded?.csrf).not.toBe(loaded?.recoveryNonce);expect(loaded?.recoveryNonce).not.toBe(loaded?.analysisNonce);
+  // 2026-11-19 (G8.5): the page no longer carries a claimant CSRF digest; each route's token comes from the page's provider.
+  expect(loaded).not.toHaveProperty("csrf");expect(loaded?.recoveryNonce).not.toBe(loaded?.analysisNonce);
   mocks.rpc.mockResolvedValue({data:{...loaded?.view,genotype:"forbidden"},error:null});
   expect(await loadClaimantRights(new Request("https://example.test/withdraw/session",{headers:{cookie}}))).toBeNull();
  });

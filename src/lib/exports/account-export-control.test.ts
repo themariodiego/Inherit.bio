@@ -1,5 +1,6 @@
 import {randomUUID} from "node:crypto";
 import {afterEach,describe,expect,it,vi} from "vitest";
+import {csrfHandle} from "@/lib/security/session-csrf-client";
 import {requestAccountExport,type AccountExportControl} from "./account-export-control";
 
 afterEach(()=>vi.useRealTimers());
@@ -8,11 +9,14 @@ const signal=()=>new AbortController().signal;
 describe("settings complete export transport",()=>{
  it("uses the genuine presented pair for one POST, then cookie-only GET with the same returned identity",async()=>{
   const exportId=randomUUID(),transport=vi.fn<(url:string,init:RequestInit)=>Promise<Response>>(async()=>Response.json({status:"preparing",exportId},{status:202}));
-  const created=await requestAccountExport({operation:"create",control,expectedExportId:null,signal:signal(),transport});
+  // 2026-11-19 (G8.5): the route's one-time session token from the page's chain rides in X-Inherit-CSRF; the
+  // presented proof, which rode there, in X-Inherit-Operation-Proof.
+  const session=`${1_800_000_000_000}.${"A".repeat(43)}.${"0".repeat(64)}`;
+  const created=await requestAccountExport({operation:"create",control,expectedExportId:null,signal:signal(),transport,csrf:csrfHandle(session)});
   expect(created).toEqual({status:"preparing",exportId});
   const [url,post]=transport.mock.calls[0];expect(url).toBe("/api/export");
   expect(post).toMatchObject({method:"POST",cache:"no-store",credentials:"same-origin",redirect:"error",
-   headers:{"Content-Type":"application/json","X-Inherit-CSRF":"synthetic-csrf-proof"},
+   headers:{"Content-Type":"application/json","X-Inherit-Operation-Proof":"synthetic-csrf-proof","X-Inherit-CSRF":session},
    body:'{"operation":"create","nonce":"synthetic-action-proof"}'});
   expect(Object.keys(post).sort()).toEqual(["body","cache","credentials","headers","method","redirect","signal"]);
   const polled=await requestAccountExport({operation:"check",control:{available:false},expectedExportId:exportId,signal:signal(),transport});

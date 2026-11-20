@@ -7,7 +7,7 @@ const SUBJECT = "79140000-0000-4000-8000-000000000001";
 
 function choice(purposeKey: OwnReportPurpose, granted: boolean,
   reconsent: Ready["view"]["choices"][number]["reconsent"] = null) {
-  return { purposeKey, label: purposeKey, description: "", granted, grantId: granted ? SUBJECT : null,
+  return { purposeKey, label: purposeKey, description: "", granted, grantId: granted ? SUBJECT : null, revokeNonce: granted ? "revoke-nonce" : null,
     artifact: { key: `consent.${purposeKey}`, version: 2, body: "" }, token: "token", statementKeys: [], reconsent };
 }
 

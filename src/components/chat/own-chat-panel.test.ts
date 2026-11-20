@@ -20,6 +20,13 @@ vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: harness.refresh
 vi.mock("next/link", () => ({ default: "a" }));
 vi.mock("@/components/ui/button", () => ({ Button: "button" }));
 vi.mock("@/components/ui/textarea", () => ({ Textarea: "textarea" }));
+// The page's rendered one-time X-Inherit-CSRF token (G8.5). The provider and
+// its context are tested in src/lib/security; here the handler's request is.
+const CSRF = vi.hoisted(() => `1800000000000.${"C".repeat(43)}.${"b".repeat(64)}`);
+vi.mock("@/components/security/csrf-provider", async () => {
+  const { csrfHandle } = await import("@/lib/security/session-csrf-client");
+  return { useCsrf: () => csrfHandle(CSRF) };
+});
 import { OwnChatPanel } from "./own-chat-panel";
 import { ownChatCorrection, OWN_CHAT_CORRECTION_NOTICE } from "@/lib/copilot/own-chat-correction";
 
@@ -77,6 +84,9 @@ describe("own chat correction client contract", () => {
     expect(control(tree, "button", "Send").disabled).toBe(true);
     expect(text(tree)).not.toContain("Review your Copilot settings before asking again");
     expect(harness.fetch).toHaveBeenCalledTimes(2);
+    // G8.5: the turn carries the route's one-time token in its header; the body is unchanged.
+    expect(harness.fetch.mock.calls[1][0]).toBe("/api/chat");
+    expect((harness.fetch.mock.calls[1][1] as RequestInit).headers).toEqual({ "content-type": "application/json", "X-Inherit-CSRF": CSRF });
     expect(harness.refresh).not.toHaveBeenCalled();
     (control(tree, "form").onSubmit as (event: unknown) => void)({ preventDefault() {} });
     expect(harness.fetch).toHaveBeenCalledTimes(2);
@@ -90,5 +100,29 @@ describe("own chat correction client contract", () => {
     expect(text(render())).not.toContain("Earlier paraphrased claim");
     expect(text(render())).not.toContain(OWN_CHAT_CORRECTION_NOTICE);
     expect(harness.refresh).toHaveBeenCalledOnce();
+  });
+});
+
+describe("own chat conversation turns", () => {
+  // G8.5 (24 October 2026): this panel now serves every subject the
+  // compatibility panel served on /copilot/me. The server holds the
+  // conversation, so the second turn names it and sends no history.
+  it("opens with the page's token once, then sends only { chatId, message } for the next turn", async () => {
+    const ask = async (question: string) => {
+      (control(render(), "textarea").onChange as (event: unknown) => void)({ target: { value: question } });
+      (control(render(), "form").onSubmit as (event: unknown) => void)({ preventDefault() {} });
+      await vi.waitFor(() => expect(control(render(), "textarea").disabled).toBe(false));
+    };
+    harness.fetch.mockResolvedValueOnce(Response.json({ chatId, message: { role: "assistant", content: "First answer.", citations: [], embryoFindings: [] } }))
+      .mockResolvedValueOnce(Response.json({ chatId, message: { role: "assistant", content: "Second answer.", citations: [], embryoFindings: [] } }));
+    await ask("First question?");
+    await ask("Second question?");
+    expect(harness.fetch.mock.calls.map(([url, init]) => [url, JSON.parse(String((init as RequestInit).body))])).toEqual([
+      ["/api/chat", { contextToken: props.contextToken, message: "First question?" }],
+      ["/api/chat", { chatId, message: "Second question?" }],
+    ]);
+    const shown = text(render());
+    for (const line of ["First question?", "First answer.", "Second question?", "Second answer."]) expect(shown).toContain(line);
+    expect(harness.refresh).not.toHaveBeenCalled();
   });
 });

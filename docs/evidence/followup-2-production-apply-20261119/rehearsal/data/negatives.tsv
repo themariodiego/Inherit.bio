@@ -1,0 +1,19 @@
+# LOCAL ONLY negative checks, local stack 127.0.0.1:54322, 2026-11-19, against the revised file (tree be49d283). Each in one rolled-back transaction, or a statement that refuses; state = fingerprint SHA-256 and ledger before vs after.
+# From rehearse.sh (on the follow-up's post-state; the batch-2 tamper after batch 1):
+neg	batch-1 dry run without a session statement_timeout	rc=3	ERROR:  session: set statement_timeout to at most 180s for the session before this statement (a SET inside the block does not bound it)
+neg	batch-1 dry run with statement_timeout 190s	rc=3	ERROR:  session: set statement_timeout to at most 180s for the session before this statement (a SET inside the block does not bound it)
+neg	batch-2 dry run before batch 1	rc=3	ERROR:  predecessor: ledger has 280 rows, max 20261023140000; expected 283 rows, max 20261025200000
+neg	batch-2 apply before batch 1	rc=3	ERROR:  predecessor: ledger has 280 rows, max 20261023140000; expected 283 rows, max 20261025200000
+neg	batch-1 apply with one byte of the embedded 20261024110000 changed	rc=3	ERROR:  integrity: embedded 20261024110000_copilot_settings_delete_nonce.sql is not the reviewed file
+neg	batch-1 apply with the embedded fingerprint query changed	rc=3	ERROR:  integrity: the embedded fingerprint query is not fingerprint.sql
+neg	state after the negative checks	unchanged
+neg	batch-2 apply with one byte of the embedded 20261025400000 changed (its stripped-body md5)	rc=3	ERROR:  integrity: embedded 20261025400000_path_a_account_accept_typed_name.sql is not the reviewed file	unchanged
+# From rehearse.sh (re-apply after each batch):
+b1	re-apply	rc=3	ERROR:  predecessor: ledger has 283 rows, max 20261025200000; expected 280 rows, max 20261023140000	unchanged
+b2	re-apply	rc=3	ERROR:  predecessor: ledger has 284 rows, max 20261025400000; expected 283 rows, max 20261025200000	unchanged
+# From negatives.sh tamper (follow-up's post-state, mirror build 7) and before-followup (PR 324's post-state, mirror build 9):
+extra-grant	prechecks: ledger 280 20261023140000 | nonzero {'guarded_bodies_not_as_rehearsed': 1} | guards not ok 1 [('#01 public.remove_own_copilot_settings_v1', 'f45c9a8b18e64acc5b3e13612f1d6d86')]	runs: ERROR:  predecessor: fingerprint summary differs: {"types": {"md5": "12d5c67500e367470d000abab7e3cd4d", "count": 5}, "views": {"md5": "d751713988987e9331980363e|ERROR:  copilot settings delete nonce prerequisite differs|	state unchanged
+strip-comments	prechecks: ledger 280 20261023140000 | nonzero {'guarded_bodies_not_as_rehearsed': 1} | guards not ok 1 [('#04 private.adult_subject_invitation_response_v1', 'b592c1523d5be2a27f7d69e0336f195b')]	runs: ERROR:  predecessor: fingerprint summary differs: {"types": {"md5": "12d5c67500e367470d000abab7e3cd4d", "count": 5}, "views": {"md5": "d751713988987e9331980363e|ERROR:  path a typed name prerequisite differs|	state unchanged
+unparsed-check-value	prechecks: ledger 280 20261023140000 | nonzero {'nonce_check_values_not_parsed': 1} | guards not ok 0 []	runs: 	state unchanged
+before-followup	prechecks: ledger 273 20261016221000 | nonzero {'prerequisite_functions_missing': 1, 'consumer_without_consent_revoke': 1, 'guarded_bodies_not_as_rehearsed': 1, 'prerequisite_signatures_missing': 1, 'nonce_check_without_subject_download_open': 1} | guards not ok 1 [('#01 private.consume_account_operation_nonce_v1', None)]	runs: ERROR:  predecessor: ledger has 273 rows, max 20261016221000; expected 280 rows, max 20261023140000|ERROR:  predecessor: ledger has 273 rows, max 20261016221000; expected 280 rows, max 20261023140000|	state unchanged
+# The revised guard's own cases: guard-cases.tsv.

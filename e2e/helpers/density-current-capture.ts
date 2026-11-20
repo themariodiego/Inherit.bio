@@ -5,7 +5,8 @@ import fs from "node:fs";
 import path from "node:path";
 import os from "node:os";
 import type { Browser, Page } from "@playwright/test";
-import { verifyCurrentDensity, type DensityContract, type DensityCurrentPacket, type DensityRegister } from "../../scripts/density-current";
+import { DENSITY_CORRECTED_READINGS_MODULE_SHA256, TEXT_ONLY_FLOOR_VARIANT_SHA256, verifyCurrentDensity,
+  type DensityContract, type DensityCurrentPacket, type DensityRegister } from "../../scripts/density-current";
 import { checkedDensityStateProof, densityCapturePlan, densityRouteMatches,
   densitySourceSchema, densityStateKey, DENSITY_VIEWPORTS, type DensityStateCase, type DensitySource } from "../../scripts/density-capture-plan";
 
@@ -123,6 +124,12 @@ export async function captureCurrentDensity(options: CurrentDensityCaptureOption
   assert(sha256(measurementBytes) === contract.capture.artifacts.measurementModule.sha256
     && sha256(computationBytes) === contract.capture.artifacts.measurementHarness.sha256, "Frozen measurement source changed");
   const { ready, measure } = await import("../../scripts/density-baseline/measure.mjs");
+  // The owner's corrected readings (2026-10-22) come from their own pinned
+  // module, never from the frozen one, on the same live page.
+  const readingsPath = path.join(root, "scripts/density-corrected-readings.mjs"), readingsBytes = publicBytes(readingsPath);
+  assert(sha256(readingsBytes) === DENSITY_CORRECTED_READINGS_MODULE_SHA256, "Pinned corrected density readings required");
+  const { readCorrectedDensity, captureTextOnlyFloor, TEXT_ONLY_FLOOR_CSS } = await import("../../scripts/density-corrected-readings.mjs");
+  assert(sha256(TEXT_ONLY_FLOOR_CSS) === TEXT_ONLY_FLOOR_VARIANT_SHA256, "Pinned text-only floor variant required");
   const { imageMetrics, verifyFrozenDensityPixelBody } = await import("../../scripts/density-current-pixels.mjs");
   verifyFrozenDensityPixelBody(root, contract.capture.artifacts.measurementHarness.sha256);
   const baselineOriginals = options.baselineOriginals === undefined ? undefined
@@ -136,6 +143,7 @@ export async function captureCurrentDensity(options: CurrentDensityCaptureOption
       && sha256(publicBytes(contractPath)) === sha256(contractBytes)
       && sha256(publicBytes(measurementPath)) === sha256(measurementBytes)
       && sha256(publicBytes(computationPath)) === sha256(computationBytes)
+      && sha256(publicBytes(readingsPath)) === sha256(readingsBytes)
       && sha256(publicBytes(options.fontManifestPath)) === sha256(fontBytes),
     "Density source/font bookend changed");
   };
@@ -195,6 +203,21 @@ export async function captureCurrentDensity(options: CurrentDensityCaptureOption
         const pixel = await imageMetrics(screenshotPath, viewport.width, viewport.height, raw.pixelExclusionRects);
         assert(pixel.screenshotSha256 === sha256(screenshot) && sha256(publicBytes(screenshotPath)) === sha256(screenshot),
           "Exact saved screenshot bytes required");
+        // The same capture, read for the corrected rules and then as its
+        // text-only floor; the floor style is removed again before the
+        // after-proof below, so the state checks see the original page.
+        const correctedReadings = { moduleSha256: sha256(readingsBytes),
+          ...(await readCorrectedDensity(page, contract.measurementSelectors)) };
+        const floorShot = await captureTextOnlyFloor(page);
+        const floorFile = `${stem}__${viewport.id}__text-only-floor.png`, floorPath = path.join(output, floorFile);
+        writeOriginal(floorPath, floorShot);
+        const floorPixel = await imageMetrics(floorPath, viewport.width, viewport.height, raw.pixelExclusionRects);
+        assert(floorPixel.screenshotSha256 === sha256(floorShot) && sha256(publicBytes(floorPath)) === sha256(floorShot),
+          "Exact saved text-only floor bytes required");
+        const textOnlyFloor = { variantSha256: sha256(TEXT_ONLY_FLOOR_CSS), screenshotSha256: floorPixel.screenshotSha256,
+          screenshotWidthPx: floorPixel.screenshotWidthPx, screenshotHeightPx: floorPixel.screenshotHeightPx,
+          includedPixelCount: floorPixel.includedPixelCount, excludedPixelCount: floorPixel.excludedPixelCount,
+          inkPixelCount: floorPixel.inkPixelCount, inkCoverageRatio: floorPixel.inkCoverageRatio };
         const targets = await page.evaluate(() => [...document.querySelectorAll(
           'a[href],button,input,select,textarea,summary,[role="button"],[role="link"],[contenteditable="true"]')]
           .map(element => ({ element, rect: element.getBoundingClientRect(), style: getComputedStyle(element) }))
@@ -220,14 +243,14 @@ export async function captureCurrentDensity(options: CurrentDensityCaptureOption
         // Concrete paths are used only in memory by the numeric verifier.
         // Bearer URLs, queries, form text and credentials are never serialized.
         captures.push({ routeId: row.route.id, state: row.state, viewport: viewport.id,
-          measurementPath: navigation.pathname, metrics, predecessor });
+          measurementPath: navigation.pathname, metrics, predecessor, textOnlyFloor, correctedReadings });
         const safeRaw = Object.fromEntries(Object.entries(raw).filter(([key]) => key !== "resolvedUrl"));
         await assertCaptureBookend();
         originals.push({ routeId: row.route.id, state: row.state, viewport: viewport.id, serviceBinding,
           registeredPath: row.route.path, navigationSha256: sha256(navigation.href), screenshotFile,
           screenshotSha256: pixel.screenshotSha256, documentSha256: sha256(settings.documentShaInput),
           nativeProofBefore: before, nativeProofAfter: after, rawMeasurement: safeRaw, metrics, predecessor,
-          targetCount: targets.length, undersizedTargetCount: smallTargets.length });
+          targetCount: targets.length, undersizedTargetCount: smallTargets.length, textOnlyFloor, correctedReadings });
         writeOriginal(path.join(output, `${stem}__${viewport.id}.json`), JSON.stringify(originals.at(-1), null, 2));
         await assertCaptureBookend();
       });
@@ -255,10 +278,15 @@ export async function captureCurrentDensity(options: CurrentDensityCaptureOption
     measurementModuleSha256: sha256(measurementBytes), computationModuleSha256: sha256(computationBytes), captures };
   let numeric: ReturnType<typeof verifyCurrentDensity> | null = null;
   try { numeric = verifyCurrentDensity(packet, register, contract, source); } catch { /* Fixed HOLD below; originals retain actual metrics. */ }
+  // The binding status reads the owner's corrected rules (2026-10-22); the
+  // contract-basis verdict stays beside it.
+  let correctedNumeric: ReturnType<typeof verifyCurrentDensity> | null = null;
+  try { correctedNumeric = verifyCurrentDensity(packet, register, contract, source, "corrected-2026-10-22"); } catch { /* HOLD below. */ }
   await assertBookend();
-  const result = { version: 1, status: numeric && !targetHolds.length ? "COMPLETE_MEASUREMENT_WITHIN_NUMERIC_BUDGETS" : "HOLD_CURRENT_DENSITY_BUDGETS",
+  const result = { version: 1, status: correctedNumeric && !targetHolds.length ? "COMPLETE_MEASUREMENT_WITHIN_NUMERIC_BUDGETS" : "HOLD_CURRENT_DENSITY_BUDGETS",
+    rules: "corrected-2026-10-22", contractStatus: numeric ? "WITHIN_CONTRACT_BUDGETS" : "OUTSIDE_CONTRACT_BUDGETS",
     g2_5Acceptance: false, source, runtimeScope: "per-capture-actual-service", captureEnvironment: environment, pageRoutes: plan.pages.length,
-    captures: originals.length, requiredCaptureCount: plan.requiredCaptureCount, numeric, targetHolds,
+    captures: originals.length, requiredCaptureCount: plan.requiredCaptureCount, numeric, correctedNumeric, targetHolds,
     measurementModuleSha256: sha256(measurementBytes), computationModuleSha256: sha256(computationBytes),
     originalsSha256: sha256(JSON.stringify(originals)) };
   writeOriginal(path.join(output, "actual-capture-result.json"), JSON.stringify(result, null, 2));

@@ -1,0 +1,40 @@
+# Order equivalence (LOCAL ONLY, local stack 127.0.0.1:54322, 2026-11-19; rehearsal/scripts/equivalence.sh). Fingerprint = ../../fingerprint.sql output; dumps = pg_dump 17.6 --schema-only inside supabase_db_sequence, normalised by dropping the two random \restrict/\unrestrict key lines.
+# fp-mirror-b1 / dump-mirror-b1: the rehearsed mirror after batch 1 (rehearse.sh), saved before the resets. fp-fresh-fu is byte-identical to the follow-up kit's own fresh-77d04563 fingerprint (its equivalence.txt, 04c167c3...).
+fp-mirror-b1.json 1a152dc5fc974dedecb574f2cc971dc3b285d144949efb71aba0cbc4400d4557 908120 bytes; dump-mirror-b1 102203 lines 1af336c5be2a16ce
+fp-fresh-fu.json 04c167c3dc9a213dff74895f789453d5b7142f3f0e8c220247310bea8b228154 905824 bytes
+(0) plain fresh 20261023140000 vs the follow-up kit's recorded post-state (its batch-2 post summary):
+DIFFERENT extensions: have {'md5': '2845b261f5cffdb8733da4f6f30af401', 'count': 5} want {'count': 6, 'md5': '5c2a24b528337a3bf52348d5c2c8ac8a'}
+DIFFERENT functions: have {'md5': 'ba156f473f33b17276f84d8abfd02c0c', 'count': 1417} want {'count': 1417, 'md5': '130b1314a0cd017ccb1f680a81c46425'}
+extensions: DIFFERENT (only first 0, only second 1)
+  > {"name": "pg_cron", "schema": "pg_catalog", "version": "1.6.4"}
+functions: DIFFERENT (only first 8, only second 8)
+  < {"args": "", "def_md5": "a809dd002f974d876a7f1117207488f9", "kind": "f", "name": "claim_due_research_publication_v1", "proacl": "{postgres=X/postgres,service_role=X/postgres}", "proconfig": ["search_path=\"\""], "pro
+  < {"args": "p_account_id uuid, p_session_id uuid, p_subject_id uuid, p_purpose text", "def_md5": "604990d2ce236acaa5e941a040ffb3ce", "kind": "f", "name": "own_subject_purpose_grant_v1", "proacl": "{postgres=X/postgres}
+  < {"args": "p_account_id uuid, p_session_id uuid, p_upload_id uuid, p_claim uuid", "def_md5": "656ea82b89985dacc54d916a74a78df7", "kind": "f", "name": "read_own_upload_finalization_checkpoint_v1", "proacl": "{postgres=
+  < {"args": "p_account_id uuid, p_session_id uuid, p_upload_id uuid, p_claim uuid, p_expected_revision bigint, p_checkpoint jsonb, p_lease_seconds integer", "def_md5": "678b8643341973dd9734a892db10e8de", "kind": "f", "n
+  < {"args": "p_claim_token_hash text", "def_md5": "b2758e2573f5b1a4d63230782c56d8a4", "kind": "f", "name": "claim_next_own_preparation_v1", "proacl": "{postgres=X/postgres,service_role=X/postgres}", "proconfig": ["searc
+  < {"args": "p_consumer text", "def_md5": "e3dc1e4a93b6f7aa1de916b3cfdd5f67", "kind": "f", "name": "record_blocked_embryo_response_v1", "proacl": "{postgres=X/postgres,service_role=X/postgres}", "proconfig": ["search_pa
+  < {"args": "p_operation text, p_account_id uuid, p_session_id uuid, p_file_id uuid, p_purpose text, p_claim uuid, p_payload jsonb", "def_md5": "a2363d0679b80b52388b6ee20768cad8", "kind": "f", "name": "own_report_genera
+  < {"args": "p_token_hash_id uuid, p_session_id uuid", "def_md5": "51805d7b1352486adb473a3ff4d4c975", "kind": "f", "name": "current_adult_subject_invitation_v1", "proacl": "{postgres=X/postgres}", "proconfig": ["search_
+  > {"args": "", "def_md5": "891ebe96ae6ecfc160adc545f335891f", "kind": "f", "name": "claim_due_research_publication_v1", "proacl": "{postgres=X/postgres,service_role=X/postgres}", "proconfig": ["search_path=\"\""], "pro
+  > {"args": "p_account_id uuid, p_session_id uuid, p_subject_id uuid, p_purpose text", "def_md5": "5c0f9c87650a2131517854d8c4f5a301", "kind": "f", "name": "own_subject_purpose_grant_v1", "proacl": "{postgres=X/postgres}
+  > {"args": "p_account_id uuid, p_session_id uuid, p_upload_id uuid, p_claim uuid", "def_md5": "baa518314a7d29db80350a14a33b5467", "kind": "f", "name": "read_own_upload_finalization_checkpoint_v1", "proacl": "{postgres=
+  > {"args": "p_account_id uuid, p_session_id uuid, p_upload_id uuid, p_claim uuid, p_expected_revision bigint, p_checkpoint jsonb, p_lease_seconds integer", "def_md5": "870b9f00101edc39df9457ac43a6d929", "kind": "f", "n
+  > {"args": "p_claim_token_hash text", "def_md5": "7250697ceb6fcfe7870ad299aa0f6c9d", "kind": "f", "name": "claim_next_own_preparation_v1", "proacl": "{postgres=X/postgres,service_role=X/postgres}", "proconfig": ["searc
+  > {"args": "p_consumer text", "def_md5": "a5a3ca6c54a7777d78718424ae9c2407", "kind": "f", "name": "record_blocked_embryo_response_v1", "proacl": "{postgres=X/postgres,service_role=X/postgres}", "proconfig": ["search_pa
+  > {"args": "p_operation text, p_account_id uuid, p_session_id uuid, p_file_id uuid, p_purpose text, p_claim uuid, p_payload jsonb", "def_md5": "362db1c76f8851c2f8b4dad6d10db1fd", "kind": "f", "name": "own_report_genera
+  > {"args": "p_token_hash_id uuid, p_session_id uuid", "def_md5": "e98e44bb5c1f2f88a294e250fc887f0c", "kind": "f", "name": "current_adult_subject_invitation_v1", "proacl": "{postgres=X/postgres}", "proconfig": ["search_
+summary extensions: {'md5': '2845b261f5cffdb8733da4f6f30af401', 'count': 5} vs {'md5': '5c2a24b528337a3bf52348d5c2c8ac8a', 'count': 6}
+summary functions: {'md5': 'ba156f473f33b17276f84d8abfd02c0c', 'count': 1417} vs {'md5': '130b1314a0cd017ccb1f680a81c46425', 'count': 1417}
+RESULT DIFFERENT
+77d04563 tree + #1-#3 (psql -1 -f each): 0.175 s
+fp-fu-plus-3.json ae124d2dca07f1dc0c34fbc017680b6fb53939d3294a9f0de236802ee6beb9a9 908055 bytes
+dump-fu-plus-3 rc=0 102125 lines 097a04191f4496da
+fp-fresh-280.json ae124d2dca07f1dc0c34fbc017680b6fb53939d3294a9f0de236802ee6beb9a9 908055 bytes
+dump-fresh-280 rc=0 102125 lines 097a04191f4496da
+fp-fresh-280-drift.json 1a152dc5fc974dedecb574f2cc971dc3b285d144949efb71aba0cbc4400d4557 908120 bytes
+dump-fresh-280-drift rc=0 102203 lines 1af336c5be2a16ce
+(a) undrifted: fingerprint byte-identical
+(a) undrifted: normalised dump identical
+(b) drifted: fingerprint byte-identical
+(b) drifted: normalised dump identical

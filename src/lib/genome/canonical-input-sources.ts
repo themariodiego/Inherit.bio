@@ -3,6 +3,7 @@ import { z } from "zod";
 import { currentOwnUploadAccount } from "@/lib/uploads/own-upload-context";
 import type { Db } from "./load";
 import type { InputSourceView } from "./input-sources";
+import { readCallsProvenanceSchema } from "./reads/provenance";
 
 export type InputSourceContext = { kind: "prepared" } | {
   kind: "report"; purpose: "reports.monogenic" | "reports.polygenic" | "ancestry";
@@ -20,6 +21,9 @@ const sourceView = z.object({
     counts: z.object({ called: count, noCall: count, unsupported: count, failedFilter: count, blocks: count,
       singleSample: z.boolean(), buildClaim: z.boolean(),
     }).strict().refine(value => Number.isSafeInteger(value.called + value.noCall)),
+    /** TEST-LOCAL read-calling provenance (ADR 0038), projected only in its
+     * closed shape by 20261022110000; absent for every other source. */
+    readCalls: readCallsProvenanceSchema.optional(),
   }).strict(),
 }).strict();
 

@@ -64,6 +64,31 @@ select is((select count(*)::integer from public.download_sessions where id=(sele
   and expires_at<=created_at+interval '1 hour'),1,'one hash-only session row bound to the exact file and object version');
 select ok(exists(select 1 from public.legal_audit_log where event_code='download.session.created'
   and route_id='api.subject-download' and coded_context->>'kind'='subject-original'),'the session creation is audited');
+-- G5.6 (20261023130000): the create step names the account only through
+-- the door that records the request's one-time nonce. The actor is cleared
+-- where production would have committed; no user JWT is present.
+savepoint attributed_open;
+select set_config('request.jwt.claims','{"role":"service_role"}',true),set_config('inherit.legal_audit_actor','',true);
+select pg_temp.own_open(repeat('d',64));
+select is((select audit_principal_id from public.legal_audit_log where event_code='download.session.created' and route_id='api.subject-download' order by seq desc limit 1),null::uuid,
+ 'the create step alone, with no nonce, names no one');
+select set_config('request.jwt.claims','{"role":"service_role"}',true),set_config('inherit.legal_audit_actor','',true);
+select lives_ok($$select public.open_subject_original_download_with_nonce_v1('77910000-0000-4000-8000-000000000001','77910000-0000-4000-8000-000000000010',
+  (select id from own_subject),'77910000-0000-4000-8000-000000000040',repeat('e',64),
+  encode(extensions.digest('download-nonce-one','sha256'),'hex'),clock_timestamp()+interval '5 minutes')$$,'the door opens a session');
+select ok(coalesce((select audit_principal_id from public.legal_audit_log where event_code='download.session.created' and route_id='api.subject-download' order by seq desc limit 1)
+  =(select audit_principal_id from private.legal_audit_account_principals where account_id='77910000-0000-4000-8000-000000000001'::uuid),false),'and its event names the account');
+select throws_ok($$select public.open_subject_original_download_with_nonce_v1('77910000-0000-4000-8000-000000000001','77910000-0000-4000-8000-000000000010',
+  (select id from own_subject),'77910000-0000-4000-8000-000000000040',repeat('f',64),
+  encode(extensions.digest('download-nonce-one','sha256'),'hex'),clock_timestamp()+interval '5 minutes')$$,
+ '22023','invalid_operation_nonce','a replayed nonce is refused');
+select throws_ok($$select public.open_subject_original_download_with_nonce_v1('77910000-0000-4000-8000-000000000001',
+  '77910000-0000-4000-8000-000000000011',(select id from own_subject),'77910000-0000-4000-8000-000000000040',repeat('f',64),
+  encode(extensions.digest('download-nonce-two','sha256'),'hex'),clock_timestamp()+interval '5 minutes')$$,
+ '42501',null,'a nonce under another account''s session is refused');
+rollback to attributed_open;
+select is((select status from public.download_sessions where id=(select (value->>'session')::uuid from opened)),'active',
+ 'the attribution opens were undone with their savepoint');
 
 -- Own data only.
 select throws_ok($$select pg_temp.open('77910000-0000-4000-8000-000000000002','77910000-0000-4000-8000-000000000011',

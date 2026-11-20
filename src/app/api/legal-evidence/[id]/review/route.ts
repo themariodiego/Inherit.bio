@@ -5,7 +5,8 @@ import { testAppealIntakeOpen } from "@/lib/future-person/appeals-open";
 import { readBoundedJson } from "@/lib/future-person/bounded-body";
 import { sha256Hex } from "@/lib/future-person/claim-session";
 import { appealDocumentDecisionBody, appealReviewRow, sealAppealReviewReason, sealAppealDecisionReference } from "@/lib/future-person/public-appeal-review";
-import { isCanonicalId, readReviewNonce, reviewCsrfMatches } from "@/lib/future-person/review";
+import { isCanonicalId, readReviewNonce } from "@/lib/future-person/review";
+import { withReviewerCsrf } from "@/lib/security/session-csrf";
 import { createClient } from "@/lib/supabase/server";
 import { permissionDocumentsOpen } from "@/lib/uploads/permission-document-open";
 import { decidePermissionDocument, permissionReviewContext } from "@/lib/uploads/permission-document-review";
@@ -13,8 +14,11 @@ import { decidePermissionDocument, permissionReviewContext } from "@/lib/uploads
  * Path B's adult-signed permission document (the subject-draft target case,
  * owner decision 2026-10-16). The native document row selects the branch; no
  * general legacy legal row, future-person assignment or request-supplied
- * target can enter either. */
-export async function POST(request: Request, context: { params: Promise<{ id: string }> }) {
+ * target can enter either. The reviewer's one-time X-Inherit-CSRF token for
+ * this route is spent before the handler runs, for both branches (G8.5, the
+ * migration stage); it was a digest of the case, the reviewer and the auth
+ * session. Each branch's one-time review nonce stays in the body. */
+export const POST = withReviewerCsrf("api.legal-evidence-review", async (request: Request, context: { params: Promise<{ id: string }> }) => {
  const { id } = await context.params; const url = new URL(request.url);
  if (!(testAppealIntakeOpen() || permissionDocumentsOpen()) || !isCanonicalId(id) || url.search || request.headers.get("origin") !== url.origin
   || request.headers.get("sec-fetch-site") !== "same-origin" || request.headers.get("content-type")?.split(";")[0]?.trim().toLowerCase() !== "application/json") return notFound();
@@ -27,7 +31,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
  // Not an appeal document this reviewer may read: the permission producer
  // alone may still recognise it; otherwise the same not-found.
  if (current.error) return current.error.code !== "42501" ? unavailable() : decidePermission(request, id, account, payload);
- const row = appealReviewRow.safeParse(current.data); if (!row.success || !reviewCsrfMatches(request.headers.get("x-inherit-csrf"), row.data.caseId, account.user.id, account.sessionId)
+ const row = appealReviewRow.safeParse(current.data); if (!row.success
   || parsed.data.reviewRevision !== row.data.reviewRevision || !row.data.documents.some(doc => doc.documentId === id && doc.sha256 === parsed.data.documentSha256 && doc.decision === null)) return notFound();
  const nonceHash = sha256Hex(nonce);
  const reference = sealAppealDecisionReference(row.data.wrappedCaseKeyHex, row.data.caseId, id, nonceHash);
@@ -44,7 +48,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
  const response = await closedResponse("api.legal-evidence-review", ["documentId", "status", "decision", "reviewRevision"],
   { documentId: id, status: "reviewed", decision: parsed.data.decision, reviewRevision: value.reviewRevision }, 200);
  response.headers.set("Referrer-Policy", "no-referrer"); return response;
-}
+});
 
 /** The subject-draft target case, under the reviewer's own JWT; null-domain documents answer not-found. */
 async function decidePermission(request: Request, id: string, account: { user: { id: string }; sessionId: string },

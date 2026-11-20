@@ -1,0 +1,106 @@
+# Builds of this release's pre-state on the local stack (rehearsal/scripts/build-mirror.sh) for the second rehearsal, against the revised file, 2026-11-19. Builds 1-4 are the first rehearsal's (first-rehearsal/mirror-builds.txt).
+== mirror5
+the 245 files up to 20261011010251 are main 12f24475's, blob for blob
+reset: 245 migrations applied
+1. fresh main fingerprint == reference fresh build (8860eee4...)
+2. ledger stand-ins: 248 20261011010251
+3. 8 drifted bodies: owner/ACL/proconfig/secdef unchanged; line hashes == production's (8 stripped)
+4. extensions == production's: pg_cron@pg_catalog@1.6.4,pg_stat_statements@extensions@1.11,pgcrypto@extensions@1.3,plpgsql@pg_catalog@1.0,supabase_vault@vault@0.3.1,uuid-ossp@extensions@1.1
+5. mirror vs production's 2026-10-22 read-back: RESULT EQUAL
+pr324: generate.py --head cf79b1b6 final; SHA256SUMS 20 lines OK, 0 not OK
+pr324 b1	dry rc=3 sentinel, read-back EQUAL 1 pre	apply rc=0 0.333s	EQUAL batch 1 post-state summary	ledger 253 20261016175000
+pr324 b2	dry rc=3 sentinel, read-back EQUAL 2 pre	apply rc=0 0.363s	EQUAL batch 2 post-state summary	ledger 259 20261016196000
+pr324 b3	dry rc=3 sentinel, read-back EQUAL 3 pre	apply rc=0 0.324s	EQUAL batch 3 post-state summary	ledger 272 20261016220000
+pr324 b4	dry rc=3 sentinel, read-back EQUAL 4 pre	apply rc=0 0.313s	EQUAL batch 4 post-state summary	ledger 273 20261016221000
+pr324 final fingerprint 4d2a2747b665310617b958dce91438c8adb2d1de6262af3db58fbf307d264fa8
+6. after PR 324's kit: fingerprint byte-identical to PR 324's rehearsed final mirror (4d2a2747...); ledger 273 20261016221000
+followup: generate.py --head 77d04563 final; SHA256SUMS 15 lines OK, 0 not OK
+followup b1	dry rc=3 sentinel, read-back EQUAL 1 pre	apply rc=0 0.380s	EQUAL batch 1 post-state summary	ledger 277 20261023110000
+followup b2	dry rc=3 sentinel, read-back EQUAL 2 pre	apply rc=0 0.311s	EQUAL batch 2 post-state summary	ledger 280 20261023140000
+followup final fingerprint 3a0f4d6860a49143b0f939a4185fbae3e1f7a89cb9d114c7c8e3975aab6ba4b4
+EQUAL batch 2 post-state summary
+7. after the follow-up's kit: fingerprint byte-identical to the follow-up's rehearsed final mirror (3a0f4d68...); ledger 280 20261023140000
+built
+== mirror6
+the 245 working-tree files up to 20261011010251 are main 12f24475's, blob for blob
+reset: 245 migrations applied
+1. fresh main fingerprint == reference fresh build (8860eee4...)
+2. ledger stand-ins: 248 20261011010251
+3. 8 drifted bodies: owner/ACL/proconfig/secdef unchanged; line hashes == production's (8 stripped)
+4. extensions == production's: pg_cron@pg_catalog@1.6.4,pg_stat_statements@extensions@1.11,pgcrypto@extensions@1.3,plpgsql@pg_catalog@1.0,supabase_vault@vault@0.3.1,uuid-ossp@extensions@1.1
+5. mirror vs production's 2026-10-22 read-back: RESULT EQUAL
+pr324: generate.py --head cf79b1b6 final; SHA256SUMS 20 lines OK, 0 not OK
+pr324 b1	dry rc=3 sentinel, read-back EQUAL 1 pre	apply rc=0 0.385s	EQUAL batch 1 post-state summary	ledger 253 20261016175000
+pr324 b2	dry rc=3 sentinel, read-back EQUAL 2 pre	apply rc=0 0.425s	EQUAL batch 2 post-state summary	ledger 259 20261016196000
+pr324 b3	dry rc=3 sentinel, read-back EQUAL 3 pre	apply rc=0 0.440s	EQUAL batch 3 post-state summary	ledger 272 20261016220000
+pr324 b4	dry rc=3 sentinel, read-back EQUAL 4 pre	apply rc=0 0.368s	EQUAL batch 4 post-state summary	ledger 273 20261016221000
+pr324 final fingerprint 4d2a2747b665310617b958dce91438c8adb2d1de6262af3db58fbf307d264fa8
+6. after PR 324's kit: fingerprint byte-identical to PR 324's rehearsed final mirror (4d2a2747...); ledger 273 20261016221000
+followup: generate.py --head 77d04563 final; SHA256SUMS 15 lines OK, 0 not OK
+followup b1	dry rc=3 sentinel, read-back EQUAL 1 pre	apply rc=0 0.342s	EQUAL batch 1 post-state summary	ledger 277 20261023110000
+followup b2	dry rc=3 sentinel, read-back EQUAL 2 pre	apply rc=0 0.309s	EQUAL batch 2 post-state summary	ledger 280 20261023140000
+followup final fingerprint 3a0f4d6860a49143b0f939a4185fbae3e1f7a89cb9d114c7c8e3975aab6ba4b4
+EQUAL batch 2 post-state summary
+7. after the follow-up's kit: fingerprint byte-identical to the follow-up's rehearsed final mirror (3a0f4d68...); ledger 280 20261023140000
+built
+== mirror7
+the 245 working-tree files up to 20261011010251 are main 12f24475's, blob for blob
+reset: 245 migrations applied
+1. fresh main fingerprint == reference fresh build (8860eee4...)
+2. ledger stand-ins: 248 20261011010251
+3. 8 drifted bodies: owner/ACL/proconfig/secdef unchanged; line hashes == production's (8 stripped)
+4. extensions == production's: pg_cron@pg_catalog@1.6.4,pg_stat_statements@extensions@1.11,pgcrypto@extensions@1.3,plpgsql@pg_catalog@1.0,supabase_vault@vault@0.3.1,uuid-ossp@extensions@1.1
+5. mirror vs production's 2026-10-22 read-back: RESULT EQUAL
+pr324: generate.py --head cf79b1b6 final; SHA256SUMS 20 lines OK, 0 not OK
+pr324 b1	dry rc=3 sentinel, read-back EQUAL 1 pre	apply rc=0 0.299s	EQUAL batch 1 post-state summary	ledger 253 20261016175000
+pr324 b2	dry rc=3 sentinel, read-back EQUAL 2 pre	apply rc=0 0.359s	EQUAL batch 2 post-state summary	ledger 259 20261016196000
+pr324 b3	dry rc=3 sentinel, read-back EQUAL 3 pre	apply rc=0 0.355s	EQUAL batch 3 post-state summary	ledger 272 20261016220000
+pr324 b4	dry rc=3 sentinel, read-back EQUAL 4 pre	apply rc=0 0.376s	EQUAL batch 4 post-state summary	ledger 273 20261016221000
+pr324 final fingerprint 4d2a2747b665310617b958dce91438c8adb2d1de6262af3db58fbf307d264fa8
+6. after PR 324's kit: fingerprint byte-identical to PR 324's rehearsed final mirror (4d2a2747...); ledger 273 20261016221000
+followup: generate.py --head 77d04563 final; SHA256SUMS 15 lines OK, 0 not OK
+followup b1	dry rc=3 sentinel, read-back EQUAL 1 pre	apply rc=0 0.300s	EQUAL batch 1 post-state summary	ledger 277 20261023110000
+followup b2	dry rc=3 sentinel, read-back EQUAL 2 pre	apply rc=0 0.321s	EQUAL batch 2 post-state summary	ledger 280 20261023140000
+followup final fingerprint 3a0f4d6860a49143b0f939a4185fbae3e1f7a89cb9d114c7c8e3975aab6ba4b4
+EQUAL batch 2 post-state summary
+7. after the follow-up's kit: fingerprint byte-identical to the follow-up's rehearsed final mirror (3a0f4d68...); ledger 280 20261023140000
+built
+== mirror8
+the 245 working-tree files up to 20261011010251 are main 12f24475's, blob for blob
+reset: 245 migrations applied
+1. fresh main fingerprint == reference fresh build (8860eee4...)
+2. ledger stand-ins: 248 20261011010251
+3. 8 drifted bodies: owner/ACL/proconfig/secdef unchanged; line hashes == production's (8 stripped)
+4. extensions == production's: pg_cron@pg_catalog@1.6.4,pg_stat_statements@extensions@1.11,pgcrypto@extensions@1.3,plpgsql@pg_catalog@1.0,supabase_vault@vault@0.3.1,uuid-ossp@extensions@1.1
+5. mirror vs production's 2026-10-22 read-back: RESULT EQUAL
+pr324: generate.py --head cf79b1b6 final; SHA256SUMS 20 lines OK, 0 not OK
+pr324 b1	dry rc=3 sentinel, read-back EQUAL 1 pre	apply rc=0 0.307s	EQUAL batch 1 post-state summary	ledger 253 20261016175000
+pr324 b2	dry rc=3 sentinel, read-back EQUAL 2 pre	apply rc=0 0.427s	EQUAL batch 2 post-state summary	ledger 259 20261016196000
+pr324 b3	dry rc=3 sentinel, read-back EQUAL 3 pre	apply rc=0 0.359s	EQUAL batch 3 post-state summary	ledger 272 20261016220000
+pr324 b4	dry rc=3 sentinel, read-back EQUAL 4 pre	apply rc=0 0.315s	EQUAL batch 4 post-state summary	ledger 273 20261016221000
+pr324 final fingerprint 4d2a2747b665310617b958dce91438c8adb2d1de6262af3db58fbf307d264fa8
+6. after PR 324's kit: fingerprint byte-identical to PR 324's rehearsed final mirror (4d2a2747...); ledger 273 20261016221000
+followup: generate.py --head 77d04563 final; SHA256SUMS 15 lines OK, 0 not OK
+followup b1	dry rc=3 sentinel, read-back EQUAL 1 pre	apply rc=0 0.317s	EQUAL batch 1 post-state summary	ledger 277 20261023110000
+followup b2	dry rc=3 sentinel, read-back EQUAL 2 pre	apply rc=0 0.300s	EQUAL batch 2 post-state summary	ledger 280 20261023140000
+followup final fingerprint 3a0f4d6860a49143b0f939a4185fbae3e1f7a89cb9d114c7c8e3975aab6ba4b4
+EQUAL batch 2 post-state summary
+7. after the follow-up's kit: fingerprint byte-identical to the follow-up's rehearsed final mirror (3a0f4d68...); ledger 280 20261023140000
+built
+== mirror9 (STOP_AFTER_PR324=1: the state before the follow-up release)
+the 245 working-tree files up to 20261011010251 are main 12f24475's, blob for blob
+reset: 245 migrations applied
+1. fresh main fingerprint == reference fresh build (8860eee4...)
+2. ledger stand-ins: 248 20261011010251
+3. 8 drifted bodies: owner/ACL/proconfig/secdef unchanged; line hashes == production's (8 stripped)
+4. extensions == production's: pg_cron@pg_catalog@1.6.4,pg_stat_statements@extensions@1.11,pgcrypto@extensions@1.3,plpgsql@pg_catalog@1.0,supabase_vault@vault@0.3.1,uuid-ossp@extensions@1.1
+5. mirror vs production's 2026-10-22 read-back: RESULT EQUAL
+pr324: generate.py --head cf79b1b6 final; SHA256SUMS 20 lines OK, 0 not OK
+pr324 b1	dry rc=3 sentinel, read-back EQUAL 1 pre	apply rc=0 0.348s	EQUAL batch 1 post-state summary	ledger 253 20261016175000
+pr324 b2	dry rc=3 sentinel, read-back EQUAL 2 pre	apply rc=0 0.490s	EQUAL batch 2 post-state summary	ledger 259 20261016196000
+pr324 b3	dry rc=3 sentinel, read-back EQUAL 3 pre	apply rc=0 0.353s	EQUAL batch 3 post-state summary	ledger 272 20261016220000
+pr324 b4	dry rc=3 sentinel, read-back EQUAL 4 pre	apply rc=0 0.314s	EQUAL batch 4 post-state summary	ledger 273 20261016221000
+pr324 final fingerprint 4d2a2747b665310617b958dce91438c8adb2d1de6262af3db58fbf307d264fa8
+6. after PR 324's kit: fingerprint byte-identical to PR 324's rehearsed final mirror (4d2a2747...); ledger 273 20261016221000
+stopped after PR 324's kit (STOP_AFTER_PR324=1)
+== use: mirror5 the comment-only proof of the two bodies (callee-bodies.txt) and the first run of the guard cases; mirror6 identifiers, step analysis and guard map; mirror7 pre-checks, measure, the guard cases, negatives.sh tamper, the lock trace, rehearse.sh with the 4 suites and the follow-up suite on the final state; mirror8 the final pass; mirror9 negatives.sh before-followup.

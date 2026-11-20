@@ -12,8 +12,11 @@ vi.mock("@/lib/supabase/admin", async () => {
  }) };
 });
 vi.mock("@/lib/crypto", () => ({ hmacSecret: (value: string, context: string) => crypto.createHash("sha256").update(context + "|" + value).digest("hex") }));
+// The one-time X-Inherit-CSRF gate passes through here; it is tested on this
+// route, through the same handler, in src/lib/security/session-csrf-routes.test.ts.
+vi.mock("@/lib/security/session-csrf", async (importOriginal) =>
+ (await import("@/lib/security/session-csrf.test-support")).admitEverySessionCsrf(await importOriginal()));
 import { POST } from "@/app/api/appeals/session/complete/route";
-import { publicAppealCsrf } from "./public-appeal-session";
 import { RIGHTS_COOKIE_NAME, rightsSessionHash } from "@/lib/embryos/rights-session";
 import { mintPublicFormToken } from "@/lib/embryos/operation-token";
 const secret = "A".repeat(43), hash = rightsSessionHash(secret);
@@ -25,7 +28,8 @@ const foreignHeaders: Record<string, string>[] = [
 function request(extra: Record<string, unknown> = {}, headers: Record<string, string> = {}) {
  return new Request("https://inherit.bio/api/appeals/session/complete", { method: "POST", headers: {
   cookie: `${RIGHTS_COOKIE_NAME}=${secret}`, origin: "https://inherit.bio", "sec-fetch-site": "same-origin", "content-type": "application/json",
-  "x-inherit-csrf": publicAppealCsrf(hash, "complete"), ...headers,
+  // 2026-11-19 (G8.5): the rights session's one-time token, admitted by the gate above; it was publicAppealCsrf(hash, "complete").
+  "x-inherit-csrf": "the-rights-session-token-the-gate-admitted", ...headers,
  }, body: JSON.stringify({ photoIdentityDocumentId: photo, subjectSourceControlDocumentId: authority,
   affirmed: true, nonce: mintPublicFormToken("appeal-complete", Date.now(), hash), ...extra }) });
 }

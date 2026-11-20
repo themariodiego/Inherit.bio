@@ -93,7 +93,8 @@ import * as accountChunk from "./account-archive-chunk-http";
 import {GET as mixedDownloadGet} from "@/app/api/downloads/[session]/chunks/[sequence]/route";
 import {POST as mixedDownloadAck} from "@/app/api/downloads/[session]/chunks/[sequence]/acknowledge/route";
 import {DOWNLOAD_COOKIE} from "@/lib/future-person/review";
-import {mintReceiptAckNonce,readReceiptAckNonce,receiptCsrf,chunkReceiptProof} from "@/lib/future-person/review-receipt";
+import {mintReceiptAckNonce,readReceiptAckNonce,chunkReceiptProof} from "@/lib/future-person/review-receipt";
+vi.mock("@/lib/security/session-csrf",async importOriginal=>(await import("@/lib/security/session-csrf.test-support")).admitEverySessionCsrf(await importOriginal()));
 
 const legacy=vi.hoisted(()=>({account:vi.fn(),own:vi.fn(),admin:vi.fn(),store:vi.fn(),key:vi.fn(),open:vi.fn()}));
 vi.mock("@/lib/account-deletion",()=>({getSensitiveAccountContext:legacy.account}));
@@ -144,7 +145,9 @@ describe("mixed native account and original reviewer download families",()=>{
   const f=fixture();f.context.mockResolvedValue(null);const original=legacyRouteFixture(f);
   const nonce=mintReceiptAckNonce(f.session,0,f.downloadHash,f.actor.accountId,f.actor.sessionId);
   const nonceValue=readReceiptAckNonce(nonce,f.session,0,f.downloadHash,f.actor.accountId,f.actor.sessionId)!;
-  const proof=chunkReceiptProof("a".repeat(64),f.bytes),csrf=receiptCsrf(f.session,f.downloadHash,f.actor.accountId,f.actor.sessionId);
+  // 2026-11-19 (G8.5, the migration stage): the reviewer's branch carries the reviewer's one-time token
+  // (its gate is driven in session-csrf-routes.test.ts), where it carried the receipt digest.
+  const proof=chunkReceiptProof("a".repeat(64),f.bytes),csrf="reviewer-session-token-checked-by-the-gate";
   const response=await mixedDownloadAck(f.post({nonce,proof},csrf,{cookie:`${DOWNLOAD_COOKIE}=${f.cookie}`}),original.context);
   expect(response.status).toBe(204);expect((await response.arrayBuffer()).byteLength).toBe(0);
   expect(f.context).toHaveBeenCalledExactlyOnceWith({actor:f.actor,sessionId:f.session,downloadHash:null},expect.any(AbortSignal));

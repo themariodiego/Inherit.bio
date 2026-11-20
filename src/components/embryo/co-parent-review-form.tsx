@@ -4,6 +4,7 @@ import { useRef, useState, type FormEvent } from "react";
 import type { CoParentReview } from "@/lib/embryos/co-parent-review";
 import { typedNameIsValid } from "@/lib/embryos/basis";
 import { InvitationRefusalForm } from "./invitation-refusal-form";
+import { useCsrf } from "@/components/security/csrf-provider";
 import { Button } from "@/components/ui/button";
 import { route } from "@/lib/primary-routes";
 
@@ -23,6 +24,7 @@ export function CoParentReviewForm({ review, countries, refusalNonce }: {
   refusalNonce: string;
 }) {
   const [status, setStatus] = useState<"ready" | "pending" | "accepted" | "failed">("ready");
+  const csrf = useCsrf("api.invitation-accept");
   const [nameError, setNameError] = useState(false);
   const submitting = useRef(false);
 
@@ -44,9 +46,9 @@ export function CoParentReviewForm({ review, countries, refusalNonce }: {
     submitting.current = true;
     setStatus("pending");
     try {
-      const response = await fetch("/api/invitations/accept", {
+      const response = await csrf.send((csrfToken) => fetch("/api/invitations/accept", {
         method: "POST", credentials: "same-origin", cache: "no-store",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "X-Inherit-CSRF": csrfToken },
         body: JSON.stringify({
           nonce: review.nonce, jurisdictionCode: form.get("jurisdictionCode"),
           coParentArtifacts: {
@@ -54,7 +56,7 @@ export function CoParentReviewForm({ review, countries, refusalNonce }: {
             parentageAttestation: artifactBody("attestation.embryo-parentage"),
           },
         }),
-      });
+      }));
       if (!response.ok) { setStatus("failed"); return; }
       const receipt = await response.json();
       setStatus(receipt.status === "accepted" && receipt.participantState === "accepted_pending_cohort_finalization" ? "accepted" : "failed");

@@ -79,7 +79,11 @@ describe("real own-report density providers", () => {
       'expect(after.runs, "native derived journal is purged, not merely hidden").toEqual([])',
       'expect(after[name], "revocation preserves the actual canonical source and other outputs").toEqual(before[name])',
       'expect(facts, "the revoked full native state stays exact around capture").toEqual(fixedRevokedFacts)',
-      'await expect(off).toHaveCount(3)', 'getByRole("link", { name: ANCESTRY_REPORTS_LINK, exact: true })',
+      `const ANCESTRY_PANELS = ['[data-testid="admixture"]', '[data-testid="mtdna"]', '[data-testid="ydna"]', "#neanderthal"] as const;`,
+      "for (const panel of ANCESTRY_PANELS) {",
+      `const said = page.locator(panel).locator('[data-slot="ancestry-off"]'); await expect(said).toHaveCount(1);`,
+      'await expect(said.getByText(ANCESTRY_OFF, { exact: true })).toBeVisible()',
+      'await expect(off).toHaveCount(ANCESTRY_PANELS.length)', 'said.getByRole("link", { name: ANCESTRY_REPORTS_LINK, exact: true })',
       'toHaveAttribute("href", "/genome/me/reports")']) expect(source).toContain(text);
   });
   it("binds the missing report choice to its one real stored-source route and holds unrelated new states", () => {

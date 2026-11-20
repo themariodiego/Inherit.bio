@@ -1,6 +1,5 @@
 import "server-only";
 import crypto from "node:crypto";
-import { hmacSecret } from "@/lib/crypto";
 import { mintPublicFormToken, readPublicFormToken } from "@/lib/embryos/operation-token";
 import { sha256Hex } from "./claim-session";
 
@@ -20,12 +19,6 @@ export function mintReceiptAckNonce(download: string, sequence: number, cookieHa
 }
 export function readReceiptAckNonce(token: string, download: string, sequence: number, cookieHash: string, account: string, session: string, now = Date.now()) {
   return token.length <= 2048 ? readPublicFormToken(token, "claim-review-receipt-ack", now, ackBinding(download, sequence, cookieHash, account, session))?.nonce ?? null : null;
-}
-export function receiptCsrf(download: string, cookieHash: string, account: string, session: string) {
-  return hmacSecret(`${download}|${cookieHash}|${account}|${session}`, "claim-review-receipt-csrf-v1");
-}
-export function receiptCsrfMatches(value: string | null, download: string, cookieHash: string, account: string, session: string) {
-  return value !== null && /^[0-9a-f]{64}$/u.test(value) && crypto.timingSafeEqual(Buffer.from(value),Buffer.from(receiptCsrf(download,cookieHash,account,session)));
 }
 /** Whole-file public digests cannot substitute for the random challenge and actual chunk. */
 export function chunkReceiptProof(challenge: string, bytes: Uint8Array) {

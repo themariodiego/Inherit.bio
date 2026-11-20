@@ -2,9 +2,10 @@ import { z } from "zod";
 import { getSensitiveAccountContext } from "@/lib/account-deletion";
 import { ACCOUNT_OPERATION_NONCE_MAX_LENGTH, verifyAccountOperationNonce } from "@/lib/account-operation-nonce";
 import { invalidRequest, notFound, unavailable } from "@/lib/embryos/api";
-import { closedResponse, originDenied, readJson, unauthorized } from "@/lib/embryos/guards";
+import { closedResponse, originDenied, readJson, unauthenticated } from "@/lib/embryos/guards";
 import { isJsonRequest } from "@/lib/subject-endpoints/request";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { withAccountCsrf } from "@/lib/security/session-csrf";
 
 /**
  * `POST /api/consents/revoke-all` (register api.consents-revoke-all). Turns
@@ -31,9 +32,10 @@ const body = z.object({
 
 const ACCEPTED_KEYS = ["status"] as const;
 
-export async function POST(request: Request) {
+export const POST = withAccountCsrf("api.consents-revoke-all", handlePost);
+async function handlePost(request: Request) {
   const account = await getSensitiveAccountContext();
-  if (!account) return unauthorized();
+  if (!account) return unauthenticated();
   const forbidden = originDenied(request);
   if (forbidden) return forbidden;
 

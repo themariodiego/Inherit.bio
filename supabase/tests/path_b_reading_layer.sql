@@ -202,12 +202,12 @@ select is(pg_temp.m('main','1'),'allow:-',
 select is(pg_temp.m('nb','1'),'deny:adult.non-account-holder-24mo',
  'a no-account person''s uploader is denied: the 24-month confirmation state is not built');
 select is(pg_temp.m('late','1'),'deny:adult.acceptance-hold-72h',
- 'an account created after the request is treated as created from it: the 72-hour hold is not built');
+ 'an account created after the request is held: 72 hours from acceptance and until its second notice is accepted (20261120120000)');
 select is(pg_temp.m('main','9'),'deny:not-found','anyone else is not found');
 update public.subject_invitations set accepted_at=accepted_at-interval '31 days'
  where id=pg_temp.invitation_of(pg_temp.sid('main'));
 select is(pg_temp.m('main','1','analysis-enqueue'),'deny:adult.re-notice-30d',
- 'from the 30-day boundary the uploader is denied: the re-notice is not built');
+ 'from the 30-day boundary the uploader is denied until the re-notice is accepted (20261120120000)');
 update public.subject_invitations set accepted_at=accepted_at+interval '31 days'
  where id=pg_temp.invitation_of(pg_temp.sid('main'));
 select throws_ok($$select private.other_adult_mitigation_v1(pg_temp.sid('main'),pg_temp.a('1'),'anything')$$,

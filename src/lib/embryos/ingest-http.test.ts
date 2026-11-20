@@ -120,10 +120,16 @@ describe("HTTP credential orchestration", () => {
     expect(req.bodyUsed).toBe(false);
   });
   it("denies before database access or body reads for missing auth, origin, jurisdiction or cookie", async () => {
-    for (const [req, context, settings, status] of [
-      [validRequest(), null, env, 401], [request({ origin: "https://evil.example" }), account, env, 403],
-      [request({ "sec-fetch-site": "cross-site" }), account, env, 403],
-      [validRequest(), account, {}, 403], [request(), account, env, 404],
+    // authContracts: no live account is authenticated-api-v1's JSON 401; a
+    // foreign Origin or fetch metadata is upload-session-api-v1's opaque 404,
+    // the same answer as a missing cookie, so a foreign site learns nothing.
+    // The foreign requests carry a valid cookie, so only the origin check can refuse them.
+    const unauthenticated = { error: "unauthenticated" }, notFound = { error: "not_found" };
+    const cookie = validRequest().headers.get("cookie")!;
+    for (const [req, context, settings, status, body] of [
+      [validRequest(), null, env, 401, unauthenticated], [request({ origin: "https://evil.example", cookie }), account, env, 404, notFound],
+      [request({ "sec-fetch-site": "cross-site", cookie }), account, env, 404, notFound],
+      [validRequest(), account, {}, 403, null], [request(), account, env, 404, notFound],
     ] as const) {
       const rpc = vi.fn();
       const result = await authorizeIngestHttpRequest(req, SESSION, context, rpc, settings);
@@ -131,6 +137,10 @@ describe("HTTP credential orchestration", () => {
       if (result.kind === "denied") {
         expect(result.response.status).toBe(status);
         expect(result.response.headers.get("cache-control")).toBe("private, no-store");
+        if (body !== null) {
+          expect(result.response.headers.get("content-type")).toBe("application/json");
+          expect(await result.response.json()).toEqual(body);
+        }
       }
       expect(rpc).not.toHaveBeenCalled();
       expect(req.bodyUsed).toBe(false);

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { useCsrf } from "@/components/security/csrf-provider";
 import { Button } from "@/components/ui/button";
 import {
   JURISDICTION_AFFIRM,
@@ -55,6 +56,7 @@ export function JurisdictionForm({
   current,
   attestation,
   next,
+  operationNonce,
 }: {
   choices: readonly { code: string; name: string }[];
   /** Each country that also asks for a state, with its states. */
@@ -63,8 +65,11 @@ export function JurisdictionForm({
   attestation: { version: number; sha256: string; summary: string; body: string };
   /** Where the first sign-in continues once a country is saved; null on an ordinary visit. */
   next: string | null;
+  /** The one-time nonce the page rendered for this declaration (G5.6, 23 Oct 2026). */
+  operationNonce: string;
 }) {
   const router = useRouter();
+  const csrf = useCsrf("api.jurisdiction");
   const [state, setState] = useState<"idle" | "saving" | "saved" | "failed">("idle");
   const [country, setCountry] = useState("");
   const [subdivision, setSubdivision] = useState("");
@@ -82,9 +87,9 @@ export function JurisdictionForm({
     const data = new FormData(form);
     setState("saving");
     try {
-      const response = await fetch("/api/settings/jurisdiction", {
+      const response = await csrf.send((csrfToken) => fetch("/api/settings/jurisdiction", {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "X-Inherit-Operation-Nonce": operationNonce, "X-Inherit-CSRF": csrfToken },
         body: JSON.stringify({
           code: String(data.get("jurisdictionCode") ?? ""),
           ...(stateChoices.length > 0 ? { subdivision: String(data.get("jurisdictionSubdivision") ?? "") } : {}),
@@ -92,7 +97,7 @@ export function JurisdictionForm({
           attestationHash: attestation.sha256,
           affirmed: data.get("affirmed") === "on",
         }),
-      });
+      }));
       // Reading the body also releases it: a response nothing reads stays open.
       await response.json().catch(() => null);
       if (!response.ok) {
@@ -115,7 +120,7 @@ export function JurisdictionForm({
   }
 
   return (
-    <section id="jurisdiction" data-slot="jurisdiction" className="plate">
+    <section id="jurisdiction" data-slot="jurisdiction" data-operation-nonce={operationNonce} className="plate">
       <div className="plate-head"><h2 className="eyebrow">{JURISDICTION_HEADING}</h2></div>
       <div className="plate-body rec-stack">
         {/* The explanation is one block of short paragraphs; the recorded

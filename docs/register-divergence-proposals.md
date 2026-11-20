@@ -54,8 +54,8 @@ The ledgers are `docs/route-divergence.json` (checked by
 | `storageBucketDivergence` `legal-evidence` | **Unbuilt.** It stays declared but not created. | Evidence ingest is built. |
 | `storageBucketDivergence` `future-person-identity` | **Unbuilt.** It stays declared but not created. | Future-person claim review is built. |
 | `unregisteredServerActions` `acknowledgeEmbryoGate` | **Deliberate; not a defect.** | Nothing. |
-| `unhashableAttestationFields` (5 rows) | **Decided on 2026-09-13** (keep the code, record the divergence). Unchanged. | A `policy.jurisdiction` artifact is authored. |
-| `unreadRequiredHeaders` `api.evidence-chunk` | **Unbuilt route.** Unchanged. | The legal-evidence ingest design. |
+| `unhashableAttestationFields` (5 rows on 28 September) | **Decided on 2026-09-13** (keep the code, record the divergence). Unchanged. **Corrected 19 November 2026:** the ledger holds 4 rows, not 5. The owner decision of 16 October ("Auth endpoints: jurisdiction, date of birth, reset and limits (G2.1)") removed the jurisdiction fields from `auth.sign-up-submit`'s contract, so its row left the ledger (`bc66aa04`); the ledger's own note says so. | A `policy.jurisdiction` artifact is authored. |
+| `unreadRequiredHeaders` `api.evidence-chunk` | **Historical status, 28 September (morning):** **Unbuilt route.** Unchanged. **Corrected 19 November 2026:** closed the same day. The owner decided on 28 September (late afternoon) that claim chunks use a one-time database reservation, so `X-Inherit-Chunk-Nonce` left the `api.evidence-chunk` contract and its row left the ledger (`e1cfe5f6`). `unreadRequiredHeaders` is empty and still checked in both directions. | Nothing further. **Historical closing, 28 September (morning):** The legal-evidence ingest design. |
 | `redirectStatusDivergence`, `taskDepthCeilingDivergence` | Empty. Both are still checked in both directions. | None. |
 
 **Update, 2026-09-28 (evening):** the `api.account-delete` row is closed. The

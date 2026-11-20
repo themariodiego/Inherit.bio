@@ -13,7 +13,7 @@
  * Colour never carries identity alone (X2.4): the initial and the name are
  * text. The bar root carries data-subject-id.
  */
-import Link from "next/link";
+import { IntentLink } from "@/components/site/intent-link";
 import { Button } from "@/components/ui/button";
 import { ADD_A_FILE, KIND_CHIPS, fileCount, type KindChip } from "@/copy/reports/strings";
 import { route } from "@/lib/primary-routes";
@@ -146,7 +146,7 @@ export function SubjectBar({ subject, fileCount: files, viewerAccountId, action 
         </span>
       ) : null}
       {files === null ? null : (
-        <Link
+        <IntentLink
           href={route("files.index")}
           data-slot="subject-files"
           // "2 files" measured 29×20: a tap target on every genome surface and
@@ -156,21 +156,21 @@ export function SubjectBar({ subject, fileCount: files, viewerAccountId, action 
           className="quiet-link flex min-h-11 min-w-11 shrink-0 items-center justify-center px-1"
         >
           {fileCount(files)}
-        </Link>
+        </IntentLink>
       )}
       {!canAddFile ? null : action === "quiet" ? (
-        <Link
+        <IntentLink
           href={route("files.upload", { query: { subject: subject.routeSegment } })}
           data-slot="subject-add-file"
           className="quiet-link ml-auto flex min-h-11 shrink-0 items-center px-1"
         >
           {ADD_A_FILE}
-        </Link>
+        </IntentLink>
       ) : (
         <Button asChild variant="outline" size="sm" className="ml-auto shrink-0">
-          <Link href={route("files.upload", { query: { subject: subject.routeSegment } })}>
+          <IntentLink href={route("files.upload", { query: { subject: subject.routeSegment } })}>
             {ADD_A_FILE}
-          </Link>
+          </IntentLink>
         </Button>
       )}
     </div>

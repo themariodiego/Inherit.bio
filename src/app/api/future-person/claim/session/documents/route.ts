@@ -2,19 +2,20 @@ import { z } from "zod";
 import { closedResponse } from "@/lib/embryos/guards";
 import { notFound, sensitiveJson, unavailable } from "@/lib/embryos/api";
 import { readBoundedJson } from "@/lib/future-person/bounded-body";
-import { claimMutationCsrfMatches, newClaimSessionRotation, sha256Hex } from "@/lib/future-person/claim-session";
+import { newClaimSessionRotation, sha256Hex } from "@/lib/future-person/claim-session";
 import { futurePersonClaimsOpen } from "@/lib/future-person/claims-open";
 import {
   EVIDENCE_COMPLETE_NONCE_HEADER,
-  EVIDENCE_CSRF_HEADER,
+  EVIDENCE_SESSION_CSRF_HEADER,
   claimSessionHash,
   evidenceCompleteNonce,
   evidenceCookie,
-  evidenceCsrf,
+  evidenceSessionCsrf,
   newEvidenceSecret,
   readClaimDocumentNonce,
 } from "@/lib/future-person/evidence-session";
 import { newWrappedDocumentKey } from "@/lib/future-person/document-envelope";
+import { answerForRotatedSession, readClaimCsrfSession, withPurposeCsrf } from "@/lib/security/session-csrf";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 /**
@@ -30,9 +31,17 @@ import { createAdminClient } from "@/lib/supabase/admin";
  * (requestContract.unknownMissingInvalidOrAmbiguous). A claim already at its
  * session or document limit is the shared 429.
  *
- * The 201 body is evidence-session-v1. The evidence cookie, and the two
- * session-bound values every chunk and the completion must send back, travel
- * only in headers.
+ * The 201 body is evidence-session-v1. The evidence cookie, the evidence
+ * session's first `X-Inherit-CSRF` values (the chunk stream's and the
+ * completion's, in `X-Inherit-Evidence-CSRF`) and the completion nonce
+ * travel only in headers.
+ *
+ * `X-Inherit-CSRF` is the claim session's one-time token for this route
+ * (G8.5, the migration stage), spent before the handler runs; it was a
+ * digest of the claim session, the operation and the nonce. The nonce stays
+ * in the body and is checked as before. Opening a session rotates the claim
+ * cookie, so the successor this answer carries is minted for the new cookie,
+ * and the evidence session's own values cannot share that header.
  */
 
 const MAXIMUM_DOCUMENT_BYTES = 20_000_000;
@@ -63,9 +72,8 @@ function withoutReferrer(response: Response): Response {
   return response;
 }
 
-export async function POST(request: Request) {
-  return withoutReferrer(await open(request));
-}
+export const POST = withPurposeCsrf("api.future-person-claim-document-session", readClaimCsrfSession,
+  async (request: Request) => withoutReferrer(await open(request)));
 
 async function open(request: Request): Promise<Response> {
   if (!futurePersonClaimsOpen()) return notFound();
@@ -83,7 +91,7 @@ async function open(request: Request): Promise<Response> {
   const parsed = body.safeParse(await readBoundedJson(request, 4096));
   if (!parsed.success) return notFound();
   const nonce = readClaimDocumentNonce(parsed.data.nonce, claimHash);
-  if (!nonce || !claimMutationCsrfMatches(request.headers.get("x-inherit-csrf"), claimHash, "documents", parsed.data.nonce)) return notFound();
+  if (!nonce) return notFound();
 
   const evidence = newEvidenceSecret();
   const successor = newClaimSessionRotation();
@@ -100,7 +108,11 @@ async function open(request: Request): Promise<Response> {
   });
   if (error) return ["42501", "23505", "22023"].includes(error.code ?? "") ? notFound() : unavailable();
   if ((data as { status?: unknown } | null)?.status === "capacity_limited") {
-    return sensitiveJson({ error: "try_again_later" }, 429, { "Retry-After": "900" });
+    // public-capacity-limited-v1, bound to this route since 2026-10-24 (G8.5),
+    // with the same no-referrer answer api.future-person-claim gives.
+    const limited = sensitiveJson({ error: "try_again_later" }, 429, { "Retry-After": "900" });
+    limited.headers.set("Referrer-Policy", "no-referrer");
+    return limited;
   }
   const session = opened.safeParse(data);
   if (!session.success) return unavailable();
@@ -121,7 +133,7 @@ async function open(request: Request): Promise<Response> {
   if (response.status !== 201) return response;
   response.headers.append("Set-Cookie", evidenceCookie(evidence.secret, expiresAt));
   response.headers.append("Set-Cookie", successor.setCookie(expiresAt));
-  response.headers.set(EVIDENCE_CSRF_HEADER, evidenceCsrf(id, evidence.hash));
+  response.headers.set(EVIDENCE_SESSION_CSRF_HEADER, evidenceSessionCsrf(id, evidence.hash));
   response.headers.set(EVIDENCE_COMPLETE_NONCE_HEADER, evidenceCompleteNonce(id, evidence.hash));
-  return response;
+  return answerForRotatedSession(response, { kind: "claim-session", sessionHash: successor.sessionHash });
 }

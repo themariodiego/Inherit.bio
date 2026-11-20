@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { IntentLink } from "@/components/site/intent-link";
 import { Button } from "@/components/ui/button";
 import { SiteNavLink } from "./site-nav";
 import { ThemeToggle } from "./theme-toggle";
@@ -57,19 +58,22 @@ export async function SiteHeader() {
             </SiteNavLink>
           ))}
         </nav>
-        {/* 12px between the toggle and the pill: clear of the 8px floor at 320. */}
+        {/* 12px between the toggle and the pill: clear of the 8px floor at 320.
+            The pill is the forest outline rather than a filled one: the same
+            44px target and label, without a filled shape in the first viewport
+            of every public page (brief X6.2, G2.5). */}
         <div className="flex items-center gap-3 md:justify-self-end">
           <ThemeToggle />
           {user ? (
-            <Button asChild size="sm">
-              <Link href={route("app.overview")}>Overview</Link>
+            <Button asChild size="sm" variant="outline" className="border-forest text-forest">
+              <IntentLink href={route("app.overview")}>Overview</IntentLink>
             </Button>
           ) : (
             <>
               <Button asChild variant="ghost" size="sm" className="hidden md:inline-flex">
-                <Link href={route("auth.sign-in")}>Sign in</Link>
+                <IntentLink href={route("auth.sign-in")}>Sign in</IntentLink>
               </Button>
-              <Button asChild size="sm">
+              <Button asChild size="sm" variant="outline" className="border-forest text-forest">
                 <Link href="/auth/sign-up" prefetch={false}>Get started</Link>
               </Button>
             </>
@@ -98,12 +102,12 @@ export async function SiteHeader() {
           ))}
         </nav>
         {user ? null : (
-          <Link
+          <IntentLink
             href={route("auth.sign-in")}
             className="site-nav-link flex min-h-11 min-w-11 shrink-0 items-center justify-center whitespace-nowrap text-sm font-medium text-ink"
           >
             Sign in
-          </Link>
+          </IntentLink>
         )}
       </div>
     </header>

@@ -3,8 +3,10 @@ import { expect, it, vi } from "vitest";
 const prepare = vi.hoisted(() => vi.fn());
 vi.mock("@/lib/copilot/own-chat", () => ({ prepareOwnCopilotChat: prepare }));
 vi.mock("@/lib/supabase/server", () => ({ createClient: async () => ({ auth: { getUser: async () => ({ data: { user: { id: "synthetic-account" } } }) } }) }));
-vi.mock("@/lib/subjects", () => ({ resolveSubjectForAccount: async () => ({ id: "synthetic-subject", subjectClass: "self", displayLabel: "You" }) }));
-vi.mock("@/components/chat/chat-panel", () => ({ ChatPanel: () => null }));
+// The subject the account holds itself: since G8.5 (24 October 2026) the page
+// opens a conversation only for an own self subject (src/lib/copilot/subject-scope.ts).
+vi.mock("@/lib/subjects", () => ({ resolveSubjectForAccount: async () => ({ id: "synthetic-subject", subjectClass: "self", displayLabel: "You",
+  subjectAccountId: "synthetic-account" }) }));
 vi.mock("@/components/chat/own-chat-panel", () => ({ OwnChatPanel: () => null }));
 import ChatPage from "@/app/(app)/copilot/[scope]/page";
 import { OwnChatPanel } from "@/components/chat/own-chat-panel";

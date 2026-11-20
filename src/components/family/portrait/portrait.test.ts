@@ -159,6 +159,7 @@ describe("the blocking screen", () => {
           { subjectId: SELF_B, step: "acknowledged" },
         ],
         consentsHref: "/settings/consents",
+        acknowledgeNonce: "acknowledge-nonce",
       }),
     );
     expect(html).toContain("Portrait is waiting for Bo");
@@ -184,6 +185,7 @@ describe("the blocking screen", () => {
           { subjectId: SELF_B, step: "grant" },
         ],
         consentsHref: "/settings/consents",
+        acknowledgeNonce: "acknowledge-nonce",
       }),
     );
     expect(html).toContain("Portrait is waiting for you and Bo");
@@ -203,6 +205,7 @@ describe("the blocking screen", () => {
         people: [people[0], { subjectId: SELF_B, displayLabel: "Invited adult", isViewer: false }],
         missing: [{ subjectId: SELF_B, step: "account" }],
         consentsHref: "/settings/consents",
+        acknowledgeNonce: "acknowledge-nonce",
       }),
     );
     expect(html).toContain("Invited adult has not: opened their own Inherit account");
@@ -520,7 +523,7 @@ describe("the trait cards and the refusals", () => {
 
 describe("the delete control", () => {
   it("renders one destructive action and no dialog until asked", () => {
-    const html = renderToStaticMarkup(h(DeletePortrait, { grantId: GRANT }));
+    const html = renderToStaticMarkup(h(DeletePortrait, { grantId: GRANT, revokeNonce: "revoke-nonce" }));
     expect(html).toContain(copy.DELETE_LEAD);
     expect(html).toContain(copy.DELETE_BUTTON);
     expect(html).toContain('data-variant="destructive"');

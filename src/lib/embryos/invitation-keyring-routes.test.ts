@@ -1,5 +1,10 @@
 import crypto from "node:crypto";
+import { readFileSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+// The one-time X-Inherit-CSRF gate is driven on this route by
+// src/lib/security/session-csrf-routes.test.ts; here it admits every request.
+vi.mock("@/lib/security/session-csrf", async (importOriginal) =>
+  (await import("@/lib/security/session-csrf.test-support")).admitEverySessionCsrf(await importOriginal()));
 
 /**
  * The invitation routes hand the database a keyed digest set and the quota
@@ -12,14 +17,19 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
   rpc: vi.fn(),
   update: vi.fn(),
+  from: vi.fn(),
   account: vi.fn(),
   user: vi.fn(),
   capability: vi.fn(),
+  offer: vi.fn(),
 }));
 vi.mock("@/lib/supabase/admin", () => ({
   createAdminClient: () => ({
     rpc: mocks.rpc,
-    from: () => ({ update: (...args: unknown[]) => { mocks.update(...args); return chain; } }),
+    from: (...table: unknown[]) => {
+      mocks.from(...table);
+      return { update: (...args: unknown[]) => { mocks.update(...args); return chain; } };
+    },
   }),
 }));
 const chain: Record<string, unknown> = {};
@@ -27,22 +37,34 @@ chain.eq = () => chain;
 vi.mock("@/lib/supabase/server", () => ({
   createClient: async () => ({ auth: { getUser: mocks.user } }),
 }));
-vi.mock("@/lib/account-deletion", () => ({ getSensitiveAccountContext: mocks.account, isSameOrigin: () => true }));
+vi.mock("@/lib/account-deletion", async (original) => ({ getSensitiveAccountContext: mocks.account, isSameOrigin: () => true,
+  hashOperationNonce: (await original<typeof import("@/lib/account-deletion")>()).hashOperationNonce }));
 vi.mock("@/lib/legal/jurisdictions", async (original) => ({
   ...(await original<typeof import("@/lib/legal/jurisdictions")>()),
   accountCapability: mocks.capability,
 }));
+// D-103: the confirm reads the session's offer again before judging its body;
+// the offer's rows are not what this file is about, so it is supplied whole.
+vi.mock("@/lib/embryos/adult-subject-review", async (original) => ({
+  ...(await original<typeof import("@/lib/embryos/adult-subject-review")>()),
+  readAdultSubjectOffer: mocks.offer,
+}));
 vi.mock("@/lib/embryos/guards", async (original) => ({
   ...(await original<typeof import("@/lib/embryos/guards")>()),
   accountJurisdictionDenied: async () => null,
-  csrfOperation: () => ({ nonce: "csrf-nonce-aaaaaaaaaaaaaaaa" }),
+  // 2026-11-19 (G8.5): api.invitations reads the operation token from X-Inherit-Operation-Nonce
+  // (headerOperation); it was csrfOperation.
+  headerOperation: () => ({ nonce: "csrf-nonce-aaaaaaaaaaaaaaaa" }),
 }));
 
 const { POST: inviteCoParent } = await import("@/app/api/invitations/route");
 const { POST: inviteAdult } = await import("@/app/api/subject-drafts/route");
 const { legacyContactDigest } = await import("@/lib/hmac-keyring");
+const { openAdultInvitationNote } = await import("@/lib/adult-invitation-note");
+const { mintPersonOperationNonce } = await import("@/lib/person-operation-nonce");
 
 const ACCOUNT = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+const SESSION = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
 const DRAFT = "cccccccc-cccc-4ccc-8ccc-cccccccccccc";
 const INVITED = "invited-person@example.invalid";
 const NETWORK = "192.0.2.44";
@@ -52,26 +74,41 @@ beforeEach(() => {
   vi.stubEnv("BYOK_ENCRYPTION_KEY", crypto.randomBytes(32).toString("base64"));
   vi.stubEnv("INHERIT_HMAC_KEYRING", `2:${KEY_2}`);
   vi.clearAllMocks();
-  mocks.account.mockResolvedValue({ user: { id: ACCOUNT, email: "owner@example.invalid" }, sessionId: "s" });
+  mocks.account.mockResolvedValue({ user: { id: ACCOUNT, email: "owner@example.invalid" }, sessionId: SESSION });
   mocks.user.mockResolvedValue({ data: { user: { id: ACCOUNT, email: "owner@example.invalid" } } });
   mocks.capability.mockResolvedValue({ status: "permitted" });
 });
 afterEach(() => vi.unstubAllEnvs());
 
-const post = (path: string, body: unknown) => new Request(`https://inherit.bio${path}`, {
+const post = (path: string, body: unknown, headers: Record<string, string> = {}) => new Request(`https://inherit.bio${path}`, {
   method: "POST",
-  headers: { origin: "https://inherit.bio", "content-type": "application/json", "x-real-ip": NETWORK },
+  headers: { origin: "https://inherit.bio", "content-type": "application/json", "x-real-ip": NETWORK, ...headers },
   body: JSON.stringify(body),
 });
 const coParent = () => post("/api/invitations", { targetCohortDraftId: DRAFT, contactEmail: INVITED });
-const adult = () => post("/api/subject-drafts", {
-  kind: "other_adult", adultFlow: "path-a-own-account", email: INVITED,
-  adultAttestation: true, requestId: crypto.randomUUID(),
+// 20261023120000 (G5.6): /family/invite renders a one-time nonce for this account and session.
+// 2026-10-23 (G8.5): the register's Path A body, closed-subject-draft-create-v1.
+const pathA = (body: Record<string, unknown> = {}) => ({
+  kind: "adult", adultFlow: "path-a-own-account", contactEmail: INVITED, requestId: crypto.randomUUID(), ...body,
 });
+const pageNonce = () => ({ "x-inherit-operation-nonce": mintPersonOperationNonce({ accountId: ACCOUNT, sessionId: SESSION,
+  operation: "adult_invitation_create", targetId: ACCOUNT }) });
+const adult = (body: Record<string, unknown> = pathA()) => post("/api/subject-drafts", body, pageNonce());
 
 function sentArgs(): Record<string, unknown> {
   expect(mocks.rpc).toHaveBeenCalledTimes(1);
   return mocks.rpc.mock.calls[0]![1] as Record<string, unknown>;
+}
+
+/** The claim the mail worker would receive for the row this idempotency key names, on its first attempt. */
+function claimOf(idempotencyKey: string) {
+  return { templateId: "adult-subject-invitation", attemptOrdinal: 1, providerAttemptKey: crypto.createHash("sha256")
+    .update(`mail-token-attempt-v1|${idempotencyKey}|1`, "utf8").digest("hex") };
+}
+
+/** The note the worker would open from what the route sent, for that invitation's own row. */
+function openedNote(args: Record<string, unknown>): string | null {
+  return openAdultInvitationNote(args.p_note_envelope, claimOf(args.p_idempotency_key as string));
 }
 
 function expectKeyedCall(args: Record<string, unknown>) {
@@ -130,7 +167,8 @@ describe("POST /api/subject-drafts (adult invitation)", () => {
     mocks.rpc.mockResolvedValue({ data: [{ invitation_id: crypto.randomUUID() }], error: null });
     const response = await inviteAdult(adult());
     expect(response.status).toBe(202);
-    expect(mocks.rpc.mock.calls[0]![0]).toBe("create_adult_subject_invitation_v1");
+    expect(mocks.rpc.mock.calls[0]![0]).toBe("create_adult_subject_invitation_with_nonce_v1");
+    expect(sentArgs()).toMatchObject({ p_session_id: SESSION, p_nonce_hash: expect.stringMatching(/^[0-9a-f]{64}$/) });
     expectKeyedCall(sentArgs());
   });
 
@@ -148,6 +186,144 @@ describe("POST /api/subject-drafts (adult invitation)", () => {
     expect((await inviteAdult(adult())).status).toBe(503);
   });
 
+  // Owner decision of 19 November 2026 (G8.5, "Path A's invitation stays one
+  // step"): the register now describes this answer, path-a-invitation-created-v1,
+  // bound to api.subject-drafts. Every outcome of the one call answers its exact
+  // status and body, and nothing that names the draft, the address or a token.
+  it("answers an issued, barred or exhausted invitation with the register's path-a-invitation-created-v1", async () => {
+    const register = JSON.parse(readFileSync("docs/route-register.json", "utf8")) as {
+      responseContracts: Record<string, { status: number; body: Record<string, { const: unknown }> }>;
+      responseContractBindings: { routes: Record<string, string[]> };
+      routes: { id: string; policy?: { pathASuccessResponseContract?: string } }[];
+    };
+    expect(register.routes.find(route => route.id === "api.subject-drafts")?.policy?.pathASuccessResponseContract)
+      .toBe("path-a-invitation-created-v1");
+    expect(register.responseContractBindings.routes["api.subject-drafts"]).toContain("path-a-invitation-created-v1");
+    const contract = register.responseContracts["path-a-invitation-created-v1"]!;
+    const registered = { status: contract.status,
+      body: Object.fromEntries(Object.entries(contract.body).map(([key, rule]) => [key, rule.const])) };
+    expect(registered).toEqual({ status: 202, body: { accepted: true } });
+    for (const data of [[{ invitation_id: crypto.randomUUID(), subject_id: crypto.randomUUID() }],
+      [{ invitation_id: null, subject_id: null }]]) {
+      mocks.rpc.mockResolvedValueOnce({ data, error: null });
+      const response = await inviteAdult(adult());
+      expect({ status: response.status, body: await response.json() }).toEqual(registered);
+    }
+  });
+
+  it("refuses an invitation without the page's nonce before reserving anything", async () => {
+    const response = await inviteAdult(post("/api/subject-drafts", pathA()));
+    expect(response.status).toBe(400);
+    expect(mocks.rpc).not.toHaveBeenCalled();
+  });
+
+  it("refuses the route's former body and every field the registered body does not declare, before reserving anything", async () => {
+    for (const body of [
+      { kind: "other_adult", adultFlow: "path-a-own-account", email: INVITED, adultAttestation: true, requestId: crypto.randomUUID() },
+      pathA({ kind: "other_adult" }),
+      pathA({ adultAttestation: true }),
+      pathA({ email: INVITED }),
+      { ...pathA(), contactEmail: undefined },
+      { ...pathA(), requestId: undefined },
+      pathA({ contactEmail: "not-an-address" }),
+    ]) {
+      expect((await inviteAdult(adult(body))).status).toBe(400);
+    }
+    expect(mocks.rpc).not.toHaveBeenCalled();
+  });
+
+  it("refuses an unreviewed jurisdiction with the registered 403 and the row's own words, before reading the body", async () => {
+    mocks.capability.mockResolvedValue({ status: "unreviewed", userFacingCopy: "Synthetic refusal copy." });
+    for (const body of [pathA(), { not: "a draft body" }]) {
+      const response = await inviteAdult(adult(body));
+      expect(response.status).toBe(403);
+      expect(await response.json()).toEqual({ error: "jurisdiction_unavailable", message: "Synthetic refusal copy." });
+    }
+    expect(mocks.rpc).not.toHaveBeenCalled();
+  });
+
+  it("keeps the note optional and passes the normalized address on", async () => {
+    mocks.rpc.mockResolvedValue({ data: [{ invitation_id: crypto.randomUUID() }], error: null });
+    expect((await inviteAdult(adult(pathA({ contactEmail: ` ${INVITED.toUpperCase()} `, note: "Synthetic note." })))).status).toBe(202);
+    // D-139 (2026-11-19): the note reaches the database only sealed, inside
+    // the invitation's own transaction; this was a plain-text update of the
+    // queued mail after the RPC had committed.
+    const args = sentArgs();
+    expect(openedNote(args)).toBe("Synthetic note.");
+    expect(mocks.from).not.toHaveBeenCalled();
+    expect(mocks.update).not.toHaveBeenCalled();
+    expectKeyedCall(args);
+  });
+
+  // D-139: the register's api.subject-drafts says the note "is
+  // envelope-encrypted and may flow only to that invitation template", and
+  // that its plaintext "exists only in bounded request and mail-worker memory".
+  describe("the optional note (D-139)", () => {
+    const NOTE = "Synthetic note for the invited person.";
+
+    it("sends only the sealed envelope: no plaintext, hex, or base64 of the note leaves the route", async () => {
+      mocks.rpc.mockResolvedValue({ data: [{ invitation_id: crypto.randomUUID() }], error: null });
+      const response = await inviteAdult(adult(pathA({ note: NOTE })));
+      expect(response.status).toBe(202);
+      const sent = JSON.stringify(mocks.rpc.mock.calls);
+      for (const plain of [NOTE, Buffer.from(NOTE).toString("hex"), Buffer.from(NOTE).toString("base64")]) {
+        expect(sent).not.toContain(plain);
+      }
+      expect(JSON.stringify(await response.json())).not.toContain(NOTE);
+      expect(Object.keys(sentArgs().p_note_envelope as object)).toEqual(["version", "idempotencyKey", "wrappedKey", "ciphertext"]);
+    });
+
+    it("hands the database the envelope with the invitation, in the one RPC, and writes no table itself", async () => {
+      mocks.rpc.mockResolvedValue({ data: [{ invitation_id: crypto.randomUUID() }], error: null });
+      expect((await inviteAdult(adult(pathA({ note: NOTE })))).status).toBe(202);
+      expect(mocks.rpc).toHaveBeenCalledTimes(1);
+      expect(mocks.rpc.mock.calls[0]![0]).toBe("create_adult_subject_invitation_with_nonce_v1");
+      expect(mocks.from).not.toHaveBeenCalled();
+      expect(mocks.update).not.toHaveBeenCalled();
+    });
+
+    it("binds the envelope to the invitation this request creates: it opens for that key's row and no other", async () => {
+      mocks.rpc.mockResolvedValue({ data: [{ invitation_id: crypto.randomUUID() }], error: null });
+      await inviteAdult(adult(pathA({ note: NOTE })));
+      const args = sentArgs();
+      const envelope = args.p_note_envelope as { idempotencyKey: string };
+      expect(envelope.idempotencyKey).toBe(args.p_idempotency_key);
+      expect(openedNote(args)).toBe(NOTE);
+      // Another invitation's row (another request id gives another key).
+      vi.clearAllMocks();
+      await inviteAdult(adult(pathA()));
+      const other = sentArgs();
+      expect(other.p_idempotency_key).not.toBe(args.p_idempotency_key);
+      expect(openAdultInvitationNote(envelope, claimOf(other.p_idempotency_key as string))).toBeNull();
+      expect(openAdultInvitationNote({ ...envelope, idempotencyKey: other.p_idempotency_key },
+        claimOf(other.p_idempotency_key as string))).toBeNull();
+    });
+
+    it("sends no envelope argument at all without a note, so a database before the migration still serves it", async () => {
+      mocks.rpc.mockResolvedValue({ data: [{ invitation_id: crypto.randomUUID() }], error: null });
+      expect((await inviteAdult(adult(pathA()))).status).toBe(202);
+      expect(sentArgs()).not.toHaveProperty("p_note_envelope");
+    });
+
+    it.each([
+      ["a database without the parameter", { code: "PGRST202", message: "Could not find the function" }],
+      ["a refused envelope", { code: "22023", message: "adult invitation note invalid" }],
+      ["a note the new mail could not take", { code: "55000", message: "adult invitation note unrecorded" }],
+    ])("surfaces %s as the route's 503, and writes nothing else", async (_case, error) => {
+      mocks.rpc.mockResolvedValue({ data: null, error });
+      const response = await inviteAdult(adult(pathA({ note: NOTE })));
+      expect(response.status).toBe(503);
+      expect(await response.json()).toEqual({ error: "invitation_unavailable" });
+      expect(mocks.rpc).toHaveBeenCalledTimes(1);
+      expect(mocks.from).not.toHaveBeenCalled();
+    });
+
+    it("keeps the nonce refusal distinct from a note refusal", async () => {
+      mocks.rpc.mockResolvedValue({ data: null, error: { code: "22023", message: "invalid_operation_nonce" } });
+      expect((await inviteAdult(adult(pathA({ note: NOTE })))).status).toBe(400);
+    });
+  });
+
   it("fails closed on a malformed keyring instead of sending fewer revisions", async () => {
     vi.stubEnv("INHERIT_HMAC_KEYRING", "2:not-a-key");
     await expect(inviteAdult(adult())).rejects.toThrow(/INHERIT_HMAC_KEYRING/);
@@ -155,29 +331,46 @@ describe("POST /api/subject-drafts (adult invitation)", () => {
   });
 });
 
-describe("POST /api/withdraw/session (adult confirm)", () => {
+describe("POST /api/invitations/accept (Path A adult)", () => {
   it("sends the account address under every held revision and nothing bare", async () => {
-    const { POST: respond } = await import("@/app/api/withdraw/session/route");
-    const { mintPublicFormToken } = await import("./operation-token");
+    const { POST: accept } = await import("@/app/api/invitations/accept/route");
+    const { mintEmbryoOperation } = await import("./operation-token");
     const { newRightsSessionSecret, RIGHTS_COOKIE_NAME, rightsSessionHash } = await import("./rights-session");
+    const { ADULT_SUBJECT_STATEMENT_KEYS, mintAdultSubjectPresentation } = await import("./adult-subject-review");
     const secret = newRightsSessionSecret();
     const hash = rightsSessionHash(secret);
+    const SUBJECT = "dddddddd-dddd-4ddd-8ddd-dddddddddddd";
+    mocks.offer.mockResolvedValue({ sessionHash: hash, subjectId: SUBJECT, draftOwnerAccountId: DRAFT,
+      invitationEmailHmac: legacyContactDigest("invited-person@example.invalid"),
+      artifact: { version: 1, effectiveOn: "2026-09-01", summaryMarkdown: "S.", bodyMarkdown: "B.", bodySha256: "d".repeat(64) } });
     mocks.account.mockResolvedValue({
       user: { id: ACCOUNT, email: "Invited-Person@Example.invalid", email_confirmed_at: "2026-09-01T00:00:00Z" },
-      sessionId: "s",
+      sessionId: SESSION,
     });
-    mocks.rpc.mockResolvedValue({ data: "accepted", error: null });
-    const response = await respond(new Request("https://inherit.bio/api/withdraw/session", {
+    mocks.rpc.mockResolvedValue({ data: SUBJECT, error: null });
+    const response = await accept(new Request("https://inherit.bio/api/invitations/accept", {
       method: "POST",
       headers: {
         origin: "https://inherit.bio", "sec-fetch-site": "same-origin", "content-type": "application/json",
         cookie: `${RIGHTS_COOKIE_NAME}=${secret}`,
       },
-      body: JSON.stringify({ operation: "confirm", nonce: mintPublicFormToken("adult-subject-respond", Date.now(), hash) }),
+      body: JSON.stringify({
+        nonce: mintEmbryoOperation({ accountId: ACCOUNT, sessionId: SESSION, operation: "invitation_accept",
+          targetKind: "rights_session", targetId: hash }),
+        subjectArtifact: { artifactKey: "consent.subject-adult", artifactVersion: 1, affirmed: true,
+          statementKeys: [...ADULT_SUBJECT_STATEMENT_KEYS], typedName: "Synthetic Invitee",
+          artifactPresentationToken: mintAdultSubjectPresentation({ sessionHash: hash, artifactVersion: 1,
+            artifactBodySha256: "d".repeat(64) }) } }),
     }));
-    expect(response.status).toBe(202);
-    expect(mocks.rpc.mock.calls[0]![0]).toBe("respond_adult_subject_invitation_session_v1");
-    const args = sentArgs();
+    expect(response.status).toBe(200);
+    expect(mocks.rpc.mock.calls[0]![0]).toBe("accept_adult_subject_invitation_v1");
+    // D-141 (20261120120000): after the door commits, the route makes exactly
+    // one more call, the read of the origin that acceptance recorded, for this
+    // record and this account. The door's arguments are the first call's.
+    expect(mocks.rpc.mock.calls.map(call => call[0])).toEqual(["accept_adult_subject_invitation_v1",
+      "adult_subject_acceptance_origin_v1"]);
+    expect(mocks.rpc.mock.calls[1]![1]).toEqual({ p_account_id: ACCOUNT, p_subject_id: SUBJECT });
+    const args = mocks.rpc.mock.calls[0]![1] as Record<string, unknown>;
     expect(args).not.toHaveProperty("p_account_email_hmac");
     const set = args.p_account_email_hmac_set as Record<string, string>;
     expect(Object.keys(set)).toEqual(["1", "2"]);

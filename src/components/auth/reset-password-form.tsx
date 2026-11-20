@@ -32,7 +32,7 @@ export function ResetPasswordForm({ csrf }: { csrf: string }) {
         ]}
         submitLabel="Update password"
         onSubmit={async ({ password }) => {
-          const answer = await postAuthEndpoint("/api/auth/reset-password", csrf, { password });
+          const answer = await postAuthEndpoint("/api/auth/reset-password", csrf, { password }, true);
           if (answer.status === 204) {
             router.push(route("auth.sign-in", { query: { notice: "password_changed" } }));
             router.refresh();

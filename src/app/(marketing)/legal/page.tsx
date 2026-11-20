@@ -29,7 +29,7 @@ export default function LegalIndexPage() {
     <div className="mx-auto max-w-6xl px-6 py-section">
       <header className="reading-head">
         <p className="eyebrow">Trust</p>
-        <h1 className="display display-lg">Legal and policy library</h1>
+        <h1 className="display">Legal and policy library</h1>
       </header>
       {/* Each row is a 56px surface; the anchor fills the row and is
           stretched over it, carrying only its label text. The arrow marks a

@@ -217,6 +217,28 @@ select is((select r->>'subjectDraftId' from (select public.create_path_b_reviewe
   '0b5e0000-0000-4000-8000-000000000001','0b5e0000-0000-4000-8000-000000000011','Synthetic Relative',date '1980-05-05',
   decode('00112233445566778899aabbccddeeff','hex'),repeat('a',64),repeat('a',64),true) r) x),pg_temp.sid('main')::text,
  'the same request reserves the same draft once');
+-- G5.6 (20261023130000): the draft names the uploader only through the
+-- door that records the page's one-time nonce. The actor is cleared where
+-- production would have committed; no user JWT is present.
+savepoint attributed_draft;
+select set_config('request.jwt.claims','{"role":"service_role"}',true),set_config('inherit.legal_audit_actor','',true);
+select public.create_path_b_reviewed_document_draft_v1('0b5e0000-0000-4000-8000-000000000001','0b5e0000-0000-4000-8000-000000000011','Synthetic Attributed',date '1980-05-05',
+  decode('00112233445566778899aabbccddeeff','hex'),repeat('7',64),repeat('7',64),true);
+select is((select audit_principal_id from public.legal_audit_log where event_code='subject-draft.created' and route_id='api.subject-drafts' order by seq desc limit 1),null::uuid,
+ 'the draft writer alone, with no nonce, names no one');
+select set_config('request.jwt.claims','{"role":"service_role"}',true),set_config('inherit.legal_audit_actor','',true);
+select lives_ok($$select public.create_path_b_reviewed_document_draft_with_nonce_v1('0b5e0000-0000-4000-8000-000000000001','0b5e0000-0000-4000-8000-000000000011','Synthetic Attributed',date '1980-05-05',
+  decode('00112233445566778899aabbccddeeff','hex'),repeat('8',64),repeat('8',64),true,null,
+  encode(extensions.digest('reviewed-draft-nonce-one','sha256'),'hex'),clock_timestamp()+interval '5 minutes')$$,'the door reserves a draft');
+select ok(coalesce((select audit_principal_id from public.legal_audit_log where event_code='subject-draft.created' and route_id='api.subject-drafts' order by seq desc limit 1)
+  =(select audit_principal_id from private.legal_audit_account_principals where account_id='0b5e0000-0000-4000-8000-000000000001'::uuid),false),'and its event names the uploader');
+select throws_ok($$select public.create_path_b_reviewed_document_draft_with_nonce_v1('0b5e0000-0000-4000-8000-000000000001','0b5e0000-0000-4000-8000-000000000011','Synthetic Attributed',date '1980-05-05',
+  decode('00112233445566778899aabbccddeeff','hex'),repeat('9',64),repeat('9',64),true,null,
+  encode(extensions.digest('reviewed-draft-nonce-one','sha256'),'hex'),clock_timestamp()+interval '5 minutes')$$,
+ '22023','invalid_operation_nonce','a replayed nonce is refused');
+rollback to attributed_draft;
+select is((select count(*) from public.subjects where display_label='Synthetic Attributed'),0::bigint,
+ 'the attribution drafts were undone with their savepoint');
 select ok((select d.adult_flow='path-b-reviewed-document' and d.confirmation_mode='path-b-token-or-account'
   and d.evidence_kind='uploaded_document' and d.state='draft' and s.lifecycle='draft' and s.subject_class='other_adult'
   and s.subject_account_id is null and s.owner_account_id='0b5e0000-0000-4000-8000-000000000001'
@@ -337,6 +359,32 @@ select ok((select d.state='invited' and i.status='pending' and i.invitation_kind
  join public.mail_outbox m on m.target_id=i.id join private.path_b_reviewed_document_requests r on r.invitation_id=i.id
  where d.subject_id=pg_temp.sid('main')),'one hidden request bound to the draft, document and review');
 select throws_ok($$select pg_temp.finalize('main','a','main')$$,'42501','not_found','a requested draft is finalized once');
+
+-- 20261023140000: a review download records its creation and expiry from
+-- one clock reading. Planted: the creation default reads the clock a second
+-- earlier than the body does, so a body that leaves created_at to the default
+-- breaks the table's one-hour check every time; the reviewed body sets both.
+savepoint review_clock;
+alter table private.permission_document_review_downloads
+ alter column created_at set default clock_timestamp()-interval '1 second';
+-- The steps of pg_temp.approved up to the reviewer's read; the decision would
+-- delete the download rows this block inspects.
+select pg_temp.draft('clock','f');
+select pg_temp.sign(pg_temp.sid('clock'),'f');
+update fx set session_id=(pg_temp.open(pg_temp.sid('clock'),'f')->>'session')::uuid where name='clock';
+select pg_temp.upload('clock','f');
+select private.assign_permission_document_review_v1(pg_temp.fx_doc('clock'),'0b5e0000-0000-4000-8000-000000000003');
+select lives_ok($$select pg_temp.read_all(pg_temp.fx_doc('clock'),encode(extensions.digest('review:f','sha256'),'hex'))$$,
+ 'planted: with the two clock reads a second apart, the named reviewer''s download still opens');
+select ok((select count(*)=1 and bool_and(expires_at=created_at+interval '1 hour')
+ from private.permission_document_review_downloads where document_id=pg_temp.fx_doc('clock')),
+ 'the review download expires exactly one hour after its own creation time');
+rollback to review_clock;
+select is((select pg_get_expr(d.adbin,d.adrelid) from pg_attrdef d join pg_attribute a on a.attrelid=d.adrelid and a.attnum=d.adnum
+ where d.adrelid='private.permission_document_review_downloads'::regclass and a.attname='created_at'),'clock_timestamp()',
+ 'the planted default was undone with its savepoint');
+select is((select md5(pg_get_functiondef('public.open_permission_review_download_v1(uuid,text)'::regprocedure))),
+ '5d13a237d73df132ac00a219ea289ebd','the review download open step is its reviewed successor');
 
 -- The barred contact: the same receipt, the same visible draft state, no request.
 select pg_temp.approved('barred','b');

@@ -11,6 +11,10 @@ import {
 
 vi.mock("@/lib/account-deletion", () => ({ getSensitiveAccountContext: vi.fn() }));
 vi.mock("@/lib/supabase/admin", () => ({ createAdminClient: vi.fn() }));
+// 20261023130000 (G5.6): the create step takes a one-time operation nonce
+// minted for the account, session and file under the server's key.
+vi.stubEnv("BYOK_ENCRYPTION_KEY", Buffer.alloc(32, 9).toString("base64"));
+const { mintPersonOperationNonce } = await import("@/lib/person-operation-nonce-core");
 
 const digest = (value: Uint8Array | string) => createHash("sha256").update(value).digest("hex");
 const ORIGIN = "http://localhost:3000";
@@ -23,8 +27,8 @@ function fixture(size = 4_000_005) {
   const bytes = randomBytes(size);
   const secret = randomBytes(32).toString("base64url");
   const calls: { name: string; args: Record<string, unknown> }[] = [];
-  const answers = new Map<string, (args: Record<string, unknown>) => { data: unknown; error: { code?: string } | null }>();
-  answers.set("open_subject_original_download_v1", () => ({ data: { session, sizeBytes: size, sha256: digest(bytes),
+  const answers = new Map<string, (args: Record<string, unknown>) => { data: unknown; error: { code?: string; message?: string } | null }>();
+  answers.set("open_subject_original_download_with_nonce_v1", () => ({ data: { session, sizeBytes: size, sha256: digest(bytes),
     chunkCount: Math.ceil(size / 4_000_000), fileType: "vcf", originalName: "Genome file", sourceSha256: digest(bytes),
     expiresAt: new Date(Date.now() + 3_600_000).toISOString() }, error: null }));
   answers.set("subject_original_download_target_v1", () => ({ data: true, error: null }));
@@ -52,18 +56,23 @@ function fixture(size = 4_000_005) {
     readRange,
     secret: () => secret,
   };
-  const entry = (query = `?file=${file}`, headers: Record<string, string> = {}) =>
-    new Request(`${ORIGIN}/api/subjects/${subject}/download${query}`, { headers: { "sec-fetch-site": "same-origin", ...headers } });
+  const nonce = (overrides: Partial<{ accountId: string; sessionId: string; targetId: string }> = {}) =>
+    mintPersonOperationNonce({ accountId: actor.accountId, sessionId: actor.sessionId, operation: "subject_download_open",
+      targetId: file, ...overrides });
+  const entry = (query = `?file=${file}`, headers: Record<string, string> = {}, operationNonce: string | null = nonce()) =>
+    new Request(`${ORIGIN}/api/subjects/${subject}/download${query}`, { headers: { "sec-fetch-site": "same-origin",
+      ...(operationNonce === null ? {} : { "x-inherit-operation-nonce": operationNonce }), ...headers } });
   const chunk = (sequence: string, headers: Record<string, string> = {}, search = "") =>
     new Request(`${ORIGIN}/api/downloads/${session}/chunks/${sequence}${search}`, {
       headers: { cookie: `${COOKIE}=${secret}`, "sec-fetch-site": "same-origin", ...headers } });
-  return { actor, subject, file, session, bytes, secret, calls, answers, readRange, deps, entry, chunk, size };
+  return { actor, subject, file, session, bytes, secret, calls, answers, readRange, deps, entry, chunk, size, nonce };
 }
 
 describe("api.subject-download entry (download-session-v1)", () => {
   it("returns the closed descriptor and sets a cookie whose hash alone reaches the database", async () => {
     const f = fixture();
-    const response = await openSubjectDownload(f.entry(), f.subject, f.deps);
+    const code = f.nonce();
+    const response = await openSubjectDownload(f.entry(undefined, {}, code), f.subject, f.deps);
     expect(response.status).toBe(200);
     const body = await response.json();
     expect(Object.keys(body).sort()).toEqual(["chunkBytes", "chunkCount", "chunkRoute", "filename", "session", "sha256", "sizeBytes"]);
@@ -72,10 +81,11 @@ describe("api.subject-download entry (download-session-v1)", () => {
     expect(JSON.stringify(body)).not.toMatch(/genomes|storage|http|signed|token/u);
     const cookie = response.headers.get("set-cookie")!;
     expect(cookie).toMatch(new RegExp(`^${COOKIE}=${f.secret}; Path=/; Max-Age=3600; HttpOnly; SameSite=Strict`));
-    const open = f.calls.find((call) => call.name === "open_subject_original_download_v1")!;
+    const open = f.calls.find((call) => call.name === "open_subject_original_download_with_nonce_v1")!;
     expect(open.args).toEqual({ p_account_id: f.actor.accountId, p_session_id: f.actor.sessionId, p_subject_id: f.subject,
-      p_file_id: f.file, p_cookie_hash: digest(f.secret) });
+      p_file_id: f.file, p_cookie_hash: digest(f.secret), p_nonce_hash: digest(code), p_nonce_expires_at: expect.any(String) });
     expect(JSON.stringify(f.calls)).not.toContain(f.secret);
+    expect(JSON.stringify(f.calls)).not.toContain(code);
     for (const [name, value] of Object.entries(DOWNLOAD_HEADERS)) expect(response.headers.get(name)).toBe(value);
   });
 
@@ -93,7 +103,7 @@ describe("api.subject-download entry (download-session-v1)", () => {
     ["a retired, deleted or mismatched original", "42501"],
   ])("answers the opaque resource-not-found-v1 for %s", async (_label, code) => {
     const f = fixture();
-    f.answers.set("open_subject_original_download_v1", () => ({ data: null, error: { code } }));
+    f.answers.set("open_subject_original_download_with_nonce_v1", () => ({ data: null, error: { code } }));
     const response = await openSubjectDownload(f.entry(), f.subject, f.deps);
     expect(response.status).toBe(404);
     expect(await response.json()).toEqual({ error: "not_found" });
@@ -136,9 +146,36 @@ describe("api.subject-download entry (download-session-v1)", () => {
     expect(hidden.status).toBe(404);
   });
 
+  it.each([
+    ["no nonce", (f: ReturnType<typeof fixture>) => f.entry(undefined, {}, null)],
+    ["a malformed nonce", (f: ReturnType<typeof fixture>) => f.entry(undefined, {}, "not-a-nonce")],
+    ["a nonce for another file", (f: ReturnType<typeof fixture>) => f.entry(undefined, {}, f.nonce({ targetId: randomUUID() }))],
+    ["a nonce for another session", (f: ReturnType<typeof fixture>) => f.entry(undefined, {}, f.nonce({ sessionId: randomUUID() }))],
+    ["a nonce for another account", (f: ReturnType<typeof fixture>) => f.entry(undefined, {}, f.nonce({ accountId: randomUUID() }))],
+  ])("refuses %s before any session opens, as invalid-request-v1 only for a readable subject", async (_label, request) => {
+    const f = fixture();
+    const response = await openSubjectDownload(request(f), f.subject, f.deps);
+    expect(response.status).toBe(422);
+    expect(await response.json()).toEqual({ error: "invalid_request", issues: ["nonce"] });
+    expect(response.headers.get("set-cookie")).toBeNull();
+    expect(f.calls.map((call) => call.name)).toEqual(["subject_original_download_target_v1"]);
+    f.answers.set("subject_original_download_target_v1", () => ({ data: false, error: null }));
+    expect((await openSubjectDownload(request(f), f.subject, f.deps)).status).toBe(404);
+  });
+
+  it("answers a nonce the database already recorded as invalid-request-v1, with no cookie", async () => {
+    const f = fixture();
+    f.answers.set("open_subject_original_download_with_nonce_v1", () => ({ data: null,
+      error: { code: "22023", message: "invalid_operation_nonce" } }));
+    const response = await openSubjectDownload(f.entry(), f.subject, f.deps);
+    expect(response.status).toBe(422);
+    expect(await response.json()).toEqual({ error: "invalid_request", issues: ["nonce"] });
+    expect(response.headers.get("set-cookie")).toBeNull();
+  });
+
   it("refuses a descriptor whose chunk count does not match its size", async () => {
     const f = fixture();
-    f.answers.set("open_subject_original_download_v1", () => ({ data: { session: f.session, sizeBytes: f.size,
+    f.answers.set("open_subject_original_download_with_nonce_v1", () => ({ data: { session: f.session, sizeBytes: f.size,
       sha256: digest(f.bytes), chunkCount: 1, fileType: "vcf", originalName: "Genome file", sourceSha256: null,
       expiresAt: new Date(Date.now() + 60_000).toISOString() }, error: null }));
     expect((await openSubjectDownload(f.entry(), f.subject, f.deps)).status).toBe(503);

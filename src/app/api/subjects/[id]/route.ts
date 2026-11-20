@@ -1,11 +1,13 @@
 import { z } from "zod";
 import { getSensitiveAccountContext } from "@/lib/account-deletion";
 import { bodyIsEmpty, notFound, unavailable } from "@/lib/embryos/api";
-import { closedResponse, originDenied, unauthorized } from "@/lib/embryos/guards";
+import { closedResponse, originDenied, unauthenticated } from "@/lib/embryos/guards";
 import { drainSubjectFileDeletions } from "@/lib/subject-endpoints/file-drain";
+import { selfWithdrawalNotice } from "@/lib/uploads/own-upload-withdrawal";
 import { verifySubjectOperationNonce } from "@/lib/subject-endpoints/operation-nonce";
 import { isCanonicalSubjectId } from "@/lib/subject-endpoints/request";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { withAccountCsrf } from "@/lib/security/session-csrf";
 
 /**
  * `DELETE /api/subjects/[id]` (register api.subject-delete; owner decisions
@@ -20,8 +22,25 @@ import { createAdminClient } from "@/lib/supabase/admin";
  *     pipeline in the same transaction. This route then removes each file's
  *     bytes and finishes it, as `api.file-delete` does; anything it does not
  *     finish is left to the seven-day backstop (source.revocation-7d).
+ *     Since the owner decision of 19 November 2026 ("Withdrawing consent for
+ *     a person's own DNA file deletes the files and all made from them") this
+ *     is the withdrawal of the account's consent to store its own DNA file,
+ *     and the brief's confirmation email goes with it: a self record goes to
+ *     `empty_self_subject_with_notice_v1`, which runs `delete_subject_v1`
+ *     unchanged and queues the email in the same transaction, addressed to
+ *     the signed-in account's own confirmed address. An account with no
+ *     confirmed address, or whose address changed meanwhile, is refused with
+ *     the same 404, and nothing is deleted.
  *   - adult: the owning account or the verified subject account deletes an
- *     other-adult record (revocation-and-purge-v1).
+ *     other-adult record (revocation-and-purge-v1). Since the owner decision
+ *     of 19 November 2026 ("An uploader's withdrawal for another adult's
+ *     file deletes it, unless that adult holds the record themselves") the
+ *     owning uploader's request is the withdrawal of its consent for that
+ *     adult's file: it goes only to `withdraw_other_adult_upload_v1`, which
+ *     runs `delete_subject_v1` unchanged and queues a short notice to the
+ *     adult in the same transaction (unless their contact is barred), and
+ *     refuses, with the same 404, a record the adult holds with their own
+ *     account. The adult's own delete still goes to `delete_subject_v1`.
  *   - embryo: a current parent's authority is locked and rechecked first. A
  *     transferred, unclaimed record is purged alone; any other record
  *     restricts its whole cohort, as `api.cohort-restrict` does. A claimed
@@ -49,11 +68,12 @@ const outcome = z.discriminatedUnion("case", [
 /** A refusal the caller can cause is the opaque 404; anything else is the server's fault. */
 const REFUSALS = new Set(["42501", "55000", "22023", "23505", "P0002"]);
 
-export async function DELETE(request: Request, context: { params: Promise<{ id: string }> }) {
+export const DELETE = withAccountCsrf("api.subject-delete", handleDelete);
+async function handleDelete(request: Request, context: { params: Promise<{ id: string }> }) {
   const { id } = await context.params;
   if (!isCanonicalSubjectId(id)) return notFound();
   const account = await getSensitiveAccountContext();
-  if (!account) return unauthorized();
+  if (!account) return unauthenticated();
   const forbidden = originDenied(request);
   if (forbidden) return forbidden;
   if (!bodyIsEmpty(request)) return notFound();
@@ -67,13 +87,42 @@ export async function DELETE(request: Request, context: { params: Promise<{ id: 
   if (!nonce) return notFound();
 
   const admin = createAdminClient();
-  const { data, error } = await admin.rpc("delete_subject_v1", {
+  const args = {
     p_account_id: account.user.id,
     p_session_id: account.sessionId,
     p_subject_id: id,
     p_nonce_hash: nonce.nonceHash,
     p_nonce_expires_at: new Date(nonce.expiresAt).toISOString(),
-  });
+  };
+  // The class and the holders choose only the door: each door rechecks the
+  // caller's authority over the record itself, under its own locks, so this
+  // read grants nothing. A self record never reaches delete_subject_v1
+  // directly from here, so its emptying always carries the confirmation
+  // email; nor does the uploader's own record of another adult, so its
+  // delete always carries the notice to that adult.
+  const target = await admin.from("subjects").select("subject_class, owner_account_id, subject_account_id")
+    .eq("id", id).maybeSingle();
+  if (target.error) return unavailable();
+  let answer;
+  if (target.data?.subject_class === "self") {
+    let notice;
+    try {
+      notice = await selfWithdrawalNotice(account.user.id);
+    } catch {
+      return unavailable();
+    }
+    if (!notice) return notFound();
+    answer = await admin.rpc("empty_self_subject_with_notice_v1", { ...args, p_notice: notice });
+  } else if (target.data?.subject_class === "other_adult" && target.data.owner_account_id === account.user.id
+    && target.data.subject_account_id !== account.user.id) {
+    // The uploader's withdrawal for another adult's file (owner decision of
+    // 19 November 2026): the person's notice goes in the same transaction,
+    // and a record the person holds with their own account is refused.
+    answer = await admin.rpc("withdraw_other_adult_upload_v1", args);
+  } else {
+    answer = await admin.rpc("delete_subject_v1", args);
+  }
+  const { data, error } = answer;
   if (error) return REFUSALS.has(error.code ?? "") ? notFound() : unavailable();
   const result = outcome.safeParse(data);
   // The transaction has committed; an unreadable answer is still accepted

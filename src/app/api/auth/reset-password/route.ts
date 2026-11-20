@@ -2,10 +2,11 @@ import crypto from "node:crypto";
 import { bcrypt } from "hash-wasm";
 import { SESSION_SCOPED_COOKIES } from "@/app/auth/sign-out/response";
 import { AUTH_FORM_COOKIE, PKCE_COOKIE, requestCookieNames, setCookie } from "@/lib/auth/auth-cookies";
-import { AUTH_CSRF_HEADER, hasSameOriginSignals } from "@/lib/auth/auth-form";
+import { hasSameOriginSignals } from "@/lib/auth/auth-form";
 import { parseAuthBody, readBoundedJson } from "@/lib/auth/auth-request";
 import { authInvalidRequest, authNoContent, authNotFound } from "@/lib/auth/auth-response";
-import { clearResetSessionCookies, readResetSession } from "@/lib/auth/reset-session";
+import { clearResetSessionCookies, readResetSessionHash } from "@/lib/auth/reset-session";
+import { readResetCsrfSession, withPurposeCsrf } from "@/lib/security/session-csrf";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 /**
@@ -46,10 +47,10 @@ function everyAuthCookieDeletion(request: Request): string[] {
   return deletions;
 }
 
-export async function POST(request: Request) {
+async function resetPassword(request: Request): Promise<Response> {
   if (!hasSameOriginSignals(request)) return authNotFound();
-  const session = readResetSession(request, request.headers.get(AUTH_CSRF_HEADER));
-  if (!session) return authNotFound();
+  const sessionHash = readResetSessionHash(request);
+  if (!sessionHash) return authNotFound();
 
   const json = await readBoundedJson(request);
   const parsed = parseAuthBody(json, ["password"] as const);
@@ -70,7 +71,7 @@ export async function POST(request: Request) {
   }
   try {
     const { data, error } = await createAdminClient().rpc("reset_password_with_recovery_v1", {
-      p_session_hash: session.sessionHash,
+      p_session_hash: sessionHash,
       p_password_hash: passwordHash,
     });
     if (error || data !== "reset") return authNotFound();
@@ -79,3 +80,14 @@ export async function POST(request: Request) {
   }
   return authNoContent(everyAuthCookieDeletion(request));
 }
+
+/**
+ * The reset session's one-time `X-Inherit-CSRF` token is spent before the
+ * handler runs (G8.5, the migration stage), after the exact origin and
+ * against the live reset session. The success answer, which spends the
+ * session itself and clears its cookies, carries no successor; any other
+ * admitted answer does, so a refused password can be corrected and sent
+ * again from the same page.
+ */
+export const POST = withPurposeCsrf("auth.reset-password-submit", readResetCsrfSession, resetPassword,
+  { exactOrigin: true, rotate: (response) => response.status !== 204 });

@@ -2,7 +2,11 @@ import {bindingBody,bindingRequestHash,currentBindingContext,readBindingNonce} f
 import {claimantNotFound,claimantResponse} from "@/lib/future-person/rights";
 import {readBoundedJson} from "@/lib/future-person/bounded-body";
 import {RIGHTS_COOKIE_NAME} from "@/lib/embryos/rights-session";
-export async function POST(request:Request) {
+import {withAccountCsrf} from "@/lib/security/session-csrf";
+/** The signed-in account's one-time X-Inherit-CSRF token is verified and spent
+ * before this runs (G8.5); the binding nonce is checked as before. */
+export const POST=withAccountCsrf("api.future-person-claimant-bind",handlePost);
+async function handlePost(request:Request) {
  const hash=bindingRequestHash(request);if(!hash)return claimantNotFound();
  const parsed=bindingBody.safeParse(await readBoundedJson(request,4096));if(!parsed.success)return claimantNotFound();
  const actor=await currentBindingContext(hash);if(!actor)return claimantNotFound();

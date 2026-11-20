@@ -20,7 +20,9 @@ function requestCase(claims = input) {
   const { token, nonceHash, claims: minted } = mintOwnConsentPresentation(claims);
   const body = { action: "sign-artifact", signatureClass: "tier1-self", subjectId,
     artifactVersion: 1, artifactPresentationToken: token, affirmed: true, statementKeys: ["own-adult-dna"] };
-  const headers = { origin: "https://inherit.bio", "sec-fetch-site": "same-origin", "x-inherit-csrf": token };
+  // 2026-11-19 (G8.5): X-Inherit-CSRF is the account session's one-time token, which api.consents verifies and
+  // spends before this module runs; it repeated the presentation token, which now travels in the body alone.
+  const headers = { origin: "https://inherit.bio", "sec-fetch-site": "same-origin", "x-inherit-csrf": "the-account-session-token-the-gate-admitted" };
   return { body, headers, nonceHash, expiresAt: minted.expiresAt };
 }
 beforeEach(() => {
@@ -48,7 +50,9 @@ describe("own-account consent signing route", () => {
       p_nonce_expires_at: new Date(expiresAt).toISOString(),
     });
   });
-  it.each(["origin", "sec-fetch-site", "x-inherit-csrf"])("requires the same-origin %s signal", async (name) => {
+  // 2026-11-19 (G8.5): "x-inherit-csrf" left this list. The header no longer repeats the presentation token:
+  // api.consents verifies and spends the account session's one-time X-Inherit-CSRF token before this module runs (src/lib/security/session-csrf-routes.test.ts), and the token is required in the body (the foreign cases below).
+  it.each(["origin", "sec-fetch-site"])("requires the same-origin %s signal", async (name) => {
     const { body, headers } = requestCase();
     const modified: Record<string, string> = { ...headers }; delete modified[name];
     expect((await send(body, modified)).status).toBe(403);

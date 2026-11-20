@@ -1,3 +1,4 @@
+import { mintPersonOperationNonce } from "@/lib/person-operation-nonce";
 import "server-only";
 import crypto from "node:crypto";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -75,6 +76,8 @@ export async function prepareOwnReportChoices(subject = "me"): Promise<OwnReport
     const presentation = mintOwnReportPresentation({ ...actor, subjectId: target.id, snapshot, purpose,
       artifactKey: artifact.artifact_key, artifactVersion: artifact.version, artifactBodySha256: artifact.body_sha256 });
     choices.push({ purposeKey: purpose, label: definition.label, description: definition.description, granted: Boolean(grant), grantId: grant?.grant_id ?? null,
+      revokeNonce: grant ? mintPersonOperationNonce({ accountId: actor.accountId, sessionId: actor.sessionId,
+        operation: "consent_revoke", targetId: grant.grant_id }) : null,
       artifact: { key: artifact.artifact_key, version: artifact.version, body: artifact.body_markdown },
       token: presentation.token, statementKeys: [...OWN_REPORT_STATEMENTS], reconsent });
   }

@@ -2,7 +2,7 @@ import "server-only";
 import crypto from "node:crypto";
 import { z } from "zod";
 import { correctionScope } from "./correction-case-envelope";
-import { claimantCsrf, claimantSessionHash } from "./rights";
+import { claimantSessionHash } from "./rights";
 import { appealKeyedDigests } from "./appeal-keyed-digests";
 import { normalizeContact } from "@/lib/embryos/routes";
 import { openMailContact, sealClaimantContact } from "./claimant-contact";
@@ -16,18 +16,18 @@ export const correctionPrepareFrame = z.object({ scope: correctionScope, rightsS
   reviewerPrincipalRevision: revision, assignmentRevision: z.literal(1),
   sourceContactReferenceId: z.uuid(), sourceContactFingerprint: hash, caseContactId: z.uuid() }).strict();
 
+/**
+ * The claimant's correction authority. The request's one-time X-Inherit-CSRF
+ * token for this rights session (api.future-person-correction) was verified
+ * and spent before the handler ran (`withPurposeCsrf` on the route); the
+ * one-time intake nonce is checked here, as before.
+ */
 export function correctionIntakeMutation(request: Request, token: string, now = Date.now()) {
-  const sessionHash = claimantSessionHash(request), url = new URL(request.url), csrf = request.headers.get("x-inherit-csrf");
+  const sessionHash = claimantSessionHash(request), url = new URL(request.url);
   if (!sessionHash || !Number.isSafeInteger(now) || now < 0 || token.length > 2048 || url.search
-    || request.headers.get("origin") !== url.origin || request.headers.get("sec-fetch-site") !== "same-origin"
-    || !csrf || !/^[0-9a-f]{64}$/u.test(csrf)) return null;
-  let actual: Buffer | undefined, expected: Buffer | undefined;
-  try {
-    actual = Buffer.from(csrf, "utf8"); expected = Buffer.from(claimantCsrf(sessionHash), "utf8");
-    if (!crypto.timingSafeEqual(actual, expected)) return null;
-    const nonce = readCorrectionIntakeNonce(token, sessionHash, now);
-    return nonce ? { sessionHash, nonce } : null;
-  } finally { actual?.fill(0); expected?.fill(0); }
+    || request.headers.get("origin") !== url.origin || request.headers.get("sec-fetch-site") !== "same-origin") return null;
+  const nonce = readCorrectionIntakeNonce(token, sessionHash, now);
+  return nonce ? { sessionHash, nonce } : null;
 }
 
 const contactRead = z.object({ caseContactId: z.uuid(),

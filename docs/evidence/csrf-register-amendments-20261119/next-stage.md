@@ -1,0 +1,46 @@
+# G8.5 CSRF, the migration stage: what it must do
+
+After stage two, `docs/register-contract-divergence.json#csrfOwnDesign` has 18 rows. Seventeen need a session kind that `public.consume_session_csrf_v1` (20261024220000_session_csrf_tokens.sql) refuses with 22023: it accepts only `authenticated`, `token` and `token-candidate`. The eighteenth, api.future-person-claim-objection, needs a gate change the principles do not settle (section 6).
+
+## 1. The seventeen rows, by the session each new kind binds to
+
+| Kind (register auth) | Rows | What the token's MAC should bind (`CsrfSession`) | Where the live request has it |
+|---|---|---|---|
+| `reviewer` (9) | api.legal-evidence-review, api.appeal-review, api.future-person-documentary-verification, api.future-person-claim-review, api.future-person-claim-release, api.future-person-claim-objection-review, api.future-person-correction-review, api.claim-review-receipt, api.claim-review-chunk-acknowledgement | the reviewer's account id and auth session id, as `authenticated` does, under its own kind so a reviewer token never verifies on an account route or the reverse | `getSensitiveAccountContext()`, plus the routes' own reviewer, MFA and case checks, which stay |
+| `upload-session` (3) | api.embryo-ingest-configure, api.embryo-ingest-mapping, api.embryo-ingest-complete | the hash of the embryo ingest cookie of the session in the path (`inherit-ingest-<session>`, one per session) together with that session id | the path's `[session]` segment and `readIngestCookieHash(request, session)`; the reader must take the route params, which `withPurposeCsrf`'s `read(request)` does not today (parse the path, or widen the reader to `(request, ...args)`) |
+| `claim-session` (2) | api.future-person-claim-document-session, api.future-person-claim-complete | the hash of the claim session cookie | the claim cookie; note the claim session ROTATES on each of these requests, so the successor must be minted for the rotated cookie's hash, not the one the request arrived with. `admitSessionCsrf`'s `rotate` mints for the request's session, so this kind needs a hook that mints after the handler has set the new cookie |
+| `evidence-session` (2) | api.evidence-chunk, api.evidence-complete | the evidence cookie hash with the evidence session id in the path | `readSecretCookie(request, EVIDENCE_COOKIE)` and the `[session]` segment |
+| `reset-session` (1) | auth.reset-password-submit | the reset session cookie hash (`inherit-reset`) | `reset-session.ts`; the reset session is spent by its one request, so its answer needs no successor (`rotate: false`, as sign-out) |
+
+The database must accept these kinds. For `reviewer` it should run the same live auth-session check as `authenticated` (and refuse a deleted user). For the cookie kinds the current function checks nothing beyond the one spend; the migration may add a live-row check for each (open ingest session, open evidence session, active claim session, active reset session), which would make a token outlive neither its session nor a revocation, as `authenticated` already does. Either way: a new guarded migration (a `_v2` function or a guarded replacement), its pgTAP, and the TypeScript `SESSION_CSRF_ROUTES` value type widened.
+
+## 2. The first token of a session an answer opens
+
+Stage two settled the pattern for the evidence session: an opening answer's own `X-Inherit-CSRF` carries the successor of the opening route's token, so the opened session's value travels in its own answer header, `X-Inherit-Evidence-CSRF` (api.legal-evidence-upload-session and api.appeal-document-session; register `policy.evidenceSessionCsrf` on both). The client reads that header and sends the value in `X-Inherit-CSRF` on the chunks and the completion, which are unchanged.
+
+- api.future-person-claim-document-session opens an evidence session too and still hands its value over in `X-Inherit-CSRF` (`src/components/future-person/claim-documents.tsx` reads it there). When that row moves, it must switch to `X-Inherit-Evidence-CSRF` exactly as the two openers did, or its own successor will overwrite the evidence value.
+- When evidence-session tokens become one-time (section 3), `X-Inherit-Evidence-CSRF` should carry the first evidence-session token(s) instead of the digest: one for api.evidence-chunk (the stream value, section 3) and one for api.evidence-complete. Tokens are per route (the MAC binds the route id), so an opener must hand over one first token per route the opened session will call.
+- Embryo ingest, the same problem: the answer that opens an upload session cannot use its own `X-Inherit-CSRF`. The register already has a body field in `upload-session-v1` for a value bound to the upload session (`csrfToken`: "the-X-Inherit-CSRF-value-bound-to-this-upload-session-that-api.embryo-ingest-complete-requires"), issued today by configure and mapping. The cleanest carrier is a closed body field of the opening answer holding one first token per ingest route (configure, mapping, complete; the chunk is exempt), or the `X-Inherit-Upload-CSRF` answer header on the evidence pattern. Each of configure, mapping and complete then rotates its own route's token in `X-Inherit-CSRF`. The configure and mapping answers' existing `csrfToken` is the ingest_complete_csrf operation value; under principle 2 it stays a separate operation value and must not be renamed into the session token.
+
+## 3. The chunk-stream rule (principle 3)
+
+A chunked upload keeps one session-bound value for the whole stream and reserves each chunk once, instead of a fresh token per chunk:
+- api.evidence-chunk: the stream value is bound to the evidence session (its cookie hash and id) and is not spent per chunk; `reserve`-style sequence reservation in the chunk transaction (`chunkAuthority`: each `session, sequence` reserved once) stays the replay guard. Register: `authContracts.evidence-session-api-v1.csrfHeader` ("rotated-or-consumed-on-every-state-changing-request") must be amended under principle 3 for the chunk route, with api.evidence-complete still spending a one-time token.
+- api.embryo-ingest-chunk is already exempt (`csrfTransport.requiredFor`).
+- api.claim-review-chunk-acknowledgement (reviewer) acknowledges each chunk of a review download with the same per-download receipt CSRF; it is a chunk stream too and should follow the same rule (one session-bound value for the stream, each acknowledgement nonce spent once), with api.claim-review-receipt spending a one-time token.
+
+## 4. Things learned in stage two that change the design
+
+- Route tokens are per route. A page that calls several routes of one session needs one rendered token per route (stage two added five rights-session tokens to `/withdraw/session`).
+- The claimant export's database binding (`claimantExportCsrfBinding`) is computed from the rights session on the server, not from the request header, so moving its header needed no migration. The account and subject exports' binding is the hash of a sealed proof the page renders; it now travels in `X-Inherit-Operation-Proof`, and its database binding (`p_csrf_binding`) is unchanged.
+- `csrfOperation` (embryo operation token read from `X-Inherit-CSRF`) is now used only by api.embryo-ingest-complete; `headerOperation` reads the same token from `X-Inherit-Operation-Nonce`. When ingest-complete moves, switch it to `headerOperation` and delete `csrfOperation`.
+- Reviewer routes return their per-case CSRF in a GET answer header (`api/reviews/appeals/[id]` sets `x-inherit-csrf` on a GET); under principle 1 that header can only carry a session token, so the page must render the reviewer token (a `(review)` layout provider) and the GET must stop setting it.
+- E2E helpers mint tokens with `e2e/helpers/session-csrf.ts`; it needs a minter per new kind (reviewer: like `accountCsrf`; cookie kinds: hash the context's cookie, and for per-session cookies the session id).
+
+## 5. Tests and ledgers the migration stage must move
+
+`src/lib/security/session-csrf-routes.test.ts` (CASES for each route, the `Kind` union, `sessionFor`/`otherSessionFor`/`otherPurposeToken` per kind, and the cookies `request()` sets; `ownWhole` 18 to 1 or 0), `session-csrf-core.test.ts` (the kinds list), `supabase/tests/session_csrf_tokens.sql`, the csrfOwnDesign ledger and its notes, and the register amendments for each first-token carrier and the chunk-stream rule.
+
+## 6. Not settled by the principles: api.future-person-claim-objection
+
+The route has two registered principals (`policy.accountEquivalent`): the rights session of the objection link, and the same owner signed in with their account from Settings. Today `X-Inherit-CSRF` carries a digest of the rights session for the first and a digest of the one-time objection nonce for the second. Principle 1 makes the header the session token, but `SESSION_CSRF_ROUTES` binds one route id to one session kind (the register's `auth: token`), so the account branch has no session token it can carry. Moving it needs either the gate to accept two kinds for one route (rights first, then account; a core change to `session-csrf-core.ts` and its tests, no migration since both kinds exist) or a separate register route id for the account branch. That is a design question for the owner, not an amendment under the four principles.

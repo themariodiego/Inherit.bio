@@ -10,6 +10,7 @@ import { ownedDensityRecipe, type OwnedDensityRecipe } from "../../scripts/densi
 import type { DensityRegister } from "../../scripts/density-current";
 import type { DensityStateFixture } from "./density-current-capture";
 import { OWN_UPLOAD_COPY } from "../../src/copy/upload/consent";
+import { LLM_DATA_CLASSES, providerKeyFor } from "../../src/lib/llm";
 import { NOTHING_READ, ANCESTRY_OFF } from "../../src/copy/ancestry";
 import { BROWSER_NO_FILE, BROWSER_PREPARING, SCORE_COVERAGE_NO_FILE, SCORE_COVERAGE_PREPARING } from "../../src/copy/genome/data";
 import { ANCESTRY_PREPARING, HUB_PREPARING, REPORT_PREPARING, REPORTS_PREPARING } from "../../src/copy/genome/preparation";
@@ -24,6 +25,13 @@ const realPath: Readonly<Record<string, string>> = {
   "genome.report": REPORT_PATH, "genome.ancestry": "/genome/me/ancestry",
   "genome.data": "/genome/me/data", "genome.browser": "/genome/me/data/browser",
 };
+/** Every ancestry panel by its own identity: the regions, the two parent lines
+ * and the Neanderthal card. This provider's origin is the 3100 service, which
+ * `checkedAppEnvironment` admits only with `INHERIT_TEST_JURISDICTION=1`, so
+ * the card states the page's no-result state itself (TEST-LOCAL);
+ * `src/app/(app)/genome/[subject]/ancestry/page-panels.test.ts` renders the
+ * same set in both flag states. */
+const ANCESTRY_PANELS = ['[data-testid="admixture"]', '[data-testid="mtdna"]', '[data-testid="ydna"]', "#neanderthal"] as const;
 interface NativeRows { [table: string]: Record<string, unknown>[] }
 
 /** Complete rows of this one fresh synthetic actor. Exact counts reject a
@@ -125,20 +133,26 @@ async function saveCloudProvider(page: Page) {
   await expect(page.getByText("Provider saved. Review the separate Copilot permission below.", { exact: true })).toBeVisible();
 }
 
-async function grantCloudConsent(page: Page) {
+/** The legacy provider-key consent the Consents page lists and withdraws, for
+ * the provider this account saved. The compatibility Copilot panel's dialog sent
+ * its request until 24 October 2026, and api.consents stopped accepting it on
+ * the owner's decision of 19 November 2026 (G8.5): it recorded a cloud
+ * permission without showing its text. The consent route that shows the text
+ * writes a purpose grant, which this page does not list, so the row is seeded by
+ * the one database function that ever wrote it, with the service role: the
+ * signature, the subject consent and the legacy grant together, as the door did.
+ * No model step is requested. */
+async function grantCloudConsent(page: Page, accountId: string) {
   await saveCloudProvider(page);
-  await page.goto("/copilot/me");
-  await page.getByLabel("Message the copilot").fill("What is my caffeine genotype?");
-  const refused = page.waitForResponse(response => new URL(response.url()).pathname === "/api/chat");
-  await page.getByRole("button", { name: "Send", exact: true }).click();
-  const response = await refused;
-  expect(response.status()).toBe(403);
-  expect(await response.json()).toEqual({ error: "consent_required", provider_key: CLOUD_PROVIDER });
-  await page.getByRole("button", { name: "Review what would be shared", exact: true }).click();
-  const signed = page.waitForResponse(reply => new URL(reply.url()).pathname === "/api/consents"
-    && reply.request().method() === "POST");
-  await page.getByTestId("consent-grant").click();
-  expect((await signed).status()).toBe(200); // No model step is requested after consent.
+  const admin = adminClient();
+  const saved = await admin.from("llm_settings").select("provider, base_url").eq("user_id", accountId).single();
+  expect(saved.error).toBeNull();
+  expect(providerKeyFor(saved.data!.provider, saved.data!.base_url), "the grant names the provider just saved").toBe(CLOUD_PROVIDER);
+  const signed = await admin.rpc("grant_cloud_model_consent", {
+    p_account_id: accountId, p_provider_key: CLOUD_PROVIDER, p_data_classes: [...LLM_DATA_CLASSES],
+  });
+  expect(signed.error).toBeNull();
+  expect(signed.data).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
 }
 
 async function assertEmpty(page: Page, row: DensityStateCase) {
@@ -154,7 +168,10 @@ async function assertEmpty(page: Page, row: DensityStateCase) {
     await expect(page.getByText(REPORT_PREPARING, { exact: true })).toHaveCount(0);
     await expect(page.getByText("Choose this result type in", { exact: false })).toHaveCount(0);
   } else if (row.route.id === "genome.ancestry") {
-    await expect(page.getByText(NOTHING_READ, { exact: true })).toHaveCount(3);
+    // Each panel says it once, found by its own identity, so a missing panel
+    // fails; the page-wide count fails on an extra one.
+    for (const panel of ANCESTRY_PANELS) await expect(page.locator(panel).getByText(NOTHING_READ, { exact: true })).toHaveCount(1);
+    await expect(page.getByText(NOTHING_READ, { exact: true })).toHaveCount(ANCESTRY_PANELS.length);
     await expect(page.locator('[data-slot="ancestry-map"]')).toHaveAttribute("data-mode", "grey");
     await expect(page.getByText(ANCESTRY_OFF, { exact: true })).toHaveCount(0);
     await expect(page.getByText(ANCESTRY_PREPARING, { exact: true })).toHaveCount(0);
@@ -250,7 +267,7 @@ export function realAccountAndOwnDensityFixtures(input: {
             await uploadOwnFilePrepared(holder, path.join(input.root, "e2e/fixtures/tiny-grch38.vcf"), { fileType: "vcf" });
             if (recipe === "model-ready") await saveCloudProvider(holder);
           } else if (recipe === "upload-ready") await completeOwnUploadConsent(holder);
-          else if (recipe === "consents-ready" || recipe === "consents-pending") await grantCloudConsent(holder);
+          else if (recipe === "consents-ready" || recipe === "consents-pending") await grantCloudConsent(holder, accountId);
 
           let peopleSession: (() => Promise<string>) | undefined;
           let originalPeopleSession: string | undefined;

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useCsrf } from "@/components/security/csrf-provider";
 import { Button } from "@/components/ui/button";
 import {
   DELETE_BUTTON,
@@ -25,8 +26,13 @@ import {
  * names what is deleted and what it takes to undo. Nothing is typed, because
  * the action is scoped to one pair and reversible by two grants.
  */
-export function DeletePortrait({ grantId }: { grantId: string }) {
+export function DeletePortrait({ grantId, revokeNonce }: {
+  grantId: string;
+  /** The one-time nonce the page rendered for this grant's revocation (G5.6, 23 Oct 2026). */
+  revokeNonce: string;
+}) {
   const router = useRouter();
+  const csrf = useCsrf("api.consent-revoke");
   const [confirming, setConfirming] = useState(false);
   const [pending, setPending] = useState(false);
   const [failed, setFailed] = useState(false);
@@ -61,7 +67,8 @@ export function DeletePortrait({ grantId }: { grantId: string }) {
               onClick={async () => {
                 setPending(true);
                 setFailed(false);
-                const response = await fetch(`/api/consents/${grantId}/revoke`, { method: "POST" });
+                const response = await csrf.send((csrfToken) => fetch(`/api/consents/${grantId}/revoke`, { method: "POST",
+                  headers: { "X-Inherit-Operation-Nonce": revokeNonce, "X-Inherit-CSRF": csrfToken } }));
                 setPending(false);
                 if (!response.ok) {
                   setFailed(true);

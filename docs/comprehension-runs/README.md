@@ -87,9 +87,10 @@ the commitment that LLM keys are never deployment-level stands.
 Nobody is asked for it. Scored runs wait until a key exists in the
 environment. The spend-capped setup that fits the owner's approval:
 
-- one key on an OpenAI-compatible gateway, preferably the existing edge
-  provider's, with a hard spending limit of US$50 or less set at the
-  provider, so the cap holds even if the harness's own journal were wrong;
+- one key on an OpenAI-compatible gateway, with a hard spending limit of
+  US$50 or less set at the provider, so the cap holds even if the harness's
+  own journal were wrong. The owner chose an Anthropic Console workspace with
+  a US$50 spend limit on 23 October 2026 (decisions, "Comprehension model key");
 - `limitMicroDollars` of at most `50000000` in the run configuration, and
   `otherCostsMicroDollars` covering any CI or plan charge already spent;
 - one `effortDirectory` for the whole approved effort, so every calibration,

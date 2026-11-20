@@ -3,18 +3,6 @@
   "purpose": "The human reviewer's worklist for G4.7 (scripts/citation-surface-gate.ts). Each entry is a sentence on a non-template surface that carries a scientific-claim marker but no registered, dated citation, grouped by surface and file. A reviewer sets verdict to \"product-wording\" (not a scientific fact; this closes it without registering anything) or \"claim-to-register\" (a fact whose source must be registered in data/claims.json and data/citations.json, which then removes it), with reviewedBy and reviewedOn. null means not yet reviewed. The open count (every entry not marked product-wording) is pinned by OPEN_BACKLOG and can only go down. Regenerate the entries, keeping verdicts, with `pnpm exec tsx scripts/citation-surface-gate.ts --write-backlog`.",
   "surfaces": {
     "copilot-context": {
-      "src/app/api/chat/route.ts": [
-        {
-          "sha256": "50ca227664a9b4a10671c75127c1292c7c62e15aa63e28a7bedb4a7025b0cdb2",
-          "text": "The rsID to look up, e.g. 'rs762551'",
-          "verdict": null
-        },
-        {
-          "sha256": "d9b7048bca4bc2ea986d012d11661b2ea42502204ba65147ddf55bfeb97d1c17",
-          "text": "No percentile, rank or risk is available.",
-          "verdict": null
-        }
-      ],
       "src/copy/copilot/refusals.ts": [
         {
           "sha256": "33088ab9b75fe8a6a53a0e1cc5336f0af1071ec9d4cad62e5ec886e119a66868",

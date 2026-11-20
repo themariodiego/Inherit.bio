@@ -1,10 +1,11 @@
 import { getSensitiveAccountContext } from "@/lib/account-deletion";
 import { invalidRequest, notFound, unavailable } from "@/lib/embryos/api";
-import { accountJurisdictionDenied, csrfOperation, requestForbidden, unauthorized } from "@/lib/embryos/guards";
+import { accountJurisdictionDenied, headerOperation, requestForbidden, unauthenticated } from "@/lib/embryos/guards";
 import { completeAccepted, completeResult, incompleteUpload, readCompleteBody, sha256Hex } from "@/lib/embryos/ingest-complete";
 import { dispatchIngestAttemptFailure } from "@/lib/embryos/ingest-failure";
 import { authorizeIngestHttpRequest } from "@/lib/embryos/ingest-http";
 import { verifyEmbryoOperation } from "@/lib/embryos/operation-token";
+import { readUploadCsrfSession, withPurposeCsrf } from "@/lib/security/session-csrf";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 const withNoReferrer = (response: Response): Response => {
@@ -19,12 +20,17 @@ const withNoReferrer = (response: Response): Response => {
  *
  * Authority is the configure route's, plus the two tokens issued with the
  * transport (by the configure route for a VCF, by the mapping route for a
- * laboratory table): the upload-session-bound `X-Inherit-CSRF` header
- * (`requiredHeader`) and the one-time `completionNonce` in the body. Both must
+ * laboratory table): the `csrfToken` operation value, which travels in
+ * `X-Inherit-Operation-Nonce` (it travelled in `X-Inherit-CSRF` until G8.5's
+ * migration stage), and the one-time `completionNonce` in the body. Both must
  * be sealed for this account, auth session and upload session, and their
  * digests must be the ones the issuing transaction stored
  * (`embryo_ingest_issued_tokens_match_v1`),
  * so no other token, however it was minted, completes this attempt.
+ * `X-Inherit-CSRF` (`requiredHeader`, bound to the upload session) is the
+ * session's one-time token for this route, which the answer that opened the
+ * session handed over in `X-Inherit-Upload-CSRF`; it is spent before the
+ * handler runs, against the session's row.
  *
  * The transaction is the worker stream's `public.complete_embryo_ingest_v1`
  * (register `completion`): it verifies the contiguous stored manifest and the
@@ -37,10 +43,10 @@ const withNoReferrer = (response: Response): Response => {
  * `missingOrNoncontiguous`; every other terminal branch reads as the opaque
  * 404, because the attempt no longer authorizes anything.
  */
-export async function POST(request: Request, context: { params: Promise<{ session: string }> }) {
+async function complete(request: Request, context: { params: Promise<{ session: string }> }): Promise<Response> {
   const { session } = await context.params;
   const account = await getSensitiveAccountContext();
-  if (!account) return withNoReferrer(unauthorized());
+  if (!account) return withNoReferrer(unauthenticated());
   const refused = await accountJurisdictionDenied(account.user.id);
   if (refused) return withNoReferrer(refused);
   const authorization = await authorizeIngestHttpRequest(
@@ -62,7 +68,7 @@ export async function POST(request: Request, context: { params: Promise<{ sessio
     targetId: authority.session,
   };
 
-  const csrf = csrfOperation(request, { ...bound, operation: "ingest_complete_csrf" });
+  const csrf = headerOperation(request, { ...bound, operation: "ingest_complete_csrf" });
   if (!csrf) return withNoReferrer(requestForbidden());
 
   const parsed = await readCompleteBody(request);
@@ -117,3 +123,5 @@ export async function POST(request: Request, context: { params: Promise<{ sessio
       return withNoReferrer(unavailable());
   }
 }
+
+export const POST = withPurposeCsrf("api.embryo-ingest-complete", readUploadCsrfSession, complete);

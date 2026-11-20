@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { useCsrf } from "@/components/security/csrf-provider";
 import { EmptyState } from "@/components/site/empty-state";
 import { Button } from "@/components/ui/button";
 import { providerDisplayName } from "@/lib/llm";
@@ -15,6 +16,12 @@ export function ConsentList({
     data_classes: string[];
     granted_at: string;
     revoked_at: string | null;
+    /**
+     * The one-time nonce the revocation consumes, rendered by the page for
+     * this account, session and grant (G8.5, 24 October 2026); null when the
+     * grant is revoked or the page has no session to bind one to.
+     */
+    revokeNonce: string | null;
   }[];
 }) {
   const router = useRouter();
@@ -31,6 +38,7 @@ export function ConsentList({
    * already use, so a reader meets one vocabulary rather than two.
    */
   const [revoking, setRevoking] = useState<string | null>(null);
+  const csrf = useCsrf("api.consent-revoke");
 
   if (grants.length === 0) {
     return (
@@ -58,16 +66,20 @@ export function ConsentList({
               {g.data_classes.length} data classes
             </p>
           </div>
-          {!g.revoked_at ? (
+          {!g.revoked_at && g.revokeNonce ? (
             <Button
               variant="outline"
               size="sm"
               data-testid={`revoke-${g.provider_key}`}
               disabled={revoking === g.id}
               onClick={async () => {
+                const revokeNonce = g.revokeNonce;
+                if (!revokeNonce) return;
                 setRevoking(g.id);
                 try {
-                  await fetch(`/api/consents/${g.id}/revoke`, { method: "POST" });
+                  await csrf.send((csrfToken) => fetch(`/api/consents/${g.id}/revoke`, {
+                    method: "POST", headers: { "X-Inherit-Operation-Nonce": revokeNonce, "X-Inherit-CSRF": csrfToken },
+                  }));
                   router.refresh();
                 } finally {
                   setRevoking(null);

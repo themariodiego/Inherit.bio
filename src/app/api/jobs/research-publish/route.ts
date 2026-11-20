@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { hasEmptyRequestBody } from "@/lib/empty-request-body";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { enqueueAccountMail } from "@/lib/mail-outbox";
-import { machineJobDrained } from "@/lib/jobs/machine-result";
+import { machineJobDrained, machineUnauthenticated } from "@/lib/jobs/machine-result";
 
 export const maxDuration = 300;
 
@@ -41,7 +41,7 @@ async function requestHasSelectors(request: Request): Promise<boolean> {
 
 export async function POST(request: Request) {
   if (!authorized(request)) {
-    return new Response("Unauthorized", { status: 401 });
+    return machineUnauthenticated();
   }
   if (await requestHasSelectors(request)) {
     return NextResponse.json({ error: "invalid_request" }, { status: 400 });

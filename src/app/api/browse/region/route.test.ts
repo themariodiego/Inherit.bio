@@ -1,4 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+// The one-time X-Inherit-CSRF gate is driven on this route by
+// src/lib/security/session-csrf-routes.test.ts; here it admits every request.
+vi.mock("@/lib/security/session-csrf", async (importOriginal) =>
+  (await import("@/lib/security/session-csrf.test-support")).admitEverySessionCsrf(await importOriginal()));
 
 const mocks = vi.hoisted(() => ({
   user: { id: "12345678-1234-4234-8234-000000000001" } as { id: string } | null,
@@ -71,9 +75,10 @@ describe("browse region", () => {
   it.each([
     ["a cross-origin request", { origin: "https://elsewhere.invalid" }],
     ["a request that is not same-site", { "sec-fetch-site": "cross-site" }],
-  ])("refuses %s before reading anything", async (_label, headers) => {
+  ])("refuses %s before reading anything, with authenticated-mutation-v1's answer", async (_label, headers) => {
     const response = await POST(post(BODY, headers));
     expect(response.status).toBe(403);
+    expect(await response.json()).toEqual({ error: "request_forbidden" });
     expect(mocks.limit).toBe(0);
   });
 
@@ -84,10 +89,12 @@ describe("browse region", () => {
     expect(mocks.limit).toBe(0);
   });
 
-  it("answers 401 without a session, and never reads", async () => {
+  it("answers authenticated-api-v1's JSON 401 without a session, and never reads", async () => {
     mocks.user = null;
     const response = await POST(post(BODY));
     expect(response.status).toBe(401);
+    expect(response.headers.get("content-type")).toBe("application/json");
+    expect(await response.json()).toEqual({ error: "unauthenticated" });
     expect(mocks.limit).toBe(0);
   });
 

@@ -246,7 +246,7 @@ describe("the person's Path B screens", () => {
   it("leaves the Path A review with its own words: no file is ever added there", () => {
     const html = renderToStaticMarkup(createElement(AdultSubjectReviewForm, { review: { nonce: "n".repeat(40),
       acceptanceBlockedBy: "sign-in", artifact: { version: 1, effectiveOn: "2026-09-01", summaryMarkdown: "Summary.",
-        bodyMarkdown: "Body.", bodySha256: "a".repeat(64) } } }));
+        bodyMarkdown: "Body.", bodySha256: "a".repeat(64) }, confirmation: null } }));
     expect(html).toContain("No genetic data has been shared");
     expect(html).not.toContain(REVISION.heading);
   });

@@ -21,10 +21,15 @@ import { hmacSecret } from "@/lib/crypto";
  * in the same transaction as the operation, which is what makes it one-time.
  */
 
-export type SubjectOperation = "subject_sharing_stop" | "subject_delete" | "subject_transfer";
+export type SubjectOperation = "subject_sharing_pause" | "subject_sharing_resume" | "subject_sharing_stop"
+  | "subject_delete" | "subject_transfer";
 
-/** Each operation belongs to exactly one registered route. */
+/** Each operation belongs to exactly one registered route. The sharing pause
+ * and resume take one since 20261023120000 (G5.6, owner decision of 23
+ * October 2026), so the ledger can name who paused or resumed. */
 export const SUBJECT_OPERATION_ROUTES: Readonly<Record<SubjectOperation, string>> = Object.freeze({
+  subject_sharing_pause: "api.subject-sharing",
+  subject_sharing_resume: "api.subject-sharing",
   subject_sharing_stop: "api.subject-sharing",
   subject_delete: "api.subject-delete",
   subject_transfer: "api.subject-transfer",

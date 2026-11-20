@@ -1,5 +1,6 @@
-import { readFileSync, readdirSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { createHash } from "node:crypto";
+import { tmpdir } from "node:os";
 import path from "node:path";
 import ts from "typescript";
 import { describe, expect, it } from "vitest";
@@ -148,7 +149,7 @@ const ledger = JSON.parse(readFileSync(LEDGER, "utf8")) as {
   permissiveDynamicSegment: { routeId: string; path: string; file: string; deleteAfter?: string }[];
   kindDivergence: { routeId: string; path: string; file: string; declaredKind: string; builtKind: string }[];
   storageBucketDivergence: { bucket: string; direction: string }[];
-  unregisteredServerActions: { file: string; export: string; why: string; closing: string }[];
+  unregisteredServerActions: { file: string; export: string; why: string; closing: string; hostedBy?: string[]; correction?: string }[];
 };
 
 describe("the route register and the App Router describe the same surface", () => {
@@ -299,9 +300,10 @@ describe("the route register and the App Router describe the same surface", () =
  * success status or body at all, which is the same hole as an unregistered
  * route wearing a register entry.
  *
- * The prefix half. `storagePrefixes` declares 6 prefixes over 4 buckets, each
- * with a path shape, a filename contract, an access rule and, for three of
- * them, retention ids. `scripts/route-gate.ts` checks the bucket names against
+ * The prefix half. `storagePrefixes` declares 7 prefixes over 4 buckets (6
+ * until 2026-11-19, when `storage.prepared-v1` was registered), each with a
+ * path shape, a filename contract, an access rule and, for four of them,
+ * retention ids. `scripts/route-gate.ts` checks the bucket names against
  * the buckets migrations create and stops there: nothing compared a prefix
  * with the code that puts bytes under it. So the checks here walk the code for
  * every place that names a Storage bucket, compare that set with the register
@@ -335,6 +337,13 @@ const contractLedger = JSON.parse(readFileSync(CONTRACT_LEDGER, "utf8")) as {
     segments: number;
     declaredPrefixIds: string[];
     declaredSegments: number[];
+    evidence: { file: string; literal: string }[];
+  }[];
+  consentWithdrawalNotRegistered: {
+    kind: string;
+    why: string;
+    closing: string;
+    closedBy: string;
     evidence: { file: string; literal: string }[];
   }[];
 };
@@ -519,21 +528,53 @@ describe("storage call-site extraction", () => {
   });
 });
 
-/** The buckets a database row is allowed to name, from the migrations' own check constraints. */
-function databaseBucketAllowlist(): { buckets: string[]; constraints: number } {
+/**
+ * The buckets a database row is allowed to name now, from the migrations' own
+ * check constraints, read in the order the migrations apply. A column check
+ * in a `create table` carries the name PostgreSQL gives it,
+ * `<table>_bucket_id_check`; a later `add constraint <name> check (bucket_id
+ * in (...)` replaces the constraint of that name, and a `drop constraint`
+ * that nothing re-adds removes it. So a check a migration tightened is read
+ * as tightened, and a literal only a superseded definition held no longer
+ * counts. `before` stops the walk at the first file not sorting below it.
+ */
+function databaseBucketAllowlist(directory = MIGRATIONS, before?: string): {
+  buckets: string[]; constraints: number; columnChecks: number; createdColumnChecks: number;
+} {
   // No dot and no `s` flag: the negated classes already span newlines, which
-  // they must, because one of the two constraints is written across lines.
-  const constraint = /bucket_id\s+text[^,]*?check\s*\(\s*bucket_id\s+in\s*\(([^)]*)\)/gi;
-  const buckets = new Set<string>();
-  let constraints = 0;
-  for (const name of readdirSync(MIGRATIONS).filter(file => file.endsWith(".sql"))) {
-    const sql = readFileSync(path.join(MIGRATIONS, name), "utf8");
-    for (const match of sql.matchAll(constraint)) {
-      constraints += 1;
-      for (const literal of match[1].matchAll(/'([^']+)'/g)) buckets.add(literal[1]);
+  // they must, because several of these constraints are written across lines.
+  const columnCheck = /bucket_id\s+text[^,]*?check\s*\(\s*bucket_id\s+in\s*\(([^)]*)\)/gi;
+  const created = /create\s+table\s+(?:\w+\.)?(\w+)\s*\([^;]*?\bbucket_id\s+text[^,]*?check\s*\(\s*bucket_id\s+in\s*\(([^)]*)\)/gi;
+  const added = /add\s+constraint\s+(\w+)\s+check\s*\(\s*bucket_id\s+in\s*\(([^)]*)\)/gi;
+  const dropped = /drop\s+constraint\s+(?:if\s+exists\s+)?(\w+)/gi;
+  const literals = (list: string) => [...list.matchAll(/'([^']+)'/g)].map(literal => literal[1]);
+  const current = new Map<string, string[]>();
+  let columnChecks = 0;
+  let createdColumnChecks = 0;
+  const files = readdirSync(directory).filter(file => file.endsWith(".sql")).sort()
+    .filter(file => before === undefined || file < before);
+  for (const name of files) {
+    const sql = readFileSync(path.join(directory, name), "utf8");
+    columnChecks += [...sql.matchAll(columnCheck)].length;
+    const events: { at: number; apply: () => void }[] = [];
+    for (const match of sql.matchAll(created)) {
+      createdColumnChecks += 1;
+      events.push({ at: match.index, apply: () => current.set(`${match[1]}_bucket_id_check`, literals(match[2])) });
     }
+    for (const match of sql.matchAll(added)) {
+      events.push({ at: match.index, apply: () => current.set(match[1], literals(match[2])) });
+    }
+    for (const match of sql.matchAll(dropped)) {
+      events.push({ at: match.index, apply: () => current.delete(match[1]) });
+    }
+    for (const event of events.sort((left, right) => left.at - right.at)) event.apply();
   }
-  return { buckets: [...buckets].sort(), constraints };
+  return {
+    buckets: [...new Set([...current.values()].flat())].sort(),
+    constraints: current.size,
+    columnChecks,
+    createdColumnChecks,
+  };
 }
 
 /** The retention ids `docs/retention.md` defines, one per table row. */
@@ -725,9 +766,14 @@ describe("the register's storage prefixes and the buckets the code addresses agr
   });
 
   it("keeps the database's own bucket allowlist inside the declared set", () => {
-    const { buckets, constraints } = databaseBucketAllowlist();
-    expect(constraints).toBeGreaterThan(1);
-    expect(buckets.length).toBeGreaterThan(3);
+    const { buckets, constraints, columnChecks, createdColumnChecks } = databaseBucketAllowlist();
+    // Not an empty scan: the bucket checks of the three tables a Storage
+    // manifest is built from, each at its latest definition, and every column
+    // check the walk saw was tied to the table that declares it.
+    expect(constraints).toBe(3);
+    expect(buckets).toEqual(["genomes", "legal-evidence"]);
+    expect(createdColumnChecks).toBe(columnChecks);
+    expect(columnChecks).toBeGreaterThan(1);
     // The three database-selected call sites take their bucket from a manifest
     // this allowlist constrains, so it is the only authority a static walk
     // has for them. An undeclared name here is the same defect the route
@@ -736,14 +782,43 @@ describe("the register's storage prefixes and the buckets the code addresses agr
       ...ledger.storageBucketDivergence
         .filter(known => known.direction === "created-not-declared")
         .map(known => known.bucket),
-      // A dropped bucket a constraint still admits (D-130), recorded rather
-      // than silently allowed. It must really be dropped, or the row is stale.
+      // A dropped bucket a constraint still admits, recorded rather than
+      // silently allowed. It must really be dropped, or the row is stale.
       ...contractLedger.allowlistedBucketNotCreated.map(known => known.bucket),
     ]);
     const created = migrationBuckets(MIGRATIONS);
     for (const known of contractLedger.allowlistedBucketNotCreated) {
       expect(created.has(known.bucket), `${known.bucket} is recorded as not created`).toBe(false);
       expect(readFileSync(known.droppedBy, "utf8"), known.droppedBy).toContain(`delete from storage.buckets where id = '${known.bucket}'`);
+    }
+  });
+
+  it("reads each bucket check at its latest definition, in migration order", () => {
+    // D-130: until 20261119110000 the checks still admitted both dropped
+    // buckets, so a walk that stops before it must still see them.
+    const before = databaseBucketAllowlist(MIGRATIONS, "20261119110000");
+    expect(before.constraints).toBe(3);
+    expect(before.buckets).toEqual(["generated-artifacts", "genomes", "genomes-staging", "legal-evidence"]);
+    const directory = mkdtempSync(path.join(tmpdir(), "bucket-allowlist-"));
+    try {
+      writeFileSync(path.join(directory, "1_create.sql"), "create table public.kept (\n  id uuid,\n"
+        + "  bucket_id text not null check (bucket_id in ('a', 'dropped')),\n  note text\n);\n"
+        + "create table public.gone (\n  bucket_id text not null check (bucket_id in ('b'))\n);\n"
+        + "create table public.other (id uuid);");
+      writeFileSync(path.join(directory, "2_tighten.sql"), "alter table public.kept\n"
+        + "  drop constraint kept_bucket_id_check,\n  add constraint kept_bucket_id_check check (bucket_id in ('a')\n"
+        + "   or bucket_id ~ '^x$');\nalter table public.gone drop constraint gone_bucket_id_check;");
+      expect(databaseBucketAllowlist(directory, "2")).toEqual(
+        { buckets: ["a", "b", "dropped"], constraints: 2, columnChecks: 2, createdColumnChecks: 2 });
+      expect(databaseBucketAllowlist(directory)).toEqual(
+        { buckets: ["a"], constraints: 1, columnChecks: 2, createdColumnChecks: 2 });
+      // Within one file, statement order decides: added then dropped is gone.
+      writeFileSync(path.join(directory, "3_same_file.sql"), "alter table public.kept\n"
+        + "  add constraint kept_bucket_id_check check (bucket_id in ('late'));\n"
+        + "alter table public.kept drop constraint kept_bucket_id_check;");
+      expect(databaseBucketAllowlist(directory).constraints).toBe(0);
+    } finally {
+      rmSync(directory, { recursive: true, force: true });
     }
   });
 
@@ -808,6 +883,135 @@ describe("the register's storage prefixes and the buckets the code addresses agr
       }
     }
   });
+
+  /**
+   * 2026-11-19 (owner decision "G8.5: the two undescribed genomes key shapes";
+   * engineering chose the documents). The two genomes shapes the ledger above
+   * recorded, the flat <uuid> key and prepared/<uuid>, are described now, so
+   * their genomes rows are gone. This holds what those rows proved from the
+   * other side: each key shape the code writes into genomes is described by
+   * the prefix named here, with the same number of segments and the same
+   * literal folder and no account or subject folder the code does not write,
+   * and each is anchored to the writer that produces it. A writer that changes
+   * its key, or a prefix that stops matching it, fails here.
+   */
+  it("describes every genomes key shape the code writes, anchored to the code that writes it", () => {
+    const written: { prefixId: string; segments: number; folder: string | null; evidence: { file: string; literal: string }[] }[] = [
+      // Staging and final keys of every self and other_adult file, and the subject-transfer relocation's new key.
+      { prefixId: "storage.subject-v2", segments: 1, folder: null, evidence: [
+        { file: "supabase/migrations/20260930125000_own_upload_allowance_excludes_embryo.sql",
+          literal: " values(p_account_id,p_session_id,p_subject_id,gen_random_uuid()::text,p_size_bytes,p_sha256," },
+        { file: "supabase/migrations/20260928150000_other_adult_held_upload.sql",
+          literal: "final_object_name=gen_random_uuid(),finalization_started_at=clock_timestamp()" },
+        { file: "supabase/migrations/20260831224054_storage_and_download_sessions.sql",
+          literal: "check (object_name ~ '^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$')," },
+        { file: "src/lib/uploads/subject-finalization.ts", literal: 'bucket: z.literal("genomes"), stagingKey: uuid, finalKey: uuid,' },
+        { file: "supabase/migrations/20261016221000_subject_transfer.sql",
+          literal: "new_object_key text check (new_object_key ~ '^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$')," },
+      ] },
+      // Prepared artifacts on a Supabase v1 receipt.
+      { prefixId: "storage.prepared-v1", segments: 2, folder: "prepared", evidence: [
+        { file: "supabase/migrations/20260908164616_own_preparation_job_authority.sql",
+          literal: "object_key text not null unique default ('prepared/'||gen_random_uuid()::text)" },
+        { file: "src/lib/genome/prepared-source/storage-common.ts", literal: "/^prepared\\/[0-9a-f]{8}-" },
+      ] },
+      // The names the database reserves in genomes for embryo ingest fragments; the cohort path writes no flat key.
+      { prefixId: "storage.cohort-v2", segments: 4, folder: null, evidence: [
+        { file: "supabase/migrations/20260905203457_embryo_ingest_unwind_runtime.sql",
+          literal: "new.object_name:=s.account_id::text||'/'||s.cohort_id::text||'/'||s.upload_id::text||'/'||new.object_id::text||v_suffix;" },
+      ] },
+    ];
+    const genomes = prefixes.filter(prefix => prefix.bucket === "genomes");
+    for (const shape of written) {
+      const prefix = genomes.find(candidate => candidate.id === shape.prefixId);
+      expect(prefix, shape.prefixId).toBeDefined();
+      const segments = prefix!.prefix.split("/");
+      expect(segments.length, shape.prefixId).toBe(shape.segments);
+      expect(segments.filter(segment => !/^\{[a-z_]+\}$/u.test(segment)), shape.prefixId).toEqual(shape.folder ? [shape.folder] : []);
+      for (const evidence of shape.evidence) {
+        expect(readFileSync(evidence.file, "utf8").includes(evidence.literal), `${shape.prefixId} ${evidence.file}: ${evidence.literal}`).toBe(true);
+      }
+    }
+    // Every other genomes prefix is closed to new writes, so no shape the code writes is left to it.
+    expect(genomes.filter(prefix => !written.some(shape => shape.prefixId === prefix.id))
+      .map(prefix => `${prefix.id} ${(prefix as Prefix & { newWrites?: string }).newWrites}`)).toEqual(["storage.raw-legacy forbidden"]);
+    // And no genomes row is left in the ledger: the one object key shape still recorded is the R2 home of the same artifacts.
+    expect(contractLedger.objectKeyShapeNotDescribedByAnyPrefix.filter(known => known.bucket === "genomes")).toEqual([]);
+  });
+});
+
+/**
+ * 2026-11-19 (owner decision "G8.5: the register names where each kind of
+ * consent is withdrawn"). api.consent-revoke lists eleven kinds in
+ * `dispositionCases` and itself resolves only two tables, so the register now
+ * names, in `policy.withdrawalRoutes.cases`, the routes that withdraw each
+ * kind today and the database door each of those routes calls. The decision
+ * says a kind with no way to be withdrawn goes back to the owner rather than
+ * being papered over, so every kind the register does not name is a row of
+ * `docs/register-contract-divergence.json#consentWithdrawalNotRegistered`,
+ * compared here in both directions: a kind that gains a route fails until its
+ * row is removed, and a kind dropped from the map fails until it is recorded.
+ */
+describe("the register names where each kind of consent is withdrawn, and the ledger every kind it does not", () => {
+  type Case = { routes: string[]; doors: string[]; how: string };
+  const document = registerDocument();
+  const entry = document.routes.find(route => route.id === "api.consent-revoke")!;
+  const policy = entry.policy as { dispositionCases: Record<string, string>;
+    withdrawalRoutes: { registeredBy: string; basis: string; cases: Record<string, Case> } };
+  const kinds = Object.keys(policy.dispositionCases);
+  const named = policy.withdrawalRoutes.cases;
+  const open = contractLedger.consentWithdrawalNotRegistered;
+  const shipped = codeFiles().filter(file => file.split(path.sep)[0] === "src").map(file => readFileSync(file, "utf8"));
+
+  it("reads the eleven kinds and the map at all, so a passing run is not an empty scan", () => {
+    expect(kinds).toHaveLength(11);
+    expect(Object.keys(named).length).toBeGreaterThan(5);
+    expect(policy.withdrawalRoutes.registeredBy).toBe("owner-decision-2026-11-19-G8.5-the-register-names-where-each-kind-of-consent-is-withdrawn");
+  });
+
+  it("names only kinds dispositionCases declares, and records every kind it does not name, in both directions", () => {
+    expect(Object.keys(named).filter(kind => !kinds.includes(kind))).toEqual([]);
+    compareBothWays(kinds.filter(kind => !(kind in named)), open.map(row => row.kind));
+  });
+
+  it("names registered routes, each with a database door that shipped code calls by name", () => {
+    const ids = new Set(document.routes.map(route => route.id));
+    for (const [kind, each] of Object.entries(named)) {
+      expect(each.routes.filter(id => !ids.has(id)), kind).toEqual([]);
+      expect(new Set(each.routes).size, kind).toBe(each.routes.length);
+      for (const door of each.doors) {
+        expect(shipped.some(source => source.includes(`"${door}"`)), `${kind}: ${door} is called by no shipped module`).toBe(true);
+      }
+      expect(each.how.length, kind).toBeGreaterThan(60);
+    }
+    // The one kind no route withdraws is the one that cannot be given yet, and it says so.
+    const none = Object.entries(named).filter(([, each]) => each.routes.length === 0);
+    expect(none.map(([kind]) => kind)).toEqual(["consent.embryo-donor-attribution-by-the-current-donor-subject-principal"]);
+    expect(none[0]![1].doors).toEqual([]);
+    expect(none[0]![1].how).toMatch(/^none-because-the-consent-cannot-be-given-yet/u);
+    expect(readFileSync("src/lib/embryos/routes.ts", "utf8")).toContain('return ["identified_donor_attribution_unavailable"];');
+    // api.consent-revoke itself resolves exactly the tables the map's basis names: since 2026-11-19 (owner decision
+    // "A non-parent uploader's withdrawal for an embryo upload stops analysis and deletes, as they signed") a third,
+    // consent_signatures, for the one signature kind the basis names, which the route checks after reading it.
+    const revoke = readFileSync("src/app/api/consents/[id]/revoke/route.ts", "utf8");
+    expect(revoke.match(/admin\.from\("([a-z_]+)"\)/gu)).toEqual(['admin.from("purpose_grants")', 'admin.from("consent_grants")',
+      'admin.from("consent_signatures")']);
+    expect(revoke).toContain('signature.artifact_key === "consent.upload-embryo"');
+    expect(revoke).toContain('signature.purpose === "embryo-upload-uploader-class"');
+    expect(policy.withdrawalRoutes.basis).toContain("a-public.consent_signatures-row-that-is-a-consent.upload-embryo-signature-of-purpose-embryo-upload-uploader-class");
+  });
+
+  it("says why each unnamed kind has no registered route, who decides, and anchors it to the code", () => {
+    for (const row of open) {
+      expect(row.closedBy, row.kind).toBe("owner");
+      expect(row.why.length, row.kind).toBeGreaterThan(300);
+      expect(row.closing.length, row.kind).toBeGreaterThan(60);
+      expect(row.evidence.length, row.kind).toBeGreaterThan(0);
+      for (const evidence of row.evidence) {
+        expect(readFileSync(evidence.file, "utf8").includes(evidence.literal), `${row.kind} ${evidence.file}: ${evidence.literal}`).toBe(true);
+      }
+    }
+  });
 });
 
 /**
@@ -823,23 +1027,65 @@ describe("the register's storage prefixes and the buckets the code addresses agr
  * An inline one is precisely the case a top-of-file check would miss, and a
  * false positive costs one ledger row while a false negative loses a mutation
  * entry point.
+ *
+ * Since 23 October 2026 the product has none (owner decision, G8.5): the one
+ * there was, `acknowledgeEmbryoGate`, is the registered route
+ * `api.embryo-acknowledge`. The assertions below hold that at zero, and the
+ * planted modules prove the walker would still see one.
  */
-function serverActionModules(): string[] {
-  return codeFiles()
-    .filter((file) => /(^|[^\w])["']use server["']/.test(readFileSync(file, "utf8")))
-    .map((file) => file.split(path.sep).join("/"))
+function serverActionModulesIn(sources: ReadonlyMap<string, string>): string[] {
+  return [...sources]
+    .filter(([, source]) => /(^|[^\w])["']use server["']/.test(source))
+    .map(([file]) => file)
     .sort();
 }
 
+function shippedSources(): Map<string, string> {
+  return new Map(codeFiles().map(file => [file.split(path.sep).join("/"), readFileSync(file, "utf8")] as const));
+}
+
+/**
+ * The deleted module, kept as a fixture so the planted defects below plant
+ * exactly what used to ship (src/app/(app)/embryos/acknowledge.ts at
+ * 287a1408, its header comment omitted).
+ */
+const FORMER_ACTION_FILE = "src/app/(app)/embryos/acknowledge.ts";
+const FORMER_ACTION = [
+  '"use server";',
+  "",
+  'import { cookies } from "next/headers";',
+  'import { currentAuthSessionId, embryoGateCookie } from "@/lib/embryos/tier2";',
+  'import { createClient } from "@/lib/supabase/server";',
+  "",
+  "export async function acknowledgeEmbryoGate(): Promise<{ ok: boolean }> {",
+  "  const supabase = await createClient();",
+  "  const {",
+  "    data: { user },",
+  "  } = await supabase.auth.getUser();",
+  "  if (!user) return { ok: false };",
+  "  const sessionId = await currentAuthSessionId();",
+  "  if (!sessionId) return { ok: false };",
+  "  const store = await cookies();",
+  "  store.set(embryoGateCookie(user.id, sessionId));",
+  "  return { ok: true };",
+  "}",
+  "",
+].join("\n");
+
 describe("every server action is a recorded surface", () => {
-  const found = serverActionModules();
+  const sources = shippedSources();
+  const found = serverActionModulesIn(sources);
   const recorded = ledger.unregisteredServerActions ?? [];
 
-  it("finds the walker's own subject, so a passing run is not an empty scan", () => {
-    // If this ever legitimately reaches zero, the ledger empties in the same
-    // change and the two assertions below fail first, which is the point.
-    expect(found.length).toBeGreaterThan(0);
-    expect(found).toContain("src/app/(app)/embryos/acknowledge.ts");
+  it("walks the shipped code at all, so a passing run is not an empty scan", () => {
+    expect(sources.size).toBeGreaterThan(1000);
+    expect([...sources.keys()].some(file => file.startsWith("src/app/(app)/embryos/"))).toBe(true);
+  });
+
+  it("finds no server action in the product, and the ledger records none", () => {
+    expect(found).toEqual([]);
+    expect(recorded).toEqual([]);
+    expect(existsSync(FORMER_ACTION_FILE)).toBe(false);
   });
 
   it("records every server action that exists", () => {
@@ -859,6 +1105,164 @@ describe("every server action is a recorded surface", () => {
       expect(known.closing.length).toBeGreaterThan(20);
     }
   });
+
+  it("fails on a planted server action, top-of-file or inline, whichever quotes it uses", () => {
+    const planted = new Map(sources);
+    planted.set(FORMER_ACTION_FILE, FORMER_ACTION);
+    planted.set("src/components/planted-inline.tsx",
+      "export function Planted() {\n  async function save() {\n    'use server';\n    return 1;\n  }\n  return <form action={save} />;\n}\n");
+    const plantedFound = serverActionModulesIn(planted);
+    expect(plantedFound).toEqual([FORMER_ACTION_FILE, "src/components/planted-inline.tsx"]);
+    // Each is a module no ledger row records, so "records every server action that exists" fails.
+    expect(plantedFound.filter((file) => !recorded.some((known) => known.file === file))).toEqual(plantedFound);
+  });
+});
+
+/**
+ * The same surface, counted by action rather than by file (G8.5, 23 October
+ * 2026). The block above records which modules carry the directive, so a
+ * second exported action added to a recorded module, or a function with an
+ * inline directive inside a recorded component, passes it. Next.js makes
+ * every export of a "use server" module, and every function whose body opens
+ * with the directive, its own POST entry point: the installed 16.3.3
+ * `action-handler.js` forwards an action id posted to ANY App Router page to
+ * a worker that holds it (`selectWorkerForForwarding`), refuses a mismatched
+ * Origin and lets a request with no Origin through with a warning. So each
+ * action is counted by name, the registered pages that render it are pinned,
+ * and the one property that makes an unregistered action defensible - it
+ * writes nothing durable - is enforced rather than asserted.
+ */
+function serverActionsIn(source: string, file: string): string[] {
+  const document = ts.createSourceFile(file, source, ts.ScriptTarget.Latest, true,
+    file.endsWith(".tsx") ? ts.ScriptKind.TSX : ts.ScriptKind.TS);
+  const directive = (statements: readonly ts.Statement[]) => {
+    for (const statement of statements) {
+      if (!ts.isExpressionStatement(statement) || !ts.isStringLiteral(statement.expression)) return false;
+      if (statement.expression.text === "use server") return true;
+    }
+    return false;
+  };
+  const names: string[] = [];
+  if (directive(document.statements)) {
+    const exported = (node: ts.Node) => ts.canHaveModifiers(node)
+      && (ts.getModifiers(node) ?? []).some(modifier => modifier.kind === ts.SyntaxKind.ExportKeyword);
+    for (const statement of document.statements) {
+      if (ts.isFunctionDeclaration(statement) && exported(statement)) names.push(statement.name?.text ?? "default");
+      if (ts.isVariableStatement(statement) && exported(statement)) {
+        for (const declaration of statement.declarationList.declarations) names.push(declaration.name.getText(document));
+      }
+      if (ts.isExportDeclaration(statement) && statement.exportClause && ts.isNamedExports(statement.exportClause)) {
+        for (const element of statement.exportClause.elements) names.push(element.name.text);
+      }
+      if (ts.isExportAssignment(statement)) names.push("default");
+    }
+  }
+  const visit = (node: ts.Node) => {
+    if (ts.isFunctionLike(node) && "body" in node && node.body && ts.isBlock(node.body as ts.Node)
+      && directive((node.body as ts.Block).statements)) {
+      const named = (node as ts.FunctionLikeDeclaration).name;
+      const holder = node.parent && ts.isVariableDeclaration(node.parent) ? node.parent.name.getText(document) : null;
+      names.push(`${named?.getText(document) ?? holder ?? "(anonymous)"} (inline)`);
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(document);
+  return [...new Set(names)].sort();
+}
+
+/** Every shipped server action, as `file export`. */
+function serverActionCensus(sources: ReadonlyMap<string, string>): string[] {
+  return [...sources].flatMap(([file, source]) => /["']use server["']/.test(source)
+    ? serverActionsIn(source, file).map(name => `${file} ${name}`) : []).sort();
+}
+
+/** The registered pages that import an action from its module, by register id. */
+function serverActionHosts(actionFile: string, exportName: string, sources: ReadonlyMap<string, string>, entries: Entry[]): string[] {
+  const target = actionFile.replace(/\.(ts|tsx|js|mjs)$/, "");
+  const hosts = new Set<string>();
+  for (const [file, source] of sources) {
+    for (const match of source.matchAll(/import\s*\{([^}]*)\}\s*from\s*["']([^"']+)["']/g)) {
+      if (!match[1].split(",").some(name => name.trim().split(/\s+as\s+/)[0] === exportName)) continue;
+      const specifier = match[2];
+      const resolved = specifier.startsWith("@/") ? `src/${specifier.slice(2)}`
+        : path.posix.normalize(path.posix.join(path.posix.dirname(file), specifier));
+      if (resolved !== target) continue;
+      const page = /^src\/app\/(.*\/)?(page|layout)\.(tsx|ts|jsx|js)$/.exec(file);
+      if (!page) { hosts.add(file); continue; }
+      const url = `/${(page[1] ?? "").split("/").filter(segment => segment && !/^\(.*\)$/.test(segment)).join("/")}`;
+      hosts.add(entries.find(entry => entry.path === url)?.id ?? url);
+    }
+  }
+  return [...hosts].sort();
+}
+
+/**
+ * What an unregistered action may not do. The ledger's reason for leaving an
+ * action out of the register is that it writes nothing durable and carries no
+ * authority a route would gate; a database call, a Storage call, an outbound
+ * request or a service-role client is exactly the thing that would make it a
+ * register endpoint instead.
+ */
+const DURABLE_EFFECT = /\.(?:rpc|from|insert|upsert|update)\s*\(|\.storage\b|\bfetch\s*\(|createAdminClient|localStorage|sessionStorage/;
+
+describe("every server action is recorded by name, with the pages that render it and what it may write", () => {
+  const sources = shippedSources();
+  const recorded = ledger.unregisteredServerActions ?? [];
+  const entries = register();
+
+  it("counts every action, not only every module, in both directions", () => {
+    expect(serverActionCensus(sources)).toEqual(recorded.map(known => `${known.file} ${known.export}`).sort());
+    expect(serverActionCensus(sources)).toEqual([]);
+  });
+
+  it("pins the registered pages that render each action, in both directions", () => {
+    for (const known of recorded) {
+      expect(serverActionHosts(known.file, known.export, sources, entries), known.export).toEqual([...(known.hostedBy ?? [])].sort());
+      // Each host is a registered page, so the POST it now also answers is on a route the register names.
+      for (const host of known.hostedBy ?? []) expect(entries.find(entry => entry.id === host)?.kind, host).toBe("page");
+    }
+    // The three pages that rendered the former action import it no more.
+    expect(serverActionHosts(FORMER_ACTION_FILE, "acknowledgeEmbryoGate", sources, entries)).toEqual([]);
+  });
+
+  it("keeps each unregistered action free of durable writes, so its reason for having no register row stays true", () => {
+    for (const known of recorded) {
+      expect(DURABLE_EFFECT.test(sources.get(known.file) ?? ""), known.file).toBe(false);
+      expect(known.correction ?? "", known.file).toMatch(/selectWorkerForForwarding/);
+    }
+  });
+
+  it("fails on a planted action, a planted second export, an inline action and a durable write", () => {
+    const planted = new Map(sources);
+    planted.set(FORMER_ACTION_FILE, FORMER_ACTION);
+    // One planted action is already a census the ledger does not match.
+    expect(serverActionCensus(planted)).toEqual([`${FORMER_ACTION_FILE} acknowledgeEmbryoGate`]);
+    expect(serverActionCensus(planted)).not.toEqual(recorded.map(known => `${known.file} ${known.export}`).sort());
+    planted.set(FORMER_ACTION_FILE, `${FORMER_ACTION}\nexport async function forgetEmbryoGate() { return { ok: true }; }\n`);
+    expect(serverActionCensus(planted)).toEqual([
+      `${FORMER_ACTION_FILE} acknowledgeEmbryoGate`,
+      `${FORMER_ACTION_FILE} forgetEmbryoGate`,
+    ]);
+    planted.set("src/app/(app)/planted/page.tsx",
+      'export default function Page() {\n  async function save() {\n    "use server";\n    return 1;\n  }\n  return <form action={save} />;\n}\n');
+    expect(serverActionCensus(planted)).toContain("src/app/(app)/planted/page.tsx save (inline)");
+    // The file-level walk above would also have caught the inline one, but not the second export.
+    expect(serverActionCensus(planted).filter(entry => entry.startsWith(FORMER_ACTION_FILE))).toHaveLength(2);
+    expect(DURABLE_EFFECT.test(FORMER_ACTION.replace("store.set(", 'await createAdminClient().rpc("record_gate_v1", {}); store.set('))).toBe(true);
+    expect(DURABLE_EFFECT.test(FORMER_ACTION)).toBe(false);
+  });
+
+  it("finds every page that renders a planted action, and loses a host that stops", () => {
+    const planted = new Map(sources);
+    planted.set(FORMER_ACTION_FILE, FORMER_ACTION);
+    planted.set("src/app/(app)/embryos/page.tsx", `import { acknowledgeEmbryoGate } from "./acknowledge";\n${sources.get("src/app/(app)/embryos/page.tsx")}`);
+    planted.set("src/app/(app)/copilot/[scope]/page.tsx",
+      `import { acknowledgeEmbryoGate } from "../../embryos/acknowledge";\n${sources.get("src/app/(app)/copilot/[scope]/page.tsx")}`);
+    expect(serverActionHosts(FORMER_ACTION_FILE, "acknowledgeEmbryoGate", planted, entries))
+      .toEqual(["copilot.scope", "embryos.index"]);
+    planted.delete("src/app/(app)/copilot/[scope]/page.tsx");
+    expect(serverActionHosts(FORMER_ACTION_FILE, "acknowledgeEmbryoGate", planted, entries)).toEqual(["embryos.index"]);
+  });
 });
 
 /**
@@ -877,10 +1281,10 @@ describe("every server action is a recorded surface", () => {
  * other expression is reported rather than assumed, because a static reader
  * cannot tell where it points.
  */
-function formActions(): { file: string; action: string; resolved: "literal" | "helper" | "unresolvable" }[] {
+function formActions(planted: Record<string, string> = {}): { file: string; action: string; resolved: "literal" | "helper" | "unresolvable" }[] {
   const found: { file: string; action: string; resolved: "literal" | "helper" | "unresolvable" }[] = [];
-  for (const file of codeFiles().filter((name) => name.endsWith(".tsx"))) {
-    const source = readFileSync(file, "utf8");
+  for (const file of [...codeFiles().filter((name) => name.endsWith(".tsx")), ...Object.keys(planted)]) {
+    const source = planted[file] ?? readFileSync(file, "utf8");
     for (const match of source.matchAll(/<form\b[^>]*?\saction=(?:"([^"]*)"|\{([^}]*)\})/g)) {
       const where = file.split(path.sep).join("/");
       if (match[1] !== undefined) {
@@ -904,13 +1308,17 @@ describe("every form posts somewhere the register describes", () => {
   const recordedPaths = new Set(ledger.builtButNotRegistered.map((known) => known.path));
 
   it("finds the forms that name a target, so a passing run is not an empty scan", () => {
+    // G8.5 (2026-10-23): sign-out became a scripted form with no action
+    // (src/components/site/sign-out-form.tsx), so the app-shell's literal
+    // "/auth/sign-out" action, the one literal in the tree, is gone.
     expect(actions).toEqual([
       { file: "src/app/(app)/genome/[subject]/data/browser/page.tsx",
         action: 'route("genome.browser", subjectParams)', resolved: "helper" },
-      { file: "src/components/site/app-shell.tsx", action: "/auth/sign-out", resolved: "literal" },
     ]);
-    expect(actions.some((form) => form.resolved === "literal")).toBe(true);
     expect(actions.some((form) => form.resolved === "helper")).toBe(true);
+    // The literal reading is still exercised: a planted native form is read as one.
+    expect(formActions({ "src/components/planted-native-form.tsx": '<form action="/auth/sign-out" method="post" />' }))
+      .toContainEqual({ file: "src/components/planted-native-form.tsx", action: "/auth/sign-out", resolved: "literal" });
   });
 
   it("points every literal action at a registered route, or at a recorded one", () => {
@@ -1031,24 +1439,51 @@ type ClientFormReview = { file: string; forms: number; sha256: string };
 // The guarded embryo/future-person flows add ten client-handled forms. Keep
 // their complete-source review separate so the original fourteen-form
 // inventory remains checked alongside the complete integrated inventory.
+// G8.5 (2026-10-23): upload-stage.tsx (cohort finalize) and
+// embryo-disposition.tsx re-reviewed after their request gained the route's
+// one-time X-Inherit-CSRF header and its rotation. The same forms, handlers,
+// preventDefault before any field is read, and targets.
+// G8.5 (2026-11-19): both re-reviewed after that request moved into its
+// token chain (`csrf.send((csrfToken) => fetch(...))`), which sends a page's
+// requests to one route one at a time. The same forms, handlers,
+// preventDefault, targets, headers and bodies.
+// G8.5 stage two (2026-11-19): draft-form.tsx, signing-form.tsx, upload-stage.tsx
+// (the invitation form) and future-person-profile.tsx re-reviewed after each
+// request moved onto its route's one-time session token, sent through the
+// route's token chain, and its operation value moved to its own header
+// (X-Inherit-Operation-Nonce, or X-Inherit-Operation-Proof for the profile's
+// derived proof), where X-Inherit-CSRF carried it. The same forms, handlers,
+// preventDefault before any field is read, targets and bodies.
+// G8.5, the migration stage (2026-11-19): upload-stage.tsx (the finalize form
+// keeps the upload session's first tokens from X-Inherit-Upload-CSRF for the
+// file step), claim-review.tsx and keyless-pending-review.tsx (each decision
+// sends the reviewer's one-time token for its route through the route's chain,
+// from the page's provider, where it sent the case digest the GET returned)
+// and owner-objection.tsx (the page's token for the route, rights or account,
+// through its chain, where it sent the digest the page passed in) re-reviewed.
+// The same forms, handlers, preventDefault, targets and bodies.
 const GUARDED_FLOW_CLIENT_FORM_REVIEW: ClientFormReview[] = [
-  { file: "src/components/embryo/upload/draft-form.tsx", forms: 1, sha256: "c216fd24a0d903e38171cf53079abe439f1656d010560de8f32694a253dfdc2e" },
-  { file: "src/components/embryo/upload/signing-form.tsx", forms: 1, sha256: "09ef84e65cf77e765d40d4034fb9b5345a19196857cd1bc4e6781b820eaffcf8" },
-  { file: "src/components/embryo/upload/upload-stage.tsx", forms: 2, sha256: "84d2461d1e510ca23f2b66f8c77cfcd656480c70e0d8c55288267d0e5db42e6e" },
+  { file: "src/components/embryo/upload/draft-form.tsx", forms: 1, sha256: "c87e9fb89d7259b4b71a45e70a73c3e369af82accc4b47b950cd21073a824879" },
+  { file: "src/components/embryo/upload/signing-form.tsx", forms: 1, sha256: "8c19943823fd5bd495751f5eeeb2c483ab791ac3ec15e82a07468c1cb52243d1" },
+  { file: "src/components/embryo/upload/upload-stage.tsx", forms: 2, sha256: "ae1a1ac781cc16e376c2f1ff4135538b4518fc14be63eb1fd8cf3065ec5eb85f" },
   { file: "src/components/future-person/claim-form.tsx", forms: 1, sha256: "15879dd96632b930bcaf494fc2f47cabd9b75bddfc328ab104bc8610be10fbdb" },
-  { file: "src/components/future-person/claim-review.tsx", forms: 1, sha256: "ef96f46a4dec3c6cf56759c7699fdcc71613c14d3171f25e549c75ba2d7f3f6c" },
-  { file: "src/components/future-person/keyless-pending-review.tsx", forms: 1, sha256: "d44c1530368a229dc5b3f75339ba541cdb04ce0f0f8442558792306f3a5f7c31" },
-  { file: "src/components/future-person/owner-objection.tsx", forms: 1, sha256: "77a7bef89da3708b7227c7c22f4fca3d89a60a8cde3c3eba18b003a2a561db7d" },
-  { file: "src/components/settings/embryo-disposition.tsx", forms: 1, sha256: "e8bb3c6be7c5d03113e867af7204b0d92e8ab6825f107699220db1e2f810f634" },
-  { file: "src/components/settings/future-person-profile.tsx", forms: 1, sha256: "44edb4bbd08e2d2ff567aa354b43e4c4f27a8b16d1f77882c9a78670f6169788" },
+  { file: "src/components/future-person/claim-review.tsx", forms: 1, sha256: "b524c7e3b6f72ad0dd43e8938e8e121c21240a9465526466ab8a4179f2c0b0fe" },
+  { file: "src/components/future-person/keyless-pending-review.tsx", forms: 1, sha256: "3ceb0acc71fa3dd42ac3ac62afcf017a993715236d66c0b5e96dfc9a5e14bc8f" },
+  { file: "src/components/future-person/owner-objection.tsx", forms: 1, sha256: "5cb7ce68d4e6c20fafe8d23dfa1c2eccc30a5c3570adb5bca6e7dbd8aa3052c9" },
+  { file: "src/components/settings/embryo-disposition.tsx", forms: 1, sha256: "87acb08033b37e93db3859b1bb94883418cf41b3a115afc595f3eae35b51c5d9" },
+  { file: "src/components/settings/future-person-profile.tsx", forms: 1, sha256: "20c943b89db53cc30fb0afde17897d3fc6b9c89c571d5ef05bce49b4112cf250" },
 ];
 
 // These two published TEST-only intake forms cancel native submission before
 // reading their fields and send JSON to their separate registered POST doors.
 // Bind the complete sources and opening counts; keep the original core census.
+// G8.5 (2026-11-19): correction-request.tsx re-reviewed after its request
+// moved from the claimant page's keyed digest to api.future-person-correction's
+// one-time session token, read from the page's CsrfProvider and sent through
+// its token chain. The same form, handler, preventDefault, target and body.
 const FUTURE_INTAKE_CLIENT_FORM_REVIEW: ClientFormReview[] = [
   { file: "src/components/future-person/appeal-intake-form.tsx", forms: 1, sha256: "dccc4b01bedb410696e2e69113041fa7e59224ce79055ebdd4b60fa71c267d2f" },
-  { file: "src/components/future-person/correction-request.tsx", forms: 1, sha256: "37cd036ad9371ed5fffaef46d844edd8b26b567ea38bef46be99144c0597b99c" },
+  { file: "src/components/future-person/correction-request.tsx", forms: 1, sha256: "bc638aacc9ccd4dd2c85729d58d56ae04cd158a0622d28b09ad9443f2a87bfcf" },
 ];
 
 /**
@@ -1059,24 +1494,82 @@ const FUTURE_INTAKE_CLIENT_FORM_REVIEW: ClientFormReview[] = [
  * and dynamically rendered interiors still need their own runtime evidence.
  */
 const CLIENT_FORM_REVIEW: ClientFormReview[] = [
-  { file: "src/components/auth/auth-form.tsx", forms: 1, sha256: "52f7cf872d5f2bf3b53a3503bb92fbc8c540c1f09aba9d90de49d1922469c487" },
-  { file: "src/components/chat/chat-panel.tsx", forms: 1, sha256: "77759a6b209673bef9ea9c5ca46e031a03e1cfb7a73f7e9e437ca519eb1dfdd1" },
-  { file: "src/components/chat/own-chat-panel.tsx", forms: 1, sha256: "935d0925a414a1f377fbae00c6d06cccb6cc3817d02aa46d2d0972224b97f89c" },
-  { file: "src/components/embryo/co-parent-review-form.tsx", forms: 1, sha256: "e37f7be36d8b6eed42a49a5c91a2d1d715f549881fd2dcae67b6eb5d77584675" },
-  { file: "src/components/embryo/invitation-refusal-form.tsx", forms: 1, sha256: "d1d5e36f18b1299ea3c21a6ef0369487250d5f2e0cae5c693486833d309ff6a3" },
-  { file: "src/components/family/invite-adult-form.tsx", forms: 1, sha256: "1866d5e668f9069c0d94a2aa8c8d3f8e55ccd341403a029915fb39d8ac8e04d7" },
-  { file: "src/components/settings/jurisdiction-form.tsx", forms: 1, sha256: "995f24840ae8e802a2f4d6b8be1c0ce3dbe804dfa75fc9b62a64572395c8fe6c" },
-  { file: "src/components/settings/llm-settings-form.tsx", forms: 1, sha256: "7b669b559f7db5b0fe391bd39ce8095a33bd8c37cd80d37e06d138ec0d55f45b" },
+  // G8.5 (2026-10-23): chat-panel, own-chat-panel, co-parent-review-form,
+  // invitation-refusal-form, invite-adult-form, jurisdiction-form,
+  // llm-settings-form, other-adult-upload-card and path-b-request-form were
+  // re-reviewed after each request gained its route's one-time X-Inherit-CSRF
+  // header and rotation (the chat panel through its transport's headers and
+  // forwarding fetch). Each keeps the same forms, handler, preventDefault and
+  // target; no body changed. sign-out-form.tsx is new: sign-out moved from
+  // the app shell's native form to one actionless form whose onSubmit cancels
+  // native submission and posts with the token.
+  // G8.5 (2026-11-19): sign-out-form, own-chat-panel, co-parent-review-form,
+  // invitation-refusal-form, invite-adult-form, jurisdiction-form,
+  // llm-settings-form and path-b-request-form re-reviewed after each request
+  // moved into its route's token chain (`csrf.send((csrfToken) => fetch(...))`),
+  // which sends a page's requests to one route one at a time. Each keeps the
+  // same forms, handler, preventDefault, target, headers and body.
+  { file: "src/components/site/sign-out-form.tsx", forms: 1, sha256: "ecfa0a19f543c66ed45d59dd2533e891855143ac6ec3028510991344221ec48a" },
+  // G2.5 (2026-10-22): re-reviewed after the submit control became the forest
+  // outline variant at the same 44px and content width. One actionless form,
+  // the same fieldset, handler and preventDefault before any field is read.
+  { file: "src/components/auth/auth-form.tsx", forms: 1, sha256: "80e1bf6cabad3769c0613561fd8c942f417a024ae8e0f831402b023470f9e8a8" },
+  // G8.5 (2026-10-24): the compatibility panel (src/components/chat/chat-panel.tsx)
+  // is retired with its api.chat branch, so its review is removed. The own panel
+  // is re-reviewed after it gained the ChatProviderInfo type the retired panel
+  // exported: still one actionless form whose onSubmit handler cancels native
+  // submission before anything is sent, the same composer and target, api.chat.
+  { file: "src/components/chat/own-chat-panel.tsx", forms: 1, sha256: "9aef9697d1654b86d7565796b8ca50e59d19e3f96c45df77501e6079b1e53738" },
+  { file: "src/components/embryo/co-parent-review-form.tsx", forms: 1, sha256: "3d53c662bcf1d25f9c27b7658a5495c981e8e5cf8d0669494a29542dd1495b16" },
+  { file: "src/components/embryo/invitation-refusal-form.tsx", forms: 1, sha256: "03e69daa6adbc9d39d555015d2b3a328fb42cddc2a5d6f16cbe48076bb5a0338" },
+  // G5.6 (2026-10-23): both re-reviewed after their request gained the page's
+  // one-time operation nonce in the X-Inherit-Operation-Nonce header, and the
+  // form or its section a data-operation-nonce attribute. Still one actionless
+  // form each, the same handler cancelling native submission, the same target.
+  // G8.5 (2026-10-23): re-reviewed after the invitation moved to the registered
+  // Path A body (contactEmail, kind "adult", no adultAttestation) and branches on
+  // the registered 403, and after the merge added the one-time X-Inherit-CSRF
+  // header. Still one actionless form, the same handler cancelling native
+  // submission before any field is read, the same target.
+  { file: "src/components/family/invite-adult-form.tsx", forms: 1, sha256: "3d9320f3d0454196553540ad4e98e252efda2f467c2452ea6f49ce8dcfc24b6b" },
+  { file: "src/components/settings/jurisdiction-form.tsx", forms: 1, sha256: "77fed8d97f299a82f26ce7e85dab915d854408a61b00a01cfb40470b3cfdb8c7" },
+  // G8.5 (2026-10-23): re-reviewed after the save moved to the registered
+  // bodies by mode and the removal button gained the page's one-time nonce, and
+  // after the merge added the one-time X-Inherit-CSRF header to both requests.
+  // Still one actionless form whose onSubmit handler cancels native submission
+  // first; the same target, and the removal is still a button outside it.
+  { file: "src/components/settings/llm-settings-form.tsx", forms: 1, sha256: "ed910610b21eaa0f3ff2369cef31499a9828c2e8c4acfeabba9481d4c4f95b72" },
   // G2.1 (2026-10-16): re-reviewed after the new-person form gained the
   // reviewed-document flow choice (two radio inputs inside the same form, the
   // same handler and target) and ConsentFields became an export. Still two
   // actionless forms whose onSubmit handlers cancel native submission.
-  { file: "src/components/uploads/other-adult-upload-card.tsx", forms: 2, sha256: "024b7da96d938bfe4fdc5228b9ec65b4723dd551bf653677bfe6c22750c6896d" },
-  { file: "src/components/uploads/own-upload-flow.tsx", forms: 1, sha256: "f78a81339439a1b91840e7138ad560055d61d618f788715d1fb0651f73a7fede" },
+  // G8.5 stage two (2026-11-19): re-reviewed after its three requests moved
+  // onto their routes' one-time session tokens through their token chains
+  // (api.subject-drafts, api.consents, api.invitations), the draft nonce and
+  // the request-send token into X-Inherit-Operation-Nonce, and the signature's
+  // presentation token into the body alone. Still two actionless forms whose
+  // onSubmit handlers cancel native submission; the same targets and bodies.
+  // 2026-11-19 (owner decision "An uploader's withdrawal for another adult's
+  // file deletes it, unless that adult holds the record themselves"):
+  // re-reviewed after the held and ready cards gained the withdrawal control
+  // (OtherAdultWithdrawal, no form) as their last child and a withdrawn card
+  // that shows only its receipt. The two forms, their handlers, fields,
+  // targets and bodies are unchanged.
+  { file: "src/components/uploads/other-adult-upload-card.tsx", forms: 2, sha256: "830f26d0dc60617563b71e6804b6929fd7aa1ceec54d7c5ad0a85564b529e358" },
+  // G7.4 (2026-10-22): re-reviewed after the flow gained the server-decided
+  // `readCalling` prop it passes to both Uploader renders (ADR 0038). Still one
+  // actionless account-completion form whose onSubmit handler cancels native
+  // submission; no handler, field or target changed.
+  // G8.5 stage two (2026-11-19): re-reviewed after both requests moved onto
+  // their routes' one-time session tokens (api.account-completion and
+  // api.consents) through their token chains; the presentation token now
+  // travels in the body alone. Still one actionless account-completion form
+  // whose onSubmit handler cancels native submission; the same targets and bodies.
+  { file: "src/components/uploads/own-upload-flow.tsx", forms: 1, sha256: "ed262cbbece96415aeeefb1644bd1fedd213af15584bb56eb47898ea7d69d776" },
   // G5.4 (2026-10-16): re-reviewed after two copy lines (the 30/730-day keep
   // line and the contact of last resort). Still one actionless form whose
   // onSubmit handler cancels native submission; no handler, field or target changed.
-  { file: "src/components/uploads/path-b-request-form.tsx", forms: 1, sha256: "b8372876fa10c03bac696a1c5e7af89c1cdc5674b0638e7682ba7c1a466c44e4" },
+  { file: "src/components/uploads/path-b-request-form.tsx", forms: 1, sha256: "c407b8a5a49c151bf9c3314ecde9cfb3559a057444aa07961b5d9545706826ba" },
   ...GUARDED_FLOW_CLIENT_FORM_REVIEW,
   ...FUTURE_INTAKE_CLIENT_FORM_REVIEW,
 ];
@@ -1108,14 +1601,16 @@ describe("native form methods match their registered targets", () => {
     const guardedFlowFiles = new Set(GUARDED_FLOW_CLIENT_FORM_REVIEW.map(review => review.file));
     const futureIntakeFiles = new Set(FUTURE_INTAKE_CLIENT_FORM_REVIEW.map(review => review.file));
     const coreForms = all.filter(form => !futureIntakeFiles.has(form.file));
-    expect(coreForms.filter(form => !guardedFlowFiles.has(form.file))).toHaveLength(14);
-    expect(coreForms).toHaveLength(24);
+    // G8.5 (2026-10-24): the compatibility panel's one form is retired with it (14, 24 and 26 before).
+    expect(coreForms.filter(form => !guardedFlowFiles.has(form.file))).toHaveLength(13);
+    expect(coreForms).toHaveLength(23);
     expect(all.filter(form => futureIntakeFiles.has(form.file))).toHaveLength(2);
-    expect(all).toHaveLength(26);
+    expect(all).toHaveLength(25);
     const submissions = all.filter(form => form.routeId !== null);
+    // G8.5 (2026-10-23): sign-out is now the reviewed scripted form above, so
+    // the genome search is the one native submission left.
     expect(submissions).toEqual([
       { file: "src/app/(app)/genome/[subject]/data/browser/page.tsx", routeId: "genome.browser", method: "GET" },
-      { file: "src/components/site/app-shell.tsx", routeId: "auth.sign-out", method: "POST" },
     ]);
     expect(formMethodIssues(submissions, entries)).toEqual([]);
   });

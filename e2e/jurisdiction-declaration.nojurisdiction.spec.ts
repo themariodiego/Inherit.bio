@@ -1,6 +1,8 @@
 import { expect, test } from "./audited-test";
 import { randomUUID } from "node:crypto";
 import { adminClient, createConfirmedUser, signIn } from "./helpers";
+import { settingsOperationNonce } from "./helpers/operation-nonce";
+import { accountCsrf } from "./helpers/session-csrf";
 
 /**
  * G5.1a declared-unreviewed, on the flag-off server (Playwright project
@@ -34,8 +36,10 @@ test("/family/health-picture jurisdiction-unavailable: a declared country with n
   const accountId = await createConfirmedUser(USER.email, USER.password);
   await signIn(page, USER.email, USER.password);
   const { version, body_sha256 } = await attestation();
-  const put = (code: string) => page.request.put("/api/settings/jurisdiction", {
-    headers: { origin: OFF, "content-type": "application/json" },
+  // Each declaration carries the one-time nonce /settings rendered (G5.6, 23 Oct 2026).
+  const put = async (code: string) => page.request.put("/api/settings/jurisdiction", {
+    headers: { origin: OFF, "content-type": "application/json",
+      "x-inherit-operation-nonce": await settingsOperationNonce(page.request, "jurisdiction"), "x-inherit-csrf": await accountCsrf(page, "api.jurisdiction") },
     data: { code, attestationVersion: version, attestationHash: body_sha256, affirmed: true },
   });
 

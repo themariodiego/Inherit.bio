@@ -2,26 +2,30 @@ import crypto from "node:crypto";
 import { z } from "zod";
 import { getSensitiveAccountContext } from "@/lib/account-deletion";
 import { invalidRequest,notFound,rpcErrorResponse,sensitiveJson,unavailable,SENSITIVE_HEADERS } from "@/lib/embryos/api";
-import { originDenied } from "@/lib/embryos/guards";
+import { originDenied, unauthenticated } from "@/lib/embryos/guards";
 import { readBoundedBytes,readBoundedJson } from "@/lib/future-person/bounded-body";
 import { futurePersonClaimsOpen } from "@/lib/future-person/claims-open";
 import { identityProfileBody,sealIdentityProfile } from "@/lib/future-person/identity-profile";
 import { identityProfileContext,readIdentityProfileOperation } from "@/lib/future-person/identity-profile-operation";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { withAccountCsrf } from "@/lib/security/session-csrf";
 
 const saved=z.object({status:z.literal("saved"),expiresAt:z.iso.datetime({offset:true})}).strict();
 /** The optional parent matching profile, never a genetic-data writer. The
  * database rechecks the evidenced recipient and current signed artifact in
- * the subject-first mutation transaction. Production remains closed. */
-export async function PUT(request:Request,context:{params:Promise<{id:string}>}) {
-  return mutate(request,(await context.params).id,"save");
-}
-export async function DELETE(request:Request,context:{params:Promise<{id:string}>}) {
-  return mutate(request,(await context.params).id,"delete");
-}
+ * the subject-first mutation transaction. Production remains closed. The
+ * shell's one-time X-Inherit-CSRF token for the account session is verified
+ * and spent before either method runs (G8.5). The page's operation token
+ * travels in X-Inherit-Operation-Nonce and its derived proof, which until
+ * 19 November 2026 was X-Inherit-CSRF, in X-Inherit-Operation-Proof; both are
+ * checked together as before. */
+export const PUT=withAccountCsrf("api.future-person-identity-profile",async(request:Request,context:{params:Promise<{id:string}>})=>
+  mutate(request,(await context.params).id,"save"));
+export const DELETE=withAccountCsrf("api.future-person-identity-profile",async(request:Request,context:{params:Promise<{id:string}>})=>
+  mutate(request,(await context.params).id,"delete"));
 async function mutate(request:Request,id:string,operation:"save"|"delete"):Promise<Response> {
   if(!futurePersonClaimsOpen()||!z.uuid().safeParse(id).success||new URL(request.url).search)return notFound();
-  const account=await getSensitiveAccountContext();if(!account)return new Response("Unauthorized",{status:401,headers:SENSITIVE_HEADERS});
+  const account=await getSensitiveAccountContext();if(!account)return unauthenticated();
   const denied=originDenied(request);if(denied)return denied;
   let input:z.infer<typeof identityProfileBody>|null=null;
   if(operation==="save"){
@@ -40,7 +44,7 @@ async function mutate(request:Request,id:string,operation:"save"|"delete"):Promi
   const parsed=identityProfileContext.safeParse(data);
   if(!parsed.success||parsed.data.embryoId!==id||parsed.data.consentSignatureId!==(input?.consentSignatureId??null))return unavailable();
   const expected=parsed.data;
-  const proof=readIdentityProfileOperation(request.headers.get("x-inherit-operation-nonce"),request.headers.get("x-inherit-csrf"),
+  const proof=readIdentityProfileOperation(request.headers.get("x-inherit-operation-nonce"),request.headers.get("x-inherit-operation-proof"),
     {accountId:account.user.id,sessionId:account.sessionId,embryoId:id,operation},expected);
   if(!proof)return notFound();
   if(operation==="delete"){

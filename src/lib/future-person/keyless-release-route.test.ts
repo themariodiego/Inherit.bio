@@ -1,5 +1,6 @@
 import crypto from "node:crypto";
 import {afterAll,beforeEach,describe,expect,it,vi} from "vitest";
+vi.mock("@/lib/security/session-csrf",async importOriginal=>(await import("@/lib/security/session-csrf.test-support")).admitEverySessionCsrf(await importOriginal()));
 const mocks=vi.hoisted(()=>({account:vi.fn(),rpc:vi.fn(),open:vi.fn(()=>true)}));
 vi.mock("@/lib/account-deletion",()=>({getSensitiveAccountContext:mocks.account}));
 vi.mock("@/lib/supabase/server",()=>({createClient:async()=>({rpc:mocks.rpc})}));
@@ -10,7 +11,9 @@ const {POST}=await import("@/app/api/reviews/future-person/claims/[id]/release/r
 const {sealNoticePackage}=await import("./notice-package");const {sealIdentityProfile}=await import("./identity-profile");
 const {sealClaimantContact,openMailContact}=await import("./claimant-contact");
 const {keylessCurrentReview,mintKeylessReleaseNonce}=await import("./keyless-release");
-const {reviewCsrf,verifiedIdentityDigestSet}=await import("./review");
+const {verifiedIdentityDigestSet}=await import("./review");
+// The gate is driven on this route in src/lib/security/session-csrf-routes.test.ts (G8.5, the migration stage).
+const REVIEWER_GATE_STAND_IN="reviewer-session-token-checked-by-the-gate";
 const {claimDataKey,openDocumentBytes}=await import("./document-envelope");
 afterAll(()=>vi.unstubAllEnvs());
 const id=(n:number)=>`7d000000-0000-4000-8000-${String(n).padStart(12,"0")}`;
@@ -29,7 +32,7 @@ const base={operation:"claim-release",claimId:ID,reviewRevision:3,assignmentRevi
 function body(){return {decision:"approve-release",reviewRevision:3,noticeRevision:2,reason:"Fresh human review of both full documents and the retained minimum.",
  nonce:mintKeylessReleaseNonce(keylessCurrentReview(base,ID)!.scope,ACCOUNT,SESSION)};}
 function request(given:unknown=body(),headers:Record<string,string>={}){return new Request(`https://test.e2e.local/api/reviews/future-person/claims/${ID}/release`,
- {method:"POST",headers:{origin:"https://test.e2e.local","sec-fetch-site":"same-origin","content-type":"application/json","x-inherit-csrf":reviewCsrf(ID,ACCOUNT,SESSION),...headers},body:JSON.stringify(given)});}
+ {method:"POST",headers:{origin:"https://test.e2e.local","sec-fetch-site":"same-origin","content-type":"application/json","x-inherit-csrf":REVIEWER_GATE_STAND_IN,...headers},body:JSON.stringify(given)});}
 const call=(req:Request)=>POST(req,{params:Promise.resolve({id:ID})});
 beforeEach(()=>{vi.clearAllMocks();mocks.open.mockReturnValue(true);mocks.account.mockResolvedValue({user:{id:ACCOUNT},sessionId:SESSION});
  mocks.rpc.mockImplementation(async(name,args)=>({data:name==="read_keyless_current_review_v1"?base:{claimId:ID,state:args.p_decision==="approve-release"?"release_queued":"refused",reviewRevision:4},error:null}));});
@@ -73,7 +76,8 @@ describe("the actual fresh keyless final native boundary",()=>{
  it("refuses gate/origin/CSRF, own-session substitution, unknown selectors and alternate time at the native request",async()=>{
   mocks.open.mockReturnValue(false);expect((await call(request())).status).toBe(404);expect(mocks.rpc).not.toHaveBeenCalled();mocks.open.mockReturnValue(true);
   for(const req of [request(body(),{origin:"https://foreign.e2e.local"}),request(body(),{"sec-fetch-site":"cross-site"}),
-   request(body(),{"x-inherit-csrf":reviewCsrf(ID,id(90),SESSION)}),request({...body(),now:new Date().toISOString()}),
+   // 2026-11-19 (G8.5): the foreign case digest left this list; the gate refuses a foreign token (session-csrf-routes.test.ts).
+   request({...body(),now:new Date().toISOString()}),
    request({...body(),subjectId:id(5)}),request({...body(),attestation:human})]){mocks.rpc.mockClear();expect((await call(req)).status).toBe(404);expect(mocks.rpc).not.toHaveBeenCalled();}
   const stale=body();mocks.account.mockResolvedValue({user:{id:ACCOUNT},sessionId:id(90)});expect((await call(request(stale))).status).toBe(404);
  });

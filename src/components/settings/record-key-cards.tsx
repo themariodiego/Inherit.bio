@@ -2,6 +2,7 @@
 
 import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { useCsrf } from "@/components/security/csrf-provider";
 import { Button } from "@/components/ui/button";
 import { RECORD_KEY_CARDS_HEADING, RECORD_KEY_CARDS_NOTE, cardDateNote } from "@/copy/embryos/upload";
 import type { RecordKeyCardControl } from "@/lib/embryos/record-key-card-controls";
@@ -9,6 +10,7 @@ import { readRecordKeyCardReceipt, type RecordKeyCardReceipt } from "@/lib/embry
 
 export function RecordKeyCards({ control }: { control: RecordKeyCardControl }) {
   const router = useRouter();
+  const csrf = useCsrf("api.embryo-record-key-cards");
   const [busy, setBusy] = useState(false), [refreshing, startRefresh] = useTransition();
   const [attempted, setAttempted] = useState(false), [receipt, setReceipt] = useState<RecordKeyCardReceipt | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -20,10 +22,11 @@ export function RecordKeyCards({ control }: { control: RecordKeyCardControl }) {
     setAttempted(true); setBusy(true); setMessage(null);
     const controller = new AbortController(), timer = setTimeout(() => controller.abort(), 20_000);
     try {
-      const response = await fetch(`/api/embryo-cohorts/${control.cohortId}/record-key-cards`, {
+      const response = await csrf.send((csrfToken) => fetch(`/api/embryo-cohorts/${control.cohortId}/record-key-cards`, {
         method: "POST", credentials: "same-origin", cache: "no-store", referrerPolicy: "no-referrer",
-        signal: controller.signal, headers: { "Content-Type": "application/json" }, body: JSON.stringify({ nonce: control.nonce }),
-      });
+        signal: controller.signal, headers: { "Content-Type": "application/json", "X-Inherit-CSRF": csrfToken },
+        body: JSON.stringify({ nonce: control.nonce }),
+      }));
       const next = readRecordKeyCardReceipt(response.status, await response.json(), control);
       if (next) setReceipt(next);
       else setMessage("We could not confirm the cards. Refresh this page to check.");

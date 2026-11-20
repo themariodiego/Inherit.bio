@@ -12,10 +12,10 @@ import { readBoundedJson } from "@/lib/future-person/bounded-body";
 import { newWrappedDocumentKey } from "@/lib/future-person/document-envelope";
 import {
   EVIDENCE_COMPLETE_NONCE_HEADER,
-  EVIDENCE_CSRF_HEADER,
+  EVIDENCE_SESSION_CSRF_HEADER,
   evidenceCompleteNonce,
   evidenceCookie,
-  evidenceCsrf,
+  evidenceSessionCsrf,
   newEvidenceSecret,
 } from "@/lib/future-person/evidence-session";
 import {
@@ -29,7 +29,8 @@ import {
   type ReviewedDocumentTarget,
   type ReviewedDocumentTargetState,
 } from "./other-adult-upload";
-import { heldUploadRpc, otherAdultUploadAvailable, presentUploaderArtifactFor, verifyPathBOperation } from "./other-adult-upload-server";
+import { isOperationNonceRefusal, personOperationNonceArgs } from "@/lib/person-operation-nonce";
+import { heldUploadRpc, otherAdultUploadAvailable, pathBDraftNonce, presentUploaderArtifactFor } from "./other-adult-upload-server";
 import { currentOwnUploadAccount, ownUploadJson } from "./own-upload-context";
 
 /**
@@ -119,15 +120,6 @@ export function readReviewedDocumentOperation(token: string | null, expected: { 
   return parsed.data.nonce;
 }
 
-/** api.subjects' X-Inherit-CSRF: bound to the account, its auth session and the draft. */
-export function finalizeCsrf(accountId: string, sessionId: string, subjectDraftId: string): string {
-  return hmacSecret(`${accountId}|${sessionId}|${subjectDraftId}`, "path-b-reviewed-document-csrf-v1");
-}
-
-function sameDigest(presented: string | null, expected: string): boolean {
-  if (!presented || !/^[0-9a-f]{64}$/u.test(presented)) return false;
-  return crypto.timingSafeEqual(Buffer.from(presented), Buffer.from(expected));
-}
 
 const sha256Hex = (value: string) => crypto.createHash("sha256").update(value).digest("hex");
 
@@ -138,21 +130,27 @@ export async function createPathBReviewedDocumentDraft(request: Request, payload
   const actor = await currentOwnUploadAccount();
   if (!actor) return unauthenticated();
   if (!(await otherAdultUploadAvailable(actor.accountId))) return notFound();
-  // The same page token as the e-signature draft: one draft-create for this account.
-  if (!verifyPathBOperation(request.headers.get("x-inherit-csrf"), { accountId: actor.accountId,
-    sessionId: actor.sessionId, operation: "draft-create", targetId: actor.accountId })) return forbidden();
+  // The same one-time page nonce as the e-signature draft (G5.6, 23 Oct 2026):
+  // the door records its hash before the draft is written, so the draft's
+  // audit event names the uploader; a spent nonce is refused like a missing one.
+  // It travels in X-Inherit-Operation-Nonce since 19 November 2026 (G8.5): the
+  // route verifies and spends the account session's X-Inherit-CSRF first.
+  const nonce = pathBDraftNonce(request.headers.get("x-inherit-operation-nonce"), actor);
+  if (!nonce) return forbidden();
   const parsed = pathBReviewedDocumentDraftBody.safeParse(payload);
   if (!parsed.success || !isAdultOn(parsed.data.dateOfBirth)) return invalid(["body"]);
   const body = parsed.data;
-  const { data, error } = await heldUploadRpc(createAdminClient(), "create_path_b_reviewed_document_draft_v1", {
+  const { data, error } = await heldUploadRpc(createAdminClient(), "create_path_b_reviewed_document_draft_with_nonce_v1", {
     p_account_id: actor.accountId, p_session_id: actor.sessionId, p_display_name: body.displayName,
     p_date_of_birth: body.dateOfBirth, p_contact_ciphertext: encryptedLiteral(body.contactEmail),
     p_contact_hmac: null, p_contact_hmac_set: contactDigestSet(body.contactEmail),
     p_request_key: hmacSecret(JSON.stringify(["adult-path-b-reviewed-document-draft-v1", actor.accountId, body.requestId]),
       "mail-idempotency-v1"),
     p_test_jurisdiction: true,
+    ...personOperationNonceArgs(nonce),
   });
   if (error) {
+    if (isOperationNonceRefusal(error)) return forbidden();
     if (error.code === "42501") return notFound();
     if (error.code === "22023") return invalid(["body"]);
     if (error.code === "55000" && error.message === "adult_account_required") {
@@ -183,7 +181,10 @@ export async function openLegalEvidenceUploadSession(request: Request): Promise<
   if (parsed.data.documentKind !== "adult-signed-permission") return notFound();
   if (!(await otherAdultUploadAvailable(actor.accountId))) return notFound();
   const body = parsed.data;
-  const nonce = readReviewedDocumentOperation(request.headers.get("x-inherit-csrf"), { accountId: actor.accountId,
+  // The card's one-time operation token travels in X-Inherit-Operation-Nonce
+  // since 19 November 2026 (G8.5): the route verifies and spends the account
+  // session's X-Inherit-CSRF before this runs.
+  const nonce = readReviewedDocumentOperation(request.headers.get("x-inherit-operation-nonce"), { accountId: actor.accountId,
     sessionId: actor.sessionId, operation: "document-session", targetId: body.subjectDraftId });
   if (!nonce) return forbidden();
   const evidence = newEvidenceSecret();
@@ -209,7 +210,10 @@ export async function openLegalEvidenceUploadSession(request: Request): Promise<
       maximumChunks: 5, maximumDocumentBytes: 20_000_000, chunkRoute: `/api/evidence/${id}/chunks/{sequence}`,
       completeRoute: `/api/evidence/${id}/complete`, expiresAt: expiry.toISOString() }, 201);
     response.headers.set("Set-Cookie", evidenceCookie(evidence.secret, expiry));
-    response.headers.set(EVIDENCE_CSRF_HEADER, evidenceCsrf(id, evidence.hash));
+    // The evidence session's first values (the chunk stream's and the completion's
+    // first token), which they send in X-Inherit-CSRF, travel in their own answer header: this answer's
+    // X-Inherit-CSRF carries the account session's successor (G8.5).
+    response.headers.set(EVIDENCE_SESSION_CSRF_HEADER, evidenceSessionCsrf(id, evidence.hash));
     response.headers.set(EVIDENCE_COMPLETE_NONCE_HEADER, evidenceCompleteNonce(id, evidence.hash));
     return response;
   } finally {
@@ -247,9 +251,8 @@ export async function finalizeReviewedDocumentSubject(request: Request, deps: Fi
   const parsed = subjectFinalizeBody.safeParse(payload);
   if (!parsed.success) return notFound();
   const body = parsed.data;
-  if (!sameDigest(request.headers.get("x-inherit-csrf"), finalizeCsrf(actor.accountId, actor.sessionId, body.subjectDraftId))) {
-    return forbidden();
-  }
+  // The account session's one-time X-Inherit-CSRF token (api.subjects) was
+  // verified and spent before this ran (src/app/api/subjects/route.ts, G8.5).
   const nonce = readReviewedDocumentOperation(body.nonce, { accountId: actor.accountId, sessionId: actor.sessionId,
     operation: "finalize", targetId: body.subjectDraftId });
   if (!nonce) return notFound();
@@ -297,8 +300,8 @@ export async function listReviewedDocumentTargets(): Promise<ReviewedDocumentTar
 
 /**
  * The tokens the page renders for each person: the one-time document-session
- * token while a document is due, and the one-time api.subjects nonce with its
- * CSRF once a named human approved. The consent presentation (for a person
+ * token while a document is due, and the one-time api.subjects nonce once a
+ * named human approved (its X-Inherit-CSRF is the shell's session token). The consent presentation (for a person
  * not yet signed for) comes from the shared Path B preparation.
  */
 export function reviewedDocumentTokens(actor: { accountId: string; sessionId: string },
@@ -307,8 +310,7 @@ export function reviewedDocumentTokens(actor: { accountId: string; sessionId: st
     return { documentToken: mintReviewedDocumentOperation(actor.accountId, actor.sessionId, "document-session", target.subjectId) };
   }
   if (target.state === "awaiting-request" && target.signed) {
-    return { finalize: { nonce: mintReviewedDocumentOperation(actor.accountId, actor.sessionId, "finalize", target.subjectId),
-      csrf: finalizeCsrf(actor.accountId, actor.sessionId, target.subjectId) } };
+    return { finalize: { nonce: mintReviewedDocumentOperation(actor.accountId, actor.sessionId, "finalize", target.subjectId) } };
   }
   return {};
 }

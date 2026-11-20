@@ -155,10 +155,20 @@ describe("canonical chat boundaries", () => {
         expect(mocks.rpc.mock.calls.find(c => c[0] === "commit")?.[4].answer).toBe(body.message.content);
     });
     it("rejects a stale projection and a replayed nonce before dispatch", async () => {
+        // G8.5 (24 October 2026): a spent context token is an invalid one, which
+        // api.chat answers with resource-not-found-v1 (it was 403).
         mocks.rpc.mockImplementation(async (op: string) => op === "prepare" ? projection : false);
         const r = request();
-        expect((await ownChatResponse(r, await r.json(), options)).status).toBe(403);
+        const replayed = await ownChatResponse(r, await r.json(), options);
+        expect(replayed.status).toBe(404);
+        expect(await replayed.json()).toEqual({ error: "not_found" });
         expect(mocks.stream).not.toHaveBeenCalled();
+        // A projection that changed since the page minted the token stays own-copilot-unavailable-v1.
+        mocks.token.mockReturnValue({ authority, projectionHash: JSON.stringify({ ...projection, sources: [{ id: "changed" }] }), nonce: "nonce", expiresAt: Date.now() + 500000 });
+        const s = request();
+        expect((await ownChatResponse(s, await s.json(), options)).status).toBe(403);
+        expect(mocks.stream).not.toHaveBeenCalled();
+        expect(mocks.rpc.mock.calls.some(c => c[0] === "commit")).toBe(false);
     });
 });
 

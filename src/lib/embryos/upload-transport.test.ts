@@ -5,8 +5,9 @@ import { chunkBinding, tableChunkBinding, validateChunk, validateTableChunk } fr
 import { deriveHeaderBuild, readConfigureBody } from "./ingest-configure";
 import { readCompleteBody } from "./ingest-complete";
 import { inspectHeader, readDecisionBody, readInspectBody } from "./ingest-mapping";
-import { CSRF_HEADER } from "./operation-token";
-import { UPLOAD_CSRF_HEADER, sendEmbryoFile, type MappingAnswer, type MappingQuestion, type UploadProgress } from "./upload-transport";
+import { CSRF_HEADER, OPERATION_HEADER } from "./operation-token";
+import { UPLOAD_CSRF_HEADER, UPLOAD_OPERATION_HEADER, sendEmbryoFile, type MappingAnswer, type MappingQuestion,
+  type UploadProgress } from "./upload-transport";
 
 /**
  * The browser transport against the server's own boundary code. The stand-in
@@ -19,6 +20,14 @@ import { UPLOAD_CSRF_HEADER, sendEmbryoFile, type MappingAnswer, type MappingQue
 const PAIR = fs.readFileSync("e2e/fixtures/embryo-pair-grch38.vcf");
 const sha = (value: string) => crypto.createHash("sha256").update(value).digest("hex");
 const SESSION = "7a000000-0000-4000-8000-00000000c0de";
+/** A value in the one-time session token's shape (the browser keeps only successors of this shape). */
+const tokenShaped = () => `${Date.now() + 3_600_000}.${crypto.randomBytes(32).toString("base64url")}.${crypto.randomBytes(32).toString("hex")}`;
+/**
+ * The upload session's first one-time tokens, as api.embryo-cohorts' answer
+ * hands them over in X-Inherit-Upload-CSRF (G8.5, the migration stage): one
+ * per token route, new for each stand-in server so no chain is shared.
+ */
+const firstTokens = () => ({ configure: tokenShaped(), mapping: tokenShaped(), complete: tokenShaped() });
 
 function server(options: { sampleCount?: number; configureStatus?: number; configureError?: string; chunkStatus?: number } = {}) {
   const handles = [0, 1].map(() => crypto.randomBytes(32).toString("base64url"));
@@ -28,6 +37,7 @@ function server(options: { sampleCount?: number; configureStatus?: number; confi
   const stored: { ordinals: number[]; records: number }[] = [];
   let configuredBuild: "GRCh37" | "GRCh38" | null = null;
   let completed: { chunkCount: number; nonce: string } | null = null;
+  const csrf = firstTokens();
   const session = {
     session: SESSION, uploadId: SESSION,
     sampleHandles: handles.map((handle, ordinal) => ({ ordinal, handle })).reverse(),
@@ -44,6 +54,7 @@ function server(options: { sampleCount?: number; configureStatus?: number; confi
       if (options.configureStatus) {
         return Response.json({ error: options.configureError ?? "build_unknown" }, { status: options.configureStatus });
       }
+      expect(request.headers.get(UPLOAD_CSRF_HEADER), "configure carries its route's first token").toBe(csrf.configure);
       const parsed = await readConfigureBody(request);
       if (!parsed.ok) return Response.json({ error: "invalid_request", issues: parsed.issues }, { status: 400 });
       expect(parsed.body.nonce).toBe(session.operationNonce);
@@ -57,6 +68,8 @@ function server(options: { sampleCount?: number; configureStatus?: number; confi
     if (chunk) {
       if (options.chunkStatus) return Response.json({ error: "invalid_genetic_chunk", issues: ["header"] }, { status: options.chunkStatus });
       expect(request.headers.get("content-type")).toBe("application/octet-stream");
+      // api.embryo-ingest-chunk carries no token (csrfTransport.requiredFor).
+      expect(request.headers.get(UPLOAD_CSRF_HEADER)).toBeNull();
       expect(Number(chunk[1])).toBe(stored.length);
       const bytes = new Uint8Array(await request.arrayBuffer());
       const binding = chunkBinding(bytes, {
@@ -73,7 +86,11 @@ function server(options: { sampleCount?: number; configureStatus?: number; confi
       return new Response(null, { status: 204 });
     }
     if (path === session.completeRoute) {
-      expect(request.headers.get(UPLOAD_CSRF_HEADER)).toBe("synthetic-csrf");
+      // 2026-11-19 (G8.5, the migration stage): the csrfToken operation value travels
+      // in X-Inherit-Operation-Nonce (it was asserted in X-Inherit-CSRF), and
+      // X-Inherit-CSRF carries the completion route's own first token.
+      expect(request.headers.get(UPLOAD_OPERATION_HEADER)).toBe("synthetic-csrf");
+      expect(request.headers.get(UPLOAD_CSRF_HEADER)).toBe(csrf.complete);
       const parsed = await readCompleteBody(request);
       if (!parsed.ok) return Response.json({ error: "invalid_request" }, { status: 400 });
       completed = parsed.body;
@@ -81,7 +98,7 @@ function server(options: { sampleCount?: number; configureStatus?: number; confi
     }
     return new Response(null, { status: 404 });
   };
-  return { fetch: fetch as typeof globalThis.fetch, session, log, stored, get completed() { return completed; }, get build() { return configuredBuild; } };
+  return { fetch: fetch as typeof globalThis.fetch, session, csrf, log, stored, get completed() { return completed; }, get build() { return configuredBuild; } };
 }
 
 describe("sendEmbryoFile", () => {
@@ -90,7 +107,7 @@ describe("sendEmbryoFile", () => {
       { sampleHandles: [{ ordinal: 0, handle: "a".repeat(43) }, { ordinal: 1, handle: "a".repeat(43) }] },
       { sampleHandles: [{ ordinal: 1, handle: "a".repeat(43) }, { ordinal: 2, handle: "b".repeat(43) }] } ]) {
       const fake = server();
-      await expect(sendEmbryoFile({ file: new Blob([PAIR]), session: { ...fake.session, ...changed }, fetch: fake.fetch }))
+      await expect(sendEmbryoFile({ file: new Blob([PAIR]), session: { ...fake.session, ...changed }, csrf: fake.csrf, fetch: fake.fetch }))
         .rejects.toMatchObject({ failure: "refused", spent: false });
       expect(fake.log).toEqual([]);
     }
@@ -102,18 +119,18 @@ describe("sendEmbryoFile", () => {
       if (String(url).endsWith("configure")) return Response.json({ ...(await response.json()), revision: 0 });
       return response;
     };
-    await expect(sendEmbryoFile({ file: new Blob([PAIR]), session: fake.session, fetch: changed as typeof fetch })).rejects.toMatchObject({ spent: true, failure: "refused" });
+    await expect(sendEmbryoFile({ file: new Blob([PAIR]), session: fake.session, csrf: fake.csrf, fetch: changed as typeof fetch })).rejects.toMatchObject({ spent: true, failure: "refused" });
     expect(fake.stored).toEqual([]);
     const other = server();
     const unrelated = async (url: string | URL | Request, init?: RequestInit) => String(url).endsWith("complete")
       ? Response.json({ status: "sanitization_pending", uploadId: "99999999-9999-4999-8999-999999999999", jobId: SESSION, analysisState: "queued" }, { status: 202 })
       : other.fetch(url, init);
-    await expect(sendEmbryoFile({ file: new Blob([PAIR]), session: other.session, fetch: unrelated as typeof fetch })).rejects.toMatchObject({ spent: true, failure: "refused" });
+    await expect(sendEmbryoFile({ file: new Blob([PAIR]), session: other.session, csrf: other.csrf, fetch: unrelated as typeof fetch })).rejects.toMatchObject({ spent: true, failure: "refused" });
   });
   it("sends participant-c's file: configure, one chunk per part bound to the issued challenge, then complete", async () => {
     const fake = server();
     const progress: UploadProgress[] = [];
-    await sendEmbryoFile({ file: new Blob([PAIR]), session: fake.session, fetch: fake.fetch, onProgress: (step) => progress.push(step) });
+    await sendEmbryoFile({ file: new Blob([PAIR]), session: fake.session, csrf: fake.csrf, fetch: fake.fetch, onProgress: (step) => progress.push(step) });
     expect(fake.build).toBe("GRCh38");
     expect(fake.stored.length).toBeGreaterThan(0);
     expect(fake.stored.every((chunk) => chunk.ordinals.join() === "0,1")).toBe(true);
@@ -125,12 +142,13 @@ describe("sendEmbryoFile", () => {
 
   it("uses the same CSRF header name as the routes", () => {
     expect(UPLOAD_CSRF_HEADER).toBe(CSRF_HEADER);
+    expect(UPLOAD_OPERATION_HEADER).toBe(OPERATION_HEADER);
   });
 
   it("refuses a file whose sample count differs from the record before any request", async () => {
     const fake = server();
     const three = PAIR.toString("utf8").replace("SAMPLE1\tSAMPLE2", "SAMPLE1\tSAMPLE2\tSAMPLE3");
-    await expect(sendEmbryoFile({ file: new Blob([three]), session: fake.session, fetch: fake.fetch }))
+    await expect(sendEmbryoFile({ file: new Blob([three]), session: fake.session, csrf: fake.csrf, fetch: fake.fetch }))
       .rejects.toMatchObject({ failure: "sample-count", spent: false });
     expect(fake.log).toEqual([]);
   });
@@ -139,18 +157,36 @@ describe("sendEmbryoFile", () => {
     for (const [error, failure] of [["build_unknown", "build-unknown"], ["sample_count_mismatch", "sample-count"],
       ["cohort_single_sample", "sample-count"]] as const) {
       const fake = server({ configureStatus: 422, configureError: error });
-      await expect(sendEmbryoFile({ file: new Blob([PAIR]), session: fake.session, fetch: fake.fetch }))
+      await expect(sendEmbryoFile({ file: new Blob([PAIR]), session: fake.session, csrf: fake.csrf, fetch: fake.fetch }))
         .rejects.toMatchObject({ failure, spent: true });
     }
     const refused = server({ chunkStatus: 422 });
-    await expect(sendEmbryoFile({ file: new Blob([PAIR]), session: refused.session, fetch: refused.fetch }))
+    await expect(sendEmbryoFile({ file: new Blob([PAIR]), session: refused.session, csrf: refused.csrf, fetch: refused.fetch }))
       .rejects.toMatchObject({ failure: "not-a-vcf", spent: true });
     expect(refused.log.filter((entry) => entry.url.endsWith("/complete"))).toEqual([]);
   });
 
+  it("reads the register's upload-session refusals as the same closed word as the answers they replaced", async () => {
+    // A request with no live account now gets authenticated-api-v1's JSON 401
+    // (was plain-text 401) and a foreign origin upload-session-api-v1's JSON
+    // 404 (was 403 request_forbidden). Each is "refused", so the person sees
+    // the same sentence after every one, on every step.
+    const answers = [() => new Response("Unauthorized", { status: 401 }), () => Response.json({ error: "request_forbidden" }, { status: 403 }),
+      () => Response.json({ error: "unauthenticated" }, { status: 401 }), () => Response.json({ error: "not_found" }, { status: 404 })];
+    for (const answer of answers) {
+      for (const step of ["/configure", "/chunks/0", "/complete"]) {
+        const fake = server();
+        const refusing = (async (url: string | URL | Request, init?: RequestInit) =>
+          new URL(String(url), "https://inherit.example").pathname.endsWith(step) ? answer() : fake.fetch(url, init)) as typeof fetch;
+        await expect(sendEmbryoFile({ file: new Blob([PAIR]), session: fake.session, csrf: fake.csrf, fetch: refusing }), step)
+          .rejects.toMatchObject({ failure: "refused", spent: true });
+      }
+    }
+  });
+
   it("refuses a PDF in this browser, and sends nothing", async () => {
     const fake = server();
-    await expect(sendEmbryoFile({ file: new Blob(["%PDF-1.7 synthetic"]), session: fake.session, fetch: fake.fetch }))
+    await expect(sendEmbryoFile({ file: new Blob(["%PDF-1.7 synthetic"]), session: fake.session, csrf: fake.csrf, fetch: fake.fetch }))
       .rejects.toMatchObject({ failure: "pdf", spent: false });
     expect(fake.log).toEqual([]);
   });
@@ -197,6 +233,14 @@ function tableServer(options: { build?: "GRCh37" | "GRCh38" | null; mappingStatu
     chunkRoute: `/api/embryo-ingest/${SESSION}/chunks/[sequence]`, completeRoute: `/api/embryo-ingest/${SESSION}/complete`,
   };
   const mappingRoute = `/api/embryo-ingest/${SESSION}/mapping`;
+  const csrf = firstTokens();
+  /** The mapping route's chain: each request carries the token the answer before it issued, starting from the first. */
+  let mappingToken = csrf.mapping;
+  const rotateMapping = (response: Response) => {
+    mappingToken = tokenShaped();
+    response.headers.set(UPLOAD_CSRF_HEADER, mappingToken);
+    return response;
+  };
   const transport = () => Response.json({ kind: "transport", build, challenge: transportChallenge, revision: 4_243,
     completionNonce: "synthetic-completion", csrfToken: "synthetic-csrf" });
   const ask = (kind: "columns" | "build", body: Record<string, unknown>) => {
@@ -211,13 +255,50 @@ function tableServer(options: { build?: "GRCh37" | "GRCh38" | null; mappingStatu
     const path = new URL(request.url).pathname;
     log.push({ method: request.method, url: path, body: request.method === "PUT" && path.includes("/chunks/")
       ? new TextDecoder().decode(new Uint8Array(await request.clone().arrayBuffer())) : await request.clone().text() });
+    if (path === mappingRoute) {
+      expect(request.headers.get(UPLOAD_CSRF_HEADER), "each mapping request carries the previous answer's successor")
+        .toBe(mappingToken);
+      return rotateMapping(await mapping(request));
+    }
     if (path === session.configureRoute) {
+      expect(request.headers.get(UPLOAD_CSRF_HEADER), "configure carries its route's first token").toBe(csrf.configure);
       const parsed = await readConfigureBody(request);
       if (!parsed.ok || parsed.body.format !== "pgt_table") return Response.json({ error: "invalid_request" }, { status: 422 });
       expect(parsed.body.nonce).toBe(session.operationNonce);
       build = options.build === undefined ? deriveHeaderBuild(parsed.body) : options.build;
       return Response.json({ nonce: "synthetic-inspection" });
     }
+    const chunk = /^\/api\/embryo-ingest\/[^/]+\/chunks\/(\d+)$/.exec(path);
+    if (chunk) {
+      expect(request.headers.get(UPLOAD_CSRF_HEADER)).toBeNull();
+      expect(Number(chunk[1])).toBe(stored.length);
+      const bytes = new Uint8Array(await request.arrayBuffer());
+      const binding = tableChunkBinding(bytes, {
+        status: "authorized", session: SESSION, cohortId: SESSION, uploadId: SESSION, ingestRevision: 1,
+        expiresAt: "2026-10-01T00:00:00+00:00", challengeHash: sha(transportChallenge), transportRevision: 4_243,
+        build, format: "pgt_table", sampleCount: 2, handles: handles.map((handle, ordinal) => ({ ordinal, hash: sha(handle) })),
+      }, locus, () => null);
+      expect(binding).not.toBeNull();
+      const validated = validateTableChunk(bytes, binding!);
+      stored.push({ ordinals: validated.fragments.map((fragment) => fragment.ordinal), text: new TextDecoder().decode(bytes) });
+      return new Response(null, { status: 204 });
+    }
+    if (path === session.completeRoute) {
+      // 2026-11-19 (G8.5, the migration stage): the csrfToken operation value travels
+      // in X-Inherit-Operation-Nonce (it was asserted in X-Inherit-CSRF), and
+      // X-Inherit-CSRF carries the completion route's own first token.
+      expect(request.headers.get(UPLOAD_OPERATION_HEADER)).toBe("synthetic-csrf");
+      expect(request.headers.get(UPLOAD_CSRF_HEADER)).toBe(csrf.complete);
+      const parsed = await readCompleteBody(request);
+      if (!parsed.ok) return Response.json({ error: "invalid_request" }, { status: 400 });
+      completed = parsed.body;
+      return Response.json({ status: "sanitization_pending", uploadId: SESSION, jobId: SESSION, analysisState: "queued" }, { status: 202 });
+    }
+    return new Response(null, { status: 404 });
+  };
+  /** The mapping route's own answers, unchanged; the caller adds the successor. */
+  const mapping = async (request: Request): Promise<Response> => {
+    const path = new URL(request.url).pathname;
     if (path === mappingRoute && request.method === "POST") {
       if (options.mappingStatus) return Response.json({ error: "not_found" }, { status: options.mappingStatus });
       const parsed = await readInspectBody(request);
@@ -247,30 +328,9 @@ function tableServer(options: { build?: "GRCh37" | "GRCh38" | null; mappingStatu
       }
       return build === null ? buildQuestion() : transport();
     }
-    const chunk = /^\/api\/embryo-ingest\/[^/]+\/chunks\/(\d+)$/.exec(path);
-    if (chunk) {
-      expect(Number(chunk[1])).toBe(stored.length);
-      const bytes = new Uint8Array(await request.arrayBuffer());
-      const binding = tableChunkBinding(bytes, {
-        status: "authorized", session: SESSION, cohortId: SESSION, uploadId: SESSION, ingestRevision: 1,
-        expiresAt: "2026-10-01T00:00:00+00:00", challengeHash: sha(transportChallenge), transportRevision: 4_243,
-        build, format: "pgt_table", sampleCount: 2, handles: handles.map((handle, ordinal) => ({ ordinal, hash: sha(handle) })),
-      }, locus, () => null);
-      expect(binding).not.toBeNull();
-      const validated = validateTableChunk(bytes, binding!);
-      stored.push({ ordinals: validated.fragments.map((fragment) => fragment.ordinal), text: new TextDecoder().decode(bytes) });
-      return new Response(null, { status: 204 });
-    }
-    if (path === session.completeRoute) {
-      expect(request.headers.get(UPLOAD_CSRF_HEADER)).toBe("synthetic-csrf");
-      const parsed = await readCompleteBody(request);
-      if (!parsed.ok) return Response.json({ error: "invalid_request" }, { status: 400 });
-      completed = parsed.body;
-      return Response.json({ status: "sanitization_pending", uploadId: SESSION, jobId: SESSION, analysisState: "queued" }, { status: 202 });
-    }
     return new Response(null, { status: 404 });
   };
-  return { fetch: fetch as typeof globalThis.fetch, session, log, stored, get completed() { return completed; }, get build() { return build; } };
+  return { fetch: fetch as typeof globalThis.fetch, session, csrf, log, stored, get completed() { return completed; }, get build() { return build; } };
 }
 
 function answering(...answers: ((question: MappingQuestion) => MappingAnswer)[]) {
@@ -284,7 +344,7 @@ describe("sendEmbryoFile, laboratory table", () => {
     const fake = tableServer();
     const reader = answering(grch38);
     await sendEmbryoFile({ file: new Blob([TABLE.replace(",Note", "").replaceAll(/,PRIVATE_NOTE|,$/gm, "")]),
-      session: fake.session, fetch: fake.fetch, decide: reader.decide });
+      session: fake.session, csrf: fake.csrf, fetch: fake.fetch, decide: reader.decide });
     expect(reader.asked).toEqual([{ kind: "build" }]);
     expect(fake.log.map((entry) => `${entry.method} ${entry.url.split("/").slice(4).join("/")}`)).toEqual([
       "POST configure", "POST mapping", "PUT mapping", "PUT chunks/0", "POST complete"]);
@@ -298,7 +358,7 @@ describe("sendEmbryoFile, laboratory table", () => {
     const fake = tableServer();
     const reader = answering();
     await sendEmbryoFile({ file: new Blob([`##reference=GRCh37\n${TABLE.replace(",Note", "").replaceAll(/,PRIVATE_NOTE|,$/gm, "")}`]),
-      session: fake.session, fetch: fake.fetch, decide: reader.decide });
+      session: fake.session, csrf: fake.csrf, fetch: fake.fetch, decide: reader.decide });
     expect(reader.asked).toEqual([]);
     expect(fake.build).toBe("GRCh37");
     expect(JSON.parse(fake.log[0].body)).toEqual({ format: "pgt_table", buildEvidence: ["##reference=GRCh37"], nonce: "synthetic-operation-nonce" });
@@ -309,7 +369,7 @@ describe("sendEmbryoFile, laboratory table", () => {
     // Two genotype columns: the reader chooses which one holds the result.
     const ambiguous = "Embryo,Chromosome,Position,Genotype,Call,Sex\nPRIVATE_A,1,1000,AG,--,XX\nPRIVATE_B,1,1000,GG,--,XY\n";
     const asked: MappingQuestion[] = [];
-    await sendEmbryoFile({ file: new Blob([ambiguous]), session: fake.session, fetch: fake.fetch,
+    await sendEmbryoFile({ file: new Blob([ambiguous]), session: fake.session, csrf: fake.csrf, fetch: fake.fetch,
       decide: async (question) => {
         asked.push(question);
         if (question.kind === "build") return grch38();
@@ -328,7 +388,7 @@ describe("sendEmbryoFile, laboratory table", () => {
 
   it("drops a forbidden column, and every label and note, before any byte leaves this browser", async () => {
     const fake = tableServer();
-    await sendEmbryoFile({ file: new Blob([TABLE]), session: fake.session, fetch: fake.fetch, decide: answering(grch38).decide });
+    await sendEmbryoFile({ file: new Blob([TABLE]), session: fake.session, csrf: fake.csrf, fetch: fake.fetch, decide: answering(grch38).decide });
     const inspected = JSON.parse(fake.log[1].body);
     expect(inspected.headerColumns).toEqual(["Embryo", "Chromosome", "Position", "Genotype", "Note"]);
     for (const entry of fake.log) {
@@ -340,7 +400,7 @@ describe("sendEmbryoFile, laboratory table", () => {
 
   it("ends on unknown with build-unknown, after the nonce was spent, and sends no chunk", async () => {
     const fake = tableServer();
-    await expect(sendEmbryoFile({ file: new Blob([TABLE]), session: fake.session, fetch: fake.fetch,
+    await expect(sendEmbryoFile({ file: new Blob([TABLE]), session: fake.session, csrf: fake.csrf, fetch: fake.fetch,
       decide: answering(() => ({ kind: "build", referenceBuild: "unknown" })).decide }))
       .rejects.toMatchObject({ failure: "build-unknown", spent: true });
     expect(fake.stored).toEqual([]);
@@ -350,7 +410,7 @@ describe("sendEmbryoFile, laboratory table", () => {
   it("refuses a file that is not a table, or one beyond four decisions, before any request", async () => {
     for (const [text, failure] of [["Well,Plate,Note\n1,2,3\n", "not-a-vcf"], ["Embryo,Chromosome,Position\nA,1,2\n", "table-unmapped"]] as const) {
       const fake = tableServer();
-      await expect(sendEmbryoFile({ file: new Blob([text]), session: fake.session, fetch: fake.fetch, decide: answering().decide }))
+      await expect(sendEmbryoFile({ file: new Blob([text]), session: fake.session, csrf: fake.csrf, fetch: fake.fetch, decide: answering().decide }))
         .rejects.toMatchObject({ failure, spent: false });
       expect(fake.log).toEqual([]);
     }
@@ -359,7 +419,7 @@ describe("sendEmbryoFile, laboratory table", () => {
   it("refuses a table whose embryos do not match the record, after the mapping", async () => {
     const fake = tableServer();
     const three = `${TABLE}PRIVATE_C,3,300,AA,XX,\n`;
-    await expect(sendEmbryoFile({ file: new Blob([three]), session: fake.session, fetch: fake.fetch, decide: answering(grch38).decide }))
+    await expect(sendEmbryoFile({ file: new Blob([three]), session: fake.session, csrf: fake.csrf, fetch: fake.fetch, decide: answering(grch38).decide }))
       .rejects.toMatchObject({ failure: "sample-count", spent: true });
     expect(fake.completed).toBeNull();
   });
@@ -367,17 +427,17 @@ describe("sendEmbryoFile, laboratory table", () => {
   it("refuses a column question that is not this browser's own plan, and a question nobody can answer", async () => {
     const ambiguous = "Embryo,Chromosome,Position,Genotype,Call\nPRIVATE_A,1,1000,AG,--\nPRIVATE_B,1,1000,GG,--\n";
     const tampered = tableServer({ tamperQuestion: true });
-    await expect(sendEmbryoFile({ file: new Blob([ambiguous]), session: tampered.session, fetch: tampered.fetch, decide: answering(grch38).decide }))
+    await expect(sendEmbryoFile({ file: new Blob([ambiguous]), session: tampered.session, csrf: tampered.csrf, fetch: tampered.fetch, decide: answering(grch38).decide }))
       .rejects.toMatchObject({ failure: "refused", spent: true });
     const silent = tableServer();
-    await expect(sendEmbryoFile({ file: new Blob([TABLE]), session: silent.session, fetch: silent.fetch }))
+    await expect(sendEmbryoFile({ file: new Blob([TABLE]), session: silent.session, csrf: silent.csrf, fetch: silent.fetch }))
       .rejects.toMatchObject({ failure: "refused", spent: true });
     expect(silent.stored).toEqual([]);
   });
 
   it("maps a refused inspection to a closed word and stops", async () => {
     const fake = tableServer({ mappingStatus: 404 });
-    await expect(sendEmbryoFile({ file: new Blob([TABLE]), session: fake.session, fetch: fake.fetch, decide: answering(grch38).decide }))
+    await expect(sendEmbryoFile({ file: new Blob([TABLE]), session: fake.session, csrf: fake.csrf, fetch: fake.fetch, decide: answering(grch38).decide }))
       .rejects.toMatchObject({ failure: "refused", spent: true });
     expect(fake.log.map((entry) => entry.url.split("/").at(-1))).toEqual(["configure", "mapping"]);
   });

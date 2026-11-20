@@ -19,7 +19,7 @@ import { drainOwnNormalizationCleanup } from "@/lib/uploads/normalization-cleanu
 import { drainOwnOriginalRetirement } from "@/lib/genome/prepared-source/original-retention";
 import { drainPreparedScratch, prepareAccountCleanup } from "@/lib/genome/prepared-source/cleanup-integration";
 import { drainAccountEmbryoCleanup } from "@/lib/embryos/account-cleanup";
-import { machineJobDrained } from "@/lib/jobs/machine-result";
+import { machineJobDrained, machineUnauthenticated } from "@/lib/jobs/machine-result";
 
 export const maxDuration = 300;
 
@@ -80,7 +80,7 @@ function isMissingAuthUser(error: unknown): boolean {
 
 export async function POST(request: Request) {
   if (!authorized(request)) {
-    return new Response("Unauthorized", { status: 401 });
+    return machineUnauthenticated();
   }
   if (await requestHasSelectors(request)) {
     return NextResponse.json({ error: "invalid_request" }, { status: 400 });
@@ -157,6 +157,17 @@ export async function POST(request: Request) {
       await expireHeld("expire_due_path_b_confirmed_files_v1");
     if (confirmedExpiryError) failed++;
     else if (typeof expiredConfirmed === "number") processed += expiredConfirmed;
+  } catch { failed++; }
+
+  // adult.acceptance-hold-72h and adult.re-notice-30d (D-141): the database
+  // queues each due second notice and re-notice once, to the person's account,
+  // cancels one whose record or address may no longer be written to, and
+  // queues the normalization a released clock held back. The mail drain sends
+  // them. Independent of every other queue.
+  try {
+    const { data: queuedNotices, error: noticeError } = await admin.rpc("run_due_adult_acceptance_notices_v1");
+    if (noticeError) failed++;
+    else if (typeof queuedNotices === "number") processed += queuedNotices;
   } catch { failed++; }
 
   // Independent due work: a failed mail/embryo queue must not strand uploads.

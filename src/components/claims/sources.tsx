@@ -17,7 +17,7 @@ export function ClaimSources({ sourceIds, scienceIndex = false, start = 1 }: {
             <a href={source.url} target="_blank" rel="noopener noreferrer" className="prose-link">
               {source.type === "pmid" ? `PMID ${source.identifier}` : source.identifier}
             </a>
-            <p className="caption">Source read: <time data-ui-chrome-kind="date" dateTime={source.access_date}>{source.access_date}</time></p>
+            <p className="caption max-w-measure">Source read: <time data-ui-chrome-kind="date" dateTime={source.access_date}>{source.access_date}</time></p>
             {!scienceIndex ? <a href={route("science.index", { hash: "sources" })} className="prose-link">About these sources</a> : null}
           </li>
         );

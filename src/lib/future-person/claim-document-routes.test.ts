@@ -1,5 +1,8 @@
 import crypto from "node:crypto";
+import { readFileSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+vi.mock("@/lib/security/session-csrf", async (importOriginal) =>
+  (await import("@/lib/security/session-csrf.test-support")).admitEverySessionCsrf(await importOriginal()));
 
 const mocks = vi.hoisted(() => ({
   rpc: vi.fn(),
@@ -40,8 +43,11 @@ vi.stubEnv("BYOK_ENCRYPTION_KEY", BYOK);
 const documents = await import("@/app/api/future-person/claim/session/documents/route");
 const chunks = await import("@/app/api/evidence/[session]/chunks/[sequence]/route");
 const completion = await import("@/app/api/evidence/[session]/complete/route");
-const { CLAIM_SESSION_COOKIE, sha256Hex, claimMutationCsrf } = await import("./claim-session");
-const { EVIDENCE_COOKIE, evidenceCompleteNonce, evidenceCsrf, mintClaimDocumentNonce } = await import("./evidence-session");
+const { CLAIM_SESSION_COOKIE, sha256Hex } = await import("./claim-session");
+const { EVIDENCE_COOKIE, evidenceCompleteNonce, mintClaimDocumentNonce } = await import("./evidence-session");
+const { verifySessionCsrf } = await import("@/lib/security/session-csrf-core");
+/** A stand-in for the one-time token each route's gate checks (session-csrf-routes.test.ts; G8.5, the migration stage). */
+const GATE_STAND_IN = "session-token-checked-by-the-gate";
 const { encryptSecret } = await import("@/lib/crypto");
 const { openDocumentBytes, claimDataKey } = await import("./document-envelope");
 
@@ -82,7 +88,7 @@ describe("POST /api/future-person/claim/session/documents", () => {
     documents.POST(new Request(`${ORIGIN}/api/future-person/claim/session/documents`, {
       method: "POST", body: payload,
       headers: headersFor({ cookie: `${CLAIM_SESSION_COOKIE}=${CLAIM_COOKIE_VALUE}`,
-        "x-inherit-csrf":claimMutationCsrf(sha256Hex(CLAIM_COOKIE_VALUE),"documents",String((JSON.parse(payload) as {nonce:unknown}).nonce)),
+        "x-inherit-csrf":GATE_STAND_IN,
         ...headers }, "application/json"),
     }));
 
@@ -116,7 +122,15 @@ describe("POST /api/future-person/claim/session/documents", () => {
     const secret = cookie.slice(cookie.indexOf("=") + 1, cookie.indexOf(";"));
     expect(args.p_cookie_hash).toBe(sha256Hex(secret));
     expect(JSON.stringify(args)).not.toContain(secret);
-    expect(response.headers.get("x-inherit-csrf")).toBe(evidenceCsrf(SESSION, sha256Hex(secret)));
+    // 2026-11-19 (G8.5, the migration stage): the evidence session's first values travel in
+    // X-Inherit-Evidence-CSRF (the chunk stream's value and the completion's first token, each bound to
+    // this session and its cookie); this answer's X-Inherit-CSRF is the claim session's successor,
+    // which the gate adds. It asserted the evidence digest in X-Inherit-CSRF.
+    expect(response.headers.get("x-inherit-csrf")).toBeNull();
+    const [chunkValue, completeValue] = response.headers.get("x-inherit-evidence-csrf")!.split(" ");
+    const evidence = { kind: "evidence-session" as const, sessionHash: sha256Hex(secret), sessionId: SESSION };
+    expect(verifySessionCsrf(chunkValue, evidence, "api.evidence-chunk")).not.toBeNull();
+    expect(verifySessionCsrf(completeValue, evidence, "api.evidence-complete")).not.toBeNull();
     expect(response.headers.get("x-inherit-complete-nonce")).toBe(evidenceCompleteNonce(SESSION, sha256Hex(secret)));
     expect(response.headers.get("referrer-policy")).toBe("no-referrer");
     expect(response.headers.get("cache-control")).toBe("private, no-store");
@@ -164,8 +178,8 @@ describe("POST /api/future-person/claim/session/documents", () => {
 
   it.each([
     ["no claim cookie", { cookie: null }],
-    ["missing CSRF", { "x-inherit-csrf":null }],
-    ["a CSRF value from another operation", { "x-inherit-csrf":claimMutationCsrf(sha256Hex(CLAIM_COOKIE_VALUE),"complete","nonce") }],
+    // 2026-11-19 (G8.5): "missing CSRF" and "a CSRF value from another operation" left this list; the
+    // gate refuses a missing token and another route's before the handler (session-csrf-routes.test.ts).
     ["another origin", { origin: "https://elsewhere.invalid" }],
     ["cross-site metadata", { "sec-fetch-site": "cross-site" }],
   ])("is the opaque 404 with %s", async (_label, headers) => {
@@ -183,6 +197,17 @@ describe("POST /api/future-person/claim/session/documents", () => {
     const response = await post(body(mintClaimDocumentNonce(CLAIM_COOKIE_VALUE)!));
     expect(response.status).toBe(429);
     expect(response.headers.get("set-cookie")).toBeNull();
+    // The register's public-capacity-limited-v1, bound to this route since 2026-10-24 (G8.5).
+    const register = JSON.parse(readFileSync("docs/route-register.json", "utf8")) as {
+      responseContracts: Record<string, { status: number; body: { error: { const: string } }; headers: Record<string, string> }>;
+      responseContractBindings: { routes: Record<string, string[]> } };
+    expect(register.responseContractBindings.routes["api.future-person-claim-document-session"]).toContain("public-capacity-limited-v1");
+    const contract = register.responseContracts["public-capacity-limited-v1"];
+    expect(response.status).toBe(contract.status);
+    expect(await response.json()).toEqual({ error: contract.body.error.const });
+    expect(response.headers.get("referrer-policy")).toBe(contract.headers["Referrer-Policy"]);
+    expect(response.headers.get("cache-control")).toContain(contract.headers["Cache-Control"]);
+    expect(response.headers.get("retry-after")).toBe("900");
   });
 
   it.each(["42501", "23505", "22023"])("maps database refusal %s to the opaque 404", async (code) => {
@@ -197,7 +222,7 @@ describe("PUT /api/evidence/[session]/chunks/[sequence]", () => {
     chunks.PUT(new Request(`${ORIGIN}/api/evidence/${session}/chunks/${sequence}`, {
       method: "PUT", body: new Uint8Array(bytes),
       headers: headersFor({ cookie: `${EVIDENCE_COOKIE}=${EVIDENCE_COOKIE_VALUE}`,
-        "x-inherit-csrf": evidenceCsrf(session, EVIDENCE_HASH), ...headers }, "application/octet-stream"),
+        "x-inherit-csrf": GATE_STAND_IN, ...headers }, "application/octet-stream"),
     }), { params: Promise.resolve({ session, sequence }) });
 
   it("seals the chunk under the claim key and writes it create-only where the database says", async () => {
@@ -218,8 +243,8 @@ describe("PUT /api/evidence/[session]/chunks/[sequence]", () => {
   });
 
   it.each([
-    ["no CSRF header", { "x-inherit-csrf": null }],
-    ["another session's CSRF", { "x-inherit-csrf": evidenceCsrf("66666666-6666-4666-8666-666666666666", EVIDENCE_HASH) }],
+    // 2026-11-19 (G8.5): "no CSRF header" and "another session's CSRF" left this list; the gate refuses
+    // both before the handler (session-csrf-routes.test.ts).
     ["no evidence cookie", { cookie: null }],
     ["an encoded body", { "content-encoding": "gzip" }],
     ["JSON", { "content-type": "application/json" }],
@@ -267,7 +292,7 @@ describe("POST /api/evidence/[session]/complete", () => {
     completion.POST(new Request(`${ORIGIN}/api/evidence/${SESSION}/complete`, {
       method: "POST", body: JSON.stringify(payload),
       headers: headersFor({ cookie: `${EVIDENCE_COOKIE}=${EVIDENCE_COOKIE_VALUE}`,
-        "x-inherit-csrf": evidenceCsrf(SESSION, EVIDENCE_HASH), ...headers }, "application/json"),
+        "x-inherit-csrf": GATE_STAND_IN, ...headers }, "application/json"),
     }), { params: Promise.resolve({ session: SESSION }) });
 
   function stage(bytes: Buffer, mediaType = "application/pdf") {

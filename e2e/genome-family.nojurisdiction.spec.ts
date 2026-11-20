@@ -3,6 +3,7 @@ import http from "node:http";
 import { randomUUID } from "node:crypto";
 import { adminClient, createConfirmedUser, drainMailUntil, signIn, acceptAdultInvitation, adultInvitationToken, adultInvitationUrl } from "./helpers";
 import { OWN_UPLOAD_COPY } from "@/copy/upload/consent";
+import { signOut } from "./helpers/session-csrf";
 
 /**
  * The three My Genome routes that refuse in an unreviewed jurisdiction, proven
@@ -188,7 +189,7 @@ test("a real accepted invitation gives the viewer a family subject to ask about"
   expect(token, "the invitation email carries a withdraw token").toBeTruthy();
 
   // B accepts in their own session, which is what creates the pairing.
-  await page.request.post(`${MAIN}/auth/sign-out`);
+  await signOut(page, MAIN);
   await acceptAdultInvitation({
     page, invitationUrl: adultInvitationUrl(token!, MAIN),
     email: B.email, password: B.password, origin: MAIN,
@@ -385,7 +386,7 @@ test("/family/portrait/[pairId] jurisdiction-unavailable: the pair exists and th
   // account, and the page below then renders A's locked Portrait row. That is
   // what the first run of this test actually did. `e2e/family.spec.ts` posts
   // the sign-out before its own switch to B for the same reason.
-  await page.request.post(`${MAIN}/auth/sign-out`);
+  await signOut(page, MAIN);
   await signIn(page, B.email, B.password);
   // B completes the same account step A did in the invitation test. A grant
   // presentation is minted only for an account whose own record is complete,
@@ -420,7 +421,7 @@ test("/family/portrait/[pairId] jurisdiction-unavailable: the pair exists and th
   expect(pair!.status, "one grant leaves it pending, which is enough to reach the route").toBe("pending");
 
   // The refusal, read on the off server by the account that did not grant.
-  await page.request.post(`${MAIN}/auth/sign-out`);
+  await signOut(page, MAIN);
   await signIn(page, A.email, A.password);
   const response = await page.goto(`/family/portrait/${pair!.id}`);
   expect(response?.status()).toBe(200);

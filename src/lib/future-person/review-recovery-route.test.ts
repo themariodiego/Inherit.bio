@@ -1,5 +1,6 @@
 import crypto from "node:crypto";
 import {afterAll,beforeEach,describe,expect,it,vi} from "vitest";
+vi.mock("@/lib/security/session-csrf",async importOriginal=>(await import("@/lib/security/session-csrf.test-support")).admitEverySessionCsrf(await importOriginal()));
 const mocks=vi.hoisted(()=>({account:vi.fn(),rpc:vi.fn(),open:vi.fn(()=>true)}));
 vi.mock("@/lib/account-deletion",()=>({getSensitiveAccountContext:mocks.account}));
 vi.mock("@/lib/supabase/server",()=>({createClient:async()=>({rpc:mocks.rpc})}));
@@ -8,7 +9,9 @@ vi.stubEnv("BYOK_ENCRYPTION_KEY",crypto.randomBytes(32).toString("base64"));
 vi.stubEnv("INHERIT_HMAC_KEYRING","");
 const {POST}=await import("@/app/api/reviews/future-person/claims/[id]/route");
 const {sealClaimIntake}=await import("./claim-intake");
-const {reviewCsrf,mintReviewNonce,verifiedIdentityDigestSet}=await import("./review");
+const {mintReviewNonce,verifiedIdentityDigestSet}=await import("./review");
+// The gate is driven on this route in src/lib/security/session-csrf-routes.test.ts (G8.5, the migration stage).
+const REVIEWER_GATE_STAND_IN="reviewer-session-token-checked-by-the-gate";
 const {shapeKeylessVerification}=await import("./keyless-verification");
 const {sealKeylessVerificationProof}=await import("./keyless-verification-proof");
 const {claimDataKey,openDocumentBytes}=await import("./document-envelope");
@@ -38,7 +41,7 @@ function body(){return {reviewRevision:1,decision:"approve-claimed-unbound-no-ke
 function request(given:unknown=body(),headers:Record<string,string>={}){
   return new Request(`https://test.e2e.local/api/reviews/future-person/claims/${ID}`,{method:"POST",
     headers:{origin:"https://test.e2e.local","sec-fetch-site":"same-origin","content-type":"application/json",
-      "x-inherit-csrf":reviewCsrf(ID,ACCOUNT,SESSION),...headers},body:JSON.stringify(given)});
+      "x-inherit-csrf":REVIEWER_GATE_STAND_IN,...headers},body:JSON.stringify(given)});
 }
 const call=(req:Request)=>POST(req,{params:Promise.resolve({id:ID})});
 beforeEach(()=>{

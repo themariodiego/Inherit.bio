@@ -7,7 +7,8 @@ import type { PublicAppealView } from "@/lib/future-person/public-appeal-session
 const view: PublicAppealView = { caseKind: "subject-objection", deadline: "2026-11-01T00:00:00Z",
  documentKinds: ["appeal-photo-identity", "appeal-subject-source-control"], evidenceState: "collecting", completionAvailable: true, documents: [] };
 const render = (overrides: Partial<PublicAppealView> = {}) => renderToStaticMarkup(createElement(PublicAppealDocuments, {
- view: { ...view, ...overrides }, documentNonce: "synthetic-document-form", completeNonce: "synthetic-complete-form", documentCsrf: "a".repeat(64), completeCsrf: "b".repeat(64),
+ // 2026-11-19 (G8.5): the documentCsrf prop is gone; the component reads api.appeal-document-session's token from its provider.
+ view: { ...view, ...overrides }, documentNonce: "synthetic-document-form", completeNonce: "synthetic-complete-form",
 }));
 describe("purpose-bound public appeal evidence page", () => {
  it("presents only its two registered kind labels with accessible file controls and no target selector", () => {

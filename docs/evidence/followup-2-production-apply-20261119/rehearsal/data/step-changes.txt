@@ -1,0 +1,20 @@
+# LOCAL ONLY step analysis (rehearsal/scripts/steps.py, stepdiff.py), 2026-11-19: each migration alone, psql -1 -f (the CLI's shape), read from the pinned tree be49d283, on the mirror of the follow-up's post-state (mirror build 6).
+#01 20261024110000_copilot_settings_delete_nonce.sql: +1 functions, +0 tables, 2 changes to existing objects
+     new function public.remove_own_copilot_settings_with_nonce_v1(p_account_id uuid, p_session_id uuid, p_nonce_hash text, p_nonce_expires_at timestamp with time zone) {postgres=X/postgres,service_role=X/postgres}
+     function private.consume_account_operation_nonce_v1(p_account_id uuid, p_session_id uuid, p_operation text, p_nonce_hash text, p_expires_at timestamp with time zone) :: def_md5
+     table public.account_operation_nonces :: constraints: ~account_operation_nonces_operation_check
+#02 20261024220000_session_csrf_tokens.sql: +1 functions, +1 tables, 0 changes to existing objects
+     new function public.consume_session_csrf_v1(p_route_id text, p_session_kind text, p_token_hash text, p_expires_at timestamp with time zone, p_account_id uuid, p_session_id uuid) {postgres=X/postgres,service_role=X/postgres}
+     new table private.session_csrf_token_uses rls True acl {postgres=arwdDxtm/postgres}
+#03 20261025200000_consent_revoke_provider_nonce.sql: +2 functions, +0 tables, 0 changes to existing objects
+     new function public.revoke_cloud_model_consent_with_nonce_v1(p_account_id uuid, p_session_id uuid, p_grant_id uuid, p_nonce_hash text, p_nonce_expires_at timestamp with time zone) {postgres=X/postgres,service_role=X/postgres}
+     new function public.revoke_own_copilot_with_nonce_v1(p_account_id uuid, p_session_id uuid, p_subject_id uuid, p_expected jsonb, p_nonce_hash text, p_nonce_expires_at timestamp with time zone) {postgres=X/postgres,service_role=X/postgres}
+#04 20261025400000_path_a_account_accept_typed_name.sql: +2 functions, +0 tables, 1 changes to existing objects
+     new function private.accept_adult_subject_invitation_v1(p_session_hash text, p_nonce text, p_account_id uuid, p_auth_session_id uuid, p_account_email_hmac_set jsonb, p_signing_name_ciphertext bytea) {postgres=X/postgres,service_role=X/postgres}
+     new function public.accept_adult_subject_invitation_v1(p_session_hash text, p_nonce text, p_account_id uuid, p_auth_session_id uuid, p_account_email_hmac_set jsonb, p_signing_name_ciphertext bytea) {postgres=X/postgres,service_role=X/postgres}
+     function private.adult_subject_invitation_response_v1(p_token_hash_id uuid, p_session_id uuid, p_action text, p_account_id uuid, p_account_email_hmac text) :: def_md5
+1 20261024110000_copilot_settings_delete_nonce.sql rc 0 0.051 s (psql -1 -f, CLI shape)
+2 20261024220000_session_csrf_tokens.sql rc 0 0.044 s (psql -1 -f, CLI shape)
+3 20261025200000_consent_revoke_provider_nonce.sql rc 0 0.037 s (psql -1 -f, CLI shape)
+4 20261025400000_path_a_account_accept_typed_name.sql rc 0 0.046 s (psql -1 -f, CLI shape)
+# Cross-check: before #1 == batch0: True | after #3 == measured batch 1: True | after #4 == measured batch 2: True

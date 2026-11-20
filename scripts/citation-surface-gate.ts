@@ -51,7 +51,9 @@ import { extractCopyRegistryBlocksFromSource, extractTsxBlocksFromSource } from 
  * sentence can still be rendered without its required provenance.
  */
 
-export const OPEN_BACKLOG = 59;
+// 59 until 2026-10-24 (G8.5): the retired compatibility chat branch took its
+// two unreviewed tool descriptions with it.
+export const OPEN_BACKLOG = 57;
 
 /** The closed marker list. Changing it means re-pinning the backlog, visibly. */
 export const CLAIM_MARKERS: readonly { name: string; pattern: RegExp }[] = [

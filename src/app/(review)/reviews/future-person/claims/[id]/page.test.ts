@@ -3,14 +3,15 @@ import React from "react";
 const mocks=vi.hoisted(()=>({open:vi.fn(),account:vi.fn(),rpc:vi.fn(),project:vi.fn()}));
 vi.mock("next/navigation",()=>({notFound:()=>{throw new Error("opaque404");}}));
 vi.mock("@/lib/future-person/claims-open",()=>({futurePersonClaimsOpen:mocks.open}));
-vi.mock("@/lib/account-deletion",()=>({getSensitiveAccountContext:mocks.account}));
+vi.mock("@/lib/page-account-context",()=>({getPageAccountContext:mocks.account}));
 vi.mock("@/lib/supabase/server",()=>({createClient:async()=>({rpc:mocks.rpc})}));
 vi.mock("@/lib/future-person/review",()=>({isCanonicalId:(id:string)=>/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/u.test(id),reviewCaseBody:mocks.project}));
 import Page from "./page";
 const ID="11111111-1111-4111-8111-111111111111";
 const run=(id=ID,search:Record<string,string>={})=>Page({params:Promise.resolve({id}),searchParams:Promise.resolve(search)});
-beforeEach(()=>{vi.stubGlobal("React",React);vi.clearAllMocks();mocks.open.mockReturnValue(true);mocks.account.mockResolvedValue({user:{id:ID},sessionId:ID});mocks.rpc.mockResolvedValue({data:{bounded:true},error:null});mocks.project.mockReturnValue({claimId:ID});});
-afterEach(()=>vi.unstubAllGlobals());
+// The page renders the reviewer's one-time tokens, minted under the deployment key (G8.5, the migration stage).
+beforeEach(()=>{vi.stubGlobal("React",React);vi.stubEnv("BYOK_ENCRYPTION_KEY",Buffer.alloc(32,46).toString("base64"));vi.clearAllMocks();mocks.open.mockReturnValue(true);mocks.account.mockResolvedValue({user:{id:ID},sessionId:ID});mocks.rpc.mockResolvedValue({data:{bounded:true},error:null});mocks.project.mockReturnValue({claimId:ID});});
+afterEach(()=>{vi.unstubAllGlobals();vi.unstubAllEnvs();});
 describe("the reviewer page's own-JWT authority",()=>{
  it("checks the exact current named-reviewer case before returning the viewer",async()=>{
   const rendered=await run();expect(rendered.type).toBe("main");expect(mocks.rpc.mock.calls).toEqual([["read_claim_review_case_v1",{p_review_id:ID}]]);

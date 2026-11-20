@@ -3,7 +3,7 @@ import crypto from "node:crypto";
 import {z} from "zod";
 import {createClient} from "@/lib/supabase/server";
 import {mintPublicFormToken,readPublicFormToken} from "@/lib/embryos/operation-token";
-import {claimantCsrf,claimantSessionHash} from "./rights";
+import {claimantSessionHash} from "./rights";
 import {futurePersonClaimsOpen} from "./claims-open";
 const revision=z.number().int().positive().safe();
 export const bindingContext=z.object({authorized:z.literal(true),account_auth_session_revision:revision,session_revision:revision,
@@ -37,10 +37,13 @@ export async function loadAccountBinding(request:Request):Promise<string|null> {
  const actor=await currentBindingContext(hash);return actor?mintBindingNonce(hash,actor.context):null;
 }
 export const bindingBody=z.object({nonce:z.string().min(1).max(2048)}).strict();
+/** The request's X-Inherit-CSRF is the signed-in account session's one-time
+ * token (api.future-person-claimant-bind), verified and spent before the
+ * handler runs (G8.5); the rights cookie and the one-time binding nonce, which
+ * is bound to it and to the account context, are checked here as before. */
 export function bindingRequestHash(request:Request):string|null {
- const url=new URL(request.url);const hash=claimantSessionHash(request);const csrf=request.headers.get("x-inherit-csrf");
+ const url=new URL(request.url);const hash=claimantSessionHash(request);
  if(!hash||request.method!=="POST"||url.search!==""||request.headers.get("origin")!==url.origin||request.headers.get("sec-fetch-site")!=="same-origin"
-  ||request.headers.get("content-type")?.split(";")[0]?.trim().toLowerCase()!=="application/json"
-  ||!csrf||!/^[0-9a-f]{64}$/u.test(csrf)||!crypto.timingSafeEqual(Buffer.from(csrf),Buffer.from(claimantCsrf(hash))))return null;
+  ||request.headers.get("content-type")?.split(";")[0]?.trim().toLowerCase()!=="application/json")return null;
  return hash;
 }

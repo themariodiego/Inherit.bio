@@ -1,0 +1,39 @@
+#01 20261022100000_neanderthal_ancestry_content.sql: +0 functions, +0 tables, 1 changes to main objects
+     function private.validate_own_ancestry_content_v1(c jsonb, f uuid, s uuid, a jsonb, encoding text) :: def_md5
+#02 20261022110000_read_called_input_provenance.sql: +0 functions, +0 tables, 1 changes to main objects
+     function private.read_own_input_sources_v1(p_account_id uuid, p_session_id uuid, p_subject_id uuid, p_file_ids uuid[], p_purpose text) :: def_md5
+#03 20261023100000_subject_export_joint_results.sql: +3 functions, +0 tables, 4 changes to main objects
+     function private.export_account_owned_capture_pre_requester_v1(p_origin jsonb, p_target_kind text, p_target_id uuid) :: def_md5
+     function private.export_subject_class_inventory_v1(p_account uuid, p_capture jsonb) :: def_md5
+     function private.export_subject_joint_results_v1(p_subject uuid) :: def_md5
+     function public.export_archive_account_classes_v1(p_operation text, p_export_id uuid, p_attempt_id uuid, p_authority_receipt text, p_kind text, p_after_id uuid) :: def_md5
+#04 20261023110000_export_completeness.sql: +3 functions, +0 tables, 11 changes to main objects
+     function private.account_archive_complete_class_rows_v1(p_origin jsonb, p_legacy jsonb, p_permissions jsonb, p_kind text) :: def_md5
+     function private.export_account_graph_capture_v1(p_account uuid, p_capture jsonb) :: def_md5
+     function private.export_account_owned_capture_pre_member_frame_v1(p_origin jsonb, p_target_kind text, p_target_id uuid) :: def_md5
+     function private.export_account_owned_capture_pre_requester_v1(p_origin jsonb, p_target_kind text, p_target_id uuid) :: def_md5
+     function private.export_subject_class_inventory_v1(p_account uuid, p_capture jsonb) :: def_md5
+     function private.export_subject_graph_capture_v1(p_account uuid, p_capture jsonb) :: def_md5
+     function private.export_subject_graph_projection_v1(p_account uuid, p_subjects uuid[], p_kind text) :: def_md5
+     function private.export_subject_history_projection_v1(p_account uuid, p_subjects uuid[], p_kind text) :: def_md5
+     function private.export_subject_joint_results_v1(p_subject uuid) :: def_md5
+     function private.export_subject_scope_v1(p_origin jsonb, p_subject uuid) :: def_md5
+     function public.export_archive_account_content_v1(p_operation text, p_export_id uuid, p_attempt_id uuid, p_authority_receipt text, p_payload jsonb) :: def_md5
+#05 20261023120000_legal_audit_attribution_completeness.sql: +11 functions, +0 tables, 4 changes to main objects
+     function private.legal_audit_person_event_v1(p_event_code text, p_route_id text) :: def_md5
+     function private.record_subject_operation_nonce_v1(p_account_id uuid, p_session_id uuid, p_operation text, p_subject_id uuid, p_nonce_hash text, p_expires_at timestamp with time zone) :: def_md5
+     table public.account_operation_nonces :: constraints: ~account_operation_nonces_operation_check
+     table public.account_operation_nonces :: triggers: +legal_audit_actor_on_consumed_insert
+#06 20261023130000_legal_audit_attribution_remaining.sql: +4 functions, +0 tables, 2 changes to main objects
+     function public.bind_adult_subject_account_v1(p_session_hash text, p_nonce text, p_account_id uuid, p_auth_session_id uuid, p_test_jurisdiction boolean) :: def_md5
+     table public.account_operation_nonces :: constraints: ~account_operation_nonces_operation_check
+#07 20261023140000_review_download_clock.sql: +0 functions, +0 tables, 1 changes to main objects
+     function public.open_permission_review_download_v1(p_document_id uuid, p_cookie_hash text) :: def_md5
+1 20261022100000_neanderthal_ancestry_content.sql rc 0 0.065 s (psql -1 -f, CLI shape)
+2 20261022110000_read_called_input_provenance.sql rc 0 0.067 s (psql -1 -f, CLI shape)
+3 20261023100000_subject_export_joint_results.sql rc 0 0.073 s (psql -1 -f, CLI shape)
+4 20261023110000_export_completeness.sql rc 0 0.083 s (psql -1 -f, CLI shape)
+5 20261023120000_legal_audit_attribution_completeness.sql rc 0 0.089 s (psql -1 -f, CLI shape)
+6 20261023130000_legal_audit_attribution_remaining.sql rc 0 0.091 s (psql -1 -f, CLI shape)
+7 20261023140000_review_download_clock.sql rc 0 0.086 s (psql -1 -f, CLI shape)
+# Cross-check (step analysis, 2026-10-23): the fingerprint summary after #04 equals expected batch 1 post-state, and after #07 equals expected batch 2 post-state; before #01 it equals PR 324's batch-4 post-state.

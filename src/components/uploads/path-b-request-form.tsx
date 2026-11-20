@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import { useCsrf } from "@/components/security/csrf-provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -29,6 +30,7 @@ type Status = "ready" | "pending" | Operation | "failed";
  */
 export function PathBRequestForm({ review }: { review: PathBRequestReview }) {
   const [status, setStatus] = useState<Status>("ready");
+  const csrf = useCsrf("api.withdraw");
   const [checked, setChecked] = useState<Record<string, boolean>>({});
   const [typedName, setTypedName] = useState("");
   const [nameError, setNameError] = useState(false);
@@ -38,11 +40,11 @@ export function PathBRequestForm({ review }: { review: PathBRequestReview }) {
   async function send(operation: Operation, body: Record<string, unknown>) {
     setStatus("pending");
     try {
-      const response = await fetch("/api/withdraw/session", {
+      const response = await csrf.send((csrfToken) => fetch("/api/withdraw/session", {
         method: "POST", credentials: "same-origin", cache: "no-store",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "X-Inherit-CSRF": csrfToken },
         body: JSON.stringify({ operation, nonce: review.nonce, ...body }),
-      });
+      }));
       const receipt = await response.json().catch(() => null);
       setStatus(response.status === 202 && receipt?.status === "accepted" && receipt?.operation === operation
         ? operation : "failed");

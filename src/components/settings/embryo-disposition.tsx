@@ -2,6 +2,7 @@
 
 import {useState,useTransition,type FormEvent} from "react";
 import {useRouter} from "next/navigation";
+import {useCsrf} from "@/components/security/csrf-provider";
 import {Button} from "@/components/ui/button";
 import {RECORD_KEY_CARDS_HEADING,RECORD_KEY_CARDS_NOTE} from "@/copy/embryos/upload";
 import type {EmbryoDispositionControl} from "@/lib/embryos/disposition-controls";
@@ -9,6 +10,7 @@ import {readEmbryoDispositionReceipt,type EmbryoDispositionReceipt,type Disposit
 
 export function EmbryoDisposition({control}:{control:EmbryoDispositionControl}){
   const router=useRouter(),[busy,setBusy]=useState(false),[refreshing,startRefresh]=useTransition();
+  const csrf=useCsrf("api.embryo-disposition");
   const [message,setMessage]=useState<string|null>(null),[receipt,setReceipt]=useState<EmbryoDispositionReceipt|null>(null);
   const disabled=busy||refreshing||receipt!==null;
   function refresh(){setReceipt(null);startRefresh(()=>router.refresh());}
@@ -20,8 +22,8 @@ export function EmbryoDisposition({control}:{control:EmbryoDispositionControl}){
     setBusy(true);setMessage(null);
     const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),20_000);
     try{
-      const response=await fetch(`/api/embryos/${control.embryoId}/disposition`,{method:"POST",credentials:"same-origin",
-        cache:"no-store",signal:controller.signal,headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
+      const response=await csrf.send((csrfToken) => fetch(`/api/embryos/${control.embryoId}/disposition`,{method:"POST",credentials:"same-origin",
+        cache:"no-store",signal:controller.signal,headers:{"Content-Type":"application/json","X-Inherit-CSRF":csrfToken},body:JSON.stringify(body)}));
       const next=readEmbryoDispositionReceipt(response.status,await response.json(),{embryoId:control.embryoId,action,disposition});
       if(!next){setMessage("We could not confirm the change. Refresh this page and check the record.");return;}
       if("disposition" in next&&next.disposition==="transferred"&&next.recordKeyCard!==null)setReceipt(next);

@@ -105,10 +105,20 @@ select extensions.is(has_function_privilege(r,'public.export_archive_account_gra
 select extensions.ok(not has_function_privilege(r,f,'execute'),r||' cannot invoke an internal source/cursor projector')
  from unnest(array['anon','authenticated','service_role','inherit_upload_only'])r cross join unnest(array[
  'private.export_account_graph_cursor_v1(text,jsonb)','private.export_account_graph_projection_v1(uuid,uuid[],text)'])f;
-select extensions.throws_ok($$select private.export_account_owned_capture_v1(jsonb_build_object('kind','account',
+-- 20261023110000 (owner decision, 23 October 2026, option A): the parent's
+-- own redacted cohort records leave and no embryo result does, where the
+-- nonempty parent graph used to refuse the whole account
+-- (supabase/tests/export_cohort_records.sql).
+select extensions.lives_ok($$select private.export_account_owned_capture_v1(jsonb_build_object('kind','account',
  'accountId',(select owner_account_id from public.embryo_cohorts where id=(select cohort_id from live)),
  'sessionId','7a000000-0000-4000-8000-0000000000a1'),'account',
  (select owner_account_id from public.embryo_cohorts where id=(select cohort_id from live)))$$,
- '0A000','export_partition_projection_unavailable','the original014 nonempty parent graph remains a whole refusal despite private metadata projection');
+ 'the nonempty parent graph is captured with the parent''s own cohort records, no longer a whole refusal');
+select extensions.is((select coalesce(sum((x->>'rows')::bigint),0) from jsonb_array_elements(private.export_account_owned_capture_v1(jsonb_build_object('kind','account',
+ 'accountId',(select owner_account_id from public.embryo_cohorts where id=(select cohort_id from live)),
+ 'sessionId','7a000000-0000-4000-8000-0000000000a1'),'account',
+ (select owner_account_id from public.embryo_cohorts where id=(select cohort_id from live)))->'classInventory')x
+ where x->>'kind' in('embryos','embryo_qc','embryo_scores','embryo_variants','embryo_figures','report_artifacts')),0::numeric,
+ 'and its class inventory counts no embryo result of the cohort');
 select extensions.lives_ok('set constraints all immediate','all original and new final deferred invariants are enforced');
 select * from finish();rollback;

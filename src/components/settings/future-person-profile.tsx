@@ -2,6 +2,7 @@
 
 import {useRef,useState,useTransition,type FormEvent} from "react";
 import {useRouter} from "next/navigation";
+import {useCsrf} from "@/components/security/csrf-provider";
 import {Button} from "@/components/ui/button";
 import {Input} from "@/components/ui/input";
 import type {IdentityProfileControl} from "@/lib/future-person/identity-profile-controls";
@@ -9,6 +10,7 @@ import type {IdentityProfileControl} from "@/lib/future-person/identity-profile-
 export function FuturePersonProfile({control}:{control:IdentityProfileControl}){
   const router=useRouter(),[busy,setBusy]=useState<"save"|"delete"|null>(null),[refreshing,startRefresh]=useTransition();
   const formRef=useRef<HTMLFormElement>(null);
+  const csrf=useCsrf("api.future-person-identity-profile");
   const [message,setMessage]=useState<string|null>(null);
   const disabled=busy!==null||refreshing;
   async function mutate(operation:"save"|"delete",form:HTMLFormElement|null){
@@ -21,11 +23,13 @@ export function FuturePersonProfile({control}:{control:IdentityProfileControl}){
     setBusy(operation);setMessage(null);
     const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),20_000);
     try{
-      const response=await fetch(`/api/embryos/${control.embryoId}/future-person-identity`,{
+      // X-Inherit-CSRF is the shell's one-time session token; the page's
+      // derived proof travels in X-Inherit-Operation-Proof (G8.5).
+      const response=await csrf.send(csrfToken=>fetch(`/api/embryos/${control.embryoId}/future-person-identity`,{
         method:operation==="save"?"PUT":"DELETE",cache:"no-store",credentials:"same-origin",signal:controller.signal,
-        headers:{"X-Inherit-Operation-Nonce":proof.operationNonce,"X-Inherit-CSRF":proof.csrf,
+        headers:{"X-Inherit-Operation-Nonce":proof.operationNonce,"X-Inherit-Operation-Proof":proof.csrf,"X-Inherit-CSRF":csrfToken,
           ...(input?{"Content-Type":"application/json"}:{})},...(input?{body:JSON.stringify(input)}:{}),
-      });
+      }));
       let complete=false;
       if(operation==="delete")complete=response.status===204&&(await response.text())==="";
       else if(response.status===200){

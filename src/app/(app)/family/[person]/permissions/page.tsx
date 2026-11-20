@@ -38,10 +38,12 @@ import {
   mintGrantPresentation,
   type GrantPurposeRequest,
 } from "@/lib/family/grant-token";
-import { getSensitiveAccountContext } from "@/lib/account-deletion";
+import { getPageAccountContext } from "@/lib/page-account-context";
 import { mintSubjectOperationNonce } from "@/lib/subject-endpoints/operation-nonce";
+import { mintPersonOperationNonce } from "@/lib/person-operation-nonce";
 import { route } from "@/lib/primary-routes";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { userForPage } from "@/lib/supabase/auth-check";
 import { createClient } from "@/lib/supabase/server";
 
 /**
@@ -70,9 +72,7 @@ export async function generateMetadata(
 
 const loadPerson = cache(async (segment: string) => {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await userForPage(supabase.auth);
   if (!user) return null;
   const person = await resolveFamilyPerson(user.id, segment);
   return person ? { user, person } : null;
@@ -91,8 +91,9 @@ export default async function FamilyPermissionsPage(
   if (!context) notFound();
   const { user, person } = context;
   // The single-use stop code is bound to this session, so the page needs it.
-  const account = await getSensitiveAccountContext();
+  const account = await getPageAccountContext();
   if (!account || account.user.id !== user.id) notFound();
+  const sessionId = account.sessionId;
 
   const decision = await personCapability(user.id, person, "third_party_adult_analysis");
   const mayGrant = permits(decision);
@@ -214,7 +215,9 @@ export default async function FamilyPermissionsPage(
 
   function actionFor(purpose: Purpose, confirmAncestry = false): RowAction | undefined {
     const held = outbound.get(purpose);
-    if (held && held.state === "on" && !confirmAncestry) return { kind: "revoke", grantId: held.grantId };
+    // The revocation's one-time nonce, for this account, session and grant (G5.6, 23 Oct 2026).
+    if (held && held.state === "on" && !confirmAncestry) return { kind: "revoke", grantId: held.grantId,
+      nonce: mintPersonOperationNonce({ accountId: user.id, sessionId, operation: "consent_revoke", targetId: held.grantId }) };
     if (!mayGrant || !canMint) return undefined;
     const isReport = purpose === "reports.monogenic" || purpose === "reports.polygenic";
     if (purpose === "ancestry" && !ancestryPresentation) return undefined;
@@ -366,15 +369,16 @@ export default async function FamilyPermissionsPage(
 
       <SharingActions
         personName={person.displayLabel}
-        personSegment={person.handle.routeSegment}
         subjectId={person.handle.id}
         paused={person.sharing === "paused"}
-        stopNonce={mintSubjectOperationNonce({
-          accountId: user.id,
-          sessionId: account.sessionId,
-          operation: "subject_sharing_stop",
-          subjectId: person.handle.id,
-        })}
+        nonces={{
+          pause: mintSubjectOperationNonce({ accountId: user.id, sessionId: account.sessionId,
+            operation: "subject_sharing_pause", subjectId: person.handle.id }),
+          resume: mintSubjectOperationNonce({ accountId: user.id, sessionId: account.sessionId,
+            operation: "subject_sharing_resume", subjectId: person.handle.id }),
+          stop: mintSubjectOperationNonce({ accountId: user.id, sessionId: account.sessionId,
+            operation: "subject_sharing_stop", subjectId: person.handle.id }),
+        }}
       />
     </div>
   );

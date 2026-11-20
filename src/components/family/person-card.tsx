@@ -10,7 +10,7 @@
  *
  * Nobody is ranked, scored or ordered by anything but their name.
  */
-import Link from "next/link";
+import { IntentLink } from "@/components/site/intent-link";
 import { subjectKind } from "@/components/subjects/subject-bar";
 import {
   CARD_NO_FILE_STATUS,
@@ -67,7 +67,7 @@ export function PersonCard({
   const colour = subjectColourIndex(person.handle);
   return (
     <li data-slot="person-card" data-subject-id={person.handle.id}>
-      <Link href={href} className="fam-row fam-person text-base">
+      <IntentLink href={href} className="fam-row fam-person text-base">
         <span
           aria-hidden="true"
           data-slot="subject-disc"
@@ -91,7 +91,7 @@ export function PersonCard({
         <span data-slot="person-state" className="text-sm text-ink-muted">
           {personCardLine(state, person.displayLabel)}
         </span>
-      </Link>
+      </IntentLink>
     </li>
   );
 }

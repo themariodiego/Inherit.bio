@@ -9,14 +9,11 @@ import { readBoundedJson } from "@/lib/future-person/bounded-body";
 import { sha256Hex } from "@/lib/future-person/claim-session";
 import { futurePersonClaimsOpen } from "@/lib/future-person/claims-open";
 import {
-  REVIEW_CSRF_HEADER,
   REVIEW_NONCE_HEADER,
   isCanonicalId,
   mintReviewNonce,
   readReviewNonce,
   reviewCaseBody,
-  reviewCsrf,
-  reviewCsrfMatches,
   reviewDecisionBody,
   sealReason,
   sealDocumentaryAttestation,
@@ -29,6 +26,7 @@ import {keylessCurrentReview,mintKeylessReleaseNonce} from "@/lib/future-person/
 import {sealNoticePackage} from "@/lib/future-person/notice-package";
 import {keylessVerificationProofMatches} from "@/lib/future-person/keyless-verification-proof";
 import { createClient } from "@/lib/supabase/server";
+import { withReviewerCsrf } from "@/lib/security/session-csrf";
 
 /**
  * `/api/reviews/future-person/claims/[id]` (register
@@ -42,8 +40,12 @@ import { createClient } from "@/lib/supabase/server";
  * there are no redirects.
  *
  * GET returns future-person-claim-review-case-v1 and records the read. It
- * also returns, in headers only, the CSRF value and a ten-minute one-time
- * decision nonce for this reviewer, session and case.
+ * also returns, in headers only, a ten-minute one-time
+ * decision nonce for this reviewer, session and case. It issues no
+ * X-Inherit-CSRF value: the review page renders the reviewer's one-time
+ * session tokens, and the POST spends this route's before the handler runs
+ * (G8.5, the migration stage; it was a digest of the case, the reviewer and
+ * the auth session, which this GET returned).
  *
  * POST takes one of the six closed decision bodies. The database allows
  * only the decisions the resolved case kind allows, records the decision
@@ -86,7 +88,6 @@ async function read(request: Request, id: string): Promise<Response> {
     const documentsAvailable=review.scope.operation==="claim-objection"||(release&&review.scope.current&&review.scope.objectionId===null);
     const decisionAvailable=review.scope.operation==="claim-objection"||release;
     return sensitiveJson(review.caseBody,200,{
-      [REVIEW_CSRF_HEADER]:reviewCsrf(id,account.user.id,account.sessionId),
       [REVIEW_NONCE_HEADER]:release?mintKeylessReleaseNonce(review.scope,account.user.id,account.sessionId):mintReviewNonce(id,account.user.id,account.sessionId),
       "x-inherit-review-operation":review.scope.operation,
       "x-inherit-review-documents":documentsAvailable?"available":"held",
@@ -101,7 +102,6 @@ async function read(request: Request, id: string): Promise<Response> {
   const body = reviewCaseBody(data);
   if (!body) return notFound();
   return sensitiveJson(body, 200, {
-    [REVIEW_CSRF_HEADER]: reviewCsrf(id, account.user.id, account.sessionId),
     [REVIEW_NONCE_HEADER]: mintReviewNonce(id, account.user.id, account.sessionId),
     "x-inherit-review-documents": "available",
     "x-inherit-review-decision": "available",
@@ -111,10 +111,10 @@ async function read(request: Request, id: string): Promise<Response> {
   });
 }
 
-export async function POST(request: Request, context: { params: Promise<{ id: string }> }) {
+export const POST = withReviewerCsrf("api.future-person-claim-review", async (request: Request, context: { params: Promise<{ id: string }> }) => {
   const { id } = await context.params;
   return withoutReferrer(await decide(request, id));
-}
+});
 
 async function decide(request: Request, id: string): Promise<Response> {
   const refused=(stage:Parameters<typeof reviewRefusal>[0],error?:unknown,response:Response=notFound())=>{reviewRefusal(stage,error);return response;};
@@ -124,8 +124,7 @@ async function decide(request: Request, id: string): Promise<Response> {
     !account ||
     request.headers.get("origin") !== url.origin ||
     request.headers.get("sec-fetch-site") !== "same-origin" ||
-    request.headers.get("content-type")?.split(";")[0]!.trim().toLowerCase() !== "application/json" ||
-    !reviewCsrfMatches(request.headers.get(REVIEW_CSRF_HEADER), id, account.user.id, account.sessionId)
+    request.headers.get("content-type")?.split(";")[0]!.trim().toLowerCase() !== "application/json"
   ) {
     return refused("request");
   }

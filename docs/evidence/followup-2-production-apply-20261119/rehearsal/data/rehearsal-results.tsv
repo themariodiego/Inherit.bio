@@ -1,0 +1,27 @@
+# LOCAL ONLY rehearsal (rehearsal/scripts/rehearse.sh, SUITES=1 OLDSUITE=1), local stack 127.0.0.1:54322, 2026-11-19, on the mirror of the follow-up's post-state (mirror build 7). Files from generate.py --head be49d283ec9a435c635ca54f28986d4676886910 final; read-backs with check-readback.py.
+pre	read-back of the mirror	EQUAL batch 1 pre-state summary 	ledger 280 20261023140000
+pre	prechecks	rc=0	must_be_zero nonzero: none | guards ok 11 / 11
+all	dry run (statement_timeout 2min)	rc=3	1 ERROR line(s): ERROR:  DRY_RUN_COMPLETE_ALL_CHECKS_PASSED|	0.435s	unchanged	EQUAL batch 1 pre-state summary 
+neg	batch-1 dry run without a session statement_timeout	rc=3	ERROR:  session: set statement_timeout to at most 180s for the session before this statement (a SET inside the block does not bound it)
+neg	batch-1 dry run with statement_timeout 190s	rc=3	ERROR:  session: set statement_timeout to at most 180s for the session before this statement (a SET inside the block does not bound it)
+neg	batch-2 dry run before batch 1	rc=3	ERROR:  predecessor: ledger has 280 rows, max 20261023140000; expected 283 rows, max 20261025200000
+neg	batch-2 apply before batch 1	rc=3	ERROR:  predecessor: ledger has 280 rows, max 20261023140000; expected 283 rows, max 20261025200000
+neg	batch-1 apply with one byte of the embedded 20261024110000 changed	rc=3	ERROR:  integrity: embedded 20261024110000_copilot_settings_delete_nonce.sql is not the reviewed file
+neg	batch-1 apply with the embedded fingerprint query changed	rc=3	ERROR:  integrity: the embedded fingerprint query is not fingerprint.sql
+neg	state after the negative checks	unchanged
+b1	lock probe	rc=3	1 PROBE_LOCKS line	unchanged
+b1	dry run	rc=3	1 ERROR line(s): ERROR:  DRY_RUN_COMPLETE_ALL_CHECKS_PASSED|	0.342s	unchanged	EQUAL batch 1 pre-state summary 
+b1	apply	rc=0	SET DO 	0.357s	EQUAL batch 1 post-state summary 
+b1	ledger	283 rows, max 20261025200000
+b1	re-apply	rc=3	ERROR:  predecessor: ledger has 283 rows, max 20261025200000; expected 280 rows, max 20261023140000	unchanged
+neg	batch-2 apply with one byte of the embedded 20261025400000 changed (its stripped-body md5)	rc=3	ERROR:  integrity: embedded 20261025400000_path_a_account_accept_typed_name.sql is not the reviewed file	unchanged
+b2	lock probe	rc=3	1 PROBE_LOCKS line	unchanged
+b2	dry run	rc=3	1 ERROR line(s): ERROR:  DRY_RUN_COMPLETE_ALL_CHECKS_PASSED|	0.294s	unchanged	EQUAL batch 2 pre-state summary 
+b2	apply	rc=0	SET DO 	0.291s	EQUAL batch 2 post-state summary 
+b2	ledger	284 rows, max 20261025400000
+b2	re-apply	rc=3	ERROR:  predecessor: ledger has 284 rows, max 20261025400000; expected 283 rows, max 20261025200000	unchanged
+pgtap	copilot_settings_delete_nonce.sql on the final state	rc=0	Files=1, Tests=24,  0 wallclock secs  Result: PASS 		unchanged
+pgtap	session_csrf_tokens.sql on the final state	rc=0	Files=1, Tests=30,  0 wallclock secs  Result: PASS 		unchanged
+pgtap	consent_revoke_provider_nonce.sql on the final state	rc=0	Files=1, Tests=34,  0 wallclock secs  Result: PASS 		unchanged
+pgtap	path_a_account_accept_typed_name.sql on the final state	rc=0	Files=1, Tests=52,  0 wallclock secs  Result: PASS 		unchanged
+final	follow-up pgTAP suite (77d04563) on the final state	Files=235, Tests=15904, 445 wallclock secs  Result: FAIL 	adult_subject_invitation.sql:4 adult_subject_session_response.sql:6 export_member_plan.sql:3 hmac_keyring_rotation.sql:1 legal_audit_attribution_completeness.sql:1 other_adult_held_upload.sql:3 	unchanged

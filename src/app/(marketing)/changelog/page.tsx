@@ -81,7 +81,7 @@ export default async function ChangelogPage() {
     <div className="mx-auto max-w-6xl px-6 py-section">
       <header className="reading-head">
         <p className="eyebrow">Research library</p>
-        <h1 className="display display-lg">
+        <h1 className="display">
           New reports, <span className="accent">continuously.</span>
         </h1>
         <p className="lede reading-intro">

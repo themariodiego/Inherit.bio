@@ -1,7 +1,5 @@
 import "server-only";
-import crypto from "node:crypto";
 import { z } from "zod";
-import { hmacSecret } from "@/lib/crypto";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { mintPublicFormToken, readPublicFormToken } from "@/lib/embryos/operation-token";
 import { claimantSessionHash } from "./rights";
@@ -17,22 +15,21 @@ export const ownerObjectionView = z.object({
   objectionArtifactBody: z.literal("Your objection pauses only this claim while a named person reviews it. Your record stays as it is."),
   allowedActionIds: z.tuple([z.literal("object")]),
 }).strict();
-export function ownerObjectionCsrf(hash: string): string { return hmacSecret(hash, "future-person-owner-objection-csrf-v1"); }
 export async function loadOwnerObjection(request: Request) {
   const hash = claimantSessionHash(request); if (!hash) return null;
   const { data, error } = await createAdminClient().rpc("future_person_objection_view_v1", { p_session_hash: hash });
   const parsed = ownerObjectionView.safeParse(data); if (error || !parsed.success) return null;
   // The view and its proof are stateless. Only the authorized POST consumes
   // this operation-specific nonce; no case, candidate or nonce is stored here.
-  return { view: parsed.data, csrf: ownerObjectionCsrf(hash),
+  // The page renders this rights session's one-time X-Inherit-CSRF token for the
+  // route (G8.5); it was a digest of the session, returned here.
+  return { view: parsed.data,
     nonce: mintPublicFormToken("future-person-claim-objection", Date.now(), hash) };
 }
 export function ownerObjectionMutation(request: Request, token: string) {
   const hash = claimantSessionHash(request); const url = new URL(request.url);
-  const csrf = request.headers.get("x-inherit-csrf");
   if (!hash || url.search || request.headers.get("origin") !== url.origin || request.headers.get("sec-fetch-site") !== "same-origin"
-    || !csrf || !/^[0-9a-f]{64}$/u.test(csrf) || token.length > 2048
-    || !crypto.timingSafeEqual(Buffer.from(csrf), Buffer.from(ownerObjectionCsrf(hash)))) return null;
+    || token.length > 2048) return null;
   const proof = readPublicFormToken(token, "future-person-claim-objection", Date.now(), hash);
   return proof ? { sessionHash: hash, nonce: proof.nonce } : null;
 }

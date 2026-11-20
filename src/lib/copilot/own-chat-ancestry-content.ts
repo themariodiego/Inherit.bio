@@ -28,7 +28,7 @@ export function capturedAncestryResult(receipt: OwnChatAncestryReceipt) {
   const { content, ...ancestrySnapshot } = receipt;
   const available = content.admixture.result_state === "available";
   const presentation = !available ? { rows: [], split: [] }
-    : (content.schemaVersion === 3 || content.schemaVersion === 4) ? presentRegionalShares(content.admixture.result)
+    : (content.schemaVersion === 3 || content.schemaVersion === 4 || content.schemaVersion === 5) ? presentRegionalShares(content.admixture.result)
     : { rows: regionsView(presentShares(content.admixture.result, { ranges: content.admixture.result.ranges })).rows, split: [] };
   return {
     file_id: receipt.fileId, purpose: "ancestry" as const, completed_at: receipt.completedAt,
@@ -37,7 +37,7 @@ export function capturedAncestryResult(receipt: OwnChatAncestryReceipt) {
     markersRead: content.admixture.result.markersUsed, markersRequired: content.panel.minimumMarkers,
     regions: presentation.rows.map(displayedRegion), split: presentation.split.map(displayedRegion),
     note: content.admixture.support_note,
-    ...((content.schemaVersion === 3 || content.schemaVersion === 4) ? { reportingCaveat: content.admixture.result.reporting.caveat,
+    ...((content.schemaVersion === 3 || content.schemaVersion === 4 || content.schemaVersion === 5) ? { reportingCaveat: content.admixture.result.reporting.caveat,
       merged: content.admixture.result.reporting.merged } : {}),
     ...(!available ? { limitation: "Too few usable markers were read for a supported regional result. Missing coverage is not a result about your ancestry." } : {}),
     lineages: capturedAncestryRows(content, receipt.completedAt).filter(row => row.kind !== "admixture")

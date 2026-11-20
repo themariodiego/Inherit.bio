@@ -6,12 +6,22 @@ import { useEffect, useRef, useState } from "react";
 import { z } from "zod";
 import { REFUSAL_IDS, refusalFor, type RefusalId } from "@/copy/copilot/refusals";
 import { NOT_DIAGNOSTIC } from "@/copy/reports/strings";
+import { useCsrf } from "@/components/security/csrf-provider";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { providerDisplayName } from "@/lib/llm";
-import type { ChatProviderInfo } from "./chat-panel";
 import { route } from "@/lib/primary-routes";
 import { OWN_CHAT_CORRECTION_NOTICE, ownChatCorrectionSchema } from "@/lib/copilot/own-chat-correction";
+
+/** What the page may say about the saved provider: its class and recipient, never a credential. */
+export interface ChatProviderInfo {
+  configured: boolean;
+  provider?: "anthropic" | "openai_compatible";
+  providerKey?: string;
+  model?: string;
+  local?: boolean;
+  hasConsent?: boolean;
+}
 
 const citation = z.object({ id: z.string().min(1).max(2000), label: z.string().min(1).max(100_000),
   href: z.string().max(4000).refine(value => {
@@ -47,6 +57,7 @@ export function OwnChatPanel({ contextToken, info, chats, displayLabel, scopeKin
   scopeKind?: "self" | "family" | "cohort"; threadHint?: string; placeholder?: string;
 }) {
   const router = useRouter();
+  const csrf = useCsrf("api.chat");
   const [input, setInput] = useState("");
   const [chatId, setChatId] = useState<string | null>(null);
   const [usedToken, setUsedToken] = useState<string | null>(null);
@@ -66,11 +77,11 @@ export function OwnChatPanel({ contextToken, info, chats, displayLabel, scopeKin
     setBusy(true); setError(null);
     if (!chatId) setUsedToken(contextToken);
     try {
-      const response = await fetch("/api/chat", {
+      const response = await csrf.send((csrfToken) => fetch("/api/chat", {
         method: "POST", credentials: "same-origin", cache: "no-store", redirect: "error",
-        headers: { "content-type": "application/json" }, signal: controller.signal,
+        headers: { "content-type": "application/json", "X-Inherit-CSRF": csrfToken }, signal: controller.signal,
         body: JSON.stringify(chatId ? { chatId, message } : { contextToken, message }),
-      });
+      }));
       if (!response.ok) {
         if (response.status === 409) {
           const blocked = ownChatCorrectionSchema.safeParse(await response.clone().json().catch(() => null));

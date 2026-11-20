@@ -60,8 +60,8 @@ export const WITHOUT_CHECK: Record<string, string> = {
     "Current named human objection reviewer under own live Auth, recent MFA, exact operation assignment and current claim/objection/notice revisions. Both documents require complete byte acknowledgement; decisions mutate only the pending claim and must remain independent of analysis, jurisdiction and QC. No analytical capability is opened.",
   "src/app/api/family/acknowledge/route.ts":
     "Records an acknowledgement, a Tier-2 result-gate cookie and a one-time portrait acknowledgement stamp. It returns no genetic result and opens no capability; the surfaces it precedes resolve capability themselves.",
-  "src/app/(app)/embryos/acknowledge.ts":
-    "Server action recording the Embryo domain's Tier-2 acknowledgement as a session cookie. It returns no result and opens no capability; the Embryo pages resolve capability through loadViewer.",
+  "src/app/api/embryos/acknowledge/route.ts":
+    "Records the Embryo domain's Tier-2 acknowledgement as a session cookie (api.embryo-acknowledge, which replaced the server action on 23 October 2026). It returns no result and opens no capability; the Embryo pages resolve capability through loadViewer.",
   "src/app/(family-hub)/layout.tsx":
     "Chooses the chrome around the Family landing by sign-in state. It renders no result; the page inside resolves capability itself.",
   "src/app/(marketing)/embryo-analysis/page.tsx":
@@ -194,7 +194,7 @@ describe("every restricted-capability surface enforces or is classified", () => 
     expect(surfaces.filter(file => file.endsWith("/page.tsx")).length).toBeGreaterThanOrEqual(18);
     for (const file of ["src/app/api/family/[person]/sharing/route.ts", "src/app/api/embryo-cohort-drafts/route.ts",
       "src/app/(app)/family/health-picture/page.tsx", "src/app/(app)/genome/[subject]/data/browser/page.tsx",
-      "src/app/(app)/embryos/acknowledge.ts", "src/app/(family-hub)/layout.tsx"]) expect(surfaces).toContain(file);
+      "src/app/api/embryos/acknowledge/route.ts", "src/app/(family-hub)/layout.tsx"]) expect(surfaces).toContain(file);
   });
 
   it("leaves no surface in scope both unguarded and unexplained", () => {

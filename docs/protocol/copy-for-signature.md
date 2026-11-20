@@ -1,12 +1,32 @@
 # Copy drafted for signature — D-102 and D-103
 
-**Status: SIGNED 2026-09-14, not yet wired.** Owner decision 2026-09-13: "I
-draft, you sign." Both are now approved and this file becomes the record of
-what was approved and when.
+**Status: SIGNED 2026-09-14. D-102 is wired; D-103 is wired 2026-10-23
+(`72ba6c53`), and its acceptance takes the typed name on its registered route
+from 2026-10-24 (local branch `local/patha`, unmerged).** Owner decision
+2026-09-13: "I draft, you sign." Both are now approved and this file becomes
+the record of what was approved and when.
 
 - **D-103's five statements: approved VERBATIM**, including statement 5's
-  pointer to the published deadlines rather than the figures. Wiring them into
-  the confirm body is queued work, not done here.
+  pointer to the published deadlines rather than the figures. **Wired
+  2026-10-23 in `72ba6c53`** (local branch `local/d103`, not yet merged): the
+  five live in `src/copy/family/adult-subject-statements.ts`, exactly as
+  signed (the four rows below and the split `revocable`), and the Path A
+  review on `/withdraw/session` renders each as its own checkbox named by its
+  sentence, with Accept disabled until all five are ticked. The confirm body
+  carries the server-published keys, and the route refuses any other list.
+  The readability gate measures them there as ordinary copy: 8.90, 3.02 and
+  4.79 for the three of 15 words or more; the two shorter ones are not graded.
+  **2026-10-24 (local branch `local/patha`), by the owner's decision of 23
+  October ("D-103: Path A acceptance includes a typed name"):** the five
+  statements are unchanged, byte for byte, and the review now also asks for
+  the person's typed name beside them. The field reuses Path B's approved
+  label and rule ("Type your full legal name to sign"; "Type your first and
+  family name, each two letters or more."), so no new wording is drafted
+  here. Accept stays disabled until all five are ticked and the name has two
+  parts of two characters or more. The acceptance now goes to
+  `api.invitation-accept`, as the register names it, and the name is stored
+  encrypted the way Path B's signature stores it
+  (`20261025400000_path_a_account_accept_typed_name.sql`).
   - **BLOCKED 2026-09-14 on one sentence, and the measurement is the reason.**
     Putting the five into `src/copy/family/` subjects them to the readability
     gate, which holds a long block to grade 9. The approved `revocable`
@@ -26,6 +46,10 @@ what was approved and when.
        the six statements already shipping in `co-parent-review-form.tsx` have
        never been measured, and three of them are at 9.13, 11.68 and 11.70 —
        all worse than the sentence being blocked here.
+
+    **Decided 2026-10-23: choice 1, the split sentence, signed by the owner**
+    (decisions, "D-103: the owner signs the split `revocable` sentence"). D-110
+    stays separate.
 
     **D-102 is unaffected and is wired.**
 - **D-102: approved, and the owner chose ATTRIBUTION** over the unattributed

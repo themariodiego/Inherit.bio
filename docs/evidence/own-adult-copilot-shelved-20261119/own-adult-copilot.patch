@@ -1,0 +1,1891 @@
+diff --git a/e2e/adult-subject-invitation.spec.ts b/e2e/adult-subject-invitation.spec.ts
+index 7fa86173..0730dc92 100644
+--- a/e2e/adult-subject-invitation.spec.ts
++++ b/e2e/adult-subject-invitation.spec.ts
+@@ -16,6 +16,7 @@ import {
+ import { ADULT_SUBJECT_STATEMENTS, ADULT_SUBJECT_STATEMENTS_HEADING } from "../src/copy/family/adult-subject-statements";
+ import { PATH_B_REQUEST_COPY } from "../src/copy/upload/other-adult";
+ import { accountCsrf, signOut } from "./helpers/session-csrf";
++import { route } from "../src/lib/primary-routes";
+ 
+ // A fresh inviter per run: the database counts invitation attempts per acting
+ // account (global-contact-refusal-bar-v1.quotaAuthority, 10 an hour and 30 a
+@@ -282,6 +283,29 @@ test("/family/invite complete: invited adult accepts without granting inviter ac
+     .select("id", { count: "exact", head: true })
+     .eq("subject_id", invitation.target_id);
+   expect(files).toBe(0);
++
++  // G8.5, Copilot for an adult's own record (19 November 2026). The record is
++  // now held by the invited adult's account and owned by no account, so it is
++  // an own subject for Copilot, on the terms of the self record: its
++  // permission also needs the record's own-file permission
++  // (consent.upload-self and the insurance acknowledgement, signed for this
++  // record), and no screen offers that for any record but the self one. So
++  // its Copilot page is still the non-enumerating not-found, minting nothing,
++  // and Settings lists no permission for it. The inviter, who neither holds
++  // nor owns it, gets the same not-found.
++  const recordCopilot = route("copilot.scope", { scope: `s-${invitation.target_id}` });
++  const ownRecord = await page.request.get(recordCopilot);
++  expect(ownRecord.status(), "the invited adult's record has no Copilot until it has its own-file permission").toBe(404);
++  expect(ownRecord.headers()["cache-control"]).toContain("no-store");
++  expect(ownRecord.headers()["x-frame-options"]).toBe("DENY");
++  expect(await ownRecord.text()).not.toMatch(/contextToken|Message the copilot/);
++  await page.goto("/settings/copilot");
++  await expect(page.getByRole("region", { name: /^Copilot permission/ })).toHaveCount(1);
++  await expect(page.getByRole("region", { name: "Copilot permission", exact: true })).toBeVisible();
++  await signOut(page);
++  await signIn(page, INVITER.email, INVITER.password);
++  expect((await page.request.get(recordCopilot)).status(), "the inviter has no Copilot for the record").toBe(404);
++  await signOut(page);
+ });
+ 
+ /**
+diff --git a/e2e/other-adult-upload.spec.ts b/e2e/other-adult-upload.spec.ts
+index 5c957799..4bc26359 100644
+--- a/e2e/other-adult-upload.spec.ts
++++ b/e2e/other-adult-upload.spec.ts
+@@ -614,6 +614,25 @@ test("another adult's file under Path B: confirmed into the person's own account
+   await signIn(page, UPLOADER.email, UPLOADER.password);
+   expect((await page.request.get(`/api/files/${held.id}/download`)).status()).toBe(404);
+   expect((await page.request.get(route("genome.reports", { subject: `s-${subjectId}` }))).status()).toBe(404);
++
++  // G8.5, Copilot for an adult's own record (19 November 2026) admits only a
++  // record its own account holds and no account owns. This one its uploader
++  // owns, so nothing changes for it: the uploader, on a runtime with no
++  // attested same-host model, gets the registered unavailable page with no
++  // composer and no token, and the person it is bound to gets the not-found.
++  const recordCopilot = route("copilot.scope", { scope: `s-${subjectId}` });
++  const uploaderView = await page.request.get(recordCopilot);
++  expect(uploaderView.status()).toBe(200);
++  expect(uploaderView.headers()["cache-control"]).toContain("no-store");
++  expect(uploaderView.headers()["x-frame-options"]).toBe("DENY");
++  await page.goto(recordCopilot);
++  await expect(page.locator('[data-slot="copilot-local-unavailable"]')).toHaveAttribute("data-state", "not-covered");
++  await expect(page.getByLabel("Message the copilot")).toHaveCount(0);
++  await expect(page.getByTestId("data-flow-indicator")).toHaveCount(0);
++  expect(await page.content()).not.toMatch(/contextToken/);
++  await signOut(page);
++  await signIn(page, ACCOUNT_PERSON.email, ACCOUNT_PERSON.password);
++  expect((await page.request.get(recordCopilot)).status(), "a record bound to the person but owned by its uploader stays refused").toBe(404);
+ });
+ 
+ /** Use the registered operator doors, with real loopback storage/RPC reads.
+diff --git a/scripts/own-adult-copilot-migration.test.ts b/scripts/own-adult-copilot-migration.test.ts
+new file mode 100644
+index 00000000..4dc9e402
+--- /dev/null
++++ b/scripts/own-adult-copilot-migration.test.ts
+@@ -0,0 +1,236 @@
++import { createHash } from "node:crypto";
++import { readFileSync, readdirSync } from "node:fs";
++import path from "node:path";
++import { describe, expect, it } from "vitest";
++
++/**
++ * G8.5, Copilot for an adult's own record (20261119100000_own_adult_copilot.sql;
++ * owner decision of 19 November 2026). The migration patches three bodies in
++ * place under the md5-guarded convention: the exact reviewed predecessor and
++ * ACL, one anchor per patch, the reviewed successor and the unchanged ACL,
++ * 55000 on any mismatch. pg_get_functiondef keeps a body verbatim, so each
++ * predecessor's definition is rebuilt here from the migration that last
++ * defined it and every md5 of the chain is recomputed from source. The pgTAP
++ * suite (supabase/tests/own_adult_copilot.sql) runs the migration against the
++ * real chain and holds the database to the same final successors.
++ */
++
++const root = path.resolve(__dirname, "..");
++const read = (file: string) => readFileSync(path.join(root, file), "utf8");
++const md5 = (text: string) => createHash("md5").update(text, "utf8").digest("hex");
++const count = (text: string, fragment: string) => text.split(fragment).length - 1;
++
++const NAME = "20261119100000_own_adult_copilot.sql";
++const migration = read(`supabase/migrations/${NAME}`);
++const pgtap = read("supabase/tests/own_adult_copilot.sql");
++
++/** The text between two markers, the first occurrence after `after`. */
++function between(text: string, start: string, end: string, after = 0): string {
++  const from = text.indexOf(start, after);
++  expect(from, start).toBeGreaterThanOrEqual(0);
++  const to = text.indexOf(end, from + start.length);
++  expect(to, end).toBeGreaterThan(from);
++  return text.slice(from + start.length, to);
++}
++
++/** A predecessor as pg_get_functiondef prints it: its normalized header around the verbatim body. */
++const predecessors: Record<string, () => string> = {
++  "private.own_copilot_configuration_v1(uuid,uuid,uuid)": () => {
++    const source = read("supabase/migrations/20260907081757_canonical_own_copilot_authority.sql");
++    const start = source.lastIndexOf("create function private.own_copilot_configuration_v1(");
++    const body = between(source, "as $function$", "$function$;", start);
++    return "CREATE OR REPLACE FUNCTION private.own_copilot_configuration_v1(p_account_id uuid, p_session_id uuid, p_subject_id uuid)\n"
++      + " RETURNS jsonb\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'pg_catalog', 'private'\nAS $function$"
++      + body + "$function$\n";
++  },
++  "private.own_report_purge_scope_v1(uuid)": () => {
++    const source = read("supabase/migrations/20260907111757_canonical_own_ancestry_generation.sql");
++    const start = source.lastIndexOf("create or replace function private.own_report_purge_scope_v1(");
++    const body = between(source, "as $fn$", "$fn$;", start);
++    return "CREATE OR REPLACE FUNCTION private.own_report_purge_scope_v1(p_grant uuid)\n"
++      + " RETURNS jsonb\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO 'pg_catalog'\nAS $function$"
++      + body + "$function$\n";
++  },
++  "private.purge_path_a_subject_v1(uuid,uuid)": () => {
++    const source = read("supabase/migrations/20261016181000_subject_delete.sql");
++    const start = source.lastIndexOf("create function private.purge_path_a_subject_v1(");
++    const body = between(source, "as $$", "$$;", start);
++    return "CREATE OR REPLACE FUNCTION private.purge_path_a_subject_v1(p_subject_id uuid, p_account_id uuid)\n"
++      + " RETURNS void\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$"
++      + body + "$function$\n";
++  },
++};
++
++interface Patch { ordinal: number; target: string; before: string; after: string; acl: string; old: string; next: string; label: string }
++const patches: Patch[] = [...migration.matchAll(
++  /\((\d+),'([^']+)','([0-9a-f]{32})',\s*'([0-9a-f]{32})','([^']+)',\s*\$old\$([\s\S]*?)\$old\$,\s*\$new\$([\s\S]*?)\$new\$,\s*'([^']+)'\)/g,
++)].map(match => ({ ordinal: Number(match[1]), target: match[2]!, before: match[3]!, after: match[4]!, acl: match[5]!,
++  old: match[6]!, next: match[7]!, label: match[8]! }));
++
++/** Every target's successor, step by step, as the patch loop computes it. */
++function successors(): Record<string, string> {
++  const definitions = Object.fromEntries(Object.entries(predecessors).map(([target, build]) => [target, build()]));
++  for (const patch of patches) definitions[patch.target] = definitions[patch.target]!.replace(patch.old, () => patch.next);
++  return definitions;
++}
++
++describe("the release it belongs to", () => {
++  it("is a guarded production release, the only one of its day, after every migration it patches", () => {
++    expect(migration.startsWith("-- =====================================================================\n"
++      + "-- PRODUCTION RELEASE: GUARDED.")).toBe(true);
++    const files = readdirSync(path.join(root, "supabase/migrations")).filter(file => file.endsWith(".sql")).sort();
++    expect(files.filter(file => file.startsWith("20261119"))).toEqual([NAME]);
++    expect(files.at(-1)).toBe(NAME);
++    for (const earlier of ["20260907081757_canonical_own_copilot_authority.sql", "20260907111757_canonical_own_ancestry_generation.sql",
++      "20261016181000_subject_delete.sql", "20261025400000_path_a_account_accept_typed_name.sql"]) expect(NAME > earlier).toBe(true);
++  });
++});
++
++describe("the guarded in-place patches", () => {
++  it("rebuild each predecessor from source at exactly the digest the patch and the preflight pin", () => {
++    const preflight = between(migration, "do $predecessor$", "$predecessor$;");
++    expect(patches.map(patch => patch.ordinal)).toEqual([1, 2, 3, 4]);
++    for (const [target, build] of Object.entries(predecessors)) {
++      const first = patches.find(patch => patch.target === target)!;
++      expect(md5(build()), target).toBe(first.before);
++      expect(preflight).toContain(`to_regprocedure('${target}')\n   and md5(pg_get_functiondef(p.oid))='${first.before}'\n`
++        + `   and p.proacl::text='${first.acl}'`);
++    }
++    expect(Object.fromEntries(patches.map(patch => [patch.ordinal, patch.acl]))).toEqual({
++      1: "{postgres=X/postgres,service_role=X/postgres}", 2: "{postgres=X/postgres}", 3: "{postgres=X/postgres}", 4: "{postgres=X/postgres}" });
++    expect(preflight).toContain("raise exception using errcode='55000',message='own adult copilot prerequisite differs'");
++  });
++
++  it("finds each anchor exactly once at its step, and each successor is the reviewed md5 the next step and the postflight require", () => {
++    const definitions = Object.fromEntries(Object.entries(predecessors).map(([target, build]) => [target, build()]));
++    const last: Record<string, string> = {};
++    for (const patch of patches) {
++      const definition = definitions[patch.target]!;
++      expect(count(definition, patch.old), patch.label).toBe(1);
++      expect(md5(definition), patch.label).toBe(patch.before);
++      definitions[patch.target] = definition.replace(patch.old, () => patch.next);
++      expect(md5(definitions[patch.target]!), patch.label).toBe(patch.after);
++      last[patch.target] = patch.after;
++    }
++    expect(patches[3]!.before).toBe(patches[2]!.after);
++    const postflight = between(migration, "do $postflight$", "$postflight$;");
++    for (const [target, after] of Object.entries(last)) {
++      expect(postflight).toContain(`('${target}','${after}',`);
++      // The pgTAP suite holds the database to the same final successor.
++      expect(pgtap).toContain(`('${target}','${after} `);
++    }
++  });
++
++  it("routes the configuration through the own Copilot context and changes nothing else in it", () => {
++    const target = "private.own_copilot_configuration_v1(uuid,uuid,uuid)";
++    const before = predecessors[target]!(), after = successors()[target]!;
++    expect(after).toContain(" c:=private.own_copilot_context_v1(p_account_id,p_session_id,p_subject_id);");
++    expect(after).not.toContain("own_report_context_v1(");
++    const call = " c:=private.own_copilot_context_v1(p_account_id,p_session_id,p_subject_id);";
++    expect(after.slice(after.indexOf(call) + call.length))
++      .toBe(before.slice(before.indexOf(" c:=public.own_report_context_v1(p_account_id,p_session_id,p_subject_id);")
++        + " c:=public.own_report_context_v1(p_account_id,p_session_id,p_subject_id);".length));
++  });
++
++  it("widens the purge scope only for a Copilot grant on an adult record no account owns", () => {
++    const target = "private.own_report_purge_scope_v1(uuid)";
++    const before = predecessors[target]!(), after = successors()[target]!;
++    expect(after).toContain("and (s.subject_class='self'\n");
++    expect(after).toContain("  or (s.subject_class='other_adult' and s.owner_account_id is null and g.purpose in('copilot.local','copilot.cloud')))\n");
++    // Every other condition of the scope is the predecessor's, byte for byte.
++    const tail = " and s.subject_account_id=d.recipient_account_id";
++    expect(after.slice(after.indexOf(tail))).toBe(before.slice(before.indexOf(tail)));
++  });
++
++  it("deletes the record's conversations before its grants end, and leaves the rest of Path A's delete as it was", () => {
++    const target = "private.purge_path_a_subject_v1(uuid,uuid)";
++    const before = predecessors[target]!(), after = successors()[target]!;
++    const chats = after.indexOf("delete from public.chats where id=any(v_chats);");
++    const messages = after.indexOf("delete from public.chat_messages where chat_id=any(v_chats);");
++    const residual = after.indexOf("message='subject_delete_chat_residual'");
++    const grants = after.indexOf(" v_grants:=array(select g.grant_id");
++    expect(after.indexOf(" v_chats:=array(select c.id from public.chats c where c.subject_id=s.id order by c.id);")).toBeGreaterThan(0);
++    expect(messages).toBeLessThan(chats);
++    expect(chats).toBeLessThan(residual);
++    expect(residual).toBeLessThan(grants);
++    expect(after.slice(grants)).toBe(before.slice(before.indexOf(" v_grants:=array(select g.grant_id")));
++    // The guard that opens the body (a record holding a file is still refused) is unchanged.
++    const guard = before.slice(before.indexOf(" select * into s"), before.indexOf(" v_grants:=array("));
++    expect(after).toContain(guard);
++    // The same model working state, in the same order, as the self record's delete.
++    const self = read("supabase/migrations/20261016181000_subject_delete.sql");
++    const selfBlock = between(self, " v_chats:=array(select c.id from public.chats c where c.subject_id=s.id order by c.id);",
++      " n_chats:=cardinality(v_chats);");
++    const ours = between(after, " v_chats:=array(select c.id from public.chats c where c.subject_id=s.id order by c.id);",
++      " if exists(select 1 from public.chat_messages m where m.retrieved_subject_ids && array[s.id])");
++    expect(ours).toBe(selfBlock);
++  });
++
++  it("uses the convention's guard body", () => {
++    const guard = between(migration, "order by ordinal loop\n", "\n end loop;");
++    const reference = read("supabase/migrations/20261024110000_copilot_settings_delete_nonce.sql");
++    expect(between(reference, "order by ordinal loop\n", "\n end loop;")).toBe(guard);
++    const tested = between(pgtap, "declare definition text;before_acl aclitem[];\nbegin\n", "\nend $guarded$;");
++    expect(tested).toBe(guard);
++  });
++});
++
++describe("the own Copilot context", () => {
++  const context = between(migration, "create function private.own_copilot_context_v1(", "\n$function$;");
++
++  it("returns exactly the self context for a self subject, before any other check", () => {
++    const self = context.indexOf("if v_class='self' then return public.own_report_context_v1(p_account_id,p_session_id,p_subject_id); end if;");
++    expect(self).toBeGreaterThan(0);
++    for (const later of ["lock_invitation_transitions_v1", "own_upload_store_authority_v1", "public_appeal_target_held_v1"]) {
++      expect(context.indexOf(later), later).toBeGreaterThan(self);
++    }
++    expect(context).toContain("if v_class is distinct from 'other_adult' or p_account_id is null then\n"
++      + "  raise exception using errcode='42501',message='not_found'; end if;");
++  });
++
++  it("decides the own adult record from database columns only, in the self context's lock order", () => {
++    const lock = context.indexOf("perform private.lock_invitation_transitions_v1();");
++    const store = context.indexOf("c:=private.own_upload_store_authority_v1(p_account_id,p_session_id,p_subject_id);");
++    const shape = context.indexOf("select * into s from public.subjects where id=p_subject_id for share;");
++    expect(lock).toBeGreaterThan(0);
++    expect(lock).toBeLessThan(store);
++    expect(store).toBeLessThan(shape);
++    for (const exact of [
++      "if s.subject_class is distinct from 'other_adult' or s.subject_account_id is distinct from p_account_id\n"
++        + "  or s.owner_account_id is not null or s.ownership_transferred_at is not null\n"
++        + "  or s.lifecycle is distinct from 'active' or s.analysis_stopped_at is not null or s.cohort_id is not null then",
++      "if private.public_appeal_target_held_v1('subject',s.id) then",
++      "b.status='current' and b.binding_kind='adult_claim'",
++      "and b.binding_revision=(c->>'accountBindingRevision')::bigint and sp.status='active'",
++      "and sp.account_id=p_account_id and sp.subject_id=s.id and sp.principal_kind='account_subject' for share of b,sp;",
++      "and i.invitation_kind='adult_subject' and i.status='accepted';",
++      "and cs.signer_principal_id=p.id and cs.purpose='adult-subject-account-acceptance'",
++      "and ca.artifact_key='consent.subject-adult' and ca.superseded_at is null",
++      "where sc.subject_id=s.id and sc.account_id=p_account_id and sc.consent_type='adult_source'\n"
++        + "  and sc.revoked_at is null",
++      "return c||jsonb_build_object('principalId',p.id,'principalRevision',p.principal_revision);",
++    ]) expect(context).toContain(exact);
++    // No request field: every argument is the server's account, session and subject.
++    expect(context).not.toMatch(/current_setting|p_snapshot|p_payload/);
++  });
++
++  it("is owner-only, and the postflight holds it to that ACL", () => {
++    expect(migration).toContain("revoke all on function private.own_copilot_context_v1(uuid,uuid,uuid)\n"
++      + " from public,anon,authenticated,inherit_upload_only,service_role;");
++    expect(migration).not.toMatch(/grant [^;]* to (anon|authenticated|public|service_role)\b/i);
++    expect(between(migration, "do $postflight$", "$postflight$;"))
++      .toContain("(select proacl::text from pg_proc where oid='private.own_copilot_context_v1(uuid,uuid,uuid)'::regprocedure)\n"
++        + "   is distinct from '{postgres=X/postgres}'");
++  });
++
++  it("pins each callee to the one reviewed body production holds", () => {
++    const preflight = between(migration, "do $predecessor$", "$predecessor$;");
++    for (const [signature, body] of [
++      ["public.own_report_context_v1(uuid,uuid,uuid)", "5bb0a10ee76fd3eaceacbcedbcb40003"],
++      ["private.own_upload_store_authority_v1(uuid,uuid,uuid)", "8c4c704f4b23546b063a0c85744b1735"],
++      ["private.public_appeal_target_held_v1(text,uuid)", "7402cafec700ba4c1f30e9e016140742"],
++      ["private.lock_invitation_transitions_v1()", "3a28aeaf4bf736cbba89e3b209649557"],
++    ]) expect(preflight).toContain(`('${signature}','${body}')`);
++    expect(preflight).toContain("as x(signature,body) on p.oid=to_regprocedure(x.signature) and md5(pg_get_functiondef(p.oid))=x.body)<>4");
++  });
++});
+diff --git a/src/app/(app)/copilot/[scope]/page.tsx b/src/app/(app)/copilot/[scope]/page.tsx
+index b50333aa..99210bf9 100644
+--- a/src/app/(app)/copilot/[scope]/page.tsx
++++ b/src/app/(app)/copilot/[scope]/page.tsx
+@@ -44,8 +44,9 @@ export default async function ChatPage(
+   const subject = await resolveSubjectForAccount(user.id, scope);
+   if (!subject) notFound();
+   // copilot-transport-availability-v1 classifies the resolved subject as own
+-  // or true non-self; only an own self subject reaches a context token
+-  // (src/lib/copilot/subject-scope.ts). A true non-self subject on a runtime
++  // or true non-self; only an own subject (a self subject, or since 19
++  // November 2026 an adult record held as the account's own) reaches a context
++  // token (src/lib/copilot/subject-scope.ts). A true non-self subject on a runtime
+   // with no attested same-host model gets the registered unavailable page,
+   // which names nothing about the subject; every other subject is the same
+   // non-enumerating 404 as an unknown segment.
+diff --git a/src/app/(app)/settings/copilot/page.tsx b/src/app/(app)/settings/copilot/page.tsx
+index d4edf9f9..1f1db4a4 100644
+--- a/src/app/(app)/settings/copilot/page.tsx
++++ b/src/app/(app)/settings/copilot/page.tsx
+@@ -1,5 +1,5 @@
+ import { OwnCopilotPermission } from "@/components/settings/own-copilot-permission";
+-import { prepareOwnCopilotPermission } from "@/lib/copilot/own-consent";
++import { prepareOwnAdultCopilotPermissions, prepareOwnCopilotPermission } from "@/lib/copilot/own-consent";
+ import { modelRuntime } from "@/lib/copilot/model-endpoint";
+ import type { Metadata } from "next";
+ import Link from "next/link";
+@@ -14,6 +14,9 @@ export default async function CopilotSettingsPage() {
+   const supabase = await createClient();
+   const { data: llm } = await supabase.from("llm_settings").select("provider, base_url, model, key_last4").maybeSingle();
+   const permission = await prepareOwnCopilotPermission();
++  // Each adult record the account holds as its own has its own permission,
++  // listed after the self record's (G8.5, 19 November 2026).
++  const ownAdult = await prepareOwnAdultCopilotPermissions();
+   const runtime = modelRuntime();
+   // The one-time nonce the removal consumes (api.llm-settings DELETE, G8.5):
+   // rendered here for this account and session, stored nowhere.
+@@ -28,6 +31,7 @@ export default async function CopilotSettingsPage() {
+         removeNonce={removeNonce}
+         current={llm ? { provider: llm.provider as "anthropic" | "openai_compatible", base_url: llm.base_url, model: llm.model, key_last4: llm.key_last4 } : null} />
+       <OwnCopilotPermission view={permission} />
++      {ownAdult.map(({ displayLabel, view }) => <OwnCopilotPermission key={view.subjectId} view={view} record={displayLabel} />)}
+       <p className="text-sm"><Link href={route("settings.index")} className="link-target quiet-link">← Settings</Link></p>
+     </div>
+   );
+diff --git a/src/components/settings/own-copilot-permission.test.ts b/src/components/settings/own-copilot-permission.test.ts
+new file mode 100644
+index 00000000..8692b4d6
+--- /dev/null
++++ b/src/components/settings/own-copilot-permission.test.ts
+@@ -0,0 +1,106 @@
++import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
++import { isValidElement, type ReactNode } from "react";
++
++// The Copilot permission section, executed without a DOM as
++// src/components/settings/llm-settings-form.test.ts does (G8.5, 19 November
++// 2026): the self record's section renders exactly as before, and an adult
++// record held as the account's own gets its own labelled section whose grant
++// and withdrawal name that record and nothing else.
++const harness = vi.hoisted(() => ({ state: [] as unknown[], cursor: 0, refresh: vi.fn(), fetch: vi.fn() }));
++vi.mock("react", async original => ({ ...await original<typeof import("react")>(),
++  useState: (initial: unknown) => {
++    const index = harness.cursor++;
++    if (!(index in harness.state)) harness.state[index] = initial;
++    return [harness.state[index], (next: unknown) => { harness.state[index] = typeof next === "function"
++      ? (next as (previous: unknown) => unknown)(harness.state[index]) : next; }];
++  },
++}));
++vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: harness.refresh }) }));
++vi.mock("next/link", () => ({ default: "a" }));
++vi.mock("@/components/ui/button", () => ({ Button: "button" }));
++const CSRF = vi.hoisted(() => `1800000000000.${"C".repeat(43)}.${"b".repeat(64)}`);
++vi.mock("@/components/security/csrf-provider", async () => {
++  const { csrfHandle } = await import("@/lib/security/session-csrf-client");
++  return { useCsrf: () => csrfHandle(CSRF) };
++});
++import { OwnCopilotPermission } from "./own-copilot-permission";
++import type { OwnCopilotPermissionView } from "@/lib/copilot/own-consent";
++
++type Element = { type: unknown; props: Record<string, unknown> };
++function elements(node: ReactNode): Element[] {
++  if (Array.isArray(node)) return node.flatMap(elements);
++  if (!isValidElement<{ children?: ReactNode }>(node)) return [];
++  return [node as Element, ...elements(node.props.children)];
++}
++function text(node: ReactNode): string {
++  if (Array.isArray(node)) return node.map(text).join("");
++  if (typeof node === "string" || typeof node === "number") return String(node);
++  if (!isValidElement<{ children?: ReactNode }>(node)) return "";
++  return text(node.props.children);
++}
++const RECORD = "80000000-0000-4000-8000-0000000000d4", GRANT = "80000000-0000-4000-8000-0000000000e5";
++const view = (subjectId: string, granted = false): Extract<OwnCopilotPermissionView, { kind: "ready" }> => ({ kind: "ready", subjectId,
++  providerClass: "local", providerLabel: "Synthetic model", origin: "http://localhost:3103", model: "synthetic-model", granted,
++  grantId: granted ? GRANT : null, revokeNonce: granted ? "synthetic-revoke-nonce" : null, purposeKey: "copilot.local",
++  token: "synthetic-presentation-token", artifacts: [{ key: "consent.own-copilot-local", version: 2, body: "Synthetic text.", sha256: "a".repeat(64) }] });
++function render(props: Parameters<typeof OwnCopilotPermission>[0]) {
++  harness.cursor = 0;
++  return OwnCopilotPermission(props);
++}
++
++beforeEach(() => {
++  harness.state = []; harness.cursor = 0; vi.clearAllMocks();
++  vi.stubGlobal("fetch", harness.fetch);
++});
++afterEach(() => vi.unstubAllGlobals());
++
++describe("the Copilot permission section", () => {
++  it("renders the self record's section with its one fixed heading and label, as before", () => {
++    const tree = render({ view: view("80000000-0000-4000-8000-0000000000c3") });
++    const section = elements(tree).find(element => element.type === "section")!;
++    expect(section.props["aria-labelledby"]).toBe("copilot-permission-title");
++    const heading = elements(tree).find(element => element.type === "h2")!;
++    expect(heading.props.id).toBe("copilot-permission-title");
++    expect(text(heading.props.children as ReactNode)).toBe("Copilot permission");
++    expect(elements(tree).some(element => typeof element.props.id === "string" && element.props.id.startsWith("copilot-permission-record-"))).toBe(false);
++  });
++
++  it("labels an adult record's section by the heading and the record's name, with ids of its own", () => {
++    const tree = render({ view: view(RECORD), record: "Invited adult" });
++    const section = elements(tree).find(element => element.type === "section")!;
++    expect(section.props["aria-labelledby"]).toBe(`copilot-permission-title-${RECORD} copilot-permission-record-${RECORD}`);
++    const heading = elements(tree).find(element => element.type === "h2")!;
++    expect(heading.props.id).toBe(`copilot-permission-title-${RECORD}`);
++    expect(text(heading.props.children as ReactNode)).toBe("Copilot permission");
++    const label = elements(tree).find(element => element.props.id === `copilot-permission-record-${RECORD}`)!;
++    expect(text(label.props.children as ReactNode)).toBe("Invited adult");
++    // The same sentences as the self record's section; only the label is added.
++    const self = text(render({ view: view(RECORD) }) as ReactNode);
++    expect(text(tree as ReactNode)).toBe(self.replace("Copilot permission", "Copilot permissionInvited adult"));
++  });
++
++  it("grants for the record the section names, under its own presentation", async () => {
++    harness.state = [];
++    render({ view: view(RECORD), record: "Invited adult" });
++    harness.state[0] = true; // the affirmation checkbox, ticked
++    const tree = render({ view: view(RECORD), record: "Invited adult" });
++    harness.fetch.mockResolvedValue(new Response(JSON.stringify({ granted: true }), { status: 201 }));
++    const button = elements(tree).find(element => element.type === "button")!;
++    await (button.props.onClick as () => Promise<void>)();
++    const [url, init] = harness.fetch.mock.calls[0] as [string, RequestInit];
++    expect(url).toBe("/api/consents");
++    expect((init.headers as Record<string, string>)["x-inherit-csrf"]).toBe("synthetic-presentation-token");
++    expect(JSON.parse(init.body as string)).toMatchObject({ action: "grant-purpose", subjectId: RECORD, purposeKey: "copilot.local",
++      artifactPresentationToken: "synthetic-presentation-token" });
++  });
++
++  it("withdraws the record's own grant with the nonce rendered for it", async () => {
++    const tree = render({ view: view(RECORD, true), record: "Invited adult" });
++    harness.fetch.mockResolvedValue(new Response(JSON.stringify({ revoked: true }), { status: 200 }));
++    const button = elements(tree).find(element => element.type === "button")!;
++    await (button.props.onClick as () => Promise<void>)();
++    const [url, init] = harness.fetch.mock.calls[0] as [string, RequestInit];
++    expect(url).toBe(`/api/consents/${GRANT}/revoke`);
++    expect((init.headers as Record<string, string>)["X-Inherit-Operation-Nonce"]).toBe("synthetic-revoke-nonce");
++  });
++});
+diff --git a/src/components/settings/own-copilot-permission.tsx b/src/components/settings/own-copilot-permission.tsx
+index a9d96cf7..5431d157 100644
+--- a/src/components/settings/own-copilot-permission.tsx
++++ b/src/components/settings/own-copilot-permission.tsx
+@@ -8,7 +8,13 @@ import { Button } from "@/components/ui/button";
+ import { OWN_COPILOT_DATA_CLASSES } from "@/copy/copilot/own-disclosure";
+ import type { OwnCopilotPermissionView } from "@/lib/copilot/own-consent";
+ 
+-export function OwnCopilotPermission({ view }: { view: OwnCopilotPermissionView }) {
++/**
++ * `record` names an adult record held as the account's own (G8.5, 19 November
++ * 2026): its section is labelled by the heading and the record's name, so each
++ * record's permission is its own region. With no `record` the section is the
++ * self record's, exactly as before.
++ */
++export function OwnCopilotPermission({ view, record }: { view: OwnCopilotPermissionView; record?: string }) {
+   const router = useRouter();
+   const revokeCsrf = useCsrf("api.consent-revoke");
+   const [affirmed, setAffirmed] = useState(false);
+@@ -20,8 +26,11 @@ export function OwnCopilotPermission({ view }: { view: OwnCopilotPermissionView
+     <Link className="link-target quiet-link text-sm" href="/uploads">Your own file</Link>
+   </section>;
+   const purposeArtifact = view.artifacts.find(a => a.key === `consent.own-copilot-${view.providerClass}`)!;
+-  return <section className="surface surface-pad rec-stack" aria-labelledby="copilot-permission-title">
+-    <h2 id="copilot-permission-title" className="title">Copilot permission</h2>
++  const titleId = record === undefined ? "copilot-permission-title" : `copilot-permission-title-${view.subjectId}`;
++  const recordId = `copilot-permission-record-${view.subjectId}`;
++  return <section className="surface surface-pad rec-stack" aria-labelledby={record === undefined ? titleId : `${titleId} ${recordId}`}>
++    <h2 id={titleId} className="title">Copilot permission</h2>
++    {record === undefined ? null : <p id={recordId} className="text-sm">{record}</p>}
+     <p className="text-sm">{view.providerLabel} · {view.model} · {view.origin}</p>
+     <p className="max-w-measure text-sm text-ink-muted">{view.providerClass === "local"
+       ? "This model runs beside your self-hosted Inherit server."
+diff --git a/src/lib/copilot/own-chat-route.test.ts b/src/lib/copilot/own-chat-route.test.ts
+index 7712241b..17686525 100644
+--- a/src/lib/copilot/own-chat-route.test.ts
++++ b/src/lib/copilot/own-chat-route.test.ts
+@@ -105,6 +105,41 @@ describe("canonical chat boundaries", () => {
+         expect((await ownChatResponse(r, body, options)).status).toBe(400);
+         expect(mocks.prepare).not.toHaveBeenCalled();
+     });
++    // G8.5, 19 November 2026: an adult record held as the account's own is
++    // answered by the same chat, under its own provider authority; every other
++    // adult record is the same 404 before any provider step.
++    it.each([{ contextToken: "valid-context-token", message: "What does my file cover?" }, { chatId, message: "Explain that observation." }])
++    ("answers an adult record the account holds as its own, under that record's own authority: %o", async body => {
++        mocks.subject.mockResolvedValue({ id: subjectId, subjectClass: "other_adult", displayLabel: "Invited adult",
++            subjectAccountId: accountId, ownerAccountId: null });
++        const response = await ownChatResponse(request(body), body, options);
++        expect(response.status).toBe(200);
++        expect(mocks.prepare).toHaveBeenCalledExactlyOnceWith(subjectId);
++        expect(mocks.rpc).toHaveBeenCalledWith("commit", authority, projection, "chatId" in body ? chatId : null, expect.anything());
++        expect(mocks.stream.mock.calls[0][0].system).toContain("The authorized subject is Invited adult.");
++    });
++    it.each([
++        ["uploaded by the account", { subjectAccountId: null, ownerAccountId: accountId }],
++        ["held by another account", { subjectAccountId: sessionId, ownerAccountId: null }],
++        ["bound to the account but owned by its uploader", { subjectAccountId: accountId, ownerAccountId: sessionId }],
++        ["bound to the account and owned by it", { subjectAccountId: accountId, ownerAccountId: accountId }],
++    ])("refuses an adult record %s before any provider step", async (_label, holders) => {
++        mocks.subject.mockResolvedValue({ id: subjectId, subjectClass: "other_adult", displayLabel: "Another adult", ...holders });
++        for (const body of [{ contextToken: "valid-context-token", message: "What does my file cover?" }, { chatId, message: "Explain." }]) {
++            const response = await ownChatResponse(request(body), body, options);
++            expect(response.status).toBe(404);
++            expect(await response.json()).toEqual({ error: "not_found" });
++        }
++        expect(mocks.prepare).not.toHaveBeenCalled();
++        expect(mocks.rpc).not.toHaveBeenCalled();
++        expect(mocks.stream).not.toHaveBeenCalled();
++    });
++    it.each(["minor", "embryo"])("refuses a %s subject before any provider step", async subjectClass => {
++        mocks.subject.mockResolvedValue({ id: subjectId, subjectClass, displayLabel: "Record", subjectAccountId: accountId, ownerAccountId: null });
++        const r = request();
++        expect((await ownChatResponse(r, await r.json(), options)).status).toBe(404);
++        expect(mocks.prepare).not.toHaveBeenCalled();
++    });
+     it("requires exact current actor/session and a single-use context", async () => {
+         mocks.token.mockReturnValue({ authority: { ...authority, sessionId: accountId } });
+         const r = request();
+diff --git a/src/lib/copilot/own-chat-route.ts b/src/lib/copilot/own-chat-route.ts
+index fb8bf684..e17f0be1 100644
+--- a/src/lib/copilot/own-chat-route.ts
++++ b/src/lib/copilot/own-chat-route.ts
+@@ -23,6 +23,7 @@ import { capturedAncestryResult, OWN_ANCESTRY_REPORT, OWN_ANCESTRY_TITLE } from
+ import { ownChatProjectionSchema, ownChatPrsSchema, ownGenotypeResult, capturedReportResult, capturedPrsResult, capturedChatCitations, hasOwnChatReportCorrection, LEGACY_SOURCE_LIMIT, LEGACY_RAW_NOTE, type OwnChatProjection } from './own-chat-content';
+ import { readOwnChatReports } from './own-chat-report-context';
+ import { ownChatCorrection } from './own-chat-correction';
++import { isOwnAdultCopilotSubject } from './subject-scope';
+ export const ownChatBodySchema = z.union([
+     z.object({ contextToken: z.string().min(16).max(12000), message: z.string().trim().min(1).max(8000) }).strict(),
+     z.object({ chatId: z.uuid(), message: z.string().trim().min(1).max(8000) }).strict(),
+@@ -48,7 +49,9 @@ export async function ownChatResponse(request: Request, body: unknown, options:
+         return notFound();
+     const subject = token ? await resolveSubjectForAccount(actor.accountId, `s-${token.authority.subjectId}`)
+         : 'chatId' in input ? await ownChatSubject(actor, input.chatId) : null;
+-    if (!subject || subject.subjectClass !== 'self')
++    // A self subject, or an adult record held as the account's own (G8.5, 19
++    // November 2026). The provider authority below is the database's decision.
++    if (!subject || (subject.subjectClass !== 'self' && !isOwnAdultCopilotSubject(actor.accountId, subject)))
+         return notFound();
+     const verdict = classifyIntent(input.message, { kind: 'self', displayLabel: subject.displayLabel });
+     if (verdict.intent !== 'allowed')
+diff --git a/src/lib/copilot/own-chat.test.ts b/src/lib/copilot/own-chat.test.ts
+index 42bec3b7..47b3213e 100644
+--- a/src/lib/copilot/own-chat.test.ts
++++ b/src/lib/copilot/own-chat.test.ts
+@@ -1,9 +1,10 @@
+ import { beforeEach, describe, expect, it, vi } from "vitest";
+-const mocks = vi.hoisted(() => ({ actor: vi.fn(), subject: vi.fn(), status: vi.fn(), provider: vi.fn(), assert: vi.fn(), rpc: vi.fn(), from: vi.fn(), mint: vi.fn() }));
++const mocks = vi.hoisted(() => ({ actor: vi.fn(), subject: vi.fn(), status: vi.fn(), provider: vi.fn(), assert: vi.fn(), rpc: vi.fn(), from: vi.fn(), mint: vi.fn(), permission: vi.fn() }));
+ vi.mock("@/lib/uploads/own-upload-context", () => ({ currentOwnUploadAccount: mocks.actor }));
+ vi.mock("@/lib/subjects", () => ({ resolveSubjectForAccount: mocks.subject }));
+ vi.mock("./own-provider-authority", () => ({ prepareOwnCopilotProvider: mocks.provider, ownCopilotProviderStatus: mocks.status, assertOwnCopilotAuthority: mocks.assert }));
+ vi.mock("./own-chat-token", () => ({ mintOwnChatToken: mocks.mint, snapshotHash: (value: unknown) => JSON.stringify(value) }));
++vi.mock("./own-consent", () => ({ prepareOwnCopilotPermission: mocks.permission }));
+ vi.mock("@/lib/supabase/admin", () => ({ createAdminClient: () => ({ from: mocks.from, rpc: mocks.rpc }) }));
+ import { prepareOwnCopilotChat, readOwnChatHistory, ownChatHistorySchema } from "./own-chat";
+ import { correctionProjection, correctionReport } from "./own-chat-correction.test-fixture";
+@@ -91,3 +92,47 @@ describe("own Copilot preparation and durable history", () => {
+         await expect(readOwnChatHistory(chatId)).rejects.toThrow("copilot_unavailable");
+     });
+ });
++// G8.5, 19 November 2026: an adult record held as the account's own.
++describe("own Copilot for an adult record the account holds as its own", () => {
++    const ownAdult = { id: subjectId, subjectClass: "other_adult", displayLabel: "Invited adult", subjectAccountId: accountId,
++        ownerAccountId: null, routeSegment: `s-${subjectId}` };
++    beforeEach(() => { mocks.subject.mockResolvedValue(ownAdult); mocks.permission.mockResolvedValue({ kind: "ready", subjectId }); });
++    it("opens the own chat, with its context token, under the record's own authority", async () => {
++        expect(await prepareOwnCopilotChat(subjectId)).toMatchObject({ kind: "ready", contextToken: "context-token" });
++        expect(mocks.status).toHaveBeenCalledExactlyOnceWith(subjectId);
++        expect(mocks.provider).toHaveBeenCalledExactlyOnceWith(subjectId);
++        expect(mocks.permission).not.toHaveBeenCalled();
++    });
++    it("names the missing permission only when Settings offers it for this record", async () => {
++        mocks.status.mockResolvedValue("consent_required");
++        expect(await prepareOwnCopilotChat(subjectId)).toEqual({ kind: "unavailable", reason: "consent_required" });
++        expect(mocks.permission).toHaveBeenCalledExactlyOnceWith(`s-${subjectId}`);
++        mocks.permission.mockResolvedValue({ kind: "unavailable" });
++        expect(await prepareOwnCopilotChat(subjectId)).toEqual({ kind: "unavailable", reason: "scope_unavailable" });
++    });
++    it.each(["provider_unavailable", "transport_unavailable", "scope_unavailable"])("answers %s with the same not-found, never a setup page", async reason => {
++        mocks.status.mockResolvedValue(reason);
++        expect(await prepareOwnCopilotChat(subjectId)).toEqual({ kind: "unavailable", reason: "scope_unavailable" });
++        expect(mocks.provider).not.toHaveBeenCalled();
++    });
++    it.each([
++        ["uploaded by the account", { subjectAccountId: null, ownerAccountId: accountId }],
++        ["held by another account", { subjectAccountId: chatId, ownerAccountId: null }],
++        ["bound to the account but owned by its uploader", { subjectAccountId: accountId, ownerAccountId: chatId }],
++        ["bound to the account and owned by it", { subjectAccountId: accountId, ownerAccountId: accountId }],
++    ])("refuses an adult record %s before any status, permission or provider read", async (_label, holders) => {
++        mocks.subject.mockResolvedValue({ ...ownAdult, ...holders });
++        expect(await prepareOwnCopilotChat(subjectId)).toEqual({ kind: "unavailable", reason: "scope_unavailable" });
++        expect(mocks.status).not.toHaveBeenCalled();
++        expect(mocks.permission).not.toHaveBeenCalled();
++        expect(mocks.provider).not.toHaveBeenCalled();
++    });
++    it("leaves a self subject's states exactly as they were", async () => {
++        mocks.subject.mockResolvedValue({ id: subjectId, subjectClass: "self", displayLabel: "You" });
++        for (const reason of ["provider_unavailable", "transport_unavailable", "consent_required"]) {
++            mocks.status.mockResolvedValue(reason);
++            expect(await prepareOwnCopilotChat(subjectId)).toEqual({ kind: "unavailable", reason });
++        }
++        expect(mocks.permission).not.toHaveBeenCalled();
++    });
++});
+diff --git a/src/lib/copilot/own-chat.ts b/src/lib/copilot/own-chat.ts
+index c82d0b9a..a39f08fe 100644
+--- a/src/lib/copilot/own-chat.ts
++++ b/src/lib/copilot/own-chat.ts
+@@ -9,6 +9,7 @@ import { ownChatProjectionSchema, ownChatCitationSchema, hasOwnChatReportCorrect
+ import { readOwnChatReports } from './own-chat-report-context';
+ import { ownChatCorrection } from './own-chat-correction';
+ import { mintOwnChatToken, snapshotHash } from './own-chat-token';
++import { isOwnAdultCopilotSubject } from './subject-scope';
+ type Actor = {
+     accountId: string;
+     sessionId: string;
+@@ -63,12 +64,25 @@ export async function prepareOwnCopilotChat(subjectId: string): Promise<OwnCopil
+         if (!actor)
+             return { kind: 'unavailable', reason: 'account_required' };
+         const subject = await resolveSubjectForAccount(actor.accountId, `s-${subjectId}`);
+-        if (!subject || subject.subjectClass !== 'self')
++        const ownAdult = subject !== null && isOwnAdultCopilotSubject(actor.accountId, subject);
++        if (!subject || (subject.subjectClass !== 'self' && !ownAdult))
+             return { kind: 'unavailable', reason: 'scope_unavailable' };
+         // Every self subject is answered here (G8.5, 24 October 2026). A subject
+         // with no canonical upload consent has no Copilot authority, so the
+         // status below names the step it lacks; there is no legacy fallback.
+         const status = await ownCopilotProviderStatus(subjectId);
++        // An adult record held as the account's own (G8.5, 19 November 2026)
++        // shows only a step the person can take: its permission, when Settings
++        // offers it for this record. Every other state of that record is the
++        // same not-found as before, never a setup or permission page whose
++        // next step no screen offers (its own-file permission, for one).
++        if (ownAdult && status !== 'ready') {
++            // Loaded only here, so the chat modules that import this one keep
++            // their module graph: the permission view is the Settings section.
++            const { prepareOwnCopilotPermission } = await import('./own-consent');
++            if (status !== 'consent_required' || (await prepareOwnCopilotPermission(subject.routeSegment)).kind !== 'ready')
++                return { kind: 'unavailable', reason: 'scope_unavailable' };
++        }
+         if (status !== 'ready')
+             return { kind: 'unavailable', reason: status };
+         const provider = await prepareOwnCopilotProvider(subjectId);
+diff --git a/src/lib/copilot/own-consent-scope.test.ts b/src/lib/copilot/own-consent-scope.test.ts
+new file mode 100644
+index 00000000..075288f4
+--- /dev/null
++++ b/src/lib/copilot/own-consent-scope.test.ts
+@@ -0,0 +1,108 @@
++import crypto from "node:crypto";
++import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
++
++/**
++ * The Copilot permission view resolves its subject by the scope it is given
++ * (G8.5, 19 November 2026): `me` is the self subject as it always was, and an
++ * `s-{uuid}` is accepted only for an adult record the account holds as its own.
++ * Settings lists one view per such record, and only one the person can act on.
++ * The database (mocked here) binds the presentation to the subject; every value
++ * is synthetic.
++ */
++const mocks = vi.hoisted(() => ({ actor: vi.fn(), resolve: vi.fn(), list: vi.fn(), rpc: vi.fn(), settings: vi.fn() }));
++vi.mock("@/lib/uploads/own-upload-context", () => ({ currentOwnUploadAccount: mocks.actor, ownUploadJson: vi.fn() }));
++vi.mock("@/lib/subjects", () => ({ resolveSubjectForAccount: mocks.resolve, listSubjectsForAccount: mocks.list }));
++vi.mock("@/lib/supabase/admin", () => ({ createAdminClient: () => ({ from: () => {
++  const query = { select: () => query, eq: () => query, maybeSingle: () => mocks.settings() };
++  return query;
++} }) }));
++vi.mock("./model-endpoint", () => ({ modelRuntimeRevision: () => "a".repeat(64), createPinnedModelFetch: vi.fn(), normalizeModelEndpoint: vi.fn() }));
++vi.mock("./own-provider-authority", async original => ({ ...(await original<typeof import("./own-provider-authority")>()), ownCopilotRpc: mocks.rpc }));
++vi.mock("@/lib/person-operation-nonce", () => ({ mintPersonOperationNonce: () => "synthetic-revoke-nonce", isOperationNonceRefusal: vi.fn(),
++  personOperationNonceArgs: vi.fn(), personOperationNonceFrom: vi.fn() }));
++import { prepareOwnAdultCopilotPermissions, prepareOwnCopilotPermission } from "./own-consent";
++
++const ACCOUNT = "80000000-0000-4000-8000-0000000000a1", OTHER = "80000000-0000-4000-8000-0000000000b2";
++const SELF = "80000000-0000-4000-8000-0000000000c3", RECORD = "80000000-0000-4000-8000-0000000000d4";
++const subject = (id: string, subjectClass: string, subjectAccountId: string | null, ownerAccountId: string | null, lifecycle = "active") => ({
++  id, displayLabel: subjectClass === "self" ? "You" : "Invited adult", subjectClass, subjectAccountId, ownerAccountId, lifecycle,
++  lifecycleRevision: 1, routeSegment: subjectClass === "self" ? "me" : `s-${id}`, dataSubjectId: id });
++const body = "Synthetic Copilot permission text.";
++const presentation = (subjectId: string) => ({ snapshot: { accountId: ACCOUNT, sessionId: ACCOUNT, subjectId, context: {
++  accountRevision: 1, authSessionRevision: 1, jurisdictionRevision: 1, subjectBindingRevision: 2, accountBindingRevision: 1,
++  uploadConsentId: subjectId, subjectLifecycleRevision: 1, originatingSessionRevision: 1, principalId: subjectId, principalRevision: 1 },
++  settingsRevision: 2, recipientRevision: 2, providerClass: "local", runtimeAttestationRevision: 1, runtimeAttestationFingerprint: "a".repeat(64) },
++  artifacts: [{ key: "consent.own-copilot-local", version: 2, body, sha256: crypto.createHash("sha256").update(body).digest("hex") }] });
++
++beforeEach(() => {
++  vi.clearAllMocks();
++  vi.stubEnv("BYOK_ENCRYPTION_KEY", Buffer.alloc(32, 31).toString("base64"));
++  mocks.actor.mockResolvedValue({ accountId: ACCOUNT, sessionId: ACCOUNT });
++  mocks.rpc.mockImplementation(async (name: string, args: { p_subject_id: string }) =>
++    name === "own_copilot_presentation_v1" ? { data: presentation(args.p_subject_id), error: null } : { data: null, error: { code: "42501" } });
++  mocks.settings.mockResolvedValue({ data: { model: "synthetic-model",
++    copilot_recipient: { revision: 2, providerLabel: "Synthetic model", origin: "http://localhost:3103" } }, error: null });
++});
++afterEach(() => vi.unstubAllEnvs());
++
++describe("the Copilot permission view, by scope", () => {
++  it("resolves `me` to the self subject exactly as before", async () => {
++    mocks.resolve.mockResolvedValue(subject(SELF, "self", ACCOUNT, ACCOUNT));
++    expect(await prepareOwnCopilotPermission()).toMatchObject({ kind: "ready", subjectId: SELF, granted: false, grantId: null });
++    expect(mocks.resolve).toHaveBeenCalledExactlyOnceWith(ACCOUNT, "me");
++    expect(mocks.rpc.mock.calls[0]).toEqual(["own_copilot_presentation_v1", { p_account_id: ACCOUNT, p_session_id: ACCOUNT, p_subject_id: SELF }]);
++  });
++
++  it("resolves an adult record the account holds as its own by its own scope", async () => {
++    mocks.resolve.mockResolvedValue(subject(RECORD, "other_adult", ACCOUNT, null));
++    const view = await prepareOwnCopilotPermission(`s-${RECORD}`);
++    expect(view).toMatchObject({ kind: "ready", subjectId: RECORD, purposeKey: "copilot.local", granted: false });
++    expect(mocks.resolve).toHaveBeenCalledExactlyOnceWith(ACCOUNT, `s-${RECORD}`);
++    expect(mocks.rpc.mock.calls.map(call => call[1].p_subject_id)).toEqual([RECORD, RECORD]);
++  });
++
++  it.each([
++    ["an adult record the account uploaded", subject(RECORD, "other_adult", null, ACCOUNT)],
++    ["another account's own adult record", subject(RECORD, "other_adult", OTHER, null)],
++    ["an adult record bound to the account that its uploader owns", subject(RECORD, "other_adult", ACCOUNT, OTHER)],
++    ["an adult record bound to the account and owned by it", subject(RECORD, "other_adult", ACCOUNT, ACCOUNT)],
++    ["the self subject named by its id", subject(SELF, "self", ACCOUNT, ACCOUNT)],
++    ["a minor", subject(RECORD, "minor", ACCOUNT, null)],
++  ])("refuses %s by scope, with no database read", async (_label, target) => {
++    mocks.resolve.mockResolvedValue(target);
++    expect(await prepareOwnCopilotPermission(`s-${target.id}`)).toEqual({ kind: "unavailable" });
++    expect(mocks.rpc).not.toHaveBeenCalled();
++  });
++
++  it("refuses `me` resolving to anything but the account's self subject", async () => {
++    mocks.resolve.mockResolvedValue(subject(RECORD, "other_adult", ACCOUNT, null));
++    expect(await prepareOwnCopilotPermission("me")).toEqual({ kind: "unavailable" });
++    expect(mocks.rpc).not.toHaveBeenCalled();
++  });
++});
++
++describe("the adult records listed in Settings", () => {
++  it("lists each adult record held as the account's own whose permission can be given, by its own scope and name", async () => {
++    const listed = [subject(SELF, "self", ACCOUNT, ACCOUNT), subject(RECORD, "other_adult", ACCOUNT, null),
++      subject(OTHER, "other_adult", ACCOUNT, OTHER), subject("80000000-0000-4000-8000-0000000000e5", "other_adult", null, ACCOUNT),
++      subject("80000000-0000-4000-8000-0000000000f6", "other_adult", ACCOUNT, null, "claimed_bound")];
++    mocks.list.mockResolvedValue(listed);
++    mocks.resolve.mockImplementation(async (_account: string, scope: string) => listed.find(record => record.routeSegment === scope) ?? null);
++    const views = await prepareOwnAdultCopilotPermissions();
++    expect(views.map(({ displayLabel, view }) => [displayLabel, view.subjectId])).toEqual([["Invited adult", RECORD]]);
++    expect(mocks.resolve.mock.calls).toEqual([[ACCOUNT, `s-${RECORD}`]]);
++  });
++
++  it("leaves out a record whose permission cannot be given (no own-file permission, no model)", async () => {
++    mocks.list.mockResolvedValue([subject(RECORD, "other_adult", ACCOUNT, null)]);
++    mocks.resolve.mockResolvedValue(subject(RECORD, "other_adult", ACCOUNT, null));
++    mocks.rpc.mockResolvedValue({ data: null, error: { code: "55000", message: "upload_consent_required" } });
++    expect(await prepareOwnAdultCopilotPermissions()).toEqual([]);
++  });
++
++  it("lists nothing with no account", async () => {
++    mocks.actor.mockResolvedValue(null);
++    expect(await prepareOwnAdultCopilotPermissions()).toEqual([]);
++    expect(mocks.list).not.toHaveBeenCalled();
++  });
++});
+diff --git a/src/lib/copilot/own-consent.ts b/src/lib/copilot/own-consent.ts
+index 78a82f09..51050467 100644
+--- a/src/lib/copilot/own-consent.ts
++++ b/src/lib/copilot/own-consent.ts
+@@ -3,11 +3,12 @@ import crypto from "node:crypto";
+ import { z } from "zod";
+ import { hmacSecret } from "@/lib/crypto";
+ import { currentOwnUploadAccount, ownUploadJson } from "@/lib/uploads/own-upload-context";
+-import { resolveSubjectForAccount } from "@/lib/subjects";
++import { listSubjectsForAccount, resolveSubjectForAccount } from "@/lib/subjects";
+ import { createAdminClient } from "@/lib/supabase/admin";
+ import { modelRuntimeRevision } from "./model-endpoint";
+ import { ownCopilotAuthoritySchema, ownCopilotConfigurationSchema, ownCopilotRpc } from "./own-provider-authority";
+ import { sameOriginCopilot } from "./own-settings";
++import { isOwnAdultCopilotSubject } from "./subject-scope";
+ import { isOperationNonceRefusal, mintPersonOperationNonce, personOperationNonceArgs, personOperationNonceFrom } from "@/lib/person-operation-nonce";
+ 
+ const CONTEXT = "own-copilot-permission-presentation-v1";
+@@ -68,12 +69,19 @@ export type OwnCopilotPermissionView = { kind: "unavailable" } | { kind: "ready"
+   /** The one-time nonce the withdrawal consumes, for this account, session and grant; null with no grant. */
+   revokeNonce: string | null;
+   purposeKey: "copilot.local" | "copilot.cloud"; token: string; artifacts: z.infer<typeof artifactsSchema> };
+-export async function prepareOwnCopilotPermission(): Promise<OwnCopilotPermissionView> {
++/**
++ * The permission for the subject a scope names: `me` (the account's self
++ * subject, as it always was), or `s-{uuid}` for an adult record held as the
++ * account's own (G8.5, 19 November 2026). The presentation, and so the grant
++ * it signs, is bound to that subject by the database.
++ */
++export async function prepareOwnCopilotPermission(scope = "me"): Promise<OwnCopilotPermissionView> {
+   try {
+     const actor = await currentOwnUploadAccount();
+     if (!actor) return { kind: "unavailable" };
+-    const target = await resolveSubjectForAccount(actor.accountId, "me");
+-    if (!target || target.subjectClass !== "self" || target.subjectAccountId !== actor.accountId) return { kind: "unavailable" };
++    const target = await resolveSubjectForAccount(actor.accountId, scope);
++    if (!target || target.subjectAccountId !== actor.accountId
++      || !(scope === "me" ? target.subjectClass === "self" : isOwnAdultCopilotSubject(actor.accountId, target))) return { kind: "unavailable" };
+     const args = { p_account_id: actor.accountId, p_session_id: actor.sessionId, p_subject_id: target.id };
+     const response = await ownCopilotRpc("own_copilot_presentation_v1", args);
+     const presentation = z.object({ snapshot: ownCopilotConfigurationSchema, artifacts: artifactsSchema }).strict().safeParse(response.data);
+@@ -97,6 +105,29 @@ export async function prepareOwnCopilotPermission(): Promise<OwnCopilotPermissio
+   } catch { return { kind: "unavailable" }; }
+ }
+ 
++/**
++ * The permission of each adult record the account holds as its own (G8.5, 19
++ * November 2026), each resolved by its own scope. Only a record whose
++ * permission can be given or withdrawn is listed: the unavailable state's
++ * sentence and link name the self record's own file, so they are never shown
++ * for another record.
++ */
++export async function prepareOwnAdultCopilotPermissions(): Promise<Array<{ displayLabel: string;
++  view: Extract<OwnCopilotPermissionView, { kind: "ready" }> }>> {
++  try {
++    const actor = await currentOwnUploadAccount();
++    if (!actor) return [];
++    const records = (await listSubjectsForAccount(actor.accountId))
++      .filter(record => record.lifecycle === "active" && isOwnAdultCopilotSubject(actor.accountId, record));
++    const views: Array<{ displayLabel: string; view: Extract<OwnCopilotPermissionView, { kind: "ready" }> }> = [];
++    for (const record of records) {
++      const view = await prepareOwnCopilotPermission(record.routeSegment);
++      if (view.kind === "ready" && view.subjectId === record.id) views.push({ displayLabel: record.displayLabel, view });
++    }
++    return views;
++  } catch { return []; }
++}
++
+ /**
+  * The own-Copilot case of api.consent-revoke. It carries, in
+  * `X-Inherit-Operation-Nonce`, the one-time nonce /settings/copilot rendered
+diff --git a/src/lib/copilot/own-provider-authority.test.ts b/src/lib/copilot/own-provider-authority.test.ts
+index 4aed271b..d7b40b0a 100644
+--- a/src/lib/copilot/own-provider-authority.test.ts
++++ b/src/lib/copilot/own-provider-authority.test.ts
+@@ -1,4 +1,4 @@
+-import { beforeEach, expect, it, vi } from "vitest";
++import { beforeEach, describe, expect, it, vi } from "vitest";
+ const mocks = vi.hoisted(() => ({ actor: vi.fn(), rpc: vi.fn(), read: vi.fn(), pinned: vi.fn() }));
+ vi.mock("@/lib/uploads/own-upload-context", () => ({ currentOwnUploadAccount: mocks.actor }));
+ vi.mock("@/lib/crypto", () => ({ decryptSecret: vi.fn(), hmacSecret: () => "b".repeat(64) }));
+@@ -8,7 +8,7 @@ vi.mock("./model-endpoint", () => ({ modelRuntimeRevision: () => "a".repeat(64),
+   normalizeModelEndpoint: () => ({ baseUrl: "https://model.synthetic.invalid/v1", origin: "https://model.synthetic.invalid",
+     providerClass: "cloud", runtimeAttestationFingerprint: "a".repeat(64) }),
+   createPinnedModelFetch: mocks.pinned }));
+-import { prepareOwnCopilotProvider } from "./own-provider-authority";
++import { ownCopilotProviderStatus, prepareOwnCopilotProvider } from "./own-provider-authority";
+ const id = "77800000-0000-4000-8000-000000000001";
+ const authority = { accountId: id, sessionId: id, subjectId: id, context: {
+   accountRevision: 1, authSessionRevision: 1, jurisdictionRevision: 1, subjectBindingRevision: 1, accountBindingRevision: 1,
+@@ -45,3 +45,38 @@ it("cannot use the data callback to bypass a changed provider permission", async
+   const authorize = mocks.pinned.mock.calls.at(-1)![1] as () => Promise<boolean>;
+   expect(await authorize()).toBe(false); expect(dataAuthority).not.toHaveBeenCalled();
+ });
++// G8.5, 19 November 2026: which subjects the status read lets reach the
++// database authority. The authority itself is the database's decision.
++describe("the own Copilot status for each subject shape", () => {
++  const settings = () => ({ provider: "openai_compatible", base_url: "https://model.synthetic.invalid/v1", model: "synthetic-model",
++    copilot_recipient: { providerLabel: "Synthetic model", origin: "https://model.synthetic.invalid", credentialFingerprint: "b".repeat(64),
++      revision: 2, runtimeAttestationFingerprint: "a".repeat(64), providerClass: "cloud", baseUrl: "https://model.synthetic.invalid/v1",
++      provider: "openai_compatible", model: "synthetic-model" } });
++  const other = "77800000-0000-4000-8000-000000000002";
++  function shape(row: Record<string, unknown>) {
++    mocks.read.mockImplementation(async table => ({ data: table === "subjects" ? { lifecycle: "active", ...row } : settings(), error: null }));
++  }
++  it.each([
++    ["a self subject the account holds", { subject_class: "self", subject_account_id: id, owner_account_id: id }],
++    ["an adult record the account holds as its own", { subject_class: "other_adult", subject_account_id: id, owner_account_id: null }],
++  ])("reads the database authority for %s", async (_label, row) => {
++    shape(row);
++    expect(await ownCopilotProviderStatus(id)).toBe("ready");
++    expect(mocks.rpc).toHaveBeenCalledExactlyOnceWith("own_copilot_authority_v1",
++      { p_account_id: id, p_session_id: id, p_subject_id: id, p_expected: null });
++  });
++  it.each([
++    ["an adult record the account uploaded", { subject_class: "other_adult", subject_account_id: null, owner_account_id: id }],
++    ["another account's own adult record", { subject_class: "other_adult", subject_account_id: other, owner_account_id: null }],
++    ["an adult record bound to the account that its uploader owns", { subject_class: "other_adult", subject_account_id: id, owner_account_id: other }],
++    ["an adult record bound to the account and owned by it", { subject_class: "other_adult", subject_account_id: id, owner_account_id: id }],
++    ["a minor", { subject_class: "minor", subject_account_id: id, owner_account_id: null }],
++    ["an embryo", { subject_class: "embryo", subject_account_id: id, owner_account_id: id }],
++    ["another account's self subject", { subject_class: "self", subject_account_id: other, owner_account_id: other }],
++    ["an inactive own adult record", { subject_class: "other_adult", subject_account_id: id, owner_account_id: null, lifecycle: "restricted" }],
++  ])("refuses %s before any authority read", async (_label, row) => {
++    shape(row);
++    expect(await ownCopilotProviderStatus(id)).toBe("scope_unavailable");
++    expect(mocks.rpc).not.toHaveBeenCalled();
++  });
++});
+diff --git a/src/lib/copilot/own-provider-authority.ts b/src/lib/copilot/own-provider-authority.ts
+index 29bad8a7..06e4bafd 100644
+--- a/src/lib/copilot/own-provider-authority.ts
++++ b/src/lib/copilot/own-provider-authority.ts
+@@ -88,8 +88,13 @@ export async function ownCopilotProviderStatus(subjectId: string): Promise<"read
+     const actor = await currentOwnUploadAccount();
+     if (!actor) return "scope_unavailable";
+     const admin = createAdminClient();
+-    const { data: subject } = await admin.from("subjects").select("subject_account_id,subject_class,lifecycle").eq("id", subjectId).maybeSingle();
+-    if (!subject || subject.subject_account_id !== actor.accountId || subject.subject_class !== "self" || subject.lifecycle !== "active") return "scope_unavailable";
++    const { data: subject } = await admin.from("subjects").select("subject_account_id,owner_account_id,subject_class,lifecycle").eq("id", subjectId).maybeSingle();
++    // A self subject, or an adult record held as the account's own and owned
++    // by no account (G8.5, 19 November 2026); the authority read below is the
++    // database's decision for both.
++    const ownAdult = subject?.subject_class === "other_adult" && subject.owner_account_id === null;
++    if (!subject || subject.subject_account_id !== actor.accountId || (subject.subject_class !== "self" && !ownAdult)
++      || subject.lifecycle !== "active") return "scope_unavailable";
+     const { data, error } = await admin.from("llm_settings").select("provider,base_url,model,copilot_recipient").eq("user_id", actor.accountId).maybeSingle();
+     if (error || !data) return "provider_unavailable";
+     const settings = settingsSchema.safeParse(data);
+diff --git a/src/lib/copilot/settings-page.test.ts b/src/lib/copilot/settings-page.test.ts
+new file mode 100644
+index 00000000..aeef801e
+--- /dev/null
++++ b/src/lib/copilot/settings-page.test.ts
+@@ -0,0 +1,47 @@
++import { isValidElement, type ReactNode } from "react";
++import { beforeEach, expect, it, vi } from "vitest";
++
++/**
++ * /settings/copilot (G8.5, 19 November 2026): the self record's permission
++ * section is rendered as before, then one section per adult record the
++ * account holds as its own, each resolved by its own scope and named by its
++ * record. Everything below the page is mocked; every value is synthetic.
++ */
++const mocks = vi.hoisted(() => ({ own: vi.fn(), adult: vi.fn() }));
++vi.mock("@/lib/supabase/server", () => ({ createClient: async () => ({ from: () => ({ select: () => ({ maybeSingle: async () => ({ data: null }) }) }) }) }));
++vi.mock("@/lib/copilot/own-consent", () => ({ prepareOwnCopilotPermission: mocks.own, prepareOwnAdultCopilotPermissions: mocks.adult }));
++vi.mock("@/lib/copilot/model-endpoint", () => ({ modelRuntime: () => ({ localAllowed: false, origins: [] }) }));
++vi.mock("@/lib/person-operation-nonce", () => ({ pageOperationNonce: vi.fn() }));
++vi.mock("@/components/settings/own-copilot-permission", () => ({ OwnCopilotPermission: () => null }));
++vi.mock("@/components/settings/llm-settings-form", () => ({ LlmSettingsForm: () => null }));
++import CopilotSettingsPage from "@/app/(app)/settings/copilot/page";
++import { OwnCopilotPermission } from "@/components/settings/own-copilot-permission";
++
++type Element = { type: unknown; key: string | null; props: Record<string, unknown> };
++function elements(node: ReactNode): Element[] {
++  if (Array.isArray(node)) return node.flatMap(elements);
++  if (!isValidElement<{ children?: ReactNode }>(node)) return [];
++  return [node as unknown as Element, ...elements(node.props.children)];
++}
++const SELF_VIEW = { kind: "ready", subjectId: "80000000-0000-4000-8000-0000000000c3" };
++const RECORD = "80000000-0000-4000-8000-0000000000d4";
++
++beforeEach(() => {
++  vi.clearAllMocks();
++  mocks.own.mockResolvedValue(SELF_VIEW);
++  mocks.adult.mockResolvedValue([]);
++});
++
++it("renders the self record's permission alone, unchanged, for an account with no adult record of its own", async () => {
++  const sections = elements(await CopilotSettingsPage()).filter(element => element.type === OwnCopilotPermission);
++  expect(sections.map(section => section.props)).toEqual([{ view: SELF_VIEW }]);
++  expect(mocks.own).toHaveBeenCalledExactlyOnceWith();
++});
++
++it("adds one named section per adult record the account holds as its own, after the self record's", async () => {
++  const view = { kind: "ready", subjectId: RECORD };
++  mocks.adult.mockResolvedValue([{ displayLabel: "Invited adult", view }]);
++  const sections = elements(await CopilotSettingsPage()).filter(element => element.type === OwnCopilotPermission);
++  expect(sections.map(section => section.props)).toEqual([{ view: SELF_VIEW }, { view, record: "Invited adult" }]);
++  expect(sections[1]!.key).toBe(RECORD);
++});
+diff --git a/src/lib/copilot/subject-scope.test.ts b/src/lib/copilot/subject-scope.test.ts
+index 9d6db9de..a1cdec6d 100644
+--- a/src/lib/copilot/subject-scope.test.ts
++++ b/src/lib/copilot/subject-scope.test.ts
+@@ -22,13 +22,14 @@ vi.mock("@/components/chat/group-scope-pages", () => ({ LocalTransportUnavailabl
+ import ChatPage from "@/app/(app)/copilot/[scope]/page";
+ import { OwnChatPanel } from "@/components/chat/own-chat-panel";
+ import { LocalTransportUnavailable } from "@/components/chat/group-scope-pages";
+-import { copilotSubjectScope } from "./subject-scope";
++import { copilotSubjectScope, isOwnAdultCopilotSubject } from "./subject-scope";
+ 
+ const OTHER_ACCOUNT = "80000000-0000-4000-8000-0000000000b2";
+ const SUBJECT = "80000000-0000-4000-8000-0000000000c3";
+ const NOT_FOUND = "NEXT_HTTP_ERROR_FALLBACK;404";
+-const subject = (subjectClass: string, subjectAccountId: string | null) => ({ id: SUBJECT, displayLabel: "Sam Example", subjectClass,
+-  subjectAccountId, ownerAccountId: ACCOUNT, lifecycle: "active", lifecycleRevision: 1, routeSegment: `s-${SUBJECT}`, dataSubjectId: SUBJECT });
++const subject = (subjectClass: string, subjectAccountId: string | null, ownerAccountId: string | null = ACCOUNT) => ({ id: SUBJECT,
++  displayLabel: "Sam Example", subjectClass, subjectAccountId, ownerAccountId, lifecycle: "active", lifecycleRevision: 1,
++  routeSegment: `s-${SUBJECT}`, dataSubjectId: SUBJECT });
+ const page = () => ChatPage({ params: Promise.resolve({ scope: `s-${SUBJECT}` }), searchParams: Promise.resolve({}) } as Parameters<typeof ChatPage>[0]);
+ function find(node: ReactNode, type: unknown): boolean {
+   if (Array.isArray(node)) return node.some(child => find(child, type));
+@@ -45,27 +46,73 @@ beforeEach(() => {
+ 
+ describe("which subjects /copilot/[scope] opens a conversation for", () => {
+   it("classifies each subject the account can resolve by the register's cases", () => {
+-    expect(copilotSubjectScope(ACCOUNT, { subjectClass: "self", subjectAccountId: ACCOUNT }, false)).toEqual({ kind: "own" });
+-    expect(copilotSubjectScope(ACCOUNT, { subjectClass: "self", subjectAccountId: ACCOUNT }, true)).toEqual({ kind: "own" });
+-    expect(copilotSubjectScope(ACCOUNT, { subjectClass: "self", subjectAccountId: OTHER_ACCOUNT }, true))
++    expect(copilotSubjectScope(ACCOUNT, { subjectClass: "self", subjectAccountId: ACCOUNT, ownerAccountId: ACCOUNT }, false)).toEqual({ kind: "own" });
++    expect(copilotSubjectScope(ACCOUNT, { subjectClass: "self", subjectAccountId: ACCOUNT, ownerAccountId: ACCOUNT }, true)).toEqual({ kind: "own" });
++    expect(copilotSubjectScope(ACCOUNT, { subjectClass: "self", subjectAccountId: OTHER_ACCOUNT, ownerAccountId: OTHER_ACCOUNT }, true))
+       .toEqual({ kind: "refused", case: "not-held" });
++    // The uploader or a grantee: someone else's record, whoever owns it.
+     for (const holder of [null, OTHER_ACCOUNT]) {
+-      expect(copilotSubjectScope(ACCOUNT, { subjectClass: "other_adult", subjectAccountId: holder }, false))
+-        .toEqual({ kind: "true-non-self-unavailable" });
+-      expect(copilotSubjectScope(ACCOUNT, { subjectClass: "other_adult", subjectAccountId: holder }, true))
+-        .toEqual({ kind: "refused", case: "adult-uploader-or-grantee" });
++      for (const owner of [ACCOUNT, OTHER_ACCOUNT, null]) {
++        expect(copilotSubjectScope(ACCOUNT, { subjectClass: "other_adult", subjectAccountId: holder, ownerAccountId: owner }, false))
++          .toEqual({ kind: "true-non-self-unavailable" });
++        expect(copilotSubjectScope(ACCOUNT, { subjectClass: "other_adult", subjectAccountId: holder, ownerAccountId: owner }, true))
++          .toEqual({ kind: "refused", case: "adult-uploader-or-grantee" });
++      }
++    }
++    // G8.5, 19 November 2026: an adult record held as the account's own (owned
++    // by no account, as Path A's acceptance leaves it) is an own subject, on
++    // either transport; the database decides the rest.
++    for (const local of [false, true]) {
++      expect(copilotSubjectScope(ACCOUNT, { subjectClass: "other_adult", subjectAccountId: ACCOUNT, ownerAccountId: null }, local))
++        .toEqual({ kind: "own" });
++    }
++    // Bound to the account but owned by an account (a Path B record its
++    // uploader owns, or one transferred to its person): still refused.
++    for (const owner of [OTHER_ACCOUNT, ACCOUNT]) {
++      for (const local of [false, true]) {
++        expect(copilotSubjectScope(ACCOUNT, { subjectClass: "other_adult", subjectAccountId: ACCOUNT, ownerAccountId: owner }, local))
++          .toEqual({ kind: "refused", case: "own-adult-subject" });
++      }
+     }
+-    expect(copilotSubjectScope(ACCOUNT, { subjectClass: "other_adult", subjectAccountId: ACCOUNT }, true))
+-      .toEqual({ kind: "refused", case: "own-adult-subject" });
+     for (const subjectClass of ["minor", "embryo"] as const) {
+       for (const holder of [null, ACCOUNT]) {
+         for (const local of [false, true]) {
+-          expect(copilotSubjectScope(ACCOUNT, { subjectClass, subjectAccountId: holder }, local)).toEqual({ kind: "refused", case: "no-subject-case" });
++          for (const owner of [null, ACCOUNT]) {
++            expect(copilotSubjectScope(ACCOUNT, { subjectClass, subjectAccountId: holder, ownerAccountId: owner }, local))
++              .toEqual({ kind: "refused", case: "no-subject-case" });
++          }
+         }
+       }
+     }
+   });
+ 
++  it("names an adult record the account's own only when the account holds it and no account owns it", () => {
++    expect(isOwnAdultCopilotSubject(ACCOUNT, { subjectClass: "other_adult", subjectAccountId: ACCOUNT, ownerAccountId: null })).toBe(true);
++    for (const [subjectClass, holder, owner] of [["other_adult", OTHER_ACCOUNT, null], ["other_adult", null, null],
++      ["other_adult", ACCOUNT, ACCOUNT], ["other_adult", ACCOUNT, OTHER_ACCOUNT], ["other_adult", null, ACCOUNT],
++      ["self", ACCOUNT, null], ["self", ACCOUNT, ACCOUNT], ["minor", ACCOUNT, null], ["embryo", ACCOUNT, null]] as const) {
++      expect(isOwnAdultCopilotSubject(ACCOUNT, { subjectClass, subjectAccountId: holder, ownerAccountId: owner }),
++        `${subjectClass} held by ${holder}, owned by ${owner}`).toBe(false);
++    }
++  });
++
++  it("opens the own chat, with its one context token, for an adult record the account holds as its own", async () => {
++    mocks.subject.mockResolvedValue(subject("other_adult", ACCOUNT, null));
++    for (const local of [false, true]) {
++      mocks.local.allowed = local;
++      const tree = await page();
++      expect(find(tree, OwnChatPanel)).toBe(true);
++    }
++    expect(mocks.prepare).toHaveBeenCalledTimes(2);
++    expect(mocks.prepare).toHaveBeenCalledWith(SUBJECT);
++  });
++
++  it("answers an adult record held as its own that the own chat cannot open with the same 404, and no setup or permission page", async () => {
++    mocks.subject.mockResolvedValue(subject("other_adult", ACCOUNT, null));
++    mocks.prepare.mockResolvedValue({ kind: "unavailable", reason: "scope_unavailable" });
++    await expect(page()).rejects.toMatchObject({ digest: NOT_FOUND });
++  });
++
+   it("opens the own chat, with its one context token, for a self subject the account holds", async () => {
+     mocks.subject.mockResolvedValue(subject("self", ACCOUNT));
+     const tree = await page();
+@@ -75,23 +122,28 @@ describe("which subjects /copilot/[scope] opens a conversation for", () => {
+ 
+   it("refuses another adult the account uploaded or holds a grant for: the unavailable page here, with no token, subject or provider", async () => {
+     for (const holder of [null, OTHER_ACCOUNT]) {
+-      mocks.subject.mockResolvedValue(subject("other_adult", holder));
+-      const tree = await page();
+-      expect(isValidElement(tree) && tree.type).toBe(LocalTransportUnavailable);
+-      expect(find(tree, OwnChatPanel)).toBe(false);
++      for (const owner of [ACCOUNT, null]) {
++        mocks.subject.mockResolvedValue(subject("other_adult", holder, owner));
++        const tree = await page();
++        expect(isValidElement(tree) && tree.type).toBe(LocalTransportUnavailable);
++        expect(find(tree, OwnChatPanel)).toBe(false);
++      }
+     }
+     expect(mocks.prepare).not.toHaveBeenCalled();
+   });
+ 
+   it("answers every other subject the person may not ask about with the same 404, and mints nothing", async () => {
+-    const refused: Array<[string, string | null, boolean]> = [
+-      ["other_adult", null, true], ["other_adult", OTHER_ACCOUNT, true], ["other_adult", ACCOUNT, false], ["other_adult", ACCOUNT, true],
+-      ["minor", null, false], ["minor", ACCOUNT, true], ["embryo", null, false], ["embryo", ACCOUNT, true], ["self", OTHER_ACCOUNT, false],
++    const refused: Array<[string, string | null, boolean, string | null]> = [
++      ["other_adult", null, true, ACCOUNT], ["other_adult", OTHER_ACCOUNT, true, ACCOUNT], ["other_adult", OTHER_ACCOUNT, true, null],
++      ["other_adult", ACCOUNT, false, OTHER_ACCOUNT], ["other_adult", ACCOUNT, true, OTHER_ACCOUNT],
++      ["other_adult", ACCOUNT, false, ACCOUNT], ["other_adult", ACCOUNT, true, ACCOUNT],
++      ["minor", null, false, ACCOUNT], ["minor", ACCOUNT, true, null], ["embryo", null, false, ACCOUNT], ["embryo", ACCOUNT, true, ACCOUNT],
++      ["self", OTHER_ACCOUNT, false, OTHER_ACCOUNT],
+     ];
+-    for (const [subjectClass, holder, local] of refused) {
++    for (const [subjectClass, holder, local, owner] of refused) {
+       mocks.local.allowed = local;
+-      mocks.subject.mockResolvedValue(subject(subjectClass, holder));
+-      await expect(page(), `${subjectClass} held by ${holder} (local ${local})`).rejects.toMatchObject({ digest: NOT_FOUND });
++      mocks.subject.mockResolvedValue(subject(subjectClass, holder, owner));
++      await expect(page(), `${subjectClass} held by ${holder}, owned by ${owner} (local ${local})`).rejects.toMatchObject({ digest: NOT_FOUND });
+     }
+     mocks.subject.mockResolvedValue(null);
+     await expect(page()).rejects.toMatchObject({ digest: NOT_FOUND });
+diff --git a/src/lib/copilot/subject-scope.ts b/src/lib/copilot/subject-scope.ts
+index ce4fd981..ed77228c 100644
+--- a/src/lib/copilot/subject-scope.ts
++++ b/src/lib/copilot/subject-scope.ts
+@@ -15,6 +15,15 @@ import type { SubjectSummary } from '@/lib/subjects';
+  *   single-use context token. A self subject with no canonical upload consent
+  *   has no such grant yet, and the own chat answers it with its own
+  *   consent-required or setup state.
++ *   Since 19 November 2026 (G8.5, "Copilot for an adult's own record is
++ *   built"), also an `other_adult` record the person holds themselves
++ *   (`subject:adult`, `own-subject`): held by the acting account and owned by
++ *   no account, which is the shape Path A's account acceptance leaves. The
++ *   same own chat serves it, for a local model or an approved cloud provider,
++ *   and the database alone decides it is the person's own
++ *   (`private.own_copilot_context_v1`: the adult_claim binding and principal,
++ *   the accepted invitation and the person's own acceptance consent, the
++ *   record's own-file permission, and no public appeal holding it).
+  * - `true-non-self-unavailable`: an `other_adult` subject the account
+  *   uploaded or was granted (`subject:adult-uploader-or-grantee`, one of
+  *   `trueNonSelfScopes`) on a runtime that is not a server-attested
+@@ -29,11 +38,10 @@ import type { SubjectSummary } from '@/lib/subjects';
+  *     and `grant_purpose_rights_v1` refuse `copilot.local` ("no Path B Copilot
+  *     scope"), and the Family door's `copilot.local` is read only by the Family
+  *     group scope. Opening uploader access is the owner's decision.
+- *   - `own-adult-subject`: an `other_adult` record the person holds
+- *     themselves. The register has provider cases for it, but the own Copilot
+- *     permission and authority (`grant_own_copilot_v1`,
+- *     `own_copilot_authority_v1` through `own_report_context_v1`) admit a
+- *     `self` subject only, so no grant can exist. Not built.
++ *   - `own-adult-subject`: an `other_adult` record bound to the person's
++ *     account that an account owns: a Path B record its uploader owns, or one
++ *     transferred to its person. No own Copilot context admits either (neither
++ *     has an adult_claim binding), so no grant can exist. Not built.
+  *   - `no-subject-case`: a `minor` or an `embryo`. `scope-derived-v1` has no
+  *     subject case for either (an embryo's Copilot is the cohort scope).
+  *   - `not-held`: a `self` record another account holds.
+@@ -48,11 +56,22 @@ export type CopilotSubjectScope =
+   | { kind: 'true-non-self-unavailable' }
+   | { kind: 'refused'; case: 'adult-uploader-or-grantee' | 'own-adult-subject' | 'no-subject-case' | 'not-held' };
+ 
+-export function copilotSubjectScope(accountId: string, subject: Pick<SubjectSummary, 'subjectClass' | 'subjectAccountId'>,
++/**
++ * An `other_adult` record the person holds themselves: held by the acting
++ * account and owned by none. A pre-check on the resolved database row; the
++ * own Copilot context in the database decides the rest.
++ */
++export function isOwnAdultCopilotSubject(accountId: string,
++  subject: Pick<SubjectSummary, 'subjectClass' | 'subjectAccountId' | 'ownerAccountId'>): boolean {
++  return subject.subjectClass === 'other_adult' && subject.subjectAccountId === accountId && subject.ownerAccountId === null;
++}
++
++export function copilotSubjectScope(accountId: string, subject: Pick<SubjectSummary, 'subjectClass' | 'subjectAccountId' | 'ownerAccountId'>,
+   localTransportAvailable: boolean): CopilotSubjectScope {
+   const held = subject.subjectAccountId === accountId;
+   if (subject.subjectClass === 'self') return held ? { kind: 'own' } : { kind: 'refused', case: 'not-held' };
+   if (subject.subjectClass === 'other_adult') {
++    if (isOwnAdultCopilotSubject(accountId, subject)) return { kind: 'own' };
+     if (held) return { kind: 'refused', case: 'own-adult-subject' };
+     return localTransportAvailable ? { kind: 'refused', case: 'adult-uploader-or-grantee' } : { kind: 'true-non-self-unavailable' };
+   }
+diff --git a/supabase/migrations/20261119100000_own_adult_copilot.sql b/supabase/migrations/20261119100000_own_adult_copilot.sql
+new file mode 100644
+index 00000000..18b9355c
+--- /dev/null
++++ b/supabase/migrations/20261119100000_own_adult_copilot.sql
+@@ -0,0 +1,253 @@
++-- =====================================================================
++-- PRODUCTION RELEASE: GUARDED. This migration is applied to local and CI
++-- databases only. It must reach a hosted database through the guarded
++-- production release (preflight, postflight, receipt), never as a side
++-- effect of a merge. It follows 20261025400000, and 20260907081757,
++-- 20260907111757 and 20261016181000, whose three bodies it patches in place.
++-- =====================================================================
++--
++-- G8.5, Copilot for an adult's own record (owner decision of 19 November
++-- 2026, "G8.5: Copilot for an adult's own record is built"). The signed
++-- register already allows it: policyResolvers.scope-derived-v1, subject:adult,
++-- principalRelationshipCases.own-subject, for a local model (copilot.local)
++-- and an approved cloud provider (copilot.cloud and the cloud-model consent
++-- for the exact provider, recipient revision and subject,
++-- cloud-model-consent-v1 scopeRequirements.subject:own-adult). Until now the
++-- own Copilot permission and authority admitted a self subject only
++-- (public.own_report_context_v1 requires subject_class 'self'), so an adult
++-- record the person holds in their own account answered not-found.
++--
++-- "Held by the person themselves" is decided here, from database rows only:
++--   * the record is other_adult, its subject_account_id is the acting
++--     account, no account owns it (owner_account_id is null, so it is neither
++--     a Path B record an uploader owns nor a transferred one), it is active,
++--     its analysis was never stopped and it belongs to no cohort;
++--   * the account holds the record's current adult_claim binding, which only
++--     Path A's account acceptance writes, with the record's active
++--     account_subject principal;
++--   * the invitation for it was accepted, and the person's own
++--     consent.subject-adult acceptance signature by that principal, on the
++--     current artifact, carries an unrevoked adult_source consent;
++--   * and every check the self context makes holds for the record itself:
++--     private.own_upload_store_authority_v1 (a live session of this account,
++--     an adult, unbanned account, the binding and principal, and the record's
++--     own consent.upload-self and insurance acknowledgement at that binding).
++-- other-adult-mitigation-state-v1, as far as this deployment records it: a
++-- public appeal holding the record denies every read, as
++-- private.other_adult_mitigation_v1 denies it first. The 72-hour hold for an
++-- account created from the invitation, its independent boundary notice and
++-- the 30-day re-notice have no mechanism yet (Path A answers every acceptance
++-- existing_account) and are not enforced here.
++--
++--   1. private.own_copilot_context_v1 returns exactly what
++--      public.own_report_context_v1 returns for a self subject (it calls it),
++--      and the same context for an adult record held as above. Every other
++--      subject is 42501 not_found. Owner-only: only the definer functions
++--      below call it.
++--   2. private.own_copilot_configuration_v1 resolves its context through it.
++--      Patched in place, md5-guarded with its exact reviewed ACL. Everything
++--      built on it is unchanged and now serves that record too: the
++--      presentation, grant, authority, revocation (and its nonce door), the
++--      chat with its server-held conversation, revoke-all and the export's
++--      chat reader. A conversation is stored as every own conversation is,
++--      scope_kind 'self' with the record's subject_id.
++--   3. private.own_report_purge_scope_v1 admits a Copilot grant on such a
++--      record, so withdrawing it, superseding it on a settings change,
++--      revoke-all and deleting the record queue the exact purge of the
++--      conversation turns it authorized, as they do for a self subject.
++--      Without this the revocation trigger refuses and nothing could be
++--      withdrawn.
++--   4. private.purge_path_a_subject_v1 (api.subject-delete's Path A case)
++--      deletes the record's conversations with their model working state, as
++--      private.empty_self_subject_v1 does for a self record, and refuses if
++--      any turn that retrieved the record would remain.
++--
++-- None of the three patched bodies or the four callees pinned below is one of
++-- the bodies production holds comment-stripped (docs/evidence/followup-2-
++-- production-apply-20261119/guarded/README.md and the PR 324 kit's "Function
++-- bodies, definitions and the comment-stripping drift"); production's
++-- 2026-10-22 read-back holds each at the digest pinned here, so one reviewed
++-- body is accepted for each. No table, column, constraint, artifact or
++-- wording changes.
++
++do $predecessor$
++begin
++ if not exists(select 1 from pg_proc p where p.oid=to_regprocedure('private.own_copilot_configuration_v1(uuid,uuid,uuid)')
++   and md5(pg_get_functiondef(p.oid))='fce304d610384353411e770e2b11bc59'
++   and p.proacl::text='{postgres=X/postgres,service_role=X/postgres}')
++  or not exists(select 1 from pg_proc p where p.oid=to_regprocedure('private.own_report_purge_scope_v1(uuid)')
++   and md5(pg_get_functiondef(p.oid))='7c1d0c919ffe1d9893730bc699513156'
++   and p.proacl::text='{postgres=X/postgres}')
++  or not exists(select 1 from pg_proc p where p.oid=to_regprocedure('private.purge_path_a_subject_v1(uuid,uuid)')
++   and md5(pg_get_functiondef(p.oid))='3d478b31be3a18c2efe4333caa6a9465'
++   and p.proacl::text='{postgres=X/postgres}')
++  -- What the new context calls, each its reviewed body. Distinct signatures
++  -- are counted, so no body can stand in for a missing callee.
++  or (select count(distinct x.signature) from pg_proc p join (values
++    ('public.own_report_context_v1(uuid,uuid,uuid)','5bb0a10ee76fd3eaceacbcedbcb40003'),
++    ('private.own_upload_store_authority_v1(uuid,uuid,uuid)','8c4c704f4b23546b063a0c85744b1735'),
++    ('private.public_appeal_target_held_v1(text,uuid)','7402cafec700ba4c1f30e9e016140742'),
++    ('private.lock_invitation_transitions_v1()','3a28aeaf4bf736cbba89e3b209649557')
++   ) as x(signature,body) on p.oid=to_regprocedure(x.signature) and md5(pg_get_functiondef(p.oid))=x.body)<>4
++  or not exists(select 1 from information_schema.columns where table_schema='public'
++   and table_name='subjects' and column_name='ownership_transferred_at')
++  or to_regprocedure('private.own_copilot_context_v1(uuid,uuid,uuid)') is not null then
++  raise exception using errcode='55000',message='own adult copilot prerequisite differs'; end if;
++end;
++$predecessor$;
++
++-- 1. The own Copilot context: a self subject as before, or an adult record
++-- the account holds as its own.
++create function private.own_copilot_context_v1(p_account_id uuid,p_session_id uuid,p_subject_id uuid) returns jsonb
++language plpgsql security definer set search_path=pg_catalog,private as $function$
++declare v_class text; c jsonb; s public.subjects%rowtype; p public.subject_principals%rowtype;
++begin
++ select subject_class into v_class from public.subjects where id=p_subject_id;
++ -- A self subject resolves exactly as it always has.
++ if v_class='self' then return public.own_report_context_v1(p_account_id,p_session_id,p_subject_id); end if;
++ if v_class is distinct from 'other_adult' or p_account_id is null then
++  raise exception using errcode='42501',message='not_found'; end if;
++ -- The invitation-transition lock first, as other-adult-mitigation-state-v1
++ -- and every adult-record writer take it, then the self context's own checks
++ -- in its own lock order: a live session of this account, an adult, unbanned
++ -- account, the record's current binding and active principal, and the
++ -- record's own consent.upload-self and insurance acknowledgement.
++ perform private.lock_invitation_transitions_v1();
++ c:=private.own_upload_store_authority_v1(p_account_id,p_session_id,p_subject_id);
++ -- Held by the person themselves: accepted into this account, owned by none.
++ select * into s from public.subjects where id=p_subject_id for share;
++ if s.subject_class is distinct from 'other_adult' or s.subject_account_id is distinct from p_account_id
++  or s.owner_account_id is not null or s.ownership_transferred_at is not null
++  or s.lifecycle is distinct from 'active' or s.analysis_stopped_at is not null or s.cohort_id is not null then
++  raise exception using errcode='42501',message='not_found'; end if;
++ -- A public appeal holding the record denies every read.
++ if private.public_appeal_target_held_v1('subject',s.id) then
++  raise exception using errcode='42501',message='not_found'; end if;
++ -- The adult_claim binding only the account acceptance writes, at the
++ -- revision the store authority read, and the record's own principal.
++ select sp.* into p from public.subject_account_bindings b join public.subject_principals sp on sp.id=b.subject_principal_id
++ where b.subject_id=s.id and b.account_id=p_account_id and b.status='current' and b.binding_kind='adult_claim'
++  and b.binding_revision=(c->>'accountBindingRevision')::bigint and sp.status='active'
++  and sp.account_id=p_account_id and sp.subject_id=s.id and sp.principal_kind='account_subject' for share of b,sp;
++ if p.id is null then raise exception using errcode='42501',message='not_found'; end if;
++ -- The acceptance: the answered invitation and the person's own signature on
++ -- the current consent.subject-adult, whose adult_source consent stands.
++ perform 1 from public.subject_invitations i where i.target_kind='subject' and i.target_id=s.id
++  and i.invitation_kind='adult_subject' and i.status='accepted';
++ if not found then raise exception using errcode='42501',message='not_found'; end if;
++ perform 1 from public.subject_consents sc join public.consent_signatures cs on cs.id=sc.signature_id
++  join public.consent_artifacts ca on ca.artifact_key=cs.artifact_key and ca.version=cs.artifact_version
++   and ca.body_sha256=cs.artifact_body_sha256
++ where sc.subject_id=s.id and sc.account_id=p_account_id and sc.consent_type='adult_source'
++  and sc.revoked_at is null and (sc.expires_at is null or sc.expires_at>clock_timestamp())
++  and cs.target_kind='subject' and cs.target_id=s.id and cs.signer_account_id=p_account_id
++  and cs.signer_principal_id=p.id and cs.purpose='adult-subject-account-acceptance'
++  and ca.artifact_key='consent.subject-adult' and ca.superseded_at is null
++  and ca.published_at<=clock_timestamp() and ca.effective_on<=timezone('UTC',clock_timestamp())::date
++  and ca.body_sha256=encode(extensions.digest(convert_to(ca.body_markdown,'UTF8'),'sha256'),'hex')
++ for share of sc,cs,ca;
++ if not found then raise exception using errcode='42501',message='not_found'; end if;
++ return c||jsonb_build_object('principalId',p.id,'principalRevision',p.principal_revision);
++end;
++$function$;
++revoke all on function private.own_copilot_context_v1(uuid,uuid,uuid)
++ from public,anon,authenticated,inherit_upload_only,service_role;
++
++-- 2-4. Guarded in-place patches.
++do $patch_own_adult_copilot$
++declare item record;definition text;before_acl aclitem[];
++begin
++ for item in select * from (values
++  -- The configuration resolves its context through the own Copilot context.
++  (1,'private.own_copilot_configuration_v1(uuid,uuid,uuid)','fce304d610384353411e770e2b11bc59',
++   '978078aaef9b559cf19cd39c2afeb40d','{postgres=X/postgres,service_role=X/postgres}',
++   $old$ -- The existing context locks and requires a self subject with active lifecycle.
++ -- Other lifecycle states cannot restart through this own-only path; the
++ -- authority resolver separately requires the exact unrevoked purpose grant.
++ c:=public.own_report_context_v1(p_account_id,p_session_id,p_subject_id);$old$,
++   $new$ -- The existing context locks and requires a self subject with active lifecycle.
++ -- Other lifecycle states cannot restart through this own-only path; the
++ -- authority resolver separately requires the exact unrevoked purpose grant.
++ -- 20261119100000: private.own_copilot_context_v1 returns exactly that context
++ -- for a self subject, and the same context for an other_adult record the
++ -- account accepted as its own (scope-derived-v1 subject:adult own-subject).
++ c:=private.own_copilot_context_v1(p_account_id,p_session_id,p_subject_id);$new$,
++   'own copilot configuration context'),
++  -- A Copilot grant on such a record is purged as a self subject's is.
++  (2,'private.own_report_purge_scope_v1(uuid)','7c1d0c919ffe1d9893730bc699513156',
++   '8ea6781abc66f8a2e81beae46a27609d','{postgres=X/postgres}',
++   $old$ where g.grant_id=p_grant and g.target_kind='subject' and s.subject_class='self'
++$old$,
++   $new$ where g.grant_id=p_grant and g.target_kind='subject' and (s.subject_class='self'
++  -- 20261119100000: a Copilot grant on an other_adult record its own account
++  -- accepted (no account owns it) is purged exactly as a self subject's is.
++  or (s.subject_class='other_adult' and s.owner_account_id is null and g.purpose in('copilot.local','copilot.cloud')))
++$new$,
++   'own report purge scope'),
++  -- Path A's delete: the conversation variables.
++  (3,'private.purge_path_a_subject_v1(uuid,uuid)','3d478b31be3a18c2efe4333caa6a9465',
++   '9df90ff2557103f89386d94652a3829d','{postgres=X/postgres}',
++   $old$declare s public.subjects%rowtype; v_now timestamptz:=clock_timestamp(); v_grants uuid[];
++begin$old$,
++   $new$declare s public.subjects%rowtype; v_now timestamptz:=clock_timestamp(); v_grants uuid[];
++ v_chats uuid[]; v_generations uuid[]; v_contexts uuid[]; v_calls uuid[];
++begin$new$,
++   'path a delete conversation variables'),
++  -- Path A's delete: the record's conversations go with it.
++  (4,'private.purge_path_a_subject_v1(uuid,uuid)','9df90ff2557103f89386d94652a3829d',
++   '7413ba458c2eff320508076f964872d5','{postgres=X/postgres}',
++   $old$ v_grants:=array(select g.grant_id from public.purpose_grants g where g.target_kind='subject' and g.target_id=s.id order by g.grant_id);$old$,
++   $new$ -- 20261119100000: the record's own Copilot conversations, with their model
++ -- working state, go with it, as a self record's do (empty_self_subject_v1).
++ v_chats:=array(select c.id from public.chats c where c.subject_id=s.id order by c.id);
++ perform 1 from public.chats where id=any(v_chats) order by id for update;
++ v_generations:=array(select g.id from public.copilot_generation_sessions g where g.chat_id=any(v_chats));
++ v_contexts:=array(select m.id from public.model_contexts m where m.generation_session_id=any(v_generations));
++ v_calls:=array(select c.id from public.cloud_model_calls c where c.model_context_id=any(v_contexts));
++ delete from public.cloud_provider_payloads where cloud_model_call_id=any(v_calls);
++ delete from public.cloud_provider_attempts where cloud_model_call_id=any(v_calls);
++ delete from public.cloud_model_calls where id=any(v_calls);
++ delete from public.model_contexts where id=any(v_contexts);
++ delete from public.copilot_context_tokens where chat_id=any(v_chats) or target_id=s.id;
++ delete from public.copilot_context_history where chat_id=any(v_chats);
++ delete from public.copilot_turn_dependencies where chat_id=any(v_chats);
++ delete from public.copilot_generation_sessions where id=any(v_generations);
++ delete from public.chat_messages where chat_id=any(v_chats);
++ delete from public.chats where id=any(v_chats);
++ if exists(select 1 from public.chat_messages m where m.retrieved_subject_ids && array[s.id])
++  or exists(select 1 from public.copilot_context_history h where h.retrieved_subject_ids && array[s.id])
++  or exists(select 1 from public.copilot_context_tokens t where t.target_id=s.id) then
++  raise exception using errcode='55000',message='subject_delete_chat_residual'; end if;
++ v_grants:=array(select g.grant_id from public.purpose_grants g where g.target_kind='subject' and g.target_id=s.id order by g.grant_id);$new$,
++   'path a delete conversations')
++ ) as patch(ordinal,target,before_md5,after_md5,acl,old_fragment,new_fragment,label) order by ordinal loop
++  select pg_get_functiondef(p.oid),p.proacl into definition,before_acl from pg_proc p
++   where p.oid=item.target::regprocedure and md5(pg_get_functiondef(p.oid))=item.before_md5 and p.proacl::text=item.acl;
++  if definition is null then raise exception using errcode='55000',message=item.label||' predecessor differs';end if;
++  if (length(definition)-length(replace(definition,item.old_fragment,'')))/length(item.old_fragment)<>1 then
++   raise exception using errcode='55000',message=item.label||' anchor differs';end if;
++  execute replace(definition,item.old_fragment,item.new_fragment);
++  if not exists(select 1 from pg_proc p where p.oid=item.target::regprocedure and md5(pg_get_functiondef(p.oid))=item.after_md5
++    and p.proacl is not distinct from before_acl) then
++   raise exception using errcode='55000',message=item.label||' successor differs';end if;
++ end loop;
++end;
++$patch_own_adult_copilot$;
++
++-- Postflight: the new context is owner-only, and the three patched bodies are
++-- their reviewed successors with their ACLs unchanged.
++do $postflight$
++begin
++ if (select proacl::text from pg_proc where oid='private.own_copilot_context_v1(uuid,uuid,uuid)'::regprocedure)
++   is distinct from '{postgres=X/postgres}'
++  or (select count(*) from pg_proc p join (values
++    ('private.own_copilot_configuration_v1(uuid,uuid,uuid)','978078aaef9b559cf19cd39c2afeb40d','{postgres=X/postgres,service_role=X/postgres}'),
++    ('private.own_report_purge_scope_v1(uuid)','8ea6781abc66f8a2e81beae46a27609d','{postgres=X/postgres}'),
++    ('private.purge_path_a_subject_v1(uuid,uuid)','7413ba458c2eff320508076f964872d5','{postgres=X/postgres}')
++   ) as x(signature,body,acl) on p.oid=to_regprocedure(x.signature) and md5(pg_get_functiondef(p.oid))=x.body
++    and p.proacl::text=x.acl)<>3 then
++  raise exception using errcode='55000',message='own adult copilot successor differs'; end if;
++end;
++$postflight$;
++
++notify pgrst, 'reload schema';
+diff --git a/supabase/tests/own_adult_copilot.sql b/supabase/tests/own_adult_copilot.sql
+new file mode 100644
+index 00000000..09d3115d
+--- /dev/null
++++ b/supabase/tests/own_adult_copilot.sql
+@@ -0,0 +1,429 @@
++begin;
++create extension if not exists pgtap with schema extensions;
++set local search_path=public,extensions;
++select no_plan();
++\ir fixtures/invitation_quota_keys.inc
++\ir fixtures/own_copilot_synthetic_settings.inc
++-- G8.5, Copilot for an adult's own record (20261119100000_own_adult_copilot.sql;
++-- owner decision of 19 November 2026, "G8.5: Copilot for an adult's own record
++-- is built"; route register scope-derived-v1, subject:adult, own-subject).
++--
++-- An adult accepts a Path A invitation in their own account. The record they
++-- now hold (other_adult, subject_account_id their account, owned by none,
++-- their adult_claim binding and principal, their own consent.subject-adult)
++-- gets the own Copilot permission, chat, revocation, purge, export and delete
++-- that a self record has, under the same own-file permission, for a local
++-- model and an approved cloud provider. Everything else stays refused: a
++-- record the account uploaded, one it was granted, another account's own
++-- adult record, an embryo or cohort, an inactive or unbound record, a record a
++-- public appeal holds, and a second account presenting the first one's
++-- authority. A self subject resolves exactly as before.
++--
++-- 01 invites both adults; 02 holds R2 (the record under test); 03 holds R3,
++-- its own adult record; 04 is a stranger. Every account, session, address,
++-- name, file and digest is synthetic, and everything rolls back.
++update public.mail_outbox set state='invalidated' where state in ('queued','claimed');
++insert into private.upload_authorization_config(singleton,auth_issuer,maximum_array_bytes,maximum_vcf_bytes,
++ maximum_account_bytes,maximum_active_uploads)
++ values(true,'http://127.0.0.1:54321/auth/v1',65536,65536,262144,2)
++ on conflict(singleton) do update set auth_issuer=excluded.auth_issuer,
++ maximum_array_bytes=excluded.maximum_array_bytes,maximum_vcf_bytes=excluded.maximum_vcf_bytes,
++ maximum_account_bytes=excluded.maximum_account_bytes,maximum_active_uploads=excluded.maximum_active_uploads;
++
++do $$ declare n integer; begin
++ for n in 1..4 loop
++  insert into auth.users(id,email,email_confirmed_at) values(('7e2a0000-0000-4000-8000-00000000000'||n)::uuid,
++   'own-adult-copilot-'||n||'@example.invalid',now());
++  insert into auth.sessions(id,user_id,created_at,updated_at,aal) values(('7e2a0000-0000-4000-8000-00000000001'||n)::uuid,
++   ('7e2a0000-0000-4000-8000-00000000000'||n)::uuid,now(),now(),'aal1');
++ end loop;
++end $$;
++update public.profiles set date_of_birth=date '1990-01-01' where id::text like '7e2a0000-%';
++create function pg_temp.account(n integer) returns uuid language sql immutable as $$ select ('7e2a0000-0000-4000-8000-00000000000'||n)::uuid $$;
++create function pg_temp.session(n integer) returns uuid language sql immutable as $$ select ('7e2a0000-0000-4000-8000-00000000001'||n)::uuid $$;
++create function pg_temp.self_of(n integer) returns uuid language sql as $$
++ select id from public.subjects where subject_account_id=pg_temp.account(n) and subject_class='self' $$;
++-- Each request is its own transaction in the product; this suite is one, so
++-- the legal-audit actor a previous call noted is cleared before another acts.
++create function pg_temp.as_actor() returns void language sql as $$ select set_config('inherit.legal_audit_actor','',true) $$;
++
++-- Path A, through the real doors: the invitation, its mailed token, the rights
++-- session and the account acceptance with the typed name's ciphertext.
++create function pg_temp.accepted(invitee integer,contact text,idem text,session_hash text,form text,accept text) returns uuid
++language plpgsql as $$
++declare v_subject uuid; v_invitation uuid; v_token text; d record; i integer;
++begin
++ perform pg_temp.as_actor();
++ select invitation_id,subject_id into v_invitation,v_subject from public.create_adult_subject_invitation_v1(pg_temp.account(1),
++  decode('00112233445566778899aabbccddeeff','hex'),repeat(contact,64),repeat(idem,64),true,p_quota_keys=>pg_temp.invitation_quota_keys());
++ for i in 1..50 loop
++  select * into d from public.claim_mail_outbox();
++  exit when d.outbox_id is null;
++  if exists(select 1 from public.mail_outbox m where m.id=d.outbox_id and m.token_target_id=v_invitation) then
++   v_token:=encode(extensions.digest(convert_to(d.delivery_token,'UTF8'),'sha256'),'hex'); exit;
++  end if;
++ end loop;
++ perform public.activate_rights_session_v1(v_token,session_hash,form);
++ perform pg_temp.as_actor();
++ return public.accept_adult_subject_invitation_v1(session_hash,accept,pg_temp.account(invitee),pg_temp.session(invitee),
++  jsonb_build_object('1',repeat(contact,64)),decode(repeat('5a',28),'hex'));
++end $$;
++create temporary table rec as select
++ pg_temp.accepted(2,'a','b',repeat('d',64),'own-adult-open-aaaaaaaaaaaaaa','own-adult-accept-aaaaaaaaaaaa') r2;
++alter table rec add column r3 uuid;
++update rec set r3=pg_temp.accepted(3,'c','e',repeat('7',64),'own-adult-open-cccccccccccccc','own-adult-accept-cccccccccccc');
++grant select on rec to service_role;
++create function pg_temp.r2() returns uuid language sql as $$ select r2 from rec $$;
++create function pg_temp.r3() returns uuid language sql as $$ select r3 from rec $$;
++select ok(pg_temp.r2() is not null and pg_temp.r3() is not null,'fixture: two invited adults accept in their own accounts');
++select is((select row(subject_class,owner_account_id,subject_account_id,lifecycle)::text from public.subjects where id=pg_temp.r2()),
++ row('other_adult',null::uuid,pg_temp.account(2),'active')::text,'fixture: R2 is an adult record its own account holds and no account owns');
++select is((select binding_kind from public.subject_account_bindings where subject_id=pg_temp.r2() and status='current'),'adult_claim',
++ 'fixture: the acceptance wrote R2''s adult_claim binding');
++
++-- The record's own-file permission, signed the way the own upload page signs
++-- it (consent.upload-self and the insurance acknowledgement), and a model.
++create function pg_temp.own_file_permission(n integer,subject uuid,letter text) returns void language plpgsql as $$
++declare c jsonb; a record; k integer:=0;
++begin
++ perform pg_temp.as_actor();
++ c:=public.own_upload_context_v1(pg_temp.account(n),pg_temp.session(n),subject);
++ for a in select artifact_key,version,body_sha256 from public.consent_artifacts
++  where artifact_key in ('disclosure.insurance-and-discrimination','consent.upload-self') and superseded_at is null
++  order by artifact_key desc loop
++  k:=k+1;
++  insert into public.account_operation_nonces(nonce_hash,account_id,session_id,operation,expires_at)
++   values(repeat(letter,63)||k,pg_temp.account(n),pg_temp.session(n),'own_upload_artifact_sign',clock_timestamp()+interval '9 minutes');
++  perform public.sign_own_upload_artifact_v1(pg_temp.account(n),pg_temp.session(n),subject,a.artifact_key,a.version,a.body_sha256,
++   case a.artifact_key when 'consent.upload-self' then array['own-adult-dna'] else array['understood'] end,
++   (c->>'accountRevision')::bigint,(c->>'authSessionRevision')::bigint,(c->>'jurisdictionRevision')::bigint,
++   (c->>'subjectBindingRevision')::bigint,(c->>'accountBindingRevision')::bigint,repeat(letter,63)||k);
++ end loop;
++end $$;
++create function pg_temp.save_model(n integer,class text default 'cloud',model_name text default 'synthetic-model') returns jsonb language sql as $$
++ select pg_temp.as_actor();
++ select public.save_own_copilot_settings_v1(pg_temp.account(n),pg_temp.session(n),
++  pg_temp.synthetic_copilot_settings(model_name,class),null,repeat('b',64),null);
++$$;
++create function pg_temp.presentation(n integer,subject uuid) returns jsonb language sql as $$
++ select public.own_copilot_presentation_v1(pg_temp.account(n),pg_temp.session(n),subject) $$;
++create function pg_temp.authority(n integer,subject uuid,expected jsonb default null,s integer default null) returns jsonb language sql as $$
++ select public.own_copilot_authority_v1(pg_temp.account(n),pg_temp.session(coalesce(s,n)),subject,expected) $$;
++create function pg_temp.grant_model(n integer,subject uuid,presentation jsonb,nonce text) returns jsonb language sql as $$
++ select public.grant_own_copilot_v1(pg_temp.account(n),pg_temp.session(n),subject,presentation->'snapshot',
++  presentation->'artifacts',nonce,clock_timestamp()+interval '9 minutes');
++$$;
++create function pg_temp.chat(n integer,subject uuid,op text,authority jsonb,projection jsonb default null,
++ chat uuid default null,payload jsonb default '{}') returns jsonb language sql as $$
++ select public.own_copilot_chat_v1(op,pg_temp.account(n),pg_temp.session(n),subject,authority,projection,chat,payload) $$;
++create function pg_temp.context(n integer,subject uuid) returns jsonb language sql as $$
++ select private.own_copilot_context_v1(pg_temp.account(n),pg_temp.session(n),subject) $$;
++
++-- 1. The migration ------------------------------------------------------------
++select is((select proacl::text from pg_proc where oid='private.own_copilot_context_v1(uuid,uuid,uuid)'::regprocedure),
++ '{postgres=X/postgres}','the own Copilot context is owner-only');
++select ok(not has_function_privilege(r,'private.own_copilot_context_v1(uuid,uuid,uuid)','execute'),
++ r||' cannot call the own Copilot context') from unnest(array['anon','authenticated','inherit_upload_only','service_role']) r;
++select is((select md5(pg_get_functiondef(p.oid))||' '||p.proacl::text from pg_proc p where p.oid=x.signature::regprocedure),x.expected,
++ x.signature||' is its reviewed successor with its ACL unchanged') from (values
++ ('private.own_copilot_configuration_v1(uuid,uuid,uuid)','978078aaef9b559cf19cd39c2afeb40d {postgres=X/postgres,service_role=X/postgres}'),
++ ('private.own_report_purge_scope_v1(uuid)','8ea6781abc66f8a2e81beae46a27609d {postgres=X/postgres}'),
++ ('private.purge_path_a_subject_v1(uuid,uuid)','7413ba458c2eff320508076f964872d5 {postgres=X/postgres}')) x(signature,expected);
++select ok(not has_function_privilege(r,f,'execute'),r||' still cannot call '||f) from
++ unnest(array['anon','authenticated','inherit_upload_only']) r cross join unnest(array[
++  'public.own_copilot_presentation_v1(uuid,uuid,uuid)','public.own_copilot_authority_v1(uuid,uuid,uuid,jsonb)',
++  'public.grant_own_copilot_v1(uuid,uuid,uuid,jsonb,jsonb,text,timestamptz)',
++  'public.revoke_own_copilot_v1(uuid,uuid,uuid,jsonb)','public.own_copilot_chat_v1(text,uuid,uuid,uuid,jsonb,jsonb,uuid,jsonb)']) f;
++
++-- 2. A self subject resolves exactly as before ---------------------------------
++select pg_temp.own_file_permission(2,pg_temp.self_of(2),'1');
++select is(pg_temp.context(2,pg_temp.self_of(2)),
++ public.own_report_context_v1(pg_temp.account(2),pg_temp.session(2),pg_temp.self_of(2)),
++ 'a self subject''s own Copilot context is exactly public.own_report_context_v1''s');
++select throws_ok($$select pg_temp.context(4,pg_temp.self_of(2))$$,'42501','not_found','another account''s self subject is not found');
++
++-- 3. R2 needs its own own-file permission, as a self record does --------------
++select pg_temp.save_model(2);
++select throws_ok($$select pg_temp.presentation(2,pg_temp.r2())$$,'55000','insurance_acknowledgement_required',
++ 'before its own-file permission R2 has no Copilot presentation, whatever the self record signed');
++select ok(pg_temp.authority(2,pg_temp.r2()) is null,'and no authority');
++select pg_temp.own_file_permission(2,pg_temp.r2(),'2');
++
++-- 4. Granted for a cloud provider, bound to R2 ---------------------------------
++create temporary table cloud_presentation as select pg_temp.presentation(2,pg_temp.r2()) value;
++select is((select value#>>'{snapshot,subjectId}' from cloud_presentation),pg_temp.r2()::text,'the presentation names R2');
++select is((select (value#>>'{snapshot,context,principalId}')::uuid from cloud_presentation),
++ (select subject_principal_id from public.subject_account_bindings where subject_id=pg_temp.r2() and status='current'),
++ 'and R2''s own principal, never the self record''s');
++select is((select array_agg(a->>'key' order by a->>'key') from cloud_presentation,jsonb_array_elements(value->'artifacts') a),
++ array['consent.copilot-cloud-model','consent.own-copilot-cloud'],'a cloud provider presents both reviewed texts, unchanged');
++select throws_ok($$select public.grant_own_copilot_v1(pg_temp.account(2),pg_temp.session(2),pg_temp.r2(),
++ (select value->'snapshot' from cloud_presentation),
++ (select jsonb_agg(a) from cloud_presentation,jsonb_array_elements(value->'artifacts') a where a->>'key'<>'consent.copilot-cloud-model'),
++ repeat('c1',32),clock_timestamp()+interval '9 minutes')$$,'42501','not_found',
++ 'a cloud grant without the cloud-model consent artifact is refused');
++select pg_temp.as_actor();
++create temporary table cloud_authority as select pg_temp.grant_model(2,pg_temp.r2(),(select value from cloud_presentation),repeat('c2',32)) value;
++grant select on cloud_authority to service_role;
++select is((select value->>'subjectId' from cloud_authority),pg_temp.r2()::text,'the invited adult grants Copilot for R2');
++select is((select value->>'providerClass' from cloud_authority),'cloud','for the cloud provider class');
++select is(pg_temp.authority(2,pg_temp.r2(),(select value from cloud_authority)),(select value from cloud_authority),'the same exact authority rechecks');
++select is((select subject_id from public.subject_consents where id=((select value from cloud_authority)->>'providerGrantId')::uuid),
++ pg_temp.r2(),'the cloud-model consent is bound to R2 exactly');
++select is((select row(target_id,purpose,artifact_key)::text from public.purpose_grants
++  where grant_id=((select value from cloud_authority)->>'copilotGrantId')::uuid),
++ row(pg_temp.r2(),'copilot.cloud','consent.own-copilot-cloud')::text,'the purpose grant is R2''s own copilot.cloud');
++select ok(pg_temp.authority(2,pg_temp.self_of(2)) is null,'R2''s permission grants nothing for the self record');
++create function pg_temp.pseudonym(n integer) returns uuid language sql as $$
++ select audit_principal_id from private.legal_audit_account_principals where account_id=pg_temp.account(n) $$;
++select is((select count(*) from public.legal_audit_log where event_code='purpose.granted' and route_id='api.consents'
++ and occurred_at>=now() and audit_principal_id=pg_temp.pseudonym(2)),1::bigint,'the grant''s audit event names the invited adult''s pseudonym');
++savepoint cloud_consent_withdrawn;
++update public.subject_consents set revoked_at=clock_timestamp(),revocation_reason='withdrawn'
++ where id=((select value from cloud_authority)->>'providerGrantId')::uuid;
++select ok(pg_temp.authority(2,pg_temp.r2()) is null,'cloud is refused once its cloud-model consent is withdrawn');
++rollback to cloud_consent_withdrawn;
++select ok(pg_temp.authority(2,pg_temp.r2()) is not null,'and restored with it');
++
++-- 5. The chat reads R2's rows and nothing else ---------------------------------
++-- Two historical processed sources (the legacy class the own chat already
++-- reads), one in R2 and one in the self record, disagree at one locus.
++insert into public.genome_files(id,user_id,subject_id,bucket_path,original_name,file_type,tier,size_bytes,sha256,status,build) values
++ ('7e2a0000-0000-4000-8000-000000000050',pg_temp.account(2),pg_temp.r2(),'7e2a0000-0000-4000-8000-000000000051',
++  'Synthetic R2 genome','vcf',1,8,repeat('e',64),'annotated','GRCh38'),
++ ('7e2a0000-0000-4000-8000-000000000060',pg_temp.account(2),pg_temp.self_of(2),'7e2a0000-0000-4000-8000-000000000061',
++  'Synthetic self genome','vcf',1,8,repeat('f',64),'annotated','GRCh38');
++insert into public.user_variants(user_id,subject_id,file_id,rsid,chrom,pos,ref,alt,genotype) values
++ (pg_temp.account(2),pg_temp.r2(),'7e2a0000-0000-4000-8000-000000000050',4988235,2,135851076,'G','A','G/G'),
++ (pg_temp.account(2),pg_temp.self_of(2),'7e2a0000-0000-4000-8000-000000000060',4988235,2,135851076,'G','A','A/G');
++create temporary table projection as select pg_temp.chat(2,pg_temp.r2(),'prepare',(select value from cloud_authority)) value;
++grant select on projection to service_role;
++select is((select array_agg(s->>'id') from projection,jsonb_array_elements(value->'legacySources') s),
++ array['7e2a0000-0000-4000-8000-000000000050'],'R2''s projection holds R2''s source only');
++select is(pg_temp.chat(2,pg_temp.r2(),'begin',(select value from cloud_authority),(select value from projection),null,
++ jsonb_build_object('nonceHash',repeat('9a',32),'expiresAt',clock_timestamp()+interval '9 minutes')),'true'::jsonb,
++ 'the single-use context nonce is recorded');
++create temporary table r2_calls as select pg_temp.chat(2,pg_temp.r2(),'calls',(select value from cloud_authority),
++ (select value from projection),null,'{"rsids":[4988235],"offset":0}') value;
++select is((select row(jsonb_array_length(value),value->0->>'file_id',value->0->>'genotype')::text from r2_calls),
++ row(1,'7e2a0000-0000-4000-8000-000000000050','G/G')::text,'a question about R2 reads R2''s genotype, never the self record''s');
++select is(pg_temp.chat(2,pg_temp.r2(),'reports',(select value from cloud_authority),(select value from projection),null,'{"offset":0}'),
++ '[]'::jsonb,'R2 has no report: own report purposes stay a self subject''s');
++create temporary table first_chat as select (pg_temp.chat(2,pg_temp.r2(),'commit',(select value from cloud_authority),
++ (select value from projection),null,jsonb_build_object('message','What is my genotype at rs4988235?',
++  'answer','Your file shows G/G at rs4988235.','citations','[]'::jsonb,'lastOrdinal',0,'nonceHash',repeat('9a',32)))->>'chatId')::uuid id;
++grant select on first_chat to service_role;
++select is((select row(user_id,scope_kind,subject_id,provider_classification)::text from public.chats where id=(select id from first_chat)),
++ row(pg_temp.account(2),'self',pg_temp.r2(),'cloud')::text,'the conversation is stored as every own conversation is, on R2');
++select is((select array_agg(distinct x) from public.chat_messages m,unnest(m.retrieved_subject_ids) x where m.chat_id=(select id from first_chat)),
++ array[pg_temp.r2()],'both turns record R2 as the only subject read');
++select is((select jsonb_agg(c->>'id') from jsonb_array_elements(pg_temp.chat(2,pg_temp.r2(),'list',(select value from cloud_authority))) c),
++ jsonb_build_array((select id from first_chat)),'R2 lists its conversation');
++select is((select count(*) from public.chats where subject_id=pg_temp.self_of(2)),0::bigint,
++ 'nothing about R2 is stored on the self record');
++select is(jsonb_array_length(pg_temp.chat(2,pg_temp.r2(),'history',(select value from cloud_authority),null,(select id from first_chat))->'messages'),
++ 2,'R2''s history reads back the paired turn');
++select is((private.export_archive_chat_messages_v1(pg_temp.account(2),pg_temp.session(2),(select id from first_chat),null,null)->>'count')::integer,
++ 2,'the export''s chat reader exports R2''s conversation while its permission stands');
++
++-- 6. Refused: a second account, every other relationship and class -------------
++select pg_temp.save_model(3);
++select pg_temp.own_file_permission(3,pg_temp.r3(),'3');
++select throws_ok($$select pg_temp.presentation(3,pg_temp.r2())$$,'42501','not_found','a second account cannot present R2');
++select ok(pg_temp.authority(3,pg_temp.r2()) is null,'a second account has no authority over R2');
++select ok(pg_temp.authority(3,pg_temp.r2(),(select value from cloud_authority)) is null,'not even presenting the first account''s exact authority');
++select ok(pg_temp.authority(2,pg_temp.r2(),null,3) is null,'R2''s account with another account''s session is refused');
++select ok(pg_temp.authority(3,pg_temp.r2(),null,2) is null,'and another account with R2''s account''s session');
++select throws_ok($$select pg_temp.chat(3,pg_temp.r2(),'history',(select value from cloud_authority),null,(select id from first_chat))$$,
++ '42501','not_found','a second account cannot read R2''s conversation');
++select throws_ok($$select pg_temp.chat(3,pg_temp.r2(),'calls',(select value from cloud_authority),(select value from projection),null,
++ '{"rsids":[4988235],"offset":0}')$$,'42501','not_found','or its rows');
++select throws_ok($$select pg_temp.chat(4,pg_temp.r2(),'prepare',(select value from cloud_authority))$$,'42501','not_found',
++ 'nor can a stranger');
++select throws_ok($$select pg_temp.presentation(2,pg_temp.r3())$$,'42501','not_found','another account''s own adult record is not R2''s account''s');
++select throws_ok($$select pg_temp.presentation(1,pg_temp.r2())$$,'42501','not_found','the inviter has nothing to present');
++select ok(pg_temp.authority(1,pg_temp.r2()) is null,'and no authority');
++-- Granted: R3's account shares R3 with 02 as a family member.
++insert into public.subject_relationships(subject_id,data_subject_principal_id,recipient_principal_id,recipient_account_id,
++ relationship_kind,relationship_revision,status)
++ select pg_temp.r3(),b.subject_principal_id,b2.account_principal_id,pg_temp.account(2),'family_member',1,'current'
++ from public.subject_account_bindings b,public.subject_account_bindings b2
++ where b.subject_id=pg_temp.r3() and b.status='current' and b2.subject_id=pg_temp.r2() and b2.status='current';
++select throws_ok($$select pg_temp.presentation(2,pg_temp.r3())$$,'42501','not_found','an adult record the account was granted is refused');
++select ok(pg_temp.authority(2,pg_temp.r3()) is null,'with no authority');
++-- Uploaded: an adult record 02 owns and no account holds (Path B's shape).
++insert into public.subjects(id,owner_account_id,subject_account_id,subject_class,upload_class,display_label,lifecycle)
++ values('7e2a0000-0000-4000-8000-000000000070',pg_temp.account(2),null,'other_adult','adult','Synthetic uploaded adult','active');
++insert into public.subject_principals(subject_id,account_id,principal_kind,status,principal_revision)
++ values('7e2a0000-0000-4000-8000-000000000070',null,'non_account_subject','active',1);
++select throws_ok($$select pg_temp.presentation(2,'7e2a0000-0000-4000-8000-000000000070')$$,'42501','not_found',
++ 'an adult record the account uploaded is refused');
++select ok(pg_temp.authority(2,'7e2a0000-0000-4000-8000-000000000070') is null,'with no authority');
++-- Uploaded and bound: R2, everything else as granted, but an uploader owns it.
++savepoint uploader_owned;
++update public.subjects set owner_account_id=pg_temp.account(1) where id=pg_temp.r2();
++select ok(pg_temp.authority(2,pg_temp.r2()) is null,'a record bound to the account that an uploader owns is refused, current grant and all');
++select throws_ok($$select pg_temp.context(2,pg_temp.r2())$$,'42501','not_found','its context is not found');
++select ok(pg_temp.authority(1,pg_temp.r2()) is null,'and its uploader has no authority either');
++rollback to uploader_owned;
++-- Other classes.
++insert into public.subjects(id,owner_account_id,subject_account_id,subject_class,upload_class,display_label,lifecycle)
++ values('7e2a0000-0000-4000-8000-000000000080',pg_temp.account(2),null,'minor','adult','Synthetic minor','active');
++select throws_ok($$select pg_temp.context(2,'7e2a0000-0000-4000-8000-000000000080')$$,'42501','not_found','a subject with no own case is refused');
++select throws_ok($$select pg_temp.context(2,'7e2a0000-0000-4000-8000-000000000099')$$,'42501','not_found','an unknown id is refused');
++
++-- 7. Refused: inactive, unbound, withdrawn or held ------------------------------
++create function pg_temp.refused_after(setup text) returns boolean language plpgsql as $$
++declare v_result boolean;
++begin
++ begin
++  execute setup;
++  v_result:=pg_temp.authority(2,pg_temp.r2()) is null;
++  raise exception using errcode='ZY001',message='restore synthetic probe';
++ exception when sqlstate 'ZY001' then null;
++ end;
++ return v_result;
++end $$;
++select ok(pg_temp.refused_after(format($s$update public.subjects set lifecycle=%L,lifecycle_revision=lifecycle_revision+1 where id=%L$s$,
++ l,pg_temp.r2())),'R2 '||l||' is refused') from unnest(array['restricted','revoked','purge_queued','purged']) l;
++select ok(pg_temp.refused_after(format($s$update public.subject_account_bindings set status='revoked',ended_at=clock_timestamp()
++ where subject_id=%L and status='current'$s$,pg_temp.r2())),'R2 with its binding ended is refused');
++select ok(pg_temp.refused_after(format($s$update public.subject_principals set status='detached' where subject_id=%L and status='active'$s$,
++ pg_temp.r2())),'R2 with its principal detached is refused');
++select ok(pg_temp.refused_after(format($s$update public.subject_consents set revoked_at=clock_timestamp(),revocation_reason='withdrawn'
++ where subject_id=%L and consent_type='adult_source'$s$,pg_temp.r2())),'R2 with the person''s own acceptance consent withdrawn is refused');
++select ok(pg_temp.refused_after(format($s$update public.subject_consents set revoked_at=clock_timestamp(),revocation_reason='withdrawn'
++ where subject_id=%L and consent_type='upload_class'$s$,pg_temp.r2())),'R2 with its own-file permission withdrawn is refused');
++select ok(pg_temp.refused_after(format($s$update public.subject_invitations set status='revoked' where target_id=%L$s$,pg_temp.r2())),
++ 'R2 with no accepted invitation is refused');
++select ok(pg_temp.refused_after(format($s$update public.subject_account_bindings set binding_kind='self' where subject_id=%L and status='current'$s$,
++ pg_temp.r2())),'R2 bound other than by the adult acceptance is refused');
++select ok(pg_temp.refused_after(format($s$update auth.sessions set not_after=clock_timestamp()-interval '1 minute' where id=%L$s$,
++ pg_temp.session(2))),'R2''s account with an ended session is refused');
++-- other-adult-mitigation-state-v1 as built: the hold resolver stands in for a
++-- committed public appeal on R2 only, and is restored by the rollback.
++select ok(pg_temp.refused_after(format($s$create or replace function private.public_appeal_target_held_v1(p_kind text,p_target uuid)
++ returns boolean language sql security definer set search_path='' as $b$select p_kind='subject' and p_target=%L::uuid$b$$s$,pg_temp.r2())),
++ 'a public appeal holding R2 refuses it');
++select is(md5(pg_get_functiondef('private.public_appeal_target_held_v1(text,uuid)'::regprocedure)),'7402cafec700ba4c1f30e9e016140742',
++ 'and the real hold resolver is back');
++select ok(pg_temp.authority(2,pg_temp.r2()) is not null,'after each probe R2''s authority stands');
++
++-- 8. Withdrawn: nothing answers, and its turns are purged -----------------------
++select pg_temp.as_actor();
++create temporary table withdrawn_authority as select pg_temp.authority(2,pg_temp.r2()) value;
++select is(public.revoke_own_copilot_with_nonce_v1(pg_temp.account(2),pg_temp.session(2),pg_temp.r2(),(select value from withdrawn_authority),
++ repeat('e1',32),clock_timestamp()+interval '9 minutes'),true,'the invited adult withdraws R2''s permission through the door api.consent-revoke calls');
++select throws_ok($$select public.revoke_own_copilot_with_nonce_v1(pg_temp.account(2),pg_temp.session(2),pg_temp.r2(),
++ (select value from withdrawn_authority),repeat('e1',32),clock_timestamp()+interval '9 minutes')$$,'22023','invalid_operation_nonce',
++ 'its one-time nonce cannot be spent twice');
++select ok(pg_temp.authority(2,pg_temp.r2()) is null,'the withdrawal takes effect at once');
++select throws_ok($$select pg_temp.chat(2,pg_temp.r2(),'check',(select value from cloud_authority),(select value from projection))$$,
++ '42501','not_found','a withdrawn permission authorizes no further read');
++select throws_ok($$select pg_temp.chat(2,pg_temp.r2(),'history',(select value from cloud_authority),null,(select id from first_chat))$$,
++ '42501','not_found','and reopens no conversation');
++select is((private.export_archive_chat_messages_v1(pg_temp.account(2),pg_temp.session(2),(select id from first_chat),null,null)->>'count')::integer,
++ 0,'and exports none');
++create temporary table purge_job as select j.id from public.worker_jobs j join public.retention_due_phases d on d.retention_row_id=j.source_binding_id
++ where d.immutable_envelope->>'grantId'=(select value->>'copilotGrantId' from cloud_authority);
++select is((select count(*) from purge_job),1::bigint,'the withdrawal queues the exact purge of what it authorized');
++select is((select count(*) from public.purge_manifest_entries e join public.purge_manifests m on m.id=e.manifest_id
++ join public.retention_due_phases d on d.retention_row_id=m.retention_row_id
++ where d.immutable_envelope->>'grantId'=(select value->>'copilotGrantId' from cloud_authority) and e.store_name='public.chat_messages'),
++ 2::bigint,'its manifest lists both turns of R2''s conversation');
++select is(private.execute_own_report_purge_v1((select id from purge_job))->>'outcome','complete','the purge runs');
++select is((select count(*) from public.chat_messages where chat_id=(select id from first_chat)),0::bigint,'and removes both turns');
++
++-- 9. A local model, then a settings change supersedes it ------------------------
++select is(pg_temp.save_model(2,'local','synthetic-local')->>'saved','true','the invited adult saves a local model');
++create temporary table local_presentation as select pg_temp.presentation(2,pg_temp.r2()) value;
++select is((select array_agg(a->>'key') from local_presentation,jsonb_array_elements(value->'artifacts') a),
++ array['consent.own-copilot-local'],'a local model presents the local text only');
++select pg_temp.as_actor();
++create temporary table local_authority as select pg_temp.grant_model(2,pg_temp.r2(),(select value from local_presentation),repeat('d1',32)) value;
++select is((select row(value->>'providerClass',value->>'providerGrantId')::text from local_authority),row('local',null::text)::text,
++ 'R2 is granted for the local provider class, with no cloud consent');
++select is((select purpose from public.purpose_grants where grant_id=((select value from local_authority)->>'copilotGrantId')::uuid),
++ 'copilot.local','under copilot.local');
++create temporary table local_projection as select pg_temp.chat(2,pg_temp.r2(),'prepare',(select value from local_authority)) value;
++select pg_temp.as_actor();
++select is(public.revoke_own_copilot_v1(pg_temp.account(2),pg_temp.session(2),pg_temp.r2(),(select value from local_authority)),true,
++ 'the local permission is withdrawn too');
++select ok(pg_temp.authority(2,pg_temp.r2()) is null,'and with no cloud consent to end, the local withdrawal alone ends it');
++select throws_ok($$select pg_temp.chat(2,pg_temp.r2(),'calls',(select value from local_authority),(select value from local_projection),null,
++ '{"rsids":[4988235],"offset":0}')$$,'42501','not_found','a withdrawn local permission reads no row');
++select pg_temp.as_actor();
++create temporary table local_again as select pg_temp.grant_model(2,pg_temp.r2(),pg_temp.presentation(2,pg_temp.r2()),repeat('d5',32)) value;
++select ok(pg_temp.authority(2,pg_temp.r2()) is not null,'a fresh local permission can be given again');
++select is(pg_temp.save_model(2,'local','synthetic-local-2')->>'saved','true','a model change');
++select ok(pg_temp.authority(2,pg_temp.r2()) is null,'supersedes R2''s permission');
++select ok((select revoked_at is not null and revocation_reason='superseded' from public.purpose_grants
++ where grant_id=((select value from local_again)->>'copilotGrantId')::uuid),'visibly');
++
++-- 10. Deleting R2 deletes its conversations -----------------------------------
++select pg_temp.as_actor();
++create temporary table again as select pg_temp.grant_model(2,pg_temp.r2(),pg_temp.presentation(2,pg_temp.r2()),repeat('d2',32)) value;
++create temporary table delete_projection as select pg_temp.chat(2,pg_temp.r2(),'prepare',(select value from again)) value;
++select pg_temp.chat(2,pg_temp.r2(),'begin',(select value from again),(select value from delete_projection),null,
++ jsonb_build_object('nonceHash',repeat('9b',32),'expiresAt',clock_timestamp()+interval '9 minutes'));
++create temporary table second_chat as select (pg_temp.chat(2,pg_temp.r2(),'commit',(select value from again),
++ (select value from delete_projection),null,jsonb_build_object('message','Anything in this record?','answer','One file.',
++  'citations','[]'::jsonb,'lastOrdinal',0,'nonceHash',repeat('9b',32)))->>'chatId')::uuid id;
++select is((select count(*) from public.chats where subject_id=pg_temp.r2()),2::bigint,'fixture: R2 holds two conversations');
++-- Path A's delete keeps refusing a record that holds a file, as before.
++select throws_ok($$select public.delete_subject_v1(pg_temp.account(2),pg_temp.session(2),pg_temp.r2(),repeat('d3',32),
++ clock_timestamp()+interval '5 minutes')$$,'42501','not_found','a record holding a file is not deleted by this route, as before');
++delete from public.user_variants where file_id='7e2a0000-0000-4000-8000-000000000050';
++delete from public.genome_files where id='7e2a0000-0000-4000-8000-000000000050';
++select pg_temp.as_actor();
++select is(public.delete_subject_v1(pg_temp.account(2),pg_temp.session(2),pg_temp.r2(),repeat('d4',32),
++ clock_timestamp()+interval '5 minutes'),'{"case":"adult"}'::jsonb,'the invited adult deletes R2');
++select is((select count(*) from public.chats where subject_id=pg_temp.r2()),0::bigint,'every conversation about R2 goes with it');
++select is((select count(*) from public.chat_messages where retrieved_subject_ids && array[pg_temp.r2()]),0::bigint,'and every turn that read it');
++select is((select lifecycle from public.subjects where id=pg_temp.r2()),'purged','R2 is purged');
++select is((select count(*) from public.legal_audit_log where event_code='subject.deleted' and route_id='api.subject-delete'
++ and occurred_at>=now() and audit_principal_id=pg_temp.pseudonym(2)),1::bigint,'the deletion''s audit event names the invited adult''s pseudonym');
++select ok((select revoked_at is not null from public.purpose_grants where grant_id=((select value from again)->>'copilotGrantId')::uuid),
++ 'and its permission ended');
++select is((select count(*) from public.chats where subject_id=pg_temp.self_of(2)),0::bigint,'the self record is untouched');
++select throws_ok($$select pg_temp.presentation(2,pg_temp.r2())$$,'42501','not_found','a purged record has no Copilot');
++
++-- 11. The guarded patch cannot run twice ---------------------------------------
++create type pg_temp.patch_item as (ordinal integer,target text,before_md5 text,after_md5 text,acl text,
++ old_fragment text,new_fragment text,label text);
++create function pg_temp.guarded_patch(item pg_temp.patch_item) returns void language plpgsql as $guarded$
++declare definition text;before_acl aclitem[];
++begin
++  select pg_get_functiondef(p.oid),p.proacl into definition,before_acl from pg_proc p
++   where p.oid=item.target::regprocedure and md5(pg_get_functiondef(p.oid))=item.before_md5 and p.proacl::text=item.acl;
++  if definition is null then raise exception using errcode='55000',message=item.label||' predecessor differs';end if;
++  if (length(definition)-length(replace(definition,item.old_fragment,'')))/length(item.old_fragment)<>1 then
++   raise exception using errcode='55000',message=item.label||' anchor differs';end if;
++  execute replace(definition,item.old_fragment,item.new_fragment);
++  if not exists(select 1 from pg_proc p where p.oid=item.target::regprocedure and md5(pg_get_functiondef(p.oid))=item.after_md5
++    and p.proacl is not distinct from before_acl) then
++   raise exception using errcode='55000',message=item.label||' successor differs';end if;
++end $guarded$;
++select throws_ok($$select pg_temp.guarded_patch(row(1,'private.own_copilot_configuration_v1(uuid,uuid,uuid)',
++ 'fce304d610384353411e770e2b11bc59','978078aaef9b559cf19cd39c2afeb40d','{postgres=X/postgres,service_role=X/postgres}',
++ ' c:=public.own_report_context_v1(p_account_id,p_session_id,p_subject_id);',
++ ' c:=private.own_copilot_context_v1(p_account_id,p_session_id,p_subject_id);',
++ 'own copilot configuration context')::pg_temp.patch_item)$$,'55000','own copilot configuration context predecessor differs',
++ 'the migration cannot be applied twice');
++
++-- 12. An embryo and its cohort: the published synthetic cohort the cohort
++-- Copilot suite uses (supabase/tests/cohort_copilot_scope.sql). An embryo's
++-- Copilot is the cohort scope, never the own one.
++\ir fixtures/embryo_cohort_published.inc
++create temporary table embryo_case as select (select cohort_id from live) cohort,
++ (select id from public.subjects where cohort_id=(select cohort_id from live) and subject_class='embryo' order by id limit 1) embryo;
++select ok((select embryo is not null from embryo_case),'fixture: the published cohort holds an embryo subject');
++select throws_ok($$select private.own_copilot_context_v1('7a000000-0000-0000-0000-000000000001',
++ '7a000000-0000-4000-8000-0000000000a1',(select embryo from embryo_case))$$,'42501','not_found','an embryo subject has no own Copilot context');
++select ok(public.own_copilot_authority_v1('7a000000-0000-0000-0000-000000000001','7a000000-0000-4000-8000-0000000000a1',
++ (select embryo from embryo_case),null) is null,'or authority, for the parent who uploaded it');
++select throws_ok($$select private.own_copilot_context_v1('7a000000-0000-0000-0000-000000000001',
++ '7a000000-0000-4000-8000-0000000000a1',(select cohort from embryo_case))$$,'42501','not_found','and a cohort is no subject');
++
++select * from finish();
++rollback;

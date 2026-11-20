@@ -29,6 +29,10 @@ const mocks = vi.hoisted(() => ({
   unwindThrows: false,
 }));
 
+// The gate is driven on this route in src/lib/security/session-csrf-routes.test.ts
+// (G8.5, the migration stage); here it admits every request.
+vi.mock("@/lib/security/session-csrf", async (importOriginal) =>
+  (await import("@/lib/security/session-csrf.test-support")).admitEverySessionCsrf(await importOriginal()));
 vi.mock("@/lib/account-deletion", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/account-deletion")>()),
   getSensitiveAccountContext: async () => mocks.account,
@@ -112,20 +116,25 @@ beforeEach(() => {
 });
 
 describe("authority before anything is read", () => {
-  it("refuses a request with no account", async () => {
+  it("refuses a request with no account with authenticated-api-v1's JSON 401", async () => {
     mocks.account = null;
     const response = await call(post(body()));
     expect(response.status).toBe(401);
+    expect(response.headers.get("content-type")).toBe("application/json");
+    expect(await response.json()).toEqual({ error: "unauthenticated" });
     expect(mocks.calls).toEqual([]);
   });
 
-  it("refuses a cross-site request or one without exact Origin", async () => {
+  it("answers a cross-site request or one without exact Origin with upload-session-api-v1's opaque 404", async () => {
     const variants: Record<string, string>[] = [
       { "sec-fetch-site": "cross-site" }, { origin: "https://elsewhere.example" }, { "sec-fetch-site": "same-site" },
     ];
     for (const headers of variants) {
       const response = await call(post(body(), headers));
-      expect(response.status).toBe(403);
+      expect(response.status).toBe(404);
+      expect(response.headers.get("content-type")).toBe("application/json");
+      expect(await response.json()).toEqual({ error: "not_found" });
+      expect(response.headers.get("cache-control")).toBe("private, no-store");
     }
     expect(mocks.calls).toEqual([]);
   });

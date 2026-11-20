@@ -4,6 +4,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { CLAIMANT_CONTACT_KEEP_DAYS, CLAIMANT_DELETION_DAYS, CLAIMANT_RIGHTS_COPY as COPY } from "@/copy/rights/claimant-rights";
 import { ClaimantRights } from "./claimant-rights";
+import { CLAIMANT_DELETE_CONTROL, CLAIMANT_PAGE } from "../../../e2e/fixtures/claimant-record-page-text";
 
 /**
  * G5.4 for the future adult: the claimed record's page states its retention
@@ -11,8 +12,9 @@ import { ClaimantRights } from "./claimant-rights";
  * enforces, within the Charter's promise.
  */
 const text = (html: string) => html.replace(/<[^>]+>/g, " ").replace(/&#x27;/g, "'").replace(/\s+/g, " ");
-const render = (deletion: { csrf: string; nonce: string } | null) => renderToStaticMarkup(createElement(ClaimantRights,
-  { csrf: "c".repeat(64), recoveryNonce: "r".repeat(40), analysisNonce: "a".repeat(40), deletion }));
+// 2026-11-19 (G8.5): the csrf props are gone; each request reads its route's one-time token from the page's provider.
+const render = (deletion: { nonce: string } | null) => renderToStaticMarkup(createElement(ClaimantRights,
+  { recoveryNonce: "r".repeat(40), analysisNonce: "a".repeat(40), deletion }));
 
 describe("the claimed record's rights page", () => {
   it("states the retention in days: kept until asked, then deleted within 30 days and its DNA data within 7", () => {
@@ -22,7 +24,7 @@ describe("the claimed record's rights page", () => {
       + "within 30 days, and its DNA data within 7 days. We keep the contact address you gave us for at most 730 days "
       + "after your claim was approved. Deleting it does not delete your record. "
       + "Keep a Recovery Key so you can start a new claim later with fresh identity documents.");
-    for (const deletion of [null, { csrf: "d".repeat(64), nonce: "n".repeat(40) }]) {
+    for (const deletion of [null, { nonce: "n".repeat(40) }]) {
       const html = render(deletion);
       expect(html).toContain('data-slot="claimant-retention"');
       expect(text(html)).toContain(COPY.retention(30, 7, 730));
@@ -45,7 +47,7 @@ describe("the claimed record's rights page", () => {
   });
   it("gives the registered contact of last resort once, with or without the delete control", () => {
     expect(COPY.contact).toBe("If this page does not work, or you need help with your rights, write to privacy@inherit.bio.");
-    for (const deletion of [null, { csrf: "d".repeat(64), nonce: "n".repeat(40) }]) {
+    for (const deletion of [null, { nonce: "n".repeat(40) }]) {
       const html = render(deletion);
       expect(html).toContain('data-slot="claimant-contact"');
       expect(text(html)).toContain(COPY.contact);
@@ -86,12 +88,32 @@ describe("the claimed record's rights page", () => {
     const without = render(null);
     expect(without).not.toContain('data-slot="claimant-export"');
     expect(text(without)).not.toContain(COPY.exportLabel);
-    const withExport = renderToStaticMarkup(createElement(ClaimantRights, { csrf: "c".repeat(64), recoveryNonce: "r".repeat(40),
-      analysisNonce: "a".repeat(40), deletion: null, exportAction: { csrf: "e".repeat(64), nonce: "x".repeat(40) } }));
+    const withExport = renderToStaticMarkup(createElement(ClaimantRights, { recoveryNonce: "r".repeat(40),
+      analysisNonce: "a".repeat(40), deletion: null, exportAction: { nonce: "x".repeat(40) } }));
     expect(withExport.match(/data-slot="claimant-export"/g)).toHaveLength(1);
     expect(withExport).toMatch(/<button[^>]*data-slot="claimant-export"[^>]*>Export my claimed record<\/button>/u);
     // The label is the only text the action adds; the nonce never renders.
     expect(text(withExport).replace(COPY.exportLabel, "").replace(/\s+/g, " ").trim()).toBe(text(without).trim());
     expect(withExport).not.toContain("x".repeat(40));
+  });
+  it("renders exactly the words the claimed-record browser journey asserts, and no delete words without a delete control", () => {
+    // e2e/future-person-claimed-record-journey.spec.ts asserts these strings
+    // on /withdraw/session; this holds the rendered component to the same text,
+    // so a copy change fails here before it reaches a hosted browser run.
+    const slot = (html: string, name: string) => text(html.match(new RegExp(`data-slot="${name}">([^<]*)</p>`, "u"))?.[1] ?? "").trim();
+    const closed = render(null), open = render({ nonce: "n".repeat(40) });
+    for (const html of [closed, open]) {
+      expect(slot(html, "claimant-retention")).toBe(CLAIMANT_PAGE.retention);
+      expect(slot(html, "claimant-contact")).toBe(CLAIMANT_PAGE.contact);
+      expect(html).toMatch(new RegExp(`<h1[^>]*>${CLAIMANT_PAGE.heading}</h1>`, "u"));
+      for (const value of [CLAIMANT_PAGE.intro, CLAIMANT_PAGE.recoveryLegend, CLAIMANT_PAGE.recoveryAcknowledgement, CLAIMANT_PAGE.recoveryButton])
+        expect(text(html)).toContain(value);
+    }
+    // Owner decision 2026-10-22, "How G5.4's claimant delete is proven": the
+    // standard app presents no delete control, so none of its words render.
+    for (const value of Object.values(CLAIMANT_DELETE_CONTROL)) {
+      expect(text(closed)).not.toContain(value);
+      expect(text(open)).toContain(value);
+    }
   });
 });

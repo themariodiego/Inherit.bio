@@ -23,6 +23,7 @@ export const EMAIL_RENDERERS = {
   "embryo-draft-expired": ["embryo-draft-expired.tsx", "EmbryoDraftExpiredEmail"],
   "embryo-ingest-abandoned": ["embryo-ingest-abandoned.tsx", "EmbryoIngestAbandonedEmail"],
   "invitation-terminal-notice": ["invitation-terminal-notice.tsx", "InvitationTerminalNoticeEmail"],
+  "upload-consent-withdrawn": ["upload-consent-withdrawn.tsx", "UploadConsentWithdrawnEmail"],
 } as const satisfies Record<MailTemplateId, readonly [string, string]>;
 
 export interface PublicDigestTemplate { slug: string; title: string; summary: string }
@@ -81,8 +82,10 @@ export function emailFixtures(catalog: readonly PublicDigestTemplate[]): EmailFi
   for (const count of [1, 3]) add(`count-${count}`, { id: "cohort-restriction-notice", payload: { embryoCount: count } });
   add("expired", { id: "embryo-draft-expired", payload: {} });
   add("abandoned", { id: "embryo-ingest-abandoned", payload: {} });
-  for (const kind of ["invitation-refused", "draft-cancelled", "donor-attribution-ended"] as const) {
+  for (const kind of ["invitation-refused", "draft-cancelled", "donor-attribution-ended", "upload-permission-withdrawn",
+    "adult-acceptance-second-notice", "adult-revocation-renotice"] as const) {
     add(kind, { id: "invitation-terminal-notice", payload: { kind } });
   }
+  add("withdrawn", { id: "upload-consent-withdrawn", payload: { withdrawnAt: "2026-11-19T12:00:00.123456+00:00" } });
   return result;
 }

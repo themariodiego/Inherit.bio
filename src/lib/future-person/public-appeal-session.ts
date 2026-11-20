@@ -1,7 +1,5 @@
 import "server-only";
-import crypto from "node:crypto";
 import { z } from "zod";
-import { hmacSecret } from "@/lib/crypto";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { RIGHTS_COOKIE_NAME, rightsSessionHash } from "@/lib/embryos/rights-session";
 import { mintPublicFormToken, readPublicFormToken } from "@/lib/embryos/operation-token";
@@ -23,9 +21,6 @@ export function publicAppealSessionHash(request: Request): string | null {
   const secret = readSecretCookie(request, RIGHTS_COOKIE_NAME);
   return secret ? rightsSessionHash(secret) : null;
 }
-export function publicAppealCsrf(hash: string, operation: "document" | "complete"): string {
-  return hmacSecret(hash, `public-appeal-${operation}-csrf-v1`);
-}
 /** A read does not create a nonce or extend any native clock. */
 export async function loadPublicAppealSession(request: Request) {
   if (!testAppealIntakeOpen()) return null;
@@ -39,17 +34,22 @@ export async function loadPublicAppealSession(request: Request) {
   const settled = owner.disposition();
   if (!view || settled.cleanupHeld || settled.pendingActualTasks !== 0) return null;
   const now = Date.now();
-  return { view, documentCsrf: publicAppealCsrf(hash, "document"), completeCsrf: publicAppealCsrf(hash, "complete"),
+  return { view,
     documentNonce: mintPublicFormToken("appeal-document", now, hash), completeNonce: mintPublicFormToken("appeal-complete", now, hash) };
 }
 /** The document endpoint's closed JSON has no nonce field: its operation token
- * travels in X-Inherit-Operation-Nonce, separately from the CSRF header. */
+ * travels in X-Inherit-Operation-Nonce, separately from the CSRF header. Both
+ * routes' X-Inherit-CSRF is the rights session's one-time token
+ * (api.appeal-complete since G8.5 stage one, api.appeal-document-session since
+ * 19 November 2026), verified and spent before the handler runs; the document
+ * session's was a keyed digest of the session compared here. Its answer hands
+ * the evidence session's own value over in X-Inherit-Evidence-CSRF, so its
+ * X-Inherit-CSRF can carry the rights session's successor. */
 export function readPublicAppealMutation(request: Request, operation: "document" | "complete", token: unknown) {
   if (!testAppealIntakeOpen() || typeof token !== "string" || token.length > 2048) return null;
-  const url = new URL(request.url); const hash = publicAppealSessionHash(request); const csrf = request.headers.get("x-inherit-csrf");
+  const url = new URL(request.url); const hash = publicAppealSessionHash(request);
   if (!hash || url.search || request.headers.get("origin") !== url.origin || request.headers.get("sec-fetch-site") !== "same-origin"
-    || request.headers.get("content-encoding") !== null || request.headers.get("content-type")?.split(";")[0]?.trim().toLowerCase() !== "application/json"
-    || !csrf || !/^[0-9a-f]{64}$/u.test(csrf) || !crypto.timingSafeEqual(Buffer.from(csrf), Buffer.from(publicAppealCsrf(hash, operation)))) return null;
+    || request.headers.get("content-encoding") !== null || request.headers.get("content-type")?.split(";")[0]?.trim().toLowerCase() !== "application/json") return null;
   const proof = readPublicFormToken(token, operation === "document" ? "appeal-document" : "appeal-complete", Date.now(), hash);
   return proof ? { sessionHash: hash, nonce: proof.nonce } : null;
 }

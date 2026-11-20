@@ -5,8 +5,8 @@ import { filterOwnAnalysisFiles, loadOwnAnalysisCandidateFiles, type AnalysisFil
 import { currentOwnUploadAccount } from "../uploads/own-upload-context";
 import { ownAncestryCapturedContentSchema } from "../uploads/own-ancestry-captured-content";
 
-import { capturedAncestryRows, type AncestryResultRow } from "./captured-rows";
-export { UNCOMPUTED_LINEAGE, type AncestryResultRow } from "./captured-rows";
+import { capturedAncestryRows, capturedNeanderthalEstimate, type AncestryResultRow, type NeanderthalEstimateRow } from "./captured-rows";
+export { UNCOMPUTED_LINEAGE, type AncestryResultRow, type NeanderthalEstimateRow } from "./captured-rows";
 const captured = z.object({ content: ownAncestryCapturedContentSchema,
   completedAt: z.iso.datetime({ offset: true }),
 }).strict();
@@ -20,11 +20,12 @@ type AncestryRpc = (name: "own_ancestry_content_v1", args: {
 async function readOwnCaptures(db: Db, subjectId: string,
   files: readonly AnalysisFileBoundary[]) {
   const modern = files.filter(file => file.single_logical_sample_verified_at != null);
-  if (!modern.length) return { rows: [], confirm: async () => [] as AncestryResultRow[] };
+  if (!modern.length) return { rows: [], neanderthal: [] as NeanderthalEstimateRow[], confirm: async () => [] as AncestryResultRow[] };
   const actor = await currentOwnUploadAccount();
-  if (!actor) return { rows: [], confirm: async () => [] as AncestryResultRow[] };
+  if (!actor) return { rows: [], neanderthal: [] as NeanderthalEstimateRow[], confirm: async () => [] as AncestryResultRow[] };
   const rpc = db.rpc.bind(db) as unknown as AncestryRpc;
   const rows: AncestryResultRow[] = [];
+  const neanderthal: NeanderthalEstimateRow[] = [];
   const receipts = new Map<string, string>();
   for (const fileId of new Set(modern.map(file => file.id))) {
     try {
@@ -37,9 +38,11 @@ async function readOwnCaptures(db: Db, subjectId: string,
       const { content, completedAt } = parsed.data;
       receipts.set(fileId, JSON.stringify(parsed.data));
       rows.push(...capturedAncestryRows(content, completedAt));
+      const estimate = capturedNeanderthalEstimate(content, completedAt);
+      if (estimate) neanderthal.push(estimate);
     } catch { /* One unavailable source does not conceal independently valid results. */ }
   }
-  return { rows, confirm: async (allowed?: ReadonlySet<string>) => {
+  return { rows, neanderthal, confirm: async (allowed?: ReadonlySet<string>) => {
     const current = new Set<string>();
     for (const [fileId, receipt] of receipts) {
       if (allowed && !allowed.has(fileId)) continue;
@@ -82,7 +85,12 @@ export async function loadAncestryResultSnapshot(db: Db, legacyReader: Db, subje
     .filter(row => legacyIds.includes(row.file_id));
   const rows = [...canonical.rows, ...historical]
     .sort((a, b) => Date.parse(b.created_at) - Date.parse(a.created_at) || a.file_id.localeCompare(b.file_id));
-  return { rows, confirm: async () => {
+  // The Neanderthal estimate comes only from a canonical revision-5 capture;
+  // legacy `ancestry_results` never carried one. The page shows it only for a
+  // file whose admixture/lineage rows are confirmed in the same read, so it is
+  // returned here and intersected with the confirmed set by the caller.
+  const neanderthal = canonical.neanderthal;
+  return { rows, neanderthal, confirm: async () => {
     // The recheck carries the same gate: a purpose revoked DURING the read must
     // withhold the legacy rows too, which is the whole point of rechecking.
     const current = new Set((await filterOwnAnalysisFiles(db, subjectId, "ancestry", allowed, { gateLegacy: true })).map(file => file.id));

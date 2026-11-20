@@ -17,6 +17,10 @@ vi.mock("@/lib/supabase/admin", () => ({
 }));
 vi.mock("@/lib/supabase/server", () => ({ createClient: async () => ({ auth: mocks }) }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: () => {} }) }));
+// The one-time X-Inherit-CSRF gate passes through here; it is tested on this
+// route, through the same handler, in src/lib/security/session-csrf-routes.test.ts.
+vi.mock("@/lib/security/session-csrf", async (importOriginal) =>
+  (await import("@/lib/security/session-csrf.test-support")).admitEverySessionCsrf(await importOriginal()));
 
 import { PATH_B_CHOICES_COPY as COPY } from "@/copy/upload/other-adult";
 import { PathBChoices } from "@/components/uploads/path-b-choices";
@@ -51,7 +55,8 @@ afterEach(() => { vi.unstubAllEnvs(); vi.useRealTimers(); });
 function post(body: unknown, token: string, headers: Record<string, string> = {}) {
   return new Request("https://inherit.bio/api/consents", { method: "POST", body: JSON.stringify(body),
     headers: { origin: "https://inherit.bio", "sec-fetch-site": "same-origin", "content-type": "application/json",
-      "x-inherit-csrf": token, ...headers } });
+      // 2026-11-19 (G8.5): the account session's one-time token, admitted by the gate above; it was the presentation token.
+      "x-inherit-csrf": "the-account-session-token-the-gate-admitted", ...headers } });
 }
 function body(token: string, patch: Record<string, unknown> = {}) {
   return { action: "grant-purpose", subjectId, purposeKey: "ancestry", artifactVersion: 1,
@@ -105,7 +110,9 @@ describe("POST /api/consents, a Path B layer", () => {
       body(token, { purposeKey: "reports.monogenic" }))).status).toBe(404);
     expect((await pathBPurposeConsent(post(body(token, { statementKeys: [...PATH_B_STATEMENTS.self] }), token),
       body(token, { statementKeys: [...PATH_B_STATEMENTS.self] }))).status).toBe(404);
-    expect((await pathBPurposeConsent(post(body(token), "y".repeat(40)), body(token))).status).toBe(403);
+    // 2026-11-19 (G8.5): the case with "y".repeat(40) in X-Inherit-CSRF left: the header no longer repeats the
+    // presentation token; api.consents verifies and spends the account session's one-time token before this
+    // module runs (session-csrf-routes.test.ts), and the token is required in the body (the cases above).
     expect((await pathBPurposeConsent(post(body(token), token, { origin: "https://foreign.example" }), body(token))).status).toBe(403);
     expect(mocks.rpc).not.toHaveBeenCalled();
     vi.stubEnv("INHERIT_TEST_JURISDICTION", "");

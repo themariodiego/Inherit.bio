@@ -17,8 +17,6 @@ export type OwnCopilotChatView = {
     kind: 'unavailable';
     reason: 'account_required' | 'provider_unavailable' | 'consent_required' | 'scope_unavailable' | 'transport_unavailable';
 } | {
-    kind: 'legacy';
-} | {
     kind: 'ready';
     contextToken: string;
     contextHash: string;
@@ -35,19 +33,6 @@ export type OwnCopilotChatView = {
         createdAt: string;
     }>;
 };
-/** Same fail-closed classification for the RSC and legacy route. A canonical
- * consent, source identity or saved chat prevents any legacy ABI fallback. */
-export async function hasCanonicalCopilotScope(subjectId: string) {
-    const db = createAdminClient();
-    const [signatures, files, chats] = await Promise.all([
-        db.from('consent_signatures').select('id').eq('target_id', subjectId).eq('artifact_key', 'consent.upload-self').limit(1),
-        db.from('genome_files').select('id').eq('subject_id', subjectId).or('single_logical_sample_verified_at.not.is.null,structural_validator_version.not.is.null,storage_object_id.not.is.null,source_sha256.not.is.null').limit(1),
-        db.from('chats').select('id').eq('subject_id', subjectId).not('canonical_authority', 'is', null).limit(1),
-    ]);
-    if (signatures.error || files.error || chats.error)
-        throw new Error('copilot_unavailable');
-    return Boolean(signatures.data?.length || files.data?.length || chats.data?.length);
-}
 export const ownChatMessageSchema = z.object({ id: z.uuid(), role: z.enum(['user', 'assistant']), content: z.array(z.object({ type: z.literal('text'), text: z.string().max(64000) }).strict()).length(1),
     citations: z.array(ownChatCitationSchema).max(100),
     turn_ordinal: z.number().int().positive(), created_at: z.string() }).strict();
@@ -80,8 +65,9 @@ export async function prepareOwnCopilotChat(subjectId: string): Promise<OwnCopil
         const subject = await resolveSubjectForAccount(actor.accountId, `s-${subjectId}`);
         if (!subject || subject.subjectClass !== 'self')
             return { kind: 'unavailable', reason: 'scope_unavailable' };
-        if (!await hasCanonicalCopilotScope(subjectId))
-            return { kind: 'legacy' };
+        // Every self subject is answered here (G8.5, 24 October 2026). A subject
+        // with no canonical upload consent has no Copilot authority, so the
+        // status below names the step it lacks; there is no legacy fallback.
         const status = await ownCopilotProviderStatus(subjectId);
         if (status !== 'ready')
             return { kind: 'unavailable', reason: status };

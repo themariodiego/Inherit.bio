@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { IntentLink } from "@/components/site/intent-link";
 import { Button } from "@/components/ui/button";
 import { START_HERE, startHereItems } from "@/copy/overview";
 
@@ -28,15 +28,15 @@ export function StartHere() {
             <li key={item.id} className="py-5 first:pt-0 last:pb-0">
               {index === 0 ? (
                 <Button asChild size="lg">
-                  <Link href={item.href}>{item.label}</Link>
+                  <IntentLink href={item.href}>{item.label}</IntentLink>
                 </Button>
               ) : (
-                <Link
+                <IntentLink
                   href={item.href}
                   className="quiet-link inline-flex min-h-11 items-center text-base font-medium"
                 >
                   {item.label}
-                </Link>
+                </IntentLink>
               )}
               <p className="mt-2 max-w-measure text-sm text-ink-muted">{item.description}</p>
             </li>

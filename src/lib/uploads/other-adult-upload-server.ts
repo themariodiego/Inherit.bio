@@ -4,6 +4,7 @@ import crypto from "node:crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import { hmacSecret } from "@/lib/crypto";
+import { mintPersonOperationNonce, verifyPersonOperationNonce, type VerifiedPersonOperationNonce } from "@/lib/person-operation-nonce-core";
 import { accountCapability, isTestJurisdictionEnabled } from "@/lib/legal/jurisdictions";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
@@ -16,8 +17,11 @@ import {
   type OtherAdultConsentView,
   type OtherAdultTarget,
   type OtherAdultTargetState,
+  type OtherAdultWithdrawalReadiness,
+  type OtherAdultWithdrawalView,
   type SubjectHeldFiles,
 } from "./other-adult-upload";
+import { mintSubjectOperationNonce } from "@/lib/subject-endpoints/operation-nonce";
 import { normalizeContact } from "@/lib/embryos/routes";
 import { createClient } from "@/lib/supabase/server";
 import { currentOwnUploadAccount } from "./own-upload-context";
@@ -107,18 +111,18 @@ export function readOtherAdultPresentation(token: string, now = Date.now()): Oth
 }
 
 /**
- * The page's operation token for the two uploader mutations that are not
- * signatures: reserving a draft (target: the account) and sending the
- * request (target: the draft). It travels in `x-inherit-csrf` and binds the
- * account, its session, the operation and the target.
+ * The page's operation token for sending the request (target: the draft), the
+ * one uploader mutation here that is neither a signature nor a draft. It
+ * travels in `x-inherit-csrf` and binds the account, its session, the
+ * operation and the target.
  */
 const OPERATION_CONTEXT = "path-b-operation-v1";
 const OPERATION_LIFETIME_MS = 10 * 60 * 1000;
-export type PathBOperation = "draft-create" | "request-send";
+export type PathBOperation = "request-send";
 const operationSchema = z.object({
   accountId: uuid,
   sessionId: uuid,
-  operation: z.enum(["draft-create", "request-send"]),
+  operation: z.enum(["request-send"]),
   targetId: uuid,
   expiresAt: z.number().int().positive().safe(),
 }).strict();
@@ -136,6 +140,24 @@ export function verifyPathBOperation(token: string | null, expected: { accountId
   return parsed.success && parsed.data.expiresAt > now && parsed.data.expiresAt - now <= OPERATION_LIFETIME_MS
     && parsed.data.accountId === expected.accountId && parsed.data.sessionId === expected.sessionId
     && parsed.data.operation === expected.operation && parsed.data.targetId === expected.targetId;
+}
+
+/**
+ * Reserving a draft (both Path B bodies) takes the page's one-time person
+ * operation nonce instead, still in `x-inherit-csrf` (G5.6, 23 Oct 2026;
+ * 20261023130000_legal_audit_attribution_remaining.sql): the database door
+ * records its hash before the draft is written, so the draft's audit event
+ * names the uploader and a replay reserves nothing.
+ */
+export function mintPathBDraftNonce(accountId: string, sessionId: string, now = Date.now()): string {
+  return mintPersonOperationNonce({ accountId, sessionId, operation: "path_b_draft_create", targetId: accountId }, now);
+}
+
+/** The draft nonce a request carries, verified for this account and session, or null. */
+export function pathBDraftNonce(token: string | null, actor: { accountId: string; sessionId: string },
+  now = Date.now()): VerifiedPersonOperationNonce | null {
+  return verifyPersonOperationNonce(token, { accountId: actor.accountId, sessionId: actor.sessionId,
+    operation: "path_b_draft_create", targetId: actor.accountId }, now);
 }
 
 /** The uploader's own Path B people, read-only. Null outside TEST-LOCAL. */
@@ -207,11 +229,42 @@ export async function prepareOtherAdultUploads(): Promise<OtherAdultUploads | nu
     const operationToken = target.state === "awaiting-request"
       ? mintPathBOperation(actor.accountId, actor.sessionId, "request-send", target.subjectId) : undefined;
     const needsSignature = !target.signed && (target.state === "awaiting-request" || target.state === "ready");
-    if (!needsSignature) { result.push({ ...target, operationToken }); continue; }
+    if (!needsSignature) {
+      const withdrawal = await prepareOtherAdultWithdrawal(admin, actor, target);
+      result.push(withdrawal ? { ...target, operationToken, withdrawal } : { ...target, operationToken });
+      continue;
+    }
     const presented = await presentUploaderArtifact(admin, actor, artifact, target.subjectId);
     result.push(presented.blockedBy ? { ...target, blockedBy: presented.blockedBy } : { ...target, operationToken, ...presented });
   }
-  return { draftToken: mintPathBOperation(actor.accountId, actor.sessionId, "draft-create", actor.accountId), targets: result };
+  return { draftToken: mintPathBDraftNonce(actor.accountId, actor.sessionId), targets: result };
+}
+
+const WITHDRAWAL_READINESS = new Set<OtherAdultWithdrawalReadiness>(["ready", "account-held", "unsupported"]);
+
+/**
+ * The withdrawal of the uploader's permission for this person, as the card
+ * offers it (owner decision of 19 November 2026, "An uploader's withdrawal
+ * for another adult's file deletes it, unless that adult holds the record
+ * themselves"). Only for a confirmed record the uploader still holds a live
+ * permission on; the database's read (`other_adult_withdrawal_readiness_v1`)
+ * says whether the request can run, and only then is the one-time
+ * api.subject-delete code minted. Brief X1.5: this runs while the page
+ * renders, so it writes nothing. A record the read does not find gets no
+ * control; any other failure, as before the migration is hosted, says it is
+ * not available and offers no request.
+ */
+export async function prepareOtherAdultWithdrawal(admin: Admin, actor: { accountId: string; sessionId: string },
+  target: OtherAdultTargetState, now = Date.now()): Promise<OtherAdultWithdrawalView | undefined> {
+  if (!target.signed || (target.state !== "ready" && target.state !== "pending")) return undefined;
+  const { data, error } = await heldUploadRpc(admin, "other_adult_withdrawal_readiness_v1", {
+    p_account_id: actor.accountId, p_subject_id: target.subjectId,
+  });
+  if (error?.code === "42501") return undefined;
+  const readiness: OtherAdultWithdrawalReadiness = !error && typeof data === "string"
+    && WITHDRAWAL_READINESS.has(data as OtherAdultWithdrawalReadiness) ? data as OtherAdultWithdrawalReadiness : "unavailable";
+  return { readiness, nonce: readiness === "ready" ? mintSubjectOperationNonce({ accountId: actor.accountId,
+    sessionId: actor.sessionId, operation: "subject_delete", subjectId: target.subjectId }, now) : null };
 }
 
 type UploaderArtifact = Omit<OtherAdultConsentView, "token"> & { bodySha256: string };

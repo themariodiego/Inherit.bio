@@ -1,22 +1,26 @@
 "use client";
 import { useState, type FormEvent } from "react";
 import { z } from "zod";
+import { useCsrf } from "@/components/security/csrf-provider";
 
-export function OwnerObjection({ summary, deadline, explanation, csrf, nonce, inSettings = false }: {
-  summary: string; deadline: string; explanation: string; csrf: string; nonce: string; inSettings?: boolean;
+export function OwnerObjection({ summary, deadline, explanation, nonce, inSettings = false }: {
+  summary: string; deadline: string; explanation: string; nonce: string; inSettings?: boolean;
 }) {
   const Heading = inSettings ? "h3" : "h1";
+  // The page's one-time X-Inherit-CSRF token for the route: the rights session's on the
+  // emailed link's page, the account session's in Settings (G8.5).
+  const csrf = useCsrf("api.future-person-claim-objection");
   const [statement, setStatement] = useState("");
   const [status, setStatus] = useState<"ready" | "pending" | "done" | "failed">("ready");
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); if (status === "pending" || status === "done") return;
     setStatus("pending");
     try {
-      const response = await fetch("/api/future-person/claim/session/objection", {
+      const response = await csrf.send((token) => fetch("/api/future-person/claim/session/objection", {
         method: "POST", credentials: "same-origin", cache: "no-store",
-        headers: { "Content-Type": "application/json", "X-Inherit-CSRF": csrf },
+        headers: { "Content-Type": "application/json", "X-Inherit-CSRF": token },
         body: JSON.stringify({ statement, nonce }),
-      });
+      }));
       const receipt = z.object({ status: z.literal("suspended_for_review") }).strict().safeParse(await response.json());
       if (response.status !== 202 || !receipt.success) throw new Error("unavailable");
       setStatement(""); setStatus("done");

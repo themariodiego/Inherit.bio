@@ -272,10 +272,49 @@ export const LINEAGE_NO_BRANCH =
 export const XX_GLOSS =
   "In plain terms: this is expected when the file comes from someone without a Y chromosome, e.g. most women.";
 
-/** The true reason the card shows nothing yet; the capability is not shipped,
- * and no evidenced-impossibility dossier establishes a withholding. */
+/**
+ * The production state of the card (capability OFF). The marker list IS built
+ * and licence-checked now (Browning et al. 2018 Sprime, CC BY 4.0), so the
+ * older "has not yet built and licence-checked" sentence became false and was
+ * replaced on 2026-10-22. The estimate runs under TEST-LOCAL and is held off
+ * production; this sentence says so without naming a legal review it does not
+ * depend on, and without a comparison number no one has reviewed.
+ */
 export const NEANDERTHAL_BODY =
-  "We can’t show this yet. Inherit has not yet built and licence-checked the marker list this needs, and we will not guess. This page will say so until that changes.";
+  "We can’t show this here yet. Inherit has built and licence-checked the marker list this needs, but has not switched this estimate on here. This page will say so until that changes.";
+
+/** TEST-LOCAL, when the file covers none of the panel's sites: a plain file limit, no number. */
+export const NEANDERTHAL_NOT_COVERED =
+  "Your file does not cover the markers this estimate needs, so there is no number to show. This is a limit of the file, not a result about you.";
+
+// The brief's mandatory "A 0% result from an array file usually means your
+// file cannot measure this, not that you have none." is NOT shipped yet. It
+// carries a percentage ("0%"), so the citation-surface gate treats it as an
+// unsourced claim, and resolving that needs either a registered citation or a
+// reviewer's product-wording verdict — neither of which may be fabricated, and
+// the backlog ratchet forbids adding it as an open entry. It is deferred into
+// the owner's source review of this estimate (docs/neanderthal-source-review.md)
+// rather than weakening the gate.
+
+/**
+ * What the number is, in plain words (brief line 2265): a panel-site share, not
+ * whole-genome ancestry, and method-dependent. Rendered beside the estimate.
+ */
+export const NEANDERTHAL_WHAT_IT_IS =
+  "This is the share of the markers Inherit checked where you carry a Neanderthal letter. It is not your whole-genome Neanderthal ancestry. A different test checks different markers and gives a different number.";
+
+/** G4.4's disjunction when the bootstrap interval has no width: say there is no range. */
+export const NEANDERTHAL_NO_RANGE =
+  "Inherit has no range for this number from your file.";
+
+/** G4.4's resolution limit in plain words: one fixed marker list, nothing beyond it. */
+export const NEANDERTHAL_RESOLUTION_LIMIT =
+  "This reads one fixed list of markers. It says nothing about Neanderthal DNA anywhere else in your genome.";
+
+/** The panel and its version (G4.4), from the stored estimate's own facts. */
+export function neanderthalPanelLine(sites: number, version: string): string {
+  return `Read against a published Neanderthal marker list of ${sites} markers (version ${version}).`;
+}
 
 /** Brief §4.6, verbatim. */
 export const DENISOVAN =

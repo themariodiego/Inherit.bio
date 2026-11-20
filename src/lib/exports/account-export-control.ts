@@ -1,5 +1,6 @@
 import {z} from "zod";
-import {accountExportPreparing,accountExportReady,accountExportDownload} from "./account-export-delivery-contract";
+import {csrfHandle,type CsrfHandle} from "@/lib/security/session-csrf-client";
+import {EXPORT_PROOF_HEADER,accountExportPreparing,accountExportReady,accountExportDownload} from "./account-export-delivery-contract";
 
 const proof=z.object({operation:z.literal("create"),nonce:z.string().min(1).max(2048),csrf:z.string().min(1).max(2048)}).strict();
 export const accountExportOpenProof=accountExportReady.extend({operation:z.literal("open-ready"),
@@ -16,7 +17,7 @@ const unavailable=()=>new Error("account_export_unavailable");
  * export, or one record's export (api.subject-export). */
 const EXPORT_ROUTE=/^\/api\/(?:export|subjects\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\/export)$/u;
 export async function requestAccountExport(options:{operation:"create"|"check"|"open-ready";control:AccountExportControl;
- expectedExportId:string|null;signal:AbortSignal;transport?:Transport;route?:string}){
+ expectedExportId:string|null;signal:AbortSignal;transport?:Transport;route?:string;csrf?:CsrfHandle}){
  const transport=options.transport??fetch,stop=new AbortController(),signal=AbortSignal.any([options.signal,stop.signal]);
  let interrupt=()=>{};const timer=setTimeout(()=>stop.abort(),30_000);
  const canceled=new Promise<never>((_,reject)=>{interrupt=()=>reject(unavailable());signal.addEventListener("abort",interrupt,{once:true});});
@@ -26,19 +27,25 @@ export async function requestAccountExport(options:{operation:"create"|"check"|"
   const route=options.route??"/api/export";
   if(signal.aborted||!['create','check','open-ready'].includes(options.operation)||!EXPORT_ROUTE.test(route))throw unavailable();
   let init:RequestInit={method:"GET",cache:"no-store",credentials:"same-origin",redirect:"error",signal};
+  // The explicit action's sealed proof travels in its own header; X-Inherit-CSRF
+  // carries the route's one-time session token from `options.csrf`'s chain
+  // (G8.5, 19 November 2026). A poll is a GET and sends neither.
+  let proofHeader:string|null=null;
   if(options.operation==="create"){
    if(!options.control.available)throw unavailable();const create=proof.parse(options.control.create);
-   init={...init,method:"POST",headers:{"Content-Type":"application/json","X-Inherit-CSRF":create.csrf},
-    body:JSON.stringify({operation:create.operation,nonce:create.nonce})};
+   proofHeader=create.csrf;
+   init={...init,method:"POST",body:JSON.stringify({operation:create.operation,nonce:create.nonce})};
   }
   if(options.operation==="open-ready"){
    if(!options.control.available||!options.control.open)throw unavailable();
    const open=accountExportOpenProof.parse(options.control.open);
    if(options.expectedExportId!==open.exportId)throw unavailable();
-   init={...init,method:"POST",headers:{"Content-Type":"application/json","X-Inherit-CSRF":open.csrf},
-    body:JSON.stringify({operation:open.operation,nonce:open.nonce})};
+   proofHeader=open.csrf;
+   init={...init,method:"POST",body:JSON.stringify({operation:open.operation,nonce:open.nonce})};
   }
-  const pending=transport(route,init);
+  const action=proofHeader;
+  const pending=action===null?transport(route,init):(options.csrf??csrfHandle(undefined)).send(token=>transport(route,{...init,
+   headers:{"Content-Type":"application/json",[EXPORT_PROOF_HEADER]:action,"X-Inherit-CSRF":token}}));
   void pending.then(value=>{if(signal.aborted)void value.body?.cancel().catch(()=>{});},()=>{});
   response=await Promise.race([pending,canceled]);
   if(![200,202].includes(response.status)||response.redirected||response.headers.get("content-type")?.split(";")[0].trim().toLowerCase()!=="application/json"

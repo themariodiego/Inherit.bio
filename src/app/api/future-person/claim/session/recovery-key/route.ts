@@ -4,7 +4,11 @@ import {readBoundedJson} from "@/lib/future-person/bounded-body";
 import {sha256Hex} from "@/lib/future-person/claim-session";
 import {claimantMutation,recoveryRequest,claimantNotFound as notFound,claimantResponse as closedResponse} from "@/lib/future-person/rights";
 import {createAdminClient} from "@/lib/supabase/admin";
-export async function POST(request:Request) {
+import {readRightsCsrfSession,withPurposeCsrf} from "@/lib/security/session-csrf";
+/** The rights session's one-time X-Inherit-CSRF token is verified and spent
+ * before this runs (G8.5); the body nonce is checked as before. */
+export const POST=withPurposeCsrf("api.future-person-recovery-key",readRightsCsrfSession,handlePost);
+async function handlePost(request:Request) {
   if(request.headers.get("content-type")?.split(";")[0]?.trim().toLowerCase()!=="application/json")return notFound();
   const parsed=recoveryRequest.safeParse(await readBoundedJson(request,4096));if(!parsed.success)return notFound();
   const authority=claimantMutation(request,parsed.data.nonce,"future-person-recovery-key");if(!authority)return notFound();

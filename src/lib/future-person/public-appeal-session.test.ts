@@ -14,12 +14,14 @@ vi.mock("@/lib/supabase/admin", async () => {
 import crypto from "node:crypto";
 import { RIGHTS_COOKIE_NAME, rightsSessionHash } from "@/lib/embryos/rights-session";
 import { mintPublicFormToken } from "@/lib/embryos/operation-token";
-import { loadPublicAppealSession, publicAppealCsrf, readPublicAppealMutation } from "./public-appeal-session";
+import { loadPublicAppealSession, readPublicAppealMutation } from "./public-appeal-session";
 const secret = "A".repeat(43); const hash = rightsSessionHash(secret);
 afterEach(() => vi.unstubAllEnvs());
 function request(token: string, extra: Record<string, string> = {}) { return new Request("https://inherit.bio/api/appeals/session/documents", {
  method: "POST", headers: { cookie: `${RIGHTS_COOKIE_NAME}=${secret}`, origin: "https://inherit.bio", "sec-fetch-site": "same-origin",
- "content-type": "application/json", "x-inherit-csrf": publicAppealCsrf(hash, "document"), "x-inherit-operation-nonce": token, ...extra }, body: "{}" }); }
+ // 2026-11-19 (G8.5): the rights session's one-time token, which the route's gate verifies and spends before
+ // readPublicAppealMutation runs (session-csrf-routes.test.ts); it was publicAppealCsrf(hash, "document").
+ "content-type": "application/json", "x-inherit-csrf": "the-rights-session-token-the-gate-admitted", "x-inherit-operation-nonce": token, ...extra }, body: "{}" }); }
 describe("public appeal case session", () => {
  beforeEach(() => { vi.stubEnv("INHERIT_TEST_JURISDICTION", "1"); vi.stubEnv("INHERIT_TEST_REQUESTER_STATEMENTS", "1"); rpc.mockReset(); });
  it("binds the distinct operation to the one exact cookie and purpose", () => {
@@ -29,7 +31,8 @@ describe("public appeal case session", () => {
   expect(readPublicAppealMutation(request(token, { cookie: `${RIGHTS_COOKIE_NAME}=${secret};${RIGHTS_COOKIE_NAME}=${secret}` }), "document", token)).toBeNull();
   expect(readPublicAppealMutation(request(token, { origin: "https://foreign.example" }), "document", token)).toBeNull();
   expect(readPublicAppealMutation(request(token, { "sec-fetch-site": "cross-site" }), "document", token)).toBeNull();
-  expect(readPublicAppealMutation(request(token, { "x-inherit-csrf": "0".repeat(64) }), "document", token)).toBeNull();
+  // 2026-11-19 (G8.5): the { "x-inherit-csrf": "0".repeat(64) } case moved to the gate's api.appeal-document-session
+  // cases in session-csrf-routes.test.ts.
  });
  it("keeps TEST default closed before a native read", async () => {
   vi.stubEnv("INHERIT_TEST_REQUESTER_STATEMENTS", "0");

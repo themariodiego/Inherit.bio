@@ -3,8 +3,17 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { accountCompletionBody, isAdultOnUtcDate } from "@/lib/uploads/account-completion";
 import { readOwnAccountCompletionPresentation } from "@/lib/uploads/own-consent-token";
 import { currentOwnUploadAccount, ownSnapshotArgs, ownUploadJson } from "@/lib/uploads/own-upload-context";
+import { withAccountCsrf } from "@/lib/security/session-csrf";
 
-export async function POST(request: Request) {
+/**
+ * The shell's one-time X-Inherit-CSRF token for the account session is
+ * verified and spent before this runs (G8.5). The completion presentation
+ * token travels only in the body's presentationToken, as the register's
+ * closed body names it, and is checked as before; until 19 November 2026 it
+ * was also sent in X-Inherit-CSRF.
+ */
+export const POST = withAccountCsrf("api.account-completion", handlePost);
+async function handlePost(request: Request) {
   if (request.headers.get("origin") !== new URL(request.url).origin
     || request.headers.get("sec-fetch-site") !== "same-origin") return ownUploadJson({ error: "forbidden" }, 403);
   const body = accountCompletionBody.safeParse(await request.json().catch(() => null));
@@ -12,7 +21,6 @@ export async function POST(request: Request) {
   if (!isAdultOnUtcDate(body.data.dateOfBirth)) {
     return ownUploadJson({ error: "adult_account_required" }, 422);
   }
-  if (request.headers.get("x-inherit-csrf") !== body.data.presentationToken) return ownUploadJson({ error: "forbidden" }, 403);
   const context = await currentOwnUploadAccount();
   if (!context) return ownUploadJson({ error: "unauthorized" }, 401);
   const token = readOwnAccountCompletionPresentation(body.data.presentationToken);

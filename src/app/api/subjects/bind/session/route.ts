@@ -1,10 +1,11 @@
 import { z } from "zod";
 import { getSensitiveAccountContext } from "@/lib/account-deletion";
 import { notFound } from "@/lib/embryos/api";
-import { closedResponse, readJson, unauthorized } from "@/lib/embryos/guards";
+import { closedResponse, readJson, unauthenticated } from "@/lib/embryos/guards";
 import { isTestJurisdictionEnabled } from "@/lib/legal/jurisdictions";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { readAdultSubjectControlRequest } from "@/lib/uploads/adult-subject-control";
+import { withAccountCsrf } from "@/lib/security/session-csrf";
 
 /**
  * `POST /api/subjects/bind/session` (register api.adult-subject-bind;
@@ -35,10 +36,11 @@ const BOUND = z.object({
 }).strict();
 const BOUND_KEYS = ["status", "subjectId", "next"] as const;
 
-export async function POST(request: Request) {
+export const POST = withAccountCsrf("api.adult-subject-bind", handlePost);
+async function handlePost(request: Request) {
   if (!isTestJurisdictionEnabled()) return notFound();
   const account = await getSensitiveAccountContext();
-  if (!account) return unauthorized();
+  if (!account) return unauthenticated();
   const parsed = body.safeParse(await readJson(request));
   if (!parsed.success) return notFound();
   const authority = readAdultSubjectControlRequest(request, parsed.data.nonce);

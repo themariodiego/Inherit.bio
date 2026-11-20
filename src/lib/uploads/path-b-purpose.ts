@@ -71,6 +71,8 @@ export interface PathBChoice {
   purpose: PathBPurpose;
   direction: PathBDirection;
   grantId: string | null;
+  /** With a grant: the one-time nonce the page rendered for its revocation (G5.6, 23 Oct 2026). */
+  revokeNonce: string | null;
   /** Present when the layer can be turned on now: a sealed presentation for exactly this row. */
   offer: { token: string; artifactVersion: number; artifactBody: string } | null;
 }

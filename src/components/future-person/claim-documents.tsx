@@ -16,6 +16,8 @@ import {
   SEND_FILE_BUTTON,
 } from "@/copy/rights/future-person-claim";
 import { sniffDocumentType } from "@/lib/future-person/document-sniff";
+import { readEvidenceSessionCsrf } from "@/lib/security/opened-session-csrf";
+import { csrfHandle } from "@/lib/security/session-csrf-client";
 
 type Kind = keyof typeof DOCUMENT_LABELS;
 type Status = keyof typeof DOCUMENT_STATUS;
@@ -39,7 +41,8 @@ const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
  * the answers are the closed statuses in DOCUMENT_STATUS.
  *
  * Each session spends the page's nonce, so the page is refreshed after one
- * opens and the next file uses the new nonce.
+ * opens and the next file uses the new nonce and the page's new one-time
+ * `X-Inherit-CSRF` tokens, bound to the rotated claim cookie.
  *
  * Once both files are received, the claimant affirms and finishes the claim
  * (api.future-person-claim-complete) with the stored mode and the two
@@ -73,18 +76,22 @@ export function ClaimDocuments({ nonce, completeNonce, mode, documentCsrf, compl
       const mediaType = sniffDocumentType(bytes);
       if (!mediaType) return say(kind, "type");
       const sha256 = hex(await crypto.subtle.digest("SHA-256", bytes));
-      const opened = await fetch("/api/future-person/claim/session/documents", {
+      const opened = await csrfHandle(documentCsrf).send((token) => fetch("/api/future-person/claim/session/documents", {
         method: "POST",
         credentials: "same-origin",
-        headers: { "content-type": "application/json", "x-inherit-csrf": documentCsrf },
+        headers: { "content-type": "application/json", "x-inherit-csrf": token },
         body: JSON.stringify({ documentKind: kind, mediaType, sizeBytes: bytes.length, sha256, nonce }),
-      });
+      }));
       router.refresh();
       if (opened.status === 429) return say(kind, "limited");
       if (opened.status === 404) return say(kind, "expired");
       if (opened.status !== 201) return say(kind, "failed");
       const session = ((await opened.json()) as { session: string }).session;
-      const csrf = opened.headers.get("x-inherit-csrf") ?? "";
+      // The evidence session's first values: the chunk stream's one value and
+      // the completion's first one-time token (G8.5).
+      const evidence = readEvidenceSessionCsrf(opened.headers);
+      if (!evidence) return say(kind, "failed");
+      const csrf = evidence.chunk, completion = csrfHandle(evidence.complete);
       const completeNonce = opened.headers.get("x-inherit-complete-nonce") ?? "";
       const chunkCount = Math.ceil(bytes.length / CHUNK_BYTES);
       for (let sequence = 0; sequence < chunkCount; sequence++) {
@@ -97,12 +104,12 @@ export function ClaimDocuments({ nonce, completeNonce, mode, documentCsrf, compl
         if (sent.status !== 204) return say(kind, sent.status === 404 ? "expired" : "integrity");
       }
       for (let poll = 0; poll < POLLS; poll++) {
-        const done = await fetch(`/api/evidence/${session}/complete`, {
+        const done = await completion.send((token) => fetch(`/api/evidence/${session}/complete`, {
           method: "POST",
           credentials: "same-origin",
-          headers: { "content-type": "application/json", "x-inherit-csrf": csrf },
+          headers: { "content-type": "application/json", "x-inherit-csrf": token },
           body: JSON.stringify({ chunkCount, nonce: completeNonce }),
-        });
+        }));
         if (done.status === 201) {
           const documentId = ((await done.json().catch(() => null)) as { documentId?: unknown } | null)?.documentId;
           if (typeof documentId !== "string") return say(kind, "failed");
@@ -130,10 +137,10 @@ export function ClaimDocuments({ nonce, completeNonce, mode, documentCsrf, compl
     if (!ready || !affirmed) return setFinish("waiting");
     setBusy(true);
     try {
-      const sent = await fetch("/api/future-person/claim/session/complete", {
+      const sent = await csrfHandle(completeCsrf).send((token) => fetch("/api/future-person/claim/session/complete", {
         method: "POST",
         credentials: "same-origin",
-        headers: { "content-type": "application/json", "x-inherit-csrf": completeCsrf },
+        headers: { "content-type": "application/json", "x-inherit-csrf": token },
         body: JSON.stringify({
           mode,
           photoIdentityDocumentId: received["future-photo-identity"],
@@ -141,7 +148,7 @@ export function ClaimDocuments({ nonce, completeNonce, mode, documentCsrf, compl
           affirmed: true,
           nonce: completeNonce,
         }),
-      });
+      }));
       if (sent.status === 202) return router.refresh();
       setFinish(sent.status === 404 ? "expired" : "failed");
     } catch {

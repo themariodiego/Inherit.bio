@@ -6,8 +6,8 @@ import { types } from "node:util";
 import { z } from "zod";
 import { checkedDensityStateProof, densityCapturePlan, densityRuntimeSchema, densitySourceSchema,
   densityStateKey, DENSITY_VIEWPORTS, type DensitySource } from "./density-capture-plan";
-import { requiredDensityCaptures, verifyCurrentDensity, type DensityContract, type DensityCurrentPacket,
-  type DensityRegister } from "./density-current";
+import { DENSITY_CORRECTED_READINGS_MODULE_SHA256, requiredDensityCaptures, TEXT_ONLY_FLOOR_VARIANT_SHA256,
+  verifyCurrentDensity, type DensityContract, type DensityCurrentPacket, type DensityRegister } from "./density-current";
 import { densityServicePort } from "./density-service-binding";
 
 const sha256 = (bytes: string | Buffer) => createHash("sha256").update(bytes).digest("hex");
@@ -57,6 +57,9 @@ export interface DensitySegmentOriginals {
   result: unknown; census: unknown; original: unknown;
   /** Supplied by the stable-FD reader below, never copied from result JSON. */
   screenshotSha256: string; recomputedPixel: Record<string, unknown>;
+  /** The text-only floor PNG of the same capture, recomputed the same way
+   * (owner decision 2026-10-22). Absent for a segment taken without it. */
+  recomputedFloorPixel?: Record<string, unknown>;
 }
 
 /** Pure complete-union validation. It confers no runtime/closure authority. */
@@ -95,9 +98,21 @@ export function validateDensitySegmentUnion(input: {
     const capture = record(packet.captures[0]);
     assert(capture.routeId === selection.routeId && capture.state === selection.state && capture.viewport === selection.viewport);
     const original = record(part.original);
+    // The corrected readings and text-only floor arrive together or not at all.
+    const corrected = ["textOnlyFloor", "correctedReadings"].filter(key => Object.hasOwn(original, key));
+    assert(corrected.length === 0 || corrected.length === 2, "Corrected readings and text-only floor arrive together");
     keys(original, ["routeId", "state", "viewport", "serviceBinding", "registeredPath", "navigationSha256", "screenshotFile",
       "screenshotSha256", "documentSha256", "nativeProofBefore", "nativeProofAfter", "rawMeasurement", "metrics", "predecessor",
-      "targetCount", "undersizedTargetCount"]);
+      "targetCount", "undersizedTargetCount", ...corrected]);
+    if (corrected.length) {
+      equal(original.textOnlyFloor, capture.textOnlyFloor); equal(original.correctedReadings, capture.correctedReadings);
+      const floor = record(original.textOnlyFloor), recomputed = record(part.recomputedFloorPixel);
+      assert(floor.variantSha256 === TEXT_ONLY_FLOOR_VARIANT_SHA256
+        && record(original.correctedReadings).moduleSha256 === DENSITY_CORRECTED_READINGS_MODULE_SHA256);
+      for (const key of ["screenshotSha256", "screenshotWidthPx", "screenshotHeightPx", "includedPixelCount",
+        "excludedPixelCount", "inkPixelCount", "inkCoverageRatio"]) equal(floor[key], recomputed[key]);
+    } else assert(part.recomputedFloorPixel === undefined && !Object.hasOwn(capture, "textOnlyFloor")
+      && !Object.hasOwn(capture, "correctedReadings"), "No floor or reading without its original");
     const row = required.find(row => row.route.id === selection.routeId && row.state === selection.state && row.viewport === selection.viewport)!;
     assert(original.routeId === selection.routeId && original.state === selection.state && original.viewport === selection.viewport
       && original.registeredPath === row.route.path && original.undersizedTargetCount === 0
@@ -153,8 +168,13 @@ export function validateDensitySegmentUnion(input: {
       const capture = captures.get(densitySegmentKey({ routeId: row.route.id, state: row.state, viewport: row.viewport }));
       assert(capture); return capture;
     }) };
-  const numeric = verifyCurrentDensity(packet, input.register, input.contract, source);
-  return { version: 1, status: "COMPLETE_SOURCE_BOUND_SEGMENT_UNION_ROOT_CLOSURE_REQUIRED", source, packet, numeric,
+  // The binding verdict reads the owner's corrected rules (2026-10-22); the
+  // contract-basis verdict is kept beside it rather than dropped.
+  const numeric = verifyCurrentDensity(packet, input.register, input.contract, source, "corrected-2026-10-22");
+  let contractNumeric: ReturnType<typeof verifyCurrentDensity> | { status: "OUTSIDE_CONTRACT_BUDGETS"; reason: string };
+  try { contractNumeric = verifyCurrentDensity(packet, input.register, input.contract, source); }
+  catch (error) { contractNumeric = { status: "OUTSIDE_CONTRACT_BUDGETS", reason: error instanceof Error ? error.message : "refused" }; }
+  return { version: 1, status: "COMPLETE_SOURCE_BOUND_SEGMENT_UNION_ROOT_CLOSURE_REQUIRED", source, packet, numeric, contractNumeric,
     captures: required.length, remainingCaptureCount: 0, resumable: false, g2_5Acceptance: false,
     requiredActualClosureAdapter: "Root must validate original bounded parent natural outcome/reaped/group absence, exact lease release/native-empty/lock absence and source/input bookends for each owner; no JSON boolean supplies that capability." };
 }
@@ -208,6 +228,7 @@ export async function aggregateDensitySegmentOriginals(input: {
   assert(publicBytes(path.join(root, "scripts/density-baseline/measure.mjs")).pin.sha256 === input.contract.capture.artifacts.measurementModule.sha256
     && publicBytes(path.join(root, "scripts/density-baseline/compute.mjs")).pin.sha256 === input.contract.capture.artifacts.measurementHarness.sha256);
   publicBytes(path.join(root, "scripts/density-current-pixels.mjs"));
+  assert(publicBytes(path.join(root, "scripts/density-corrected-readings.mjs")).pin.sha256 === DENSITY_CORRECTED_READINGS_MODULE_SHA256);
   publicBytes(path.join(root, "scripts/density-current.ts"));
   publicBytes(path.join(root, "scripts/density-capture-plan.ts"));
   publicBytes(path.join(root, "scripts/density-service-binding.ts"));
@@ -223,8 +244,11 @@ export async function aggregateDensitySegmentOriginals(input: {
     const result = record(json(resultFile.bytes)), selection = selectionSchema.parse(result.selection);
     assert(record(result.captureEnvironment).fontManifestSha256 === fontHash);
     const stem = `${sha256(densityStateKey(selection.routeId, selection.state))}__${selection.viewport}`;
-    equal(fs.readdirSync(directory).sort(), ["actual-capture-result.json", "current-census.json", `${stem}.json`, `${stem}.png`].sort());
+    const listing = fs.readdirSync(directory).sort(), floorName = `${stem}__text-only-floor.png`;
+    const withFloor = listing.includes(floorName);
+    equal(listing, ["actual-capture-result.json", "current-census.json", `${stem}.json`, `${stem}.png`, ...(withFloor ? [floorName] : [])].sort());
     const originalFile = stableBytes(path.join(directory, `${stem}.json`)), screenshot = stableBytes(path.join(directory, `${stem}.png`));
+    const floorShot = withFloor ? stableBytes(path.join(directory, floorName)) : undefined;
     const original = record(json(originalFile.bytes)), raw = record(original.rawMeasurement);
     assert(Array.isArray(result.fixtureCatalog));
     for (const item of result.fixtureCatalog) { const fixture = record(item);
@@ -235,9 +259,13 @@ export async function aggregateDensitySegmentOriginals(input: {
     const viewport = DENSITY_VIEWPORTS.find(x => x.id === selection.viewport)!;
     const pixel = await imageMetrics(screenshot.pin.path, viewport.width, viewport.height, raw.pixelExclusionRects);
     equal(stableBytes(screenshot.pin.path).pin, screenshot.pin);
+    // The floor is the same capture: the same exclusion rectangles, the same frozen pixel body.
+    const floorPixel = floorShot ? await imageMetrics(floorShot.pin.path, viewport.width, viewport.height, raw.pixelExclusionRects) : undefined;
+    if (floorShot) { equal(stableBytes(floorShot.pin.path).pin, floorShot.pin); pins.push(floorShot.pin); }
     for (const file of [resultFile, censusFile, originalFile]) equal(stableBytes(file.pin.path).pin, file.pin);
     pins.push(resultFile.pin, censusFile.pin, originalFile.pin, screenshot.pin);
-    parts.push({ result, census: json(censusFile.bytes), original, screenshotSha256: screenshot.pin.sha256, recomputedPixel: pixel });
+    parts.push({ result, census: json(censusFile.bytes), original, screenshotSha256: screenshot.pin.sha256, recomputedPixel: pixel,
+      ...(floorPixel ? { recomputedFloorPixel: floorPixel } : {}) });
     for (const file of sourcePins.keys()) publicBytes(file);
     equal(densitySourceSchema.parse(data(await input.observeSource())), currentSource);
   }

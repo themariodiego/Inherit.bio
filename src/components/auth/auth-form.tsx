@@ -69,7 +69,11 @@ export function AuthForm({
             {error}
           </p>
         ) : null}
-        <Button type="submit" className="w-fit" disabled={!ready || pending}>
+        {/* The one action, in the forest accent as an outlined control: the
+            same 44px target at content width, its boundary and label at full
+            contrast, without the filled pill that was 30–40% of each auth
+            page's first-viewport ink (brief X6.2, G2.5). */}
+        <Button type="submit" variant="outline" className="w-fit border-forest text-forest" disabled={!ready || pending}>
           {pending ? "Working…" : submitLabel}
         </Button>
       </fieldset>

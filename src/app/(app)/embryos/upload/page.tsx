@@ -4,7 +4,9 @@ import { redirect } from "next/navigation";
 import { EmbryoUnavailable } from "@/components/embryo/states";
 import { UploadFlow } from "@/components/embryo/upload/upload-flow";
 import { UploadStage } from "@/components/embryo/upload/upload-stage";
-import { getSensitiveAccountContext } from "@/lib/account-deletion";
+import { EmbryoUploaderWithdrawal } from "@/components/embryo/uploader-withdrawal";
+import { prepareDraftUploaderWithdrawal } from "@/lib/embryos/uploader-withdrawal";
+import { getPageAccountContext } from "@/lib/page-account-context";
 import { Breadcrumbs } from "@/components/site/breadcrumbs";
 import { EMBRYOS_H1 } from "@/copy/embryos/index";
 import { BACK_TO_EMBRYOS_LINK } from "@/copy/embryos/request-data";
@@ -28,9 +30,14 @@ export default async function EmbryoUploadPage() {
   if (!viewer) redirect("/auth/sign-in");
   const { decision } = viewer;
   const built = permits(decision) && embryoIngestBuilt();
-  const account = built ? await getSensitiveAccountContext() : null;
+  const account = built ? await getPageAccountContext() : null;
   if (built && (!account || account.user.id !== viewer.user.id)) redirect("/auth/sign-in");
   const view = built && account ? await loadUploadStage({ accountId: account.user.id, sessionId: account.sessionId }) : null;
+  // A non-parent uploader's withdrawal of its permission before the upload is
+  // finalised (owner decision of 19 November 2026): only where the steps past
+  // the draft are built, for the open draft this page shows, once signed.
+  const uploaderWithdrawal = built && account
+    ? await prepareDraftUploaderWithdrawal({ accountId: account.user.id, sessionId: account.sessionId }) : null;
 
   return (
     <div data-surface="flow" className="page-stack stack-blocks max-w-3xl">
@@ -58,6 +65,7 @@ export default async function EmbryoUploadPage() {
             </>
           ) : <UploadStage view={view} /> : <p role="alert" data-slot="stage-read-failed" className="max-w-prose text-sm text-ink">{STAGE_READ_FAILED_STATUS}</p> : <UploadFlow />}
           {built || EMBRYO_INGEST_AVAILABLE ? null : <p className="caption max-w-measure">{INGEST_UNAVAILABLE_LEDE}</p>}
+          {built ? <EmbryoUploaderWithdrawal view={uploaderWithdrawal} /> : null}
         </div>
       )}
     </div>

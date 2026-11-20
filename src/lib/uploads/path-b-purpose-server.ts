@@ -1,3 +1,4 @@
+import { mintPersonOperationNonce } from "@/lib/person-operation-nonce";
 import "server-only";
 
 import crypto from "node:crypto";
@@ -81,9 +82,11 @@ export async function pathBPurposeConsent(request: Request, payload: unknown): P
   const parsed = pathBPurposeBody.safeParse(payload);
   if (!parsed.success) return ownUploadJson({ error: "invalid_request" }, 422);
   const body = parsed.data;
+  // The presentation token is the body's artifactPresentationToken, checked
+  // below; api.consents verifies and spends the account session's
+  // X-Inherit-CSRF before this runs (G8.5, 19 November 2026).
   if (request.headers.get("origin") !== new URL(request.url).origin
-    || request.headers.get("sec-fetch-site") !== "same-origin"
-    || request.headers.get("x-inherit-csrf") !== body.artifactPresentationToken) return ownUploadJson({ error: "forbidden" }, 403);
+    || request.headers.get("sec-fetch-site") !== "same-origin") return ownUploadJson({ error: "forbidden" }, 403);
   const actor = await currentPathBAccount();
   if (!actor) return ownUploadJson({ error: "unauthorized" }, 401);
   const c = readPathBPurposePresentation(body.artifactPresentationToken);
@@ -151,6 +154,8 @@ export async function preparePathBChoices(now = Date.now()): Promise<PathBChoice
         const artifact = artifacts.get(PATH_B_GRANT_TEXT[direction][purpose]);
         const canOffer = !grant && artifact && (direction === "self" || shareOpen);
         choices.push({ purpose, direction, grantId: grant?.grantId ?? null,
+          revokeNonce: grant ? mintPersonOperationNonce({ accountId: actor.accountId, sessionId: actor.sessionId,
+            operation: "consent_revoke", targetId: grant.grantId }, now) : null,
           offer: canOffer ? {
             token: mintPathBPurposePresentation({ accountId: actor.accountId, sessionId: actor.sessionId,
               subjectId: person.subjectId, purpose, direction, artifactKey: artifact.artifact_key,
