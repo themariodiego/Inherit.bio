@@ -491,3 +491,74 @@ This migration ships no application code; the code of release 4's own-file withd
 ## What a person sees
 
 A person who has ever asked for an export of their own record now sees the withdrawal offered on Settings → Consents and on Files, where they saw the `unsupported` line before. After withdrawing, any download link of that record's exports stops at once: the poll answers 409 `state_conflict` while the record's file awaits its finish and 404 afterwards, and an open download serves no further chunk. The confirmation's list of what is deleted does not mention exports; no wording changed here (proposed wording is with the owner). Subject exports are made only in test mode, so in production nobody sees a difference until exports ship.
+
+# Release notes: `20261120110000_file_delete_operation_nonce.sql`
+
+Local work only. Nothing here was run against production or any hosted database. Owner decision of 19 November 2026, "G8.5: where the register is stricter, engineering codes to it" (`docs/protocol/decisions.md`); one of the examples the owner was given was deleting one file without the one-time confirmation the register requires for deletions. `api.file-delete` (`DELETE /api/files/[id]`, the Files page's Delete) is live in production, so this release changes a production path.
+
+## What it changes
+
+- `public.account_operation_nonces_operation_check` gains `'file_delete'` (drop and add, validated in place; the 22 values it holds are kept, read from the constraint as `20261024110000` reads them). Its definition md5 goes `7767adc7fcaf77800ca104be3ba0f121` → `c100e05a7cf3aca9ffcd33f386bdd3a4` (local).
+- Two new functions:
+  - `private.record_file_delete_nonce_v1(uuid,uuid,text,timestamptz)`, `{postgres=X/postgres}` (no caller but the door), `def_md5` `60a0ae8a89aa24913a82d301afe3d9fc`: the account operation consumer's rule for this one operation. A malformed hash or an expiry not within the next 10 minutes is refused (22023 `invalid_operation_nonce`); a session that is not the account's live one is refused with the per-file door's own message (42501 `file_delete_unauthorized`); then the value's hash is inserted consumed, once (a hash already held, whatever its operation, is refused 22023). Inserting it consumed names the account as the transaction's legal-audit actor; no event the file deletion writes is on the person-event list, so no audit row changes.
+  - `public.prepare_own_prepared_file_cleanup_with_nonce_v1(uuid,uuid,uuid,text,timestamptz)`, `{postgres=X/postgres,service_role=X/postgres}`, `def_md5` `25c4025a77771334573f9594d73dc3ee`: records the value, then returns `public.prepare_own_prepared_file_cleanup_v1` unchanged, in the same transaction. That door's first write is the deletion's first write, so the value is spent exactly when a deletion starts: a refused deletion (not found, processing, shared graph, another record) rolls the spend back, and a replayed value writes nothing.
+- Pinned, not changed: `public.prepare_own_prepared_file_cleanup_v1` (`8b6c62634d64e9058e2c503def867c4d`) and `public.prepare_genome_file_deletion_v1` (`8f2f2fd4b5d9dd017c5330907b42e137`), both `{postgres=X/postgres,service_role=X/postgres}`; both keep their grant (the subject-delete drain, this route's recheck after a prepared-artifact drain, and the deploy window below call the first). The per-file guard body, `private.prepare_genome_file_deletion_body_v1`, is deliberately not pinned: the door neither calls nor reads it, and `20261120100000` (D-144), earlier in this release, patches it.
+- `private.consume_account_operation_nonce_v1` is not patched (20261119170000 pins it as its last word); the recorder is a separate function.
+- Fingerprint effect: 2 more rows in `functions`, no `def_md5` changes; 1 constraint md5 in `tables` changes.
+
+## Which releases must come first
+
+1. Release 2's `20261023120000` (the legal-audit trigger `legal_audit_actor_on_consumed_insert`, which the predecessor block requires) and the check widening of `20261024110000` (`provider_setting_delete` must be in the check, or the widening refuses 55000 `account operation check unreadable`).
+2. Release 3's `20261024220000` (the route is wrapped by `withAccountCsrf`).
+3. Nothing else in release 4 is required. `20261120100000` (D-144) comes before this one in file order and patches the per-file guard body (to `c78d66691786e656a063b2dfe7b78a28`); this migration neither pins nor reads that body, so it applies with or without D-144 (checked locally on the shared database at `20261120100000`).
+
+## Read-only pre-checks (one SELECT; the release session and its `search_path`)
+
+Stop unless every `must_be_*` holds.
+
+```sql
+select
+ (select count(distinct x.signature) from pg_proc p join (values
+   ('public.prepare_own_prepared_file_cleanup_v1(uuid,uuid,uuid)','8b6c62634d64e9058e2c503def867c4d','{postgres=X/postgres,service_role=X/postgres}'),
+   ('public.prepare_genome_file_deletion_v1(uuid,uuid,uuid)','8f2f2fd4b5d9dd017c5330907b42e137','{postgres=X/postgres,service_role=X/postgres}')
+  ) as x(signature,body,acl) on p.oid=to_regprocedure(x.signature) and md5(pg_get_functiondef(p.oid))=x.body
+   and p.proacl::text=x.acl) as must_be_2_doors_as_reviewed,
+ (select count(*) from pg_trigger t where t.tgrelid='public.account_operation_nonces'::regclass
+   and t.tgname='legal_audit_actor_on_consumed_insert' and not t.tgisinternal) as must_be_1_actor_trigger,
+ (select count(*) from pg_constraint c where c.conrelid='public.account_operation_nonces'::regclass
+   and c.conname='account_operation_nonces_operation_check' and c.convalidated
+   and pg_get_constraintdef(c.oid) like '%''provider_setting_delete''%'
+   and pg_get_constraintdef(c.oid) not like '%''file_delete''%') as must_be_1_check_before_widening,
+ (select count(*) from pg_proc where proname in ('record_file_delete_nonce_v1','prepare_own_prepared_file_cleanup_with_nonce_v1'))
+   as must_be_zero_new_functions_present,
+ (select md5(pg_get_constraintdef(c.oid)) from pg_constraint c where c.conrelid='public.account_operation_nonces'::regclass
+   and c.conname='account_operation_nonces_operation_check') as context_check_md5,
+ (select count(*) from public.account_operation_nonces) as context_nonce_rows,
+ (select count(*) from private.genome_file_deletions) as context_started_file_deletions,
+ current_user as context_current_user,
+ current_setting('search_path') as context_search_path;
+```
+
+Locally every `must_be_*` held before the migration; the two md5s are the same under `"$user", public, extensions` and under `pg_catalog` alone, and `scripts/file-delete-operation-nonce-migration.test.ts` recomputes both from source. `context_check_md5` read `7767adc7fcaf77800ca104be3ba0f121` locally; production's is compared, not assumed (the check has been widened by ten migrations, some not yet hosted).
+
+## Locks and duration
+
+The `alter table` takes ACCESS EXCLUSIVE on `public.account_operation_nonces` for the drop and the validating add (a scan of its rows: unexpired and consumed one-time values, each kept only until the next spend of its operation removes it once expired); every account operation that spends a value (Settings, consents, subject delete, account deletion) waits for it. Everything else is catalog work. Measured locally inside a rolled-back transaction: 23.0 ms, holding ACCESS EXCLUSIVE on that table only (checked in `pg_locks`).
+
+## Deployed code between apply and deploy, and what a person sees
+
+The route verifies the value before it asks the database anything (its MAC binds the account, the auth session, the operation `file_delete` and the file, and it expires within 10 minutes); a missing, malformed, expired or foreign value is refused 403 `request_forbidden`, which the Files page words "Deletion did not finish. Please try Delete again. The file will stay listed until deletion is complete." (existing copy). The route then calls the new door. Only when PostgREST or Postgres answers that the door does not exist (`PGRST202`, `42883`) does it call the unchanged door instead, as the session-CSRF stage falls back to v1; any other error refuses (503 `file_delete_failed`) and nothing is written.
+
+- **Code deployed, migration not yet applied (the normal order).** Deleting a file works as today. The value is required and verified, but not spent, so within its 10 minutes the same request could be replayed for the same file by the same session: it can only repeat the deletion that person confirmed, of that one file, which is idempotent. A person sees no difference, except (as in every window once the code is deployed): a Files page left open more than 10 minutes answers its first Delete with the sentence above and renders itself again, and the second Delete works; and after any answer that is not a deletion the page renders again, so a row whose deletion started and stopped shows the database's own "File deletion is pending. Try Delete again." line without a reload.
+- **Pages open across the code deploy.** A Files page rendered by the earlier code sends no value: its Delete is refused with the same sentence each time until the page is reloaded (the earlier client does not render itself again after a failure). Nothing is deleted or half-deleted.
+- **Migration applied, code not yet deployed.** The deployed route calls the unchanged door, which keeps its grant: deleting works as today, with no value. Nobody sees a difference; the register's requirement is met only once the code is deployed.
+- **Both.** Each request spends its own value in the transaction that starts (or continues) its deletion; a pending answer (202 `file_delete_pending`) carries the next value in its `X-Inherit-Operation-Nonce` header, which the client's repeat spends.
+- A file deletion never half-happens because of this change: the spend and the deletion's first write commit together or not at all; after the first write the existing order (Storage removal, then finish, and the seven-day backstop) is unchanged.
+
+## Rollback
+
+Drop `public.prepare_own_prepared_file_cleanup_with_nonce_v1(uuid,uuid,uuid,text,timestamptz)` and `private.record_file_delete_nonce_v1(uuid,uuid,text,timestamptz)`; the deployed code then falls back to the unchanged door as in the first window. The `'file_delete'` value can stay in the check; to remove it, delete the rows with `operation='file_delete'` first (each is a spent value of a deletion that has already started or finished). Done locally after the browser runs: the check read back identical to its predecessor.
+
+## Browser runs (local, this container)
+
+`e2e/file-deletion.spec.ts` (its three tests that need no disposable stack) and `e2e/own-file-controls.spec.ts` ran against one local production build, twice: with the door absent (4 of 4 passed, through the fallback) and with this migration applied forward to the shared local database without recording it (4 of 4 passed; four `file_delete` values were recorded consumed, one per deletion, and none for the refused ones). The migration's objects were then dropped and the check restored.

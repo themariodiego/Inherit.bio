@@ -1,7 +1,15 @@
 import { z } from "zod";
 import { getSensitiveAccountContext, isSameOrigin } from "@/lib/account-deletion";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { prepareFileCleanup } from "@/lib/genome/prepared-source/cleanup-integration";
+import { prepareFileCleanup, type FileCleanupSpend } from "@/lib/genome/prepared-source/cleanup-integration";
+import {
+  PERSON_OPERATION_NONCE_HEADER,
+  isOperationNonceRefusal,
+  mintPersonOperationNonce,
+  personOperationNonceArgs,
+  personOperationNonceFrom,
+  type PersonOperationContext,
+} from "@/lib/person-operation-nonce";
 import { withAccountCsrf } from "@/lib/security/session-csrf";
 
 export const maxDuration = 60;
@@ -9,8 +17,39 @@ export const maxDuration = 60;
 const target = z.object({ token: z.string().uuid(), bucket: z.literal("genomes"), name: z.string().min(1) }).strict();
 const headers = { "Cache-Control": "private, no-store" };
 const failure = (error: string, status: number) => Response.json({ error }, { status, headers });
+/** PostgREST's answer for a function the schema does not have, and Postgres's. */
+const FUNCTION_ABSENT: ReadonlySet<string> = new Set(["PGRST202", "42883"]);
+const codeOf = (error: unknown) => error && typeof error === "object" && "code" in error && typeof error.code === "string"
+  ? error.code : "";
 
-export const DELETE = withAccountCsrf("api.file-delete", handleDelete);
+/**
+ * `DELETE /api/files/[id]` (register api.file-delete).
+ *
+ * Order of refusals, as the register puts them: a request from another
+ * origin is refused (`authenticated-mutation-v1`'s 403 `request_forbidden`;
+ * owner decision of 19 November 2026) by the CSRF wrapper before the account
+ * context is read or the session's token is spent (`originFirst`;
+ * `policy.sameOriginRequired`); then the session token; then here a route id
+ * that is not a UUID (404), no account (401), and a missing, malformed,
+ * expired or foreign one-time value (403), before anything is read from or
+ * written to the database.
+ *
+ * The one-time value (G8.5, 20 November 2026, "where the register is
+ * stricter, engineering codes to it"; `authenticated-mutation-v1
+ * .destructiveNonce`): the Files page renders it for this account, session,
+ * operation and file, and the request carries it in
+ * `X-Inherit-Operation-Nonce`. `prepare_own_prepared_file_cleanup_with_nonce_v1`
+ * records its hash in the same transaction as the deletion's first write and
+ * before it, so a replay is refused (403) and writes nothing, and a refused
+ * deletion spends nothing. A pending answer carries the next value for the
+ * same file, which the client's repeat spends.
+ *
+ * Until 20261120110000 is applied (code may be deployed first) that door is
+ * absent, and the first call goes to the unchanged door it wraps: the value
+ * is still verified for this account, session, operation and file and its
+ * expiry, but not yet spent. Only the door's absence falls back.
+ */
+export const DELETE = withAccountCsrf("api.file-delete", handleDelete, { originFirst: true });
 async function handleDelete(request: Request, context: { params: Promise<{ id: string }> }) {
   // `authenticated-mutation-v1`'s refusal, the same body the CSRF wrapper
   // gives (owner decision of 19 November 2026, "a cross-site file delete is
@@ -21,11 +60,18 @@ async function handleDelete(request: Request, context: { params: Promise<{ id: s
   if (!z.string().uuid().safeParse(id).success) return failure("not_found", 404);
   const account = await getSensitiveAccountContext();
   if (!account) return failure("unauthenticated", 401);
+  const operation: PersonOperationContext = { accountId: account.user.id, sessionId: account.sessionId,
+    operation: "file_delete", targetId: id };
+  const nonce = personOperationNonceFrom(request, operation);
+  if (!nonce) return failure("request_forbidden", 403);
   const admin = createAdminClient();
   const args = { p_account_id: account.user.id, p_session_id: account.sessionId, p_file_id: id };
+  const spend: FileCleanupSpend = { procedure: "prepare_own_prepared_file_cleanup_with_nonce_v1", args: personOperationNonceArgs(nonce) };
   try {
-    const prepared = await prepareFileCleanup(admin, args, request.signal);
+    let prepared = await prepareFileCleanup(admin, args, request.signal, undefined, spend);
+    if (prepared.error && FUNCTION_ABSENT.has(codeOf(prepared.error))) prepared = await prepareFileCleanup(admin, args, request.signal);
     if (prepared.error) {
+      if (isOperationNonceRefusal(prepared.error as { code?: string; message?: string })) return failure("request_forbidden", 403);
       const message = typeof prepared.error === "object" && "message" in prepared.error && typeof prepared.error.message === "string"
         ? prepared.error.message : "file_delete_failed";
       if (message.includes("file_delete_not_found")) return failure("not_found", 404);
@@ -37,7 +83,12 @@ async function handleDelete(request: Request, context: { params: Promise<{ id: s
       }
       return failure("file_delete_failed", 503);
     }
-    if (!prepared.complete) return failure("file_delete_pending", 202);
+    if (!prepared.complete) {
+      // The repeat the client makes spends a value too: this answer issues it.
+      const pending = failure("file_delete_pending", 202);
+      pending.headers.set(PERSON_OPERATION_NONCE_HEADER, mintPersonOperationNonce(operation));
+      return pending;
+    }
     const manifest = target.safeParse(prepared.original);
     if (!manifest.success) return failure("file_delete_failed", 503);
     const { data: removed, error } = await admin.storage.from(manifest.data.bucket).remove([manifest.data.name]);

@@ -31,11 +31,23 @@ const accountPlan = z.object({ version: z.literal("own-prepared-account-cleanup-
  * procedures return the same plan and select the same prepared cleanup. */
 export type FileCleanupProcedure = "prepare_own_prepared_file_cleanup_v1" | "prepare_own_prepared_file_cleanup_claimed_v1";
 
+/**
+ * api.file-delete's first call (20261120110000; G8.5, 20 November 2026): the
+ * owner-path door that spends the request's one-time value in the same
+ * transaction, before the unchanged door it wraps starts the deletion. Only
+ * that first call spends it; the recheck after a drain is the unchanged door,
+ * inside the request the spent value authorised.
+ */
+export type FileCleanupSpend = Readonly<{
+  procedure: "prepare_own_prepared_file_cleanup_with_nonce_v1";
+  args: Readonly<{ p_nonce_hash: string; p_nonce_expires_at: string }>;
+}>;
+
 /** Cleanup remains enabled even when new prepared ingestion is disabled. */
 export async function prepareFileCleanup(admin: Admin, args: Record<string, string>, signal?: AbortSignal,
-  procedure: FileCleanupProcedure = "prepare_own_prepared_file_cleanup_v1") {
+  procedure: FileCleanupProcedure = "prepare_own_prepared_file_cleanup_v1", spend?: FileCleanupSpend) {
   const rpc = boundedRpc(admin, signal);
-  const result = await rpc(procedure, args);
+  const result = spend ? await rpc(spend.procedure, { ...args, ...spend.args }) : await rpc(procedure, args);
   if (result.error) return { error: result.error, original: null, complete: false };
   let plan = filePlan.parse(result.data);
   if (!plan.preparedComplete) {

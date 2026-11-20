@@ -42,7 +42,17 @@ describe("the person operation nonce", () => {
       subject_download_open: "api.subject-download",
       // 20261024110000 (G8.5): the removal of the Copilot provider and its key.
       provider_setting_delete: "api.llm-settings",
+      // 20261120110000 (G8.5): the deletion of one file.
+      file_delete: "api.file-delete",
     });
+  });
+
+  it("binds a file deletion to the file: a value for one file, or for another operation on it, never verifies for another", () => {
+    const file = { ...DECLARE, operation: "file_delete" as const, targetId: OTHER };
+    const nonce = mintPersonOperationNonce(file, NOW);
+    expect(verifyPersonOperationNonce(nonce, file, NOW)).not.toBeNull();
+    expect(verifyPersonOperationNonce(nonce, { ...file, targetId: DECLARE.targetId }, NOW)).toBeNull();
+    expect(verifyPersonOperationNonce(mintPersonOperationNonce({ ...file, operation: "consent_revoke" }, NOW), file, NOW)).toBeNull();
   });
 
   it("verifies for exactly the account, session, operation and target it was minted for", () => {

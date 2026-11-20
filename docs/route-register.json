@@ -10231,6 +10231,15 @@
         }
       },
       {
+        "routeId": "api.file-delete",
+        "method": "DELETE",
+        "operation": "file-deletion",
+        "nonce": {
+          "header": "X-Inherit-Operation-Nonce"
+        },
+        "registeredBy": "registered-2026-11-20-owner-decision-2026-11-19-G8.5-where-the-register-is-stricter-engineering-codes-to-it"
+      },
+      {
         "routeId": "api.subject-sharing",
         "method": "POST",
         "requestOperation": {
@@ -13719,6 +13728,7 @@
           }
         },
         "when": "the-database-cleanup-has-not-completed; the-client-repeats-the-same-owner-authorized-DELETE-with-its-next-X-Inherit-CSRF-and-a-timeout-never-means-deleted",
+        "nextOperationNonce": "registered-2026-11-20-owner-decision-2026-11-19-G8.5-where-the-register-is-stricter-engineering-codes-to-it: this-answer-alone-also-carries-an-X-Inherit-Operation-Nonce-response-header, the-next-one-time-file_delete-value-minted-for-the-same-account-session-and-file-as-the-Files-page-mints-it, which-the-repeat-sends-and-spends (mutationSecurityBindings.operationNonceIssuance: a-registered-response-issues-the-next-nonce); a-pending-answer-without-one-ends-the-repeats-as-pending-and-the-Files-page-renders-a-fresh-value",
         "unknownFieldsRecursively": "forbidden"
       },
       "processing": {
@@ -17783,7 +17793,9 @@
         "body": "forbidden",
         "pathParameter": {
           "id": "canonical lowercase UUID of a file the caller's account owns"
-        }
+        },
+        "requiredHeader": "X-Inherit-Operation-Nonce-from-the-files-page",
+        "operationNonce": "registered-2026-11-20-owner-decision-2026-11-19-G8.5-where-the-register-is-stricter-engineering-codes-to-it: authenticated-mutation-v1.destructiveNonce-for-deleting-one-file; files.index-renders-one-value-per-file-row-as-mutationSecurityBindings.operationNonceIssuance-says (a-stateless-HMAC-bound-to-the-account-its-originating-auth-session-the-operation-file_delete-and-that-file, expiring-within-10-minutes, stored-nowhere); prepare_own_prepared_file_cleanup_with_nonce_v1-records-its-hash-in-account_operation_nonces-in-the-same-transaction-as-the-deletion's-first-write-and-before-it (20261120110000), so-a-refused-deletion-spends-nothing-and-a-replayed-value-writes-nothing; a-missing-malformed-expired-spent-or-foreign-value (another-account-session-operation-or-file) is-refused-with-authenticated-mutation-v1.failure-before-anything-is-deleted; each-request-spends-its-own-value, and-a-file-delete-v1.pending-answer-issues-the-next (file-delete-v1.pending.nextOperationNonce); X-Inherit-CSRF-is-the-one-time-account-session-token-and-never-carries-it (operationNonceIsNotCsrf)"
       },
       "stateProfile": "endpoint",
       "policy": {

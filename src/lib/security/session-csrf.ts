@@ -1,6 +1,6 @@
 import "server-only";
 
-import { getSensitiveAccountContext } from "@/lib/account-deletion";
+import { getSensitiveAccountContext, isSameOrigin } from "@/lib/account-deletion";
 import { authNotFound } from "@/lib/auth/auth-response";
 import { readResetSessionHash } from "@/lib/auth/reset-session";
 import { notFound } from "@/lib/embryos/api";
@@ -170,6 +170,15 @@ export interface CsrfOptions {
   rotate?: boolean | ((response: Response) => boolean);
   /** Also require the request's Origin to be this origin exactly, before any token is spent. */
   exactOrigin?: boolean;
+  /**
+   * Refuse a request the route's own same-origin check (`isSameOrigin`)
+   * refuses, with the register's answer, before the session is read or any
+   * token is spent: for a route whose register policy puts that refusal
+   * before the account context is read (`api.file-delete`,
+   * `policy.sameOriginRequired`; G8.5, 20 November 2026). The check itself
+   * is the route's, unchanged; only its place moves.
+   */
+  originFirst?: boolean;
 }
 
 function exactOrigin(request: Request): boolean {
@@ -180,7 +189,7 @@ function exactOrigin(request: Request): boolean {
 export async function admitSessionCsrf(request: Request, session: CsrfSession, route: CsrfRoute,
   options: CsrfOptions = {}): Promise<Exclude<CsrfAdmission, { kind: "unbound" }>> {
   if (!acceptsSessionKind(route, session.kind) || (options.exactOrigin && !exactOrigin(request))
-    || !(await spend(request, session, route))) {
+    || (options.originFirst && !isSameOrigin(request)) || !(await spend(request, session, route))) {
     return { kind: "refused", response: refusal(route) };
   }
   // A chunk stream keeps the value it presented; nothing is issued.
@@ -218,7 +227,9 @@ export async function currentReviewerCsrfSession(): Promise<CsrfSession | null> 
 /** The admission of an authenticated route's request; `unbound` when nobody is signed in. */
 export async function admitAccountCsrf(request: Request, route: CsrfRoute,
   options: CsrfOptions = {}): Promise<CsrfAdmission> {
-  if (options.exactOrigin && !exactOrigin(request)) return { kind: "refused", response: refusal(route) };
+  if ((options.exactOrigin && !exactOrigin(request)) || (options.originFirst && !isSameOrigin(request))) {
+    return { kind: "refused", response: refusal(route) };
+  }
   const session = await currentAccountCsrfSession();
   return session ? admitSessionCsrf(request, session, route, options) : { kind: "unbound" };
 }

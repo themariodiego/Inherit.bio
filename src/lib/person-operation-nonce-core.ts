@@ -41,7 +41,10 @@ export type PersonOperation =
   | "path_b_draft_create"
   | "subject_download_open"
   // 20261024110000 (G8.5): the DELETE of the Copilot provider and its key.
-  | "provider_setting_delete";
+  | "provider_setting_delete"
+  // 20261120110000 (G8.5, "where the register is stricter, engineering codes
+  // to it"): the DELETE of one file, bound to that file.
+  | "file_delete";
 
 /** Each operation belongs to exactly one registered route. */
 export const PERSON_OPERATION_ROUTES: Readonly<Record<PersonOperation, string>> = Object.freeze({
@@ -55,6 +58,7 @@ export const PERSON_OPERATION_ROUTES: Readonly<Record<PersonOperation, string>> 
   path_b_draft_create: "api.subject-drafts",
   subject_download_open: "api.subject-download",
   provider_setting_delete: "api.llm-settings",
+  file_delete: "api.file-delete",
 });
 
 /** The request header that carries the page's nonce to a route whose body is closed without it. */

@@ -8,6 +8,7 @@ import { localE2eProject } from "../scripts/local-e2e-project";
 import { migrationBuckets } from "../scripts/storage-buckets";
 import { uploadOwnFilePrepared, uploadOwnFileWithChosenReports } from "./own-report-helpers";
 import { adminClient, anonClient, createConfirmedUser, JOBS_SECRET, jobRanCleanly, signIn } from "./helpers";
+import { mintedOperationNonce } from "./helpers/operation-nonce";
 import { accountCsrf } from "./helpers/session-csrf";
 
 /** Every private bucket the migrations leave in place (the set `e2e/rls.spec.ts`
@@ -141,23 +142,27 @@ test("foreign account, active processing and another adult cannot use the self-f
   expect(source.error).toBeNull();
   const file = source.data!;
   expect(file.status).toBe("stored");
-  // Each direct call carries a fresh X-Inherit-CSRF token for its own session (G8.5).
-  const remove = async () => page.evaluate(async ({ id, csrf }) =>
-    (await fetch(`/api/files/${id}`, { method: "DELETE", headers: { "X-Inherit-CSRF": csrf } })).status,
-  { id: fileId, csrf: await accountCsrf(page, "api.file-delete") });
+  // Each direct call carries a fresh X-Inherit-CSRF token for its own session (G8.5),
+  // and a fresh one-time value for this account, session and file (G8.5, 20 November 2026).
+  const remove = async () => page.evaluate(async ({ id, csrf, nonce }) =>
+    (await fetch(`/api/files/${id}`, { method: "DELETE", headers: { "X-Inherit-CSRF": csrf, "X-Inherit-Operation-Nonce": nonce } })).status,
+  { id: fileId, csrf: await accountCsrf(page, "api.file-delete"),
+    nonce: await mintedOperationNonce(page.context(), ownerId, "file_delete", fileId) });
   // Deliberate negative parser-state injection exercises the existing fence;
   // restoring the exact original state never fabricates completed analysis.
   expect((await admin.from("genome_files").update({ status: "parsing" }).eq("id", fileId)).error).toBeNull();
   try { expect(await remove()).toBe(409); }
   finally { expect((await admin.from("genome_files").update({ status: file.status }).eq("id", fileId)).error).toBeNull(); }
   const other = { email: `file-other-${randomUUID()}@e2e.local`, password };
-  await createConfirmedUser(other.email, other.password);
+  const otherId = await createConfirmedUser(other.email, other.password);
   const context = await browser.newContext();
   const otherPage = await context.newPage();
   await signIn(otherPage, other.email, other.password);
-  expect(await otherPage.evaluate(async ({ id, csrf }) =>
-    (await fetch(`/api/files/${id}`, { method: "DELETE", headers: { "X-Inherit-CSRF": csrf } })).status,
-  { id: fileId, csrf: await accountCsrf(otherPage, "api.file-delete") })).toBe(404);
+  // The other account's own value for this file id, so the request reaches the database's ownership check.
+  expect(await otherPage.evaluate(async ({ id, csrf, nonce }) =>
+    (await fetch(`/api/files/${id}`, { method: "DELETE", headers: { "X-Inherit-CSRF": csrf, "X-Inherit-Operation-Nonce": nonce } })).status,
+  { id: fileId, csrf: await accountCsrf(otherPage, "api.file-delete"),
+    nonce: await mintedOperationNonce(context, otherId, "file_delete", fileId) })).toBe(404);
   await context.close();
   const adultId = randomUUID();
   expect((await admin.from("subjects").insert({ id: adultId, owner_account_id: ownerId, subject_class: "other_adult", upload_class: "adult", display_label: "Synthetic adult" })).error).toBeNull();
@@ -175,10 +180,11 @@ test("foreign account, active processing and another adult cannot use the self-f
     file_type: "vcf", tier: 1, size_bytes: bytes.length, status: "stored" });
   expect(legacy.error).toBeNull();
   try {
-    const refused = await page.evaluate(async ({ id, csrf }) => {
-      const response = await fetch(`/api/files/${id}`, { method: "DELETE", headers: { "X-Inherit-CSRF": csrf } });
+    const refused = await page.evaluate(async ({ id, csrf, nonce }) => {
+      const response = await fetch(`/api/files/${id}`, { method: "DELETE", headers: { "X-Inherit-CSRF": csrf, "X-Inherit-Operation-Nonce": nonce } });
       return { status: response.status, body: await response.json() };
-    }, { id: legacyId, csrf: await accountCsrf(page, "api.file-delete") });
+    }, { id: legacyId, csrf: await accountCsrf(page, "api.file-delete"),
+      nonce: await mintedOperationNonce(page.context(), ownerId, "file_delete", legacyId) });
     expect(refused).toEqual({ status: 409, body: { error: "file_delete_subject_unavailable" } });
     const retainedAdult = await admin.from("genome_files")
       .select("subject_id,status,normalization_completed_at,single_logical_sample_verified_at").eq("id", legacyId).single();
@@ -225,10 +231,11 @@ test("an ended family pair with nothing left on it no longer blocks the owner's 
   const [ownerSubject, otherSubject] = [await selfOf(ownerId), await selfOf(otherId)];
   const source = await admin.from("genome_files").select("bucket_path").eq("id", fileId).single();
   expect(source.error).toBeNull();
-  const remove = async () => page.evaluate(async ({ id, csrf }) => {
-    const response = await fetch(`/api/files/${id}`, { method: "DELETE", headers: { "X-Inherit-CSRF": csrf } });
+  const remove = async () => page.evaluate(async ({ id, csrf, nonce }) => {
+    const response = await fetch(`/api/files/${id}`, { method: "DELETE", headers: { "X-Inherit-CSRF": csrf, "X-Inherit-Operation-Nonce": nonce } });
     return { status: response.status, body: response.status === 204 ? null : await response.json() };
-  }, { id: fileId, csrf: await accountCsrf(page, "api.file-delete") });
+  }, { id: fileId, csrf: await accountCsrf(page, "api.file-delete"),
+    nonce: await mintedOperationNonce(page.context(), ownerId, "file_delete", fileId) });
   const pair = await admin.from("family_pairs").insert({ subject_a_id: ownerSubject, subject_b_id: otherSubject, status: "current" })
     .select("id").single();
   expect(pair.error).toBeNull();

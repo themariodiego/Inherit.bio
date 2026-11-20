@@ -13,6 +13,8 @@ import { route } from "@/lib/primary-routes";
 import { resolveSubjectForAccount } from "@/lib/subjects";
 import { createClient } from "@/lib/supabase/server";
 import { formatBytes } from "@/lib/limits";
+import { getPageAccountContext } from "@/lib/page-account-context";
+import { mintPersonOperationNonce } from "@/lib/person-operation-nonce";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { fileStatusLabel } from "@/lib/uploads/file-status";
 import { prepareOwnUploadWithdrawal } from "@/lib/uploads/own-upload-withdrawal";
@@ -36,12 +38,19 @@ export default async function UploadsPage() {
   // subject, read only for its label (round-2 M8).
   const self = user ? await resolveSubjectForAccount(user.id, "me") : null;
 
-  const [{ data: stats }, ownUpload] = await Promise.all([
+  const [{ data: stats }, ownUpload, account] = await Promise.all([
     createAdminClient().rpc("processing_time_stats"),
     // The withdrawal of the consent to store these files (owner decision of
     // 19 November 2026); nothing when that consent is not live.
     prepareOwnUploadWithdrawal(),
+    getPageAccountContext(),
   ]);
+  // Deleting a file spends a one-time value (api.file-delete; G8.5, 20
+  // November 2026, "where the register is stricter, engineering codes to
+  // it"), rendered here for this account, session and each file, and stored
+  // nowhere. Every render brings fresh ones.
+  const deleteNonce = (fileId: string) => account ? mintPersonOperationNonce({ accountId: account.user.id,
+    sessionId: account.sessionId, operation: "file_delete", targetId: fileId }) : null;
   const tier1 = stats?.find((s: { file_tier: number }) => s.file_tier === 1);
 
   const inFlight = (files ?? []).some(
@@ -189,6 +198,7 @@ export default async function UploadsPage() {
                     status={f.status}
                     tier={f.tier}
                     preparationOnly={f.single_logical_sample_verified_at !== null}
+                    deleteNonce={deleteNonce(f.id)}
                   />
                 </div>
               </li>

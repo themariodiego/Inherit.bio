@@ -878,11 +878,24 @@ describe("the client census fails on a planted divergence", () => {
     const source = real(file);
     expect(source).not.toMatch(/^\s*["']use client["']/u);
     // 2026-11-19: the request goes through its token chain (csrf.send); the planted copy still drops the header.
-    const sent = 'headers: { "X-Inherit-CSRF": csrfToken } }));';
+    // 2026-11-20 (G8.5): the request also sends the one-time value in X-Inherit-Operation-Nonce; the planted copy keeps it.
+    const sent = 'headers: { "X-Inherit-CSRF": csrfToken, "X-Inherit-Operation-Nonce": current } }));';
     expect(source).toContain(sent);
-    expect(csrfOmissions(run({ [file]: source.replace(sent, "}));") })))
+    expect(csrfOmissions(run({ [file]: source.replace(sent, 'headers: { "X-Inherit-Operation-Nonce": current } }));') })))
       .toEqual([`${file} api.file-delete DELETE: omits X-Inherit-CSRF, which mutationSecurityBindings.csrfTransport requires of this state-changing request`]);
   });
+
+  // G8.5, 20 November 2026 ("where the register is stricter, engineering
+  // codes to it"): api.file-delete's requestContract.requiredHeader.
+  it("fails when the file delete helper stops sending the one-time value the register requires", () => {
+    const file = "src/lib/uploads/file-delete-browser.ts";
+    const source = real(file);
+    const sent = 'headers: { "X-Inherit-CSRF": csrfToken, "X-Inherit-Operation-Nonce": current } }));';
+    expect(source).toContain(sent);
+    expect(ledgerMismatch(run({ [file]: source.replace(sent, 'headers: { "X-Inherit-CSRF": csrfToken } }));') }).issues
+      .map(formIssueKey), accountedClientKeys()).unrecorded)
+      .toEqual([`${file} api.file-delete DELETE: omits the required header x-inherit-operation-nonce`]);
+  }, 30_000);
 
   it("fails when the chat panel stops sending its token, or the SDK transport wraps its request in something it cannot read", () => {
     // The chat panel's fetch. The compatibility panel this read until 24 October 2026 is retired (G8.5);
