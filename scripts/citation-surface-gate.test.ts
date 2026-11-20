@@ -291,7 +291,12 @@ describe("the 2 October release integration preserves measured debt", () => {
     // the 59 candidates below are unchanged.
     // 57 since 2026-10-24 (G8.5): the compatibility chat branch's two tool
     // descriptions left src/app/api/chat/route.ts with it.
-    expect(result.fileCount).toBe(121);
+    // 124 since 2026-11-20: the three consent withdrawals add three copy
+    // modules to the surface (src/copy/upload/withdrawal.ts,
+    // src/copy/upload/other-adult-withdrawal.ts and
+    // src/copy/embryos/uploader-withdrawal.ts); none carries a claim-marked
+    // sentence, so the 57 candidates are unchanged.
+    expect(result.fileCount).toBe(124);
     expect(result.candidates).toHaveLength(57);
     expect(result).toMatchObject({ sourced: 0, open: 57, classified: 0 });
     const inputs = readRepositoryInputs(ROOT);

@@ -262,6 +262,21 @@ export interface OtherAdultConsentView {
   warning: string;
 }
 
+/**
+ * Whether the uploader's withdrawal of its permission for this person can run
+ * now (owner decision of 19 November 2026, "An uploader's withdrawal for
+ * another adult's file deletes it, unless that adult holds the record
+ * themselves"), from `other_adult_withdrawal_readiness_v1`. `account-held`:
+ * the person holds the record with their own account, a branch not built
+ * while who holds it afterwards is undecided. `unavailable`: the read failed.
+ */
+export type OtherAdultWithdrawalReadiness = "ready" | "account-held" | "unsupported" | "unavailable";
+export interface OtherAdultWithdrawalView {
+  readiness: OtherAdultWithdrawalReadiness;
+  /** The one-time api.subject-delete code for this record; only when the request can run. */
+  nonce: string | null;
+}
+
 export type OtherAdultTarget = OtherAdultTargetState & {
   /** Present while the uploader still has to sign for this person. */
   consent?: OtherAdultConsentView;
@@ -269,6 +284,8 @@ export type OtherAdultTarget = OtherAdultTargetState & {
   operationToken?: string;
   /** Set when nothing can be done for this person yet, and why. */
   blockedBy?: "account-completion" | "unavailable";
+  /** Present while the uploader holds a live permission on a confirmed record. */
+  withdrawal?: OtherAdultWithdrawalView;
 };
 
 /**

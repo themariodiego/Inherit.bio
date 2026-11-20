@@ -5,6 +5,7 @@ import { render, toPlainText } from "@react-email/components";
 import { describe, expect, it } from "vitest";
 import { ADULT_UPLOAD_DERIVED_LIST as DERIVED, ADULT_UPLOAD_REVISION_COPY as REVISION } from "@/copy/upload/other-adult";
 import { OWN_UPLOAD_WITHDRAWAL_EMAIL_COPY as WITHDRAWN } from "@/copy/upload/withdrawal";
+import { UPLOAD_PERMISSION_WITHDRAWN_NOTICE_COPY as UPLOAD_WITHDRAWN } from "@/copy/upload/other-adult-withdrawal";
 import { ReportReadyEmail } from "./report-ready";
 import { ResearchDigestEmail } from "./research-digest";
 import { AdultSubjectInvitationEmail } from "./adult-subject-invitation";
@@ -367,6 +368,22 @@ describe("own-upload consent withdrawn email", () => {
       WITHDRAWN.sharing, WITHDRAWN.afterwards, WITHDRAWN.security]) {
       expect(html).toContain(line);
     }
+    expect(html).not.toContain("href=");
+    expectSafeBody(html);
+  });
+});
+
+// Owner decision of 19 November 2026: an uploader's withdrawal for another
+// adult's file sends that adult a short notice through the terminal-notice
+// queue (20261119160000). Its words are drafts for the owner
+// (src/copy/upload/other-adult-withdrawal.ts); this pins that they are sent.
+describe("upload permission withdrawn notice", () => {
+  it("says what was deleted and that nothing is asked of them, with no name, file, link or address", async () => {
+    const mail = { id: "invitation-terminal-notice", payload: { kind: "upload-permission-withdrawn" } } as const;
+    expect(mailSubject(mail)).toBe("An invitation on Inherit has ended");
+    const html = stripMarkers(await renderMail(mail));
+    expect(html).toContain(UPLOAD_WITHDRAWN.heading);
+    expect(html).toContain(UPLOAD_WITHDRAWN.body);
     expect(html).not.toContain("href=");
     expectSafeBody(html);
   });

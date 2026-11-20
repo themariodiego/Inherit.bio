@@ -51,7 +51,8 @@ describe("independent production email fixture inventory", () => {
   });
   it("expands all current conditional branches and explicitly distinguishes empty digest scope", () => {
     const fixtures = emailFixtures(readPublicDigestCatalog(projectRoot));
-    expect(fixtures).toHaveLength(40);
+    // 2026-11-19: 40 -> 41, the invitation terminal notice's new kind upload-permission-withdrawn (20261119160000).
+    expect(fixtures).toHaveLength(41);
     expect(fixtures.filter((fixture) => fixture.mail.id === "appeal-evidence")).toEqual([
       expect.objectContaining({ entrypoint: "src/emails/appeal-evidence.tsx", exportName: "AppealEvidenceEmail",
         mail: { id: "appeal-evidence", payload: { continueUrl: "https://example.test/fixture#synthetic-appeal" } } }),
@@ -116,9 +117,12 @@ describe("actual production email HTML and envelope capture", () => {
   });
 
   it("retains every expected fixture before reporting actual annotation failures", () => {
-    expect(result.receipts).toHaveLength(39);
-    expect(result.observations).toHaveLength(78);
-    expect(result.requiredSurfaces).toHaveLength(78);
+    // 41 since 2026-11-20: the three consent withdrawals add two mails (the
+    // own-file confirmation and the notice to another adult), each with its
+    // body and subject surface: 82 observations and required surfaces.
+    expect(result.receipts).toHaveLength(41);
+    expect(result.observations).toHaveLength(82);
+    expect(result.requiredSurfaces).toHaveLength(82);
     expect(result.observations.every((o) => o.channel === "email" && o.contentCommitSha === result.contentCommitSha)).toBe(true);
     expect(result.audit.ok).toBe(false);
     expect(result.audit.issues.map((i) => i.code)).toEqual(expect.arrayContaining(["missing-channel", "missing-region", "empty-corpus"]));

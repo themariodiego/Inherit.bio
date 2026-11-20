@@ -990,9 +990,15 @@ describe("the register names where each kind of consent is withdrawn, and the le
     expect(none[0]![1].doors).toEqual([]);
     expect(none[0]![1].how).toMatch(/^none-because-the-consent-cannot-be-given-yet/u);
     expect(readFileSync("src/lib/embryos/routes.ts", "utf8")).toContain('return ["identified_donor_attribution_unavailable"];');
-    // api.consent-revoke itself resolves exactly the two tables the map's basis names.
+    // api.consent-revoke itself resolves exactly the tables the map's basis names: since 2026-11-19 (owner decision
+    // "A non-parent uploader's withdrawal for an embryo upload stops analysis and deletes, as they signed") a third,
+    // consent_signatures, for the one signature kind the basis names, which the route checks after reading it.
     const revoke = readFileSync("src/app/api/consents/[id]/revoke/route.ts", "utf8");
-    expect(revoke.match(/admin\.from\("([a-z_]+)"\)/gu)).toEqual(['admin.from("purpose_grants")', 'admin.from("consent_grants")']);
+    expect(revoke.match(/admin\.from\("([a-z_]+)"\)/gu)).toEqual(['admin.from("purpose_grants")', 'admin.from("consent_grants")',
+      'admin.from("consent_signatures")']);
+    expect(revoke).toContain('signature.artifact_key === "consent.upload-embryo"');
+    expect(revoke).toContain('signature.purpose === "embryo-upload-uploader-class"');
+    expect(policy.withdrawalRoutes.basis).toContain("a-public.consent_signatures-row-that-is-a-consent.upload-embryo-signature-of-purpose-embryo-upload-uploader-class");
   });
 
   it("says why each unnamed kind has no registered route, who decides, and anchors it to the code", () => {
@@ -1543,7 +1549,13 @@ const CLIENT_FORM_REVIEW: ClientFormReview[] = [
   // the request-send token into X-Inherit-Operation-Nonce, and the signature's
   // presentation token into the body alone. Still two actionless forms whose
   // onSubmit handlers cancel native submission; the same targets and bodies.
-  { file: "src/components/uploads/other-adult-upload-card.tsx", forms: 2, sha256: "fcb3a5ce65937bc350dc286ab1e72636266dbd0443dc2360584daecbb448a249" },
+  // 2026-11-19 (owner decision "An uploader's withdrawal for another adult's
+  // file deletes it, unless that adult holds the record themselves"):
+  // re-reviewed after the held and ready cards gained the withdrawal control
+  // (OtherAdultWithdrawal, no form) as their last child and a withdrawn card
+  // that shows only its receipt. The two forms, their handlers, fields,
+  // targets and bodies are unchanged.
+  { file: "src/components/uploads/other-adult-upload-card.tsx", forms: 2, sha256: "830f26d0dc60617563b71e6804b6929fd7aa1ceec54d7c5ad0a85564b529e358" },
   // G7.4 (2026-10-22): re-reviewed after the flow gained the server-decided
   // `readCalling` prop it passes to both Uploader renders (ADR 0038). Still one
   // actionless account-completion form whose onSubmit handler cancels native

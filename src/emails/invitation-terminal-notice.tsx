@@ -1,8 +1,9 @@
 import { Text } from "@react-email/components";
+import { UPLOAD_PERMISSION_WITHDRAWN_NOTICE_COPY } from "@/copy/upload/other-adult-withdrawal";
 import { EmailLayout, brand } from "./base";
 
 export interface InvitationTerminalNoticeProps {
-  kind: "invitation-refused" | "draft-cancelled" | "donor-attribution-ended";
+  kind: "invitation-refused" | "draft-cancelled" | "donor-attribution-ended" | "upload-permission-withdrawn";
 }
 
 const copy: Record<InvitationTerminalNoticeProps["kind"], { heading: string; body: string }> = {
@@ -18,6 +19,10 @@ const copy: Record<InvitationTerminalNoticeProps["kind"], { heading: string; bod
     heading: "The optional donor link has ended",
     body: "The draft will not name this donor. This decision alone does not cancel the embryo draft or delete embryo files. It does not give anyone access to a genome.",
   },
+  // 20261119160000: the uploader of another adult's file withdrew its
+  // permission and everything it added was deleted (owner decision of 19
+  // November 2026). The words are drafts for the owner's review.
+  "upload-permission-withdrawn": UPLOAD_PERMISSION_WITHDRAWN_NOTICE_COPY,
 };
 
 /** No names, addresses, draft labels, result details or credentials are accepted. */

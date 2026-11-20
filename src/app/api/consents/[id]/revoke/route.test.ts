@@ -22,13 +22,14 @@ const mocks = vi.hoisted(() => ({
   rows: {} as Record<string, unknown>,
   rpc: { data: null as unknown, error: null as { code?: string; message?: string } | null },
   rpcCalls: [] as string[],
+  rpcArgs: [] as unknown[],
   reads: [] as string[],
 }));
 vi.mock("@/lib/supabase/server", () => ({ createClient: async () => ({ auth: { getUser: async () => ({ data: { user: mocks.user } }) } }) }));
 vi.mock("@/lib/supabase/admin", () => ({ createAdminClient: () => ({
   from: (table: string) => (mocks.reads.push(table),
     { select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: mocks.rows[table] ?? null, error: null }) }) }) }),
-  rpc: async (name: string) => { mocks.rpcCalls.push(name); return mocks.rpc; },
+  rpc: async (name: string, args: unknown) => { mocks.rpcCalls.push(name); mocks.rpcArgs.push(args); return mocks.rpc; },
 }) }));
 vi.mock("@/lib/account-deletion", async (importOriginal) => ({
   ...await importOriginal<typeof import("@/lib/account-deletion")>(), getSensitiveAccountContext: async () => mocks.account }));
@@ -51,6 +52,7 @@ beforeEach(() => {
   mocks.rows = {};
   mocks.rpc = { data: null, error: null };
   mocks.rpcCalls = [];
+  mocks.rpcArgs = [];
   mocks.reads = [];
 });
 afterEach(() => vi.unstubAllEnvs());
@@ -132,5 +134,69 @@ describe("api.consent-revoke's sign-in and not-found refusals", () => {
     mocks.rpc = { data: "2026-11-19T12:00:00.000Z", error: null };
     const response = await revoke();
     expect([response.status, await response.json()]).toEqual([200, { revoked: true, effectiveAt: "2026-11-19T12:00:00.000Z" }]);
+  });
+});
+
+/**
+ * A non-parent uploader's own consent.upload-embryo signature (owner decision
+ * of 19 November 2026, "A non-parent uploader's withdrawal for an embryo
+ * upload stops analysis and deletes, as they signed"). The route resolves the
+ * signature only for that artifact and purpose, spends the page's
+ * consent_revoke nonce through `withdraw_embryo_uploader_consent_v1`, which
+ * decides the phase and the actor itself, and answers lifecycle-accepted-v1.
+ */
+describe("api.consent-revoke for a non-parent uploader's embryo upload signature", () => {
+  const SIGNATURE = { id: GRANT, artifact_key: "consent.upload-embryo", purpose: "embryo-upload-uploader-class" };
+  const nonce = () => mintPersonOperationNonce({ accountId: ACCOUNT, sessionId: SESSION, operation: "consent_revoke", targetId: GRANT });
+  const send = (code: string | null = nonce()) => POST(new Request(`http://localhost/api/consents/${GRANT}/revoke`, { method: "POST",
+    headers: { origin: "http://localhost", "sec-fetch-site": "same-origin", ...(code === null ? {} : { "x-inherit-operation-nonce": code }) } }),
+  { params: Promise.resolve({ id: GRANT }) });
+  beforeEach(() => { mocks.rows = { consent_signatures: SIGNATURE }; });
+
+  it("withdraws through the one door with the nonce's hash, and answers 202 accepted", async () => {
+    const code = nonce();
+    mocks.rpc = { data: { case: "cohort" }, error: null };
+    const response = await send(code);
+    expect([response.status, response.headers.get("cache-control"), await response.json()])
+      .toEqual([202, "private, no-store", { status: "accepted" }]);
+    expect(mocks.reads).toEqual(["purpose_grants", "consent_grants", "consent_signatures"]);
+    expect(mocks.rpcCalls).toEqual(["withdraw_embryo_uploader_consent_v1"]);
+    const { hashOperationNonce } = await import("@/lib/account-deletion");
+    expect(mocks.rpcArgs).toEqual([{ p_account_id: ACCOUNT, p_session_id: SESSION, p_signature_id: GRANT,
+      p_nonce_hash: hashOperationNonce(code), p_nonce_expires_at: new Date(Number(code.split(".")[0])).toISOString() }]);
+    mocks.rpc = { data: { case: "draft" }, error: null };
+    expect((await send()).status).toBe(202);
+  });
+
+  it("resolves no other signature: another artifact or purpose is not found, and nothing runs", async () => {
+    for (const other of [{ ...SIGNATURE, artifact_key: "consent.upload-self" }, { ...SIGNATURE, purpose: "embryo-upload-parent-class" },
+      { ...SIGNATURE, artifact_key: "consent.upload-other-adult", purpose: "other-adult-upload" }]) {
+      mocks.rows = { consent_signatures: other };
+      expect(await answer(await send()), JSON.stringify(other)).toEqual(NOT_FOUND);
+    }
+    mocks.rows = { consent_signatures: SIGNATURE, consent_grants: { id: GRANT } };
+    expect(await answer(await send())).toEqual(NOT_FOUND);
+    expect(mocks.rpcCalls).toEqual([]);
+  });
+
+  it("requires this account's own session and a nonce minted for this signature", async () => {
+    expect(await answer(await send(null))).toEqual([400, "application/json", { error: "invalid_request" }]);
+    expect(await answer(await send(mintPersonOperationNonce({ accountId: ACCOUNT, sessionId: SESSION, operation: "consent_revoke",
+      targetId: "7c6e0000-0000-4000-8000-000000000099" })))).toEqual([400, "application/json", { error: "invalid_request" }]);
+    mocks.account = { user: { id: "7c6e0000-0000-4000-8000-000000000041" }, sessionId: SESSION };
+    expect(await answer(await send())).toEqual(UNAUTHENTICATED);
+    expect(mocks.rpcCalls).toEqual([]);
+  });
+
+  it("answers the door's refusals with the JSON 404, a spent nonce with 400, and anything else with 503", async () => {
+    for (const error of [{ code: "42501", message: "not_found" }, { code: "42501", message: "not the non-parent uploader" },
+      { code: "55000", message: "already restricted" }, { code: "55000", message: "withdrawal_phase_changed" }]) {
+      mocks.rpc = { data: null, error };
+      expect(await answer(await send()), error.message).toEqual(NOT_FOUND);
+    }
+    mocks.rpc = { data: null, error: { code: "22023", message: "invalid_operation_nonce" } };
+    expect(await answer(await send())).toEqual([400, "application/json", { error: "invalid_request" }]);
+    mocks.rpc = { data: null, error: { code: "PGRST202", message: "Could not find the function" } };
+    expect(await answer(await send())).toEqual([503, "application/json", { error: "unavailable" }]);
   });
 });

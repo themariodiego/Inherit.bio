@@ -344,39 +344,6 @@
       "closedBy": "owner"
     }
   ],
-  "consentWithdrawalNotRegisteredNote": "2026-11-19 (G8.5, owner decision \"the register names where each kind of consent is withdrawn\"). The decision says any kind that turns out to have no way to be withdrawn comes back to the owner and the amendment does not paper over it. api.consent-revoke's policy.withdrawalRoutes.cases names the routes that withdraw nine of the eleven dispositionCases kinds (donor attribution as a consent that cannot be given yet; self-upload-class-consent since the owner decision of 2026-11-19, \"Withdrawing consent for a person's own DNA file deletes the files and all made from them\"). These rows are the other two: nothing withdraws them short of deleting the whole record or the account, which also ends more than the consent. scripts/route-register-correspondence.test.ts compares the kinds the register names with these rows in both directions, so a kind gaining a registered route fails until its row is removed. Listing a kind records it; it does not bless it.",
-  "consentWithdrawalNotRegistered": [
-    {
-      "kind": "other-adult-uploader-consent.upload-other-adult",
-      "why": "The uploader's consent.upload-other-adult signature and the upload_class public.subject_consents row on the Path B other_adult subject (20260928150000_other_adult_held_upload.sql). Nothing withdraws it on its own: api.consent-revoke cannot address it and api.consents-revoke-all excludes it. The uploader can end it only by deleting the whole record: api.subject-delete by the owning account (delete_path_b_subject_for_route_v1 with state withdrawn) ends every held file revision, purges the subject and deletes the other adult's principal and contact, so it also ends the other adult's own confirmation; no page sends that request. Account deletion ends it too. The register's disposition names revocation-and-purge-v1.",
-      "closing": "Owner: say whether the uploader's withdrawal is the whole-record delete (and from which screen) or whether the uploader may withdraw a held file or the consent without ending the other adult's record; engineering then registers it and this row is removed.",
-      "closedBy": "owner",
-      "evidence": [
-        {
-          "file": "supabase/migrations/20261016181000_subject_delete.sql",
-          "literal": "case when s.subject_account_id is not distinct from p_account_id then 'deleted' else 'withdrawn' end);"
-        },
-        {
-          "file": "supabase/migrations/20261016200000_consents_revoke_all.sql",
-          "literal": "-- Excluded, as the register says: class-upload consents"
-        }
-      ]
-    },
-    {
-      "kind": "embryo-nonparent-uploader-own-upload-artifact",
-      "why": "A nonparent uploader's own consent.upload-embryo signature for a cohort uploaded with the genetic parents' permission (upload_class embryo_third_party). Nothing withdraws it: api.cohort-restrict and its alias api.embryo-withdraw act only for a current disposition authority (restrict_embryo_cohort_v1 refuses with 'not a disposition authority'), which a nonparent uploader never is; api.withdraw's embryo-parent-withdrawal session is issued only to a disposition authority; api.consent-revoke cannot address an artifact signature. Only deleting the uploader's account ends it, through the owned-cohort purge (20260930235000_account_cohort_purge.sql). Embryo ingest is TEST-LOCAL, so no such cohort exists in production today.",
-      "closing": "Owner: say how a nonparent uploader withdraws their own upload artifact (the register's cohort-restriction-v1 nonparent-required-uploader-basis-loss case); engineering builds and registers it and this row is removed.",
-      "closedBy": "owner",
-      "evidence": [
-        {
-          "file": "supabase/migrations/20260930232000_embryo_parent_withdrawal.sql",
-          "literal": "raise exception using errcode = '42501', message = 'not a disposition authority';"
-        },
-        {
-          "file": "src/lib/embryos/routes.ts",
-          "literal": "uploadSituation: z.literal(\"with-genetic-parents-permission\"),"
-        }
-      ]
-    }
-  ]
+  "consentWithdrawalNotRegisteredNote": "2026-11-19 (G8.5, owner decision \"the register names where each kind of consent is withdrawn\"). The decision says any kind that turns out to have no way to be withdrawn comes back to the owner and the amendment does not paper over it. api.consent-revoke's policy.withdrawalRoutes.cases names the routes that withdraw all eleven dispositionCases kinds (donor attribution as a consent that cannot be given yet; self-upload-class-consent since the owner decision of 2026-11-19, \"Withdrawing consent for a person's own DNA file deletes the files and all made from them\"; other-adult-uploader-consent.upload-other-adult since the owner decision of 2026-11-19, \"An uploader's withdrawal for another adult's file deletes it, unless that adult holds the record themselves\", for a record whose adult holds no account of their own on it, the own-account branch waiting on the owner; and embryo-nonparent-uploader-own-upload-artifact since the owner decision of 2026-11-19, \"A non-parent uploader's withdrawal for an embryo upload stops analysis and deletes, as they signed\"). No row remains: each kind that had no way to be withdrawn short of deleting the whole record or the account now has one. scripts/route-register-correspondence.test.ts compares the kinds the register names with these rows in both directions, so a kind gaining a registered route fails until its row is removed. Listing a kind records it; it does not bless it.",
+  "consentWithdrawalNotRegistered": []
 }

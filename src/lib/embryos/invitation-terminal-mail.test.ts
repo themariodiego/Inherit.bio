@@ -113,3 +113,19 @@ describe("canonical invitation terminal delivery", () => {
       expect.objectContaining({ p_success: true, p_provider_message_hmac: "a".repeat(64) })]);
   });
 });
+
+// 20261119160000 (owner decision of 19 November 2026): the notice to another
+// adult whose uploader withdrew is one more closed kind of the same queue,
+// sent to its sealed contact exactly as a refused invitation's is.
+describe("the uploader's withdrawal notice", () => {
+  it("is sent as its own closed kind to the decrypted contact, and an unknown kind is never sent", async () => {
+    const { admin } = fixture({ notice_kind: "upload-permission-withdrawn" });
+    await expect(drainInvitationTerminalMail(admin)).resolves.toEqual({ processed: 1, failed: 0 });
+    expect(mocks.submit).toHaveBeenCalledWith("recipient@example.test",
+      { id: "invitation-terminal-notice", payload: { kind: "upload-permission-withdrawn" } }, "original-key");
+    mocks.submit.mockClear();
+    const unknown = fixture({ notice_kind: "upload-permission-ended" });
+    await expect(drainInvitationTerminalMail(unknown.admin)).resolves.toEqual({ processed: 0, failed: 1 });
+    expect(mocks.submit).not.toHaveBeenCalled();
+  });
+});

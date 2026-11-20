@@ -13968,7 +13968,7 @@
           "const": "unavailable"
         }
       },
-      "when": "a-database-read-or-door-the-bound-route-depends-on-errored-threw-or-answered-outside-its-closed-shape: api.browse-region's-variant-read-errored; the-own-Copilot-case-of-api.consent-revoke-threw; api.future-person-claim-document-session's-door-failed-with-a-code-other-than-42501-23505-or-22023-or-answered-a-session-it-cannot-read; api.appeal-document-session's-door-failed-with-a-code-other-than-42501-23505-or-22023-answered-neither-a-capacity-limit-nor-a-matching-open-session-threw-or-left-its-intake-runtime-holding-cleanup-or-unsettled-work",
+      "when": "a-database-read-or-door-the-bound-route-depends-on-errored-threw-or-answered-outside-its-closed-shape: api.browse-region's-variant-read-errored; the-own-Copilot-case-of-api.consent-revoke-threw; api.future-person-claim-document-session's-door-failed-with-a-code-other-than-42501-23505-or-22023-or-answered-a-session-it-cannot-read; api.appeal-document-session's-door-failed-with-a-code-other-than-42501-23505-or-22023-answered-neither-a-capacity-limit-nor-a-matching-open-session-threw-or-left-its-intake-runtime-holding-cleanup-or-unsettled-work; (registered-2026-11-19-owner-decision-a-non-parent-uploader's-withdrawal-for-an-embryo-upload-stops-analysis-and-deletes-as-they-signed) the-non-parent-uploader's-embryo-upload-signature-case-of-api.consent-revoke-whose-door-withdraw_embryo_uploader_consent_v1-failed-with-a-code-other-than-42501-or-55000-or-a-nonce-refusal",
       "detail": "the-database's-own-message-never-leaves-the-server; the-answer-does-not-say-whether-a-write-committed",
       "unknownFieldsRecursively": "forbidden"
     },
@@ -18468,7 +18468,8 @@
               "owning-account"
             ],
             "scope": "route-subject-only",
-            "dispositionContract": "revocation-and-purge-v1"
+            "dispositionContract": "revocation-and-purge-v1",
+            "withdrawal": "registered-2026-11-19-owner-decision-an-uploader's-withdrawal-for-another-adult's-file-deletes-it-unless-that-adult-holds-the-record-themselves: the-owning-account's-request-is-the-withdrawal-of-its-other-adult-uploader-consent.upload-other-adult; the-route-sends-it-only-to-withdraw_other_adult_upload_v1, which-under-the-invitation-transition-lock-runs-delete_subject_v1's-unchanged-Path-B-delete-as-withdrawn-and-in-the-same-transaction-queues-one-upload-permission-withdrawn-terminal-notice-per-spent-nonce-to-the-adult's-own-sealed-contact-bound-to-the-request-they-accepted-unless-that-contact-is-barred-then-or-when-the-notice-is-sent; a-record-the-adult-holds-with-their-own-account-(subject_account_id-set)-is-refused-with-resource-not-found-v1-and-nothing-changes, and-delete_subject_v1-itself-refuses-the-owning-account-on-such-a-record, until-the-owner-decides-who-holds-it-after-the-uploader's-withdrawal; a-record-whose-notice-cannot-be-addressed-is-refused-whole; the-verified-subject-account's-own-delete-is-unchanged"
           },
           "embryo-transferred-unclaimed": {
             "actorRole": "one-exact-current-member-of-policyResolvers.embryo-basis-authority-v1.dispositionAuthorities-for-the-route-embryos-cohort",
@@ -19279,7 +19280,7 @@
       "requestContract": {
         "body": "forbidden",
         "requiredHeader": "X-Inherit-Operation-Nonce-from-the-consent-page",
-        "operationNonce": "the-directional-purpose-revocation-recorded-in-account_operation_nonces-before-the-writer-in-the-same-transaction-so-its-legal-audit-event-names-the-actor-G5.6-2026-10-23; since-2026-10-24-G8.5-the-cloud-model-provider-grant-and-the-own-Copilot-permission-record-it-the-same-way-revoke_cloud_model_consent_with_nonce_v1-and-revoke_own_copilot_with_nonce_v1"
+        "operationNonce": "the-directional-purpose-revocation-recorded-in-account_operation_nonces-before-the-writer-in-the-same-transaction-so-its-legal-audit-event-names-the-actor-G5.6-2026-10-23; since-2026-10-24-G8.5-the-cloud-model-provider-grant-and-the-own-Copilot-permission-record-it-the-same-way-revoke_cloud_model_consent_with_nonce_v1-and-revoke_own_copilot_with_nonce_v1; registered-2026-11-19-owner-decision-a-non-parent-uploader's-withdrawal-for-an-embryo-upload-stops-analysis-and-deletes-as-they-signed: the-non-parent-uploader's-consent.upload-embryo-signature-records-the-same-consent_revoke-nonce-minted-for-that-signature-the-same-way-withdraw_embryo_uploader_consent_v1"
       },
       "stateProfile": "endpoint",
       "policy": {
@@ -19303,7 +19304,7 @@
         },
         "withdrawalRoutes": {
           "registeredBy": "owner-decision-2026-11-19-G8.5-the-register-names-where-each-kind-of-consent-is-withdrawn",
-          "basis": "api.consent-revoke-itself-resolves-only-a-public.purpose_grants-row-or-a-public.consent_grants-row-and-answers-resource-not-found-v1-for-any-other-id; cases-names-for-each-dispositionCases-kind-the-routes-that-withdraw-it-today-and-the-database-door-each-of-those-routes-calls, and-a-kind-cases-does-not-name-has-no-registered-withdrawal-route-yet",
+          "basis": "api.consent-revoke-itself-resolves-only-a-public.purpose_grants-row-or-a-public.consent_grants-row-or-(registered-2026-11-19-owner-decision-a-non-parent-uploader's-withdrawal-for-an-embryo-upload-stops-analysis-and-deletes-as-they-signed)-a-public.consent_signatures-row-that-is-a-consent.upload-embryo-signature-of-purpose-embryo-upload-uploader-class, exactly-one-of-the-three-must-match, and-answers-resource-not-found-v1-for-any-other-id-including-every-other-signature; cases-names-for-each-dispositionCases-kind-the-routes-that-withdraw-it-today-and-the-database-door-each-of-those-routes-calls, and-a-kind-cases-does-not-name-has-no-registered-withdrawal-route-yet",
           "cases": {
             "analytic-purpose-grant-including-cohort-scoped-embryo.analysis": {
               "routes": [
@@ -19371,6 +19372,15 @@
               ],
               "how": "registered-2026-11-19-owner-decision-withdrawing-consent-for-a-person's-own-DNA-file-deletes-the-files-and-all-made-from-them: one-control-on-settings.consents-and-on-files.index-shown-only-while-the-account-holds-a-live-upload_class-consent-on-its-own-self-record leads-to-one-confirmation-that-names-what-is-deleted-and-what-is-kept-and-sends-api.subject-delete-for-that-record-with-the-page's-one-time-X-Inherit-Operation-Nonce-and-the-route's-X-Inherit-CSRF-token; the-route-sends-a-self-record-only-to-empty_self_subject_with_notice_v1, which-runs-delete_subject_v1's-unchanged-self-case-private.empty_self_subject_v1 (every-file-on-the-record, every-result-report-and-Copilot-conversation-made-from-them, the-sharing-permissions-family-links-and-other-accounts'-copies-built-on-them-end, every-consent-on-the-record-is-marked-withdrawn-and-kept, the-account-and-its-record-stay) and-queues-the-upload-consent-withdrawn-confirmation-email-to-the-account's-own-confirmed-address-in-the-same-transaction; a-later-upload-asks-for-consent.upload-self-again; api.file-delete-deletes-one-file-and-is-not-a-withdrawal"
             },
+            "other-adult-uploader-consent.upload-other-adult": {
+              "routes": [
+                "api.subject-delete"
+              ],
+              "doors": [
+                "withdraw_other_adult_upload_v1"
+              ],
+              "how": "registered-2026-11-19-owner-decision-an-uploader's-withdrawal-for-another-adult's-file-deletes-it-unless-that-adult-holds-the-record-themselves: one-control-on-the-uploader's-card-for-that-person-on-files.upload, shown-only-while-the-uploader-holds-a-live-upload_class-consent-on-a-confirmed-active-Path-B-record, says-from-other_adult_withdrawal_readiness_v1-which-outcome-applies-to-that-record, and-for-a-record-whose-adult-holds-no-account-of-their-own-on-it-leads-to-one-confirmation-that-sends-api.subject-delete-for-that-record-with-the-page's-one-time-X-Inherit-Operation-Nonce-and-the-route's-X-Inherit-CSRF-token; the-route-sends-the-owning-account's-request-only-to-withdraw_other_adult_upload_v1, which-runs-delete_subject_v1's-unchanged-Path-B-delete-as-withdrawn (every-file-the-uploader-added-ends-confirmed-or-not, the-record-is-purged, its-contact-shredded, every-upload_class-consent-on-it-marked-withdrawn-and-kept, no-subject-controlled-bar) and-in-the-same-transaction-queues-one-upload-permission-withdrawn-terminal-notice-to-the-adult's-sealed-contact-unless-barred; a-record-the-adult-holds-with-their-own-account-is-not-withdrawn-here-yet: the-door-and-delete_subject_v1-refuse-the-uploader-on-it-and-the-card-says-so, because-who-holds-the-record-after-the-uploader's-withdrawal-is-not-decided; the-adult's-own-delete-everything-about-me-through-api.withdraw-or-api.subject-delete-also-marks-this-consent-withdrawn, as-before"
+            },
             "adult-data-subject-own-consent.subject-adult": {
               "routes": [
                 "api.withdraw",
@@ -19381,6 +19391,15 @@
                 "delete_subject_v1"
               ],
               "how": "for-a-path-b-subject-api.withdraw-under-its-adult-upload-revision-rights-session-with-operation-delete-ends-the-subject-through-delete_path_b_subject_v1-and-api.subject-delete-by-the-subject's-own-bound-account-ends-it-through-delete_path_b_subject_for_route_v1-with-the-subject-controlled-contact-bar; for-a-path-a-record-that-holds-no-file-api.subject-delete-by-its-own-account-ends-it-through-purge_path_a_subject_v1"
+            },
+            "embryo-nonparent-uploader-own-upload-artifact": {
+              "routes": [
+                "api.consent-revoke"
+              ],
+              "doors": [
+                "withdraw_embryo_uploader_consent_v1"
+              ],
+              "how": "registered-2026-11-19-owner-decision-a-non-parent-uploader's-withdrawal-for-an-embryo-upload-stops-analysis-and-deletes-as-they-signed: api.consent-revoke-resolves-the-uploader's-own-consent.upload-embryo-signature-of-purpose-embryo-upload-uploader-class, and-one-control-for-the-account-that-signed-it-as-the-cohort's-or-draft's-non-parent-uploader, on-the-cohort's-card-on-embryos.index-after-finalisation-and-on-embryos.upload-before-it, leads-to-one-confirmation-that-sends-it-with-the-page's-one-time-consent_revoke-X-Inherit-Operation-Nonce-for-that-signature-and-the-route's-X-Inherit-CSRF-token; withdraw_embryo_uploader_consent_v1-records-the-nonce-and-the-legal-audit-event-embryo.upload-consent.withdrawn, then-after-finalisation-runs-private.restrict_embryo_cohort_core_v1-under-cohort-restriction-v1.actorCases.nonparent-required-uploader-basis-loss (bound-to-this-route-alone, the-cohort's-own-current-class-D-non-parent-uploader-principal-in-its-own-withdrawal-transaction, outside-every-participant-set; analysis-stops, derived-rows-and-source-files-are-deleted-as-a-withdrawal, Record-Keys-and-permissions-end, every-current-notice-recipient-is-told) and-before-it-ends-the-draft's-pending-invitations-without-a-notice, cancels-the-draft-and-queues-it-on-the-refused-invitation-draft-purge-that-deletes-its-evidence-objects-signatures-attestations-invitations-contacts-and-draft-principals; neither-gives-the-uploader-a-parent-role-disposition-choice-claim-right-or-say-over-any-other-cohort, and-the-answer-is-lifecycle-accepted-v1"
             },
             "consent.embryo-donor-attribution-by-the-current-donor-subject-principal": {
               "routes": [],

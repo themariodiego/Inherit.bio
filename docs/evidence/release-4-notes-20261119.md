@@ -298,3 +298,129 @@ So the migration and this code can go in either order once follow-up 2's batch 1
 ## Rollback
 
 Dropping `public.consume_session_csrf_v2(text,text,text,timestamptz,uuid,uuid,text,uuid)` returns the database to `20261119110000`'s state; the code of this stage then falls back to v1 as above. The spent hashes it recorded stay in `private.session_csrf_token_uses` and expire on their own.
+
+# Release notes: `20261119160000_other_adult_upload_consent_withdrawal.sql`
+
+Local work only. Nothing here was run against production or any hosted database. Owner decision of 19 November 2026, "An uploader's withdrawal for another adult's file deletes it, unless that adult holds the record themselves" (`docs/protocol/decisions.md`); design section 2 of `docs/evidence/consent-withdrawal-design-20261119/design.md`. Path B is TEST-LOCAL: no hosted database holds a Path B record the control could act on.
+
+## What it changes
+
+- `private.invitation_terminal_notices_notice_kind_check` gains `'upload-permission-withdrawn'` (drop and add, validated in place; the three existing kinds unchanged).
+- Two bodies patched in place, md5-guarded with their reviewed ACL, one anchor each, successor md5 and unchanged ACL asserted:
+  - `public.delete_subject_v1` (`2f2c32f48e4a223617ba6d31f493a92c` → `e994afb4410ad008aa959efc65726895`, `{postgres=X/postgres,service_role=X/postgres}`): its Path B branch refuses the owning uploader (42501 `not_found`) on a record whose person holds it with their own account. The self branch that 20261119150000 pins, the person's own delete, and the transferred and Path A branches are untouched.
+  - `private.invitation_notice_recipient_current_v1` (`261f743d84e3615d4ae56ab2e4e26b9a` → `e0728613189f2cbdfa05029c962767a5`, `{postgres=X/postgres}`): a notice of the new kind is current only while the accepted request's contact HMAC is not under the global refusal bar, so the terminal mail worker's claim and authorization drop it once barred.
+- Two new functions:
+  - `public.withdraw_other_adult_upload_v1(uuid,uuid,uuid,text,timestamptz)`, `{postgres=X/postgres,service_role=X/postgres}`: under the invitation-transition lock, refuses anything but a confirmed, active Path B record the caller owns and has not given away (42501 `not_found`), a record whose person holds it with their own account (42501 `other_adult_withdrawal_account_held`) and one whose notice cannot be addressed (55000 `withdrawal_notice_unavailable`); then runs `delete_subject_v1` unchanged (the uploader's Path B delete as `withdrawn`) and queues one `upload-permission-withdrawn` terminal notice, keyed by the spent nonce, to the person's contact ciphertext, bound to the request they accepted, for 7 days, unless that contact is barred.
+  - `public.other_adult_withdrawal_readiness_v1(uuid,uuid)`, stable, `{postgres=X/postgres,service_role=X/postgres}`: `ready`, `account-held` or `unsupported`, from the door's predicates.
+- Pinned, not changed: `private.delete_path_b_subject_for_route_v1` (`f30283fb54afaf87da2462c9a469c85f`), `private.enqueue_invitation_terminal_notice_v1` (`689008df933e852391c20f6e8b3afd4a`) and its trigger, `private.invitation_contact_barred_v1` (`78c6413be21d2c662e515764a39748b3`).
+- Fingerprint effect: 2 more rows in `functions`, 2 `def_md5` values change, 1 constraint md5 in `tables` changes.
+
+## Which releases must come first
+
+1. Release 1 (PR 324): `20261016181000`, `20261016220000` and `20261016221000` make `delete_subject_v1` the body pinned above; without them the predecessor block refuses (55000, `other adult upload withdrawal prerequisite differs`).
+2. Release 2's `20261023120000` (the subject-delete audit event names the person) and release 3's `20261024220000` (session CSRF tokens: the route is wrapped by `withAccountCsrf`).
+3. `20261119150000` in this release (the route's self door; this migration does not touch its branch).
+4. This migration.
+
+## Read-only pre-checks (one SELECT; the release session and its `search_path`)
+
+Stop unless every `must_be_*` holds.
+
+```sql
+select
+ (select count(distinct x.signature) from pg_proc p join (values
+   ('public.delete_subject_v1(uuid,uuid,uuid,text,timestamptz)','2f2c32f48e4a223617ba6d31f493a92c','{postgres=X/postgres,service_role=X/postgres}'),
+   ('private.delete_path_b_subject_for_route_v1(uuid,text)','f30283fb54afaf87da2462c9a469c85f','{postgres=X/postgres}'),
+   ('private.invitation_notice_recipient_current_v1(uuid)','261f743d84e3615d4ae56ab2e4e26b9a','{postgres=X/postgres}'),
+   ('private.enqueue_invitation_terminal_notice_v1()','689008df933e852391c20f6e8b3afd4a','{postgres=X/postgres}')
+  ) as x(signature,body,acl) on p.oid=to_regprocedure(x.signature) and md5(pg_get_functiondef(p.oid))=x.body
+   and p.proacl::text=x.acl) as must_be_4_bodies_as_reviewed,
+ (select count(*) from pg_proc p where p.oid=to_regprocedure('private.invitation_contact_barred_v1(text)')
+   and md5(pg_get_functiondef(p.oid))='78c6413be21d2c662e515764a39748b3') as must_be_1_bar_as_reviewed,
+ (select count(*) from pg_trigger t where t.tgrelid='private.invitation_terminal_notices'::regclass
+   and t.tgname='enqueue_invitation_terminal_notice' and t.tgenabled='O') as must_be_1_notice_trigger,
+ (select md5(pg_get_constraintdef(c.oid)) from pg_constraint c where c.conrelid='private.invitation_terminal_notices'::regclass
+   and c.conname='invitation_terminal_notices_notice_kind_check' and c.convalidated)
+   ='9a5c55221b44fc6b6b80079b9460b790' as must_be_true_notice_kind_check_as_reviewed,
+ (select count(*) from pg_proc where proname in ('withdraw_other_adult_upload_v1','other_adult_withdrawal_readiness_v1'))
+   as must_be_zero_new_functions_present,
+ (select count(*) from public.subjects where subject_class='other_adult' and lifecycle='active' and ownership_transferred_at is null
+   and owner_account_id is not null and subject_account_id is not null) as context_account_held_path_b_records,
+ (select count(*) from private.invitation_terminal_notices) as context_terminal_notices,
+ current_user as context_current_user,
+ current_setting('search_path') as context_search_path;
+```
+
+Locally, in the predecessor state rebuilt inside a rolled-back transaction, every `must_be_*` held; the md5s are also recomputed from source by `scripts/other-adult-upload-consent-withdrawal-migration.test.ts`, the door's through its two earlier patches. No pinned header prints a `public` type, so the md5s do not depend on `search_path`. Production holds none of release 1's functions yet, so the pins must be compared with release 1's read-back before this release's kit is built (D-136: a comment-stripped body is reviewed, not loosened).
+
+## Locks and duration
+
+The `alter table` takes ACCESS EXCLUSIVE on `private.invitation_terminal_notices` for the drop and the validating add (a scan of its rows; it holds only terminal notices, each at most 30 days old). Everything else is catalog work. Measured locally inside a rolled-back transaction that first rebuilt the predecessor state: 8.4 ms.
+
+## Deployed code between apply and deploy
+
+- **Migration applied, code not yet deployed.** Nothing deployed calls the two functions. No page sends `DELETE /api/subjects/[id]` for an other-adult record; the deployed route still sends one to `delete_subject_v1`, which now refuses the uploader on a record its person holds with their own account (the decision's branch) and otherwise deletes it as before, without the notice. Only a hand-made request reaches it.
+- **Code deployed, migration not yet applied.** The upload page's card calls `other_adult_withdrawal_readiness_v1`; PostgREST answers that the function does not exist, and the card then says "You cannot withdraw here right now. Please try again." with no button. A hand-made request reaches the route, which sends the uploader's request only to `withdraw_other_adult_upload_v1`; the missing function's error is not one of the route's refusal codes, so it answers 503 `unavailable` and nothing is deleted. The route never falls back to `delete_subject_v1` for the uploader.
+- **Before release 1.** As above: the read is missing, so the card offers nothing.
+
+## What a person sees
+
+Only in test mode: on `/files/upload`, the uploader's card for a confirmed person gains a "Your permission" section. For a person with no account of their own on the record, "Withdraw my permission" opens a confirmation that names what is deleted and that the person is told; after it the card shows only the receipt, and the person receives the `upload-permission-withdrawn` notice (subject "An invitation on Inherit has ended"). For a person who holds the record with their own account, the section says the permission cannot be withdrawn here yet and offers no button. The wording is a draft for the owner.
+
+# Release notes: `20261119170000_embryo_uploader_consent_withdrawal.sql`
+
+Local work only. Nothing here was run against production or any hosted database. Owner decision of 19 November 2026, "A non-parent uploader's withdrawal for an embryo upload stops analysis and deletes, as they signed" (`docs/protocol/decisions.md`); design section 3 of the same design file. Embryo ingest is closed in production (`EMBRYO_INGEST_AVAILABLE = false`; every draft and finalisation door is TEST-LOCAL), so no hosted database holds a non-parent upload.
+
+## What it changes
+
+- Two bodies patched in place under the same convention:
+  - `private.restrict_embryo_cohort_core_v1` (`f2e6cb1f392308d4c834f7eef50d7abd` → `7b821beb4dffe9d039331941b4a8d8f2` → `ed617144a6aca603f29be372bd9bb484` → `006bfca91b8c66060681371e61333494`, `{postgres=X/postgres}`): the route list gains `api.consent-revoke`; on that route alone the actor must satisfy `private.embryo_uploader_basis_loss_v1` (refused 42501 `not the non-parent uploader`); on `api.cohort-restrict` and `api.withdraw` a current disposition authority is still required; the uploader's withdrawal deletes the sources as a `withdrawal`. Nothing else of the restriction changes.
+  - `private.legal_audit_person_event_v1` (`56990e96581e5dc415222f44f09b5ac0` → `73bd0200b7e272bec503eab70499e877`, `{postgres=X/postgres}`): `('api.consent-revoke','embryo.upload-consent.withdrawn')` joins the person-caused events.
+- Three new functions:
+  - `private.embryo_uploader_basis_loss_v1(uuid,uuid)`, stable, `{postgres=X/postgres}`: the cohort's own current class-D non-parent uploader principal (the draft's `uploader_principal_id`, active, of the cohort owner's account), with its exact `consent.upload-embryo` uploader signature on the cohort's draft, in no participant set of the cohort, inside its own withdrawal (the transaction-local marker the door sets just before the core and the legal-audit actor its consumed nonce named).
+  - `public.withdraw_embryo_uploader_consent_v1(uuid,uuid,uuid,text,timestamptz)`, `{postgres=X/postgres,service_role=X/postgres}`, given the uploader's own signature. After finalisation it locks the cohort, checks it, spends the `consent_revoke` nonce, writes `embryo.upload-consent.withdrawn` (`{"phase":"cohort","actor_case":"nonparent-required-uploader-basis-loss"}`) and runs the restriction under that actor case (its own `embryo.cohort.restricted` event, now on `api.consent-revoke`, and its `cohort-restriction-notice` to every notice recipient). Before it, it takes the invitation-transition lock, locks the draft, refuses one finalised meanwhile (55000 `withdrawal_phase_changed`), spends the nonce, ends every pending invitation of the draft without a notice, cancels the draft and queues it through `private.queue_refused_invitation_draft_v1` on the draft purge the retention job already drains, and writes the event with `"phase":"draft"`.
+  - `public.embryo_uploader_withdrawal_readiness_v1(uuid,uuid)`, stable, `{postgres=X/postgres,service_role=X/postgres}`: `cohort` or `draft`, else 42501.
+- Pinned, not changed: `private.queue_refused_invitation_draft_v1` (`54ab785feca9114bb097e5fbe1484dd9`), `private.consume_account_operation_nonce_v1` (`6869593d67ff37d93a6d4caea62f01c3`).
+- No table, column, constraint, participant set or grant on an existing object changes. Fingerprint effect: 3 more rows in `functions`, 2 `def_md5` values change.
+- `supabase/tests/legal_audit_attribution_completeness.sql` pinned the person-event list at its 20261023120000 successor; it now pins this migration's successor.
+
+## Which releases must come first
+
+1. The embryo restriction core (`20260930232000`) and the refusal draft purge (`20260906051253`): their hosted state is not recorded in this repository; the pre-check below reads them.
+2. Release 2's `20261023120000`, the nonce recorder's last patch (`20261024110000`) and release 3's `20261024220000` (session CSRF tokens; `api.consent-revoke` is wrapped by `withAccountCsrf`).
+3. `20261119160000` (this release), then this migration.
+
+## Read-only pre-checks (one SELECT; the release session and its `search_path`)
+
+```sql
+select
+ (select count(distinct x.signature) from pg_proc p join (values
+   ('private.restrict_embryo_cohort_core_v1(uuid,uuid,text)','f2e6cb1f392308d4c834f7eef50d7abd','{postgres=X/postgres}'),
+   ('private.legal_audit_person_event_v1(text,text)','56990e96581e5dc415222f44f09b5ac0','{postgres=X/postgres}'),
+   ('private.queue_refused_invitation_draft_v1(text,uuid,timestamptz,bigint)','54ab785feca9114bb097e5fbe1484dd9','{postgres=X/postgres}'),
+   ('private.consume_account_operation_nonce_v1(uuid,uuid,text,text,timestamptz)','6869593d67ff37d93a6d4caea62f01c3','{postgres=X/postgres}')
+  ) as x(signature,body,acl) on p.oid=to_regprocedure(x.signature) and md5(pg_get_functiondef(p.oid))=x.body
+   and p.proacl::text=x.acl) as must_be_4_bodies_as_reviewed,
+ (select count(*) from pg_proc where proname in ('embryo_uploader_basis_loss_v1','withdraw_embryo_uploader_consent_v1',
+   'embryo_uploader_withdrawal_readiness_v1')) as must_be_zero_new_functions_present,
+ (select count(*) from public.embryo_cohorts where upload_class='embryo_third_party') as context_third_party_cohorts,
+ (select count(*) from public.embryo_cohort_drafts where upload_class='embryo_third_party'
+   and state in ('draft','evidence_pending','ready')) as context_open_third_party_drafts,
+ current_user as context_current_user,
+ current_setting('search_path') as context_search_path;
+```
+
+Locally every `must_be_*` held in the rebuilt predecessor state; the core's and the draft purge's md5s are recomputed from their source, and the other two read from the patch tables that made them, by `scripts/embryo-uploader-consent-withdrawal-migration.test.ts`. Both context counts are expected to be 0 in production.
+
+## Locks and duration
+
+Catalog work only: no relation lock beyond ACCESS SHARE (checked). Measured locally inside a rolled-back transaction that first rebuilt the predecessor state: 10.8 ms.
+
+## Deployed code between apply and deploy
+
+- **Migration applied, code not yet deployed.** Nothing deployed calls the three functions; the deployed `api.consent-revoke` resolves no signature and answers 404 for one. The core's two existing routes behave as before.
+- **Code deployed, migration not yet applied.** `/embryos` and `/embryos/upload` call `embryo_uploader_withdrawal_readiness_v1`; PostgREST answers that it does not exist, and the control says "You cannot withdraw here right now. Please try again." with no button. A hand-made request reaches the route, which resolves the signature and calls `withdraw_embryo_uploader_consent_v1`; the missing function's error is neither 42501 nor 55000 nor a nonce refusal, so the route answers 503 `unavailable` (the registered `service-unavailable-v1`) and nothing is written.
+
+## What a person sees
+
+Only in test mode: the uploader who added embryo files with the genetic parents' permission sees "Your upload permission" on that cohort's card on `/embryos` and, before finalisation, on `/embryos/upload` once it has signed. The confirmation names what stops and is deleted, that the parents are told (after finalisation), and that it gives no parent role. A genetic parent never sees the control. The wording is a draft for the owner.

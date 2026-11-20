@@ -17,8 +17,11 @@ import {
   type OtherAdultConsentView,
   type OtherAdultTarget,
   type OtherAdultTargetState,
+  type OtherAdultWithdrawalReadiness,
+  type OtherAdultWithdrawalView,
   type SubjectHeldFiles,
 } from "./other-adult-upload";
+import { mintSubjectOperationNonce } from "@/lib/subject-endpoints/operation-nonce";
 import { normalizeContact } from "@/lib/embryos/routes";
 import { createClient } from "@/lib/supabase/server";
 import { currentOwnUploadAccount } from "./own-upload-context";
@@ -226,11 +229,42 @@ export async function prepareOtherAdultUploads(): Promise<OtherAdultUploads | nu
     const operationToken = target.state === "awaiting-request"
       ? mintPathBOperation(actor.accountId, actor.sessionId, "request-send", target.subjectId) : undefined;
     const needsSignature = !target.signed && (target.state === "awaiting-request" || target.state === "ready");
-    if (!needsSignature) { result.push({ ...target, operationToken }); continue; }
+    if (!needsSignature) {
+      const withdrawal = await prepareOtherAdultWithdrawal(admin, actor, target);
+      result.push(withdrawal ? { ...target, operationToken, withdrawal } : { ...target, operationToken });
+      continue;
+    }
     const presented = await presentUploaderArtifact(admin, actor, artifact, target.subjectId);
     result.push(presented.blockedBy ? { ...target, blockedBy: presented.blockedBy } : { ...target, operationToken, ...presented });
   }
   return { draftToken: mintPathBDraftNonce(actor.accountId, actor.sessionId), targets: result };
+}
+
+const WITHDRAWAL_READINESS = new Set<OtherAdultWithdrawalReadiness>(["ready", "account-held", "unsupported"]);
+
+/**
+ * The withdrawal of the uploader's permission for this person, as the card
+ * offers it (owner decision of 19 November 2026, "An uploader's withdrawal
+ * for another adult's file deletes it, unless that adult holds the record
+ * themselves"). Only for a confirmed record the uploader still holds a live
+ * permission on; the database's read (`other_adult_withdrawal_readiness_v1`)
+ * says whether the request can run, and only then is the one-time
+ * api.subject-delete code minted. Brief X1.5: this runs while the page
+ * renders, so it writes nothing. A record the read does not find gets no
+ * control; any other failure, as before the migration is hosted, says it is
+ * not available and offers no request.
+ */
+export async function prepareOtherAdultWithdrawal(admin: Admin, actor: { accountId: string; sessionId: string },
+  target: OtherAdultTargetState, now = Date.now()): Promise<OtherAdultWithdrawalView | undefined> {
+  if (!target.signed || (target.state !== "ready" && target.state !== "pending")) return undefined;
+  const { data, error } = await heldUploadRpc(admin, "other_adult_withdrawal_readiness_v1", {
+    p_account_id: actor.accountId, p_subject_id: target.subjectId,
+  });
+  if (error?.code === "42501") return undefined;
+  const readiness: OtherAdultWithdrawalReadiness = !error && typeof data === "string"
+    && WITHDRAWAL_READINESS.has(data as OtherAdultWithdrawalReadiness) ? data as OtherAdultWithdrawalReadiness : "unavailable";
+  return { readiness, nonce: readiness === "ready" ? mintSubjectOperationNonce({ accountId: actor.accountId,
+    sessionId: actor.sessionId, operation: "subject_delete", subjectId: target.subjectId }, now) : null };
 }
 
 type UploaderArtifact = Omit<OtherAdultConsentView, "token"> & { bodySha256: string };

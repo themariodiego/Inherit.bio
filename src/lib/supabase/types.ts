@@ -9168,6 +9168,42 @@ export type Database = {
         }
         Returns: string
       }
+      // 20261119160000_other_adult_upload_consent_withdrawal.sql.
+      withdraw_other_adult_upload_v1: {
+        Args: {
+          p_account_id: string
+          p_nonce_expires_at: string
+          p_nonce_hash: string
+          p_session_id: string
+          p_subject_id: string
+        }
+        Returns: Json
+      }
+      other_adult_withdrawal_readiness_v1: {
+        Args: {
+          p_account_id: string
+          p_subject_id: string
+        }
+        Returns: string
+      }
+      // 20261119170000_embryo_uploader_consent_withdrawal.sql.
+      withdraw_embryo_uploader_consent_v1: {
+        Args: {
+          p_account_id: string
+          p_nonce_expires_at: string
+          p_nonce_hash: string
+          p_session_id: string
+          p_signature_id: string
+        }
+        Returns: Json
+      }
+      embryo_uploader_withdrawal_readiness_v1: {
+        Args: {
+          p_account_id: string
+          p_signature_id: string
+        }
+        Returns: string
+      }
       transfer_subject_v1: {
         Args: {
           p_account_id: string

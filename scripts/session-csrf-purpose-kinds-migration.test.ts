@@ -61,10 +61,20 @@ function liveDefinition(): { file: string; text: string } {
 const pinnedLiterals = (text: string) => [...text.matchAll(/'([0-9a-f]{32}) (\{[^}]+\})'/g)].map(match => `${match[1]} ${match[2]}`);
 
 describe("the release it belongs to", () => {
-  it("is a guarded production release, the newest migration, after the two whose objects it pins", () => {
+  it("is a guarded production release, after the two whose objects it pins, and nothing later touches what it adds or pins", () => {
     expect(migration.startsWith("-- =====================================================================\n"
       + "-- PRODUCTION RELEASE: GUARDED.")).toBe(true);
-    expect(files.at(-1)).toBe(NAME);
+    // 2026-11-20: later migrations of release 4 now follow it (D-139 and the
+    // three consent withdrawals), so it is no longer the newest file. What
+    // being the newest guaranteed is that nothing later undoes it: no later
+    // migration names either consume function or the table of spent tokens.
+    expect(files).toContain(NAME);
+    for (const later of files.filter(file => file > NAME)) {
+      const sql = read(`supabase/migrations/${later}`);
+      for (const touched of ["consume_session_csrf_v1", "consume_session_csrf_v2", "session_csrf_token_uses"]) {
+        expect(sql.includes(touched), `${later}: ${touched}`).toBe(false);
+      }
+    }
     expect(NAME > "20261119110000_dropped_bucket_literals_and_guard.sql").toBe(true);
     expect(NAME > "20261024220000_session_csrf_tokens.sql").toBe(true);
     expect(NAME > liveDefinition().file).toBe(true);

@@ -769,13 +769,24 @@ describe("every client request sends what its register entry declares (G8.5)", (
     // 2026-11-19 (G8.5's migration stage): src/lib/security/opened-session-csrf.ts
     // reads the first tokens an opening answer hands over, in the browser: one
     // more client module with no request of its own, 229 modules.
-    expect(client.modules).toHaveLength(229);
-    expect(client.modules.filter(file => /^\s*["']use client["']/u.test(readFileSync(file, "utf8")))).toHaveLength(97);
-    expect(client.calls).toHaveLength(104);
-    expect(new Set(client.calls.map(request => `${request.file}:${request.line}`)).size).toBe(90);
+    // 2026-11-19 (owner decisions "An uploader's withdrawal for another
+    // adult's file deletes it, unless that adult holds the record themselves"
+    // and "A non-parent uploader's withdrawal for an embryo upload stops
+    // analysis and deletes, as they signed"): two "use client" controls, each
+    // importing its copy module, and the embryo one a browser half that holds
+    // its one fetch (api.consent-revoke, no form's); the other-adult control
+    // sends the own-file withdrawal's api.subject-delete request through the
+    // same function, so it adds no fetch: five more modules (two "use client"),
+    // one more request from one more fetch call, one more made by no form. With
+    // the intent link and the opened-session reader that is 234 modules (99
+    // "use client"), 105 requests from 91 fetch calls, 76 made by no form.
+    expect(client.modules).toHaveLength(234);
+    expect(client.modules.filter(file => /^\s*["']use client["']/u.test(readFileSync(file, "utf8")))).toHaveLength(99);
+    expect(client.calls).toHaveLength(105);
+    expect(new Set(client.calls.map(request => `${request.file}:${request.line}`)).size).toBe(91);
     expect(client.calls.filter(request => request.via === "ai-sdk-default-chat-transport")).toHaveLength(0);
     expect(new Set(actual.requests.map(request => `${request.file}:${request.line}`)).size).toBe(25);
-    expect(client.unformed).toHaveLength(75);
+    expect(client.unformed).toHaveLength(76);
     // Every request a form makes is one of the client's, read once.
     const calls = new Set(client.calls.map(request => `${request.file}:${request.line}`));
     expect(actual.requests.filter(request => !calls.has(`${request.file}:${request.line}`))).toEqual([]);

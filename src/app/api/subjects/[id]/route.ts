@@ -32,7 +32,15 @@ import { withAccountCsrf } from "@/lib/security/session-csrf";
  *     confirmed address, or whose address changed meanwhile, is refused with
  *     the same 404, and nothing is deleted.
  *   - adult: the owning account or the verified subject account deletes an
- *     other-adult record (revocation-and-purge-v1).
+ *     other-adult record (revocation-and-purge-v1). Since the owner decision
+ *     of 19 November 2026 ("An uploader's withdrawal for another adult's
+ *     file deletes it, unless that adult holds the record themselves") the
+ *     owning uploader's request is the withdrawal of its consent for that
+ *     adult's file: it goes only to `withdraw_other_adult_upload_v1`, which
+ *     runs `delete_subject_v1` unchanged and queues a short notice to the
+ *     adult in the same transaction (unless their contact is barred), and
+ *     refuses, with the same 404, a record the adult holds with their own
+ *     account. The adult's own delete still goes to `delete_subject_v1`.
  *   - embryo: a current parent's authority is locked and rechecked first. A
  *     transferred, unclaimed record is purged alone; any other record
  *     restricts its whole cohort, as `api.cohort-restrict` does. A claimed
@@ -86,11 +94,14 @@ async function handleDelete(request: Request, context: { params: Promise<{ id: s
     p_nonce_hash: nonce.nonceHash,
     p_nonce_expires_at: new Date(nonce.expiresAt).toISOString(),
   };
-  // The class never changes and chooses only the door: each door rechecks
-  // the caller's authority over the record itself, so this read grants
-  // nothing. A self record never reaches delete_subject_v1 directly from
-  // here, so its emptying always carries the confirmation email.
-  const target = await admin.from("subjects").select("subject_class").eq("id", id).maybeSingle();
+  // The class and the holders choose only the door: each door rechecks the
+  // caller's authority over the record itself, under its own locks, so this
+  // read grants nothing. A self record never reaches delete_subject_v1
+  // directly from here, so its emptying always carries the confirmation
+  // email; nor does the uploader's own record of another adult, so its
+  // delete always carries the notice to that adult.
+  const target = await admin.from("subjects").select("subject_class, owner_account_id, subject_account_id")
+    .eq("id", id).maybeSingle();
   if (target.error) return unavailable();
   let answer;
   if (target.data?.subject_class === "self") {
@@ -102,6 +113,12 @@ async function handleDelete(request: Request, context: { params: Promise<{ id: s
     }
     if (!notice) return notFound();
     answer = await admin.rpc("empty_self_subject_with_notice_v1", { ...args, p_notice: notice });
+  } else if (target.data?.subject_class === "other_adult" && target.data.owner_account_id === account.user.id
+    && target.data.subject_account_id !== account.user.id) {
+    // The uploader's withdrawal for another adult's file (owner decision of
+    // 19 November 2026): the person's notice goes in the same transaction,
+    // and a record the person holds with their own account is refused.
+    answer = await admin.rpc("withdraw_other_adult_upload_v1", args);
   } else {
     answer = await admin.rpc("delete_subject_v1", args);
   }

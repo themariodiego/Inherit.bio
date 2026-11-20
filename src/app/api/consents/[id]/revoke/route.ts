@@ -35,6 +35,16 @@ import { originDenied } from "@/lib/embryos/guards";
  * (`revokeOwnCopilotConsent`), each recording the nonce /settings/consents or
  * /settings/copilot rendered before its unchanged writer runs
  * (20261025200000_consent_revoke_provider_nonce.sql).
+ *
+ * Since 19 November 2026 (owner decision "A non-parent uploader's withdrawal
+ * for an embryo upload stops analysis and deletes, as they signed") the id
+ * may also name a non-parent uploader's own consent.upload-embryo signature.
+ * Its one-time nonce is the same consent_revoke operation, minted by
+ * /embryos or /embryos/upload for this account, session and signature;
+ * `withdraw_embryo_uploader_consent_v1` records it and either restricts the
+ * finalised cohort under the register's actor case
+ * nonparent-required-uploader-basis-loss or deletes the open draft. The
+ * answer is lifecycle-accepted-v1; every refusal is the opaque 404.
  */
 const NO_STORE = { "Cache-Control": "private, no-store" };
 /** `authenticated-api-v1.unauthenticated`. */
@@ -63,14 +73,51 @@ async function handlePost(
   if (forbidden) return forbidden;
 
   const admin = createAdminClient();
-  const [{ data: purposeGrant }, { data: cloudGrant }] = await Promise.all([
+  const [{ data: purposeGrant }, { data: cloudGrant }, { data: signature }] = await Promise.all([
     admin.from("purpose_grants").select("grant_id,target_id,copilot_recipient_revision").eq("grant_id", id).maybeSingle(),
     admin.from("consent_grants").select("id").eq("id", id).maybeSingle(),
+    // Since 19 November 2026, one signature-only consent too: a non-parent
+    // uploader's own consent.upload-embryo signature (owner decision "A
+    // non-parent uploader's withdrawal for an embryo upload stops analysis
+    // and deletes, as they signed"). No other signature is resolved here.
+    admin.from("consent_signatures").select("id,artifact_key,purpose").eq("id", id).maybeSingle(),
   ]);
-  // One id, one consent kind: an id that names both, or neither, is refused
-  // rather than resolved by order.
-  if (Boolean(purposeGrant) === Boolean(cloudGrant)) {
+  const uploaderSignature = signature && "artifact_key" in signature && signature.artifact_key === "consent.upload-embryo"
+    && "purpose" in signature && signature.purpose === "embryo-upload-uploader-class" ? signature : null;
+  // One id, one consent kind: an id that names more than one, or none, is
+  // refused rather than resolved by order.
+  if ([purposeGrant, cloudGrant, uploaderSignature].filter(Boolean).length !== 1) {
     return notFound();
+  }
+
+  if (uploaderSignature) {
+    const account = await getSensitiveAccountContext();
+    if (!account || account.user.id !== user.id) return unauthenticated();
+    const nonce = personOperationNonceFrom(request, { accountId: user.id, sessionId: account.sessionId,
+      operation: "consent_revoke", targetId: id });
+    if (!nonce) return NextResponse.json({ error: "invalid_request" }, { status: 400 });
+    // The door resolves the phase and the actor case itself: after
+    // finalisation the cohort's restriction under
+    // nonparent-required-uploader-basis-loss, before it the draft's deletion.
+    // Only the signer, as the cohort's own non-parent uploader, can run it.
+    const { error } = await admin.rpc("withdraw_embryo_uploader_consent_v1", {
+      p_account_id: user.id,
+      p_session_id: account.sessionId,
+      p_signature_id: id,
+      ...personOperationNonceArgs(nonce),
+    });
+    if (isOperationNonceRefusal(error)) return NextResponse.json({ error: "invalid_request" }, { status: 400 });
+    if (error) {
+      // A refusal the caller can cause wrote nothing and is the opaque 404;
+      // anything else (the door missing before its migration, an outage)
+      // cannot say whether anything committed.
+      return error.code === "42501" || error.code === "55000"
+        ? notFound()
+        : NextResponse.json({ error: "unavailable" }, { status: 503, headers: NO_STORE });
+    }
+    // The transaction has committed; the purge and the notices it queued
+    // complete asynchronously, which is lifecycle-accepted-v1.
+    return NextResponse.json({ status: "accepted" }, { status: 202, headers: NO_STORE });
   }
 
   if (purposeGrant && "copilot_recipient_revision" in purposeGrant && purposeGrant.copilot_recipient_revision != null

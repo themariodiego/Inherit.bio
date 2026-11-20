@@ -174,7 +174,7 @@ describe("DELETE /api/subjects/[id] for the account's own record: the withdrawal
     const response = await call({ nonce: code });
     expect(response.status).toBe(202);
     expect(await response.json()).toEqual({ status: "accepted" });
-    expect(mocks.reads).toEqual([["subjects", "subject_class", "id", SUBJECT]]);
+    expect(mocks.reads).toEqual([["subjects", "subject_class, owner_account_id, subject_account_id", "id", SUBJECT]]);
     expect(mocks.notice).toHaveBeenCalledWith(ACCOUNT);
     expect(mocks.rpc).toHaveBeenCalledTimes(1);
     expect(mocks.rpc).toHaveBeenCalledWith("empty_self_subject_with_notice_v1", {
@@ -236,5 +236,91 @@ describe("DELETE /api/subjects/[id] for the account's own record: the withdrawal
       expect(mocks.rpc.mock.calls.map(([name, args]) => [name, "p_notice" in args])).toEqual([["delete_subject_v1", false]]);
     }
     expect(mocks.notice).not.toHaveBeenCalled();
+  });
+});
+
+/**
+ * The uploader's withdrawal of its permission for another adult's file (owner
+ * decision of 19 November 2026, "An uploader's withdrawal for another adult's
+ * file deletes it, unless that adult holds the record themselves"). The
+ * owning uploader's request goes only to its own door, which runs
+ * delete_subject_v1 unchanged and queues the adult's notice in the same
+ * transaction, and refuses a record the adult holds with their own account
+ * (20261119160000). The adult's own delete still goes to delete_subject_v1.
+ */
+describe("DELETE /api/subjects/[id] for another adult's record the uploader owns: the withdrawal", () => {
+  const PERSON = "dddddddd-dddd-4ddd-8ddd-dddddddddddd";
+  beforeEach(() => {
+    mocks.subject.mockResolvedValue({ data: { subject_class: "other_adult", owner_account_id: ACCOUNT, subject_account_id: null },
+      error: null });
+    mocks.rpc.mockResolvedValue({ data: { case: "adult" }, error: null });
+  });
+
+  it("calls only the withdrawal door, with the code's hash and no address, and drains nothing", async () => {
+    const code = deleteCode();
+    const response = await call({ nonce: code });
+    expect(response.status).toBe(202);
+    expect(await response.json()).toEqual({ status: "accepted" });
+    expect(mocks.reads).toEqual([["subjects", "subject_class, owner_account_id, subject_account_id", "id", SUBJECT]]);
+    expect(mocks.rpc).toHaveBeenCalledTimes(1);
+    expect(mocks.rpc).toHaveBeenCalledWith("withdraw_other_adult_upload_v1", {
+      p_account_id: ACCOUNT, p_session_id: SESSION, p_subject_id: SUBJECT,
+      p_nonce_hash: hashOperationNonce(code), p_nonce_expires_at: new Date(Number(code.split(".")[0])).toISOString(),
+    });
+    expect(mocks.notice).not.toHaveBeenCalled();
+    expect(mocks.drain).not.toHaveBeenCalled();
+  });
+
+  it("never sends the uploader's request to delete_subject_v1, so no delete goes without the notice", async () => {
+    // A record the adult holds with their own account is still the door's to refuse.
+    mocks.subject.mockResolvedValue({ data: { subject_class: "other_adult", owner_account_id: ACCOUNT, subject_account_id: PERSON },
+      error: null });
+    mocks.rpc.mockResolvedValue({ data: null, error: { code: "42501", message: "other_adult_withdrawal_account_held" } });
+    const response = await call();
+    expect(response.status).toBe(404);
+    expect(await response.json()).toEqual({ error: "not_found" });
+    expect(mocks.rpc.mock.calls.map(([name]) => name)).toEqual(["withdraw_other_adult_upload_v1"]);
+  });
+
+  it("answers every database refusal of the withdrawal with the opaque 404", async () => {
+    for (const [code, message] of [["42501", "not_found"], ["42501", "other_adult_withdrawal_account_held"],
+      ["55000", "withdrawal_notice_unavailable"], ["55000", "other_adult_withdrawal_case_differs"],
+      ["22023", "invalid_operation_nonce"]] as const) {
+      mocks.rpc.mockResolvedValue({ data: null, error: { code, message } });
+      const response = await call();
+      expect(response.status, message).toBe(404);
+      expect(await response.json()).toEqual({ error: "not_found" });
+    }
+  });
+
+  it("answers 503 when the door is missing, before its migration, and never falls back to delete_subject_v1", async () => {
+    mocks.rpc.mockResolvedValue({ data: null, error: { code: "PGRST202", message: "Could not find the function" } });
+    const response = await call();
+    expect(response.status).toBe(503);
+    expect(await response.json()).toEqual({ error: "unavailable" });
+    expect(mocks.rpc.mock.calls.map(([name]) => name)).toEqual(["withdraw_other_adult_upload_v1"]);
+  });
+
+  it("still sends the adult's own delete, and anyone else's request, to delete_subject_v1", async () => {
+    for (const data of [
+      { subject_class: "other_adult", owner_account_id: OTHER, subject_account_id: ACCOUNT },
+      { subject_class: "other_adult", owner_account_id: ACCOUNT, subject_account_id: ACCOUNT },
+      { subject_class: "other_adult", owner_account_id: OTHER, subject_account_id: null },
+      { subject_class: "other_adult", owner_account_id: null, subject_account_id: ACCOUNT },
+    ]) {
+      mocks.rpc.mockClear();
+      mocks.subject.mockResolvedValue({ data, error: null });
+      expect((await call()).status).toBe(202);
+      expect(mocks.rpc.mock.calls.map(([name]) => name), JSON.stringify(data)).toEqual(["delete_subject_v1"]);
+    }
+  });
+
+  it("checks the code, the origin and the session before it reads anything", async () => {
+    expect((await call({ nonce: deleteCode({ subjectId: OTHER }) })).status).toBe(404);
+    expect((await call({ origin: "https://attacker.example" })).status).toBe(403);
+    mocks.context.mockResolvedValue(null);
+    expect((await call()).status).toBe(401);
+    expect(mocks.reads).toEqual([]);
+    expect(mocks.rpc).not.toHaveBeenCalled();
   });
 });

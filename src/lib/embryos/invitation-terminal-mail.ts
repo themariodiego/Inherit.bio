@@ -3,7 +3,8 @@ import { decryptSecret, hmacSecret } from "@/lib/crypto";
 import { submitMail } from "@/lib/email";
 import type { createAdminClient } from "@/lib/supabase/admin";
 
-const noticeKind = z.enum(["invitation-refused", "draft-cancelled", "donor-attribution-ended"]);
+// 20261119160000 adds the notice of an uploader's withdrawal for another adult's file.
+const noticeKind = z.enum(["invitation-refused", "draft-cancelled", "donor-attribution-ended", "upload-permission-withdrawn"]);
 
 /** Canonical outbox delivery; only the recipient envelope is draft-independent. */
 export async function drainInvitationTerminalMail(

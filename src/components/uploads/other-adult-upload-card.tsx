@@ -17,6 +17,7 @@ import {
 import { uploadHeldSubjectFile, type UploadProgress } from "@/lib/uploads/subject-upload-browser";
 import type { OwnUploadLimits } from "@/lib/uploads/subject-upload-contract";
 import { day, latestFileLine } from "./other-adult-lines";
+import { OtherAdultWithdrawal } from "./other-adult-withdrawal";
 
 const EMPTY_PERSON = { name: "", email: "", birth: "" };
 const subscribeNever = () => () => {};
@@ -159,16 +160,26 @@ export function OtherAdultUploadCard({ target, limits = null }: { target: OtherA
   const [progress, setProgress] = useState<UploadProgress | null>(null);
   const [heldNow, setHeldNow] = useState(false);
   const [uploadError, setUploadError] = useState(false);
+  const [withdrawn, setWithdrawn] = useState(false);
 
   const heading = <h3 className="title">{target.label} · {COPY.requestedOn(day(target.requestedAt))}</h3>;
   const latest = latestFileLine(target.label, target.latest);
   const card = (children: ReactNode, slot?: string) =>
     <article className="surface surface-pad rec-stack" data-slot={slot}>{heading}{children}</article>;
+  // The withdrawal of the uploader's permission (owner decision of 19
+  // November 2026) is the last child of every card that offers it, at the
+  // same place, so its steps and receipt survive the card changing around it.
+  const withdrawal = <OtherAdultWithdrawal key="withdrawal" subjectId={target.subjectId} name={target.label}
+    view={target.withdrawal} onWithdrawn={() => setWithdrawn(true)} />;
 
+  if (withdrawn) return card(<>{null}{withdrawal}</>, "other-adult-withdrawn");
   if (heldNow || target.state === "pending") {
     return card(<>
-      <p role="status" className="max-w-measure text-sm">{COPY.pendingStatus(target.label)}</p>
-      {target.latest?.deleteBy ? <p className="max-w-measure text-sm text-ink-muted">{COPY.pendingDeadline(day(target.latest.deleteBy))}</p> : null}
+      <>
+        <p role="status" className="max-w-measure text-sm">{COPY.pendingStatus(target.label)}</p>
+        {target.latest?.deleteBy ? <p className="max-w-measure text-sm text-ink-muted">{COPY.pendingDeadline(day(target.latest.deleteBy))}</p> : null}
+      </>
+      {withdrawal}
     </>, "other-adult-held");
   }
   if (target.blockedBy) {
@@ -248,7 +259,7 @@ export function OtherAdultUploadCard({ target, limits = null }: { target: OtherA
     }
   }
   const busy = progress !== null && !uploadError;
-  return card(<>
+  return card(<><>
     {latest ? <p role="status" className="max-w-measure text-sm">{latest}</p> : null}
     <input ref={inputRef} type="file" className="sr-only" aria-hidden tabIndex={-1} aria-label={COPY.chooseLabel}
       data-slot="other-adult-file" disabled={!interactive || busy}
@@ -267,5 +278,5 @@ export function OtherAdultUploadCard({ target, limits = null }: { target: OtherA
         : progress?.step === "validating" ? <p>{COPY.progress.validating}</p> : null}
       {uploadError ? <p role="alert" className="text-danger">{COPY.uploadFailed}</p> : null}
     </div>
-  </>, "other-adult-ready");
+  </>{withdrawal}</>, "other-adult-ready");
 }
