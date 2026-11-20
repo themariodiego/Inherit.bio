@@ -1,3 +1,104 @@
+## 2026-11-19 — Pages to the register: the whole-route referrer rule on pages and the sign-in redirect, D-138 (d) and (e), and the Family hub's missing headers
+
+This batch carries out two owner decisions of today on pages, the `/api/` half having shipped earlier: "G8.5: the strictest referrer setting applies to the whole route" and "G8.5: where the register is stricter, engineering codes to it". Under "Register amendments that only describe decided behaviour" it makes one register amendment. No sentence a person reads changes, and nothing a person can do or see changes. Every change is to a response header the proxy sets; Next 16.3.3 keeps a header the proxy has already set over the page's or handler's own (`node_modules/next/dist/server/send-response.js`, and `send-payload.js` for a page's `Cache-Control`). All edits in `src/proxy.ts` are to header code. No route handler, page, migration or `supabase/` file changed.
+
+(1) **The whole-route rule on pages.** A page or an endpoint outside `/api/` now sends `Referrer-Policy: no-referrer` on every answer when the register names that policy for any of its answers. "Names" is read the same two ways as for `/api/`: a `no-referrer` profile in `sensitiveResponseHeaderBindings` binds the route, or `responseContractBindings.routes` binds it a contract whose `headers` name `no-referrer`. The proxy cannot know which answer a page will give, so it sets the policy for all of them: the page itself, its 404 and 500, a redirect it gives, and the proxy's own deletion-notice, embargo and declaration redirects, its sign-in-check rewrite (D-142) and its 451. Those three proxy redirects now pass the path to `withSensitiveHeaders`, so they follow the page's policy. In `src/proxy.ts`, `WHOLE_ROUTE_NO_REFERRER_PAGES` names nine exact paths. `WHOLE_ROUTE_NO_REFERRER_PAGE_SHAPES` matches five dynamic routes, one segment each, and `embryos.detail`'s shape leaves out its static siblings `upload` and `request-data`. The set is 15 routes:
+- the seven pages with a bound contract: `embryos.index`, `embryos.compare`, `embryos.detail`, `copilot.scope`, `genome.reports`, `family.index`, `family.portrait`;
+- the five pages a profile binds: `rights.withdraw`, `auth.sign-in`, `auth.sign-up`, `auth.forgot-password`, `auth.reset-password`;
+- three endpoints outside `/api/`: `auth.callback`, `auth.sign-out`, `rights.withdraw-request`.
+
+(2) **The sign-in redirect.** `authenticated-page-signin-redirect-v1` names `private-no-store-no-referrer`. The proxy builds this answer itself, so it now gives it `no-referrer` exactly (`signInRedirect`), from every protected path. A page's other answers keep the policy their own statements give them. `/overview`, `/settings` and the other pages outside the rule still send `same-origin` on their documents.
+
+(3) **`auth.sign-out`.** Its 303 already sent `no-referrer`. Its 403 refusals came from the CSRF gate's `sensitiveJson` with `same-origin`. The proxy now sets `no-referrer` on every answer of `/auth/sign-out` and adds no other header, so the handler's own headers stand. The CSRF gate is not touched.
+
+(4) **D-138 (d).** `/auth/callback` sent no header but `Location`. Every answer of `/auth/callback` now carries the `authCallback` profile exactly (`AUTH_CALLBACK_HEADERS`, compared with the register by a test), the proxy's own refusal included. Every answer of `/withdraw/[token]` (`rights.withdraw`) now sends `no-referrer`; it sent `same-origin`. Checking every page and non-`/api/` endpoint bound to `tokenPageOrEndpoint`, `authOrRecovery`, `authCallback` or `downloadOrExport` found more of the same gap:
+- `/auth/sign-in` sent `Cache-Control: s-maxage=31536000` and no other header of its profile.
+- `/auth/reset-password` sent only Next's own `Cache-Control`.
+
+  Both now carry the sensitive set with `no-referrer`, as `/auth/sign-up` and `/auth/forgot-password` already did on the GET that hands out a form pair.
+- Those two form pages sent `same-origin` on their other branches: a method other than GET, a prefetch from a browser with no form cookie, and no sealing key. Those branches now send `no-referrer` too.
+- `rights.withdraw-request` sent no header on answers its handler does not build, such as a POST's 405. The proxy now adds `no-referrer` there, the handler's own value, and nothing else.
+- `downloadOrExport` binds nothing outside `/api/`.
+
+(5) **D-138 (e).** On `/api/rights/reissue`, the proxy's `frame-ancestors 'none'` replaced the `authOrRecovery` nonce policy that the handler builds through `authJson`. The proxy now gives every answer on that path the profile itself (`applyAppealIntakeHeaders`), as it already did for the three auth endpoints. That covers its own 423, 451 and 503, each with a fresh nonce, and `frame-ancestors 'none'` stays in force. Among the other `authOrRecovery` endpoints, the three auth endpoints and `api.subject-access-request` already had the profile from the proxy. `api.future-person-claim` has nothing to replace: its handler builds no nonce policy, so its only policy is the proxy's `frame-ancestors 'none'`. That is pinned as open.
+
+(6) **The Family hub (new defect, numbered by the owner).** `/family` (`family.index`, `public-or-authenticated`) received no sensitive header, because the proxy's test is `startsWith("/family/")`. A signed-in visitor gets the app shell with their email and the shell's CSRF tokens, and the page reads their people. The hub could be framed. It is now sensitive on every answer, signed in and signed out, and under (1) it sends `no-referrer`. `pageAuthContract.publicOrAuthenticated.cache` lets the signed-out page be cached but never requires it.
+
+(7) **The register.** One new key, `sensitiveResponseHeaderBindings.wholeRouteReferrerRuleOutsideApi`, beside `wholeRouteReferrerRule`. It states (1) and (2). `wholeRouteReferrerRule` is unchanged. The old and new text are in the amendments list for the owner.
+
+**New tests.** `src/proxy.test.ts`, 49 new; the file had 317 and now has 364.
+- `pages and the endpoints outside /api/: the register's referrer and header statements`, 46:
+  - The six protected pages of the rule. Signed in, and on the deletion-notice, declared-embargo and declaration redirects, the sign-in-check rewrite, the sign-in redirect and the 451, each answer has `no-referrer` and every other header of `SENSITIVE_RESPONSE_HEADERS`.
+  - The six public pages of the rule, signed in and signed out. An account in its notice with an embargoed declaration, the sign-in-check failure and the 451 give the same.
+  - The two form pages: no sealing key, HEAD, POST, the form pair, and a prefetch with no cookie.
+  - Twelve protected paths outside the rule. The sign-in redirect is `no-referrer`. The signed-in page, the rewrite, and the deletion-notice and declaration redirects stay `same-origin`.
+  - Eight neighbouring paths keep the original set. Seven public paths get no header.
+  - `auth.callback`: exactly the register's profile and no other sensitive header, signed in, signed out, on the rewrite case and on the 451. `auth.sign-out`: `no-referrer` and nothing else from the proxy, and the sensitive set on its 451. `rights.withdraw-request`: `no-referrer` alone on GET, HEAD and POST, with no session read.
+  - One register-driven test. It computes the set from the register's profiles and `responseContractBindings.routes`, as the `/api/` test does, and drives every route outside `/api/` signed in, signed out and on the 451:
+    - a route in the set gets `no-referrer` everywhere;
+    - a page outside it gets `same-origin`, `null` (public) or its namespace's `no-referrer` (the two reviewer pages), with the two form-pair pages allowed either value;
+    - every `authenticated` route's signed-out answer is the sign-in redirect with `no-referrer`;
+    - the page-side bindings that name a `no-referrer` contract but no route must be exactly the four accounted for;
+    - every token page must be in the set;
+    - the explicit lists must equal the derived set;
+    - the 20 pages named only through `resourceAuthorizationBindings` are pinned as open.
+  - One coverage test for the Family finding. Every route outside `/api/` that the register calls `authenticated`, `public-or-authenticated` or `reviewer`, or binds to a sensitive profile, carries the no-store and anti-framing set on every answer, signed in and out. The exceptions are three endpoints, each with its reason: `rights.withdraw-request`, `auth.callback` and `auth.sign-out`.
+- `api.rights-reissue keeps the authOrRecovery policy (D-138 (e))`, 3:
+  - the profile on every answer: signed in and out, 423, declared 451, 503 and connection 451. The CSP must match the register's template with one nonce in both places, a fresh nonce each time;
+  - three neighbouring paths keep the original set;
+  - a register-driven test: every `/api/` endpoint bound to `authOrRecovery` gets the nonce policy, except `api.future-person-claim`, which is pinned at `frame-ancestors 'none'` as open.
+
+**Changed assertions (old, new, why).** None is weakened.
+- `src/proxy.test.ts`, D-142 block, `rewrites %s to the error surface after asking twice…`. Old: all four paths held to `same-origin`. New: `/family/portrait/pair` and `/genome/me/reports` are held to `no-referrer`, and `/overview` and `/settings` stay `same-origin`. The title gains `(Referrer-Policy %s)`. Why: (1). `pageAuthContract.authServiceUnavailable.headers` is "the sensitive response headers every other answer of the requested page carries".
+- `src/proxy.test.ts`, `sends a person with no session to sign-in exactly as before, asking once`. Old: `same-origin`. New: `no-referrer`. Why: (2).
+- `src/proxy.test.ts`, `register no-referrer endpoints keep the strict policy`. Old: `POST /api/rights/reissue` was in `ENDPOINTS` and in the 423 list, held to `Content-Security-Policy: frame-ancestors 'none'` by `strict()`. New: it leaves both lists, with a comment. The new D-138 (e) block holds the same answers to the `authOrRecovery` nonce policy, with every other header, `no-referrer` included, unchanged. The register-driven `/api/` test still drives it for `no-referrer`. Why: (5).
+- `e2e/response-headers.spec.ts`. In `signed-out request to a protected page redirects…`, old: `same-origin`; new: `no-referrer`. In `signed-in product pages and API responses…`, old: `/genome/me/reports` `same-origin`; new: `no-referrer`. `/overview`, `/genome/me` and `/settings` are unchanged. Why: (2) and (1). Only the expected values changed.
+
+**Planted defects, each applied, run and reverted.** Each is one exact replacement, and the file was restored byte-identical, SHA-256 checked. The run was `src/proxy.test.ts` with the three other proxy-reading tests; the fifth added `scripts/route-register-correspondence.test.ts`.
+- `genome.reports`'s shape removed from `WHOLE_ROUTE_NO_REFERRER_PAGE_SHAPES`: 3 fail. They are its protected-page case, the D-142 rewrite case and the register-driven test.
+- The sign-in redirect back to `withSensitiveHeaders(NextResponse.redirect(url))` (`same-origin`): 20 fail. They are the D-142 sign-in case, the six protected-page cases, the twelve sign-in-redirect cases and the register-driven test.
+- `/family` removed from `sensitive`: 2 fail, the hub's own case and the coverage test.
+- `/api/rights/reissue` removed from `authOrRecoveryEndpoint` (the proxy replaces the CSP again): 2 fail, the reissue answers case and the `authOrRecovery` register-driven test.
+- A page binding added to the register with no proxy coverage (`genome.report` bound to `resource-not-found-page-v1` in `responseContractBindings.routes`): 1 fails, the register-driven page test.
+
+**Results.**
+- `pnpm typecheck` and `pnpm lint --ignore-pattern ".claude/**"` exit 0.
+- `gate:routes` (174 of 174 route states, 455 browser tests), `gate:secrets`, `gate:readability`, `gate:browser-discovery` (628 cases) and `gate:names` with the placeholder denylist all pass.
+- A targeted run of 78 files: every test that reads `docs/route-register.json` or imports `src/proxy.ts`, plus the sign-out, auth-callback, sign-in and reissue route tests. It gave the same result with `INHERIT_TEST_JURISDICTION` unset and `=1`: 2,107 tests, 2,088 passed, 19 skipped, none failed. `scripts/density-corrected-readings.test.ts` cannot launch Playwright's missing Chromium build, the same 19 skipped at the untouched base.
+
+**Measured on a real server.** `next build` and `next start` of this tree and of the untouched base `7f625f4f`, against the local Supabase stack, each with one throwaway account, deleted afterwards. Before and after:
+
+| Answer | Before | After |
+| --- | --- | --- |
+| The seven pages' 200s, 404s and sign-in redirects | `same-origin` | `no-referrer`, other seven headers unchanged |
+| The sign-in redirects of `/overview`, `/genome/me`, `/settings` and `/family/invite` | `same-origin` | `no-referrer` |
+| Those four pages signed in | `same-origin` | `same-origin` |
+| `/embryos`' declaration redirect | `same-origin` | `no-referrer` |
+| `/overview`'s declaration redirect | `same-origin` | `same-origin` |
+| `/family`, signed in and out | only Next's `Cache-Control` | the full set with `no-referrer` |
+| `/auth/sign-in` | `Cache-Control: s-maxage=31536000`, nothing else | the full set with `no-referrer` |
+| `/auth/reset-password` | Next's `Cache-Control` only | the full set with `no-referrer` |
+| `/withdraw/session` 404 | `same-origin` | `no-referrer` |
+| `/auth/callback` 307 | `Location` only | the `authCallback` profile |
+| `POST /withdraw/request` 405 | no header | `no-referrer` |
+| `auth.sign-out` 403s | `same-origin` | `no-referrer` |
+| `/api/rights/reissue` 404 | `frame-ancestors 'none'` | the nonce policy |
+
+**Requests from the changed pages.** Nothing in `src/` sends a native form POST: no `method="post"`, no `formAction`/`formMethod` and no `"use server"` action. The one native form, on `genome.browser`, is a GET. No code calls `sendBeacon` or gives a `fetch` a `mode`. No code reads the `Referer` header or `document.referrer`. Every state-changing request reachable from the 15 routes is a `fetch` or an XHR in `cors` mode. In Chromium 157 (`refpg/probe-extended.cjs`), such requests from a `no-referrer` document carry the real `Origin` and `Sec-Fetch-Site: same-origin`, for fetch POST, PUT and DELETE and for an XHR POST. Only a native form POST carries `Origin: null`. A document reached through a `no-referrer` redirect keeps its own policy.
+
+**Not run.** `e2e/response-headers.spec.ts`: Playwright's Chromium build is missing here. Its four changed expectations are the values measured above on `next start`. No other spec pins `same-origin` on these answers: by reading, every other `referrer-policy` assertion in `e2e/` already expects `no-referrer`.
+
+**Open, not changed.**
+- The 20 pages named only through `resourceAuthorizationBindings` (`resource-not-found-page-v1`) keep `same-origin`, their not-found answers included. This is for the owner.
+- The `authOrRecovery` and `tokenPageOrEndpoint` nonce script policy is not applied to pages. `rights.withdraw` and the four auth pages keep `frame-ancestors 'none'`. Applying it needs Next's nonce plumbing and could change what a page shows.
+- `/withdraw/session` sends no `X-Robots-Tag` header. Its page metadata says `noindex, nofollow`.
+- `api.future-person-claim` gets no nonce policy.
+- `auth.sign-out`'s 303 carries no anti-framing header.
+- `auth.callback` answers 307 where `auth-callback-v1` says 303. That is not a header and is out of scope.
+- `family.index` says it never renders consent-required, yet `portrait-grant-denial-v1` is bound to it. The binding is what puts `/family` in the set.
+
+**Integration note, 20 November.** Integrated on top of the D-142, own-file withdrawal, intent-link and CSRF migration-stage commits; the four files applied without conflict. On the integrated tree typecheck and lint exit 0, `src/proxy.test.ts` and the register, route-gate, auth and security tests pass (1,130 tests), and `gate:routes`, `gate:secrets` and `gate:browser-discovery` pass.
+
 ## 2026-11-19 — G8.5 migration stage: the last eighteen routes on the one-time session token, five more session kinds spent by `public.consume_session_csrf_v2`, and the claim-objection address on either kind of session
 
 This stage follows the owner's decisions of today: "G8.5: principles for the CSRF register amendments" and "G8.5: the claim-objection address accepts either kind of session". It moves the seventeen `csrfOwnDesign` rows that needed a session kind `public.consume_session_csrf_v1` does not accept, plus api.future-person-claim-objection. One guarded migration, `supabase/migrations/20261119120000_session_csrf_purpose_kinds.sql`, adds `public.consume_session_csrf_v2`. It spends a token of eight kinds into v1's table, so one hash is spent once across both doors. The three earlier kinds keep v1's rules. Each of the five new kinds is held to its session's live row:

@@ -38,7 +38,7 @@ vi.mock("@supabase/ssr", () => ({
 vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "http://127.0.0.1:54321");
 vi.stubEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY", "anon");
 
-const { proxy, SENSITIVE_RESPONSE_HEADERS } = await import("./proxy");
+const { proxy, SENSITIVE_RESPONSE_HEADERS, AUTH_CALLBACK_HEADERS } = await import("./proxy");
 
 const visit = (path: string) => proxy(new NextRequest(`https://inherit.bio${path}`));
 const location = (response: Response) => {
@@ -120,8 +120,12 @@ describe("a sign-in check that fails for a moment (D-142)", () => {
     }
   };
 
-  it.each(["/overview", "/family/portrait/pair", "/genome/me/reports", "/settings"])(
-    "rewrites %s to the error surface after asking twice: no sign-in, no account read", async (path) => {
+  // The rewrite carries "the sensitive response headers every other answer of
+  // the requested page carries" (pageAuthContract.authServiceUnavailable):
+  // no-referrer on the two pages of the whole-route rule (family.portrait,
+  // genome.reports), same-origin on the other two.
+  it.each([["/overview", "same-origin"], ["/family/portrait/pair", "no-referrer"], ["/genome/me/reports", "no-referrer"], ["/settings", "same-origin"]])(
+    "rewrites %s to the error surface after asking twice: no sign-in, no account read (Referrer-Policy %s)", async (path, referrer) => {
       mocks.answers = [temporary(), temporary()];
       const response = await visit(path);
       expect(mocks.sessionReads).toBe(2);
@@ -130,7 +134,7 @@ describe("a sign-in check that fails for a moment (D-142)", () => {
       expect(response.headers.get("x-middleware-rewrite")).toBe(`https://inherit.bio${AUTH_UNAVAILABLE_PATH}`);
       expect(response.headers.get(MARKER), "only the proxy's own rewrite carries the marker").toBe("1");
       expect(mocks.selected, "no profile is read for an unconfirmed session").toEqual([]);
-      strict(response);
+      strict(response, referrer);
     },
   );
 
@@ -172,7 +176,8 @@ describe("a sign-in check that fails for a moment (D-142)", () => {
     expect(mocks.sessionReads).toBe(1);
     expect(response.status).toBe(307);
     expect(location(response)).toBe(`/auth/sign-in?next=${encodeURIComponent("/family/portrait/pair")}`);
-    strict(response);
+    // authenticated-page-signin-redirect-v1: private-no-store-no-referrer.
+    strict(response, "no-referrer");
   });
 
   it("takes a no-session second answer as no session: sign-in, as before", async () => {
@@ -673,7 +678,8 @@ describe("register no-referrer endpoints keep the strict policy (sensitiveRespon
     ["GET", "/api/withdraw/session/export"],
     ["POST", "/api/appeals/session/complete"],
     ["POST", "/api/appeals/session/documents"],
-    ["POST", "/api/rights/reissue"],
+    // POST /api/rights/reissue left this list on 19 November 2026 (D-138 (e)):
+    // its answers carry the authOrRecovery nonce policy, held below.
   ];
 
   it.each(ENDPOINTS)("%s %s keeps no-referrer with every other sensitive header, signed in or not", async (method, path) => {
@@ -684,7 +690,7 @@ describe("register no-referrer endpoints keep the strict policy (sensitiveRespon
     }
   });
 
-  it.each([["DELETE", "/api/future-person/claim/session"], ["POST", "/api/rights/reissue"], ["POST", "/api/appeals/session/complete"]])(
+  it.each([["DELETE", "/api/future-person/claim/session"], ["POST", "/api/appeals/session/complete"]])(
     "keeps no-referrer on a proxy-produced deletion-notice refusal for %s %s", async (method, path) => {
       mocks.profile = { deletion_requested_at: "2026-09-25T00:00:00Z", jurisdiction_code: "GB" };
       const response = await call(method, path);
@@ -1007,5 +1013,485 @@ describe("the strictest referrer setting applies to the whole route (D-138 (b) a
       expect(endpoints.some(route => route.id === id), id).toBe(true);
       expect(inSet.has(id), id).toBe(false);
     }
+  });
+});
+
+type RegisterRoute = {
+  id: string; kind: string; path: string; auth?: string; methods?: string[];
+  parameterContract?: Record<string, { const?: unknown; enum?: unknown[] } | string>;
+};
+type HeaderRegister = {
+  sensitiveResponseHeaders: Record<string, Record<string, string>>;
+  sensitiveResponseHeaderBindings: Record<string, unknown>;
+  responseContracts: Record<string, unknown>;
+  responseContractBindings: {
+    routes: Record<string, string[]>;
+    pageStates: Record<string, string>;
+    resourceAuthorizationBindings: { page?: string; endpoint?: string };
+  };
+  resourceAuthorizationBindings: { failureContractBySurface: Record<string, string>; routes: Record<string, unknown> };
+  pageAuthContract: { authenticatedSignedOut: { responseContract: string }; tokenInvalidOrExpired: string };
+  routes: RegisterRoute[];
+};
+const headerRegister = (): HeaderRegister => JSON.parse(readFileSync("docs/route-register.json", "utf8")) as HeaderRegister;
+
+/**
+ * Pages and the endpoints outside `/api/`, 19 November 2026. The owner's
+ * decision "the strictest referrer setting applies to the whole route",
+ * carried from `/api/` to pages: where the register names no-referrer for any
+ * answer of a page (a no-referrer profile in `sensitiveResponseHeaderBindings`,
+ * or a contract bound to it in `responseContractBindings.routes`), every
+ * answer of that page gets it, because the proxy cannot know which answer the
+ * page will give. The sign-in redirect is the proxy's own answer and gets
+ * no-referrer exactly (authenticated-page-signin-redirect-v1). Also D-138 (d)
+ * (`/auth/callback` and `/withdraw/session`) and `/family` (family.index),
+ * which received no sensitive header at all.
+ */
+describe("pages and the endpoints outside /api/: the register's referrer and header statements", () => {
+  const register = headerRegister();
+  const ID = "12345678-1234-4234-8234-00000000000c";
+  const SIGNED_IN = { id: "12345678-1234-4234-8234-000000000001" };
+  const DECLARED = { deletion_requested_at: null, jurisdiction_code: "GB" };
+  const USER_DATA = new Set(["authenticated", "public-or-authenticated", "reviewer"]);
+  const call = (method: string, path: string, headers: Record<string, string> = {}) =>
+    proxy(new NextRequest(`https://inherit.bio${path}`, { method, headers }));
+  const located = (method: string, path: string) => call(method, path, { "x-vercel-ip-country": "IR" });
+  const temporary = () => ({ error: new AuthRetryableFetchError("fetch failed", 0) });
+  /** Every header of the sensitive set, with the referrer policy given. */
+  const sensitive = (response: Response, referrer: string, label: string) => {
+    for (const [name, value] of Object.entries(SENSITIVE_RESPONSE_HEADERS)) {
+      expect(response.headers.get(name), `${label}: ${name}`).toBe(name === "Referrer-Policy" ? referrer : value);
+    }
+  };
+  const restoreEnv = () => {
+    vi.unstubAllEnvs();
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "http://127.0.0.1:54321");
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY", "anon");
+  };
+
+  // The set, computed from the register as the /api/ test above computes it.
+  const namesNoReferrer = (value: unknown): boolean => value !== null && typeof value === "object" && Object.entries(value)
+    .some(([key, inner]) => (key === "headers" && JSON.stringify(inner).includes("no-referrer")) || namesNoReferrer(inner));
+  const noReferrerContracts = new Set(Object.entries(register.responseContracts).filter(([, contract]) => namesNoReferrer(contract)).map(([id]) => id));
+  const noReferrerProfiles = Object.entries(register.sensitiveResponseHeaders)
+    .filter(([, headers]) => headers["Referrer-Policy"] === "no-referrer").map(([name]) => name);
+  const reasons = (route: RegisterRoute) => [
+    ...noReferrerProfiles.filter(name => (register.sensitiveResponseHeaderBindings[name] as string[]).includes(route.id)).map(name => `profile:${name}`),
+    ...(register.responseContractBindings.routes[route.id] ?? []).filter(id => noReferrerContracts.has(id)).map(id => `contract:${id}`),
+  ];
+  const outsideApi = register.routes.filter(route => !route.path.startsWith("/api/"));
+  const byId = (id: string) => register.routes.find(route => route.id === id)!;
+  const wholeRoute = new Set(outsideApi.filter(route => reasons(route).length > 0).map(route => route.id));
+  const concrete = (route: RegisterRoute) => route.path.replace(/\[([^\]]+)\]/g, (_all, name: string) => {
+    const contract = route.parameterContract?.[name];
+    if (typeof contract === "object") {
+      if (typeof contract.const === "string") return contract.const;
+      if (Array.isArray(contract.enum) && typeof contract.enum[0] === "string") return contract.enum[0];
+    }
+    return name === "subject" || name === "scope" ? "me" : name === "person" ? `s-${ID}` : ID;
+  });
+
+  /** The six pages of the rule behind sign-in, by register id, and the path each is driven on. */
+  const PROTECTED: readonly (readonly [id: string, path: string])[] = [
+    ["embryos.index", "/embryos"],
+    ["embryos.compare", "/embryos/compare"],
+    ["embryos.detail", `/embryos/${ID}`],
+    ["copilot.scope", "/copilot/me"],
+    ["genome.reports", "/genome/me/reports"],
+    ["family.portrait", `/family/portrait/${ID}`],
+  ];
+  /** The pages of the rule a signed-out visitor is shown. */
+  const PUBLIC: readonly (readonly [id: string, path: string])[] = [
+    ["family.index", "/family"],
+    ["rights.withdraw", "/withdraw/session"],
+    ["auth.sign-in", "/auth/sign-in"],
+    ["auth.sign-up", "/auth/sign-up"],
+    ["auth.forgot-password", "/auth/forgot-password"],
+    ["auth.reset-password", "/auth/reset-password"],
+  ];
+  /** The three endpoints outside /api/ the rule reaches. */
+  const ENDPOINTS: readonly (readonly [id: string, method: string, path: string])[] = [
+    ["auth.callback", "GET", "/auth/callback"],
+    ["auth.sign-out", "POST", "/auth/sign-out"],
+    ["rights.withdraw-request", "GET", "/withdraw/request"],
+  ];
+  /** Pages outside the set that the proxy upgrades for the namespace rule it has always had. */
+  const NAMESPACE_PAGES: Readonly<Record<string, string>> = {
+    "reviews.future-person-claim": "/reviews/future-person/claims/: reviewer IDs and documentary decisions",
+    "reviews.appeal": "/reviews/appeals/: reviewer IDs and documentary decisions",
+  };
+  /**
+   * Public pages outside the set with a proxy branch of their own: the
+   * sensitive set with same-origin, and no-referrer on the GET that hands out
+   * a form pair while their intake is open. Unchanged here.
+   */
+  const FORM_PAIR_PAGES: Readonly<Record<string, string>> = {
+    "rights.future-person-claim": "/future-person/claim: claimPage",
+    "rights.subject-access": "/legal/appeals: appealPage",
+  };
+  /**
+   * The page-side bindings that name a no-referrer contract but no route, and
+   * how each is met. The test below fails on any other, or it would not see
+   * whom that binding binds.
+   */
+  const UNROUTED_PAGE_BINDINGS: Readonly<Record<string, string>> = {
+    "pageAuthContract.authenticatedSignedOut.responseContract": "the sign-in redirect: the proxy builds it and gives it no-referrer exactly",
+    "pageAuthContract.tokenInvalidOrExpired": "a token page's not-found: every token page is in the set (asserted)",
+    "responseContractBindings.resourceAuthorizationBindings.page": "OPEN: a resource-authorized page's not-found (resource-not-found-page-v1); RESOURCE_ONLY below",
+    "resourceAuthorizationBindings.failureContractBySurface.page": "the same binding, stated in resourceAuthorizationBindings",
+  };
+  /**
+   * OPEN, for the owner. These pages are bound in `resourceAuthorizationBindings`,
+   * whose failure contract for a page, resource-not-found-page-v1, names
+   * no-referrer; nothing else the register states about them does. The
+   * whole-route rule as registered reads profiles and `responseContractBindings.routes`
+   * only, so their documents keep same-origin (asserted below), and their
+   * not-found answers do too.
+   */
+  const RESOURCE_ONLY = ["app.overview", "embryos.request-data", "embryos.upload", "family.health-picture", "family.invite", "family.permissions",
+    "family.person", "files.index", "files.upload", "genome.ancestry", "genome.browser", "genome.carrier", "genome.data", "genome.report",
+    "genome.subject", "settings.consents", "settings.copilot", "settings.data", "settings.index", "settings.people"];
+
+  it.each(PROTECTED)("%s (%s): the page, its sign-in redirect and every answer the proxy gives itself carry no-referrer", async (id, path) => {
+    mocks.user = SIGNED_IN; mocks.profile = DECLARED;
+    const page = await call("GET", path);
+    expect(page.status).toBe(200); expect(page.headers.get("location")).toBeNull();
+    sensitive(page, "no-referrer", `${id} page`);
+    mocks.profile = { deletion_requested_at: "2026-09-25T00:00:00Z", jurisdiction_code: "GB" };
+    const held = await call("GET", path);
+    expect(location(held)).toBe("/settings/data"); sensitive(held, "no-referrer", `${id} deletion notice`);
+    mocks.profile = { deletion_requested_at: null, jurisdiction_code: "CU" };
+    const embargoed = await call("GET", path);
+    expect(location(embargoed)).toBe("/settings"); sensitive(embargoed, "no-referrer", `${id} declared embargo`);
+    mocks.profile = { deletion_requested_at: null, jurisdiction_code: null };
+    const undeclared = await call("GET", path);
+    expect(location(undeclared)).toBe(`/settings?next=${encodeURIComponent(path)}`); sensitive(undeclared, "no-referrer", `${id} declaration`);
+    mocks.answers = [temporary(), temporary()];
+    const unavailable = await call("GET", path);
+    expect(unavailable.headers.get("x-middleware-rewrite")).toBe(`https://inherit.bio${AUTH_UNAVAILABLE_PATH}`);
+    sensitive(unavailable, "no-referrer", `${id} sign-in check unavailable`);
+    mocks.user = null;
+    const signIn = await call("GET", path);
+    expect(signIn.status).toBe(307); expect(location(signIn)).toBe(`/auth/sign-in?next=${encodeURIComponent(path)}`);
+    sensitive(signIn, "no-referrer", `${id} sign-in redirect`);
+    mocks.sessionReads = 0;
+    const refused = await located("GET", path);
+    expect(refused.status).toBe(451); sensitive(refused, "no-referrer", `${id} location`);
+    expect(mocks.sessionReads).toBe(0);
+  });
+
+  it.each(PUBLIC)("%s (%s): every answer carries no-referrer with the sensitive set, signed in or not", async (id, path) => {
+    for (const user of [SIGNED_IN, null]) {
+      mocks.user = user; mocks.profile = DECLARED;
+      const page = await call("GET", path);
+      expect(page.status).toBe(200); expect(page.headers.get("location")).toBeNull();
+      sensitive(page, "no-referrer", `${id} ${user ? "signed in" : "signed out"}`);
+    }
+    // An account in its deletion notice with an embargoed declaration is not sent away from these pages.
+    mocks.user = SIGNED_IN; mocks.profile = { deletion_requested_at: "2026-09-25T00:00:00Z", jurisdiction_code: "CU" };
+    const held = await call("GET", path);
+    expect(held.headers.get("location")).toBeNull(); sensitive(held, "no-referrer", `${id} held account`);
+    mocks.answers = [temporary(), temporary()];
+    const unavailable = await call("GET", path);
+    expect(unavailable.headers.get("x-middleware-rewrite")).toBeNull(); sensitive(unavailable, "no-referrer", `${id} sign-in check unavailable`);
+    const refused = await located("GET", path);
+    expect(refused.status).toBe(451); sensitive(refused, "no-referrer", `${id} location`);
+  });
+
+  it.each(["/auth/sign-up", "/auth/forgot-password"])("%s: every branch of the form page carries no-referrer, not only the form pair", async path => {
+    try {
+      vi.stubEnv("BYOK_ENCRYPTION_KEY", "");
+      const keyless = await call("GET", path);
+      expect(keyless.headers.get("set-cookie"), "no sealing key: no pair").toBeNull(); sensitive(keyless, "no-referrer", "no sealing key");
+      sensitive(await call("HEAD", path), "no-referrer", "HEAD");
+      sensitive(await call("POST", path), "no-referrer", "POST");
+      vi.stubEnv("BYOK_ENCRYPTION_KEY", Buffer.alloc(32, 9).toString("base64"));
+      const pair = await call("GET", path);
+      expect(pair.headers.get("set-cookie")).toMatch(/^inherit-auth-form=/); sensitive(pair, "no-referrer", "form pair");
+      const prefetch = await call("GET", path, { rsc: "1", "next-router-prefetch": "1" });
+      expect(prefetch.headers.get("set-cookie")).toBeNull(); sensitive(prefetch, "no-referrer", "prefetch with no cookie");
+    } finally {
+      restoreEnv();
+    }
+  });
+
+  // authenticated-page-signin-redirect-v1 names no-referrer for the sign-in
+  // redirect of every signed-in page; the page's own answers keep the policy
+  // their own statements give them.
+  it.each(["/overview", "/genome/me", `/genome/me/reports/${ID}`, "/family/invite", `/family/s-${ID}`, "/embryos/upload", "/embryos/request-data",
+    "/files", "/settings", "/settings/data", "/dashboard", "/copilot"])(
+    "%s: the sign-in redirect carries no-referrer, and the signed-in page and the proxy's redirects keep same-origin", async path => {
+      mocks.user = null;
+      const signIn = await call("GET", path);
+      expect(signIn.status).toBe(307); expect(location(signIn)).toBe(`/auth/sign-in?next=${encodeURIComponent(path)}`);
+      sensitive(signIn, "no-referrer", "sign-in redirect");
+      mocks.user = SIGNED_IN; mocks.profile = DECLARED;
+      const page = await call("GET", path);
+      expect(page.headers.get("location")).toBeNull(); sensitive(page, "same-origin", "page");
+      mocks.answers = [temporary(), temporary()];
+      sensitive(await call("GET", path), "same-origin", "sign-in check unavailable");
+      if (!path.startsWith("/settings")) {
+        mocks.profile = { deletion_requested_at: "2026-09-25T00:00:00Z", jurisdiction_code: "GB" };
+        sensitive(await call("GET", path), "same-origin", "deletion notice");
+        mocks.profile = { deletion_requested_at: null, jurisdiction_code: null };
+        const declare = await call("GET", path);
+        expect(location(declare)).toBe(`/settings?next=${encodeURIComponent(path)}`); sensitive(declare, "same-origin", "declaration");
+      }
+    });
+
+  it.each([`/embryos/compare/${ID}`, `/embryos/${ID}/extra`, "/copilot/me/extra", `/genome/me/reports/${ID}/extra`, "/family/portrait",
+    `/family/portrait/${ID}/extra`, "/withdraw/session/extra", "/genome/me/reportsx"])(
+    "leaves %s, outside the exact page shape, with the original sensitive policy", async path => {
+      mocks.profile = DECLARED;
+      const response = await call("GET", path);
+      expect(response.status).toBe(200); sensitive(response, "same-origin", path);
+    });
+
+  it.each(["/familyx", "/family-hub", "/auth/sign-in/extra", "/auth/callback/extra", "/auth/sign-out/extra", "/auth", "/withdraw"])(
+    "adds no header to %s, a public path outside every rule", async path => {
+      for (const method of ["GET", "POST"]) {
+        const response = await call(method, path);
+        for (const name of Object.keys(SENSITIVE_RESPONSE_HEADERS)) expect(response.headers.get(name), `${method} ${name}`).toBeNull();
+      }
+    });
+
+  it("auth.callback sends exactly the register's authCallback profile on every answer (D-138 (d))", async () => {
+    expect(AUTH_CALLBACK_HEADERS).toEqual(register.sensitiveResponseHeaders.authCallback);
+    const only = (response: Response, label: string) => {
+      for (const [name, value] of Object.entries(AUTH_CALLBACK_HEADERS)) expect(response.headers.get(name), `${label}: ${name}`).toBe(value);
+      for (const name of Object.keys(SENSITIVE_RESPONSE_HEADERS)) {
+        if (!(name in AUTH_CALLBACK_HEADERS)) expect(response.headers.get(name), `${label}: ${name}`).toBeNull();
+      }
+    };
+    const path = "/auth/callback?code=synthetic&state=synthetic";
+    for (const user of [SIGNED_IN, null]) {
+      mocks.user = user;
+      const response = await call("GET", path);
+      expect(response.status).toBe(200); expect(response.headers.get("x-middleware-next")).toBe("1");
+      only(response, user ? "signed in" : "signed out");
+    }
+    mocks.answers = [temporary(), temporary()];
+    only(await call("GET", path), "sign-in check unavailable");
+    const refused = await located("GET", path);
+    expect(refused.status).toBe(451); only(refused, "location");
+  });
+
+  it("auth.sign-out: every answer carries no-referrer (sign-out-v1); the proxy adds nothing else to the handler's answers", async () => {
+    for (const user of [SIGNED_IN, null]) {
+      mocks.user = user; mocks.profile = { deletion_requested_at: "2026-09-25T00:00:00Z", jurisdiction_code: "CU" };
+      const response = await call("POST", "/auth/sign-out");
+      expect(response.status).toBe(200); expect(response.headers.get("x-middleware-next")).toBe("1");
+      expect(response.headers.get("referrer-policy")).toBe("no-referrer");
+      for (const name of Object.keys(SENSITIVE_RESPONSE_HEADERS)) {
+        if (name !== "Referrer-Policy") expect(response.headers.get(name), name).toBeNull();
+      }
+    }
+    const refused = await located("POST", "/auth/sign-out");
+    expect(refused.status).toBe(451); sensitive(refused, "no-referrer", "location");
+  });
+
+  it("rights.withdraw-request: the proxy adds only the handler's own no-referrer, on every method, and its location refusal carries it", async () => {
+    for (const method of ["GET", "HEAD", "POST"]) {
+      const response = await call(method, "/withdraw/request");
+      expect(response.headers.get("x-middleware-next")).toBe("1");
+      expect(response.headers.get("referrer-policy"), method).toBe("no-referrer");
+      for (const name of Object.keys(SENSITIVE_RESPONSE_HEADERS)) {
+        if (name !== "Referrer-Policy") expect(response.headers.get(name), `${method} ${name}`).toBeNull();
+      }
+    }
+    expect(mocks.sessionReads).toBe(0);
+    const refused = await located("GET", "/withdraw/request");
+    expect(refused.status).toBe(451); sensitive(refused, "no-referrer", "location");
+  });
+
+  it("gives no-referrer to every answer of every route outside /api/ the register names it for, by profile or bound contract, and to no other page", async () => {
+    // The page-side bindings that name no route are the ones accounted for.
+    const unrouted: Record<string, string | undefined> = {
+      ...Object.fromEntries(Object.entries(register.responseContractBindings.pageStates)
+        .map(([state, id]) => [`responseContractBindings.pageStates.${state}`, id])),
+      "responseContractBindings.resourceAuthorizationBindings.page": register.responseContractBindings.resourceAuthorizationBindings.page,
+      "resourceAuthorizationBindings.failureContractBySurface.page": register.resourceAuthorizationBindings.failureContractBySurface.page,
+      "pageAuthContract.authenticatedSignedOut.responseContract": register.pageAuthContract.authenticatedSignedOut.responseContract,
+      "pageAuthContract.tokenInvalidOrExpired": register.pageAuthContract.tokenInvalidOrExpired,
+    };
+    expect(Object.entries(unrouted).filter(([, id]) => id !== undefined && noReferrerContracts.has(id)).map(([at]) => at).sort())
+      .toEqual(Object.keys(UNROUTED_PAGE_BINDINGS).sort());
+    for (const id of register.sensitiveResponseHeaderBindings.tokenPageOrEndpoint as string[]) {
+      if (byId(id).kind === "page") expect(wholeRoute.has(id), `token page ${id}`).toBe(true);
+    }
+    for (const route of outsideApi) {
+      const path = concrete(route);
+      for (const method of route.methods ?? ["GET"]) {
+        const label = `${route.id} ${method} ${path} ${reasons(route).join(", ") || "none"}`;
+        mocks.user = SIGNED_IN; mocks.profile = DECLARED;
+        const document = (await call(method, path)).headers.get("referrer-policy");
+        mocks.user = null;
+        const signedOut = await call(method, path);
+        const refused = (await located(method, path)).headers.get("referrer-policy");
+        if (wholeRoute.has(route.id)) {
+          expect(document, `${label} signed in`).toBe("no-referrer");
+          expect(signedOut.headers.get("referrer-policy"), `${label} signed out`).toBe("no-referrer");
+          expect(refused, `${label} location`).toBe("no-referrer");
+          continue;
+        }
+        if (FORM_PAIR_PAGES[route.id]) {
+          expect(["same-origin", "no-referrer"], `${label} signed in`).toContain(document);
+          expect(["same-origin", "no-referrer"], `${label} signed out`).toContain(signedOut.headers.get("referrer-policy"));
+          expect(refused, `${label} location`).toBe("same-origin");
+          continue;
+        }
+        const own = NAMESPACE_PAGES[route.id] ? "no-referrer" : USER_DATA.has(route.auth ?? "") ? "same-origin" : null;
+        expect(document, `${label} signed in`).toBe(own);
+        if (route.auth === "authenticated") {
+          expect(signedOut.status, label).toBe(307);
+          expect(location(signedOut), label).toBe(`/auth/sign-in?next=${encodeURIComponent(path)}`);
+          expect(signedOut.headers.get("referrer-policy"), `${label} sign-in redirect`).toBe("no-referrer");
+        } else {
+          expect(signedOut.headers.get("referrer-policy"), `${label} signed out`).toBe(own);
+        }
+        expect(refused, `${label} location`).toBe(NAMESPACE_PAGES[route.id] ? "no-referrer" : "same-origin");
+      }
+    }
+    // The explicit lists above are the register's, and each path is its route's path with the parameters filled in.
+    expect([...PROTECTED, ...PUBLIC].map(([id]) => id).concat(ENDPOINTS.map(([id]) => id)).sort()).toEqual([...wholeRoute].sort());
+    for (const [id, path] of [...PROTECTED, ...PUBLIC]) {
+      expect(new RegExp(`^${byId(id).path.replace(/\[[^\]]+\]/g, "[^/]+")}$`).test(path), `${id} ${path}`).toBe(true);
+    }
+    for (const [id, method, path] of ENDPOINTS) expect(byId(id), id).toMatchObject({ kind: "endpoint", path, methods: [method] });
+    for (const id of [...Object.keys(NAMESPACE_PAGES), ...Object.keys(FORM_PAIR_PAGES)]) expect(byId(id), id).toBeDefined();
+    // OPEN: the pages whose only no-referrer statement is the resource-authorization failure contract (asserted same-origin above).
+    expect(Object.keys(register.resourceAuthorizationBindings.routes)
+      .filter(id => byId(id) !== undefined && byId(id).kind === "page" && !wholeRoute.has(id)).sort()).toEqual(RESOURCE_ONLY);
+  });
+
+  /**
+   * The routes outside /api/ that the test below does not hold to the
+   * sensitive set, each an endpoint with its own headers.
+   */
+  const OWN_HEADERS: Readonly<Record<string, string>> = {
+    "rights.withdraw-request": "the handler sends rights-interstitial-v1's headers, a stricter policy than the sensitive set (src/lib/embryos/rights-entry.test.ts); the proxy adds only no-referrer",
+    "auth.callback": "its own authCallback profile, exactly (held above)",
+    "auth.sign-out": "the handler's answers (sign-out-v1's 303, the CSRF gate's refusals) with the proxy's no-referrer; OPEN: the 303 carries no anti-framing header",
+  };
+
+  /**
+   * `/family` received no sensitive header at all: the proxy tested
+   * `startsWith("/family/")`. Every route outside /api/ that the register
+   * calls authenticated, public-or-authenticated or reviewer, or binds to a
+   * sensitive profile, carries the no-store and anti-framing set on every
+   * answer the proxy gives, signed in or not, so a prefix test that misses a
+   * registered route fails here.
+   */
+  it("carries the sensitive set on every answer of every page the register calls signed-in, public-or-signed-in or reviewer, or binds to a profile", async () => {
+    const profileBound = new Set(Object.keys(register.sensitiveResponseHeaders)
+      .flatMap(name => register.sensitiveResponseHeaderBindings[name] as string[]));
+    const covered = outsideApi.filter(route => USER_DATA.has(route.auth ?? "") || profileBound.has(route.id));
+    for (const route of covered) {
+      if (OWN_HEADERS[route.id]) {
+        expect(route.kind, route.id).toBe("endpoint");
+        continue;
+      }
+      const path = concrete(route);
+      for (const method of route.methods ?? ["GET"]) {
+        for (const user of [SIGNED_IN, null]) {
+          mocks.user = user; mocks.profile = DECLARED;
+          const response = await call(method, path);
+          const label = `${route.id} ${method} ${path} ${user ? "signed in" : "signed out"}`;
+          for (const [name, value] of Object.entries(SENSITIVE_RESPONSE_HEADERS)) {
+            if (name === "Referrer-Policy") expect(["same-origin", "no-referrer"], label).toContain(response.headers.get(name));
+            else expect(response.headers.get(name), `${label}: ${name}`).toBe(value);
+          }
+        }
+      }
+    }
+    for (const id of Object.keys(OWN_HEADERS)) expect(covered.some(route => route.id === id), id).toBe(true);
+    expect(covered.filter(route => route.kind !== "endpoint").length).toBe(covered.length - Object.keys(OWN_HEADERS).length);
+  });
+});
+
+/**
+ * D-138 (e). api.rights-reissue is bound to `authOrRecovery`, and its handler
+ * answers with that profile's per-response nonce policy (`authJson`). The
+ * proxy's `frame-ancestors 'none'` replaced it, because Next keeps the
+ * proxy's header. The proxy now gives every answer on that path the profile
+ * itself, as it does for the three auth endpoints, its own refusals included.
+ */
+describe("api.rights-reissue keeps the authOrRecovery policy (D-138 (e))", () => {
+  const register = headerRegister();
+  const profileHeaders = register.sensitiveResponseHeaders.authOrRecovery!;
+  const parts = profileHeaders["Content-Security-Policy"]!.split("{per-response-random-nonce}");
+  const escape = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const NONCE_POLICY = new RegExp(`^${escape(parts[0]!)}([A-Za-z0-9+/]{22}==)${parts.slice(1).map(escape).join("\\1")}$`);
+  const call = (method: string, path: string, headers: Record<string, string> = {}) =>
+    proxy(new NextRequest(`https://inherit.bio${path}`, { method, headers }));
+  const temporary = () => ({ error: new AuthRetryableFetchError("fetch failed", 0) });
+  const profile = (response: Response, label: string) => {
+    expect(response.headers.get("content-security-policy"), `${label}: Content-Security-Policy`).toMatch(NONCE_POLICY);
+    for (const [name, value] of Object.entries(SENSITIVE_RESPONSE_HEADERS)) {
+      if (name !== "Content-Security-Policy") expect(response.headers.get(name), `${label}: ${name}`).toBe(name === "Referrer-Policy" ? "no-referrer" : value);
+    }
+    for (const [name, value] of Object.entries(profileHeaders)) {
+      if (name === "Cache-Control") expect(response.headers.get(name), `${label}: ${name}`).toContain(value);
+      else if (name !== "Content-Security-Policy") expect(response.headers.get(name), `${label}: ${name}`).toBe(value);
+    }
+  };
+  const nonceOf = (response: Response) => NONCE_POLICY.exec(response.headers.get("content-security-policy") ?? "")?.[1];
+
+  it("POST /api/rights/reissue: the profile, with a fresh nonce, on every answer, the proxy's own included", async () => {
+    const answers: Response[] = [];
+    for (const user of [{ id: "12345678-1234-4234-8234-000000000001" }, null]) {
+      mocks.user = user;
+      const response = await call("POST", "/api/rights/reissue");
+      expect(response.status).toBe(200); profile(response, user ? "signed in" : "signed out");
+      answers.push(response);
+    }
+    expect(nonceOf(answers[0]!)).not.toBe(nonceOf(answers[1]!));
+    mocks.user = { id: "12345678-1234-4234-8234-000000000001" };
+    mocks.profile = { deletion_requested_at: "2026-09-25T00:00:00Z", jurisdiction_code: "GB" };
+    const held = await call("POST", "/api/rights/reissue");
+    expect(held.status).toBe(423); profile(held, "deletion notice");
+    mocks.profile = { deletion_requested_at: null, jurisdiction_code: "IR" };
+    const declared = await call("POST", "/api/rights/reissue");
+    expect(declared.status).toBe(451); profile(declared, "declared location");
+    mocks.answers = [temporary(), temporary()];
+    const unavailable = await call("POST", "/api/rights/reissue");
+    expect(unavailable.status).toBe(503); profile(unavailable, "sign-in check unavailable");
+    const located = await call("POST", "/api/rights/reissue", { "x-vercel-ip-country": "IR" });
+    expect(located.status).toBe(451); profile(located, "connection location");
+  });
+
+  it("leaves the original sensitive policy on the paths beside it", async () => {
+    for (const path of ["/api/rights/reissue/extra", "/api/rights", "/api/rights/reissues"]) {
+      const response = await call("POST", path);
+      for (const [name, value] of Object.entries(SENSITIVE_RESPONSE_HEADERS)) expect(response.headers.get(name), `${path} ${name}`).toBe(value);
+    }
+  });
+
+  /**
+   * api.future-person-claim is bound to authOrRecovery too, but neither its
+   * handler nor the proxy sends the profile's nonce policy: the proxy's
+   * `frame-ancestors 'none'` is the only one, and nothing is replaced.
+   */
+  const NO_NONCE_POLICY: Readonly<Record<string, string>> = {
+    "api.future-person-claim": "OPEN: no nonce policy is built for it; frame-ancestors 'none' is its one policy",
+  };
+
+  it("gives every /api/ endpoint bound to authOrRecovery the profile's nonce policy, except the one stated", async () => {
+    const bound = new Set(register.sensitiveResponseHeaderBindings.authOrRecovery as string[]);
+    const endpoints = register.routes.filter(route => bound.has(route.id) && route.path.startsWith("/api/"));
+    for (const route of endpoints) {
+      expect(route.path, route.id).not.toMatch(/\[/);
+      for (const method of route.methods ?? ["GET"]) {
+        for (const user of [{ id: "12345678-1234-4234-8234-000000000001" }, null]) {
+          mocks.user = user;
+          const response = await call(method, route.path);
+          const label = `${route.id} ${method} ${route.path}`;
+          if (NO_NONCE_POLICY[route.id]) expect(response.headers.get("content-security-policy"), label).toBe("frame-ancestors 'none'");
+          else profile(response, label);
+        }
+      }
+    }
+    for (const id of Object.keys(NO_NONCE_POLICY)) expect(endpoints.some(route => route.id === id), id).toBe(true);
+    expect(endpoints.some(route => route.id === "api.rights-reissue")).toBe(true);
   });
 });

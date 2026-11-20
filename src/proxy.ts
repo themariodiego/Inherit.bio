@@ -118,17 +118,100 @@ const WHOLE_ROUTE_NO_REFERRER_SHAPES: readonly RegExp[] = [
   /^\/api\/reviews\/future-person\/corrections\/[^/]+$/, // api.future-person-correction-review: its review-case contract
 ];
 
+/**
+ * The same rule for pages and the three endpoints outside `/api/`: every route
+ * whose register statements name no-referrer for some or all of its answers,
+ * through a no-referrer profile in `sensitiveResponseHeaderBindings` or a
+ * response contract bound to it in `responseContractBindings.routes`. The
+ * proxy cannot know which answer a page will give (its 200, a 404 or 500, a
+ * redirect it gives itself, or the proxy's own redirects, rewrite and
+ * refusals), so by the same decision every answer of the route gets it.
+ * `src/proxy.test.ts` derives the same set from the register. The sign-in
+ * redirect every signed-in page carries is not here: the proxy builds that
+ * answer itself and gives it no-referrer exactly (`signInRedirect`).
+ */
+const WHOLE_ROUTE_NO_REFERRER_PAGES: ReadonlySet<string> = new Set([
+  "/auth/sign-in", // auth.sign-in: authOrRecovery
+  "/auth/sign-up", // auth.sign-up: authOrRecovery
+  "/auth/forgot-password", // auth.forgot-password: authOrRecovery
+  "/auth/reset-password", // auth.reset-password: authOrRecovery
+  "/auth/callback", // auth.callback (endpoint): authCallback, auth-callback-v1
+  "/auth/sign-out", // auth.sign-out (endpoint): sign-out-v1
+  "/family", // family.index: portrait-grant-denial-v1
+  "/embryos", // embryos.index: embryo-closed-schema-v1
+  "/embryos/compare", // embryos.compare: resource-not-found-page-v1, embryo-closed-schema-v1
+]);
+
+/** Pages with dynamic segments: one segment each, as the route matches it. */
+const WHOLE_ROUTE_NO_REFERRER_PAGE_SHAPES: readonly RegExp[] = [
+  // rights.withdraw (`/withdraw/[token]`): tokenPageOrEndpoint, authOrRecovery, resource-not-found-page-v1,
+  // embryo-closed-schema-v1; and rights.withdraw-request (`/withdraw/request`, endpoint): tokenPageOrEndpoint.
+  /^\/withdraw\/[^/]+$/,
+  /^\/genome\/[^/]+\/reports$/, // genome.reports: owned-file-redirect-response-v1, resource-not-found-page-v1
+  /^\/family\/portrait\/[^/]+$/, // family.portrait: portrait-grant-denial-v1
+  // embryos.detail (`/embryos/[embryoId]`): resource-not-found-page-v1, embryo-closed-schema-v1. Its static
+  // siblings embryos.upload and embryos.request-data are their own routes and name it for no answer.
+  /^\/embryos\/(?!upload$|request-data$)[^/]+$/,
+  /^\/copilot\/[^/]+$/, // copilot.scope: resource-not-found-page-v1, embryo-closed-schema-v1
+];
+
 /** True on every path the register names no-referrer for, on every answer or (by the decision above) on some. */
 function registerNoReferrer(path: string): boolean {
   return NO_REFERRER_ENDPOINTS.has(path) || FILE_DOWNLOAD_ENDPOINT.test(path)
-    || WHOLE_ROUTE_NO_REFERRER_ENDPOINTS.has(path) || WHOLE_ROUTE_NO_REFERRER_SHAPES.some(shape => shape.test(path));
+    || WHOLE_ROUTE_NO_REFERRER_ENDPOINTS.has(path) || WHOLE_ROUTE_NO_REFERRER_SHAPES.some(shape => shape.test(path))
+    || WHOLE_ROUTE_NO_REFERRER_PAGES.has(path) || WHOLE_ROUTE_NO_REFERRER_PAGE_SHAPES.some(shape => shape.test(path));
+}
+
+/**
+ * The four auth pages the register binds to `authOrRecovery` (auth.sign-in,
+ * auth.sign-up, auth.forgot-password, auth.reset-password). Every answer
+ * carries the sensitive set with no-referrer, as the two form pages' answers
+ * already did. The profile's nonce script policy is not applied to a page
+ * here; `frame-ancestors 'none'` stands, as on every other page.
+ */
+const AUTH_RECOVERY_PAGES: ReadonlySet<string> = new Set([
+  "/auth/sign-in",
+  "/auth/sign-up",
+  "/auth/forgot-password",
+  "/auth/reset-password",
+]);
+
+/**
+ * auth.callback's `sensitiveResponseHeaders.authCallback` profile, exactly as
+ * the register names it (`src/proxy.test.ts` compares the two). Its answers
+ * are redirects with no body, so its closed policy shows nothing.
+ */
+export const AUTH_CALLBACK_HEADERS: Readonly<Record<string, string>> = {
+  "Cache-Control": "no-store",
+  "Referrer-Policy": "no-referrer",
+  "X-Content-Type-Options": "nosniff",
+  "Content-Security-Policy": "default-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
+  "X-Frame-Options": "DENY",
+};
+const AUTH_CALLBACK_PATH = "/auth/callback";
+
+/**
+ * Endpoints the register binds to `authOrRecovery` whose answers the proxy
+ * gives that profile, its per-response nonce policy included: the public
+ * appeal intake (api.subject-access-request), the claimant's correction
+ * intake, the three auth endpoints, and api.rights-reissue, whose handler
+ * builds the same policy and which the proxy's `frame-ancestors 'none'`
+ * replaced until 19 November 2026 (D-138 (e)).
+ */
+function authOrRecoveryEndpoint(path: string): boolean {
+  return path === "/api/appeals" || path === "/api/future-person/claim/session/corrections"
+    || path === "/api/rights/reissue" || AUTH_ENDPOINTS.has(path);
 }
 
 function withSensitiveHeaders<T extends NextResponse>(response: T, path?: string): T {
+  if (path === AUTH_CALLBACK_PATH) {
+    for (const [name, value] of Object.entries(AUTH_CALLBACK_HEADERS)) response.headers.set(name, value);
+    return response;
+  }
   for (const [name, value] of Object.entries(SENSITIVE_RESPONSE_HEADERS)) {
     response.headers.set(name, value);
   }
-  if(path==="/api/appeals"||path==="/api/future-person/claim/session/corrections"||(path!==undefined&&AUTH_ENDPOINTS.has(path)))return applyAppealIntakeHeaders(response);
+  if (path !== undefined && authOrRecoveryEndpoint(path)) return applyAppealIntakeHeaders(response);
   // The proxy's response headers also reach route-handler responses. Review
   // IDs, documentary decisions and document download sessions require the
   // stricter policy, including refusals produced by the proxy itself. Next's
@@ -147,6 +230,19 @@ function withSensitiveHeaders<T extends NextResponse>(response: T, path?: string
       path?.startsWith("/api/downloads/")) {
     response.headers.set("Referrer-Policy", "no-referrer");
   }
+  return response;
+}
+
+/**
+ * authenticated-page-signin-redirect-v1 (`pageAuthContract.authenticatedSignedOut`),
+ * whose headers are `private-no-store-no-referrer`. The proxy builds this
+ * answer itself, so it carries no-referrer exactly, from every page it
+ * answers, and a page's other answers keep the policy their own register
+ * statements give them.
+ */
+function signInRedirect(url: URL, path: string): NextResponse {
+  const response = withSensitiveHeaders(NextResponse.redirect(url), path);
+  response.headers.set("Referrer-Policy", "no-referrer");
   return response;
 }
 
@@ -241,8 +337,12 @@ export async function proxy(request: NextRequest) {
   if(request.nextUrl.pathname==="/api/appeals")return withSensitiveHeaders(NextResponse.next({request}),request.nextUrl.pathname);
   // This generic document must not look up an account or an invitation.
   // Its handler sets its own nonce CSP and non-authorizing candidate cookie.
+  // Its no-referrer (tokenPageOrEndpoint) is set here as well, the handler's
+  // own value, so an answer the handler does not build (a 405, a 500) has it.
   if (request.nextUrl.pathname === "/withdraw/request") {
-    return NextResponse.next({ request });
+    const response = NextResponse.next({ request });
+    response.headers.set("Referrer-Policy", "no-referrer");
+    return response;
   }
   // These rights operations use their own browser-bound credentials, not the
   // signed-in account. An unrelated account's deletion notice must not block
@@ -312,7 +412,14 @@ export async function proxy(request: NextRequest) {
     path.startsWith("/settings");
 
   const isReviewPage=path.startsWith("/reviews/future-person/claims/") || path.startsWith("/reviews/appeals/");
-  const sensitive = isProtected || path.startsWith("/api/") || path.startsWith("/withdraw/") || isReviewPage;
+  // `/family` (family.index, public-or-authenticated) is not protected: a
+  // signed-out visitor gets its public page. A signed-in one gets the app
+  // shell with their account and the page reads their people, so every answer
+  // carries the sensitive set; the public page may be stored, never must be
+  // (`pageAuthContract.publicOrAuthenticated.cache`). The auth pages and the
+  // callback carry the profiles the register binds them to.
+  const sensitive = isProtected || path === "/family" || path.startsWith("/api/") || path.startsWith("/withdraw/") || isReviewPage
+    || AUTH_RECOVERY_PAGES.has(path) || path === AUTH_CALLBACK_PATH;
 
   // Neither signed in nor signed out: the account's own checks below cannot
   // run, so a protected page or an endpoint is answered here, never with
@@ -325,7 +432,7 @@ export async function proxy(request: NextRequest) {
     const url = request.nextUrl.clone();
     url.pathname = "/auth/sign-in";
     url.searchParams.set("next", path);
-    return withSensitiveHeaders(NextResponse.redirect(url));
+    return signInRedirect(url, path);
   }
 
   if (user && (isProtected || path.startsWith("/api/"))) {
@@ -348,7 +455,7 @@ export async function proxy(request: NextRequest) {
         const url = request.nextUrl.clone();
         url.pathname = "/settings/data";
         url.search = "";
-        return withSensitiveHeaders(NextResponse.redirect(url));
+        return withSensitiveHeaders(NextResponse.redirect(url), path);
       }
     }
 
@@ -362,7 +469,7 @@ export async function proxy(request: NextRequest) {
         );
       }
       if (isProtected && !path.startsWith("/settings")) {
-        return withSensitiveHeaders(NextResponse.redirect(new URL("/settings", request.url)));
+        return withSensitiveHeaders(NextResponse.redirect(new URL("/settings", request.url)), path);
       }
     }
 
@@ -375,11 +482,14 @@ export async function proxy(request: NextRequest) {
       // A fresh URL, not a clone: a clone of `/family/` keeps its trailing slash.
       const url = new URL("/settings", request.url);
       url.searchParams.set("next", `${path}${request.nextUrl.search}`);
-      return withSensitiveHeaders(NextResponse.redirect(url));
+      return withSensitiveHeaders(NextResponse.redirect(url), path);
     }
   }
 
-  if(sensitive)withSensitiveHeaders(response,path);
+  if (sensitive) withSensitiveHeaders(response, path);
+  // auth.sign-out: the 303 of sign-out-v1 and the CSRF gate's refusals are the
+  // handler's; the register names no-referrer for the 303, so every answer gets it.
+  else if (registerNoReferrer(path)) response.headers.set("Referrer-Policy", "no-referrer");
   return response;
 }
 
@@ -421,25 +531,27 @@ function claimPage(request: NextRequest): NextResponse {
 function authFormPage(request: NextRequest, form: (typeof AUTH_FORM_PAGES)[string]): NextResponse {
   const headers = new Headers(request.headers);
   headers.delete(AUTH_FORM_TOKEN_HEADER);
-  if (request.method !== "GET") return withSensitiveHeaders(NextResponse.next({ request: { headers } }));
+  // Every answer carries no-referrer (authOrRecovery, WHOLE_ROUTE_NO_REFERRER_PAGES),
+  // not only the one that hands out a form pair.
+  const path = request.nextUrl.pathname;
+  if (request.method !== "GET") return withSensitiveHeaders(NextResponse.next({ request: { headers } }), path);
   // A prefetch from another page (the header's sign-up link) must not hand
   // that page's visitor an auth form cookie they never asked for. A browser
   // already holding one, prefetching the form it shows, keeps it as before.
   const prefetch = request.headers.has("next-router-prefetch") || request.headers.has("next-router-segment-prefetch");
   if (prefetch && authFormSecret(request) === null) {
-    return withSensitiveHeaders(NextResponse.next({ request: { headers } }));
+    return withSensitiveHeaders(NextResponse.next({ request: { headers } }), path);
   }
   let pair: ReturnType<typeof mintAuthForm>;
   try {
     pair = mintAuthForm(form, Date.now(), authFormSecret(request));
   } catch {
     // No sealing key: the page renders, and its POST is refused as stale.
-    return withSensitiveHeaders(NextResponse.next({ request: { headers } }));
+    return withSensitiveHeaders(NextResponse.next({ request: { headers } }), path);
   }
   headers.set(AUTH_FORM_TOKEN_HEADER, pair.formToken);
-  const response = withSensitiveHeaders(NextResponse.next({ request: { headers } }));
+  const response = withSensitiveHeaders(NextResponse.next({ request: { headers } }), path);
   response.headers.append("Set-Cookie", pair.setCookie);
-  response.headers.set("Referrer-Policy", "no-referrer");
   return response;
 }
 
