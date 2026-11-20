@@ -6028,3 +6028,23 @@ follow-up, and release 1 waits for a working Supabase access token. Each
 release's database write still needs the owner's go after its read-only
 pre-checks; once a release reads back EQUAL, the matching commit is merged at
 once under this instruction.
+
+## 2026-11-20 — PR 324's release: the Supabase connector reads production, and what it cannot carry
+
+Not a decision to proceed. The owner wrote (typed in chat, 19 November): "I
+changed the supabase connector permissions." The Supabase connector now reaches
+the production project, and one small read-only query was run through it on 20
+November: the session user is `postgres`, the migration ledger holds 248 rows
+with highest version `20261011010251`, and no row at or after release 1's first
+version exists. That is the ledger state release 1's first batch expects.
+
+The release itself cannot go through the connector. It is four statements of
+91 KB to 340 KB of exact SQL (740 KB in all), each carrying md5 checks of every
+embedded migration, and the kit sends them from files through the Supabase
+Management API with an access token (`api/RUNBOOK.md`). The connector takes a
+query only as text the session writes out, which cannot be done byte for byte
+at that size. So release 1's runbook steps 3 to 7 still wait for a working
+personal access token (it starts `sbp_`) entered by the owner in the secure
+form or in the environment's settings; the value saved for `api.supabase.com`
+on 19 November is still refused (401). The connector read is an early check,
+not the runbook's step 4, which is run again with the kit when the token works.
