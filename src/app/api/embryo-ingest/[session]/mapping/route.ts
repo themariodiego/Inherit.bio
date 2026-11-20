@@ -18,6 +18,7 @@ import {
   zeroizeHeader,
 } from "@/lib/embryos/ingest-mapping";
 import { mintIngestSessionOperation, verifyEmbryoOperation, type IngestSessionOperation } from "@/lib/embryos/operation-token";
+import { readUploadCsrfSession, withPurposeCsrf } from "@/lib/security/session-csrf";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 /**
@@ -29,9 +30,12 @@ import { createAdminClient } from "@/lib/supabase/admin";
  * Authority comes first, exactly as on the configure route: the live account
  * and auth session, exact Origin with same-origin fetch metadata, the
  * `embryo_analysis` guard, the host-only upload cookie and the database's
- * credential-bound authorizer. A request carries no `X-Inherit-CSRF` header:
- * the session CSRF rule is unchanged, and only completion requires it. Each
- * request's authority is its one-time nonce, issued in the response before
+ * credential-bound authorizer. Before any of it, each request spends the
+ * upload session's one-time `X-Inherit-CSRF` token for this route (G8.5, the
+ * migration stage): the first came with the answer that opened the session
+ * (`X-Inherit-Upload-CSRF`), and each answer here carries the next, for the
+ * POST and the PUTs alike. Each
+ * request's operation authority is its one-time nonce, issued in the response before
  * it and bound in the database to the session (`POST`) or to the exact
  * challenge (`PUT`).
  *
@@ -100,7 +104,7 @@ function mintTransport(authority: Authorized, credentials: IngestAuthorizationAr
 
 const REFUSED = ["42501", "23505", "55000", "P0002"];
 
-export async function POST(request: Request, context: RouteContext) {
+async function inspect(request: Request, context: RouteContext): Promise<Response> {
   const { session } = await context.params;
   const authorized = await authorize(request, session);
   if (authorized.kind === "answer") return authorized.response;
@@ -180,7 +184,7 @@ export async function POST(request: Request, context: RouteContext) {
   }
 }
 
-export async function PUT(request: Request, context: RouteContext) {
+async function decide(request: Request, context: RouteContext): Promise<Response> {
   const { session } = await context.params;
   const authorized = await authorize(request, session);
   if (authorized.kind === "answer") return authorized.response;
@@ -256,3 +260,6 @@ export async function PUT(request: Request, context: RouteContext) {
     }
   }
 }
+
+export const POST = withPurposeCsrf("api.embryo-ingest-mapping", readUploadCsrfSession, inspect);
+export const PUT = withPurposeCsrf("api.embryo-ingest-mapping", readUploadCsrfSession, decide);

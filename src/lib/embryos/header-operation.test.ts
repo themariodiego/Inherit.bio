@@ -1,10 +1,12 @@
 import crypto from "node:crypto";
+import { readFileSync } from "node:fs";
 import { afterAll, describe, expect, it, vi } from "vitest";
 
 vi.stubEnv("BYOK_ENCRYPTION_KEY", crypto.randomBytes(32).toString("base64"));
 
 const { mintEmbryoOperation } = await import("./operation-token");
-const { csrfOperation, headerOperation } = await import("./guards");
+const guards = await import("./guards");
+const { headerOperation } = guards;
 
 afterAll(() => {
   vi.unstubAllEnvs();
@@ -45,9 +47,17 @@ describe("the embryo operation token in its own header", () => {
     }
   });
 
-  it("leaves csrfOperation, which api.embryo-ingest-complete still reads from X-Inherit-CSRF, unchanged", () => {
-    const token = mintEmbryoOperation(EXPECTED);
-    expect(csrfOperation(request({ "x-inherit-csrf": token }), EXPECTED)).toMatchObject(EXPECTED);
-    expect(csrfOperation(request({ "x-inherit-operation-nonce": token }), EXPECTED)).toBeNull();
+  // 2026-11-19 (G8.5, the migration stage): api.embryo-ingest-complete reads
+  // its ingest_complete_csrf operation token with headerOperation too, and
+  // csrfOperation, which read it from X-Inherit-CSRF, is gone. This case
+  // asserted that csrfOperation still read the token from X-Inherit-CSRF.
+  it("reads no embryo operation token from X-Inherit-CSRF anywhere: csrfOperation is gone", () => {
+    expect(Object.keys(guards)).not.toContain("csrfOperation");
+    const complete = readFileSync("src/app/api/embryo-ingest/[session]/complete/route.ts", "utf8");
+    expect(complete).toContain('headerOperation(request, { ...bound, operation: "ingest_complete_csrf" })');
+    const ingest = { ...EXPECTED, operation: "ingest_complete_csrf" as const, targetKind: "ingest_session" as const };
+    const token = mintEmbryoOperation(ingest);
+    expect(headerOperation(request({ "x-inherit-operation-nonce": token }), ingest)).toMatchObject(ingest);
+    expect(headerOperation(request({ "x-inherit-csrf": token }), ingest)).toBeNull();
   });
 });

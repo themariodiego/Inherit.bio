@@ -15,7 +15,13 @@ export function admitEverySessionCsrf(actual: typeof SessionCsrf): typeof Sessio
     ...actual,
     withAccountCsrf: ((_route, handler) => handler) as typeof actual.withAccountCsrf,
     withPurposeCsrf: ((_route, _read, handler) => handler) as typeof actual.withPurposeCsrf,
+    withReviewerCsrf: ((_route, handler) => handler) as typeof actual.withReviewerCsrf,
+    // The one route that takes either kind: the session it would bind, rights
+    // first, is handed to the handler as the real gate does after the spend.
+    withRightsOrAccountCsrf: ((_route, handler) => async (request: Request) =>
+      handler(request, actual.readRightsCsrfSession(request) ?? await actual.currentAccountCsrfSession())) as typeof actual.withRightsOrAccountCsrf,
     admitAccountCsrf: (async () => ({ kind: "unbound" })) as typeof actual.admitAccountCsrf,
     requireAccountCsrf: (async () => ({ kind: "admitted", next: "", rotate: (response: Response) => response })) as typeof actual.requireAccountCsrf,
+    requireReviewerCsrf: (async () => ({ kind: "admitted", next: "", rotate: (response: Response) => response })) as typeof actual.requireReviewerCsrf,
   };
 }

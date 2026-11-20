@@ -15,7 +15,7 @@ import {
   EVIDENCE_SESSION_CSRF_HEADER,
   evidenceCompleteNonce,
   evidenceCookie,
-  evidenceCsrf,
+  evidenceSessionCsrf,
   newEvidenceSecret,
 } from "@/lib/future-person/evidence-session";
 import {
@@ -210,10 +210,10 @@ export async function openLegalEvidenceUploadSession(request: Request): Promise<
       maximumChunks: 5, maximumDocumentBytes: 20_000_000, chunkRoute: `/api/evidence/${id}/chunks/{sequence}`,
       completeRoute: `/api/evidence/${id}/complete`, expiresAt: expiry.toISOString() }, 201);
     response.headers.set("Set-Cookie", evidenceCookie(evidence.secret, expiry));
-    // The evidence session's own value, which each chunk and the completion
-    // send in X-Inherit-CSRF, travels in its own answer header: this answer's
+    // The evidence session's first values (the chunk stream's and the completion's
+    // first token), which they send in X-Inherit-CSRF, travel in their own answer header: this answer's
     // X-Inherit-CSRF carries the account session's successor (G8.5).
-    response.headers.set(EVIDENCE_SESSION_CSRF_HEADER, evidenceCsrf(id, evidence.hash));
+    response.headers.set(EVIDENCE_SESSION_CSRF_HEADER, evidenceSessionCsrf(id, evidence.hash));
     response.headers.set(EVIDENCE_COMPLETE_NONCE_HEADER, evidenceCompleteNonce(id, evidence.hash));
     return response;
   } finally {

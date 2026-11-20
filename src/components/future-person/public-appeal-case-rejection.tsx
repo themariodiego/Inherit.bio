@@ -1,14 +1,17 @@
 "use client";
 import { useEffect, useId, useRef, useState } from "react";
 import { z } from "zod";
+import { useCsrf } from "@/components/security/csrf-provider";
 
 const receipt = z.union([z.object({ caseId: z.uuid(), state: z.literal("resolved"), outcome: z.enum(["rejected", "upheld", "prior_decision_reversed"]),
  reviewRevision: z.number().int().positive().safe() }).strict(), z.object({ caseId: z.uuid(), state: z.literal("more_information_required"),
  outcome: z.literal("more_information_required"), reviewRevision: z.number().int().positive().safe() }).strict()]);
-export function PublicAppealCaseRejection({ caseId, reviewRevision, csrf, nonce, disabled, allowUphold = false, allowMoreInformation = false, reversal, onMoreInformation, onResolved }: {
- caseId: string; reviewRevision: number; csrf: string; nonce: string; disabled: boolean; allowUphold?: boolean; allowMoreInformation?: boolean; reversal?: { priorDecisionRevision: number; evidenceRevision: number }; onMoreInformation?: () => void; onResolved: (outcome?: string) => void;
+export function PublicAppealCaseRejection({ caseId, reviewRevision, nonce, disabled, allowUphold = false, allowMoreInformation = false, reversal, onMoreInformation, onResolved }: {
+ caseId: string; reviewRevision: number; nonce: string; disabled: boolean; allowUphold?: boolean; allowMoreInformation?: boolean; reversal?: { priorDecisionRevision: number; evidenceRevision: number }; onMoreInformation?: () => void; onResolved: (outcome?: string) => void;
 }) {
  const reasonId = useId();
+ // The reviewer's one-time X-Inherit-CSRF token for api.appeal-review, which the page renders (G8.5).
+ const csrf = useCsrf("api.appeal-review");
  const [reason, setReason] = useState(""); const [checked, setChecked] = useState(false);
  const [busy, setBusy] = useState(false); const [message, setMessage] = useState("");
  const [unconfirmed, setUnconfirmed] = useState(false); const inFlight = useRef(false);
@@ -23,10 +26,10 @@ export function PublicAppealCaseRejection({ caseId, reviewRevision, csrf, nonce,
   const abort = new AbortController(); operation.current = abort; setBusy(true);
   const timeout = setTimeout(() => abort.abort(), 20_000);
   try {
-   const response = await fetch(`/api/reviews/appeals/${caseId}`, { method: "POST", credentials: "same-origin", signal: abort.signal,
-    headers: { "content-type": "application/json", "x-inherit-csrf": csrf },
+   const response = await csrf.send((token) => fetch(`/api/reviews/appeals/${caseId}`, { method: "POST", credentials: "same-origin", signal: abort.signal,
+    headers: { "content-type": "application/json", "x-inherit-csrf": token },
     body: JSON.stringify({ decision, reviewRevision, reason, nonce, ...(decision === "reverse-prior-decision" && reversal
-     ? { priorDecisionRevision: reversal.priorDecisionRevision, evidenceRevision: reversal.evidenceRevision } : {}) }) });
+     ? { priorDecisionRevision: reversal.priorDecisionRevision, evidenceRevision: reversal.evidenceRevision } : {}) }) }));
    const value = receipt.safeParse(await response.json());
    if (abort.signal.aborted || response.status !== 200 || !value.success || value.data.caseId !== caseId
     || value.data.state !== (decision === "needs-more-information" ? "more_information_required" : "resolved")

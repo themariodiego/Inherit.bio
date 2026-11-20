@@ -89,7 +89,10 @@ describe("the auth endpoints against docs/route-register.json", () => {
     ] as const) {
       expect(`src/app${entry(id).path}/route.ts`).toBe(file);
       expect(entry(id).methods).toEqual(["POST"]);
-      expect([...read(file).matchAll(/^export async function ([A-Z]+)\(/gm)].map((match) => match[1])).toEqual(["POST"]);
+      // 2026-11-19 (G8.5, the migration stage): the reset route exports its wrapped handler as
+      // `export const POST = withPurposeCsrf(...)`, so a method is either declaration form.
+      expect([...read(file).matchAll(/^export (?:async function ([A-Z]+)\(|const ([A-Z]+) = )/gm)]
+        .map((match) => match[1] ?? match[2])).toEqual(["POST"]);
     }
   });
 });

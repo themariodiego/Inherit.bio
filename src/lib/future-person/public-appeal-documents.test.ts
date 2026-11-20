@@ -60,7 +60,9 @@ describe("public appeal independent document sessions", () => {
   expect(response.headers.get("set-cookie")).toContain(`${EVIDENCE_COOKIE}=`);
   // 2026-11-19 (G8.5): the evidence session's value travels in its own answer header, so the answer's
   // X-Inherit-CSRF is free for the rights session's successor (it was EVIDENCE_CSRF_HEADER, x-inherit-csrf).
-  expect(response.headers.get(EVIDENCE_SESSION_CSRF_HEADER)).toMatch(/^[0-9a-f]{64}$/u);expect(response.headers.get("x-inherit-csrf")).toBeNull();
+  // 2026-11-19 (G8.5, the migration stage): the header holds the evidence session's first two session
+  // tokens, the chunk stream's and the completion's (it held the evidence digest, /^[0-9a-f]{64}$/).
+  expect(response.headers.get(EVIDENCE_SESSION_CSRF_HEADER)).toMatch(/^\d{13}\.[A-Za-z0-9_-]{43}\.[0-9a-f]{64} \d{13}\.[A-Za-z0-9_-]{43}\.[0-9a-f]{64}$/u);expect(response.headers.get("x-inherit-csrf")).toBeNull();
   expect(response.headers.get(EVIDENCE_COMPLETE_NONCE_HEADER)).toBeTruthy();
   expect(native.wrapped).toHaveLength(1);expect(native.wrapped[0]!.every(byte => byte === 0)).toBe(true);
  });

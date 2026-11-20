@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { OTHER_ADULT_UPLOAD_COPY as COPY, REVIEWED_DOCUMENT_COPY as DOCUMENT } from "@/copy/upload/other-adult";
 import { sniffDocumentType } from "@/lib/future-person/document-sniff";
+import { readEvidenceSessionCsrf } from "@/lib/security/opened-session-csrf";
+import { csrfHandle } from "@/lib/security/session-csrf-client";
 import { route } from "@/lib/primary-routes";
 import { otherAdultTypedNameIsValid, type ReviewedDocumentTarget } from "@/lib/uploads/other-adult-upload";
 import { day } from "./other-adult-lines";
@@ -117,25 +119,27 @@ export function ReviewedDocumentCard({ target }: { target: ReviewedDocumentTarge
         if (opened.status === 403 || opened.status === 404) return setStatus("expired");
         if (opened.status !== 201) return setStatus("failed");
         const session = ((await opened.json()) as { session: string }).session;
-        // The evidence session's own value for the chunks and the completion;
-        // the answer's x-inherit-csrf is the account session's successor (G8.5).
-        const csrf = opened.headers.get("x-inherit-evidence-csrf") ?? "";
+        // The evidence session's first values (the chunk stream's one value and the
+        // completion's first one-time token); the answer's x-inherit-csrf is the account session's successor (G8.5).
+        const csrf = readEvidenceSessionCsrf(opened.headers);
+        if (!csrf) return setStatus("failed");
+        const completion = csrfHandle(csrf.complete);
         const completeNonce = opened.headers.get("x-inherit-complete-nonce") ?? "";
         const chunkCount = Math.ceil(bytes.length / CHUNK_BYTES);
         for (let sequence = 0; sequence < chunkCount; sequence++) {
           const sent = await fetch(`/api/evidence/${session}/chunks/${sequence}`, {
             method: "PUT", credentials: "same-origin", cache: "no-store",
-            headers: { "content-type": "application/octet-stream", "x-inherit-csrf": csrf },
+            headers: { "content-type": "application/octet-stream", "x-inherit-csrf": csrf.chunk },
             body: bytes.slice(sequence * CHUNK_BYTES, (sequence + 1) * CHUNK_BYTES),
           });
           if (sent.status !== 204) return setStatus(sent.status === 404 ? "expired" : "integrity");
         }
         for (let poll = 0; poll < POLLS; poll++) {
-          const done = await fetch(`/api/evidence/${session}/complete`, {
+          const done = await completion.send((token) => fetch(`/api/evidence/${session}/complete`, {
             method: "POST", credentials: "same-origin", cache: "no-store",
-            headers: { "content-type": "application/json", "x-inherit-csrf": csrf },
+            headers: { "content-type": "application/json", "x-inherit-csrf": token },
             body: JSON.stringify({ chunkCount, nonce: completeNonce }),
-          });
+          }));
           if (done.status === 201) { setStatus("received"); router.refresh(); return; }
           if (done.status === 422) {
             const reason = ((await done.json().catch(() => null)) as { reason?: string } | null)?.reason;

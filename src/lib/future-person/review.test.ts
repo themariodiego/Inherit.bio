@@ -5,7 +5,8 @@ vi.stubEnv("BYOK_ENCRYPTION_KEY", crypto.randomBytes(32).toString("base64"));
 const { encryptSecret, decryptSecret } = await import("@/lib/crypto");
 const { claimDataKey,openDocumentBytes } = await import("./document-envelope");
 const { sealClaimIntake } = await import("./claim-intake");
-const { reviewCsrf, reviewCsrfMatches, mintReviewNonce, readReviewNonce,
+const review = await import("./review");
+const { mintReviewNonce, readReviewNonce,
   reviewDecisionBody, reviewCaseBody, sealReason,verifiedDocumentIdentity,verifiedIdentityDigestSet, downloadCookieHash, DOWNLOAD_COOKIE } = await import("./review");
 afterAll(() => vi.unstubAllEnvs());
 
@@ -15,14 +16,15 @@ const SESSION = "5e000000-0000-4000-8000-000000000001";
 const NOW = Date.UTC(2026, 8, 30, 12);
 
 describe("review decision authority binds the case, reviewer and session", () => {
-  it("refuses each changed binding and malformed CSRF", () => {
-    const csrf = reviewCsrf(ID, ACCOUNT, SESSION);
-    expect(reviewCsrfMatches(csrf, ID, ACCOUNT, SESSION)).toBe(true);
-    expect(reviewCsrfMatches(csrf, ACCOUNT, ACCOUNT, SESSION)).toBe(false);
-    expect(reviewCsrfMatches(csrf, ID, ID, SESSION)).toBe(false);
-    expect(reviewCsrfMatches(csrf, ID, ACCOUNT, ID)).toBe(false);
-    for (const bad of [null, "", csrf.toUpperCase(), `${csrf}0`])
-      expect(reviewCsrfMatches(bad, ID, ACCOUNT, SESSION)).toBe(false);
+  // 2026-11-19 (G8.5, the migration stage): the case digest (reviewCsrf) is gone. X-Inherit-CSRF on
+  // the reviewer routes is the reviewer's one-time session token, bound to the account and its auth
+  // session under its own kind and the route; it is refused for another session, another kind and
+  // another route in src/lib/security/session-csrf-core.test.ts, and spent once by each route's gate
+  // in src/lib/security/session-csrf-routes.test.ts. This case asserted the digest's bindings.
+  it("has no case digest: the reviewer's session token stands where it stood", () => {
+    expect(Object.keys(review)).not.toContain("reviewCsrf");
+    expect(Object.keys(review)).not.toContain("reviewCsrfMatches");
+    expect(Object.keys(review)).not.toContain("REVIEW_CSRF_HEADER");
   });
   it("refuses a nonce for another case, reviewer, session, expired time or modified ciphertext", () => {
     const nonce = mintReviewNonce(ID, ACCOUNT, SESSION, NOW);

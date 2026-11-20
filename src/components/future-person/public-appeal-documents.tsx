@@ -5,6 +5,8 @@ import { useCsrf } from "@/components/security/csrf-provider";
 import { Button } from "@/components/ui/button";
 import { sniffDocumentType } from "@/lib/future-person/document-sniff";
 import type { PublicAppealView } from "@/lib/future-person/public-appeal-session";
+import { readEvidenceSessionCsrf } from "@/lib/security/opened-session-csrf";
+import { csrfHandle } from "@/lib/security/session-csrf-client";
 const LABELS = {
  "appeal-photo-identity": "Photo identity document", "appeal-subject-source-control": "Evidence that the source is yours",
  "appeal-genetic-parent-authority": "Evidence of your genetic parent role", "appeal-decision-notice": "The decision notice",
@@ -49,22 +51,22 @@ export function PublicAppealDocuments({ view, documentNonce, completeNonce }: {
    const value: unknown = await opened.json();
    if (typeof value !== "object" || value === null || !("session" in value) || typeof value.session !== "string"
     || !/^[0-9a-f-]{36}$/u.test(value.session)) throw new Error("document_unavailable");
-   // The evidence session's own value, which the chunks and the completion
-   // send in x-inherit-csrf; the answer's own x-inherit-csrf is the rights
+   // The evidence session's first values (the chunk stream's one value and
+   // the completion's first one-time token); the answer's own x-inherit-csrf is the rights
    // session's successor, which the chain above keeps (G8.5).
-   const session = value.session; const csrf = opened.headers.get("x-inherit-evidence-csrf"); const nonce = opened.headers.get("x-inherit-complete-nonce");
+   const session = value.session; const csrf = readEvidenceSessionCsrf(opened.headers); const nonce = opened.headers.get("x-inherit-complete-nonce");
    if (!csrf || !nonce) throw new Error("document_unavailable");
-   const chunkCount = Math.ceil(bytes.length / 4_000_000);
+   const completion = csrfHandle(csrf.complete); const chunkCount = Math.ceil(bytes.length / 4_000_000);
    for (let sequence = 0; sequence < chunkCount; sequence++) {
     const chunk = bytes.slice(sequence * 4_000_000, (sequence + 1) * 4_000_000);
     try { const answer = await fetch(`/api/evidence/${session}/chunks/${sequence}`, { method: "PUT", credentials: "same-origin",
-     headers: { "content-type": "application/octet-stream", "x-inherit-csrf": csrf }, body: chunk });
+     headers: { "content-type": "application/octet-stream", "x-inherit-csrf": csrf.chunk }, body: chunk });
      if (answer.status !== 204) throw new Error("document_unavailable");
     } finally { chunk.fill(0); }
    }
    for (let poll = 0; poll < 60; poll++) {
-    const answer = await fetch(`/api/evidence/${session}/complete`, { method: "POST", credentials: "same-origin",
-     headers: { "content-type": "application/json", "x-inherit-csrf": csrf }, body: JSON.stringify({ chunkCount, nonce }) });
+    const answer = await completion.send((token) => fetch(`/api/evidence/${session}/complete`, { method: "POST", credentials: "same-origin",
+     headers: { "content-type": "application/json", "x-inherit-csrf": token }, body: JSON.stringify({ chunkCount, nonce }) }));
     if (answer.status === 201) {
      const result: unknown = await answer.json();
      if (typeof result !== "object" || result === null || !("documentId" in result) || typeof result.documentId !== "string"

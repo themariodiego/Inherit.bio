@@ -29,7 +29,7 @@ import { JURISDICTION_AFFIRM, JURISDICTION_SELECT_LABEL } from "../src/copy/sett
 import { parseArtifactFile } from "../src/lib/legal/artifact-file";
 import { artifactStatements } from "../src/lib/uploads/other-adult-upload";
 import { mintedOperationNonce } from "./helpers/operation-nonce";
-import { signOut } from "./helpers/session-csrf";
+import { reviewerCsrf, signOut } from "./helpers/session-csrf";
 
 /**
  * payloadBoundaryContract (verification: this file): no request or response
@@ -298,11 +298,15 @@ async function reviewedDocumentPerson(page: Page, person: { email: string; name:
 
 /** The real reviewer reads every chunk of the exact bytes, then decides. Runs in the reviewer's own page. */
 async function review(page: Page, documentId: string, decision: "approved" | "rejected", reason: string) {
-  return page.evaluate(async ({ documentId, decision, reason }) => {
+  // 2026-11-19 (G8.5, the migration stage): the decision carries the reviewer's one-time token for the route,
+  // which the review page renders; the review-download answer issues no X-Inherit-CSRF value (it issued the
+  // case digest the decision carried).
+  const token = await reviewerCsrf(page, "api.legal-evidence-review");
+  return page.evaluate(async ({ documentId, decision, reason, token }) => {
     const opened = await fetch(`/api/legal-evidence/${documentId}/review-download`, { credentials: "same-origin", cache: "no-store" });
     if (opened.status !== 200) return { stage: "open", status: opened.status };
     const session = await opened.json() as { session: string; sha256: string; sizeBytes: number; chunkCount: number; chunkRoute: string };
-    const csrf = opened.headers.get("x-inherit-csrf"), nonce = opened.headers.get("x-inherit-review-nonce");
+    const nonce = opened.headers.get("x-inherit-review-nonce");
     const revision = Number(opened.headers.get("x-inherit-review-revision"));
     const parts: Uint8Array[] = [];
     const chunkSizes: number[] = [];
@@ -319,12 +323,12 @@ async function review(page: Page, documentId: string, decision: "approved" | "re
     const digest = [...new Uint8Array(await crypto.subtle.digest("SHA-256", whole))].map(byte => byte.toString(16).padStart(2, "0")).join("");
     const decided = await fetch(`/api/legal-evidence/${documentId}/review`, {
       method: "POST", credentials: "same-origin", cache: "no-store",
-      headers: { "content-type": "application/json", "x-inherit-csrf": csrf ?? "" },
+      headers: { "content-type": "application/json", "x-inherit-csrf": token },
       body: JSON.stringify({ decision, reason, documentSha256: session.sha256, reviewRevision: revision, nonce }),
     });
     return { stage: "decided", status: decided.status, body: await decided.json(), digestMatches: digest === session.sha256,
       sizeBytes: session.sizeBytes, chunkSizes, revision };
-  }, { documentId, decision, reason });
+  }, { documentId, decision, reason, token });
 }
 
 async function permissionDocumentOf(draftId: string): Promise<string> {

@@ -6,6 +6,7 @@ import { testAppealIntakeOpen } from "@/lib/future-person/appeals-open";
 import { futurePersonClaimsOpen } from "@/lib/future-person/claims-open";
 import { claimDataKey, sealDocumentBytes } from "@/lib/future-person/document-envelope";
 import { readEvidenceRequest } from "@/lib/future-person/evidence-session";
+import { readEvidenceCsrfSession, withPurposeCsrf } from "@/lib/security/session-csrf";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { permissionDocumentsOpen } from "@/lib/uploads/permission-document-open";
 
@@ -15,9 +16,13 @@ import { permissionDocumentsOpen } from "@/lib/uploads/permission-document-open"
  * deployment issues. The native session row chooses the store.
  *
  * The session id in the path must match the evidence cookie, and the
- * request must carry `X-Inherit-CSRF` for that session, the exact origin and
- * same-origin fetch metadata; otherwise it is the opaque 404. The body is
- * raw `application/octet-stream`, never encoded, at most 4,000,000 bytes.
+ * request must carry the exact origin and same-origin fetch metadata;
+ * otherwise it is the opaque 404. Its `X-Inherit-CSRF` is the chunk stream's
+ * one value for this evidence session (G8.5, principle 3: one session-bound
+ * value for the whole stream), checked before the handler runs and never
+ * spent; the one-time reservation of each sequence below is the replay
+ * guard. The body is raw `application/octet-stream`, never encoded, at most
+ * 4,000,000 bytes.
  *
  * The server hashes the bytes itself and asks the database to reserve the
  * sequence under a key it makes. A sequence is written once. Too many bytes
@@ -55,10 +60,11 @@ function invalid(issue: string): Response {
   return sensitiveJson({ error: "invalid_document_chunk", issues: [issue] }, 422);
 }
 
-export async function PUT(request: Request, context: { params: Promise<{ session: string; sequence: string }> }) {
-  const { session, sequence } = await context.params;
-  return withoutReferrer(await putChunk(request, session, sequence));
-}
+export const PUT = withPurposeCsrf("api.evidence-chunk", readEvidenceCsrfSession,
+  async (request: Request, context: { params: Promise<{ session: string; sequence: string }> }) => {
+    const { session, sequence } = await context.params;
+    return withoutReferrer(await putChunk(request, session, sequence));
+  });
 
 async function putChunk(request: Request, session: string, sequence: string): Promise<Response> {
   if (!futurePersonClaimsOpen() && !testAppealIntakeOpen() && !permissionDocumentsOpen()) return notFound();

@@ -1,7 +1,7 @@
 import "server-only";
 import crypto from "node:crypto";
 import { z } from "zod";
-import { decryptSecret, encryptSecret, hmacSecret } from "@/lib/crypto";
+import { decryptSecret, encryptSecret } from "@/lib/crypto";
 import { getSensitiveAccountContext } from "@/lib/account-deletion";
 import { createClient } from "@/lib/supabase/server";
 import { ownerObjectionView } from "./owner-objection";
@@ -24,13 +24,14 @@ export function mintOwnerAccountObjection(account: Account, notice: { noticeId: 
   // The existing root authenticates a stateless form proof, not an identity,
   // account session or stored owner authority. Those are rechecked independently.
   const nonce = encryptSecret(JSON.stringify(parsed)).toString("hex");
-  return { nonce, csrf: hmacSecret(nonce, "owner-account-objection-csrf-v1") };
+  // The Settings page renders the account session's one-time X-Inherit-CSRF token
+  // for the route (G8.5); it was a digest of this nonce, returned here.
+  return { nonce };
 }
 export function readOwnerAccountObjection(request: Request, token: string, account: Account, now = Date.now()) {
-  const url = new URL(request.url), csrf = request.headers.get("x-inherit-csrf");
+  const url = new URL(request.url);
   if (url.search || request.headers.get("origin") !== url.origin || request.headers.get("sec-fetch-site") !== "same-origin"
-    || !/^[0-9a-f]{180,2048}$/u.test(token) || !csrf || !/^[0-9a-f]{64}$/u.test(csrf)
-    || !crypto.timingSafeEqual(Buffer.from(csrf), Buffer.from(hmacSecret(token, "owner-account-objection-csrf-v1")))) return null;
+    || !/^[0-9a-f]{180,2048}$/u.test(token)) return null;
   try {
     const parsed = claims.safeParse(JSON.parse(decryptSecret(Buffer.from(token, "hex"))));
     if (!parsed.success) return null;

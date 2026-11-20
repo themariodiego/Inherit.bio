@@ -9232,6 +9232,19 @@ export type Database = {
         }
         Returns: boolean
       }
+      consume_session_csrf_v2: {
+        Args: {
+          p_account_id?: string | null
+          p_cookie_hash?: string | null
+          p_expires_at: string
+          p_purpose_session_id?: string | null
+          p_route_id: string
+          p_session_id?: string | null
+          p_session_kind: string
+          p_token_hash: string
+        }
+        Returns: boolean
+      }
       declare_jurisdiction_with_nonce_v1: {
         Args: {
           p_account_id: string

@@ -57,6 +57,48 @@ export async function rightsCsrf(target: Page | BrowserContext, route: CsrfRoute
   return mint({ kind: "token", sessionHash: createHash("sha256").update(cookie.value, "utf8").digest("hex") }, route);
 }
 
+/*
+ * G8.5, the migration stage (19 November 2026): one minter per session kind
+ * public.consume_session_csrf_v2 added. Each binds what the route's own
+ * wrapper reads from the live request: the reviewer's account and auth
+ * session, or one purpose cookie's hash (with the session id where the
+ * cookie belongs to one upload or evidence session).
+ */
+
+/** A token for a reviewer `route`, bound to the context's signed-in session under the reviewer's own kind. */
+export async function reviewerCsrf(target: Page | BrowserContext, route: CsrfRoute): Promise<string> {
+  const session = await accountSession(await contextOf(target).cookies());
+  if (!session) throw new Error("The context's own session is unavailable");
+  return mint({ kind: "reviewer", ...session }, route);
+}
+
+/** The SHA-256 of the context's one cookie of `name`, with or without its `__Host-` prefix. */
+async function cookieHash(target: Page | BrowserContext, name: string): Promise<string> {
+  const cookies = (await contextOf(target).cookies()).filter(item => item.name === `__Host-${name}` || item.name === name);
+  if (cookies.length !== 1) throw new Error(`The context holds ${cookies.length} ${name} cookies`);
+  return createHash("sha256").update(cookies[0]!.value, "utf8").digest("hex");
+}
+
+/** A token for an embryo upload session's `route`, bound to its `inherit-ingest-<session>` cookie and id. */
+export async function uploadCsrf(target: Page | BrowserContext, session: string, route: CsrfRoute): Promise<string> {
+  return mint({ kind: "upload-session", sessionHash: await cookieHash(target, `inherit-ingest-${session}`), sessionId: session }, route);
+}
+
+/** A token for an evidence session's `route`, bound to the evidence cookie and the session id. */
+export async function evidenceCsrf(target: Page | BrowserContext, session: string, route: CsrfRoute): Promise<string> {
+  return mint({ kind: "evidence-session", sessionHash: await cookieHash(target, "inherit-evidence"), sessionId: session }, route);
+}
+
+/** A token for a claim session's `route`, bound to the claim cookie. */
+export async function claimCsrf(target: Page | BrowserContext, route: CsrfRoute): Promise<string> {
+  return mint({ kind: "claim-session", sessionHash: await cookieHash(target, "inherit-claim") }, route);
+}
+
+/** A token for auth.reset-password-submit, bound to the reset session's cookie. */
+export async function resetCsrf(target: Page | BrowserContext): Promise<string> {
+  return mint({ kind: "reset-session", sessionHash: await cookieHash(target, "inherit-reset") }, "auth.reset-password-submit");
+}
+
 /**
  * Signs the page's context out as the shell's scripted form does: an empty
  * POST from this origin with the session's one-time sign-out token. `base`

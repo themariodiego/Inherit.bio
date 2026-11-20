@@ -5,7 +5,7 @@ import { encryptSecret } from "@/lib/crypto";
 import { closedResponse } from "@/lib/embryos/guards";
 import { notFound, unavailable } from "@/lib/embryos/api";
 import { sha256Hex } from "@/lib/future-person/claim-session";
-import { readReviewNonce, reviewCsrfMatches } from "@/lib/future-person/review";
+import { readReviewNonce } from "@/lib/future-person/review";
 
 /**
  * api.legal-evidence-review for the subject-draft target case: one
@@ -14,7 +14,7 @@ import { readReviewNonce, reviewCsrfMatches } from "@/lib/future-person/review";
  * Only the database decides who may decide: the named claim reviewer the
  * database owner assigned to this document, in a live session stepped up with
  * MFA in the last 15 minutes, who read every chunk of the exact bytes through
- * their own review session. The route checks the shape, the CSRF and the
+ * their own review session. The route checks the shape and the
  * one-time nonce the review session issued, seals the reason, and asks.
  *
  * `rejected-documentary-conflict` must dispatch contradiction-v1, which no
@@ -56,7 +56,6 @@ export async function decidePermissionDocument(request: Request, id: string, pay
   account: { userId: string; sessionId: string }, rpc: Rpc, current: z.infer<typeof context>): Promise<Response> {
   const parsed = permissionDocumentDecisionBody.safeParse(payload);
   if (!parsed.success || parsed.data.decision === "rejected-documentary-conflict") return notFound();
-  if (!reviewCsrfMatches(request.headers.get("x-inherit-csrf"), id, account.userId, account.sessionId)) return notFound();
   const nonce = readReviewNonce(parsed.data.nonce, id, account.userId, account.sessionId);
   if (!nonce || parsed.data.reviewRevision !== current.reviewRevision || parsed.data.documentSha256 !== current.sha256) {
     return notFound();

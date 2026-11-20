@@ -766,7 +766,10 @@ describe("every client request sends what its register entry declares (G8.5)", (
     // 2026-11-19 (D-142): `src/components/site/intent-link.tsx`, the link that
     // prefetches on intent, is one more "use client" module with no request:
     // 228 modules (97 "use client"), every request count unchanged.
-    expect(client.modules).toHaveLength(228);
+    // 2026-11-19 (G8.5's migration stage): src/lib/security/opened-session-csrf.ts
+    // reads the first tokens an opening answer hands over, in the browser: one
+    // more client module with no request of its own, 229 modules.
+    expect(client.modules).toHaveLength(229);
     expect(client.modules.filter(file => /^\s*["']use client["']/u.test(readFileSync(file, "utf8")))).toHaveLength(97);
     expect(client.calls).toHaveLength(104);
     expect(new Set(client.calls.map(request => `${request.file}:${request.line}`)).size).toBe(90);

@@ -6,6 +6,8 @@ import { embryoTableHeader, opensAsVcf, type TableHeaderCopy } from "./table-hea
 import { applyMappingAnswers, mappingChallengeColumns, PGT_FIELDS, type CompleteMapping, type PgtField } from "../genome/parsers/pgt-table";
 import { z } from "zod";
 import { route, routePattern } from "@/lib/primary-routes";
+import type { UploadSessionCsrf } from "@/lib/security/opened-session-csrf";
+import { csrfHandle, type CsrfHandle } from "@/lib/security/session-csrf-client";
 
 /**
  * The browser's half of an embryo upload after the cohort is finalized
@@ -42,6 +44,12 @@ import { route, routePattern } from "@/lib/primary-routes";
 
 /** `operation-token.ts`'s `CSRF_HEADER`, which is server-only; the unit test pins the two together. */
 export const UPLOAD_CSRF_HEADER = "x-inherit-csrf";
+/**
+ * `operation-token.ts`'s `OPERATION_HEADER`. The completion's `csrfToken`
+ * operation value travels here (G8.5, principle 2); `X-Inherit-CSRF` carries
+ * the upload session's one-time token on configure, mapping and completion.
+ */
+export const UPLOAD_OPERATION_HEADER = "x-inherit-operation-nonce";
 
 export interface UploadSession {
   session: string;
@@ -190,6 +198,12 @@ function sourceMapping(mapping: CompleteMapping, source: readonly number[]): Com
 export async function sendEmbryoFile(input: {
   file: Blob;
   session: UploadSession;
+  /**
+   * The upload session's first one-time `X-Inherit-CSRF` tokens, from the
+   * opening answer's `X-Inherit-Upload-CSRF` (G8.5): each route's chain
+   * starts there and follows the successor every answer carries.
+   */
+  csrf: UploadSessionCsrf;
   onProgress?: (progress: UploadProgress) => void;
   /** Ask the reader one question of a laboratory table's mapping. */
   decide?: (question: MappingQuestion) => Promise<MappingAnswer>;
@@ -200,6 +214,11 @@ export async function sendEmbryoFile(input: {
     method, credentials: "same-origin", cache: "no-store", redirect: "error",
     headers: { "Content-Type": "application/json", ...headers }, body: JSON.stringify(body),
   });
+  const configureCsrf = csrfHandle(input.csrf.configure), mappingCsrf = csrfHandle(input.csrf.mapping);
+  const completeCsrf = csrfHandle(input.csrf.complete);
+  /** One request of a token route, carrying the route's next token in `X-Inherit-CSRF`. */
+  const tokened = (handle: CsrfHandle, url: string, init: RequestInit) => handle.send((token) => send(url,
+    { ...init, headers: { ...(init.headers as Record<string, string>), [UPLOAD_CSRF_HEADER]: token } }));
   let spent = false;
   try {
     let session: UploadSession;
@@ -217,7 +236,7 @@ export async function sendEmbryoFile(input: {
     if (evidence.sampleCount !== session.sampleHandles.length) throw new UploadTransportError("sample-count");
 
     spent = true;
-    const configure = await send(session.configureRoute,
+    const configure = await tokened(configureCsrf, session.configureRoute,
       json({ format: "vcf", buildEvidence: evidence.buildEvidence, sampleCount: evidence.sampleCount,
         nonce: session.operationNonce }));
     if (configure.status !== 200) throw new UploadTransportError(await terminalOf(configure));
@@ -243,13 +262,13 @@ export async function sendEmbryoFile(input: {
    * the transport the last answer carried.
    */
   async function mapTable(table: TableHeaderCopy, session: UploadSession): Promise<Transport & { answers: { field: PgtField; column: number }[] }> {
-    const configure = await send(session.configureRoute,
+    const configure = await tokened(configureCsrf, session.configureRoute,
       json({ format: "pgt_table", buildEvidence: table.buildEvidence, nonce: session.operationNonce }));
     if (configure.status !== 200) throw new UploadTransportError(await terminalOf(configure));
     const configured = tableConfigured.safeParse(await configure.json());
     if (!configured.success) throw new UploadTransportError("refused");
     const mappingRoute = route("api.embryo-ingest-mapping", { session: session.session });
-    let response = await send(mappingRoute, json({ headerColumns: table.copy, nonce: configured.data.nonce }));
+    let response = await tokened(mappingCsrf, mappingRoute, json({ headerColumns: table.copy, nonce: configured.data.nonce }));
     let answers: { field: PgtField; column: number }[] = [];
     for (let step = 0; step < 3; step++) {
       if (response.status !== 200) throw new UploadTransportError(await terminalOf(response));
@@ -262,12 +281,12 @@ export async function sendEmbryoFile(input: {
         const answer = await input.decide(columnQuestion(next, table));
         if (answer.kind !== "columns") throw new UploadTransportError("refused");
         answers = answer.mappings.map(({ field, columnIndex }) => ({ field, column: columnIndex }));
-        response = await send(mappingRoute, json({ challengeId: next.challengeId,
+        response = await tokened(mappingCsrf, mappingRoute, json({ challengeId: next.challengeId,
           mappings: answer.mappings.map(({ columnIndex, field }) => ({ columnIndex, field })), nonce: next.nonce }, {}, "PUT"));
       } else {
         const answer = await input.decide({ kind: "build" });
         if (answer.kind !== "build") throw new UploadTransportError("refused");
-        response = await send(mappingRoute, json({ challengeId: next.challengeId, referenceBuild: answer.referenceBuild,
+        response = await tokened(mappingCsrf, mappingRoute, json({ challengeId: next.challengeId, referenceBuild: answer.referenceBuild,
           nonce: next.nonce }, {}, "PUT"));
       }
     }
@@ -305,8 +324,8 @@ export async function sendEmbryoFile(input: {
     }
 
     input.onProgress?.({ phase: "finishing" });
-    const complete = await send(session.completeRoute,
-      json({ chunkCount: sequence, nonce: transport.completionNonce }, { [UPLOAD_CSRF_HEADER]: transport.csrfToken }));
+    const complete = await tokened(completeCsrf, session.completeRoute,
+      json({ chunkCount: sequence, nonce: transport.completionNonce }, { [UPLOAD_OPERATION_HEADER]: transport.csrfToken }));
     if (complete.status !== 200 && complete.status !== 202) throw new UploadTransportError(await terminalOf(complete));
     const accepted = z.object({ status: z.enum(["sanitization_pending", "sanitization_in_progress"]), uploadId: z.uuid(),
       jobId: z.uuid(), analysisState: z.enum(["queued", "running"]) }).strict().safeParse(await complete.json());

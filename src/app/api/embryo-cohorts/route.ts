@@ -3,7 +3,8 @@ import { notFound, rpcErrorResponse, sensitiveJson } from "@/lib/embryos/api";
 import { cohortCreatedBody, cohortFinalizeBody, ingestCookieParts } from "@/lib/embryos/cohort-create";
 import { accountJurisdictionDenied, originDenied, readJson, unauthenticated } from "@/lib/embryos/guards";
 import { ingestRequestOrigin } from "@/lib/embryos/ingest-http";
-import { ingestCookie } from "@/lib/embryos/ingest-session";
+import { ingestCookie, uploadSessionCsrf } from "@/lib/embryos/ingest-session";
+import { UPLOAD_SESSION_CSRF_HEADER } from "@/lib/security/opened-session-csrf";
 import { mintIngestSessionOperation, verifyEmbryoOperation } from "@/lib/embryos/operation-token";
 import { isTestJurisdictionEnabled } from "@/lib/legal/jurisdictions";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -108,5 +109,8 @@ async function handlePost(request: Request) {
   const body = cohortCreatedBody(data, operationNonce);
   return sensitiveJson(body, 201, {
     "set-cookie": ingestCookie(cookie.session, cookie.secret, cookie.expiresAt),
+    // The upload session's first one-time X-Inherit-CSRF tokens (G8.5): this
+    // answer's own X-Inherit-CSRF carries api.embryo-cohorts' successor.
+    [UPLOAD_SESSION_CSRF_HEADER]: uploadSessionCsrf(cookie.session, cookie.secret),
   });
 }

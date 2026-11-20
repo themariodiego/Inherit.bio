@@ -29,6 +29,10 @@ const mocks = vi.hoisted(() => ({
   unwindThrows: false,
 }));
 
+// The gate is driven on this route in src/lib/security/session-csrf-routes.test.ts
+// (G8.5, the migration stage); here it admits every request.
+vi.mock("@/lib/security/session-csrf", async (importOriginal) =>
+  (await import("@/lib/security/session-csrf.test-support")).admitEverySessionCsrf(await importOriginal()));
 vi.mock("@/lib/account-deletion", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/account-deletion")>()),
   getSensitiveAccountContext: async () => mocks.account,

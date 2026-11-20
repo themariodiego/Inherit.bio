@@ -3,6 +3,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   SESSION_CSRF_LIFETIME_MS,
   SESSION_CSRF_ROUTES,
+  SESSION_CSRF_SECOND_KINDS,
+  SESSION_CSRF_STREAM_ROUTES,
+  acceptsSessionKind,
   mintSessionCsrf,
   verifySessionCsrf,
   type CsrfSession,
@@ -95,6 +98,92 @@ describe("the one-time X-Inherit-CSRF token (session-csrf-core)", () => {
     expect(() => mintSessionCsrf({ ...account, accountId: "not-a-uuid" }, "api.jurisdiction", NOW)).toThrow();
     expect(() => mintSessionCsrf({ kind: "token", sessionHash: "short" }, "api.withdraw", NOW)).toThrow();
     expect(() => mintSessionCsrf(account, "api.jurisdiction", -1)).toThrow();
-    expect(Object.values(SESSION_CSRF_ROUTES).every((kind) => ["authenticated", "token", "token-candidate"].includes(kind))).toBe(true);
+    // 2026-11-19 (G8.5, the migration stage): the kinds list grew from the
+    // three of 20261024220000 to the eight public.consume_session_csrf_v2 accepts.
+    expect(new Set(Object.values(SESSION_CSRF_ROUTES))).toEqual(new Set(["authenticated", "token", "token-candidate",
+      "reviewer", "upload-session", "claim-session", "evidence-session", "reset-session"]));
+    expect(() => mintSessionCsrf({ kind: "upload-session", sessionHash: "a".repeat(64), sessionId: "not-a-uuid" },
+      "api.embryo-ingest-configure", NOW)).toThrow();
+  });
+});
+
+/**
+ * The five kinds of G8.5's migration stage. A token of one kind never
+ * verifies as another, even where the two bind the same values: a reviewer's
+ * and an account's are both the account and its auth session; a claim
+ * session's, a reset session's and a rights session's are each one cookie
+ * hash. An upload or evidence session's token binds the session id the path
+ * names as well as the cookie's hash.
+ */
+describe("the five later session kinds", () => {
+  const reviewer: CsrfSession = { kind: "reviewer", accountId: account.accountId, sessionId: account.sessionId };
+  const HASH = "c".repeat(64);
+  const SESSION = "55555555-5555-4555-8555-555555555555";
+
+  it("keeps a reviewer token and an account token apart", () => {
+    const token = mintSessionCsrf(reviewer, "api.appeal-review", NOW);
+    expect(verifySessionCsrf(token, reviewer, "api.appeal-review", NOW + 1)).not.toBeNull();
+    expect(verifySessionCsrf(token, account, "api.appeal-review", NOW + 1)).toBeNull();
+    expect(() => mintSessionCsrf(reviewer, "api.jurisdiction", NOW)).toThrow("session_csrf_context_invalid");
+    expect(() => mintSessionCsrf(account, "api.appeal-review", NOW)).toThrow("session_csrf_context_invalid");
+    expect(verifySessionCsrf(mintSessionCsrf(account, "api.jurisdiction", NOW), reviewer, "api.jurisdiction", NOW + 1)).toBeNull();
+  });
+
+  it("keeps each cookie kind apart from the others with the same hash", () => {
+    const claim: CsrfSession = { kind: "claim-session", sessionHash: HASH };
+    const token = mintSessionCsrf(claim, "api.future-person-claim-complete", NOW);
+    expect(verifySessionCsrf(token, claim, "api.future-person-claim-complete", NOW + 1)).not.toBeNull();
+    for (const kind of ["token", "reset-session", "token-candidate"] as const) {
+      expect(verifySessionCsrf(token, { kind, sessionHash: HASH }, "api.future-person-claim-complete", NOW + 1), kind).toBeNull();
+    }
+    const reset = mintSessionCsrf({ kind: "reset-session", sessionHash: HASH }, "auth.reset-password-submit", NOW);
+    expect(verifySessionCsrf(reset, { kind: "reset-session", sessionHash: HASH }, "auth.reset-password-submit", NOW + 1)).not.toBeNull();
+    expect(verifySessionCsrf(reset, { kind: "reset-session", sessionHash: "d".repeat(64) }, "auth.reset-password-submit", NOW + 1)).toBeNull();
+  });
+
+  it("binds an upload or evidence session's token to the session id as well as the cookie", () => {
+    for (const [kind, route] of [["upload-session", "api.embryo-ingest-complete"], ["evidence-session", "api.evidence-complete"]] as const) {
+      const session: CsrfSession = { kind, sessionHash: HASH, sessionId: SESSION };
+      const token = mintSessionCsrf(session, route, NOW);
+      expect(verifySessionCsrf(token, session, route, NOW + 1), kind).not.toBeNull();
+      expect(verifySessionCsrf(token, { ...session, sessionId: "66666666-6666-4666-8666-666666666666" }, route, NOW + 1), kind).toBeNull();
+      expect(verifySessionCsrf(token, { ...session, sessionHash: "d".repeat(64) }, route, NOW + 1), kind).toBeNull();
+    }
+    const evidence = mintSessionCsrf({ kind: "evidence-session", sessionHash: HASH, sessionId: SESSION }, "api.evidence-chunk", NOW);
+    expect(verifySessionCsrf(evidence, { kind: "upload-session", sessionHash: HASH, sessionId: SESSION }, "api.evidence-chunk", NOW + 1)).toBeNull();
+  });
+
+  it("names one chunk stream, api.evidence-chunk, whose value is not spent per chunk (principle 3)", () => {
+    expect([...SESSION_CSRF_STREAM_ROUTES]).toEqual(["api.evidence-chunk"]);
+    expect(Object.hasOwn(SESSION_CSRF_ROUTES, "api.embryo-ingest-chunk")).toBe(false);
+  });
+});
+
+/**
+ * Owner decision of 19 November 2026, "G8.5: the claim-objection address
+ * accepts either kind of session": one route takes a rights or an account
+ * session's token. Every other route takes its own kind only.
+ */
+describe("the one route that takes two kinds of session", () => {
+  it("is declared for api.future-person-claim-objection alone, rights first and account second", () => {
+    expect(SESSION_CSRF_SECOND_KINDS).toEqual({ "api.future-person-claim-objection": "authenticated" });
+    expect(SESSION_CSRF_ROUTES["api.future-person-claim-objection"]).toBe("token");
+    const accountToken = mintSessionCsrf(account, "api.future-person-claim-objection", NOW);
+    const rightsToken = mintSessionCsrf(rights, "api.future-person-claim-objection", NOW);
+    expect(verifySessionCsrf(accountToken, account, "api.future-person-claim-objection", NOW + 1)).not.toBeNull();
+    expect(verifySessionCsrf(rightsToken, rights, "api.future-person-claim-objection", NOW + 1)).not.toBeNull();
+    expect(verifySessionCsrf(accountToken, rights, "api.future-person-claim-objection", NOW + 1)).toBeNull();
+    expect(verifySessionCsrf(rightsToken, account, "api.future-person-claim-objection", NOW + 1)).toBeNull();
+  });
+
+  it("does not let any other route take a second kind: each refuses every kind but its own", () => {
+    const kinds = ["authenticated", "token", "token-candidate", "reviewer", "upload-session", "claim-session", "evidence-session", "reset-session"] as const;
+    for (const route of Object.keys(SESSION_CSRF_ROUTES) as (keyof typeof SESSION_CSRF_ROUTES)[]) {
+      const accepted = kinds.filter(kind => acceptsSessionKind(route, kind));
+      expect(accepted, route).toEqual(route === "api.future-person-claim-objection"
+        ? ["authenticated", "token"] : [SESSION_CSRF_ROUTES[route]]);
+    }
+    expect(() => mintSessionCsrf(account, "api.withdraw", NOW)).toThrow("session_csrf_context_invalid");
+    expect(() => mintSessionCsrf(rights, "api.future-person-claimant-bind", NOW)).toThrow("session_csrf_context_invalid");
   });
 });

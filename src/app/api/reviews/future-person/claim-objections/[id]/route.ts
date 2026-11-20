@@ -6,7 +6,8 @@ import { sha256Hex } from "@/lib/future-person/claim-session";
 import { futurePersonClaimsOpen } from "@/lib/future-person/claims-open";
 import { mintAssignedObjectionNonce, readAssignedObjectionNonce, objectionDecisionBody,
   objectionDecisionScope, shapeObjectionReview } from "@/lib/future-person/objection-review";
-import { isCanonicalId, REVIEW_CSRF_HEADER, REVIEW_NONCE_HEADER, reviewCsrf, reviewCsrfMatches, sealReason } from "@/lib/future-person/review";
+import { isCanonicalId, REVIEW_NONCE_HEADER, sealReason } from "@/lib/future-person/review";
+import { withReviewerCsrf } from "@/lib/security/session-csrf";
 import { mintReceiptOpenNonce } from "@/lib/future-person/review-receipt";
 import { createClient } from "@/lib/supabase/server";
 
@@ -24,19 +25,20 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
   if (error) return noReferrer(error.code === "42501" ? notFound() : unavailable());
   const body = shapeObjectionReview(data, id); if (!body) return noReferrer(notFound());
   return noReferrer(sensitiveJson(body, 200, {
-    [REVIEW_CSRF_HEADER]: reviewCsrf(id, account.user.id, account.sessionId),
     [REVIEW_NONCE_HEADER]: mintAssignedObjectionNonce(id, account.user.id, account.sessionId, body),
     "x-inherit-photo-receipt-nonce": mintReceiptOpenNonce(body.reviewPackage.photoIdentityDocumentId, account.user.id, account.sessionId),
     "x-inherit-birth-receipt-nonce": mintReceiptOpenNonce(body.reviewPackage.birthRecordDocumentId, account.user.id, account.sessionId),
   }));
 }
 /** Every current revision and both full byte receipts are rechecked by SQL;
- * a review overrule only queues a separate fresh human operation. */
-export async function POST(request: Request, context: { params: Promise<{ id: string }> }) {
+ * a review overrule only queues a separate fresh human operation. The
+ * reviewer's one-time X-Inherit-CSRF token is spent before the handler runs
+ * (G8.5, the migration stage); the GET issues none (it returned a digest of
+ * the case), and the review page renders the tokens. */
+export const POST = withReviewerCsrf("api.future-person-claim-objection-review", async (request: Request, context: { params: Promise<{ id: string }> }) => {
   const { id } = await context.params, account = await reviewer(request, id), url = new URL(request.url);
   if (!account || request.headers.get("origin") !== url.origin || request.headers.get("sec-fetch-site") !== "same-origin"
-    || request.headers.get("content-type")?.split(";")[0]?.trim().toLowerCase() !== "application/json"
-    || !reviewCsrfMatches(request.headers.get(REVIEW_CSRF_HEADER), id, account.user.id, account.sessionId)) return noReferrer(notFound());
+    || request.headers.get("content-type")?.split(";")[0]?.trim().toLowerCase() !== "application/json") return noReferrer(notFound());
   const parsed = objectionDecisionBody.safeParse(await readBoundedJson(request, 16 * 1024));
   if (!parsed.success) return noReferrer(notFound());
   const nonce = readAssignedObjectionNonce(parsed.data.nonce, id, account.user.id, account.sessionId, parsed.data);
@@ -59,4 +61,4 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
     || receipt.objectionId !== id || receipt.objectionRevision !== parsed.data.objectionRevision + 1
     || receipt.state !== expected[parsed.data.decision]) return noReferrer(unavailable());
   return noReferrer(await closedResponse("api.future-person-claim-objection-review", ["objectionId", "state", "objectionRevision"], receipt, 200));
-}
+});

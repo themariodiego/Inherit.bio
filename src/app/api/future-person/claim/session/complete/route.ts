@@ -2,9 +2,10 @@ import { z } from "zod";
 import { closedResponse } from "@/lib/embryos/guards";
 import { notFound, unavailable } from "@/lib/embryos/api";
 import { readBoundedJson } from "@/lib/future-person/bounded-body";
-import { claimMutationCsrfMatches, newClaimSessionRotation, sha256Hex } from "@/lib/future-person/claim-session";
+import { newClaimSessionRotation, sha256Hex } from "@/lib/future-person/claim-session";
 import { futurePersonClaimsOpen } from "@/lib/future-person/claims-open";
 import { claimSessionHash, readClaimCompleteNonce } from "@/lib/future-person/evidence-session";
+import { answerForRotatedSession, readClaimCsrfSession, withPurposeCsrf } from "@/lib/security/session-csrf";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 /**
@@ -20,6 +21,12 @@ import { createAdminClient } from "@/lib/supabase/admin";
  * future-person-claim-acceptance-v1; nothing about a match, a candidate or
  * a review reaches the claimant. Anything unknown, missing, invalid or
  * crossing sessions is the opaque 404.
+ *
+ * `X-Inherit-CSRF` is the claim session's one-time token for this route
+ * (G8.5, the migration stage), spent before the handler runs; it was a
+ * digest of the claim session, the operation and the nonce. The nonce stays
+ * in the body and is checked as before. The completion rotates the claim
+ * cookie, so the successor the answer carries is minted for the new one.
  */
 
 const RECEIVED_KEYS = ["status"] as const;
@@ -37,9 +44,8 @@ function withoutReferrer(response: Response): Response {
   return response;
 }
 
-export async function POST(request: Request) {
-  return withoutReferrer(await complete(request));
-}
+export const POST = withPurposeCsrf("api.future-person-claim-complete", readClaimCsrfSession,
+  async (request: Request) => withoutReferrer(await complete(request)));
 
 async function complete(request: Request): Promise<Response> {
   if (!futurePersonClaimsOpen()) return notFound();
@@ -57,7 +63,7 @@ async function complete(request: Request): Promise<Response> {
   const parsed = body.safeParse(await readBoundedJson(request, 4096));
   if (!parsed.success) return notFound();
   const nonce = readClaimCompleteNonce(parsed.data.nonce, claimHash);
-  if (!nonce || !claimMutationCsrfMatches(request.headers.get("x-inherit-csrf"), claimHash, "complete", parsed.data.nonce)) return notFound();
+  if (!nonce) return notFound();
 
   const successor = newClaimSessionRotation();
   const { data, error } = await createAdminClient().rpc("complete_future_person_claim_rotated_v1", {
@@ -74,6 +80,7 @@ async function complete(request: Request): Promise<Response> {
   const expiry = new Date(accepted.expiresAt);
   if (Number.isNaN(expiry.getTime())) return unavailable();
   const response = await closedResponse("api.future-person-claim-complete", RECEIVED_KEYS, { status: "received" }, 202);
-  if (response.status === 202) response.headers.append("Set-Cookie", successor.setCookie(expiry));
-  return response;
+  if (response.status !== 202) return response;
+  response.headers.append("Set-Cookie", successor.setCookie(expiry));
+  return answerForRotatedSession(response, { kind: "claim-session", sessionHash: successor.sessionHash });
 }

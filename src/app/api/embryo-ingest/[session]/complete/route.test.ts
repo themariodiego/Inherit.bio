@@ -24,6 +24,10 @@ const mocks = vi.hoisted(() => ({
   results: {} as Record<string, { data: unknown; error: { code?: string } | null }>,
 }));
 
+// The gate is driven on this route in src/lib/security/session-csrf-routes.test.ts
+// (G8.5, the migration stage); here it admits every request.
+vi.mock("@/lib/security/session-csrf", async (importOriginal) =>
+  (await import("@/lib/security/session-csrf.test-support")).admitEverySessionCsrf(await importOriginal()));
 vi.mock("@/lib/account-deletion", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/account-deletion")>()),
   getSensitiveAccountContext: async () => mocks.account,
@@ -71,7 +75,11 @@ function post(body: unknown, headers: Record<string, string> = {}) {
     method: "POST",
     headers: {
       origin: ORIGIN, "sec-fetch-site": "same-origin", "content-type": "application/json",
-      cookie: `inherit-ingest-${SESSION}=${COOKIE_VALUE}`, "x-inherit-csrf": csrf.token, ...headers,
+      // 2026-11-19 (G8.5, the migration stage): the ingest_complete_csrf operation token travels in
+      // X-Inherit-Operation-Nonce; X-Inherit-CSRF is the upload session's one-time token, which the
+      // gate checks before the handler (src/lib/security/session-csrf-routes.test.ts).
+      cookie: `inherit-ingest-${SESSION}=${COOKIE_VALUE}`, "x-inherit-csrf": "session-token-checked-by-the-gate",
+      "x-inherit-operation-nonce": csrf.token, ...headers,
     },
     body: JSON.stringify(body),
   });
@@ -136,9 +144,11 @@ describe("authority", () => {
     ["the completion nonce in its place", () => completion.token],
     ["another upload session's", () => token("ingest_complete_csrf", { targetId: "12345678-1234-4234-8234-0000000000c2" }).token],
     ["another auth session's", () => token("ingest_complete_csrf", { sessionId: "12345678-1234-4234-8234-0000000000a2" }).token],
-  ])("refuses an X-Inherit-CSRF header that is %s, before reading the body", async (_label, header) => {
-    const request = post(body(), header ? { "x-inherit-csrf": header() } : {});
-    if (!header) request.headers.delete("x-inherit-csrf");
+    ["sent only in X-Inherit-CSRF, its old place", () => null],
+  ])("refuses an X-Inherit-Operation-Nonce header that is %s, before reading the body", async (_label, header) => {
+    const value = header?.();
+    const request = post(body(), value ? { "x-inherit-operation-nonce": value } : value === null ? { "x-inherit-csrf": csrf.token } : {});
+    if (!value) request.headers.delete("x-inherit-operation-nonce");
     const response = await call(request);
     expect(response.status).toBe(403);
     expect(await response.json()).toEqual({ error: "request_forbidden" });

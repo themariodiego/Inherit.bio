@@ -14,7 +14,7 @@ import {
   SUBMITTED_BODY,
   SUBMITTED_HEADING,
 } from "@/copy/rights/future-person-claim";
-import { CLAIM_FORM_TOKEN_HEADER, CLAIM_SESSION_COOKIE, claimMutationCsrf, sha256Hex } from "@/lib/future-person/claim-session";
+import { CLAIM_FORM_TOKEN_HEADER, CLAIM_SESSION_COOKIE, claimSessionCsrf, sha256Hex } from "@/lib/future-person/claim-session";
 import { mintClaimCompleteNonce, mintClaimDocumentNonce } from "@/lib/future-person/evidence-session";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { futurePersonClaimsOpen } from "@/lib/future-person/claims-open";
@@ -55,9 +55,10 @@ async function claimStatus(): Promise<ClaimStatus> {
   if (error || !value) return null;
   if (value.status === "completed") return { status: "completed" };
   if (value.status === "live" && (value.mode === "record-key" || value.mode === "claimant-recovery-key" || value.mode === "keyless")) {
+    const csrf = claimSessionCsrf(sha256Hex(secret));
     return { status: "live", mode: value.mode, documentNonce, completeNonce,
-      documentCsrf: claimMutationCsrf(sha256Hex(secret), "documents", documentNonce),
-      completeCsrf: claimMutationCsrf(sha256Hex(secret), "complete", completeNonce) };
+      documentCsrf: csrf.documents,
+      completeCsrf: csrf.complete };
   }
   return null;
 }

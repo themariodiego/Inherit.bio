@@ -162,7 +162,7 @@
   "allowlistedBucketNotCreatedNote": "A bucket a database CHECK constraint still admits, which no migration leaves in place. The three database-selected call sites choose their bucket from rows those constraints govern, so an admitted bucket is one a manifest could still name. scripts/route-register-correspondence.test.ts reads each bucket CHECK at its latest definition, in migration order, compares this list in both directions with the admitted, undeclared buckets that are not in the route ledger, and fails if a row's bucket is created again. Empty since supabase/migrations/20261119110000_dropped_bucket_literals_and_guard.sql: both manifest builders already read upload_sessions.storage_bucket (D-130; 20260929101000 and 20260930235000, restated by 20260930132000 and 20260930238000), so that migration removed 'genomes-staging' (dropped by 20260930140000) from the CHECKs of public.account_deletion_storage_entries and public.embryo_ingest_delete_objects, and 'generated-artifacts' (dropped by 20260930140100) from those two and public.genome_storage_objects, refusing to run while any row named either.",
   "allowlistedBucketNotCreated": [],
   "formRequestDivergenceNote": "2026-10-23 (G8.5, form verification). What every <form> in the shipped app sends, read from source by scripts/form-contract-census.ts and held against docs/route-register.json by scripts/form-register-correspondence.test.ts: the target, method, body keys and literal discriminators, required and CSRF headers, Content-Type and the statuses the code branches on. A native form is read from its markup; an actionless form through its submit handler, following local and imported functions, conditional bodies and the props a form hands its submission to. Each row is one (request file, route, method) and the issues it shows (since 2026-10-23 no request omits X-Inherit-CSRF, and the test fails if one does; see csrfTransportNote); the test computes the issue set and compares it with these rows in both directions, so a new divergence fails until recorded and a fixed one fails until its row is removed. closedBy names who has to act: owner (which document moves), counsel, or engineering. Listing a divergence records it; it does not bless it. 2026-10-23, owner decision (\"G8.5: forms, CSRF, the server action and the Resend webhook\", item 1): the register lists the harmless extras that ship, so five rows close and are removed: genome.browser's q (a closed queryContract), requestId on every subject-draft body, Path B's withAccount confirm body on api.withdraw, api.chat's 409s (copilot-provider-setup-required-v1 and own-chat-scientific-correction-v1) and api.future-person-claim's 404 (resource-not-found-v1). The CSRF rows close with item 2, the one-time session token, the same day (see csrfTransportNote). The Path A row (src/components/family/invite-adult-form.tsx) closes the same day: the form and src/app/api/subject-drafts/route.ts moved to the registered { kind: \"adult\", adultFlow: \"path-a-own-account\", contactEmail, requestId, note? } and answer an unreviewed jurisdiction with capability-denied-api-v1 (403). The compatibility chat row (src/components/chat/chat-panel.tsx) closes the same day: the panel sends the registered { contextToken, message } to api.chat with no query, under a token /copilot/[scope] mints for the account, its auth session and the subject (src/lib/copilot/compat-chat-token.ts), and the route's AI SDK transport branch is gone. 2026-10-24, owner decision (\"G8.5: Settings \u2192 AI may omit `apiKey`\"): the register's hosted and remote-openai-compatible bodies of api.llm-settings say apiKey is optional (an absent key keeps the stored key for the same destination, a remote HTTPS endpoint may be saved with no key, and a POST that cannot reuse a stored key answers llm-settings-v1.keyRequired, 409), so the last Settings row closes and is removed. The co-parent jurisdiction fields (D-083, counsel) are the one row left. 2026-10-24 (G8.5): the compatibility Copilot panel (src/components/chat/chat-panel.tsx) is retired with its api.chat branch; the form census reads 25 forms (1 native, 24 handler-submitted) and 27 requests in 22 files, and this table is unchanged. 2026-11-19, owner decision (\"G8.5: the retired chat's 409 leaves the register\"): copilot-provider-setup-required-v1, which nothing has answered since the compatibility branch of api.chat was retired on 24 October, leaves the register with its two references (api.chat's responseContractBindings entry and its zeroFindingClosedBranches entry). api.chat's one registered 409 is now own-chat-scientific-correction-v1, which the own chat still answers, so a form that branches on 409 still matches a bound contract. This table is unchanged.",
-  "csrfTransportNote": "2026-10-23 (G8.5; owner decision \"CSRF: build the token everywhere\"). The register's csrfTransport stands and is built. src/lib/security/session-csrf-core.ts mints X-Inherit-CSRF as <expiresAt>.<random>.<mac>: a keyed digest of the session kind, the session (the account and its auth session, or the SHA-256 of the rights-session or activation-candidate cookie), the registered route and a twelve-hour expiry, none of which travels in the token. The page or the signed-in shell renders it and stores nothing. The route verifies it against the live request, and public.consume_session_csrf_v1 (20261024220000_session_csrf_tokens.sql, a guarded production release) spends its hash once, refusing a spent token, an expiry beyond the lifetime and an authenticated token whose auth session is no longer live; the response that spends one carries its successor in the same header. A missing, spent, other-session or other-route token is refused before the handler runs: authenticated-mutation-v1's 403 request_forbidden on an authenticated route, the 404 not_found of token-api-v1 or token-candidate-api-v1 on a purpose-session route. Operation nonces are unchanged and separate (operationNonceIsNotCsrf). The 56 routes of SESSION_CSRF_ROUTES require it (37, and api.embryo-acknowledge since the merge with G8.5's form shapes; api.subjects, api.future-person-claimant-bind, api.future-person-correction and api.appeal-complete since 2026-11-19, moved from csrfOwnDesign; fourteen more the same day in stage two, with api.consents and api.subject-drafts now gated on every body), with api.embryo-withdraw sharing api.cohort-restrict's token as its policy.aliasOf; src/lib/security/session-csrf-routes.test.ts drives each through its handler, and scripts/form-register-correspondence.test.ts finds no client request, form or not, that omits the header. auth.sign-out is a scripted form that sends it and checks the exact Origin. Every other route the register binds keeps an X-Inherit-CSRF of its own design, listed in csrfOwnDesign with what it binds and whether it is one-time; two upload-session routes send none. No formRequestDivergence row records a CSRF omission any more.",
+  "csrfTransportNote": "2026-10-23 (G8.5; owner decision \"CSRF: build the token everywhere\"). The register's csrfTransport stands and is built. src/lib/security/session-csrf-core.ts mints X-Inherit-CSRF as <expiresAt>.<random>.<mac>: a keyed digest of the session kind, the session (the account and its auth session, or the SHA-256 of the rights-session or activation-candidate cookie), the registered route and a twelve-hour expiry, none of which travels in the token. The page or the signed-in shell renders it and stores nothing. The route verifies it against the live request, and public.consume_session_csrf_v1 (20261024220000_session_csrf_tokens.sql, a guarded production release) spends its hash once, refusing a spent token, an expiry beyond the lifetime and an authenticated token whose auth session is no longer live; the response that spends one carries its successor in the same header. A missing, spent, other-session or other-route token is refused before the handler runs: authenticated-mutation-v1's 403 request_forbidden on an authenticated route, the 404 not_found of token-api-v1 or token-candidate-api-v1 on a purpose-session route. Operation nonces are unchanged and separate (operationNonceIsNotCsrf). The 74 routes of SESSION_CSRF_ROUTES require it (37, and api.embryo-acknowledge since the merge with G8.5's form shapes; api.subjects, api.future-person-claimant-bind, api.future-person-correction and api.appeal-complete since 2026-11-19, moved from csrfOwnDesign; fourteen more the same day in stage two, with api.consents and api.subject-drafts now gated on every body; eighteen more in the migration stage, the same day, on five more session kinds that public.consume_session_csrf_v2 spends and holds to their live rows, with api.future-person-claim-objection taking a rights or an account token), with api.embryo-withdraw sharing api.cohort-restrict's token as its policy.aliasOf; src/lib/security/session-csrf-routes.test.ts drives each through its handler, and scripts/form-register-correspondence.test.ts finds no client request, form or not, that omits the header. auth.sign-out is a scripted form that sends it and checks the exact Origin. No route the register binds keeps an X-Inherit-CSRF of its own design since the migration stage; csrfOwnDesign keeps one branch row, the TEST account archive's acknowledgement on api.claim-review-chunk-acknowledgement's path. api.evidence-chunk's value is verified on every chunk and not spent (principle 3). No formRequestDivergence row records a CSRF omission any more.",
   "formRequestDivergence": [
     {
       "file": "src/components/embryo/co-parent-review-form.tsx",
@@ -281,151 +281,16 @@
       "closing": "Nothing while both callers pass an object URL. A caller that passes a network URL changes the evidence and fails this entry until it is re-reviewed."
     }
   ],
-  "csrfOwnDesignNote": "2026-10-23 (G8.5). Every route the register binds to csrfTransport whose X-Inherit-CSRF is not the one-time session token of src/lib/security/session-csrf.ts, read from its handler: what the header carries, the kind (digest-not-one-time: a keyed digest of the session that a replay can repeat, so the paired one-time nonce or the session's own rotation is what refuses it; operation-token: the one-time operation or presentation value itself, which operationNonceIsNotCsrf says a CSRF value is not; derived-one-time: a distinct value bound to a one-time token; none), and whether it is one-time. branch marks a route whose other bodies use the session token. src/lib/security/session-csrf-routes.test.ts holds this list to the register in both directions, with SESSION_CSRF_ROUTES, and each row to the literal it cites. Moving a row onto the session token is engineering work once the owner says these designs should go; the two upload-session routes also need a carrier for the first token of a session a response opens. 2026-11-19 (G8.5 stage one, the owner's \"build the token everywhere\"): the four rows that fit without a migration or a design question moved onto the session token and left this list (api.subjects, api.future-person-claimant-bind, api.future-person-correction, api.appeal-complete); each kept its one-time nonce. Of the 34 left after it, 2026-11-19 (G8.5 stage two, under the owner's principles for the CSRF register amendments of the same day): fourteen whole rows and the two branch rows moved onto the session token and left this list (api.account-completion, api.invitations, api.embryo-cohort-drafts, api.legal-evidence-upload-session, api.embryo-record-key-cards-rights, api.export, api.subject-export, api.future-person-export, api.future-person-identity-profile, api.future-person-recovery-key, api.future-person-analysis-stop, api.future-person-delete, api.appeal-document-session, api.third-party-subject-export; api.consents, api.subject-drafts). Each kept its one-time operation value where the register now names it: a body field (presentationToken, artifactPresentationToken, nonce), X-Inherit-Operation-Nonce, or X-Inherit-Operation-Proof for the export routes' sealed proof and the identity profile's derived proof; the two evidence-session openers hand the evidence session's value over in X-Inherit-Evidence-CSRF. The 18 left: 17 need a session kind the consume function does not accept (reviewer, upload-session, claim-session, evidence-session, reset-session), so a migration; api.future-person-claim-objection needs the gate to accept two session kinds for one route (the rights session for its link branch and the account session for its registered accountEquivalent branch), which the owner's principles do not settle.",
+  "csrfOwnDesignNote": "2026-10-23 (G8.5). Every route the register binds to csrfTransport whose X-Inherit-CSRF is not the one-time session token of src/lib/security/session-csrf.ts, read from its handler: what the header carries, the kind (digest-not-one-time: a keyed digest of the session that a replay can repeat, so the paired one-time nonce or the session's own rotation is what refuses it; operation-token: the one-time operation or presentation value itself, which operationNonceIsNotCsrf says a CSRF value is not; derived-one-time: a distinct value bound to a one-time token; none), and whether it is one-time. branch marks a route whose other bodies use the session token. src/lib/security/session-csrf-routes.test.ts holds this list to the register in both directions, with SESSION_CSRF_ROUTES, and each row to the literal it cites. Moving a row onto the session token is engineering work once the owner says these designs should go; the two upload-session routes also need a carrier for the first token of a session a response opens. 2026-11-19 (G8.5 stage one, the owner's \"build the token everywhere\"): the four rows that fit without a migration or a design question moved onto the session token and left this list (api.subjects, api.future-person-claimant-bind, api.future-person-correction, api.appeal-complete); each kept its one-time nonce. Of the 34 left after it, 2026-11-19 (G8.5 stage two, under the owner's principles for the CSRF register amendments of the same day): fourteen whole rows and the two branch rows moved onto the session token and left this list (api.account-completion, api.invitations, api.embryo-cohort-drafts, api.legal-evidence-upload-session, api.embryo-record-key-cards-rights, api.export, api.subject-export, api.future-person-export, api.future-person-identity-profile, api.future-person-recovery-key, api.future-person-analysis-stop, api.future-person-delete, api.appeal-document-session, api.third-party-subject-export; api.consents, api.subject-drafts). Each kept its one-time operation value where the register now names it: a body field (presentationToken, artifactPresentationToken, nonce), X-Inherit-Operation-Nonce, or X-Inherit-Operation-Proof for the export routes' sealed proof and the identity profile's derived proof; the two evidence-session openers hand the evidence session's value over in X-Inherit-Evidence-CSRF. The 18 left: 17 need a session kind the consume function does not accept (reviewer, upload-session, claim-session, evidence-session, reset-session), so a migration; api.future-person-claim-objection needs the gate to accept two session kinds for one route (the rights session for its link branch and the account session for its registered accountEquivalent branch), which the owner's principles do not settle. 2026-11-19 (G8.5, the migration stage, under the same principles and the owner's decision of the same day \"G8.5: the claim-objection address accepts either kind of session\"): all 18 whole rows moved onto the session token and left this list. The seventeen that needed a session kind the consume function did not accept are spent by public.consume_session_csrf_v2 (20261119120000_session_csrf_purpose_kinds.sql, a guarded production release), which holds each kind to its live row: reviewer (api.legal-evidence-review, api.appeal-review, api.future-person-documentary-verification, api.future-person-claim-review, api.future-person-claim-release, api.future-person-claim-objection-review, api.future-person-correction-review, api.claim-review-receipt, api.claim-review-chunk-acknowledgement), upload-session (api.embryo-ingest-configure, api.embryo-ingest-mapping, api.embryo-ingest-complete), claim-session (api.future-person-claim-document-session, api.future-person-claim-complete), evidence-session (api.evidence-chunk, api.evidence-complete) and reset-session (auth.reset-password-submit). api.future-person-claim-objection takes a rights token first and an account token second (SESSION_CSRF_SECOND_KINDS, the only route that declares one). Each kept its one-time value where it was (the review, receipt, acknowledgement, claim, completion, mapping and objection nonces in their bodies), except api.embryo-ingest-complete's ingest_complete_csrf operation token, which moved to X-Inherit-Operation-Nonce. The review pages render the reviewer's tokens and the case GETs return none; an opening answer hands over the opened session's first tokens in X-Inherit-Evidence-CSRF or X-Inherit-Upload-CSRF; the reset callback puts the reset session's first token in its Lax cookie; api.evidence-chunk keeps one session-bound value for the chunk stream (principle 3). One branch row stays: the TEST account archive's acknowledgement on api.claim-review-chunk-acknowledgement's path keeps its own per-chunk value.",
   "csrfOwnDesign": [
     {
-      "routeId": "auth.reset-password-submit",
-      "file": "src/lib/auth/reset-session.ts",
-      "literal": "return hmacSecret(sessionHash, CSRF_CONTEXT);",
-      "kind": "digest-not-one-time",
-      "value": "A keyed digest of the reset session (resetCsrf).",
-      "oneTime": "In effect: the reset session is spent by its one request."
-    },
-    {
-      "routeId": "api.embryo-ingest-configure",
-      "file": "src/app/api/embryo-ingest/[session]/configure/route.ts",
-      "literal": " * The request carries no `X-Inherit-CSRF` header: the only upload-session",
-      "kind": "none",
-      "value": "None. The body's one-time operationNonce from api.embryo-cohorts is the only value the request carries.",
-      "oneTime": "No token. upload-session-api-v1.stateChangingRequest requires one; the response that opens the upload session has no carrier for its first token, since X-Inherit-CSRF on it carries api.embryo-cohorts' own successor. Owner decision needed."
-    },
-    {
-      "routeId": "api.embryo-ingest-mapping",
-      "file": "src/app/api/embryo-ingest/[session]/mapping/route.ts",
-      "literal": "credential-bound authorizer. A request carries no `X-Inherit-CSRF` header:",
-      "kind": "none",
-      "value": "None. Each mapping request carries the one-time mapping nonce the previous response issued.",
-      "oneTime": "No token; as api.embryo-ingest-configure."
-    },
-    {
-      "routeId": "api.embryo-ingest-complete",
-      "file": "src/app/api/embryo-ingest/[session]/complete/route.ts",
-      "literal": "const csrf = csrfOperation(request, { ...bound, operation: \"ingest_complete_csrf\" });",
-      "kind": "derived-one-time",
-      "value": "The ingest_complete_csrf token the configure or mapping response issued, distinct from the completion nonce.",
-      "oneTime": "Yes: its nonce hash (p_csrf_hash) is recorded once."
-    },
-    {
-      "routeId": "api.future-person-claim-document-session",
-      "file": "src/app/api/future-person/claim/session/documents/route.ts",
-      "literal": "if (!nonce || !claimMutationCsrfMatches(request.headers.get(\"x-inherit-csrf\"), claimHash, \"documents\", parsed.data.nonce)) return notFound();",
-      "kind": "derived-one-time",
-      "value": "A keyed digest of the claim session, the operation and its one-use token (claimMutationCsrf).",
-      "oneTime": "Yes: the nonce is spent and the claim session rotates."
-    },
-    {
-      "routeId": "api.future-person-claim-complete",
-      "file": "src/app/api/future-person/claim/session/complete/route.ts",
-      "literal": "if (!nonce || !claimMutationCsrfMatches(request.headers.get(\"x-inherit-csrf\"), claimHash, \"complete\", parsed.data.nonce)) return notFound();",
-      "kind": "derived-one-time",
-      "value": "As api.future-person-claim-document-session, for the completion.",
-      "oneTime": "Yes: the nonce is spent and the claim session rotates."
-    },
-    {
-      "routeId": "api.evidence-chunk",
-      "file": "src/lib/future-person/evidence-session.ts",
-      "literal": "return hmacSecret(`${sessionId}|${cookieHash}`, \"evidence-csrf-v1\");",
-      "kind": "digest-not-one-time",
-      "value": "A keyed digest of the evidence session (evidenceCsrf), the same value for every chunk and the completion.",
-      "oneTime": "No: evidence-session-api-v1 asks for it to be rotated or consumed on every request; each sequence is reserved once instead."
-    },
-    {
-      "routeId": "api.evidence-complete",
-      "file": "src/lib/future-person/evidence-session.ts",
-      "literal": "return hmacSecret(`${sessionId}|${cookieHash}`, \"evidence-csrf-v1\");",
-      "kind": "digest-not-one-time",
-      "value": "The same evidence-session digest as api.evidence-chunk.",
-      "oneTime": "No on its own: the body's one-time completion nonce refuses a replay."
-    },
-    {
-      "routeId": "api.legal-evidence-review",
-      "file": "src/lib/uploads/permission-document-review.ts",
-      "literal": "if (!reviewCsrfMatches(request.headers.get(\"x-inherit-csrf\"), id, account.userId, account.sessionId)) return notFound();",
-      "kind": "digest-not-one-time",
-      "value": "A keyed digest of the review case, the reviewer's account and auth session (reviewCsrf), the same value for every request on the case.",
-      "oneTime": "No on its own: the case's one-time review nonce refuses a replayed decision."
-    },
-    {
-      "routeId": "api.appeal-review",
-      "file": "src/app/api/reviews/appeals/[id]/route.ts",
-      "literal": "!reviewCsrfMatches(request.headers.get(\"x-inherit-csrf\"), id, account.user.id, account.sessionId)) return notFound();",
-      "kind": "digest-not-one-time",
-      "value": "A keyed digest of the review case, the reviewer's account and auth session (reviewCsrf), the same value for every request on the case.",
-      "oneTime": "No on its own: the case's one-time review nonce refuses a replayed decision."
-    },
-    {
-      "routeId": "api.future-person-documentary-verification",
-      "file": "src/app/api/reviews/future-person/claims/[id]/verify-documents/route.ts",
-      "literal": "if(!account||!reviewCsrfMatches(request.headers.get(REVIEW_CSRF_HEADER),id,account.user.id,account.sessionId))return notFound();",
-      "kind": "digest-not-one-time",
-      "value": "A keyed digest of the review case, the reviewer's account and auth session (reviewCsrf), the same value for every request on the case.",
-      "oneTime": "No on its own: the case's one-time review nonce refuses a replayed decision."
-    },
-    {
-      "routeId": "api.future-person-claim-review",
-      "file": "src/app/api/reviews/future-person/claims/[id]/route.ts",
-      "literal": "!reviewCsrfMatches(request.headers.get(REVIEW_CSRF_HEADER), id, account.user.id, account.sessionId)",
-      "kind": "digest-not-one-time",
-      "value": "A keyed digest of the review case, the reviewer's account and auth session (reviewCsrf), the same value for every request on the case.",
-      "oneTime": "No on its own: the case's one-time review nonce refuses a replayed decision."
-    },
-    {
-      "routeId": "api.future-person-claim-release",
-      "file": "src/app/api/reviews/future-person/claims/[id]/release/route.ts",
-      "literal": "if(!account||!reviewCsrfMatches(request.headers.get(REVIEW_CSRF_HEADER),id,account.user.id,account.sessionId))return notFound();",
-      "kind": "digest-not-one-time",
-      "value": "A keyed digest of the review case, the reviewer's account and auth session (reviewCsrf), the same value for every request on the case.",
-      "oneTime": "No on its own: the case's one-time review nonce refuses a replayed decision."
-    },
-    {
-      "routeId": "api.future-person-claim-objection",
-      "file": "src/lib/future-person/owner-objection.ts",
-      "literal": "export function ownerObjectionCsrf(hash: string): string { return hmacSecret(hash, \"future-person-owner-objection-csrf-v1\"); }",
-      "kind": "digest-not-one-time",
-      "value": "A keyed digest of the rights session (ownerObjectionCsrf); the signed-in owner's branch uses a digest of its one-time nonce instead.",
-      "oneTime": "No on its own for the rights branch: the one-time objection nonce refuses a replay."
-    },
-    {
-      "routeId": "api.future-person-claim-objection-review",
-      "file": "src/app/api/reviews/future-person/claim-objections/[id]/route.ts",
-      "literal": "|| !reviewCsrfMatches(request.headers.get(REVIEW_CSRF_HEADER), id, account.user.id, account.sessionId)) return noReferrer(notFound());",
-      "kind": "digest-not-one-time",
-      "value": "A keyed digest of the review case, the reviewer's account and auth session (reviewCsrf), the same value for every request on the case.",
-      "oneTime": "No on its own: the case's one-time review nonce refuses a replayed decision."
-    },
-    {
-      "routeId": "api.future-person-correction-review",
-      "file": "src/lib/future-person/correction-review.ts",
-      "literal": "return hmacSecret(`${correctionId}|${accountId}|${sessionId}`, \"correction-review-csrf-v1\");",
-      "kind": "digest-not-one-time",
-      "value": "A keyed digest of the correction, the reviewer's account and auth session (correctionReviewCsrf).",
-      "oneTime": "No on its own: the case's one-time review nonce refuses a replayed decision."
-    },
-    {
-      "routeId": "api.claim-review-receipt",
-      "file": "src/app/api/downloads/[session]/receipt/route.ts",
-      "literal": "if (!nonce || !reviewCsrfMatches(request.headers.get(\"x-inherit-csrf\"),target.reviewId,account.user.id,account.sessionId)) return notFound();",
-      "kind": "digest-not-one-time",
-      "value": "A keyed digest of the review case, the reviewer's account and auth session (reviewCsrf), the same value for every request on the case.",
-      "oneTime": "No on its own: the one-time receipt nonce refuses a replay."
-    },
-    {
       "routeId": "api.claim-review-chunk-acknowledgement",
-      "file": "src/app/api/downloads/[session]/chunks/[sequence]/acknowledge/route.ts",
-      "literal": "if (!cookie || !account || !receiptCsrfMatches(request.headers.get(\"x-inherit-csrf\"),session,cookie,account.user.id,account.sessionId)) return notFound();",
-      "kind": "digest-not-one-time",
-      "value": "A keyed digest of the download, its cookie, the reviewer's account and auth session (receiptCsrf), the same for every chunk.",
-      "oneTime": "No on its own: each chunk's one-time acknowledgement nonce refuses a replay."
+      "file": "src/lib/exports/account-archive-chunk-http.ts",
+      "literal": "if(!sameHash(request.headers.get(\"x-inherit-csrf\"),csrf(current.input,current.ordinal,challengeHash,value.sha256,value.sizeBytes)))throw unavailable();",
+      "kind": "derived-one-time",
+      "value": "On the TEST account archive's acknowledgement (INHERIT_TEST_ACCOUNT_ARCHIVE_R2, unregistered on this path), a keyed digest of the account, the download, its cookie, the chunk ordinal, the chunk's challenge, digest and size, which that chunk's GET handed over.",
+      "oneTime": "In effect: each chunk's acknowledgement settles once. The reviewer's branch uses the reviewer's session token; this branch is answered before it and takes no session token, because the route's register auth is reviewer and only api.future-person-claim-objection may take a second kind.",
+      "branch": true
     }
   ],
   "endpointResponseDivergenceNote": "2026-10-23 (G8.5). A registered endpoint whose method matches the register but whose answer does not. Each row names the register text it departs from and literal evidence in the code that produces the answer; scripts/form-register-correspondence.test.ts checks both, and src/app/api/export/route.test.ts drives the cookieless GET itself, so the row fails as stale the day the behaviour or the register changes. api.export is the case docs/route-divergence.json#methodDivergenceNote describes since 1 October: verb correspondence only. 2026-10-24 (D-103 and G8.5's \"code to the register\"): api.subject-drafts' Path A answer joins them. The register's subject-draft-created-v1 (201) and reserved draft wait on a product decision, because the draft's next step is an uploader artifact that Path A's inviter, who never holds the file, cannot truthfully sign; the row says which two decisions would close it. 2026-11-19, owner decision (\"G8.5: Path A's invitation stays one step\"): the register describes what the route does on Path A. api.subject-drafts' policy.pathAOneStepInvitation reserves the draft and creates the invitation and its mail in one transaction, with no inviter artifact, and answers path-a-invitation-created-v1 (202 { accepted: true }, bound to the route as policy.pathASuccessResponseContract); api.invitations no longer takes a Path A draft. Path B keeps subject-draft-created-v1 and the uploader artifact. The Path A row closes and is removed; the two api.export rows remain.",

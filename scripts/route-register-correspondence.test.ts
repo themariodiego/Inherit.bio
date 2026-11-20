@@ -1448,14 +1448,22 @@ type ClientFormReview = { file: string; forms: number; sha256: string };
 // (X-Inherit-Operation-Nonce, or X-Inherit-Operation-Proof for the profile's
 // derived proof), where X-Inherit-CSRF carried it. The same forms, handlers,
 // preventDefault before any field is read, targets and bodies.
+// G8.5, the migration stage (2026-11-19): upload-stage.tsx (the finalize form
+// keeps the upload session's first tokens from X-Inherit-Upload-CSRF for the
+// file step), claim-review.tsx and keyless-pending-review.tsx (each decision
+// sends the reviewer's one-time token for its route through the route's chain,
+// from the page's provider, where it sent the case digest the GET returned)
+// and owner-objection.tsx (the page's token for the route, rights or account,
+// through its chain, where it sent the digest the page passed in) re-reviewed.
+// The same forms, handlers, preventDefault, targets and bodies.
 const GUARDED_FLOW_CLIENT_FORM_REVIEW: ClientFormReview[] = [
   { file: "src/components/embryo/upload/draft-form.tsx", forms: 1, sha256: "c87e9fb89d7259b4b71a45e70a73c3e369af82accc4b47b950cd21073a824879" },
   { file: "src/components/embryo/upload/signing-form.tsx", forms: 1, sha256: "8c19943823fd5bd495751f5eeeb2c483ab791ac3ec15e82a07468c1cb52243d1" },
-  { file: "src/components/embryo/upload/upload-stage.tsx", forms: 2, sha256: "14552f06d20a94c6cf533ae678dbf7414babd2defde2ff589f6a1a49136d5fce" },
+  { file: "src/components/embryo/upload/upload-stage.tsx", forms: 2, sha256: "ae1a1ac781cc16e376c2f1ff4135538b4518fc14be63eb1fd8cf3065ec5eb85f" },
   { file: "src/components/future-person/claim-form.tsx", forms: 1, sha256: "15879dd96632b930bcaf494fc2f47cabd9b75bddfc328ab104bc8610be10fbdb" },
-  { file: "src/components/future-person/claim-review.tsx", forms: 1, sha256: "ef96f46a4dec3c6cf56759c7699fdcc71613c14d3171f25e549c75ba2d7f3f6c" },
-  { file: "src/components/future-person/keyless-pending-review.tsx", forms: 1, sha256: "d44c1530368a229dc5b3f75339ba541cdb04ce0f0f8442558792306f3a5f7c31" },
-  { file: "src/components/future-person/owner-objection.tsx", forms: 1, sha256: "77a7bef89da3708b7227c7c22f4fca3d89a60a8cde3c3eba18b003a2a561db7d" },
+  { file: "src/components/future-person/claim-review.tsx", forms: 1, sha256: "b524c7e3b6f72ad0dd43e8938e8e121c21240a9465526466ab8a4179f2c0b0fe" },
+  { file: "src/components/future-person/keyless-pending-review.tsx", forms: 1, sha256: "3ceb0acc71fa3dd42ac3ac62afcf017a993715236d66c0b5e96dfc9a5e14bc8f" },
+  { file: "src/components/future-person/owner-objection.tsx", forms: 1, sha256: "5cb7ce68d4e6c20fafe8d23dfa1c2eccc30a5c3570adb5bca6e7dbd8aa3052c9" },
   { file: "src/components/settings/embryo-disposition.tsx", forms: 1, sha256: "87acb08033b37e93db3859b1bb94883418cf41b3a115afc595f3eae35b51c5d9" },
   { file: "src/components/settings/future-person-profile.tsx", forms: 1, sha256: "20c943b89db53cc30fb0afde17897d3fc6b9c89c571d5ef05bce49b4112cf250" },
 ];

@@ -6,7 +6,7 @@ import { readBoundedJson } from "@/lib/future-person/bounded-body";
 import { appealDocumentKind, readPublicAppealMutation } from "@/lib/future-person/public-appeal-session";
 import { newWrappedDocumentKey } from "@/lib/future-person/document-envelope";
 import { createAppealIntakeRuntime } from "@/lib/future-person/appeal-intake-runtime";
-import { evidenceCookie, evidenceCsrf, evidenceCompleteNonce, newEvidenceSecret, EVIDENCE_SESSION_CSRF_HEADER, EVIDENCE_COMPLETE_NONCE_HEADER } from "@/lib/future-person/evidence-session";
+import { evidenceCookie, evidenceSessionCsrf, evidenceCompleteNonce, newEvidenceSecret, EVIDENCE_SESSION_CSRF_HEADER, EVIDENCE_COMPLETE_NONCE_HEADER } from "@/lib/future-person/evidence-session";
 import { readRightsCsrfSession, withPurposeCsrf } from "@/lib/security/session-csrf";
 const body = z.object({ documentKind: appealDocumentKind, mediaType: z.enum(["application/pdf", "image/jpeg", "image/png"]),
  sizeBytes: z.number().int().min(1).max(20_000_000), sha256: z.string().regex(/^[0-9a-f]{64}$/u) }).strict();
@@ -46,7 +46,7 @@ async function handlePost(request: Request) {
     chunkRoute: `/api/evidence/${id}/chunks/{sequence}`, completeRoute: `/api/evidence/${id}/complete`, expiresAt: expiry.toISOString() }, 201);
      if (response.status === 201) {
       response.headers.set("Set-Cookie", evidenceCookie(evidence.secret, expiry)); response.headers.set("Referrer-Policy", "no-referrer");
-      response.headers.set(EVIDENCE_SESSION_CSRF_HEADER, evidenceCsrf(id, evidence.hash)); response.headers.set(EVIDENCE_COMPLETE_NONCE_HEADER, evidenceCompleteNonce(id, evidence.hash));
+      response.headers.set(EVIDENCE_SESSION_CSRF_HEADER, evidenceSessionCsrf(id, evidence.hash)); response.headers.set(EVIDENCE_COMPLETE_NONCE_HEADER, evidenceCompleteNonce(id, evidence.hash));
      }
     }
    }

@@ -224,6 +224,40 @@ select
    where p.oid=to_regprocedure('public.delete_subject_v1(uuid,uuid,uuid,text,timestamptz)')) as context_door_md5,
  (select count(*) from public.subject_consents where consent_type='upload_class' and revoked_at is null
    and subject_id in (select id from public.subjects where subject_class='self')) as context_live_self_upload_consents,
+
+# Release notes: `20261119120000_session_csrf_purpose_kinds.sql` (joins release 4)
+
+Local work only. Nothing here was run against production or any hosted database. Release 4 now holds two migrations, applied in file order: `20261119110000` (above), then this one. Every figure above that counts release 4 as one migration is superseded here: after both, the ledger has 286 rows, max `20261119120000`; the functions count is one higher than after `20261119110000` alone; the tables fingerprint is the same as after `20261119110000`.
+
+## What it changes
+
+- One function is added, nothing is altered: `public.consume_session_csrf_v2(p_route_id text, p_session_kind text, p_token_hash text, p_expires_at timestamptz, p_account_id uuid default null, p_session_id uuid default null, p_cookie_hash text default null, p_purpose_session_id uuid default null) returns boolean`, `security definer`, `search_path ''`, ACL `{postgres=X/postgres,service_role=X/postgres}`, `def_md5` `13570c4a4b77de1fbc6e3fcfe2d40636`. The body repeats the service-role check.
+- It spends a one-time `X-Inherit-CSRF` token of eight session kinds into `private.session_csrf_token_uses`, the table `20261024220000` created and `public.consume_session_csrf_v1` writes, so one hash is spent once across both doors. The three kinds of v1 (`authenticated`, `token`, `token-candidate`) keep v1's rules exactly; the five added kinds are each held to their session's live row: `reviewer` (v1's live `auth.sessions` row and undeleted user), `upload-session` (the `public.embryo_ingest_sessions` row of that id and cookie hash, status `open`, `mapping_required` or `failure_pending`), `evidence-session` (a claim, appeal or permission document session row of that id and cookie hash), `claim-session` (a `private.future_person_claim_intakes` row of that session hash that `private.claim_intake_live_v1` calls live) and `reset-session` (an unexpired `private.auth_recovery_sessions` row of an undeleted account).
+- Pinned, not changed: `public.consume_session_csrf_v1` (`ae9a75327090d06a46456efce17625a3`, ACL as above), `private.claim_intake_live_v1(private.future_person_claim_intakes)` (`f76e353669c3f7ff70c66e78e34317a1`, `{postgres=X/postgres}`), the columns the checks read, and `embryo_ingest_sessions_status_check`.
+- Re-runnable: a second apply finds the successor exactly as reviewed, replaces it with itself and passes the postflight (applied twice locally). Any other `public.consume_session_csrf_v2` overload or body refuses with 55000 before anything is written.
+- No table, column, constraint, policy, grant on an existing object, or wording changes. Fingerprint effect: one row added to `functions` (`public.consume_session_csrf_v2`), none changed; `tables` unchanged.
+
+## Read-only pre-checks (one SELECT; run under the release session, the same `search_path`)
+
+Stop unless every `must_be_*` holds. `context_*` values are for the operator and the owner.
+
+```sql
+select
+ (select md5(pg_get_functiondef(p.oid))||' '||p.proacl::text from pg_proc p
+   where p.oid=to_regprocedure('public.consume_session_csrf_v1(text,text,text,timestamptz,uuid,uuid)'))
+   = 'ae9a75327090d06a46456efce17625a3 {postgres=X/postgres,service_role=X/postgres}' as must_be_true_v1_as_reviewed,
+ (select md5(pg_get_functiondef(p.oid))||' '||p.proacl::text from pg_proc p
+   where p.oid=to_regprocedure('private.claim_intake_live_v1(private.future_person_claim_intakes)'))
+   = 'f76e353669c3f7ff70c66e78e34317a1 {postgres=X/postgres}' as must_be_true_claim_liveness_rule_as_reviewed,
+ (select array_agg(column_name::text order by column_name) from information_schema.columns
+   where table_schema='private' and table_name='session_csrf_token_uses')
+   = array['expires_at','route_id','token_hash'] as must_be_true_spend_table_as_reviewed,
+ (select count(*) from pg_proc p join pg_namespace n on n.oid=p.pronamespace
+   where n.nspname='public' and p.proname='consume_session_csrf_v2') as must_be_0_successor_absent,
+ (select count(*) from pg_constraint c where c.conrelid='public.embryo_ingest_sessions'::regclass
+   and c.conname='embryo_ingest_sessions_status_check' and c.convalidated) as must_be_1_ingest_status_check,
+ (select count(*) from private.session_csrf_token_uses) as context_spent_hashes,
+ (select count(*) from private.auth_recovery_sessions where expires_at>clock_timestamp()) as context_live_reset_sessions,
  current_user as context_current_user,
  current_setting('search_path') as context_search_path;
 ```
@@ -239,3 +273,28 @@ Three `create function` statements, their grants, and two catalog-only `do` bloc
 - **Migration applied, code not yet deployed.** Nothing deployed calls the three functions. No page sends `DELETE /api/subjects/[id]` today, so the self emptying stays reachable only as it was, through `delete_subject_v1`, without the email.
 - **Code deployed, migration not yet applied.** The pages call `self_subject_withdrawal_readiness_v1`; PostgREST answers that the function does not exist, and the control then shows "You cannot withdraw here right now. Please try again." with no button, so no request is offered. A page rendered before the deploy has no control at all. If a request is sent anyway (a hand-made one), the route sends a self record only to `empty_self_subject_with_notice_v1`, which does not exist: the RPC error is not one of the route's refusal codes, so the route answers 503 `unavailable` and nothing is deleted; the control reads a 503 as "We do not know if this finished. Open this page again to see if your files were deleted." The route never falls back to `delete_subject_v1` for a self record, so the emptying never runs without its email.
 - **Before release 1.** The same as above: the read is missing, so the control offers nothing.
+
+The three md5s are search-path independent only while `private` is not on the session's `search_path` (`claim_intake_live_v1` prints its argument type schema-qualified); the fingerprint's pinned `pg_catalog` setting and the session's `"$user", public, extensions` both give the values above, which were read from a local build at `20261119110000`.
+
+## Locks and duration
+
+1. `$predecessor$`: catalog and `information_schema` reads. No table lock.
+2. `create or replace function`: a catalog row; no table is locked, and nothing calls v2 yet.
+3. `revoke`/`grant` on the new function only; `$postflight$`: catalog reads; `notify pgrst`.
+
+It holds no lock on any table and can run while the app serves requests. Measured locally: 26.9 ms of statement time for the whole file (a re-apply, inside a transaction that was rolled back).
+
+## Order against the code, and what a person sees in each window
+
+The app code of this stage calls v1 for the three earlier kinds, as before, and v2 for the five added ones. While v2 is absent from the database (PostgREST answers `PGRST202`, Postgres `42883`), it spends the token through v1 instead under the kind whose rule it shares: a reviewer's as an `authenticated` token (the same live auth-session check), a cookie kind's as a `token` (spent once by its hash, as a rights token is). Any other error refuses. `src/lib/security/session-csrf.test.ts` holds this to that rule.
+
+- **Migration applied, earlier code still deployed.** Nothing earlier calls v2, and v1 is unchanged; the seventeen routes' earlier code checked its own digests and called neither door. Nobody sees a difference.
+- **This stage's code deployed, migration not yet applied (the normal order: code merges, the guarded release comes later).** Every route works. Each of the seventeen routes' tokens is still verified for its kind, session, route and expiry and spent once (through v1), so nobody sees a difference; what is missing until the migration is the live-row check of the four cookie kinds, which each route's own handler and database call still make for its session. The reviewer kind loses nothing.
+- **This stage's code deployed before `20261024220000` (follow-up 2, batch 1).** Already forbidden since stage one, and unchanged by this migration: neither door exists, every token route refuses every state-changing request (an account route's 403 `request_forbidden`, a session route's 404). For a person: every save, upload, review decision, objection and password change fails; a password reset form says the link has expired. Constraint, unchanged: follow-up 2's batch 1 before this branch's code deploys.
+- **Pages open across the code deploy.** A page rendered by the earlier code sends its earlier value (a 64-hex digest) and is refused once with the route's 403 or 404 until it is reloaded; a reload renders the tokens. Two cases where reloading is not enough: an evidence upload in flight fails and must be sent again from the reloaded page; and a password reset whose link was opened in the 15 minutes before the deploy keeps the earlier digest in its Lax cookie, so its form says the link has expired and the person asks for a new link. A refused request writes nothing; the chunks of an interrupted upload that were written before the deploy are removed by retention, as any abandoned upload's are.
+
+So the migration and this code can go in either order once follow-up 2's batch 1 is applied.
+
+## Rollback
+
+Dropping `public.consume_session_csrf_v2(text,text,text,timestamptz,uuid,uuid,text,uuid)` returns the database to `20261119110000`'s state; the code of this stage then falls back to v1 as above. The spent hashes it recorded stay in `private.session_csrf_token_uses` and expire on their own.

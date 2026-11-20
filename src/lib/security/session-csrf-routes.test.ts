@@ -2,7 +2,8 @@ import crypto from "node:crypto";
 import { readFileSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { csrfHeaderRequired as csrfHeaderRequiredOf } from "../../../scripts/form-contract-census";
-import { SESSION_CSRF_ROUTES, mintSessionCsrf, verifySessionCsrf, type CsrfRoute, type CsrfSession } from "./session-csrf-core";
+import { SESSION_CSRF_ROUTES, SESSION_CSRF_STREAM_ROUTES, mintSessionCsrf, verifySessionCsrf, type CsrfRoute, type CsrfSession,
+  type CsrfSessionKind } from "./session-csrf-core";
 
 /**
  * Every route the one-time `X-Inherit-CSRF` token guards
@@ -27,6 +28,12 @@ const OTHER_SESSION = "5a000000-0000-4000-8000-000000000012";
 const ID = "5a000000-0000-4000-8000-0000000000aa";
 const RIGHTS_COOKIE_VALUE = "R".repeat(43);
 const CANDIDATE_COOKIE_VALUE = "C".repeat(43);
+// 2026-11-19 (G8.5, the migration stage): the four cookie kinds' cookies.
+const CLAIM_COOKIE_VALUE = "L".repeat(43);
+const RESET_COOKIE_VALUE = "S".repeat(43);
+const INGEST_COOKIE_VALUE = "I".repeat(43);
+const EVIDENCE_COOKIE_VALUE = "E".repeat(43);
+const OTHER_COOKIE_VALUE = "O".repeat(43);
 const sha256 = (value: string) => crypto.createHash("sha256").update(value, "utf8").digest("hex");
 
 const state = vi.hoisted(() => ({
@@ -62,9 +69,12 @@ const NO_SUCCESSOR = new Set<CsrfRoute>(["auth.sign-out", "api.rights-activate"]
 vi.mock("@/lib/supabase/admin", () => ({
   createAdminClient: () => ({
     rpc: (name: string, args: Record<string, unknown>) => {
-      if (name !== "consume_session_csrf_v1") { state.touches += 1; return inert(); }
-      state.consumeCalls.push(args);
-      const live = args.p_session_kind !== "authenticated" || state.liveSessions.has(`${args.p_account_id}|${args.p_session_id}`);
+      // v1 for the three kinds of 20261024220000, v2 for the five later ones;
+      // the same table, so the same one spend per hash.
+      if (name !== "consume_session_csrf_v1" && name !== "consume_session_csrf_v2") { state.touches += 1; return inert(); }
+      state.consumeCalls.push({ ...args, function: name });
+      const account = args.p_session_kind === "authenticated" || args.p_session_kind === "reviewer";
+      const live = !account || state.liveSessions.has(`${args.p_account_id}|${args.p_session_id}`);
       const hash = String(args.p_token_hash);
       const fresh = live && !state.spent.has(hash);
       if (fresh) state.spent.add(hash);
@@ -102,10 +112,12 @@ vi.mock("next/headers", () => ({
   headers: async () => new Headers(),
 }));
 
-type Kind = "authenticated" | "token" | "token-candidate";
+type Kind = CsrfSessionKind;
 interface Case {
   /** The route whose token the request carries. */
   route: CsrfRoute;
+  /** The kind of session the request carries, where the route takes a second one (SESSION_CSRF_SECOND_KINDS). */
+  kind?: Kind;
   label?: string;
   method: "POST" | "PUT" | "DELETE";
   path: string;
@@ -179,29 +191,78 @@ const CASES: Case[] = [
   { route: "api.future-person-correction", method: "POST", path: "/api/future-person/claim/session/corrections", load: () => import("@/app/api/future-person/claim/session/corrections/route") },
   { route: "api.appeal-complete", method: "POST", path: "/api/appeals/session/complete", load: () => import("@/app/api/appeals/session/complete/route") },
   { route: "api.rights-activate", method: "POST", path: "/api/rights/activate", load: () => import("@/app/api/rights/activate/route") },
+  // 2026-11-19 (G8.5, the migration stage): the seventeen csrfOwnDesign rows
+  // that needed a new session kind, and api.future-person-claim-objection,
+  // which takes either of two kinds (owner decision of the same day), once
+  // per kind.
+  { route: "api.legal-evidence-review", method: "POST", path: `/api/legal-evidence/${ID}/review`, params: { id: ID }, load: () => import("@/app/api/legal-evidence/[id]/review/route") },
+  { route: "api.appeal-review", method: "POST", path: `/api/reviews/appeals/${ID}`, params: { id: ID }, load: () => import("@/app/api/reviews/appeals/[id]/route") },
+  { route: "api.future-person-documentary-verification", method: "POST", path: `/api/reviews/future-person/claims/${ID}/verify-documents`, params: { id: ID }, load: () => import("@/app/api/reviews/future-person/claims/[id]/verify-documents/route") },
+  { route: "api.future-person-claim-review", method: "POST", path: `/api/reviews/future-person/claims/${ID}`, params: { id: ID }, load: () => import("@/app/api/reviews/future-person/claims/[id]/route") },
+  { route: "api.future-person-claim-release", method: "POST", path: `/api/reviews/future-person/claims/${ID}/release`, params: { id: ID }, load: () => import("@/app/api/reviews/future-person/claims/[id]/release/route") },
+  { route: "api.future-person-claim-objection-review", method: "POST", path: `/api/reviews/future-person/claim-objections/${ID}`, params: { id: ID }, load: () => import("@/app/api/reviews/future-person/claim-objections/[id]/route") },
+  { route: "api.future-person-correction-review", method: "POST", path: `/api/reviews/future-person/corrections/${ID}`, params: { id: ID }, load: () => import("@/app/api/reviews/future-person/corrections/[id]/route") },
+  { route: "api.claim-review-receipt", method: "POST", path: `/api/downloads/${ID}/receipt`, params: { session: ID }, load: () => import("@/app/api/downloads/[session]/receipt/route") },
+  { route: "api.claim-review-chunk-acknowledgement", method: "POST", path: `/api/downloads/${ID}/chunks/0/acknowledge`, params: { session: ID, sequence: "0" }, load: () => import("@/app/api/downloads/[session]/chunks/[sequence]/acknowledge/route") },
+  { route: "api.embryo-ingest-configure", method: "POST", path: `/api/embryo-ingest/${ID}/configure`, params: { session: ID }, load: () => import("@/app/api/embryo-ingest/[session]/configure/route") },
+  { route: "api.embryo-ingest-mapping", method: "POST", path: `/api/embryo-ingest/${ID}/mapping`, params: { session: ID }, load: () => import("@/app/api/embryo-ingest/[session]/mapping/route") },
+  { route: "api.embryo-ingest-mapping", method: "PUT", path: `/api/embryo-ingest/${ID}/mapping`, params: { session: ID }, load: () => import("@/app/api/embryo-ingest/[session]/mapping/route") },
+  { route: "api.embryo-ingest-complete", method: "POST", path: `/api/embryo-ingest/${ID}/complete`, params: { session: ID }, load: () => import("@/app/api/embryo-ingest/[session]/complete/route") },
+  { route: "api.future-person-claim-document-session", method: "POST", path: "/api/future-person/claim/session/documents", load: () => import("@/app/api/future-person/claim/session/documents/route") },
+  { route: "api.future-person-claim-complete", method: "POST", path: "/api/future-person/claim/session/complete", load: () => import("@/app/api/future-person/claim/session/complete/route") },
+  { route: "api.evidence-chunk", method: "PUT", path: `/api/evidence/${ID}/chunks/0`, params: { session: ID, sequence: "0" }, load: () => import("@/app/api/evidence/[session]/chunks/[sequence]/route") },
+  { route: "api.evidence-complete", method: "POST", path: `/api/evidence/${ID}/complete`, params: { session: ID }, load: () => import("@/app/api/evidence/[session]/complete/route") },
+  { route: "auth.reset-password-submit", method: "POST", path: "/api/auth/reset-password", load: () => import("@/app/api/auth/reset-password/route") },
+  { route: "api.future-person-claim-objection", label: "api.future-person-claim-objection (the emailed link's rights session)", method: "POST", path: "/api/future-person/claim/session/objection", load: () => import("@/app/api/future-person/claim/session/objection/route") },
+  { route: "api.future-person-claim-objection", kind: "authenticated", label: "api.future-person-claim-objection (the signed-in account, from Settings)", method: "POST", path: "/api/future-person/claim/session/objection", load: () => import("@/app/api/future-person/claim/session/objection/route") },
 ];
 
 const kindOf = (route: CsrfRoute): Kind => SESSION_CSRF_ROUTES[route];
-const sessionFor = (kind: Kind): CsrfSession => kind === "authenticated"
-  ? { kind, accountId: ACCOUNT, sessionId: SESSION }
-  : kind === "token" ? { kind, sessionHash: sha256(RIGHTS_COOKIE_VALUE) } : { kind, sessionHash: sha256(CANDIDATE_COOKIE_VALUE) };
+/** The kind of session the case's request carries. */
+const entryKind = (entry: Case): Kind => entry.kind ?? kindOf(entry.route);
+const COOKIE_OF: Partial<Record<Kind, string>> = {
+  "token": RIGHTS_COOKIE_VALUE, "token-candidate": CANDIDATE_COOKIE_VALUE, "claim-session": CLAIM_COOKIE_VALUE,
+  "reset-session": RESET_COOKIE_VALUE, "upload-session": INGEST_COOKIE_VALUE, "evidence-session": EVIDENCE_COOKIE_VALUE,
+};
+const sessionFor = (kind: Kind, cookie = COOKIE_OF[kind]!): CsrfSession => {
+  if (kind === "authenticated" || kind === "reviewer") return { kind, accountId: ACCOUNT, sessionId: SESSION };
+  if (kind === "upload-session" || kind === "evidence-session") return { kind, sessionHash: sha256(cookie), sessionId: ID };
+  return { kind, sessionHash: sha256(cookie) };
+};
 /** A token of the same kind of session, for the same account or cookie holder, but not this session. */
-const otherSessionFor = (kind: Kind): CsrfSession => kind === "authenticated"
+const otherSessionFor = (kind: Kind): CsrfSession => kind === "authenticated" || kind === "reviewer"
   ? { kind, accountId: ACCOUNT, sessionId: OTHER_SESSION }
-  : { kind, sessionHash: sha256(kind === "token" ? CANDIDATE_COOKIE_VALUE : RIGHTS_COOKIE_VALUE) };
-/** The same session's token for another route, or for this cookie under another purpose session. */
-function otherPurposeToken(route: CsrfRoute): string {
-  const kind = kindOf(route);
+  : kind === "token" ? sessionFor(kind, CANDIDATE_COOKIE_VALUE)
+    : kind === "token-candidate" ? sessionFor(kind, RIGHTS_COOKIE_VALUE) : sessionFor(kind, OTHER_COOKIE_VALUE);
+/** Two routes of each later kind: the "another purpose" token is the one that is not the case's route. */
+const SIBLINGS: Partial<Record<Kind, readonly [CsrfRoute, CsrfRoute]>> = {
+  "reviewer": ["api.appeal-review", "api.future-person-claim-review"],
+  "upload-session": ["api.embryo-ingest-configure", "api.embryo-ingest-complete"],
+  "claim-session": ["api.future-person-claim-document-session", "api.future-person-claim-complete"],
+  "evidence-session": ["api.evidence-chunk", "api.evidence-complete"],
+};
+/** The same session's token for another route, or for this cookie under another kind of session. */
+function otherPurposeToken(entry: Case): string {
+  const kind = entryKind(entry), route = entry.route;
   if (kind === "authenticated") return mintSessionCsrf(sessionFor(kind), route === "api.chat" ? "api.jurisdiction" : "api.chat");
   if (kind === "token") return mintSessionCsrf(sessionFor(kind), route === "api.withdraw" ? "api.consent-revoke-rights" : "api.withdraw");
-  return mintSessionCsrf({ kind: "token", sessionHash: sha256(CANDIDATE_COOKIE_VALUE) }, "api.withdraw");
+  if (kind === "token-candidate" || kind === "reset-session") {
+    // The same cookie's hash under the rights session's kind.
+    return mintSessionCsrf({ kind: "token", sessionHash: sha256(COOKIE_OF[kind]!) }, "api.withdraw");
+  }
+  const [first, second] = SIBLINGS[kind]!;
+  return mintSessionCsrf(sessionFor(kind), route === first ? second : first);
 }
 
 function request(entry: Case, token: string | null): Request {
   const headers = new Headers({ origin: ORIGIN, "sec-fetch-site": "same-origin" });
-  const kind = kindOf(entry.route);
+  const kind = entryKind(entry);
   if (kind === "token") headers.set("cookie", `inherit-rights=${RIGHTS_COOKIE_VALUE}`);
   if (kind === "token-candidate") headers.set("cookie", `inherit-rights-candidate=${CANDIDATE_COOKIE_VALUE}`);
+  if (kind === "claim-session") headers.set("cookie", `inherit-claim=${CLAIM_COOKIE_VALUE}`);
+  if (kind === "reset-session") headers.set("cookie", `inherit-reset=${RESET_COOKIE_VALUE}`);
+  if (kind === "upload-session") headers.set("cookie", `inherit-ingest-${ID}=${INGEST_COOKIE_VALUE}`);
+  if (kind === "evidence-session") headers.set("cookie", `inherit-evidence=${EVIDENCE_COOKIE_VALUE}`);
   const body = entry.body === null ? undefined : entry.body ?? "{}";
   if (body !== undefined) headers.set("content-type", "application/json");
   if (token !== null) headers.set("x-inherit-csrf", token);
@@ -236,7 +297,9 @@ async function expectRefused(entry: Case, response: Response) {
 }
 
 /** The two branches that spend the token inside the handler, after reading their own request. */
-const INLINE = new Set<CsrfRoute>(["api.consents", "api.subject-drafts"]);
+const INLINE = new Set<CsrfRoute>(["api.consents", "api.subject-drafts", "api.claim-review-chunk-acknowledgement"]);
+/** The kinds 20261024220000's door spends; the five later ones go to public.consume_session_csrf_v2. */
+const V1_KINDS = new Set<Kind>(["authenticated", "token", "token-candidate"]);
 
 /**
  * Sends `token` and requires the register's refusal before the handler ran:
@@ -276,32 +339,52 @@ describe("every bound route requires and spends its one-time X-Inherit-CSRF toke
   });
 
   describe.each(CASES.map((entry) => [entry.label ?? `${entry.route} ${entry.method}`, entry] as const))("%s", (_name, entry) => {
-    const session = () => sessionFor(kindOf(entry.route));
+    const session = () => sessionFor(entryKind(entry));
+    const stream = SESSION_CSRF_STREAM_ROUTES.has(entry.route);
 
     it("refuses a request without the token before the handler runs", async () => {
       await expectRefusedBeforeHandler(entry, null);
       expect(state.consumeCalls).toHaveLength(0);
     });
 
-    it("refuses a token that was already spent", async () => {
-      const token = mintSessionCsrf(session(), entry.route);
-      const first = await send(entry, token);
-      if (!NO_SUCCESSOR.has(entry.route)) expect(first.headers.get("x-inherit-csrf"), "the first use is admitted").not.toBeNull();
-      await expectRefusedBeforeHandler(entry, token);
-      expect(state.consumeResults, "spent the first time, refused the second").toEqual([true, false]);
-    });
+    if (stream) {
+      // Principle 3 (G8.5, 19 November 2026): a chunk stream keeps one
+      // session-bound value; each chunk's own reservation is its replay guard.
+      it("admits the stream's one value on every chunk, spends nothing and issues no successor", async () => {
+        const token = mintSessionCsrf(session(), entry.route);
+        for (let chunk = 0; chunk < 3; chunk++) {
+          const response = await send(entry, token);
+          expect(response.headers.get("x-inherit-csrf"), "no successor").toBeNull();
+          // The handler's own answer: every one it gives is no-referrer, and
+          // the gate's refusal is not (the evidence routes are closed here, so
+          // it answers 404 at once).
+          expect(response.headers.get("referrer-policy"), "the handler ran").toBe("no-referrer");
+        }
+        expect(state.consumeCalls).toHaveLength(0);
+        const refused = await send(entry, mintSessionCsrf(otherSessionFor(entryKind(entry)), entry.route));
+        expect(refused.headers.get("referrer-policy"), "the gate refused").toBe("same-origin");
+      });
+    } else {
+      it("refuses a token that was already spent", async () => {
+        const token = mintSessionCsrf(session(), entry.route);
+        const first = await send(entry, token);
+        if (!NO_SUCCESSOR.has(entry.route)) expect(first.headers.get("x-inherit-csrf"), "the first use is admitted").not.toBeNull();
+        await expectRefusedBeforeHandler(entry, token);
+        expect(state.consumeResults, "spent the first time, refused the second").toEqual([true, false]);
+      });
+    }
 
     it("refuses a token of another session", async () => {
-      await expectRefusedBeforeHandler(entry, mintSessionCsrf(otherSessionFor(kindOf(entry.route)), entry.route));
+      await expectRefusedBeforeHandler(entry, mintSessionCsrf(otherSessionFor(entryKind(entry)), entry.route));
       expect(state.consumeCalls).toHaveLength(0);
     });
 
     it("refuses a token of another purpose", async () => {
-      await expectRefusedBeforeHandler(entry, otherPurposeToken(entry.route));
+      await expectRefusedBeforeHandler(entry, otherPurposeToken(entry));
       expect(state.consumeCalls).toHaveLength(0);
     });
 
-    it("admits the same request with a fresh token, spends it once and issues the next one", async () => {
+    if (!stream) it("admits the same request with a fresh token, spends it once and issues the next one", async () => {
       const token = mintSessionCsrf(session(), entry.route);
       const response = await send(entry, token);
       const next = response.headers.get("x-inherit-csrf");
@@ -315,7 +398,12 @@ describe("every bound route requires and spends its one-time X-Inherit-CSRF toke
         expect(verifySessionCsrf(next, session(), entry.route)).not.toBeNull();
       }
       expect(state.consumeCalls).toEqual([expect.objectContaining({
-        p_route_id: entry.route, p_session_kind: kindOf(entry.route), p_token_hash: sha256(token),
+        p_route_id: entry.route, p_session_kind: entryKind(entry), p_token_hash: sha256(token),
+        function: V1_KINDS.has(entryKind(entry)) ? "consume_session_csrf_v1" : "consume_session_csrf_v2",
+        ...(V1_KINDS.has(entryKind(entry)) ? {} : {
+          p_cookie_hash: "sessionHash" in session() ? (session() as { sessionHash: string }).sessionHash : null,
+          p_purpose_session_id: entryKind(entry) === "upload-session" || entryKind(entry) === "evidence-session" ? ID : null,
+        }),
       })]);
       expect(state.consumeResults).toEqual([true]);
     });
@@ -357,6 +445,14 @@ describe("every bound route requires and spends its one-time X-Inherit-CSRF toke
     await expectRefusedBeforeHandler(entry, token);
   });
 
+  it("refuses a reviewer token once its auth session has ended, as an account token is", async () => {
+    const entry = CASES.find((candidate) => candidate.route === "api.appeal-review")!;
+    const token = mintSessionCsrf(sessionFor("reviewer"), "api.appeal-review");
+    state.liveSessions.clear();
+    await expectRefusedBeforeHandler(entry, token);
+    expect(state.consumeCalls).toEqual([expect.objectContaining({ function: "consume_session_csrf_v2", p_session_kind: "reviewer" })]);
+  });
+
   it("leaves a request with no session to its handler's own answer, spending nothing", async () => {
     state.signedIn = false;
     for (const entry of CASES.filter((candidate) => kindOf(candidate.route) === "authenticated")) {
@@ -396,6 +492,11 @@ describe("every bound route requires and spends its one-time X-Inherit-CSRF toke
     for (const file of ["src/app/api/consents/route.ts", "src/app/api/subject-drafts/route.ts"]) {
       expect(readFileSync(file, "utf8")).toMatch(/(?:requireAccountCsrf|admitAccountCsrf)\(request, "api\.(?:consents|subject-drafts)"\)/u);
     }
+    // 2026-11-19 (G8.5, the migration stage): the reviewer's branch of the
+    // chunk acknowledgement checks its token before anything of its own; the
+    // TEST account archive's branch answers first with its own value.
+    expect(readFileSync("src/app/api/downloads/[session]/chunks/[sequence]/acknowledge/route.ts", "utf8"))
+      .toMatch(/if\(archive\)return archive;\n  const admitted=await requireReviewerCsrf\(request,"api\.claim-review-chunk-acknowledgement"\);\n  if\(admitted instanceof Response\)return admitted;/u);
   });
 });
 
@@ -443,8 +544,14 @@ describe("every route the register binds to csrfTransport is accounted for", () 
     // api.future-person-identity-profile, api.future-person-recovery-key,
     // api.future-person-analysis-stop, api.future-person-delete, api.appeal-document-session,
     // api.third-party-subject-export), and the two branch rows (api.consents, api.subject-drafts) left.
-    expect(ownWhole).toHaveLength(18);
-    expect(own.filter(row => row.branch)).toHaveLength(0);
+    // 0 since the migration stage, the same day: the seventeen rows that needed a new session kind
+    // (reviewer 9, upload-session 3, claim-session 2, evidence-session 2, reset-session 1) moved,
+    // and api.future-person-claim-objection moved under the owner's decision that it takes either kind.
+    expect(ownWhole).toHaveLength(0);
+    // 1 since the migration stage: the reviewer's branch of api.claim-review-chunk-acknowledgement
+    // moved, and the TEST account archive's acknowledgement on the same path keeps its own
+    // per-chunk value (0 before: the whole route was one row).
+    expect(own.filter(row => row.branch).map(row => row.routeId)).toEqual(["api.claim-review-chunk-acknowledgement"]);
   });
 
   it("anchors each own-design row to the code it describes", () => {

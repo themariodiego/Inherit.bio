@@ -17,6 +17,7 @@ import {
 import { dispatchIngestAttemptFailure } from "@/lib/embryos/ingest-failure";
 import { authorizeIngestHttpRequest, type IngestAuthorization, type IngestAuthorizationArgs } from "@/lib/embryos/ingest-http";
 import { mintIngestSessionOperation, verifyEmbryoOperation } from "@/lib/embryos/operation-token";
+import { readUploadCsrfSession, withPurposeCsrf } from "@/lib/security/session-csrf";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 /**
@@ -64,12 +65,16 @@ import { createAdminClient } from "@/lib/supabase/admin";
  * `EMBRYO_INGEST_AVAILABLE` stays false and production refuses at step 1 and
  * again inside every database function (`p_test_jurisdiction`).
  *
- * The request carries no `X-Inherit-CSRF` header: the only upload-session
- * CSRF token is the one this response issues. The body nonce, delivered only
- * in a same-origin JSON response and bound to the host-only cookie's session,
- * is this request's authority (see the owner question in the PR body).
+ * `X-Inherit-CSRF` is the upload session's one-time token for this route
+ * (G8.5, the migration stage), bound to this session id and its cookie and
+ * spent before the handler runs, against the session's row; the answer that
+ * opened the session handed over the first in `X-Inherit-Upload-CSRF`, and
+ * this answer carries the next. The body nonce is the operation's own
+ * authority, checked below as before. The `csrfToken` this answer issues is
+ * the completion's separate operation value, which api.embryo-ingest-complete
+ * reads from `X-Inherit-Operation-Nonce`.
  */
-export async function POST(request: Request, context: { params: Promise<{ session: string }> }) {
+async function configure(request: Request, context: { params: Promise<{ session: string }> }): Promise<Response> {
   const { session } = await context.params;
   const account = await getSensitiveAccountContext();
   if (!account) return withNoReferrer(unauthenticated());
@@ -224,3 +229,5 @@ async function configureTable(
   if (result.data.build !== build) return withNoReferrer(unavailable());
   return tableConfiguredResponse(mapping.token);
 }
+
+export const POST = withPurposeCsrf("api.embryo-ingest-configure", readUploadCsrfSession, configure);

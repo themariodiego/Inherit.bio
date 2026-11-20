@@ -3,6 +3,8 @@ import {expect} from "../audited-test";
 import {reviewFixtureSql} from "./claim-review-fixture";
 import {keylessEffectProofSql} from "./keyless-effect-proof-sql";
 import {keylessVerificationResponse,reviewPageCase} from "../../src/lib/future-person/review-page-contract";
+import type {CsrfRoute} from "../../src/lib/security/session-csrf-core";
+import {reviewerCsrf} from "./session-csrf";
 
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/u;
 export function reviewId(value:string){if(!UUID.test(value))throw new Error("Invalid synthetic review scope");return value;}
@@ -28,17 +30,31 @@ export async function nativeReviewRequest(page:Page,path:string,body?:unknown,cs
     }finally{clearTimeout(timer);abort.abort();}
   },{path,body,csrf});
 }
+/** The reviewer route a review request path names. */
+function reviewRoute(path:string):CsrfRoute{
+  if(/^\/api\/reviews\/future-person\/claims\/[^/]+\/verify-documents$/u.test(path))return "api.future-person-documentary-verification";
+  if(/^\/api\/reviews\/future-person\/claims\/[^/]+\/release$/u.test(path))return "api.future-person-claim-release";
+  if(/^\/api\/reviews\/future-person\/claims\/[^/]+$/u.test(path))return "api.future-person-claim-review";
+  throw new Error(`No reviewer route for ${path}`);
+}
+/** A fresh one-time reviewer token of `page`'s own session for the route `path` names (G8.5, the migration
+ * stage): the review page renders these, and each POST spends one; the case GET returns none. */
+export async function freshReviewerCsrf(page:Page,path:string):Promise<string>{
+  return reviewerCsrf(page,reviewRoute(path));
+}
 export async function currentDocumentaryCase(page:Page,claim:string){
   const result=await nativeReviewRequest(page,`/api/reviews/future-person/claims/${reviewId(claim)}`);
   expect(result.status).toBe(200);expect(result.cache).toBe("private, no-store");expect(result.referrer).toBe("no-referrer");
-  expect(Boolean(result.csrf&&/^[0-9a-f]{64}$/u.test(result.csrf))).toBe(true);
+  // 2026-11-19 (G8.5, the migration stage): the GET issues no X-Inherit-CSRF value (it issued the case digest,
+  // /^[0-9a-f]{64}$/, which every decision carried); each decision carries a fresh one-time reviewer token.
+  expect(result.csrf).toBeNull();
   expect(Boolean(result.nonce&&result.nonce.length<=2048)).toBe(true);
   expect(Boolean(result.lookup&&result.lookup.length<=2048)).toBe(true);
   const record=reviewPageCase.parse(result.body);expect(record.claimId).toBe(claim);
   expect(record.reviewRevision).toBe(1);expect(record.mode).toBe("keyless");expect(record.state).toBe("document_review_pending");
   expect(record.case).toEqual({kind:"keyless_none",selectorOutcome:"no_unique_candidate",allowedDecisions:["reject","needs-more-information"]});
   expect(record.notice).toEqual({state:"not_applicable",noticeRevision:null});
-  return {record,csrf:result.csrf!,nonce:result.nonce!,lookup:result.lookup!};
+  return {record,nonce:result.nonce!,lookup:result.lookup!};
 }
 export function expectNoUniqueKeylessResponse(text:string,claim:string){
   const result=keylessVerificationResponse.parse(JSON.parse(text));

@@ -3,9 +3,15 @@ const mocks = vi.hoisted(() => ({ rpc: vi.fn(), account: vi.fn(), accountRpc: vi
 vi.mock("@/lib/supabase/admin", () => ({ createAdminClient: () => ({ rpc: mocks.rpc }) }));
 vi.mock("@/lib/account-deletion", () => ({ getSensitiveAccountContext: mocks.account }));
 vi.mock("@/lib/supabase/server", () => ({ createClient: async () => ({ rpc: mocks.accountRpc }) }));
+vi.mock("@/lib/security/session-csrf", async (importOriginal) =>
+  (await import("@/lib/security/session-csrf.test-support")).admitEverySessionCsrf(await importOriginal()));
 vi.stubEnv("BYOK_ENCRYPTION_KEY", Buffer.alloc(32, 19).toString("base64"));
 const { POST } = await import("@/app/api/future-person/claim/session/objection/route");
-const { ownerObjectionCsrf } = await import("./owner-objection");
+// 2026-11-19 (owner decision "G8.5: the claim-objection address accepts either kind of session"):
+// X-Inherit-CSRF is a one-time token of the rights session or the signed-in account, spent by the
+// route's gate (session-csrf-routes.test.ts); the handler no longer reads it. Each request carries a
+// stand-in where it carried the rights session's digest or the account branch's nonce digest.
+const GATE_STAND_IN = "session-token-checked-by-the-gate";
 const { mintOwnerAccountObjection } = await import("./owner-account-objection");
 const { mintPublicFormToken } = await import("@/lib/embryos/operation-token");
 const { rightsSessionHash } = await import("@/lib/embryos/rights-session");
@@ -17,7 +23,7 @@ function body() { return { statement, nonce: mintPublicFormToken("future-person-
 function request(value: unknown = body(), changed: Record<string, string> = {}, query = "") {
   return new Request(`https://test.e2e.local/api/future-person/claim/session/objection${query}`, { method: "POST", headers: {
     origin: "https://test.e2e.local", "sec-fetch-site": "same-origin", "content-type": "application/json",
-    cookie: `inherit-rights=${secret}`, "x-inherit-csrf": ownerObjectionCsrf(hash), ...changed,
+    cookie: `inherit-rights=${secret}`, "x-inherit-csrf": GATE_STAND_IN, ...changed,
   }, body: JSON.stringify(value) });
 }
 beforeEach(() => { mocks.account.mockReset(); mocks.account.mockResolvedValue(null); mocks.accountRpc.mockReset(); mocks.rpc.mockReset(); mocks.rpc.mockImplementation(async name => ({
@@ -43,7 +49,8 @@ describe("native owner-only objection POST", () => {
   });
   it("refuses wrong/missing origin, CSRF, cookie, operation and client target before any SQL", async () => {
     const requests = [request(body(), { origin: "https://other.e2e.local" }), request(body(), { "sec-fetch-site": "cross-site" }),
-      request(body(), { "x-inherit-csrf": "bad" }), request(body(), { cookie: "" }), request(body(), { cookie: `inherit-rights=${secret}; inherit-rights=${secret}` }),
+      // 2026-11-19: { "x-inherit-csrf": "bad" } left this list; the gate refuses it (session-csrf-routes.test.ts).
+      request(body(), { cookie: "" }), request(body(), { cookie: `inherit-rights=${secret}; inherit-rights=${secret}` }),
       request({ ...body(), nonce: mintPublicFormToken("future-person-claim-review", Date.now(), hash) }),
       request({ ...body(), noticeId: scope.noticeId }), request({ ...body(), statement: "short" }), request(body(), {}, "?noticeId=" + scope.noticeId)];
     for (const req of requests) { mocks.rpc.mockClear(); const response = await POST(req); expect(response.status).toBe(404); expect(mocks.rpc).not.toHaveBeenCalled(); }
@@ -61,7 +68,7 @@ describe("native owner-only objection POST", () => {
       noticeDeadline: new Date(Date.now() + 86400000).toISOString() });
     mocks.account.mockResolvedValue({ user: { id: owner.accountId }, sessionId: owner.authSessionId });
     mocks.accountRpc.mockResolvedValueOnce({ data: scope, error: null }).mockResolvedValueOnce({ data: { status: "suspended_for_review" }, error: null });
-    const response = await POST(request({ statement, nonce: proof.nonce }, { cookie: "", "x-inherit-csrf": proof.csrf }));
+    const response = await POST(request({ statement, nonce: proof.nonce }, { cookie: "", "x-inherit-csrf": GATE_STAND_IN }));
     expect(response.status).toBe(202); expect(await response.json()).toEqual({ status: "suspended_for_review" });
     expect(mocks.rpc).not.toHaveBeenCalled();
     expect(mocks.accountRpc.mock.calls.map(call => call[0])).toEqual(["future_person_owner_account_objection_scope_v1", "submit_future_person_account_objection_v1"]);
@@ -74,7 +81,7 @@ describe("native owner-only objection POST", () => {
   it("refuses account/session swaps and changed current notice authority without a mutation", async () => {
     const owner = { accountId: "61000000-0000-4000-8000-000000000021", authSessionId: "61000000-0000-4000-8000-000000000022" };
     const proof = mintOwnerAccountObjection(owner, { noticeId: scope.noticeId, noticeRevision: 2, noticeDeadline: new Date(Date.now() + 86400000).toISOString() });
-    const posted = () => request({ statement, nonce: proof.nonce }, { cookie: "", "x-inherit-csrf": proof.csrf });
+    const posted = () => request({ statement, nonce: proof.nonce }, { cookie: "", "x-inherit-csrf": GATE_STAND_IN });
     mocks.account.mockResolvedValue({ user: { id: scope.claimId }, sessionId: owner.authSessionId });
     expect((await POST(posted())).status).toBe(404); expect(mocks.accountRpc).not.toHaveBeenCalled();
     mocks.account.mockResolvedValue({ user: { id: owner.accountId }, sessionId: scope.claimId });
@@ -87,6 +94,19 @@ describe("native owner-only objection POST", () => {
     }
     expect(mocks.rpc).not.toHaveBeenCalled();
   });
+  // 2026-11-19 (owner decision "G8.5: the claim-objection address accepts either kind of session"): the
+  // gate tells the handler which session it admitted, and only that principal's branch runs.
+  it("runs only the branch of the session the gate admitted: a rights request never falls through to the account", async () => {
+    const owner = { accountId: "61000000-0000-4000-8000-000000000021", authSessionId: "61000000-0000-4000-8000-000000000022" };
+    const proof = mintOwnerAccountObjection(owner, { noticeId: scope.noticeId, noticeRevision: 2, noticeDeadline: new Date(Date.now() + 86400000).toISOString() });
+    mocks.account.mockResolvedValue({ user: { id: owner.accountId }, sessionId: owner.authSessionId });
+    mocks.accountRpc.mockResolvedValue({ data: scope, error: null });
+    // The rights cookie is there, so the rights session was admitted; the account branch's proof is not its nonce.
+    expect((await POST(request({ statement, nonce: proof.nonce }))).status).toBe(404);
+    expect(mocks.accountRpc).not.toHaveBeenCalled();
+    expect(mocks.rpc).not.toHaveBeenCalled();
+  });
+
   it("does not accept a widened or wrong committed receipt", async () => {
     for (const result of [{ data: { status: "suspended_for_review", claimId: scope.claimId }, error: null },
       { data: { status: "approved" }, error: null }, { data: null, error: { code: "42501" } }]) {

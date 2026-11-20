@@ -17,6 +17,10 @@ const mocks = vi.hoisted(() => ({
   buckets: [] as string[],
 }));
 vi.mock("server-only", () => ({}));
+// The evidence chunk stream's value is checked by the route's gate, driven in
+// src/lib/security/session-csrf-routes.test.ts (G8.5, the migration stage); here it admits every request.
+vi.mock("@/lib/security/session-csrf", async (importOriginal) =>
+  (await import("@/lib/security/session-csrf.test-support")).admitEverySessionCsrf(await importOriginal()));
 vi.mock("@/lib/account-deletion", () => ({ getSensitiveAccountContext: () => mocks.account() }));
 vi.mock("@/lib/supabase/admin", () => ({
   createAdminClient: () => ({
@@ -57,9 +61,8 @@ vi.stubEnv("BYOK_ENCRYPTION_KEY", BYOK);
 const chunks = await import("@/app/api/evidence/[session]/chunks/[sequence]/route");
 const reviewDownload = await import("@/app/api/legal-evidence/[id]/review-download/route");
 const downloads = await import("@/app/api/downloads/[session]/chunks/[sequence]/route");
-const { sha256Hex } = await import("@/lib/future-person/claim-session");
-const { EVIDENCE_COOKIE, evidenceCsrf } = await import("@/lib/future-person/evidence-session");
-const { DOWNLOAD_COOKIE, readReviewNonce, reviewCsrfMatches } = await import("@/lib/future-person/review");
+const { EVIDENCE_COOKIE } = await import("@/lib/future-person/evidence-session");
+const { DOWNLOAD_COOKIE, readReviewNonce } = await import("@/lib/future-person/review");
 const { encryptSecret } = await import("@/lib/crypto");
 const { openDocumentBytes, sealDocumentBytes } = await import("@/lib/future-person/document-envelope");
 
@@ -70,7 +73,6 @@ const REVIEWER = "33333333-3333-4333-8333-333333333333";
 const AUTH_SESSION = "55555555-5555-4555-8555-555555555555";
 const OBJECT = `permission/${SESSION}/${DOCUMENT}/66666666-6666-4666-8666-666666666666`;
 const EVIDENCE_COOKIE_VALUE = crypto.randomBytes(32).toString("base64url");
-const EVIDENCE_HASH = sha256Hex(EVIDENCE_COOKIE_VALUE);
 const RAW_KEY = crypto.randomBytes(32);
 const WRAPPED = encryptSecret(RAW_KEY.toString("base64")).toString("hex");
 const PDF = Buffer.concat([Buffer.from("%PDF-1.4\n"), crypto.randomBytes(5000)]);
@@ -90,7 +92,7 @@ describe("PUT /api/evidence/[session]/chunks/[sequence] for a permission session
   const put = () => chunks.PUT(new Request(`${ORIGIN}/api/evidence/${SESSION}/chunks/0`, {
     method: "PUT", body: new Uint8Array(PDF),
     headers: { origin: ORIGIN, "sec-fetch-site": "same-origin", "content-type": "application/octet-stream",
-      cookie: `${EVIDENCE_COOKIE}=${EVIDENCE_COOKIE_VALUE}`, "x-inherit-csrf": evidenceCsrf(SESSION, EVIDENCE_HASH) },
+      cookie: `${EVIDENCE_COOKIE}=${EVIDENCE_COOKIE_VALUE}`, "x-inherit-csrf": "evidence-stream-value-checked-by-the-gate" },
   }), { params: Promise.resolve({ session: SESSION, sequence: "0" }) });
 
   it("seals the chunk into the legal-evidence store the native session names", async () => {
@@ -121,7 +123,9 @@ describe("GET /api/legal-evidence/[id]/review-download for a permission document
   const opened = { session: SESSION, sizeBytes: PDF.length, sha256: "a".repeat(64), chunkCount: 1,
     mediaType: "application/pdf", documentKind: "adult-signed-permission", reviewRevision: 2 };
 
-  it("opens a revocable session and issues the next decision nonce, its CSRF and the review revision", async () => {
+  // 2026-11-19 (G8.5, the migration stage): the answer issues no X-Inherit-CSRF value (it issued the
+  // case digest, which the decision carried); the decision carries the page's reviewer token.
+  it("opens a revocable session and issues the next decision nonce and the review revision, and no X-Inherit-CSRF value", async () => {
     mocks.own.mockImplementation((name: string) => name === "review_document_domain_v1"
       ? { data: "permission", error: null } : { data: opened, error: null });
     const response = await open();
@@ -129,7 +133,7 @@ describe("GET /api/legal-evidence/[id]/review-download for a permission document
     expect(await response.json()).toEqual({ session: SESSION, filename: "signed-permission.pdf", sizeBytes: PDF.length,
       sha256: "a".repeat(64), chunkBytes: 4_000_000, chunkCount: 1, chunkRoute: `/api/downloads/${SESSION}/chunks/{sequence}` });
     expect(response.headers.get("set-cookie")).toContain(`${DOWNLOAD_COOKIE}=`);
-    expect(reviewCsrfMatches(response.headers.get("x-inherit-csrf"), DOCUMENT, REVIEWER, AUTH_SESSION)).toBe(true);
+    expect(response.headers.get("x-inherit-csrf")).toBeNull();
     expect(readReviewNonce(response.headers.get("x-inherit-review-nonce")!, DOCUMENT, REVIEWER, AUTH_SESSION)).not.toBeNull();
     expect(response.headers.get("x-inherit-review-revision")).toBe("2");
     expect(response.headers.get("referrer-policy")).toBe("no-referrer");

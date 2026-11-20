@@ -5,7 +5,7 @@ import { closedResponse } from "@/lib/embryos/guards";
 import { sha256Hex } from "@/lib/future-person/claim-session";
 import { testAppealIntakeOpen } from "@/lib/future-person/appeals-open";
 import { futurePersonClaimsOpen } from "@/lib/future-person/claims-open";
-import { CHUNK_BYTES, downloadCookie, isCanonicalId, mintReviewNonce, reviewCsrf } from "@/lib/future-person/review";
+import { CHUNK_BYTES, downloadCookie, isCanonicalId, mintReviewNonce } from "@/lib/future-person/review";
 import { createClient } from "@/lib/supabase/server";
 import { permissionDocumentsOpen } from "@/lib/uploads/permission-document-open";
 
@@ -20,7 +20,9 @@ import { permissionDocumentsOpen } from "@/lib/uploads/permission-document-open"
  *
  * For a reviewed-document Path B permission document (the subject-draft
  * target case), the same session response also carries the next decision
- * nonce, its CSRF and the current review revision for api.legal-evidence-review
+ * nonce and the current review revision for api.legal-evidence-review (no
+ * X-Inherit-CSRF value: the reviewer's one-time session token for that route
+ * is the page's, G8.5; this GET carried a digest of the case until then)
  * (mutationSecurityBindings.operationNonceIssuance: a registered session
  * response issuing the next nonce). It stores nothing.
  */
@@ -75,7 +77,6 @@ async function open(request: Request, id: string): Promise<Response> {
     if (typeof value.reviewRevision !== "number" || !Number.isSafeInteger(value.reviewRevision) || value.reviewRevision < 1) {
       return unavailable();
     }
-    permissionHeaders["x-inherit-csrf"] = reviewCsrf(id, account.user.id, account.sessionId);
     permissionHeaders["x-inherit-review-nonce"] = mintReviewNonce(id, account.user.id, account.sessionId);
     permissionHeaders["x-inherit-review-revision"] = String(value.reviewRevision);
   }

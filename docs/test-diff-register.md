@@ -1,3 +1,193 @@
+## 2026-11-19 — G8.5 migration stage: the last eighteen routes on the one-time session token, five more session kinds spent by `public.consume_session_csrf_v2`, and the claim-objection address on either kind of session
+
+This stage follows the owner's decisions of today: "G8.5: principles for the CSRF register amendments" and "G8.5: the claim-objection address accepts either kind of session". It moves the seventeen `csrfOwnDesign` rows that needed a session kind `public.consume_session_csrf_v1` does not accept, plus api.future-person-claim-objection. One guarded migration, `supabase/migrations/20261119120000_session_csrf_purpose_kinds.sql`, adds `public.consume_session_csrf_v2`. It spends a token of eight kinds into v1's table, so one hash is spent once across both doors. The three earlier kinds keep v1's rules. Each of the five new kinds is held to its session's live row:
+- `reviewer`: the account's live auth session, as v1 holds an account token.
+- `upload-session`: the ingest session of that id and cookie, status `open`, `mapping_required` or `failure_pending`.
+- `evidence-session`: a claim, appeal or permission document session row of that id and cookie.
+- `claim-session`: a claim intake that `private.claim_intake_live_v1` calls live.
+- `reset-session`: an unexpired recovery session of an undeleted account.
+
+Per kind:
+- **Reviewer (9).** api.legal-evidence-review, api.appeal-review, api.future-person-documentary-verification, api.future-person-claim-review, api.future-person-claim-release, api.future-person-claim-objection-review, api.future-person-correction-review, api.claim-review-receipt and api.claim-review-chunk-acknowledgement. Each is wrapped with `withReviewerCsrf`. The chunk acknowledgement is the exception: it checks inline (`requireReviewerCsrf`) after the account archive's branch declines the request. Each handler drops its case, receipt or correction digest (`reviewCsrf`, `receiptCsrf`, `correctionReviewCsrf`, all deleted) and keeps every review, receipt and acknowledgement nonce in its body. The two review pages render the reviewer's tokens (`reviewerCsrfTokens`, from the page's own account context, in a page-level `CsrfProvider`). The case GETs and the review download no longer return an `X-Inherit-CSRF` value. The browser's receipt and each acknowledgement follow their routes' chains.
+- **Upload session (3).** api.embryo-ingest-configure, api.embryo-ingest-mapping (POST and PUT) and api.embryo-ingest-complete. api.embryo-cohorts' 201 hands over the three routes' first tokens in a new answer header, `X-Inherit-Upload-CSRF` (`<configure> <mapping> <complete>`, `src/lib/security/opened-session-csrf.ts`). Each answer carries its route's successor. The completion's `ingest_complete_csrf` operation token moves from `X-Inherit-CSRF` to `X-Inherit-Operation-Nonce` (`headerOperation`), and `csrfOperation` is deleted. api.embryo-ingest-chunk carries no token, as before.
+- **Claim session (2).** api.future-person-claim-document-session and api.future-person-claim-complete. The claim page renders both tokens (`claimSessionCsrf`), and `claimMutationCsrf` is gone. Both routes rotate the claim cookie, so each answer's successor is minted for the rotated cookie (`answerForRotatedSession`). The page nonce stays in the body.
+- **Evidence session (2).** api.evidence-chunk and api.evidence-complete. The three openers' `X-Inherit-Evidence-CSRF` (stage two's header) now carries `<chunk> <complete>`: the chunk stream's value and the completion's first token. The chunk stream's value is verified on every chunk and never spent or rotated (principle 3; `SESSION_CSRF_STREAM_ROUTES`). Each sequence is still reserved once. The completion spends a one-time token. `evidenceCsrf` is gone. The claim document opener's own `X-Inherit-CSRF` is now the claim session's successor.
+- **Reset session (1).** auth.reset-password-submit. The recovery callback puts the reset session's first token in the Lax `inherit-reset-csrf` cookie, where the keyed digest was. The form sends it, and a refused (non-204) answer carries the successor, so a 422 can be retried. `exactOrigin` is kept.
+- **The claim-objection address.** api.future-person-claim-objection's gate (`withRightsOrAccountCsrf`) checks the rights session first and the signed-in account second (`SESSION_CSRF_SECOND_KINDS`, the only route that declares a second kind). It spends the token of whichever it finds, and the handler runs only that principal's branch. The rights branch's digest (`ownerObjectionCsrf`) and the account branch's nonce digest are gone. Each branch's one-time objection nonce stays in `body.nonce`.
+
+`SESSION_CSRF_ROUTES` goes from 56 to 74. `csrfOwnDesign` goes from 18 rows to 1. The row that stays is a branch row: the TEST account archive's acknowledgement shares api.claim-review-chunk-acknowledgement's path and keeps its own per-chunk value in `X-Inherit-CSRF`. Moving it would need a second kind (account) on a reviewer route, which is the same question the owner answered for the claim-objection address. While v2 is absent, the gate spends through v1 under the kind whose rule it shares (reviewer as authenticated, a cookie kind as token) and refuses on any other error. Twelve register statements are amended: 7 changed and 5 new, each marked `registered-2026-11-19-G8.5`. The list for the owner is in the commit's notes. Release 4's notes gain this migration. No wording a person reads changed.
+
+**New tests.**
+- `supabase/tests/session_csrf_purpose_kinds.sql`, new file, 58 tests:
+  - Each new kind is spent once and refused the second time.
+  - Each kind is refused once its live row is not live. Reviewer: an auth session past `not_after`, a deleted user, another account's session, a removed session. Upload: failed and completed. Evidence: another cookie, and a row that is gone. Claim: completed, idle past 30 minutes, expired. Reset: expired, and a deleted account.
+  - A refused token is not spent.
+  - The three earlier kinds keep v1's rules, including an ended auth session.
+  - A hash spent through v1 is refused by v2.
+  - Expiry and each kind's required shapes are enforced.
+  - Who may call it, and its body and ACL, are the reviewed ones; v1 is unchanged.
+- `scripts/session-csrf-purpose-kinds-migration.test.ts`, new file, 11 tests:
+  - The migration is guarded and newest.
+  - It adds one function and alters nothing.
+  - The md5s of v1, of `private.claim_intake_live_v1` and of its own successor are recomputed from source, and the predecessor, the postflight and the pgTAP suite compare to those md5s and ACLs only.
+  - It accepts exactly the eight kinds the app binds.
+  - Each later kind is held to its live row.
+  - It spends with v1's statements, into v1's table.
+  - The chunk stream does not reach it.
+  - It is re-runnable, and refuses any other overload.
+- `src/lib/security/session-csrf-core.test.ts`, 6 new (14 in the file):
+  - A reviewer token and an account token are kept apart.
+  - Each cookie kind is kept apart from the others with the same hash.
+  - An upload or evidence token binds the session id as well as the cookie.
+  - api.evidence-chunk is the one stream.
+  - The two-kind declaration exists for api.future-person-claim-objection alone, rights first.
+  - Every other route accepts exactly its own kind.
+- `src/lib/security/session-csrf.test.ts`, 7 new (15):
+  - A reviewer token is spent through v2 and an account token through v1.
+  - An upload token is spent with the cookie hash and the path's session id.
+  - The v1 fallback happens only while v2 is absent (`PGRST202`/`42883`), and any other error refuses.
+  - The stream is verified and never spent or rotated.
+  - The successor is minted for the rotated session, and none is issued where the answer ends the session (reset 204).
+  - On the claim-objection address, a rights token is spent first and an account token second, and the handler is told which.
+  - On the claim-objection address, a missing, foreign or other-route token gets the route's 404.
+- `src/lib/security/session-csrf-routes.test.ts`, 100 new (404 in the file):
+  - 20 cases, each through its real handler: 18 routes, with api.embryo-ingest-mapping's POST and PUT, and api.future-person-claim-objection once with a rights cookie and once signed in.
+  - 19 cases have five tests each: refused without a token before the handler runs; a spent token refused; another session's token refused; another purpose's token refused; a fresh token admitted, spent once, with its successor.
+  - api.evidence-chunk has four, the fifth replaced by "admits the stream's one value on every chunk, spends nothing and issues no successor".
+  - Plus "refuses a reviewer token once its auth session has ended, as an account token is".
+  - The stub answers `consume_session_csrf_v2` with the same one-spend-per-hash table and the reviewer's live auth-session check.
+- `src/lib/future-person/owner-objection-route.test.ts`, 1 new: "runs only the branch of the session the gate admitted: a rights request never falls through to the account".
+- Old-position and handover assertions:
+  - `src/app/api/embryo-ingest/[session]/complete/route.test.ts`: the operation token sent only in `X-Inherit-CSRF`, its old place, is refused before the body is read.
+  - `src/lib/embryos/upload-transport.test.ts`:
+    - configure and complete carry their first tokens.
+    - Each mapping request carries the previous answer's successor.
+    - The chunk carries no token.
+    - The completion's operation value is in `X-Inherit-Operation-Nonce`.
+  - `claim-document-routes.test.ts`: the opening answer's `X-Inherit-Evidence-CSRF` is two tokens that verify for the chunk stream and the completion of that session and cookie, and the handler sets no `X-Inherit-CSRF`.
+  - `read-review-document.test.ts`: the receipt carries its route's token; the acknowledgements carry their route's token and then the first answer's successor; no request carries the receipt's successor.
+
+**Changed test setup (no assertion changed).**
+- These route and lib tests now mock `@/lib/security/session-csrf` with `admitEverySessionCsrf`, as stages one and two did, wherever the handler is wrapped: the reset route, the three ingest routes, claim-document-routes, the reviewer route tests (keyless-release, keyless-verification, review-recovery, review-notice, objection-review, correction-review, public-appeal-review-routes), public-appeal-download-scope, account-archive-chunk-http, owner-objection-route and permission-document-routes. The gate is driven on each route in `session-csrf-routes.test.ts`. Their requests send a stand-in (`REVIEWER_GATE_STAND_IN`, `GATE_STAND_IN`) where the old digest was.
+- `session-csrf.test-support.ts` adds the pass-throughs `withReviewerCsrf`, `withRightsOrAccountCsrf` and `requireReviewerCsrf`.
+- `public-appeal-case-rejection.test.ts` no longer passes the removed `csrf` prop.
+- The claims review page test stubs `BYOK_ENCRYPTION_KEY`, because the page now mints the reviewer's tokens.
+
+**Changed assertions (old, new, why).** None is weakened. Each removed case's property is asserted in the suite named.
+- Header refusal cases removed because the handler no longer reads `X-Inherit-CSRF`. The gate's missing, spent, other-session and other-purpose cases for the same route replace them in `session-csrf-routes.test.ts`:
+  - reset route: "no CSRF value", "another session's CSRF value", and "refuses a CSRF value presented with another browser's session cookie".
+  - ingest complete: missing or foreign header. These became `X-Inherit-Operation-Nonce` cases, plus the old-place case.
+  - claim-document-routes: "missing CSRF", "a CSRF value from another operation", "no CSRF header", "another session's CSRF".
+  - correction-review: missing and foreign.
+  - keyless-release, keyless-verification and review-notice: the foreign case digest.
+  - public-appeal-review-routes: `"foreign"`.
+  - permission-document-review: the foreign case digest. The test is renamed without "a foreign CSRF".
+  - owner-objection: `"f".repeat(64)`.
+  - owner-account-objection: `"f".repeat(64)`.
+  - owner-objection-route: `"bad"`.
+- `session-csrf-core.test.ts`, kinds.
+  - Old: every route's kind is in `["authenticated", "token", "token-candidate"]`.
+  - New: the set of kinds is exactly the eight. A malformed upload session id cannot be minted.
+  - Why: five kinds were added.
+- `session-csrf-routes.test.ts`, accounting.
+  - Old: `ownWhole` 18; branch rows `[]`.
+  - New: `ownWhole` 0; branch rows `["api.claim-review-chunk-acknowledgement"]`.
+  - Why: every whole row moved, and the account archive branch stays (see above). `bound` and the both-directions equality are unchanged.
+- `header-operation.test.ts`.
+  - Old: "leaves csrfOperation, which api.embryo-ingest-complete still reads from X-Inherit-CSRF, unchanged".
+  - New: "reads no embryo operation token from X-Inherit-CSRF anywhere: csrfOperation is gone". It checks that the guards module has no `csrfOperation`, that the completion route calls `headerOperation` for `ingest_complete_csrf`, and that the token is read from `X-Inherit-Operation-Nonce` and refused from `X-Inherit-CSRF`.
+  - Why: the last reader moved.
+- `upload-transport.test.ts`.
+  - Old: the completion's `X-Inherit-CSRF` is `"synthetic-csrf"` (the configure answer's `csrfToken`).
+  - New: `X-Inherit-Operation-Nonce` is `"synthetic-csrf"`, and `X-Inherit-CSRF` is the completion route's first token.
+  - Why: principle 2.
+  - The table server's chunk and completion handlers moved ahead of the mapping handler, unchanged except for these header assertions, so that the mapping chain can wrap only the mapping answers.
+- `auth-endpoint-parts.test.ts`.
+  - Old: the Lax cookie is `[0-9a-f]{64}` and equals `resetCsrf(sessionHash)`, and `readResetSession(request, csrf)` authorizes only the cookie with its own digest.
+  - New: the Lax cookie is a token that verifies for this reset session and not another, and `readResetSessionHash` reads exactly one well-formed cookie. `presentedResetCsrf` renders a token and refuses the old digest's shape.
+  - Why: the digest is replaced by the session's first one-time token, checked and spent by the wrapper.
+- `auth-register-contract.test.ts`.
+  - Old: the method export is matched as `export async function POST(`.
+  - New: it is matched either as `export async function POST(` or as `export const POST = `.
+  - Why: the reset route exports its wrapped handler. It must still be exactly `["POST"]`.
+- `claim-session.test.ts`.
+  - Old: `claimMutationCsrf` binds the cookie, the operation and the page nonce.
+  - New: `claimSessionCsrf` gives each route a token that verifies for the current cookie only and for its own route only.
+  - Why: the digest is gone, and the nonce stays in the body.
+- `review.test.ts` and `review-receipt.test.ts`.
+  - Old: the `reviewCsrf`/`reviewCsrfMatches` and `receiptCsrf`/`receiptCsrfMatches` bindings.
+  - New: the modules export none of them.
+  - Why: the reviewer's token stands where the digests stood, and its bindings are asserted in the core and routes suites.
+- `owner-objection.test.ts`: the module no longer exports `ownerObjectionCsrf`. `owner-account-objection.test.ts`: the account item's keys are `["deadline", "explanation", "nonce", "summary"]` (`csrf` left the item), and the reader no longer requires the nonce digest.
+- `correction-review-route.test.ts` and `permission-document-routes.test.ts`.
+  - Old: the GET answer's `x-inherit-csrf` is the case digest.
+  - New: it is null.
+  - Why: the page renders the reviewer's token.
+- `public-appeal-documents.test.ts` (lib).
+  - Old: `X-Inherit-Evidence-CSRF` matches `/^[0-9a-f]{64}$/`.
+  - New: it matches two tokens separated by one space.
+  - The `x-inherit-csrf`-is-null assertion is unchanged.
+- `scripts/dropped-bucket-literals-migration.test.ts`.
+  - Old: `files.at(-1)` is `20261119110000_…`.
+  - New: the only later file is `20261119120000_session_csrf_purpose_kinds.sql`, and it names none of that migration's objects.
+  - Why: release 4's second migration follows it.
+- `scripts/form-register-correspondence.test.ts`.
+  - Old: client modules 224.
+  - New: 225.
+  - Why: `opened-session-csrf.ts` is a new browser module that reads the first tokens.
+- `scripts/route-register-correspondence.test.ts`: four sealed client forms were re-reviewed and resealed, with a review note. They are upload-stage, claim-review, keyless-pending-review and owner-objection. They have the same forms, handlers, preventDefault, targets and bodies; only the token's source changed.
+
+**Planted defects, each applied, run and reverted byte-identical** (each touched file's SHA-256 was checked after the restore). Every one was caught. The new owner-objection-route case was written alongside the claim-objection fall-through plant, and it is that plant's only catcher. The pgTAP reset fixture was also corrected so that an expired session belongs to its own account; with the expired row on a live account, a plant removing only the expiry check would not have been seen.
+- A reviewer token accepted on an account route (`acceptsSessionKind`): 2 fail, "keeps a reviewer token and an account token apart" and "does not let any other route take a second kind…".
+- The two-kind rule generalised, so an account token is accepted on every rights route: 2 fail, "does not let any other route take a second kind…" and "refuses a token minted for another route, and will not mint one for a route of another session kind".
+- A spend that answered `false` counted as spent (`data !== null`): 19 fail. They are the 17 new non-stream "refuses a token that was already spent" cases, the reviewer ended-session case and the fallback case.
+- The fallback taken on any error: 1 fails, the fallback case.
+- api.evidence-complete treated as a stream: 2 fail, its spent case and its admitted case.
+- The claim-objection rights branch falling through to the account branch: 1 fails, the new owner-objection-route case.
+- The ingest completion's operation token read from `X-Inherit-CSRF` again: 25 fail in the completion route test.
+- The claim document opener writing the evidence value into `X-Inherit-CSRF` again: 1 fails, "opens one evidence session and returns its credentials only in headers".
+- The account objection reader requiring `X-Inherit-CSRF` equal to the nonce again: 4 fail (2 in owner-account-objection, 2 in owner-objection-route).
+- The ledger's remaining branch row removed: 1 fails, "accounts for every bound route once, in both directions".
+- In the database, inside a rolled-back transaction, with v2 replaced by the planted body:
+  - v2 answering true for a spent hash: pgTAP 2, 8, 16, 23, 30 and 41 fail (each "refused the second time", and "a hash spent through v1 is refused by v2"), plus 57 (body).
+  - Each kind's live-row check removed:
+    - reviewer: 3, 4, 5, 6, 34 and 36 fail.
+    - upload: 11, 14 and 34 fail.
+    - evidence: 20, 21 and 34 fail.
+    - claim: 24, 25, 26 and 34 fail.
+    - reset: 31, 32 and 34 fail.
+    - Each also fails 57.
+  - v2's md5 was unchanged after every database plant.
+
+**Results.**
+- `src/lib/security/` (5 files) and the migration test: 489/489.
+- A broad run of 376 files: `src/lib/security`, `future-person`, `uploads`, `exports`, `auth` and `embryos`; `src/app`; `src/components`; `src/proxy.test.ts`; the route gate; the two correspondence tests; and the three migration tests. Results: 7,412 passed, 1 failed and 26 skipped, the same with `INHERIT_TEST_JURISDICTION` unset and with `=1`. The failure is `embryo.test.ts`'s landmark case. Two more files fail to load (`claim.test.ts` and `adult-subject-review-form.test.ts`). All three need the Playwright browser build this container lacks.
+- The full unit suite, flag unset: 826 files and 14,621 tests, of which 14,386 passed, 39 failed and 196 skipped. The 27 failing files and the failing tests are identical by name to the untouched base, `e313bfb4`, run the same way: 825 files and 14,503 tests, of which 14,268 passed, 39 failed and 196 skipped. These are the container baseline: the Playwright browser build, plus the root-ownership and container-runtime checks (`ci-browser-runtime` 21, `owned-lifecycle` 7, `manual-reconciliation` 5, `owned-linux-runtime` 3, `account-archive-root/checkpoint` 2).
+- pgTAP: the new file 58/58 and `session_csrf_tokens.sql` 30/30, each in a transaction that rolls back. The migration was applied forward with `psql` twice, which shows it is re-runnable: 26.9 ms, no table lock.
+- `pnpm typecheck`, `pnpm lint --ignore-pattern ".claude/**"`, `gate:routes`, `gate:secrets` (the gate's `scanText` was also run on the untracked new files), `gate:readability`, `gate:claims`, `gate:citations`, `gate:browser-discovery`, `gate:sql-includes` and `gate:names` (placeholder denylist) all pass. Key counts:
+  - `gate:routes`: 174 of 174 route states, 455 browser tests, 3 of 3 required headers.
+  - `gate:secrets`: 4,017 tracked files. The gate's own `scanText` finds nothing in the 103 changed and new files.
+  - `gate:browser-discovery`: 628 cases in 115 files.
+  - `gate:sql-includes`: 628 files, 222 includes.
+
+**Not run.** No browser spec was run: this container has no Playwright browser build. Specs that drive a moved route were read. Five files were changed, for the transport only:
+- `e2e/helpers/session-csrf.ts`: one minter per new kind (`reviewerCsrf`, `uploadCsrf`, `evidenceCsrf`, `claimCsrf`, `resetCsrf`), each bound to what the route's wrapper reads.
+- `e2e/helpers/keyless-review-journey.ts`:
+  - `currentDocumentaryCase` asserts that the GET's `X-Inherit-CSRF` is null; it asserted a 64-hex digest. It no longer returns `csrf`.
+  - `freshReviewerCsrf(page, path)` mints the reviewer token for the route the path names.
+- `e2e/future-person-keyless-review.spec.ts` and `e2e/reviews-keyless-owner-notice-journey.spec.ts`: each direct decision request carries a fresh reviewer token where it carried the case digest. The other reviewer's request carries the first reviewer's token, as it carried the first reviewer's digest. Every asserted answer is still the 404 `{"error":"not_found"}`. That answer is both the reviewer gate's refusal and the route's own, so one assertion is added per request:
+  - Each request that should reach the route asserts that its answer carries a successor token. Only an admitted request gets one, so the 404 is the route's own.
+  - The other reviewer's request asserts that its answer carries none: the gate refused it.
+  - The pattern is stage two's G5.4 step 5.
+- `e2e/function-payload.spec.ts`: the permission-document decision carries `reviewerCsrf(page, "api.legal-evidence-review")` where it carried the review-download answer's digest.
+- Read and unchanged:
+  - The UI-driven claim, evidence, ingest, reset and review flows: future-person-claim, future-person-review (two documents' receipts and three acknowledgements through the chains), claim-review-fixture, density-claim-review-audit, participant-c-journey, embryo-third-party-journey, auth, auth-processing, density-real-state-fixtures.
+  - `public-appeal-review-audit.ts` and `density-claim-state-fixtures.ts`: they assert the header's presence, which is still true.
+  - `appeal-intake-ui.spec.ts`.
+  - `future-person-claim.nojurisdiction.spec.ts`: claim start, not a moved route.
+
+**Integration note, 20 November.** Integrated on top of the D-139, own-file withdrawal and intent-link commits. `scripts/dropped-bucket-literals-migration.test.ts` keeps the stronger form D-139's integration introduced, so this stage's own edit of that assertion is not applied. The client census in `scripts/form-register-correspondence.test.ts` now reads 229 client modules (97 "use client"): this stage's `opened-session-csrf.ts` on top of the withdrawal control's three modules and `intent-link.tsx`. On the integrated tree typecheck and lint exit 0, the security, route, component, census and migration files pass apart from five files that need the Playwright browser build, and the gates pass.
+
 ## 2026-11-20 — D-142: signed-in links prefetch on intent, not on sight
 
 Every default `<Link>` in view prefetched (one route-tree request plus one data request), and each prefetch passed the proxy's sign-in check: 21 prefetches and 25 `GET /auth/v1/user` calls for one report page view, which is the load that exhausted the CI auth service's ports. `src/components/site/intent-link.tsx` (`IntentLink`) is `next/link` with prefetching off until the person hovers, focuses or touches the link, then Next's default prefetch for that one link (the hover-triggered pattern of Next 16's prefetching guide, extended to focus and touch). It is used by every link under `src/components/site` and on the overview, report, reports-list, Family side-by-side and files pages and their list components. The sensitive-result reveal and the header's sign-up link stay `prefetch={false}`: neither may fetch ahead of a click. What the proxy verifies, what any page shows, its wording and every status are unchanged.

@@ -9,7 +9,7 @@ import {
   type JurisdictionCapability,
 } from "@/lib/legal/jurisdictions";
 import { ClosedShapeError, blockedResponse, closedObject, sensitiveJson } from "./api";
-import { CSRF_HEADER, OPERATION_HEADER, verifyEmbryoOperation, type EmbryoOperationClaims } from "./operation-token";
+import { OPERATION_HEADER, verifyEmbryoOperation, type EmbryoOperationClaims } from "./operation-token";
 
 /**
  * The checks every embryo route runs before it reads a body (contract
@@ -72,20 +72,13 @@ export async function accountJurisdictionDenied(
   return sensitiveJson({ error: "jurisdiction_unavailable", message: decision.userFacingCopy }, 403);
 }
 
-/** The claims of the `x-inherit-csrf` token when it was minted for exactly this operation; null otherwise. */
-export function csrfOperation(
-  request: Request,
-  expected: Omit<EmbryoOperationClaims, "nonce" | "expiresAt">,
-): EmbryoOperationClaims | null {
-  return verifyEmbryoOperation(request.headers.get(CSRF_HEADER), expected);
-}
-
 /**
  * The claims of the `x-inherit-operation-nonce` token when it was minted for
- * exactly this operation; null otherwise. The same one-time embryo operation
- * token `csrfOperation` reads, in its own header: on a route whose
- * `X-Inherit-CSRF` is the session token (G8.5, the owner's principles of
- * 19 November 2026), the operation token travels here.
+ * exactly this operation; null otherwise. `X-Inherit-CSRF` is the session
+ * token on every route (G8.5, the owner's principles of 19 November 2026),
+ * so an embryo operation token travels here and is never read from it;
+ * `csrfOperation`, which read it from `X-Inherit-CSRF`, went with
+ * api.embryo-ingest-complete's move in the migration stage.
  */
 export function headerOperation(
   request: Request,

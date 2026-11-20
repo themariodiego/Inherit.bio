@@ -10064,7 +10064,7 @@
       "originSessionBinding": "authContracts.authenticated-session-v1.authenticatedDerivedCapability-for-an-authenticated-origin-and-the-exact-independent-token-claim-reset-or-purpose-session-authority-for-a-nonauthenticated-origin",
       "origin": "exact-canonical-origin-required",
       "fetchMetadata": "same-origin-required",
-      "csrfHeader": "X-Inherit-CSRF-bound-to-the-evidence-session-and-rotated-or-consumed-on-every-state-changing-request",
+      "csrfHeader": "X-Inherit-CSRF-bound-to-the-evidence-session-and-rotated-or-consumed-on-every-state-changing-request-except-the-chunk-stream; registered-2026-11-19-G8.5 (principle 3): api.evidence-chunk-carries-the-evidence-session's-one-session-bound-chunk-stream-value-on-every-chunk-verified-and-never-spent-or-rotated-because-each-session-sequence-is-reserved-once (api.evidence-chunk.requestContract.chunkAuthority); api.evidence-complete-spends-a-one-time-token-and-each-of-its-answers-carries-the-successor",
       "missingInvalidExpiredCompletedWrongPrincipalWrongTargetOrWrongSession": {
         "status": 404,
         "contentType": "application/json",
@@ -10197,7 +10197,7 @@
         "const": "X-Inherit-CSRF"
       },
       "requiredFor": "every-state-changing-method-including-a-body-forbidden-route-except-api.embryo-ingest-chunk-as-declared-by-its-policy.requestAuthority",
-      "binding": "one-time-and-bound-to-the-current-authenticated-or-purpose-session",
+      "binding": "one-time-and-bound-to-the-current-authenticated-or-purpose-session; registered-2026-11-19-G8.5 (principle 3): api.evidence-chunk's-value-is-the-evidence-session's-one-session-bound-chunk-stream-value-verified-on-every-chunk-and-not-spent (authContracts.evidence-session-api-v1.csrfHeader)",
       "operationNonceIsNotCsrf": true
     },
     "sessionRule": "each-state-changing-session-route-requires-exact-Origin-Sec-Fetch-Site-same-origin-and-the-X-Inherit-CSRF-header-bound-to-that-session-in-addition-to-any-distinct-operation-nonce; only-api.embryo-ingest-chunk-omits-the-CSRF-and-operation-nonce-headers-under-its-policy.requestAuthority",
@@ -12167,7 +12167,7 @@
           "challenge": "one-CSPRNG-at-least-128-bit-base64url-transport-challenge-bound-to-this-session-and-ingest-revision-and-stored-hash-only",
           "revision": "positive-random-safe-integer-stored-with-the-challenge",
           "completionNonce": "the-next-operation-nonce: one-time-nonce-bound-to-this-upload-session-for-exactly-one-api.embryo-ingest-complete-request",
-          "csrfToken": "the-X-Inherit-CSRF-value-bound-to-this-upload-session-that-api.embryo-ingest-complete-requires"
+          "csrfToken": "the-one-time-ingest_complete_csrf-operation-value-bound-to-this-upload-session-that-api.embryo-ingest-complete-requires-in-X-Inherit-Operation-Nonce (registered-2026-11-19-G8.5: not-the-X-Inherit-CSRF-session-token)"
         },
         "unknownFields": "forbidden",
         "use": "the-browser-writes-build-challenge-and-revision-into-the-regenerated-##inheritTable=1-header-of-every-chunk-through-src/lib/embryos/table-transport.ts"
@@ -14037,7 +14037,7 @@
           "challenge": "one-CSPRNG-at-least-128-bit-base64url-transport-challenge-bound-to-this-session-and-ingest-revision-and-stored-hash-only",
           "revision": "positive-random-safe-integer-stored-with-the-challenge",
           "completionNonce": "one-time-nonce-bound-to-this-upload-session-for-exactly-one-api.embryo-ingest-complete-request",
-          "csrfToken": "the-X-Inherit-CSRF-value-bound-to-this-upload-session-that-api.embryo-ingest-complete-requires"
+          "csrfToken": "the-one-time-ingest_complete_csrf-operation-value-bound-to-this-upload-session-that-api.embryo-ingest-complete-requires-in-X-Inherit-Operation-Nonce (registered-2026-11-19-G8.5: not-the-X-Inherit-CSRF-session-token)"
         },
         "unknownFields": "forbidden",
         "headers": "private-no-store-no-referrer",
@@ -14096,7 +14096,7 @@
         },
         "unknownFieldsRecursively": "forbidden",
         "headers": {
-          "X-Inherit-CSRF": "receipt-session-bound-CSRF-distinct-from-every-chunk-operation-nonce"
+          "X-Inherit-CSRF": "registered-2026-11-19-G8.5: the-successor-of-this-route's-one-time-reviewer-session-token; each-chunk-acknowledgement-carries-its-own-route's-reviewer-token-from-the-review-page's-chain-and-no-receipt-session-value"
         }
       },
       "objectPathUrlOrCredentialInBody": "forbidden-except-the-explicit-short-lived-acknowledgement-nonce"
@@ -18030,7 +18030,8 @@
         },
         "manifestRule": "chunkCount-must-equal-the-exact-server-owned-contiguous-zero-based-fragment-manifest-cardinality-with-no-gap-extra-duplicate-or-client-selected-sequence",
         "unknownMissingOrInvalid": "invalid-request-v1",
-        "requiredHeader": "X-Inherit-CSRF-bound-to-the-upload-session"
+        "requiredHeader": "X-Inherit-CSRF-bound-to-the-upload-session",
+        "operationToken": "registered-2026-11-19-G8.5: X-Inherit-Operation-Nonce-carries-the-one-time-ingest_complete_csrf-operation-value (the-csrfToken-the-configure-or-mapping-answer-issued)-and-not-X-Inherit-CSRF-which-is-the-upload-session's-one-time-token (operationNonceIsNotCsrf)"
       },
       "stateProfile": "endpoint",
       "policy": {
@@ -19882,6 +19883,7 @@
       "stateProfile": "endpoint",
       "policy": {
         "mode": "guarded-draft-finalize",
+        "uploadSessionCsrf": "registered-2026-11-19-G8.5: the-201-answer-that-opens-the-embryo-upload-session-hands-the-browser-its-first-one-time-X-Inherit-CSRF-tokens (authContracts.upload-session-api-v1.stateChangingRequest)-in-the-X-Inherit-Upload-CSRF-answer-header-as-'<configure> <mapping> <complete>'-one-per-token-route-bound-to-the-session-id-and-its-inherit-ingest-<session>-cookie; each-answer-of-those-routes-carries-its-route's-successor; api.embryo-ingest-chunk-carries-none; this-answer's-own-X-Inherit-CSRF-carries-the-successor-of-this-route's-one-time-account-session-token",
         "operation": "cohort-create",
         "actorTargetRule": "acting-account-owns-the-current-cohort-draft-and-must-be-either-one-exact-current-member-of-policyResolvers.embryo-basis-authority-v1.requiredUploadPrincipals-for-embryo_own-or-the-current-class-D-nonparent-uploader-for-embryo_third_party; ownership-never-adds-the-actor-to-any-of-the-five-output-sets-or-grants-donor-disposition-notice-Card-restriction-withdrawal-or-profile-authority",
         "orderedPrerequisites": {
@@ -20113,7 +20115,7 @@
       },
       "stateProfile": "endpoint",
       "policy": {
-        "evidenceSessionCsrf": "registered-2026-11-19-G8.5: the-201-answer-hands-the-browser-the-new-evidence-session's-X-Inherit-CSRF-value (authContracts.evidence-session-api-v1.csrfHeader)-in-the-X-Inherit-Evidence-CSRF-answer-header-because-this-answer's-own-X-Inherit-CSRF-carries-the-successor-of-this-route's-one-time-account-session-token; each-chunk-and-the-completion-send-that-value-in-X-Inherit-CSRF-unchanged",
+        "evidenceSessionCsrf": "registered-2026-11-19-G8.5: the-201-answer-hands-the-browser-the-new-evidence-session's-first-two-X-Inherit-CSRF-values (authContracts.evidence-session-api-v1.csrfHeader)-in-the-X-Inherit-Evidence-CSRF-answer-header-as-'<chunk> <complete>': the-chunk-stream's-one-session-bound-value-for-api.evidence-chunk (principle 3) and-the-first-one-time-token-for-api.evidence-complete-whose-answers-carry-each-successor; this-answer's-own-X-Inherit-CSRF-carries-the-successor-of-this-route's-one-time-account-session-token",
         "mode": "resolved",
         "resolver": "evidence-ingest-session-v1",
         "operation": "legal-evidence-upload-session-create",
@@ -20217,6 +20219,7 @@
           ]
         },
         "clientModeOverride": "forbidden",
+        "evidenceSessionCsrf": "registered-2026-11-19-G8.5: the-201-answer-hands-the-browser-the-new-evidence-session's-first-two-X-Inherit-CSRF-values-in-the-X-Inherit-Evidence-CSRF-answer-header-as-api.legal-evidence-upload-session's-does; this-answer's-own-X-Inherit-CSRF-carries-the-successor-of-this-route's-one-time-claim-session-token-minted-for-the-rotated-claim-cookie (authContracts.claim-session-api-v1.rotation)",
         "storageAccessContract": "restricted-evidence-v1",
         "contracts": [
           "resource-authorization-v1",
@@ -20248,7 +20251,7 @@
         },
         "clientRangeOffsetOrObjectPath": "forbidden",
         "requiredHeaders": {
-          "X-Inherit-CSRF": "one-time-token-bound-to-the-evidence-session"
+          "X-Inherit-CSRF": "registered-2026-11-19-G8.5 (principle 3): the-evidence-session's-one-session-bound-chunk-stream-value-from-the-opening-answer's-X-Inherit-Evidence-CSRF-sent-unchanged-on-every-chunk-verified-and-never-spent; each-session-sequence-is-reserved-once (chunkAuthority)"
         },
         "chunkAuthority": "owner-decision-2026-09-28: the-server-reserves-each-session-sequence-once-in-the-transaction-that-rechecks-the-session-principal-target-lifecycle-cumulative-bytes-and-the-server-computed-chunk-sha256; a-replayed-or-reused-sequence-is-refused-so-no-separate-one-time-chunk-nonce-is-required"
       },
@@ -20753,7 +20756,7 @@
       },
       "stateProfile": "endpoint",
       "policy": {
-        "evidenceSessionCsrf": "registered-2026-11-19-G8.5: the-201-answer-hands-the-browser-the-new-evidence-session's-X-Inherit-CSRF-value (authContracts.evidence-session-api-v1.csrfHeader)-in-the-X-Inherit-Evidence-CSRF-answer-header-because-this-answer's-own-X-Inherit-CSRF-carries-the-successor-of-this-route's-one-time-rights-session-token; each-chunk-and-the-completion-send-that-value-in-X-Inherit-CSRF-unchanged",
+        "evidenceSessionCsrf": "registered-2026-11-19-G8.5: the-201-answer-hands-the-browser-the-new-evidence-session's-first-two-X-Inherit-CSRF-values (authContracts.evidence-session-api-v1.csrfHeader)-in-the-X-Inherit-Evidence-CSRF-answer-header-as-'<chunk> <complete>': the-chunk-stream's-one-session-bound-value-for-api.evidence-chunk (principle 3) and-the-first-one-time-token-for-api.evidence-complete-whose-answers-carry-each-successor; this-answer's-own-X-Inherit-CSRF-carries-the-successor-of-this-route's-one-time-rights-session-token",
         "mode": "appeal-evidence-document-session-create",
         "jurisdictionBypass": true,
         "resolver": "withdrawal-target-v1",
@@ -21462,6 +21465,7 @@
         "jurisdictionBypass": true,
         "actorRole": "the-exact-current-owner_user_id-notice-recipient-bound-by-the-active-future-person-claim-objection-rights-session-before-or-at-the-server-owned-owner-notice-deadline",
         "accountEquivalent": "under-claimObjectionCredential-the-same-current-owner-may-use-independent-own-live-Auth-recent-reauthentication-and-configured-MFA-with-an-encrypted-ten-minute-form-proof-bound-to-that-account-session-exact-notice-and-current-revision; own-JWT-subject-first-authority-is-rechecked-at-write-and-a-link-cookie-or-service-actor-never-substitutes-for-account-authority",
+        "sessionCsrf": "registered-2026-11-19-G8.5 (owner decision: the claim-objection address accepts either kind of session): X-Inherit-CSRF-is-a-one-time-session-token-of-the-emailed-link's-rights-session-checked-first-or-of-the-signed-in-account (accountEquivalent)-checked-second; the-route-spends-the-token-of-whichever-it-finds-and-runs-only-that-principal's-branch; each-branch's-one-time-objection-nonce-stays-in-body.nonce; no-other-route-takes-two-kinds",
         "expiry": "after-the-notice-deadline-or-any-release-refusal-withdrawal-terminalization-or-prior-objection-decision-return-resource-not-found-v1-with-zero-writes-and-atomically-invalidate-every-objection-credential-session-and-nonce",
         "effect": "atomically-suspend-only-the-current-release-enter-claim-release-objection-freeze-v1-persist-its-minimum-of-objection_at-plus-30-days-and-submission_at-plus-92-days-deadline-supersede-the-day-62-no-objection-transition-for-this-package-invalidate-any-pending-release-job-and-create-one-current-named-human-objection-reviewer-assignment-before-return; never-enter-generic-contradiction.freeze-and-never-delete-freeze-or-restrict-the-embryo-subject-source-or-results",
         "statementStorage": "application-envelope-encrypted-reviewer-only-no-log-no-analytics-and-purged-at-final-resolution-or-the-applicable-persisted-deadline-owned-by-retention-id-future-person.keyless-notice-release-62d-or-future-person.claim-objection-review-30d-leaving-only-a-coded-objection-outcome-and-pseudonymized-audit",

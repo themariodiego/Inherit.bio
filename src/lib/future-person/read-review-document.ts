@@ -1,9 +1,13 @@
+import type { CsrfHandle } from "@/lib/security/session-csrf-client";
 /** Browser transport: acknowledge only after every exact chunk and the full digest arrive. */
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/u;
 const HEX=/^[0-9a-f]{64}$/u;
 const hash=async(bytes:Uint8Array)=>[...new Uint8Array(await crypto.subtle.digest("SHA-256",Uint8Array.from(bytes)))].map(b=>b.toString(16).padStart(2,"0")).join("");
 const exact=(value:unknown,keys:string[]):value is Record<string,unknown>=>value!==null&&typeof value==="object"&&!Array.isArray(value)&&Object.keys(value).sort().join("|")===keys.slice().sort().join("|");
-export async function readReviewDocument(documentId:string,openNonce:string,reviewCsrf:string,signal?:AbortSignal):Promise<{bytes:Uint8Array;filename:string}> {
+/** `receipt` and `acknowledge` are the page's one-time X-Inherit-CSRF handles for
+ * api.claim-review-receipt and api.claim-review-chunk-acknowledgement (G8.5); the
+ * acknowledgements go one after another, each carrying the previous answer's successor. */
+export async function readReviewDocument(documentId:string,openNonce:string,receipt:CsrfHandle,acknowledge:CsrfHandle,signal?:AbortSignal):Promise<{bytes:Uint8Array;filename:string}> {
   if (!UUID.test(documentId)) throw new Error("Document unavailable");
   const assertActive=()=>{if(signal?.aborted)throw new Error("Document read canceled");};
   assertActive();
@@ -16,19 +20,18 @@ export async function readReviewDocument(documentId:string,openNonce:string,revi
     ||descriptor.chunkCount!==Math.ceil(Number(descriptor.sizeBytes)/4_000_000)
     ||descriptor.chunkRoute!==`/api/downloads/${descriptor.session}/chunks/{sequence}`)throw new Error("Document unavailable");
   assertActive();
-  const opened=await fetch(`/api/downloads/${descriptor.session}/receipt`,{method:"POST",credentials:"same-origin",signal,
-    headers:{"content-type":"application/json","x-inherit-csrf":reviewCsrf},body:JSON.stringify({nonce:openNonce})});
-  const receipt:unknown=await opened.json();
-  const csrf=opened.headers.get("x-inherit-csrf");
-  if(opened.status!==201||!csrf||!HEX.test(csrf)||!exact(receipt,["session","chunks"])||receipt.session!==descriptor.session
-    ||!Array.isArray(receipt.chunks)||receipt.chunks.length!==descriptor.chunkCount)throw new Error("Document unavailable");
+  const opened=await receipt.send((token)=>fetch(`/api/downloads/${descriptor.session}/receipt`,{method:"POST",credentials:"same-origin",signal,
+    headers:{"content-type":"application/json","x-inherit-csrf":token},body:JSON.stringify({nonce:openNonce})}));
+  const receiptBody:unknown=await opened.json();
+  if(opened.status!==201||!exact(receiptBody,["session","chunks"])||receiptBody.session!==descriptor.session
+    ||!Array.isArray(receiptBody.chunks)||receiptBody.chunks.length!==descriptor.chunkCount)throw new Error("Document unavailable");
   const chunks:Uint8Array[]=[];
   const proofs:Array<{proof:string;nonce:string}>=[];
   let bytes:Uint8Array|undefined;
   try {
-    for(let sequence=0;sequence<receipt.chunks.length;sequence++) {
+    for(let sequence=0;sequence<receiptBody.chunks.length;sequence++) {
       assertActive();
-      const item:unknown=receipt.chunks[sequence];
+      const item:unknown=receiptBody.chunks[sequence];
       if(!exact(item,["sequence","challenge","nonce"])||item.sequence!==sequence||typeof item.challenge!=="string"
         ||!HEX.test(item.challenge)||typeof item.nonce!=="string"||item.nonce.length<1||item.nonce.length>2048)throw new Error("Document unavailable");
       const response=await fetch(`/api/downloads/${descriptor.session}/chunks/${sequence}`,{credentials:"same-origin",signal});
@@ -51,9 +54,9 @@ export async function readReviewDocument(documentId:string,openNonce:string,revi
     for(let sequence=0;sequence<proofs.length;sequence++) {
       assertActive();
       const {proof,nonce}=proofs[sequence];
-      const settled=await fetch(`/api/downloads/${descriptor.session}/chunks/${sequence}/acknowledge`,{
-        method:"POST",credentials:"same-origin",signal,headers:{"content-type":"application/json","x-inherit-csrf":csrf},body:JSON.stringify({proof,nonce}),
-      });
+      const settled=await acknowledge.send((token)=>fetch(`/api/downloads/${descriptor.session}/chunks/${sequence}/acknowledge`,{
+        method:"POST",credentials:"same-origin",signal,headers:{"content-type":"application/json","x-inherit-csrf":token},body:JSON.stringify({proof,nonce}),
+      }));
       if(settled.status!==204||(await settled.arrayBuffer()).byteLength!==0)throw new Error("Document receipt unavailable");
     }
     assertActive();

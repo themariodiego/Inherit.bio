@@ -2,7 +2,8 @@ import { getSensitiveAccountContext } from "@/lib/account-deletion";
 import { notFound, sensitiveJson, unavailable } from "@/lib/embryos/api";
 import { testAppealIntakeOpen } from "@/lib/future-person/appeals-open";
 import { appealCaseContext, appealCaseDecisionBody, mintAppealCaseReviewNonce, publicAppealCaseReviewBody, readAppealCaseReviewNonce, sealAppealCaseReason } from "@/lib/future-person/public-appeal-case-decision";
-import { isCanonicalId, mintReviewNonce, reviewCsrf, reviewCsrfMatches } from "@/lib/future-person/review";
+import { isCanonicalId, mintReviewNonce } from "@/lib/future-person/review";
+import { withReviewerCsrf } from "@/lib/security/session-csrf";
 import { mintReceiptOpenNonce } from "@/lib/future-person/review-receipt";
 import { createClient } from "@/lib/supabase/server";
 import { readBoundedJson } from "@/lib/future-person/bounded-body";
@@ -26,7 +27,9 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
  }]));
  const reversal = row.data.allowedDecisions.some(decision => decision === "reverse-prior-decision") && row.data.priorDecision
   ? { priorDecisionRevision: row.data.priorDecision.decisionRevision, evidenceRevision: row.data.evidenceRevision } : null;
- return sensitiveJson(body, 200, { "Referrer-Policy": "no-referrer", "x-inherit-csrf": reviewCsrf(id, account.user.id, account.sessionId),
+ // The page renders the reviewer's one-time X-Inherit-CSRF tokens; this GET
+ // issues none (G8.5: the header carries only the session token).
+ return sensitiveJson(body, 200, { "Referrer-Policy": "no-referrer",
   "x-inherit-document-nonces": JSON.stringify(tokens), "x-inherit-case-review-nonce": mintAppealCaseReviewNonce({ caseId: id,
     accountId: account.user.id, sessionId: account.sessionId, reviewRevision: row.data.reviewRevision, evidenceRevision: row.data.evidenceRevision }),
   "x-inherit-case-decisions": JSON.stringify(row.data.allowedDecisions),
@@ -35,7 +38,7 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
 
 /** Registered rejection, prior correction/uphold and nonfinal information requests have no target effects. Other final
  * branches remain opaque until their native authority producers exist. */
-export async function POST(request: Request, context: { params: Promise<{ id: string }> }) {
+export const POST = withReviewerCsrf("api.appeal-review", async (request: Request, context: { params: Promise<{ id: string }> }) => {
  const { id } = await context.params; const url = new URL(request.url);
  if (!testAppealIntakeOpen() || !isCanonicalId(id) || url.search || request.headers.get("origin") !== url.origin
   || request.headers.get("sec-fetch-site") !== "same-origin"
@@ -46,7 +49,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
  if (current.error) return current.error.code === "42501" ? notFound() : unavailable();
  const row = appealCaseContext.safeParse(current.data);
  if (!row.success || row.data.caseId !== id || !row.data.allowedDecisions.some(decision => decision === parsed.data.decision) || Date.parse(row.data.deadline) <= Date.now()
-  || parsed.data.reviewRevision !== row.data.reviewRevision || !reviewCsrfMatches(request.headers.get("x-inherit-csrf"), id, account.user.id, account.sessionId)) return notFound();
+  || parsed.data.reviewRevision !== row.data.reviewRevision) return notFound();
  const nonce = readAppealCaseReviewNonce(parsed.data.nonce, { caseId: id, accountId: account.user.id, sessionId: account.sessionId,
   reviewRevision: row.data.reviewRevision, evidenceRevision: row.data.evidenceRevision });
  if (!nonce || parsed.data.decision === "reverse-prior-decision" && (!row.data.priorDecision
@@ -71,4 +74,4 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
   || value.reviewRevision !== row.data.reviewRevision + 1 || Object.keys(value).sort().join("|") !== "caseId|outcome|reviewRevision|state") return unavailable();
  const response = await closedResponse("api.appeal-review", ["caseId", "state", "outcome", "reviewRevision"], value, 200);
  response.headers.set("Referrer-Policy", "no-referrer"); return response;
-}
+});

@@ -1,7 +1,7 @@
 import "server-only";
 
 import crypto from "node:crypto";
-import { hmacSecret } from "@/lib/crypto";
+import { mintSessionCsrf } from "@/lib/security/session-csrf-core";
 import { RESET_CSRF_COOKIE, RESET_SESSION_COOKIE, SECRET_SHAPE, readSingleCookie, setCookie } from "./auth-cookies";
 
 /**
@@ -16,26 +16,26 @@ import { RESET_CSRF_COOKIE, RESET_SESSION_COOKIE, SECRET_SHAPE, readSingleCookie
  * else: it is not a Supabase session and no page or endpoint reads data with
  * it.
  *
- * Its CSRF value (`X-Inherit-CSRF-header-bound-to-the-reset-session`) is a
- * keyed digest of the session hash. The callback hands it to the page in a
- * Lax cookie, because the first render arrives by a redirect chain that a
- * Strict cookie is withheld from; the POST is same-origin and carries both.
- * Spending the session spends the value with it.
+ * Its CSRF value (`X-Inherit-CSRF-header-bound-to-the-reset-session`) is the
+ * reset session's one-time token for auth.reset-password-submit (G8.5, the
+ * migration stage; `src/lib/security/session-csrf.ts`), which the route's
+ * wrapper spends before the handler runs, against the live reset session.
+ * It was a keyed digest of the session hash. The callback mints the first
+ * one and hands it to the page in a Lax cookie, because the first render
+ * arrives by a redirect chain that a Strict cookie is withheld from; the
+ * POST is same-origin and carries both. An answer that does not spend the
+ * session (a password outside the limits) carries the next token, so the
+ * form can be sent again; the answer that spends it carries none.
  */
 
 export const RESET_SESSION_SECONDS = 15 * 60;
-const CSRF_CONTEXT = "auth-reset-csrf-v1";
-const CSRF_SHAPE = /^[0-9a-f]{64}$/u;
+const TOKEN_SHAPE = /^\d{13}\.[A-Za-z0-9_-]{43}\.[0-9a-f]{64}$/u;
 
 function sha256Hex(value: string): string {
   return crypto.createHash("sha256").update(value, "utf8").digest("hex");
 }
 
-export function resetCsrf(sessionHash: string): string {
-  return hmacSecret(sessionHash, CSRF_CONTEXT);
-}
-
-/** A new reset session: the hash for the database and both cookies. */
+/** A new reset session: the hash for the database and both cookies, the second holding its first token. */
 export function newResetSession(): { sessionHash: string; setCookies: string[] } {
   const secret = crypto.randomBytes(32).toString("base64url");
   const sessionHash = sha256Hex(secret);
@@ -43,7 +43,8 @@ export function newResetSession(): { sessionHash: string; setCookies: string[] }
     sessionHash,
     setCookies: [
       setCookie(RESET_SESSION_COOKIE, secret, RESET_SESSION_SECONDS, "Strict"),
-      setCookie(RESET_CSRF_COOKIE, resetCsrf(sessionHash), RESET_SESSION_SECONDS, "Lax"),
+      setCookie(RESET_CSRF_COOKIE, mintSessionCsrf({ kind: "reset-session", sessionHash }, "auth.reset-password-submit"),
+        RESET_SESSION_SECONDS, "Lax"),
     ],
   };
 }
@@ -53,20 +54,17 @@ export function clearResetSessionCookies(): string[] {
   return [setCookie(RESET_SESSION_COOKIE, "", 0, "Strict"), setCookie(RESET_CSRF_COOKIE, "", 0, "Lax")];
 }
 
-/** The CSRF value the page renders into its form, when the browser holds a well-formed one. */
+/** The token the page renders into its form, when the browser holds a well-formed one. */
 export function presentedResetCsrf(value: string | undefined): string {
-  return value !== undefined && CSRF_SHAPE.test(value) ? value : "";
+  return value !== undefined && TOKEN_SHAPE.test(value) ? value : "";
 }
 
 /**
  * The session hash of a request that carries exactly one well-formed reset
- * cookie and the CSRF value derived from it; null otherwise. Whether the
- * session is live is the database's question.
+ * cookie; null otherwise. Its token was spent for this session before the
+ * handler ran. Whether the session is live is the database's question.
  */
-export function readResetSession(request: Request, csrfHeader: string | null): { sessionHash: string } | null {
+export function readResetSessionHash(request: Request): string | null {
   const secret = readSingleCookie(request, RESET_SESSION_COOKIE, SECRET_SHAPE);
-  if (!secret || csrfHeader === null || !CSRF_SHAPE.test(csrfHeader)) return null;
-  const sessionHash = sha256Hex(secret);
-  const expected = resetCsrf(sessionHash);
-  return crypto.timingSafeEqual(Buffer.from(csrfHeader), Buffer.from(expected)) ? { sessionHash } : null;
+  return secret ? sha256Hex(secret) : null;
 }

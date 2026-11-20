@@ -1,3 +1,4 @@
+import crypto from "node:crypto";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { mintSessionCsrf, verifySessionCsrf } from "./session-csrf-core";
 
@@ -15,14 +16,20 @@ const ORIGIN = "https://inherit.test";
 const state = vi.hoisted(() => ({
   context: null as null | { user: { id: string }; sessionId: string },
   answer: { data: true as unknown, error: null as unknown },
+  /** The answer of public.consume_session_csrf_v2, when a test sets one; otherwise `answer`. */
+  v2: null as null | { data: unknown; error: unknown },
   calls: [] as Record<string, unknown>[],
+  names: [] as string[],
 }));
 vi.mock("@/lib/account-deletion", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/account-deletion")>()),
   getSensitiveAccountContext: vi.fn(async () => state.context),
 }));
 vi.mock("@/lib/supabase/admin", () => ({
-  createAdminClient: () => ({ rpc: async (_name: string, args: Record<string, unknown>) => { state.calls.push(args); return state.answer; } }),
+  createAdminClient: () => ({ rpc: async (name: string, args: Record<string, unknown>) => {
+    state.calls.push(args); state.names.push(name);
+    return name === "consume_session_csrf_v2" && state.v2 ? state.v2 : state.answer;
+  } }),
 }));
 
 const signedIn = { user: { id: ACCOUNT }, sessionId: SESSION };
@@ -38,7 +45,9 @@ beforeEach(() => {
   vi.stubEnv("BYOK_ENCRYPTION_KEY", KEY);
   state.context = signedIn;
   state.answer = { data: true, error: null };
+  state.v2 = null;
   state.calls.length = 0;
+  state.names.length = 0;
 });
 afterEach(() => vi.unstubAllEnvs());
 
@@ -120,6 +129,151 @@ describe("requireAccountCsrf", () => {
     expect(await requireAccountCsrf(post("nope"), "api.consents")).toBeInstanceOf(Response);
     const admitted = await requireAccountCsrf(post(mintSessionCsrf(accountSession, "api.consents")), "api.consents");
     expect(admitted).not.toBeInstanceOf(Response);
+  });
+});
+
+/**
+ * G8.5, the migration stage: the five later kinds are spent by
+ * public.consume_session_csrf_v2 with the values its live-row check needs;
+ * the three earlier ones stay on v1 exactly as before.
+ */
+describe("the five later kinds' spend", () => {
+  const HASH = "e".repeat(64);
+  const INGEST = "5b000000-0000-4000-8000-0000000000a1";
+  const reviewer = { kind: "reviewer" as const, accountId: ACCOUNT, sessionId: SESSION };
+
+  it("spends a reviewer token through v2 with the account and its auth session, and an account token through v1", async () => {
+    const { withAccountCsrf, withReviewerCsrf } = await import("./session-csrf");
+    const handler = vi.fn(async () => new Response(null, { status: 204 }));
+    expect((await withReviewerCsrf("api.appeal-review", handler)(post(mintSessionCsrf(reviewer, "api.appeal-review")))).status).toBe(204);
+    expect((await withAccountCsrf("api.jurisdiction", handler)(post(mintSessionCsrf(accountSession, "api.jurisdiction")))).status).toBe(204);
+    expect(state.names).toEqual(["consume_session_csrf_v2", "consume_session_csrf_v1"]);
+    expect(state.calls[0]).toEqual(expect.objectContaining({ p_route_id: "api.appeal-review", p_session_kind: "reviewer",
+      p_account_id: ACCOUNT, p_session_id: SESSION, p_cookie_hash: null, p_purpose_session_id: null }));
+    // A reviewer's token never stands in for an account's, nor the reverse.
+    state.calls.length = 0;
+    expect((await withReviewerCsrf("api.appeal-review", handler)(post(mintSessionCsrf(accountSession, "api.jurisdiction")))).status).toBe(404);
+    expect((await withAccountCsrf("api.jurisdiction", handler)(post(mintSessionCsrf(reviewer, "api.appeal-review")))).status).toBe(403);
+    expect(state.calls).toEqual([]);
+  });
+
+  it("spends an upload session's token with the cookie hash and the session id the path names", async () => {
+    const { withPurposeCsrf } = await import("./session-csrf");
+    const read = vi.fn(async (_request: Request, context: { params: Promise<{ session: string }> }) =>
+      ({ kind: "upload-session" as const, sessionHash: HASH, sessionId: (await context.params).session }));
+    const route = withPurposeCsrf("api.embryo-ingest-complete", read, async () => new Response(null, { status: 204 }));
+    const token = mintSessionCsrf({ kind: "upload-session", sessionHash: HASH, sessionId: INGEST }, "api.embryo-ingest-complete");
+    const response = await route(post(token), { params: Promise.resolve({ session: INGEST }) });
+    expect(response.status).toBe(204);
+    expect(read).toHaveBeenCalledOnce();
+    expect(state.calls).toEqual([expect.objectContaining({ p_session_kind: "upload-session", p_account_id: null, p_session_id: null,
+      p_cookie_hash: HASH, p_purpose_session_id: INGEST })]);
+    // The same token presented for another session the path names is refused before any spend.
+    state.calls.length = 0;
+    const other = await route(post(token), { params: Promise.resolve({ session: "5b000000-0000-4000-8000-0000000000a2" }) });
+    expect(other.status).toBe(404);
+    expect(state.calls).toEqual([]);
+  });
+
+  it("falls back to v1 under the kind whose rule it shares only while v2 is absent, and refuses on any other error", async () => {
+    const { withPurposeCsrf, withReviewerCsrf } = await import("./session-csrf");
+    const handler = vi.fn(async () => new Response(null, { status: 204 }));
+    const claim = withPurposeCsrf("api.future-person-claim-complete", () => ({ kind: "claim-session" as const, sessionHash: HASH }), handler);
+    state.v2 = { data: null, error: { code: "PGRST202" } };
+    expect((await claim(post(mintSessionCsrf({ kind: "claim-session", sessionHash: HASH }, "api.future-person-claim-complete")))).status).toBe(204);
+    expect(state.names).toEqual(["consume_session_csrf_v2", "consume_session_csrf_v1"]);
+    expect(state.calls[1]).toEqual(expect.objectContaining({ p_session_kind: "token", p_account_id: null, p_session_id: null }));
+    state.calls.length = 0; state.names.length = 0;
+    expect((await withReviewerCsrf("api.appeal-review", handler)(post(mintSessionCsrf(reviewer, "api.appeal-review")))).status).toBe(204);
+    expect(state.calls[1]).toEqual(expect.objectContaining({ p_session_kind: "authenticated", p_account_id: ACCOUNT, p_session_id: SESSION }));
+    handler.mockClear(); state.calls.length = 0; state.names.length = 0;
+    for (const error of [{ code: "42501" }, { code: "22023" }, { code: "XX000" }]) {
+      state.v2 = { data: null, error };
+      const response = await claim(post(mintSessionCsrf({ kind: "claim-session", sessionHash: HASH }, "api.future-person-claim-complete")));
+      expect(response.status, error.code).toBe(404);
+    }
+    state.v2 = { data: false, error: null };
+    expect((await claim(post(mintSessionCsrf({ kind: "claim-session", sessionHash: HASH }, "api.future-person-claim-complete")))).status).toBe(404);
+    expect(handler).not.toHaveBeenCalled();
+    expect(state.names.every(name => name === "consume_session_csrf_v2")).toBe(true);
+  });
+
+  it("verifies a chunk stream's value on every chunk and never spends or rotates it (principle 3)", async () => {
+    const { withPurposeCsrf } = await import("./session-csrf");
+    const evidence = { kind: "evidence-session" as const, sessionHash: HASH, sessionId: INGEST };
+    const route = withPurposeCsrf("api.evidence-chunk", () => evidence, async () => new Response(null, { status: 204 }));
+    const value = mintSessionCsrf(evidence, "api.evidence-chunk");
+    for (let chunk = 0; chunk < 3; chunk++) {
+      const response = await route(post(value));
+      expect(response.status).toBe(204);
+      expect(response.headers.get("x-inherit-csrf")).toBeNull();
+    }
+    expect(state.calls).toEqual([]);
+    expect((await route(post(mintSessionCsrf(evidence, "api.evidence-complete")))).status).toBe(404);
+    expect((await route(post(mintSessionCsrf({ ...evidence, sessionId: "5b000000-0000-4000-8000-0000000000a2" }, "api.evidence-chunk")))).status).toBe(404);
+    expect((await route(post())).status).toBe(404);
+  });
+
+  it("mints the successor for the session a rotating answer names, and issues none where the answer ends the session", async () => {
+    const { answerForRotatedSession, withPurposeCsrf } = await import("./session-csrf");
+    const claim = { kind: "claim-session" as const, sessionHash: HASH };
+    const rotated = { kind: "claim-session" as const, sessionHash: "f".repeat(64) };
+    const route = withPurposeCsrf("api.future-person-claim-document-session", () => claim,
+      async () => answerForRotatedSession(new Response(null, { status: 201 }), rotated));
+    const response = await route(post(mintSessionCsrf(claim, "api.future-person-claim-document-session")));
+    const next = response.headers.get("x-inherit-csrf");
+    expect(verifySessionCsrf(next, rotated, "api.future-person-claim-document-session")).not.toBeNull();
+    expect(verifySessionCsrf(next, claim, "api.future-person-claim-document-session")).toBeNull();
+    const reset = { kind: "reset-session" as const, sessionHash: HASH };
+    let status = 204;
+    const submit = withPurposeCsrf("auth.reset-password-submit", () => reset, async () => new Response(null, { status }),
+      { rotate: (answer) => answer.status !== 204 });
+    expect((await submit(post(mintSessionCsrf(reset, "auth.reset-password-submit")))).headers.get("x-inherit-csrf")).toBeNull();
+    status = 422;
+    const refused = await submit(post(mintSessionCsrf(reset, "auth.reset-password-submit")));
+    expect(verifySessionCsrf(refused.headers.get("x-inherit-csrf"), reset, "auth.reset-password-submit")).not.toBeNull();
+  });
+});
+
+describe("the claim-objection address, which takes either kind of session", () => {
+  const RIGHTS = "R".repeat(43);
+  const rights = { kind: "token" as const, sessionHash: crypto.createHash("sha256").update(RIGHTS, "utf8").digest("hex") };
+  const withRights = (token?: string) => {
+    const request = post(token);
+    const headers = new Headers(request.headers);
+    headers.set("cookie", `inherit-rights=${RIGHTS}`);
+    return new Request(request.url, { method: "PUT", headers });
+  };
+
+  it("spends a rights token for the rights session first, an account token for the signed-in account second, and tells the handler which", async () => {
+    const { withRightsOrAccountCsrf } = await import("./session-csrf");
+    const seen: (string | null)[] = [];
+    const route = withRightsOrAccountCsrf("api.future-person-claim-objection", async (_request, session) => {
+      seen.push(session?.kind ?? null); return new Response(null, { status: 202 });
+    });
+    expect((await route(withRights(mintSessionCsrf(rights, "api.future-person-claim-objection")))).status).toBe(202);
+    expect((await route(withRights(mintSessionCsrf(accountSession, "api.future-person-claim-objection")))).status).toBe(202);
+    expect((await route(post(mintSessionCsrf(accountSession, "api.future-person-claim-objection")))).status).toBe(202);
+    expect(seen).toEqual(["token", "authenticated", "authenticated"]);
+    expect(state.calls.map(call => call.p_session_kind)).toEqual(["token", "authenticated", "authenticated"]);
+  });
+
+  it("refuses a missing, foreign or other-route token with the route's 404, and leaves a request with neither session to the handler", async () => {
+    const { withRightsOrAccountCsrf } = await import("./session-csrf");
+    const handler = vi.fn(async () => new Response(null, { status: 202 }));
+    const route = withRightsOrAccountCsrf("api.future-person-claim-objection", handler);
+    for (const request of [withRights(), withRights(mintSessionCsrf(rights, "api.withdraw")), post(),
+      post(mintSessionCsrf(accountSession, "api.jurisdiction"))]) {
+      const response = await route(request);
+      expect(response.status).toBe(404);
+      expect(await response.json()).toEqual({ error: "not_found" });
+    }
+    expect(handler).not.toHaveBeenCalled();
+    state.context = null;
+    expect((await route(post())).status).toBe(202);
+    expect(handler).toHaveBeenCalledWith(expect.any(Request), null);
+    expect(state.calls).toEqual([]);
+    expect(() => withRightsOrAccountCsrf("api.withdraw", handler)).toThrow("does not take a rights or an account session");
   });
 });
 

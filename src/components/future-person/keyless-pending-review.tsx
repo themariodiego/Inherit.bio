@@ -2,6 +2,7 @@
 import {useEffect,useRef,useState,type FormEvent} from "react";
 import {z} from "zod";
 import type {ReviewPageCase} from "@/lib/future-person/review-page-contract";
+import {useCsrf} from "@/components/security/csrf-provider";
 const revision=z.number().int().positive().safe();
 const objectionCase=z.object({objectionId:z.uuid(),claimId:z.uuid(),statement:z.string().min(20).max(16000),
  objectionRevision:revision,claimReviewRevision:revision,noticeRevision:revision,
@@ -14,14 +15,16 @@ const objectionCase=z.object({objectionId:z.uuid(),claimId:z.uuid(),statement:z.
 const refusalCodes={documentary_evidence_insufficient:"The documents do not support this claim.",identity_profile_conflict:"The parent details do not match.",
  notice_delivery_failed:"The owner notice could not be delivered.",claim_deadline_expired:"The claim deadline has passed.",record_state_changed:"The record has changed."} as const;
 type RefusalCode=keyof typeof refusalCodes;
-type Objection={record:z.infer<typeof objectionCase>;csrf:string;nonce:string};
+type Objection={record:z.infer<typeof objectionCase>;nonce:string};
 /** Only this newly assigned operation gets a decision. The parent's document
  * controls use new GET-issued receipt proofs and the current full EOF/ACK
  * reader; no original documentary receipt or choice survives the operation. */
-export function KeylessPendingReview({claimId,record,csrf,nonce,operation,objectionId,operationReady,documentsRead,onSaved}:{claimId:string;record:ReviewPageCase;
- csrf:string;nonce:string;operation:"documentary"|"claim-objection"|"claim-release";objectionId:string|null;operationReady:boolean;documentsRead:boolean;onSaved:()=>void}) {
+export function KeylessPendingReview({claimId,record,nonce,operation,objectionId,operationReady,documentsRead,onSaved}:{claimId:string;record:ReviewPageCase;
+ nonce:string;operation:"documentary"|"claim-objection"|"claim-release";objectionId:string|null;operationReady:boolean;documentsRead:boolean;onSaved:()=>void}) {
  const submission=useRef<AbortController|null>(null);
  useEffect(()=>()=>submission.current?.abort(),[]);
+ // The reviewer's one-time X-Inherit-CSRF tokens for the two routes, which the page renders (G8.5).
+ const releaseCsrf=useCsrf("api.future-person-claim-release"),objectionCsrf=useCsrf("api.future-person-claim-objection-review");
  const [openedAt]=useState(()=>Date.now());
  const [choice,setChoice]=useState("refuse-release"),[code,setCode]=useState<RefusalCode>("documentary_evidence_insufficient");
  const [reason,setReason]=useState(""),[adult,setAdult]=useState(false),[parent,setParent]=useState(false),[identity,setIdentity]=useState(false);
@@ -31,13 +34,13 @@ export function KeylessPendingReview({claimId,record,csrf,nonce,operation,object
   const controller=new AbortController();
   (async()=>{try{
    const response=await fetch(`/api/reviews/future-person/claim-objections/${objectionId}`,{credentials:"same-origin",cache:"no-store",signal:controller.signal});
-   const parsed=objectionCase.safeParse(await response.json()),ownCsrf=response.headers.get("x-inherit-csrf"),ownNonce=response.headers.get("x-inherit-review-nonce");
+   const parsed=objectionCase.safeParse(await response.json()),ownNonce=response.headers.get("x-inherit-review-nonce");
    if(response.status!==200||!parsed.success||parsed.data.objectionId!==objectionId||parsed.data.claimId!==claimId
     ||parsed.data.claimReviewRevision!==record.reviewRevision||record.notice.state==="not_applicable"||parsed.data.noticeRevision!==record.notice.noticeRevision
     ||parsed.data.reviewPackage.photoIdentityDocumentId!==record.evidence.photoIdentityDocumentId
     ||parsed.data.reviewPackage.birthRecordDocumentId!==record.evidence.birthRecordDocumentId
-    ||!ownCsrf||!/^[0-9a-f]{64}$/u.test(ownCsrf)||!ownNonce||ownNonce.length>2048)throw new Error("unavailable");
-   if(!controller.signal.aborted){setObjection({record:parsed.data,csrf:ownCsrf,nonce:ownNonce});setChoice("uphold-objection");}
+    ||!ownNonce||ownNonce.length>2048)throw new Error("unavailable");
+   if(!controller.signal.aborted){setObjection({record:parsed.data,nonce:ownNonce});setChoice("uphold-objection");}
   }catch{if(!controller.signal.aborted)setMessage("This case is not available. Reload this page and sign in again.");}})();
   return()=>controller.abort();
  },[operation,objectionId,claimId,record]);
@@ -56,7 +59,7 @@ export function KeylessPendingReview({claimId,record,csrf,nonce,operation,object
     {decision:choice,reviewRevision:record.reviewRevision,noticeRevision:record.notice.noticeRevision,reason,nonce,
      ...(approval?{}:{refusalCode:code})};
    const url=isObjection?`/api/reviews/future-person/claim-objections/${objectionId}`:`/api/reviews/future-person/claims/${claimId}/release`;
-   const response=await fetch(url,{method:"POST",signal:controller.signal,credentials:"same-origin",headers:{"content-type":"application/json","x-inherit-csrf":isObjection?objection!.csrf:csrf},body:JSON.stringify(body)});
+   const response=await (isObjection?objectionCsrf:releaseCsrf).send(token=>fetch(url,{method:"POST",signal:controller.signal,credentials:"same-origin",headers:{"content-type":"application/json","x-inherit-csrf":token},body:JSON.stringify(body)}));
    const value:unknown=await response.json();if(controller.signal.aborted)throw new Error("unavailable");if(response.status!==200||value===null||typeof value!=="object"||Array.isArray(value))throw new Error("unavailable");
    const result=value as Record<string,unknown>;
    if(isObjection){const expected:Record<string,string>={"uphold-objection":"claim_rejected","overrule-objection":"release_recheck_required","needs-more-information":"more_information_required"};

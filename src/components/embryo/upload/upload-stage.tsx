@@ -73,6 +73,7 @@ import { EMBRYO_INGEST_SESSION_LIMITS } from "@/lib/genome/ingest-limits";
 import { UploadTransportError, sendEmbryoFile, type MappingAnswer, type MappingQuestion,
   type UploadFailure, type UploadProgress, type UploadSession } from "@/lib/embryos/upload-transport";
 import { readUploadReceipt } from "@/lib/embryos/upload-receipt";
+import { readUploadSessionCsrf, type UploadSessionCsrf } from "@/lib/security/opened-session-csrf";
 import { route } from "@/lib/primary-routes";
 import { INITIAL_FLOW } from "@/lib/embryos/upload-flow";
 import { COMPARE_THESE_LINK } from "@/copy/embryos/index";
@@ -232,7 +233,7 @@ function InviteForm({ draftId, csrfTokens, onSent }: { draftId: string; csrfToke
   );
 }
 
-type Finalized = { cards: CohortCard[]; session: UploadSession };
+type Finalized = { cards: CohortCard[]; session: UploadSession; csrf: UploadSessionCsrf };
 type FileState =
   | { phase: "choose"; problem: string | null }
   | { phase: "sending"; progress: UploadProgress }
@@ -271,7 +272,11 @@ function FinalizeAndSend({ view }: { view: Extract<UploadStageView, { kind: "ack
         futurePersonCharterAcknowledgementId: charter, nonce: view.finalizeNonce }),
     }));
     if (response.status !== 201) { setFailed(true); return; }
-    try { setFinalized(readUploadReceipt(await response.json())); }
+    // The upload session's first one-time tokens travel in their own answer
+    // header; this answer's X-Inherit-CSRF is api.embryo-cohorts' successor (G8.5).
+    const sessionCsrf = readUploadSessionCsrf(response.headers);
+    if (!sessionCsrf) { setFailed(true); return; }
+    try { setFinalized({ ...readUploadReceipt(await response.json()), csrf: sessionCsrf }); }
     catch { setFailed(true); }
   }
 
@@ -297,7 +302,7 @@ function FileStep({ finalized }: { finalized: Finalized }) {
     if (!chosen || state.phase === "sending") return;
     setState({ phase: "sending", progress: { phase: "reading" } });
     try {
-      await sendEmbryoFile({ file: chosen, session: finalized.session,
+      await sendEmbryoFile({ file: chosen, session: finalized.session, csrf: finalized.csrf,
         onProgress: (progress) => setState({ phase: "sending", progress }),
         // A laboratory table's question, asked on this screen; the upload
         // waits for the reader's answer and then carries on.

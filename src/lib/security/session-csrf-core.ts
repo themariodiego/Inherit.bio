@@ -23,10 +23,12 @@ import { hmacSecret, hmacSecretWithKey } from "../crypto";
  * does with its own value.
  *
  * The MAC binds the session kind, the session (the account and its auth
- * session, or the hash of a purpose-session cookie), the registered route
- * and the expiry. None of them travels in the token: the verifier recomputes
- * the MAC from the live request, so a token minted for another session,
- * another purpose session or another route never verifies.
+ * session, or the hash of a purpose-session cookie, with the session id the
+ * route's path names where one cookie belongs to one upload or evidence
+ * session), the registered route and the expiry. None of them travels in the
+ * token: the verifier recomputes the MAC from the live request, so a token
+ * minted for another session, another purpose session, another kind of
+ * session or another route never verifies.
  *
  * This module is the pure mint and verify, with no request, cookie or
  * database access, so a browser test helper can mint under the local
@@ -109,15 +111,88 @@ export const SESSION_CSRF_ROUTES = Object.freeze({
   "api.appeal-document-session": "token",
   "api.third-party-subject-export": "token",
   "api.rights-activate": "token-candidate",
+  // 2026-11-19 (G8.5, the migration stage): the five session kinds that
+  // public.consume_session_csrf_v2 accepts beside these three.
+  "api.legal-evidence-review": "reviewer",
+  "api.appeal-review": "reviewer",
+  "api.future-person-documentary-verification": "reviewer",
+  "api.future-person-claim-review": "reviewer",
+  "api.future-person-claim-release": "reviewer",
+  "api.future-person-claim-objection-review": "reviewer",
+  "api.future-person-correction-review": "reviewer",
+  "api.claim-review-receipt": "reviewer",
+  "api.claim-review-chunk-acknowledgement": "reviewer",
+  "api.embryo-ingest-configure": "upload-session",
+  "api.embryo-ingest-mapping": "upload-session",
+  "api.embryo-ingest-complete": "upload-session",
+  "api.future-person-claim-document-session": "claim-session",
+  "api.future-person-claim-complete": "claim-session",
+  "api.evidence-chunk": "evidence-session",
+  "api.evidence-complete": "evidence-session",
+  "auth.reset-password-submit": "reset-session",
+  // Its account branch's token is the second kind SESSION_CSRF_SECOND_KINDS declares.
+  "api.future-person-claim-objection": "token",
 } as const);
 
 export type CsrfRoute = keyof typeof SESSION_CSRF_ROUTES;
 export type CsrfSessionKind = (typeof SESSION_CSRF_ROUTES)[CsrfRoute];
 
-/** The session a token is bound to: the live account session, or one purpose-session cookie's hash. */
+/**
+ * The one route whose token may be bound to either of two kinds of session
+ * (owner decision of 19 November 2026, "G8.5: the claim-objection address
+ * accepts either kind of session"): api.future-person-claim-objection checks
+ * the emailed link's rights session first and then the signed-in account,
+ * and spends a one-time token of whichever it finds. Its register `auth` is
+ * the first kind (`SESSION_CSRF_ROUTES`); the second is declared here and
+ * nowhere else, so every other route accepts its own kind only.
+ */
+export const SESSION_CSRF_SECOND_KINDS: Readonly<Partial<Record<CsrfRoute, CsrfSessionKind>>> = Object.freeze({
+  "api.future-person-claim-objection": "authenticated",
+});
+
+/** Whether a token of `kind` may be minted for and verified on `route`. */
+export function acceptsSessionKind(route: CsrfRoute, kind: CsrfSessionKind): boolean {
+  return isCsrfRoute(route) && (SESSION_CSRF_ROUTES[route] === kind
+    || (Object.hasOwn(SESSION_CSRF_SECOND_KINDS, route) && SESSION_CSRF_SECOND_KINDS[route] === kind));
+}
+
+/**
+ * The routes of a chunk stream (owner decision of 19 November 2026, "G8.5:
+ * principles for the CSRF register amendments", principle 3): the browser
+ * keeps one session-bound value for the whole stream instead of a new token
+ * per chunk. The value is verified on every chunk exactly as a token is
+ * (kind, session, route, expiry) but never spent and never rotated; the
+ * route's own one-time reservation of each chunk is the replay guard
+ * (api.evidence-chunk `requestContract.chunkAuthority`: each session and
+ * sequence is reserved once). api.embryo-ingest-chunk carries no token at
+ * all (`csrfTransport.requiredFor`).
+ */
+export const SESSION_CSRF_STREAM_ROUTES: ReadonlySet<CsrfRoute> = new Set<CsrfRoute>(["api.evidence-chunk"]);
+
+/** The kinds bound to the account and its auth session. */
+type AccountKind = "authenticated" | "reviewer";
+/** The purpose sessions with one cookie per session, whose id the route's path names. */
+type IdentifiedKind = "upload-session" | "evidence-session";
+type CookieKind = Exclude<CsrfSessionKind, AccountKind | IdentifiedKind>;
+
+/**
+ * The session a token is bound to: the live account session (an account
+ * route's, or a reviewer's under its own kind, so neither token verifies on
+ * the other's routes), one purpose-session cookie's hash, or for an upload
+ * or evidence session that cookie's hash with the session's id.
+ */
 export type CsrfSession =
-  | Readonly<{ kind: "authenticated"; accountId: string; sessionId: string }>
-  | Readonly<{ kind: "token" | "token-candidate"; sessionHash: string }>;
+  | Readonly<{ kind: AccountKind; accountId: string; sessionId: string }>
+  | Readonly<{ kind: CookieKind; sessionHash: string }>
+  | Readonly<{ kind: IdentifiedKind; sessionHash: string; sessionId: string }>;
+
+export function isAccountSession(session: CsrfSession): session is Extract<CsrfSession, { kind: AccountKind }> {
+  return session.kind === "authenticated" || session.kind === "reviewer";
+}
+
+export function isIdentifiedSession(session: CsrfSession): session is Extract<CsrfSession, { kind: IdentifiedKind }> {
+  return session.kind === "upload-session" || session.kind === "evidence-session";
+}
 
 export type VerifiedSessionCsrf = Readonly<{
   /** SHA-256 of the whole token, the only form the database records. */
@@ -129,16 +204,18 @@ export function isCsrfRoute(value: string): value is CsrfRoute {
   return Object.hasOwn(SESSION_CSRF_ROUTES, value);
 }
 
+const COOKIE_KINDS: ReadonlySet<string> = new Set<CookieKind>(["token", "token-candidate", "claim-session", "reset-session"]);
+
 function validSession(session: CsrfSession): boolean {
-  return session.kind === "authenticated"
-    ? UUID.test(session.accountId) && UUID.test(session.sessionId)
-    : (session.kind === "token" || session.kind === "token-candidate") && HASH.test(session.sessionHash);
+  if (isAccountSession(session)) return UUID.test(session.accountId) && UUID.test(session.sessionId);
+  if (isIdentifiedSession(session)) return HASH.test(session.sessionHash) && UUID.test(session.sessionId);
+  return COOKIE_KINDS.has(session.kind) && HASH.test(session.sessionHash);
 }
 
 function bindingFor(session: CsrfSession): string {
-  return session.kind === "authenticated"
-    ? [session.kind, session.accountId, session.sessionId].join("|")
-    : [session.kind, session.sessionHash].join("|");
+  if (isAccountSession(session)) return [session.kind, session.accountId, session.sessionId].join("|");
+  if (isIdentifiedSession(session)) return [session.kind, session.sessionId, session.sessionHash].join("|");
+  return [session.kind, session.sessionHash].join("|");
 }
 
 function mac(session: CsrfSession, route: CsrfRoute, expiresAt: number, random: string, encodedKey?: string): string {
@@ -147,7 +224,7 @@ function mac(session: CsrfSession, route: CsrfRoute, expiresAt: number, random: 
 }
 
 function usable(session: CsrfSession, route: CsrfRoute): boolean {
-  return isCsrfRoute(route) && validSession(session) && SESSION_CSRF_ROUTES[route] === session.kind;
+  return isCsrfRoute(route) && validSession(session) && acceptsSessionKind(route, session.kind);
 }
 
 /**

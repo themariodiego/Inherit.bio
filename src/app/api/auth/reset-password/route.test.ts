@@ -4,6 +4,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({ rpc: vi.fn(), admin: vi.fn() }));
 vi.mock("@/lib/supabase/admin", () => ({ createAdminClient: mocks.admin }));
+// The reset session's one-time token is checked and spent by the route's gate, which
+// src/lib/security/session-csrf-routes.test.ts drives (G8.5, the migration stage).
+vi.mock("@/lib/security/session-csrf", async (importOriginal) =>
+  (await import("@/lib/security/session-csrf.test-support")).admitEverySessionCsrf(await importOriginal()));
 
 const route = await import("./route");
 const { newResetSession } = await import("@/lib/auth/reset-session");
@@ -85,8 +89,12 @@ describe("POST /api/auth/reset-password (auth.reset-password-submit)", () => {
   it.each([
     ["another origin", { origin: "https://elsewhere.invalid" }],
     ["cross-site fetch metadata", { "sec-fetch-site": "cross-site" }],
-    ["no CSRF value", { "x-inherit-csrf": "" }],
-    ["another session's CSRF value", { "x-inherit-csrf": "0".repeat(64) }],
+    // 2026-11-19 (G8.5, the migration stage): "no CSRF value" and "another
+    // session's CSRF value" left this list, and the case of a value presented
+    // with another browser's session cookie went too: the handler no longer
+    // reads X-Inherit-CSRF; the gate refuses a missing token, another reset
+    // session's and another route's before the handler runs, against the real
+    // gate, in src/lib/security/session-csrf-routes.test.ts.
     ["no reset cookie", { cookie: "" }],
     ["form-encoded data", { "content-type": "application/x-www-form-urlencoded" }],
   ])("is resource-not-found-v1 with %s, before the body or the database", async (_label, headers) => {
@@ -94,14 +102,6 @@ describe("POST /api/auth/reset-password (auth.reset-password-submit)", () => {
     expect(response.status).toBe(404);
     expect(await response.json()).toEqual({ error: "not_found" });
     expect(response.headers.getSetCookie()).toEqual([]);
-    expect(mocks.admin).not.toHaveBeenCalled();
-  });
-
-  it("refuses a CSRF value presented with another browser's session cookie", async () => {
-    const mine = newResetSession();
-    const theirs = newResetSession();
-    const request = reset({ password: PASSWORD }, { session: theirs, headers: { "x-inherit-csrf": cookieValue(mine.setCookies[1]!) } });
-    expect((await route.POST(request)).status).toBe(404);
     expect(mocks.admin).not.toHaveBeenCalled();
   });
 

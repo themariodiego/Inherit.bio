@@ -4,7 +4,6 @@ import { closedResponse } from "@/lib/embryos/guards";
 import { readBoundedJson } from "@/lib/future-person/bounded-body";
 import { mintCorrectionReviewNonce, readCorrectionReviewNonce, sealCorrectionRejectReason } from "@/lib/future-person/correction-case-envelope";
 import {
-  CORRECTION_REVIEW_CSRF_HEADER,
   CORRECTION_REVIEW_NONCE_HEADER,
   DECIDABLE,
   bindingIsCaller,
@@ -12,14 +11,13 @@ import {
   correctionReviewBody,
   correctionReviewCase,
   correctionReviewCaseBody,
-  correctionReviewCsrf,
-  correctionReviewCsrfMatches,
   correctionReviewReceipt,
   nonceHash,
 } from "@/lib/future-person/correction-review";
 import { requesterStatementsOpen } from "@/lib/future-person/requester-statement";
 import { isCanonicalId } from "@/lib/future-person/review";
 import { createClient } from "@/lib/supabase/server";
+import { withReviewerCsrf } from "@/lib/security/session-csrf";
 
 /**
  * `/api/reviews/future-person/corrections/[id]` (register
@@ -79,7 +77,6 @@ async function read(request: Request, id: string): Promise<Response> {
   try { nonce = mintCorrectionReviewNonce(id, row.data.binding, row.data.deadline); }
   catch { return notFound(); }
   const response = await closedResponse("api.future-person-correction-review", CASE_KEYS, body, 200, {
-    [CORRECTION_REVIEW_CSRF_HEADER]: correctionReviewCsrf(id, account.user.id, account.sessionId),
     [CORRECTION_REVIEW_NONCE_HEADER]: nonce,
   });
   // The case must still be exactly the one just read when the body leaves.
@@ -89,10 +86,16 @@ async function read(request: Request, id: string): Promise<Response> {
   return response;
 }
 
-export async function POST(request: Request, context: { params: Promise<{ id: string }> }) {
+/**
+ * The reviewer's one-time X-Inherit-CSRF token is spent before the handler
+ * runs (G8.5, the migration stage). It was a digest of the correction, the
+ * reviewer and the auth session that the GET returned; the GET issues none
+ * now.
+ */
+export const POST = withReviewerCsrf("api.future-person-correction-review", async (request: Request, context: { params: Promise<{ id: string }> }) => {
   const { id } = await context.params;
   return private_(await decide(request, id));
-}
+});
 
 async function decide(request: Request, id: string): Promise<Response> {
   const url = new URL(request.url);
@@ -101,8 +104,7 @@ async function decide(request: Request, id: string): Promise<Response> {
   const account = await getSensitiveAccountContext();
   if (!account) return notFound();
   const parsed = correctionReviewBody.safeParse(await readBoundedJson(request, 16 * 1024));
-  if (!parsed.success || !(DECIDABLE as readonly string[]).includes(parsed.data.decision)
-    || !correctionReviewCsrfMatches(request.headers.get(CORRECTION_REVIEW_CSRF_HEADER), id, account.user.id, account.sessionId)) return notFound();
+  if (!parsed.success || !(DECIDABLE as readonly string[]).includes(parsed.data.decision)) return notFound();
   const own = await createClient();
   const current = await own.rpc("future_person_correction_decision_context_v1", { p_correction: id })
     .retry(false).abortSignal(request.signal);
