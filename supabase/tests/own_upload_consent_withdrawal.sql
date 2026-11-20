@@ -291,8 +291,11 @@ select ok((select revocation_reason='withdrawn' from public.subject_consents whe
  'the withdrawn consent stays withdrawn beside it');
 
 -- The wrapped functions are the ones reviewed ------------------------------------------
-select is((select md5(pg_get_functiondef('private.empty_self_subject_v1(uuid,uuid)'::regprocedure))),'85a9ab8159fa7e5bfb18deada62c1215',
- 'the self emptying is the reviewed body, unchanged');
+-- 2026-11-20 (D-144): 20261120100000 patches the self emptying, from exactly
+-- the body this migration pinned (its patch predecessor there), so the
+-- reviewed body is now that patch's successor.
+select is((select md5(pg_get_functiondef('private.empty_self_subject_v1(uuid,uuid)'::regprocedure))),'5c35b1a9eafbfe7fd3e16f54b648dee7',
+ 'the self emptying is the reviewed body: as 20261016181000 wrote it, patched by 20261120100000');
 
 select * from finish();
 rollback;

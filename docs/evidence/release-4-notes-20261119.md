@@ -424,3 +424,70 @@ Catalog work only: no relation lock beyond ACCESS SHARE (checked). Measured loca
 ## What a person sees
 
 Only in test mode: the uploader who added embryo files with the genetic parents' permission sees "Your upload permission" on that cohort's card on `/embryos` and, before finalisation, on `/embryos/upload` once it has signed. The confirmation names what stops and is deleted, that the parents are told (after finalisation), and that it gives no parent role. A genetic parent never sees the control. The wording is a draft for the owner.
+
+# Release notes: `20261120100000_self_withdrawal_deletes_exports.sql` (D-144; joins release 4)
+
+Local work only. Nothing here was run against production or any hosted database. Defect D-144 (`docs/protocol/defects.md`): a saved export of a person's own record blocked the withdrawal of their upload consent for good, because `private.empty_self_subject_v1` refused (`subject_delete_unsupported_graph`) whenever any `generated_exports` row targeted the record, whatever its status. Brief §2.7: revoking the class artifact deletes every export artifact for that record; `export.generated-artifact-24h`: an export never outlives an earlier subject deletion.
+
+## What it changes
+
+An export with stored objects cannot be deleted: its archive segments and TEST R2 reservations are kept by design, and `private.guard_export_archive_delete_v1` refuses the row's deletion (`export_cleanup_incomplete`) even after disposal. So the emptying now retires each export of the record the way the export system itself does, through `public.export_archive_cleanup_v1('stop')` (the transition the cleanup sweep makes before the disposal runner removes an attempt's objects), and revokes it as the subject transfer revokes a record's exports. Five patches in place, each md5-guarded with its reviewed ACL, one anchor each, successor md5 and unchanged ACL asserted:
+
+- `private.empty_self_subject_v1` (`85a9ab8159fa7e5bfb18deada62c1215` → `f524d4d33597e3938d9922f40ed3a115` → `022d38406f5ff240d32cdd460ebc4e96` → `5c35b1a9eafbfe7fd3e16f54b648dee7`, `{postgres=X/postgres}`): two declared variables; the export clause leaves the `subject_delete_unsupported_graph` refusal (a file another account holds on the record and a file tied to embryo records still refuse); before the files are prepared, every export of the record is locked, each of its attempts still `writing` or `bytes_complete` is stopped through the cleanup door (its objects queued for disposal behind the attempt's own fence, the lease plus 30 seconds; its download sessions revoked; its job's active attempt cleared, so a worker building it is refused at its next step), every export of the record is set `revoked` whatever its status was, and any `download_sessions` row bound to one of the record's exports (`target_kind='export'`, the legacy form) is revoked. No export row, segment or reservation is deleted. The audit event and its payload are unchanged.
+- `private.prepare_genome_file_deletion_body_v1` (`e9f3f4692f0c6d10f6827410db8a0102` → `c78d66691786e656a063b2dfe7b78a28`, `{postgres=X/postgres}`): an export the emptying has retired (`revoked`, with no attempt still `writing` or `bytes_complete`) no longer blocks the file shortcut (`file_delete_shared_graph`); every other export of the record still does. Without this, every file the emptying prepares would be refused again at its finish, which reruns the guard. Nothing but the emptying revokes an export of a self record (`scripts/self-withdrawal-deletes-exports-migration.test.ts` lists every revoking statement), so `api.file-delete`, which shares the guard, answers exactly as before (409 `file_delete_subject_unavailable` while the record has any export) on every record that has not been emptied, as the register's `file-delete-v1` says.
+- `public.self_subject_withdrawal_readiness_v1` (`81917a7dcc51887ab4cb06735cfca1a1` → `963586dade86d48a3f61d03b2403d41a`, stable, `{postgres=X/postgres,service_role=X/postgres}`): the export clause leaves `unsupported`, as it left the emptying's refusal.
+- Pinned, not changed: `public.export_archive_cleanup_v1(text,uuid,uuid,jsonb)` (`25fa3ce71b73fb0c371d1bb9af836bd7`, `{postgres=X/postgres,service_role=X/postgres}`), unchanged since `20260923123240`.
+- No table, column, constraint, trigger, grant, function, audit event or wording changes. Fingerprint effect: 3 `def_md5` values change; `functions` row count and `tables` unchanged.
+
+## Which releases must come first, and the order against `20261119150000`
+
+1. `20260923123240_export_archive_persistence.sql` (the cleanup door and the archive tables; its production apply is recorded in `docs/evidence/export-persistence-production-apply-20260925/`) and release 1's `20261016181000_subject_delete.sql` (the two bodies patched here).
+2. `20261119150000_own_upload_consent_withdrawal.sql`, earlier in this release. Its predecessor block pins `empty_self_subject_v1` and `prepare_genome_file_deletion_body_v1` at `85a9ab81…` and `e9f3f469…` and its postflight pins the first again: it must run before this migration, never after (it would then refuse, 55000 `own upload consent withdrawal prerequisite differs`). This migration cannot be applied first by mistake: it pins the readiness read that `20261119150000` creates and refuses without it (55000 `self withdrawal export prerequisite differs`). A pin of a later migration's input at its own time is not broken by a later migration that starts from exactly that body; this one names both pinned md5s as its patch predecessors (`scripts/own-upload-consent-withdrawal-migration.test.ts` now holds that, and `supabase/tests/own_upload_consent_withdrawal.sql` pins this migration's successor).
+3. `20261119160000` and `20261119170000` touch none of these bodies; they may go before it in the same release, as their file order puts them.
+
+## Read-only pre-checks (one SELECT; the release session and its `search_path`)
+
+Stop unless every `must_be_*` holds.
+
+```sql
+select
+ (select count(distinct x.signature) from pg_proc p join (values
+   ('private.empty_self_subject_v1(uuid,uuid)','85a9ab8159fa7e5bfb18deada62c1215','{postgres=X/postgres}'),
+   ('private.prepare_genome_file_deletion_body_v1(uuid,uuid)','e9f3f4692f0c6d10f6827410db8a0102','{postgres=X/postgres}'),
+   ('public.self_subject_withdrawal_readiness_v1(uuid,uuid)','81917a7dcc51887ab4cb06735cfca1a1','{postgres=X/postgres,service_role=X/postgres}'),
+   ('public.export_archive_cleanup_v1(text,uuid,uuid,jsonb)','25fa3ce71b73fb0c371d1bb9af836bd7','{postgres=X/postgres,service_role=X/postgres}')
+  ) as x(signature,body,acl) on p.oid=to_regprocedure(x.signature) and md5(pg_get_functiondef(p.oid))=x.body
+   and p.proacl::text=x.acl) as must_be_4_bodies_as_reviewed,
+ (select count(*) from pg_class where oid in (to_regclass('private.export_archive_attempts'),to_regclass('private.export_archive_jobs')))
+   as must_be_2_archive_tables,
+ (select count(*) from pg_trigger t where t.tgrelid='public.generated_exports'::regclass and t.tgname='guard_export_archive_delete'
+   and t.tgenabled='O') as context_export_delete_guard,
+ (select count(*) from public.generated_exports e join public.subjects s on s.id=e.target_id
+   where e.target_kind='subject' and s.subject_class='self') as context_self_record_exports,
+ (select count(*) from public.generated_exports e join public.subjects s on s.id=e.target_id
+   where e.target_kind='subject' and s.subject_class='self' and e.status in ('queued','building','ready')) as context_live_self_record_exports,
+ (select count(*) from private.export_archive_attempts a join public.generated_exports e on e.id=a.export_id
+   join public.subjects s on s.id=e.target_id where e.target_kind='subject' and s.subject_class='self'
+   and a.state in ('writing','bytes_complete')) as context_self_record_attempts_holding_objects,
+ (select enabled from private.account_archive_r2_configuration) as context_test_r2_enabled,
+ current_user as context_current_user,
+ current_setting('search_path') as context_search_path;
+```
+
+Locally, in the predecessor state rebuilt inside a rolled-back transaction (the five patches undone on the live bodies, each md5 checked back to its predecessor), `must_be_4_bodies_as_reviewed` was 4 and `must_be_2_archive_tables` 2; the md5s are also recomputed from source by `scripts/self-withdrawal-deletes-exports-migration.test.ts`. No pinned header prints a `public` or `private` type, so the md5s do not depend on `search_path`. The context counts say how many self records the change reaches at once. `api.subject-export` answers 503 before it creates anything unless a generation capability is configured, and only the TEST one exists (`approvedAccountArchiveGeneration` returns null), so all three self-record counts are expected to be 0 in production and `context_test_r2_enabled` false. `context_export_delete_guard` 1 is why nothing is deleted.
+
+## Locks and duration
+
+Catalog work only: three `create or replace function` statements run from the patch block, and catalog reads. No lock on any table (checked: the session held only `RowExclusiveLock` on `pg_proc`'s TOAST relation). Measured locally inside a rolled-back transaction that first rebuilt the predecessor state: 11.4, 12.1 and 16.0 ms in three runs. At run time the emptying additionally locks the record's export rows, then each job and attempt it stops, in the order every export worker and the cleanup sweep take them (export, job, attempt), after the subject it already holds.
+
+## Deployed code between apply and deploy
+
+This migration ships no application code; the code of release 4's own-file withdrawal (`20261119150000`'s branch) is the code that matters.
+
+- **Migration applied, release-4 code deployed.** The intended state. A record whose only obstacle was an export reads `ready`; the withdrawal ends the record's exports with the rest, and the route's drain finishes each file. Deleting one file from `/files` is unchanged.
+- **Migration applied, release-4 code not yet deployed.** No page offers the withdrawal; the deployed `DELETE /api/subjects/[id]` still sends a self record to `delete_subject_v1`, whose self case now ends the record's exports instead of refusing (only a hand-made request reaches it). Deleting one file is unchanged.
+- **Release-4 code deployed, this migration not yet applied (also: `20261119150000` applied, this one not).** As before D-144: the read says `unsupported` for any record with an export, and the control shows "We cannot do this here yet, because of other data on your record. Nothing was deleted." with no button; a hand-made request is refused (55000, the route's opaque 404) and nothing is deleted.
+
+## What a person sees
+
+A person who has ever asked for an export of their own record now sees the withdrawal offered on Settings → Consents and on Files, where they saw the `unsupported` line before. After withdrawing, any download link of that record's exports stops at once: the poll answers 409 `state_conflict` while the record's file awaits its finish and 404 afterwards, and an open download serves no further chunk. The confirmation's list of what is deleted does not mention exports; no wording changed here (proposed wording is with the owner). Subject exports are made only in test mode, so in production nobody sees a difference until exports ship.

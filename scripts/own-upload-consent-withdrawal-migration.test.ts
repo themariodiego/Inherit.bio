@@ -73,17 +73,25 @@ describe("the release it belongs to", () => {
     expect(migration).not.toMatch(/create or replace function/iu);
   });
 
-  it("is the last word on none of the functions it pins: no later migration restates or patches them", () => {
+  it("pins functions that only D-144's migration patches later, and that one from exactly the bodies pinned here", () => {
     const rewrites = (file: string, qualified: string) => {
       const sql = read(`supabase/migrations/${file}`);
       const local = qualified.slice(qualified.indexOf(".") + 1);
       return new RegExp(`create\\s+(?:or\\s+replace\\s+)?function\\s+(?:\\w+\\.)?${local}\\s*\\(`, "iu").test(sql)
         || (sql.includes(`'${qualified}(`) && sql.includes("replace(definition"));
     };
+    // 2026-11-20 (D-144): 20261120100000 patches both bodies in place, so this
+    // migration is no longer the last word on them. What being the last word
+    // guaranteed is that every later body starts from the reviewed one: the
+    // only later patch names exactly the md5s pinned here as its predecessors.
+    const D144 = "20261120100000_self_withdrawal_deletes_exports.sql";
     for (const qualified of ["private.empty_self_subject_v1", "private.prepare_genome_file_deletion_body_v1"]) {
       expect(files.filter(file => file > "20261016181000_subject_delete.sql" && file !== NAME && rewrites(file, qualified)),
-        qualified).toEqual([]);
+        qualified).toEqual([D144]);
     }
+    const later = read(`supabase/migrations/${D144}`);
+    expect(later).toContain("(1,'private.empty_self_subject_v1(uuid,uuid)','85a9ab8159fa7e5bfb18deada62c1215',");
+    expect(later).toContain("(4,'private.prepare_genome_file_deletion_body_v1(uuid,uuid)','e9f3f4692f0c6d10f6827410db8a0102',");
   });
 });
 
@@ -191,9 +199,11 @@ describe("the door and the email", () => {
   });
 
   it("is driven by its pgTAP suite through every refusal, the withdrawal, the email and the consent given again", () => {
+    // 2026-11-20 (D-144): the suite now pins the self emptying at
+    // 20261120100000's successor, which patches the body pinned here.
     for (const fragment of ["'subject_delete_processing'", "'subject_delete_unsupported_graph'", "'file_delete_processing'",
       "'withdrawal_notice_recipient_stale'", "'withdrawal_notice_unavailable'", "'invalid_operation_nonce'",
-      "public.authorize_mail_submission_v1(", "public.claim_mail_outbox()", "'85a9ab8159fa7e5bfb18deada62c1215'"]) {
+      "public.authorize_mail_submission_v1(", "public.claim_mail_outbox()", "'5c35b1a9eafbfe7fd3e16f54b648dee7'"]) {
       expect(pgtap, fragment).toContain(fragment);
     }
     expect(pgtap.startsWith("begin;\n")).toBe(true);
