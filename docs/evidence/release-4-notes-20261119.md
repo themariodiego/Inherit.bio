@@ -562,3 +562,80 @@ Drop `public.prepare_own_prepared_file_cleanup_with_nonce_v1(uuid,uuid,uuid,text
 ## Browser runs (local, this container)
 
 `e2e/file-deletion.spec.ts` (its three tests that need no disposable stack) and `e2e/own-file-controls.spec.ts` ran against one local production build, twice: with the door absent (4 of 4 passed, through the fallback) and with this migration applied forward to the shared local database without recording it (4 of 4 passed; four `file_delete` values were recorded consumed, one per deletion, and none for the refused ones). The migration's objects were then dropped and the check restored.
+
+# Release notes: `20261120120000_adult_acceptance_hold_and_renotice.sql`
+
+Local work only. Nothing here was run against production or any hosted database. D-141 (`docs/protocol/defects.md`), coded to the signed register under the owner's rule of 19 November 2026, "G8.5: where the register is stricter, engineering codes to it" (`docs/protocol/decisions.md`): `policyResolvers.other-adult-mitigation-state-v1` (`account-created-from-invitation`, `all-class-b-re-notice`), `adult-subject-confirmation-v1.authenticatedTransaction`, `invitation-accepted-v1`, and `docs/retention.md` (`adult.acceptance-hold-72h`, `adult.re-notice-30d`). Path A's own-account acceptance and Path B are reached only under the test jurisdiction: in production no adult-subject invitation can be created, so no acceptance starts a clock and the executor finds nothing.
+
+## What it changes
+
+- `private.invitation_terminal_notices_notice_kind_check` gains `'adult-acceptance-second-notice'` and `'adult-revocation-renotice'` (drop and add, validated in place; the four existing kinds unchanged).
+- Six bodies patched in place, md5-guarded with their reviewed ACL, one anchor each, successor md5, unchanged ACL, volatility and owner asserted:
+  - `private.adult_subject_invitation_response_v1` (`99dfdec657617a2b4850f6632693ef51` → `bb4234666d681aeb85f3d41ed9e5121a`, `{postgres=X/postgres}`): Path A's confirm branch calls `private.start_adult_acceptance_clocks_v1` right after it marks the invitation accepted. Refusal and deletion are untouched.
+  - `private.confirm_path_b_subject_account_core_v1` (`2b25a1fb389738bb23397c418612dd63` → `63c6c510a724cbe747af5db354cb344b`, `{postgres=X/postgres}`): the same call, for both Path B flows.
+  - `private.other_adult_mitigation_before_public_appeal_v1` (`55892f3ffba0f229626ca024647c134a` → `8864524071b266426d978e106b6711d0` → `99b4ddcb5f80f2a4fb384b530b2c1502` → `4aa844173516d17aa462fb4ff2048e67` → `91dfb6e4abf766e3da6e5827d4381daf`, `{postgres=X/postgres}`, still STABLE): finds Path A's record by its own-account binding (its draft is consumed at acceptance), reads the clocks the acceptance recorded, holds an account recorded as created from the invitation until 72 hours after acceptance and until the second notice has provider submission acceptance (the uploader at every checkpoint; the person's own account at the six analysis and derived-read checkpoints only), and from 30 days denies the uploader until the re-notice has provider submission acceptance. An acceptance recorded before this migration keeps the old creation-time comparison and is never released. The no-account branch is unchanged.
+  - `private.path_b_normalization_authority_v1` (`969bc88e9758fe1b2425289c6e4dd3a5` → `591fc9f913fb7177ed86144a7ce654f4`, `{postgres=X/postgres}`): its authority deadline is the uploader consent's own expiry (or none); the 30-day boundary is left to the decision it asks first at every checkpoint.
+  - `public.claim_invitation_terminal_mail_v1` (`a725fd9deff71e8d32a3d76400112366` → `3524eba4d0dd916bef2c4dac1e5c25cb`) and `public.authorize_invitation_terminal_mail_v1` (`a4448da4d509e964b4cfe493dc6c8996` → `5ba9fd2ef4bfa2c36ec0e2be4b97aeb5`), both `{postgres=X/postgres,service_role=X/postgres}`: for the two new kinds only, the claim invalidates and the authorization refuses a notice whose record is no longer active, bound to the recipient account and untransferred, whose phase no longer waits on it, or whose invited address is under the global contact refusal bar. Every other kind reads as before.
+- Six new functions and one trigger:
+  - `private.start_adult_acceptance_clocks_v1(uuid)`, `{postgres=X/postgres}`: inside the acceptance, from `auth.users.created_at` and the invitation's `created_at` only, records `existing_account` for an account created before the invitation and `created_from_this_invitation` for any other (a missing time included); writes one `adult.re-notice-30d` retention row and due phase (`adult-revocation-renotice`, deadline acceptance + 30 days) for every account acceptance, and one `adult.acceptance-hold-72h` row and phase (`adult-acceptance-second-notice`, acceptance + 72 hours) for the second origin, both on `target_kind='invitation'`; the re-notice phase's envelope names the origin and the two times.
+  - `private.adult_acceptance_clock_state_v1(uuid)`, stable, `{postgres=X/postgres}`: the decision's read of those clocks (null when none were recorded).
+  - `private.adult_acceptance_notice_current_v1(uuid)`, stable, `{postgres=X/postgres}`: the send-time check above.
+  - `private.settle_adult_acceptance_notice_v1()` and trigger `settle_adult_acceptance_notice` (after update of state or delete on `private.invitation_terminal_notices`, the two kinds only): provider acceptance makes the phase `succeeded` in the transaction that records it; a notice invalidated or removed unsent makes it `failed` and cancels its clock.
+  - `public.run_due_adult_acceptance_notices_v1()`, `{postgres=X/postgres,service_role=X/postgres}`: called by `jobs.retention`; under the invitation-transition lock, queues each due notice once (idempotency key from the phase and the invitation) to the person's account (`recipient_kind='account'`, no contact copied), or cancels it with a coded reason; then, for a released clock, retries `private.enqueue_path_b_normalization_v1` for any revision the person confirmed while it held them back (`confirmed_blocked_current_gate`), each rechecking every gate.
+  - `public.adult_subject_acceptance_origin_v1(uuid,uuid)`, stable, `{postgres=X/postgres,service_role=X/postgres}`: the recorded origin of the record's accepted invitation, for its own account only.
+- Pinned, not changed: `private.enqueue_path_b_normalization_v1` (`8299149090c6d48d6ec52cfe75ab1af6`), `private.invitation_contact_barred_v1` (`78c6413be21d2c662e515764a39748b3`, pinned by name), the notice-kind check as `20261119160000` left it (`237de83b1bd70e3587147bb307883b96`), the queue's single trigger, and the two registered retention classes and their phases.
+- No table, column or grant on an existing object changes. Fingerprint effect: 6 more rows in `functions`, 6 `def_md5` values change, 1 constraint md5 changes and 1 trigger is added.
+
+## Which releases must come first
+
+1. Release 1 (PR 324) for the Path B account core and decision as `20261016190000` and `20261016204000` left them; release 2's `20261025400000` for Path A's body.
+2. `20261119160000` in this release (the notice-kind check it widens).
+3. This migration. It does not depend on `20261120100000` or `20261120110000` and touches neither's objects.
+
+## Read-only pre-checks (one SELECT; the release session and its `search_path`)
+
+Stop unless every `must_be_*` holds.
+
+```sql
+select
+ (select count(distinct x.signature) from pg_proc p join (values
+   ('private.adult_subject_invitation_response_v1(uuid,uuid,text,uuid,text)','99dfdec657617a2b4850f6632693ef51','{postgres=X/postgres}'),
+   ('private.confirm_path_b_subject_account_core_v1(text,text,integer,text,text[],bytea,uuid,uuid,text,boolean)','2b25a1fb389738bb23397c418612dd63','{postgres=X/postgres}'),
+   ('private.other_adult_mitigation_before_public_appeal_v1(uuid,uuid,text)','55892f3ffba0f229626ca024647c134a','{postgres=X/postgres}'),
+   ('private.path_b_normalization_authority_v1(uuid,text)','969bc88e9758fe1b2425289c6e4dd3a5','{postgres=X/postgres}'),
+   ('public.claim_invitation_terminal_mail_v1()','a725fd9deff71e8d32a3d76400112366','{postgres=X/postgres,service_role=X/postgres}'),
+   ('public.authorize_invitation_terminal_mail_v1(uuid,smallint)','a4448da4d509e964b4cfe493dc6c8996','{postgres=X/postgres,service_role=X/postgres}'),
+   ('private.enqueue_path_b_normalization_v1(uuid)','8299149090c6d48d6ec52cfe75ab1af6','{postgres=X/postgres}')
+  ) as x(signature,body,acl) on p.oid=to_regprocedure(x.signature) and md5(pg_get_functiondef(p.oid))=x.body
+   and p.proacl::text=x.acl) as must_be_7_bodies_as_reviewed,
+ (select md5(pg_get_constraintdef(c.oid)) from pg_constraint c where c.conrelid='private.invitation_terminal_notices'::regclass
+   and c.conname='invitation_terminal_notices_notice_kind_check' and c.convalidated)
+   ='237de83b1bd70e3587147bb307883b96' as must_be_true_notice_kind_check_as_reviewed,
+ (select count(*) from pg_trigger t where t.tgrelid='private.invitation_terminal_notices'::regclass and not t.tgisinternal)
+   as must_be_1_notice_trigger,
+ (select count(*) from public.retention_rows where retention_id in ('adult.acceptance-hold-72h','adult.re-notice-30d'))
+   as must_be_zero_clocks,
+ (select count(*) from pg_proc where proname in ('start_adult_acceptance_clocks_v1','adult_acceptance_clock_state_v1',
+   'adult_acceptance_notice_current_v1','settle_adult_acceptance_notice_v1','run_due_adult_acceptance_notices_v1',
+   'adult_subject_acceptance_origin_v1')) as must_be_zero_new_functions_present,
+ (select count(*) from public.subject_invitations where invitation_kind='adult_subject' and status='accepted')
+   as context_accepted_adult_invitations,
+ (select count(*) from private.invitation_terminal_notices) as context_terminal_notices,
+ current_user as context_current_user,
+ current_setting('search_path') as context_search_path;
+```
+
+Locally, in the predecessor state rebuilt inside a rolled-back transaction, every `must_be_*` held; the seven md5s are also recomputed from source, each through every earlier patch, by `scripts/adult-acceptance-hold-migration.test.ts`. No pinned header prints a `public` type. `context_accepted_adult_invitations` is expected to be 0 in production; a non-zero count means acceptances exist that this migration does not backfill: they keep the old rule (below).
+
+## Locks and duration
+
+The `alter table` takes ACCESS EXCLUSIVE on `private.invitation_terminal_notices` for the drop and the validating add (a scan of its rows, each at most 30 days old), and `create trigger` SHARE ROW EXCLUSIVE on the same table. Everything else is catalog work. Measured locally inside a rolled-back transaction that first rebuilt the predecessor state: 30.4 ms, the predecessor checks included.
+
+## Deployed code between apply and deploy
+
+- **Migration applied, code not yet deployed.** Every new account acceptance records its origin and clocks. A held account stays denied: the deployed retention job does not run the executor, so no second notice or re-notice is queued and no clock is released; from 30 days every account acceptance's uploader is denied, as today. The deployed `api.invitation-accept` still answers the existing-account body for every Path A acceptance; its page reads only `invitationKind` and `status`. An acceptance recorded before the apply keeps the old comparison (an account created after its request is held for good; any other uploader is denied from 30 days). The normalization authority's snapshot changes once for every existing Path B normalization (test-local only): a source normalized before the apply reads as `subject-bound-source` until it is normalized again. Nothing opens early.
+- **Code deployed, migration not yet applied.** `api.invitation-accept` calls `adult_subject_acceptance_origin_v1`; PostgREST answers that it does not exist, and the route answers the held body (`created_from_this_invitation`, `hold_72h`) for every Path A acceptance, which over-states a hold and changes nothing the page shows. `jobs.retention` counts one failure per run for the missing executor and runs every other queue. The mail worker knows two more kinds the database cannot yet hold. The database decides exactly as before: Path B denies an account created after its request for good, Path A answers not found. Nothing opens early.
+
+## What a person sees
+
+Only in test mode. No page changes. An adult who accepts through an account created after the invitation gets, 72 hours later, the email "Did you accept an invitation on Inherit?"; every adult who accepted through an account gets, 30 days after acceptance, "You can still change your mind on Inherit". Until the first is accepted by the provider, the uploader's sharing stays closed ("Sharing with the person who added your file is not open yet." on the person's choices, as before) and nothing is analysed; from 30 days until the second is accepted, the uploader sees nothing more. The wording of both emails is a draft for the owner (`src/copy/upload/other-adult-acceptance-notices.ts`).

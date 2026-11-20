@@ -471,6 +471,9 @@ select is((select count(*) from public.purpose_grants where target_id=pg_temp.si
 -- subject transfer (20261016221000_subject_transfer.sql) detaches each
 -- confirmed revision into the person's file, and its relocation retirement
 -- marks the revision's held working row deleted once the old object is gone.
+-- The adult-acceptance executor (20261120120000_adult_acceptance_hold_and_renotice.sql,
+-- D-141) reads it only to find a confirmed revision a released hold or re-notice
+-- held back, and hands it to the enqueue above, which checks every gate again.
 select is((select string_agg(n.nspname||'.'||p.proname,', ' order by n.nspname,p.proname)
  from pg_proc p join pg_namespace n on n.oid=p.pronamespace
  where n.nspname in ('public','private') and p.prosrc like '%other_adult_held_uploads%'),
@@ -487,7 +490,8 @@ select is((select string_agg(n.nspname||'.'||p.proname,', ' order by n.nspname,p
    then '' else ', public.adult_upload_revision_retention_v1' end || case when to_regprocedure('public.bind_adult_subject_account_v1(text,text,uuid,uuid,boolean)') is null
    then '' else ', public.bind_adult_subject_account_v1' end || ', public.expire_due_other_adult_held_uploads_v1' || case when to_regprocedure('public.expire_due_path_b_confirmed_files_v1()') is null
    then '' else ', public.expire_due_path_b_confirmed_files_v1' end || case when to_regprocedure('public.finish_subject_transfer_retirement_v1(uuid,text,boolean)') is null
-   then '' else ', public.finish_subject_transfer_retirement_v1' end || ', public.read_adult_upload_revision_v1, public.respond_adult_upload_revision_v1','the held table is named only by the exact reviewed lifecycle functions');
+   then '' else ', public.finish_subject_transfer_retirement_v1' end || ', public.read_adult_upload_revision_v1, public.respond_adult_upload_revision_v1' || case when to_regprocedure('public.run_due_adult_acceptance_notices_v1()') is null
+   then '' else ', public.run_due_adult_acceptance_notices_v1' end,'the held table is named only by the exact reviewed lifecycle functions');
 -- Four reviewed complete-account helpers inspect the held source only for
 -- internal whole-source comparison/excluded census. No API may execute them.
 select ok(to_regprocedure(x.signature) is null or (select md5(p.prosrc)=x.body_md5

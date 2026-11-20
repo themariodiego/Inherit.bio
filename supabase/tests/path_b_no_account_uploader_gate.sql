@@ -43,9 +43,14 @@ create function pg_temp.age_acceptance(p_name text,p_days integer) returns void 
 $$;
 
 -- 0. The patched body ----------------------------------------------------------
+-- 20261120120000 (D-141) patches the account branch, the Path A lookup and
+-- the person's own hold into the same body; with it applied the pin is its
+-- successor. The no-account branch it carries is unchanged.
 select is((select md5(prosrc) from pg_proc
  where oid='private.other_adult_mitigation_before_public_appeal_v1(uuid,uuid,text)'::regprocedure),
- '29c74c79cb3eeedbbdac44273a6f4de3','the no-account branch carries the pinned successor body');
+ case when to_regprocedure('private.adult_acceptance_clock_state_v1(uuid)') is null
+  then '29c74c79cb3eeedbbdac44273a6f4de3' else 'b7c33a43753656597ebb23e5acb560f5' end,
+ 'the no-account branch carries the pinned successor body');
 select ok((select provolatile='s' and prosecdef and proconfig=array['search_path=pg_catalog'] from pg_proc
  where oid='private.other_adult_mitigation_before_public_appeal_v1(uuid,uuid,text)'::regprocedure),
  'it stays STABLE SECURITY DEFINER with its pinned search path');
@@ -91,7 +96,7 @@ select pg_temp.age_acceptance('nb',29);
 select is(pg_temp.m('nb','1','analysis-enqueue'),'allow:-','(nb) 29 days after acceptance the uploader is still allowed');
 select pg_temp.age_acceptance('nb',2);
 select is(pg_temp.m('nb','1','analysis-enqueue'),'deny:adult.re-notice-30d',
- '(nb) 31 days after acceptance the uploader is denied: the re-notice is not built');
+ '(nb) 31 days after acceptance the uploader is denied: no re-notice is built for a person with no account');
 select is(pg_temp.m('nb','1','purpose-grant-create'),'deny:adult.re-notice-30d','(nb) ... also at purpose-grant-create');
 select ok((select count(*)=1 from pg_temp.keep('nb') where state='scheduled' and fixed_deadline>clock_timestamp()),
  '(nb) ... while the 730-day clock itself is still live');
@@ -130,8 +135,15 @@ select pg_temp.age_acceptance('acct',31);
 select is(pg_temp.m('acct','1','analysis-enqueue'),'deny:adult.re-notice-30d','(acct) from 30 days the uploader is denied');
 select pg_temp.age_acceptance('acct',-31);
 update auth.users set created_at=clock_timestamp() where id=pg_temp.a('2');
-select is(pg_temp.m('acct','1'),'deny:adult.acceptance-hold-72h',
- '(acct) an account created after the request still meets the 72-hour hold');
+-- 20261120120000 (D-141): the origin is recorded when the acceptance commits,
+-- so rewriting the auth row afterwards no longer moves this account into the
+-- hold; an account created after its request is held from its acceptance
+-- (supabase/tests/adult_acceptance_hold_and_renotice.sql and the 'late'
+-- person of path_b_reading_layer.sql). Before it, the decision read the auth
+-- row at every call.
+select is(pg_temp.m('acct','1'),case when to_regprocedure('private.adult_acceptance_clock_state_v1(uuid)') is null
+  then 'deny:adult.acceptance-hold-72h' else 'allow:-' end,
+ '(acct) the hold follows the account''s origin as the acceptance recorded it, not a later auth row');
 update auth.users set created_at=now()-interval '1 day' where id=pg_temp.a('2');
 select is(pg_temp.m('acct','1'),'allow:-','(acct) restored, allowed');
 select throws_ok($$select private.other_adult_mitigation_v1(pg_temp.sid('acct'),pg_temp.a('1'),'anything')$$,

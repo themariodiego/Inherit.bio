@@ -9204,6 +9204,18 @@ export type Database = {
         }
         Returns: string
       }
+      // 20261120120000_adult_acceptance_hold_and_renotice.sql (D-141).
+      run_due_adult_acceptance_notices_v1: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
+      adult_subject_acceptance_origin_v1: {
+        Args: {
+          p_account_id: string
+          p_subject_id: string
+        }
+        Returns: string | null
+      }
       transfer_subject_v1: {
         Args: {
           p_account_id: string

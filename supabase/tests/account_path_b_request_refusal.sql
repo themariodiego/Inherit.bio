@@ -59,6 +59,11 @@ set local role service_role;
 select * from pg_temp.path_b_refusal_probe('unsigned draft',array[pg_temp.a('1')],array[pg_temp.s('1')]);
 reset role;
 -- Genuine account signature leaves the uploader and recipient as distinct actors.
+-- Both accounts predate the request (20261120120000, D-141: the origin is
+-- recorded when the acceptance commits, so the fixture's account must already
+-- be the existing one it is meant to be; before, the line below ran later and
+-- the decision read it at every call).
+update auth.users set created_at=now()-interval '1 day' where id::text like '0b5e0000-%';
 select pg_temp.requested('main','a',repeat('a',64));
 select is(pg_temp.account_confirms('a','deletion-bound-aaaaaaaaaaaaaaaa','2',repeat('a',64)),
  'accepted','the refusal fixture uses the real invited account signature');

@@ -71,9 +71,15 @@ create function pg_temp.untouched() returns boolean language sql as $$
 $$;
 
 -- 1. The migration: the shared body is its reviewed successor, and the door is service-only.
+-- 20261120120000 (D-141) patches the body once more, in its confirm branch
+-- only, to record the account's origin and start its clocks; with it applied
+-- the pin is its successor.
 select is((select md5(pg_get_functiondef(p.oid))||' '||p.proacl::text from pg_proc p
   where p.oid='private.adult_subject_invitation_response_v1(uuid,uuid,text,uuid,text)'::regprocedure),
- '99dfdec657617a2b4850f6632693ef51 {postgres=X/postgres}','the shared acceptance body is the reviewed successor, its ACL unchanged');
+ case when to_regprocedure('private.start_adult_acceptance_clocks_v1(uuid)') is null
+  then '99dfdec657617a2b4850f6632693ef51 {postgres=X/postgres}'
+  else 'bb4234666d681aeb85f3d41ed9e5121a {postgres=X/postgres}' end,
+ 'the shared acceptance body is the reviewed successor, its ACL unchanged');
 select is((select proacl::text from pg_proc where oid=s::regprocedure),'{postgres=X/postgres,service_role=X/postgres}',
  s||' is owner and service role only') from unnest(array[
   'public.accept_adult_subject_invitation_v1(text,text,uuid,uuid,jsonb,bytea)',

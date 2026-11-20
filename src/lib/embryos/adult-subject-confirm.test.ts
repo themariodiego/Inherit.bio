@@ -140,7 +140,7 @@ beforeEach(() => {
   vi.stubEnv("INHERIT_TEST_JURISDICTION", "");
   vi.clearAllMocks();
   mocks.reads.length = 0;
-  mocks.rpc.mockReset().mockResolvedValue({ data: SUBJECT, error: null });
+  mocks.rpc.mockReset().mockImplementation(answers());
   mocks.account.mockReset().mockResolvedValue(account());
   mocks.rows.mockReset().mockImplementation(offerRows());
   for (const level of ["log", "info", "warn", "error", "debug"] as const) {
@@ -157,11 +157,21 @@ async function expectOpaque(response: Promise<Response>) {
   expect(mocks.rpc).not.toHaveBeenCalled();
 }
 
-/** The one RPC call's arguments, after checking it is the account door. */
+/**
+ * The account door's arguments, after checking it was called once and first.
+ * D-141 (20261120120000): after it commits, the route makes exactly one more
+ * call, the read of the origin that acceptance recorded, for this record and
+ * this account only.
+ */
 function acceptArgs(): Record<string, unknown> {
-  expect(mocks.rpc).toHaveBeenCalledTimes(1);
+  expect(mocks.rpc).toHaveBeenCalledTimes(2);
   expect(mocks.rpc.mock.calls[0]![0]).toBe("accept_adult_subject_invitation_v1");
+  expect(mocks.rpc.mock.calls[1]).toEqual(["adult_subject_acceptance_origin_v1", { p_account_id: ACCOUNT, p_subject_id: SUBJECT }]);
   return mocks.rpc.mock.calls[0]![1] as Record<string, unknown>;
+}
+/** The database's answers: the account door returns the record, the origin read the recorded origin. */
+function answers(origin: { data: unknown; error: unknown } = { data: "existing_account", error: null }) {
+  return async (name: string) => name === "adult_subject_acceptance_origin_v1" ? origin : { data: SUBJECT, error: null };
 }
 
 describe("the register this confirmation answers to", () => {
@@ -251,6 +261,47 @@ describe("POST /api/invitations/accept, Path A with the five statements and a ty
       p_nonce: readEmbryoOperation(body.nonce)!.nonce,
       p_account_email_hmac_set: expect.objectContaining({ 1: legacyContactDigest(INVITED) }) });
     expect(mocks.reads).toContain("consent_artifacts");
+  });
+
+  // D-141 (20261120120000): the origin is the one the acceptance recorded in
+  // its own transaction; the body carries no origin field to take one from.
+  it("answers the held body for an account the acceptance recorded as created from the invitation", async () => {
+    mocks.rpc.mockImplementation(answers({ data: "created_from_this_invitation", error: null }));
+    const response = await accept(acceptBody());
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ invitationKind: "adult_subject", status: "accepted", subjectId: SUBJECT,
+      subjectAccountBound: true, accountOrigin: "created_from_this_invitation", activationBlock: "hold_72h" });
+    expect(register.responseContracts["invitation-accepted-v1"]!.oneOfClosedBodies).toContainEqual({
+      invitationKind: { const: "adult_subject" }, status: { const: "accepted" }, subjectId: "opaque-server-owned-subject-id",
+      subjectAccountBound: { const: true }, accountOrigin: { const: "created_from_this_invitation" },
+      activationBlock: { const: "hold_72h" } });
+    acceptArgs();
+  });
+
+  it.each([
+    ["the read fails", { data: null, error: { message: "private" } }],
+    ["no origin was recorded", { data: null, error: null }],
+    ["the answer is not a known origin", { data: "something-else", error: null }],
+  ])("never answers the existing-account body when %s: the held body tells the person no less than the record", async (_case, origin) => {
+    mocks.rpc.mockImplementation(answers(origin));
+    const response = await accept(acceptBody());
+    expect(response.status).toBe(200);
+    expect(await response.json()).toMatchObject({ accountOrigin: "created_from_this_invitation", activationBlock: "hold_72h" });
+  });
+
+  it("answers the held body, not an error, when the origin read throws after the acceptance committed", async () => {
+    mocks.rpc.mockImplementation(async (name: string) => {
+      if (name === "adult_subject_acceptance_origin_v1") throw new Error("synthetic transport failure");
+      return { data: SUBJECT, error: null };
+    });
+    const response = await accept(acceptBody());
+    expect(response.status).toBe(200);
+    expect(await response.json()).toMatchObject({ accountOrigin: "created_from_this_invitation", activationBlock: "hold_72h" });
+  });
+
+  it("takes no origin from the request: a body that names one is the opaque 404 with no write", async () => {
+    await expectOpaque(accept(acceptBody({}, { accountOrigin: "existing_account" })));
+    await expectOpaque(accept(acceptBody({ accountOrigin: "existing_account" })));
   });
 
   it("stores the name the way Path B does: trimmed, encrypted, and never as text", async () => {

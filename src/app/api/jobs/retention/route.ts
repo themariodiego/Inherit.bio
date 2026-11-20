@@ -159,6 +159,17 @@ export async function POST(request: Request) {
     else if (typeof expiredConfirmed === "number") processed += expiredConfirmed;
   } catch { failed++; }
 
+  // adult.acceptance-hold-72h and adult.re-notice-30d (D-141): the database
+  // queues each due second notice and re-notice once, to the person's account,
+  // cancels one whose record or address may no longer be written to, and
+  // queues the normalization a released clock held back. The mail drain sends
+  // them. Independent of every other queue.
+  try {
+    const { data: queuedNotices, error: noticeError } = await admin.rpc("run_due_adult_acceptance_notices_v1");
+    if (noticeError) failed++;
+    else if (typeof queuedNotices === "number") processed += queuedNotices;
+  } catch { failed++; }
+
   // Independent due work: a failed mail/embryo queue must not strand uploads.
   try {
     const uploads = await drainOwnUploadCleanup(admin);

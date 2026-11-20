@@ -6,6 +6,7 @@ import { describe, expect, it } from "vitest";
 import { ADULT_UPLOAD_DERIVED_LIST as DERIVED, ADULT_UPLOAD_REVISION_COPY as REVISION } from "@/copy/upload/other-adult";
 import { OWN_UPLOAD_WITHDRAWAL_EMAIL_COPY as WITHDRAWN } from "@/copy/upload/withdrawal";
 import { UPLOAD_PERMISSION_WITHDRAWN_NOTICE_COPY as UPLOAD_WITHDRAWN } from "@/copy/upload/other-adult-withdrawal";
+import { ADULT_ACCEPTANCE_SECOND_NOTICE_COPY as SECOND_NOTICE, ADULT_REVOCATION_RENOTICE_COPY as RENOTICE } from "@/copy/upload/other-adult-acceptance-notices";
 import { ReportReadyEmail } from "./report-ready";
 import { ResearchDigestEmail } from "./research-digest";
 import { AdultSubjectInvitationEmail } from "./adult-subject-invitation";
@@ -386,6 +387,33 @@ describe("upload permission withdrawn notice", () => {
     expect(html).toContain(UPLOAD_WITHDRAWN.body);
     expect(html).not.toContain("href=");
     expectSafeBody(html);
+  });
+});
+
+// D-141 (20261120120000): the second notice 72 hours after an account created
+// from the invitation accepted it, and the re-notice 30 days after any account
+// acceptance, through the same queue. Their words are drafts for the owner
+// (src/copy/upload/other-adult-acceptance-notices.ts); this pins that they are
+// the ones sent, each under its own subject, with no name, link or address.
+describe("the notices to an adult who accepted through their own account", () => {
+  it.each([
+    ["adult-acceptance-second-notice", SECOND_NOTICE],
+    ["adult-revocation-renotice", RENOTICE],
+  ] as const)("%s says what happened and where to turn, with no name, file, link or address", async (kind, copy) => {
+    const mail = { id: "invitation-terminal-notice", payload: { kind } } as const;
+    expect(mailSubject(mail)).toBe(copy.subject);
+    const html = stripMarkers(await renderMail(mail));
+    expect(html).toContain(copy.heading);
+    expect(html).toContain(copy.body.replaceAll("'", "&#x27;"));
+    expect(html).not.toContain("href=");
+    // The contact of last resort, once, and no other address.
+    expectSafeBody(html, true);
+  });
+
+  it("leaves every other kind's subject as it was", () => {
+    for (const kind of ["invitation-refused", "draft-cancelled", "donor-attribution-ended", "upload-permission-withdrawn"] as const) {
+      expect(mailSubject({ id: "invitation-terminal-notice", payload: { kind } })).toBe("An invitation on Inherit has ended");
+    }
   });
 });
 

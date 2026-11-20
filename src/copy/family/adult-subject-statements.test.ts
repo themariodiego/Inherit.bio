@@ -105,11 +105,19 @@ describe("the five D-103 statements are the signed text, byte for byte", () => {
     const recorded = /'adult-subject-account-acceptance',\s*(array\[[^\]]*\])/.exec(body)?.[1];
     expect([...(recorded ?? "").matchAll(/'([^']*)'/g)].map(match => match[1])).toEqual(keys);
     const later = files.filter(name => name > current && read(name).includes("adult_subject_invitation_response_v1"));
-    expect(later).toEqual(["20261025400000_path_a_account_accept_typed_name.sql"]);
+    // 2026-11-20 (D-141): 20261120120000 patches the same body once more, after
+    // the invitation is marked accepted, to record the account's origin; it
+    // names neither the signature's purpose nor any statement key, so the list
+    // the body records is still 20261025400000's.
+    expect(later).toEqual(["20261025400000_path_a_account_accept_typed_name.sql",
+      "20261120120000_adult_acceptance_hold_and_renotice.sql"]);
     const patch = read(later[0]!);
     const successor = patch.slice(patch.indexOf("$new$    insert into public.consent_signatures ("));
     const patched = /'adult-subject-account-acceptance',\s*(array\[[^\]]*\])/.exec(successor)?.[1];
     expect([...(patched ?? "").matchAll(/'([^']*)'/g)].map(match => match[1])).toEqual(keys);
+    const hold = read(later[1]!);
+    expect(hold).not.toContain("adult-subject-account-acceptance");
+    for (const key of keys) expect(hold.includes(`'${key}'`), key).toBe(false);
   });
 });
 

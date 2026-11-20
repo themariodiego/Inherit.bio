@@ -75,11 +75,17 @@ export async function acceptAdultSubjectInvitation(
   });
   if (error || data !== offer.subjectId) return notFound();
 
-  // invitation-accepted-v1, the adult body. The register keeps the 72-hour
-  // hold for an account a server-owned binding proves was created from this
-  // invitation; no such binding exists yet, so no account is proven created
-  // from it and every acceptance answers the existing-account body, whose
-  // block is the exact purpose grant the person has not made.
+  // invitation-accepted-v1, the adult body (D-141, 20261120120000). The
+  // acceptance recorded, in its own transaction and from the auth row and the
+  // invitation row alone, whether this account existed before the invitation
+  // was sent; only that one is an existing account, whose block is the exact
+  // purpose grant the person has not made. Any other account, and an answer
+  // the record cannot give (a failed read after the acceptance committed),
+  // is the held body: it never tells the person less than the database holds.
+  const existing = await createAdminClient().rpc("adult_subject_acceptance_origin_v1", {
+    p_account_id: context.user.id,
+    p_subject_id: data,
+  }).then(origin => !origin.error && origin.data === "existing_account", () => false);
   return closedResponse(
     "api.invitation-accept",
     ACCEPTED_KEYS,
@@ -88,8 +94,8 @@ export async function acceptAdultSubjectInvitation(
       status: "accepted",
       subjectId: data,
       subjectAccountBound: true,
-      accountOrigin: "existing_account",
-      activationBlock: "pending_exact_purpose",
+      accountOrigin: existing ? "existing_account" : "created_from_this_invitation",
+      activationBlock: existing ? "pending_exact_purpose" : "hold_72h",
     },
     200,
   );

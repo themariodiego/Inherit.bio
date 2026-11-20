@@ -364,7 +364,13 @@ describe("POST /api/invitations/accept (Path A adult)", () => {
     }));
     expect(response.status).toBe(200);
     expect(mocks.rpc.mock.calls[0]![0]).toBe("accept_adult_subject_invitation_v1");
-    const args = sentArgs();
+    // D-141 (20261120120000): after the door commits, the route makes exactly
+    // one more call, the read of the origin that acceptance recorded, for this
+    // record and this account. The door's arguments are the first call's.
+    expect(mocks.rpc.mock.calls.map(call => call[0])).toEqual(["accept_adult_subject_invitation_v1",
+      "adult_subject_acceptance_origin_v1"]);
+    expect(mocks.rpc.mock.calls[1]![1]).toEqual({ p_account_id: ACCOUNT, p_subject_id: SUBJECT });
+    const args = mocks.rpc.mock.calls[0]![1] as Record<string, unknown>;
     expect(args).not.toHaveProperty("p_account_email_hmac");
     const set = args.p_account_email_hmac_set as Record<string, string>;
     expect(Object.keys(set)).toEqual(["1", "2"]);

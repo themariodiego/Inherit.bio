@@ -63,6 +63,7 @@ import { AccountDeletionAffectedEmail, AccountDeletionAffectedCancelledEmail,
   type AccountDeletionAffectedProps, type AccountDeletionAffectedCancelledProps } from "@/emails/account-deletion-affected";
 import { UploadConsentWithdrawnEmail, type UploadConsentWithdrawnProps } from "@/emails/upload-consent-withdrawn";
 import { OWN_UPLOAD_WITHDRAWAL_EMAIL_COPY } from "@/copy/upload/withdrawal";
+import { ADULT_ACCEPTANCE_SECOND_NOTICE_COPY, ADULT_REVOCATION_RENOTICE_COPY } from "@/copy/upload/other-adult-acceptance-notices";
 
 /** Every template id, paired with the props its component renders. */
 interface MailPayloads {
@@ -168,6 +169,14 @@ const addendumSubjects: Record<RecordKeyAddendumProps["kind"], string> = {
 export function mailSubject(mail: MailTemplate): string {
   if (mail.id === "record-key-addendum") {
     return addendumSubjects[mail.payload.kind];
+  }
+  // D-141 (20261120120000): the two notices to an adult who accepted through
+  // their own account are not endings, so each carries its own subject line.
+  if (mail.id === "invitation-terminal-notice" && mail.payload.kind === "adult-acceptance-second-notice") {
+    return ADULT_ACCEPTANCE_SECOND_NOTICE_COPY.subject;
+  }
+  if (mail.id === "invitation-terminal-notice" && mail.payload.kind === "adult-revocation-renotice") {
+    return ADULT_REVOCATION_RENOTICE_COPY.subject;
   }
   // The register's Path B request (TEST-LOCAL only) asks for a signature, not an account.
   if (mail.id === "adult-subject-invitation" && mail.payload.request === "esignature") {

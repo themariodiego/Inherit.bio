@@ -129,3 +129,28 @@ describe("the uploader's withdrawal notice", () => {
     expect(mocks.submit).not.toHaveBeenCalled();
   });
 });
+
+// D-141 (20261120120000): the second notice and the re-notice to an adult who
+// accepted through their own account are two more closed kinds of the same
+// queue, always addressed to that account. The address is read from the
+// account only here, between the two authorizations, and never decrypted.
+describe("the second notice and the re-notice", () => {
+  it.each(["adult-acceptance-second-notice", "adult-revocation-renotice"])(
+    "sends %s to the account's verified address, rechecked after the lookup", async kind => {
+      const { admin, rpc, getUserById } = fixture({ notice_kind: kind, contact_ciphertext: null, recipient_account_id: "person" });
+      await expect(drainInvitationTerminalMail(admin)).resolves.toEqual({ processed: 1, failed: 0 });
+      expect(getUserById).toHaveBeenCalledExactlyOnceWith("person");
+      expect(mocks.decrypt).not.toHaveBeenCalled();
+      expect(mocks.submit).toHaveBeenCalledWith("owner@example.test",
+        { id: "invitation-terminal-notice", payload: { kind } }, "original-key");
+      expect(rpc.mock.calls.filter(([name]) => name === "authorize_invitation_terminal_mail_v1")).toHaveLength(2);
+      expect(getUserById.mock.invocationCallOrder[0]).toBeLessThan(rpc.mock.invocationCallOrder[2]);
+    });
+
+  it.each(["adult-acceptance-second-notice", "adult-revocation-renotice"])(
+    "sends nothing for %s when the database refuses it after the lookup (deleted, barred or transferred since)", async kind => {
+      const { admin } = fixture({ notice_kind: kind, contact_ciphertext: null, recipient_account_id: "person" }, [true, false]);
+      await expect(drainInvitationTerminalMail(admin)).resolves.toEqual({ processed: 0, failed: 1 });
+      expect(mocks.submit).not.toHaveBeenCalled();
+    });
+});
