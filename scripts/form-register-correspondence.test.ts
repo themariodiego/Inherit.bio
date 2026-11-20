@@ -976,7 +976,7 @@ describe("the client census fails on a planted divergence", () => {
     const added = run({ [file]: source.replace(headers, `${headers} body: JSON.stringify({ grantId: g.id }),`) });
     expect(ledgerMismatch(added.issues.map(formIssueKey), accountedClientKeys()).unrecorded)
       .toEqual([`${file} api.consent-revoke POST: sends a body the register forbids`]);
-  });
+  }, 30_000); // five whole-tree census runs; over the default 5 s on the hosted runner since the client graph grew (2026-11-20)
 
   /** Only the issues the planted run reports for one file. */
   const issuesIn = (result: ReturnType<typeof run>, file: string) => [...new Set([...result.formIssues, ...result.issues]

@@ -4,6 +4,7 @@ import type { BrowserContext, Page } from "@playwright/test";
 import { expect, test } from "./audited-test";
 import { adminClient, createConfirmedUser, DEFAULT_TEST_JURISDICTION, drainMailUntil, signIn } from "./helpers";
 import { signStatements } from "./embryo-signing-helpers";
+import { observeNativeResponses } from "./helpers/native-response-observer";
 import { SIGN_BUTTON } from "@/copy/embryos/signing";
 import { FINALIZE_BUTTON, parentEmailLabel, SAVE_DRAFT_BUTTON, SEND_INVITATION_BUTTON } from "@/copy/embryos/upload";
 import { EMBRYO_UPLOADER_WITHDRAWAL_COPY as COPY } from "@/copy/embryos/uploader-withdrawal";
@@ -102,12 +103,18 @@ async function withdrawFromHere(page: Page, signatureId: string, phase: "cohort"
   await expect(dialog).toHaveCount(0);
   expect(sent).toBe(0);
   await section.getByTestId("embryo-uploader-withdrawal").click();
+  // The control reads only the status of a `no-store` answer, whose unread
+  // body Chromium never reports as loaded: read it from the browser's own fetch.
+  const observer = await observeNativeResponses(page, { withdrawal: `^/api/consents/${signatureId}/revoke$` }, "POST");
   const answered = page.waitForResponse(response => response.request().method() === "POST"
     && new URL(response.url()).pathname === `/api/consents/${signatureId}/revoke`);
   await section.getByTestId("embryo-uploader-withdrawal-confirm").click();
   const response = await answered;
   expect(response.status()).toBe(202);
-  expect(await response.json()).toEqual({ status: "accepted" });
+  const native = await observer.read("withdrawal");
+  await observer.dispose();
+  expect(native.status).toBe(response.status());
+  expect(JSON.parse(native.text)).toEqual({ status: "accepted" });
   expect(response.request().headers()["x-inherit-operation-nonce"]).toMatch(CODE);
   expect(response.request().headers()["x-inherit-csrf"]).toMatch(CODE);
   expect(response.request().postData()).toBeNull();
@@ -159,6 +166,8 @@ test("after finalisation the uploader withdraws on the cohort's card: the cohort
       expect(invitation).toBeTruthy();
       await parent.goto(new URL(invitation!).pathname + new URL(invitation!).hash);
       await parent.getByRole("button", { name: "Continue", exact: true }).click();
+      // `all()` does not wait: the review must be on screen before its boxes are read (as in the third-party journey).
+      await expect(parent.getByRole("heading", { name: "Review this invitation before you sign" })).toBeVisible();
       for (const box of await parent.getByRole("checkbox").all()) await box.check();
       await parent.getByLabel("Country where you live").selectOption(DEFAULT_TEST_JURISDICTION);
       await parent.getByLabel("Full legal name").fill(`Synthetic Parent ${index + 1}`);

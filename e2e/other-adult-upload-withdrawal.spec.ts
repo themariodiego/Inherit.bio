@@ -4,8 +4,9 @@ import fs from "node:fs";
 import http from "node:http";
 import path from "node:path";
 import type { APIRequestContext, Page } from "@playwright/test";
-import { adminClient, adultInvitationToken, adultInvitationUrl, createConfirmedUser, drainMailUntil, findUserByEmail,
-  signIn } from "./helpers";
+import { adminClient, adultInvitationToken, adultInvitationUrl, completeOwnUploadConsent, createConfirmedUser, drainMailUntil,
+  findUserByEmail, signIn } from "./helpers";
+import { observeNativeResponses } from "./helpers/native-response-observer";
 import { signOut as signOutWithToken } from "./helpers/session-csrf";
 import { JURISDICTION_AFFIRM, JURISDICTION_SELECT_LABEL } from "../src/copy/settings/jurisdiction";
 import { ADULT_UPLOAD_REVISION_COPY as REVISION, OTHER_ADULT_UPLOAD_COPY as UPLOAD,
@@ -104,6 +105,9 @@ async function openPathB(page: Page) {
 /** The uploader reserves, signs and sends the request; the person signs it, with or without their account. */
 async function confirmedPerson(page: Page, request: APIRequestContext, person: { email: string; name: string; password?: string }) {
   await signIn(page, UPLOADER.email, UPLOADER.password);
+  // As in e2e/other-adult-upload.spec.ts: the uploader completes its own
+  // account first, or the draft is refused as adult_account_required (409).
+  await completeOwnUploadConsent(page);
   const section = await openPathB(page);
   const form = section.locator('[data-slot="other-adult-new"]');
   await form.getByLabel(UPLOAD.nameLabel).fill(person.name);
@@ -204,20 +208,30 @@ test("the uploader withdraws for a person with no account: every file it added g
   await expect(dialog).toHaveCount(0);
   expect(sent).toBe(0);
   await control.getByTestId("other-adult-withdrawal").click();
+  // The control reads only the status of a `no-store` answer, whose unread
+  // body Chromium never reports as loaded: read it from the browser's own fetch.
+  const observer = await observeNativeResponses(page, { withdrawal: `^/api/subjects/${record.subjectId}$` }, "DELETE");
   const answered = page.waitForResponse(response => response.request().method() === "DELETE"
     && new URL(response.url()).pathname === `/api/subjects/${record.subjectId}`);
   await control.getByTestId("other-adult-withdrawal-confirm").click();
   const response = await answered;
   expect(response.status()).toBe(202);
-  expect(await response.json()).toEqual({ status: "accepted" });
+  const native = await observer.read("withdrawal");
+  await observer.dispose();
+  expect(native.status).toBe(response.status());
+  expect(JSON.parse(native.text)).toEqual({ status: "accepted" });
   expect(response.request().headers()["x-inherit-operation-nonce"]).toMatch(CODE);
   expect(response.request().headers()["x-inherit-csrf"]).toMatch(CODE);
   expect(response.request().postData()).toBeNull();
   expect(sent).toBe(1);
-  const receipt = control.locator('[data-slot="other-adult-withdrawal-receipt"]');
+  // Once accepted, the person's card shows only the receipt, under its own
+  // slot (other-adult-upload-card.tsx), and the held card is gone.
+  const withdrawnCard = section.locator('[data-slot="other-adult-withdrawn"]').filter({ hasText: NO_ACCOUNT.name });
+  const receipt = withdrawnCard.locator('[data-slot="other-adult-withdrawal-receipt"]');
   await expect(receipt).toContainText(COPY.receiptHeading);
   await expect(receipt).toContainText(COPY.receiptBody(NO_ACCOUNT.name));
-  await expect(control.getByTestId("other-adult-withdrawal")).toHaveCount(0);
+  await expect(withdrawnCard.getByTestId("other-adult-withdrawal")).toHaveCount(0);
+  await expect(card).toHaveCount(0);
 
   const subject = await admin.from("subjects").select("lifecycle").eq("id", record.subjectId).single();
   expect(subject.data!.lifecycle).toBe("purged");

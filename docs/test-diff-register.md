@@ -1,3 +1,29 @@
+## 2026-11-20 — The three withdrawal journeys run in a browser: the answer's body read from the page's own fetch, three spec steps corrected, and one census test's time allowance
+
+The three withdrawal specs of `b6ac5264` and `cebfbebc` were written without a browser. Hosted runs 44709859425 (`d14c44e0`) and 44715128384 (`f5903d7e`) failed `e2e/own-upload-withdrawal.spec.ts` and `e2e/embryo-uploader-withdrawal.spec.ts` in `browser (5)`. Run here against the production build, the local stack and the real Storage proxy (this container's Chromium 1243 standing in for the pinned 1234), all three specs failed and the product was right each time: the route answered 202 `{"status":"accepted"}` (replayed from Node directly and through the browser proxy), the receipt rendered, and the database, mail and pages were as specified. Only specs change.
+
+Each control reads only its answer's status, and the answer is `Cache-Control: private, no-store`. Chromium never reports the load of an unread `no-store` fetch body as finished (DevTools: the 21 bytes received, no `loadingFinished`), so Playwright's `response.json()` waits until the test times out; a two-button page outside the app shows the same with `no-store` alone. The body is now read with `observeNativeResponses` (`e2e/helpers/native-response-observer.ts`), from a clone of the page's own fetch answer; nothing is replayed.
+
+**New tests.** None.
+
+**Changed test setup (no assertion changed).**
+- `e2e/other-adult-upload-withdrawal.spec.ts`, `confirmedPerson`: the uploader runs `completeOwnUploadConsent` after signing in, as `e2e/other-adult-upload.spec.ts` does; without it the draft is refused `adult_account_required` (409).
+- `e2e/embryo-uploader-withdrawal.spec.ts`, the cohort test: waits for "Review this invitation before you sign" before reading the checkboxes, as `e2e/embryo-third-party-journey.spec.ts` does; `all()` does not wait, so the boxes were read before the review loaded.
+- `scripts/form-register-correspondence.test.ts`, "records a new non-CSRF divergence of a request no form makes, and notices a recorded one close": an explicit 30-second allowance, as its sibling whole-tree tests have. It runs the whole client census five times and crossed the default 5 seconds on the hosted runner (run 44715128384, `repository-checks`) once the client graph had grown by ten modules. No assertion changed.
+
+**Changed assertions (old, new, why).**
+- The three specs, the confirmed request: `expect(await response.json()).toEqual({ status: "accepted" })` becomes the page's own fetch answer observed: its status equals the response's (202) and `JSON.parse(text)` equals `{ status: "accepted" }`. The same proof; the old form could never resolve against a `no-store` answer the page does not read.
+- `e2e/own-upload-withdrawal.spec.ts`, `expectUploadAsksAgain`: "Choose file" `toHaveCount(0)` becomes `toBeDisabled()`, and the file input `toBeDisabled()`. The own-upload stage shows the picker shut until the consent is signed (`own-upload-flow.tsx`), as `e2e/own-upload-consent.spec.ts` asserts of the same stage.
+- `e2e/other-adult-upload-withdrawal.spec.ts`, the receipt: looked for inside the held card, now inside the `other-adult-withdrawn` card for the person, with no trigger there, and the held card gone (new). On a 202 the card changes to that slot (`other-adult-upload-card.tsx`); the old trigger check was vacuous once the card disappeared.
+
+**Planted defects.** None; no product code changed.
+
+**Results.**
+- Locally (`pnpm build && pnpm start`, reset and seeded database, real Storage proxy, unmodified `playwright.config.ts`): the three withdrawal specs 7 of 7, with `response-headers`, `future-person-keyless-review`, `function-payload`, `future-person-review`, `future-person-claim`, `auth`, `auth-processing` and `jurisdiction-declaration`: 36 passed, no skips or retries. So the specs the final CSRF stage, the page-headers work and the intent link edited or depend on pass here too.
+- Not runnable outside isolated CI: `reviews-keyless-owner-notice-journey` and `embryo-third-party-journey` (they need the embryo app variant and worker that only the isolated runtime starts).
+- `pnpm typecheck` and lint exit 0; `scripts/form-register-correspondence.test.ts` 59 of 59; `gate:routes`, `gate:browser-discovery` (635 cases) and `gate:names` pass.
+- `browser (4)` of run 44715128384 failed before any test ran: the runner could not start one Supabase container ("driver failed programming external connectivity"). Not this repository's code.
+
 ## 2026-11-19 — G8.5: withdrawing an uploader's consent for another adult's file, and a non-parent uploader's consent for an embryo upload
 
 The owner decided today ("An uploader's withdrawal for another adult's file deletes it, unless that adult holds the record themselves"; "A non-parent uploader's withdrawal for an embryo upload stops analysis and deletes, as they signed") what the last two withdrawals of "G8.5: a withdrawal is built for three kinds of consent" do. Both kinds exist only in test mode. This change builds them and nothing beyond them; the own-account branch of the first stops on an undecided point (below).

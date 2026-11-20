@@ -4,6 +4,7 @@ import path from "node:path";
 import type { Page } from "@playwright/test";
 import { expect, test } from "./audited-test";
 import { adminClient, createConfirmedUser, drainMailUntil, signIn } from "./helpers";
+import { observeNativeResponses } from "./helpers/native-response-observer";
 import { uploadOwnFilePrepared } from "./own-report-helpers";
 import { OWN_UPLOAD_COPY } from "../src/copy/upload/consent";
 import { OWN_UPLOAD_WITHDRAWAL_COPY as COPY, OWN_UPLOAD_WITHDRAWAL_EMAIL_COPY as EMAIL } from "../src/copy/upload/withdrawal";
@@ -92,12 +93,20 @@ async function withdrawFromHere(page: Page, subjectId: string) {
   await expect(dialog).toHaveCount(0);
   expect(sent).toBe(0);
   await section.getByTestId("own-upload-withdrawal").click();
+  // The control reads only the status, and the answer is `no-store`: Chromium
+  // never reports the load of an unread no-store fetch body as finished, so
+  // `response.json()` would wait for ever. The body is read from the
+  // browser's own fetch instead; the app still receives the original answer.
+  const observer = await observeNativeResponses(page, { withdrawal: `^/api/subjects/${subjectId}$` }, "DELETE");
   const answered = page.waitForResponse((response) => response.request().method() === "DELETE"
     && new URL(response.url()).pathname === `/api/subjects/${subjectId}`);
   await section.getByTestId("own-upload-withdrawal-confirm").click();
   const response = await answered;
   expect(response.status()).toBe(202);
-  expect(await response.json()).toEqual({ status: "accepted" });
+  const native = await observer.read("withdrawal");
+  await observer.dispose();
+  expect(native.status).toBe(response.status());
+  expect(JSON.parse(native.text)).toEqual({ status: "accepted" });
   const headers = response.request().headers();
   expect(headers["x-inherit-operation-nonce"]).toMatch(/^\d{13}\.[A-Za-z0-9_-]{43}\.[0-9a-f]{64}$/u);
   expect(headers["x-inherit-csrf"]).toMatch(/^\d{13}\.[A-Za-z0-9_-]{43}\.[0-9a-f]{64}$/u);
@@ -140,7 +149,10 @@ async function expectUploadAsksAgain(page: Page) {
   await page.goto("/files/upload");
   await expect(page.getByRole("heading", { name: OWN_UPLOAD_COPY.ownHeading, exact: true })).toBeVisible();
   await expect(page.getByRole("checkbox", { name: OWN_UPLOAD_COPY.ownCheckbox, exact: true })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Choose file", exact: true })).toHaveCount(0);
+  // The own-upload stage shows the picker shut until the consent is signed
+  // again (own-upload-flow.tsx; e2e/own-upload-consent.spec.ts asserts the same stage).
+  await expect(page.getByRole("button", { name: "Choose file", exact: true })).toBeDisabled();
+  await expect(page.locator('input[type="file"]')).toBeDisabled();
 }
 
 test("own upload withdrawal from Settings: the confirmation, the receipt, the email, an empty Files page and the consent asked again", async ({ page }) => {
