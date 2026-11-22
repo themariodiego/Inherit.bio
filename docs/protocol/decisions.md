@@ -6114,3 +6114,58 @@ the pattern approved for "object to a claim"; apply it here too? Offered:
 `api.claim-review-chunk-acknowledgement` checks the reviewer session first
 and then the account, and spends a one-time token of whichever it finds;
 nothing changes for people. `csrfOwnDesign` then has no row.
+
+## 2026-11-22 — The wording of the two test-mode withdrawals is approved
+
+Owner decision (clickable chat answer, "Approve as written"). Asked: do you
+approve the wording of the two test-mode withdrawals (an uploader's
+permission for another adult's file, and a non-parent uploader's embryo
+upload), shown in full? Offered: "Approve as written", "Not yet, I want
+changes". Chosen: "Approve as written".
+
+The strings listed in
+`docs/evidence/consent-withdrawal-design-20261119/other-adult-and-embryo-wording.md`
+are approved. The line shown on a record the adult holds with their own
+account changes with the transfer branch decided the same day and comes back
+to the owner with the transfer's notices.
+
+## 2026-11-22 — The wording of the 72-hour notice and the 30-day reminder is approved
+
+Owner decision (clickable chat answer, "Approve as written"). Asked: do you
+approve the two emails sent to an adult who accepted an invitation, the
+second notice after 72 hours and the reminder after 30 days, shown in full,
+noting that the reminder cannot say "one click" because no in-account delete
+exists yet for these adults? Offered: "Approve as written", "Not yet, I want
+changes". Chosen: "Approve as written".
+
+The strings listed in `docs/evidence/adult-acceptance-hold-20261120/wording.md`
+are approved.
+
+## 2026-11-22 — The wording of Copilot for another adult's record is approved
+
+Owner decision (clickable chat answer, "Approve as written"). Asked: do you
+approve the wording of Copilot for another adult's record (self-hosted,
+local model only), shown in full, noting that the existing Family "Copilot"
+permission row now also opens the one-person page? Offered: "Approve as
+written", "Not yet, I want changes". Chosen: "Approve as written".
+
+The strings listed in `docs/evidence/subject-copilot-20261120/wording.md` are
+approved, and the Family "Copilot" row's existing sentence stands for both
+pages. The cloud path remains a separate decision; its draft is in the same
+folder for the owner and counsel.
+
+## 2026-11-22 — The 72-hour hold covers an inviter's reads of the invited adult's own record
+
+Owner decision (clickable chat answer, "Yes, cover the inviter's reads").
+Asked: for an invitation to share (Path A), the adult's file sits on their
+own record, which the hold does not cover, so the inviter can read what that
+adult shares with them during the first 72 hours and after 30 days without
+the reminder; should the hold cover the inviter's reads of that adult's own
+record too? Offered: "Yes, cover the inviter's reads", "No, the hold is for
+uploaded files only". Chosen: "Yes, cover the inviter's reads".
+
+Until 72 hours have passed and the second notice has been accepted by the
+mail provider, and from 30 days until the reminder has been accepted, the
+inviter sees nothing the new adult shares with them, through every Family
+reader and Copilot. The adult's own use of their record is not held. This
+closes D-156 when built. Test mode only today.

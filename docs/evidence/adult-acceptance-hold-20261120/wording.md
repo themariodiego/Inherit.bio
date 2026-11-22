@@ -1,5 +1,7 @@
 # D-141 wording: every new string, verbatim (NOT APPROVED)
 
+**APPROVED by the owner on 22 November 2026** (`docs/protocol/decisions.md`, "The wording of the 72-hour notice and the 30-day reminder is approved"). The strings below are the approved text; the notes about it are kept as they were written.
+
 Neither the signed register nor the brief gives words for the second notice or the re-notice. The register names no mail template or copy id for them (`policyResolvers.other-adult-mitigation-state-v1`, `retentionPhaseManifestClassBindings` `adult.acceptance-hold-72h` / `adult.re-notice-30d`, `docs/retention.md`: "send a second independent notice under `mail-token-delivery-v1`"; "an unconditional notice restating one-click revocation"). The brief (§3, "Three operable mitigations") says only "a second independent notice is sent to the address at that boundary" and "a plain, unconditional re-notice is sent 30 days after acceptance, restating the one-click revoke".
 
 So every string below is a draft for the owner. All live in one copy module, `src/copy/upload/other-adult-acceptance-notices.ts`, and are rendered by the existing template `invitation-terminal-notice` (`src/emails/invitation-terminal-notice.tsx`, heading plus one paragraph, inside the shared `EmailLayout` with its unchanged attribution and "Informational, not medical advice." footer). The subjects are chosen in `mailSubject` (`src/lib/email.ts`) for these two kinds only. No existing string changed; no page changed; no legal artifact or signed text changed.

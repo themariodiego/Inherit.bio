@@ -1,5 +1,7 @@
 # Copilot for one other adult's record: new wording, for the owner's approval
 
+**APPROVED by the owner on 22 November 2026** (`docs/protocol/decisions.md`, "The wording of Copilot for another adult's record is approved"). The strings below are the approved text; the notes about it are kept as they were written.
+
 Owner decision of 19 November 2026, "G8.5: Copilot for another adult's record opens": "The permission wording comes to the owner for approval before it ships." **None of the strings below is approved.** Every one lives in the copy registry and passes `pnpm gate:readability`: the page's and the links' in `src/copy/copilot/subject-scope.ts`, the Path B choice's beside its sibling choices in `src/copy/upload/other-adult.ts` (`PATH_B_CHOICES_COPY`). `{name}` is the person's name as the asker already sees it (on the Family pages: the counterpart's own label, or "Invited adult"; on Files: the label the uploader gave the Path B record).
 
 ## The permission itself
