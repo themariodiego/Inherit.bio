@@ -39,7 +39,9 @@ import { withPurposeCsrf, readRightsCsrfSession } from "@/lib/security/session-c
  * uploader of a no-account subject only while a 730-day clock is live and
  * before the 30-day re-notice boundary (owner decision 2026-10-22,
  * 20261016204000). copilot.local is accepted by the closed body and refused
- * by the database until a Path B Copilot scope exists.
+ * by the database: the Path B Copilot scope (20261120130000) reads only a
+ * record its person holds with their own account, so a no-account person's
+ * Copilot choice would authorize nothing.
  */
 
 const body = z.object({

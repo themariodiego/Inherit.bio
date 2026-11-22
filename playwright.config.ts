@@ -16,7 +16,8 @@ import { assertStandardCiBrowserProjects } from "./scripts/ci-browser-project-re
 // The independent pause server uses TEST-LOCAL with issuance paused. The
 // fourth server, on LOCAL_MODEL_PORT, is the one app that attests the
 // local-model path (G4.8): the `copilot-local` project runs the red-team suite
-// and the Family and cohort Copilot journeys against it, and nothing else runs there.
+// and the Family, cohort and one-other-adult Copilot journeys against it, and
+// nothing else runs there.
 // Isolated CI adds a prepared-source server on PREPARED_APP_PORT. Its SQL
 // gate is enabled only inside that guarded journey; other variants keep it off.
 // Playwright starts servers in order; every later server reuses the same build.
@@ -50,7 +51,7 @@ const EMBRYO_JOURNEY = /embryo-ingest-journey\.spec\.ts$/;
 const KEYLESS_NOTICE_JOURNEY = /reviews-keyless-owner-notice-journey\.spec\.ts$/;
 const THIRD_PARTY_EMBRYO_JOURNEY = /embryo-third-party-journey\.spec\.ts$/;
 const CLAIMED_RECORD_JOURNEY = /future-person-claimed-record-journey\.spec\.ts$/;
-const COPILOT_LOCAL = /copilot-redteam\.spec\.ts$|copilot-family\.spec\.ts$|copilot-cohort\.spec\.ts$/;
+const COPILOT_LOCAL = /copilot-redteam\.spec\.ts$|copilot-family\.spec\.ts$|copilot-cohort\.spec\.ts$|copilot-subject\.spec\.ts$/;
 /**
  * The density capture (G2.5). It is not a test — it records what the product
  * looks like — so it is excluded from every default project and runs only when

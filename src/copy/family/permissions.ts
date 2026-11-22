@@ -80,7 +80,9 @@ export const PERMISSION_ROWS: readonly PermissionRowCopy[] = [
   {
     // The register's `copilot.local` directional purpose: separate from every
     // result row, so sharing a report is never permission to feed it to a
-    // model. It takes effect only with Health picture and a report row on.
+    // model. With a report row on, it lets this person's Copilot about you
+    // read the reports you share (/copilot/s-{your record}, since 20 November
+    // 2026); the Family group view also needs Health picture.
     id: "copilot.local",
     label: "Copilot",
     consequence: "They can ask Copilot about the reports you share, on a model that runs on their own computer.",

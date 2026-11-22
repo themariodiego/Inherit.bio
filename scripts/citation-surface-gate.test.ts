@@ -296,7 +296,10 @@ describe("the 2 October release integration preserves measured debt", () => {
     // src/copy/upload/other-adult-withdrawal.ts and
     // src/copy/embryos/uploader-withdrawal.ts); none carries a claim-marked
     // sentence, so the 57 candidates are unchanged.
-    expect(result.fileCount).toBe(124);
+    // 125 since 2026-11-20 (Copilot for another adult's record): the one-record
+    // scope's copy module src/copy/copilot/subject-scope.ts joins the surface;
+    // it carries no claim-marked sentence, so the 57 candidates are unchanged.
+    expect(result.fileCount).toBe(125);
     expect(result.candidates).toHaveLength(57);
     expect(result).toMatchObject({ sourced: 0, open: 57, classified: 0 });
     const inputs = readRepositoryInputs(ROOT);

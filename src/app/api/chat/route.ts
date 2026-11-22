@@ -1,6 +1,7 @@
 import { ownChatResponse } from "@/lib/copilot/own-chat-route";
 import { familyChatResponse, isFamilyChatRequest } from "@/lib/copilot/family-chat-route";
 import { cohortChatResponse, isCohortChatRequest } from "@/lib/copilot/cohort-chat-route";
+import { isSubjectChatRequest, subjectChatResponse } from "@/lib/copilot/subject-chat-route";
 import { createUIMessageStream, createUIMessageStreamResponse } from "ai";
 import { NextResponse } from "next/server";
 import type { RefusalId } from "@/copy/copilot/refusals";
@@ -37,10 +38,12 @@ function refusalResponse(id: RefusalId, text: string): Response {
  * Every body is one of the register's two closed shapes, `{ contextToken,
  * message }` for a new conversation or `{ chatId, message }` for a turn in a
  * server-held one, and its scope comes only from the token or the database
- * chat row. Three canonical scopes answer: the Family group, the embryo
- * cohort and the person's own subject. Each keeps its conversation on the
- * server, spends its context token once and rechecks its authority before
- * every read and the model call.
+ * chat row. Four canonical scopes answer: the Family group, the embryo
+ * cohort, one other adult's record (since 20 November 2026, owner decision
+ * "G8.5: Copilot for another adult's record opens"; local model only) and the
+ * person's own subject. Each keeps its conversation on the server, spends its
+ * context token once and rechecks its authority before every read and the
+ * model call.
  *
  * Since 24 October 2026 (G8.5) there is no compatibility branch. It answered
  * `/copilot/[scope]`'s other subjects, and self subjects with no canonical
@@ -65,6 +68,7 @@ async function handlePost(request: Request) {
     // own scope never reads either, and the two answer the same closed shape.
     if (await isFamilyChatRequest(raw)) return familyChatResponse(request, raw, { refusal: refusalResponse });
     if (await isCohortChatRequest(raw)) return cohortChatResponse(request, raw, { refusal: refusalResponse });
+    if (await isSubjectChatRequest(raw)) return subjectChatResponse(request, raw, { refusal: refusalResponse });
     return ownChatResponse(request, raw, { systemPrompt: OWN_SYSTEM_PROMPT, refusal: refusalResponse });
   }
   // Every registered body names a context token or a chat. The AI SDK

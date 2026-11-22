@@ -39,6 +39,7 @@ const accountId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 const sessionId = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
 const subjectId = "cccccccc-cccc-4ccc-8ccc-cccccccccccc";
 const grantId = "dddddddd-dddd-4ddd-8ddd-dddddddddddd";
+const copilotGrant = "ffffffff-ffff-4fff-8fff-ffffffffffff";
 const SHA = "a".repeat(64);
 const input = { accountId, sessionId, subjectId, purpose: "ancestry" as const, direction: "uploader" as const,
   artifactKey: "consent.share-with-adult", artifactVersion: 1, artifactBodySha256: SHA };
@@ -102,6 +103,23 @@ describe("POST /api/consents, a Path B layer", () => {
       p_test_jurisdiction: true });
     expect(args.p_nonce_hash).toMatch(/^[0-9a-f]{64}$/);
   });
+  it("hands the database the Copilot choice exactly as a layer: uploader direction and share text from the token", async () => {
+    const copilot = { ...input, purpose: "copilot.local" as const };
+    const token = mintPathBPurposePresentation(copilot).token;
+    const request = body(token, { purposeKey: "copilot.local" });
+    mocks.rpc.mockResolvedValueOnce({ data: { recordKind: "purpose_grant", recordId: copilotGrant, artifactKey: "consent.share-with-adult",
+      artifactVersion: 1, purposeKey: "copilot.local", signedAt: "2026-11-20T10:00:00+00:00" }, error: null });
+    expect((await consents(post(request, token))).status).toBe(201);
+    const [name, args] = mocks.rpc.mock.calls[0]!;
+    expect(name).toBe("grant_path_b_purpose_v1");
+    expect(args).toMatchObject({ p_account_id: accountId, p_session_id: sessionId, p_subject_id: subjectId,
+      p_purpose: "copilot.local", p_direction: "uploader", p_test_jurisdiction: true });
+    // A Copilot token cannot be spent on a result layer, nor a layer's on Copilot.
+    expect((await pathBPurposeConsent(post(body(token), token), body(token))).status).toBe(404);
+    const layer = mintPathBPurposePresentation(input).token;
+    expect((await pathBPurposeConsent(post(body(layer, { purposeKey: "copilot.local" }), layer),
+      body(layer, { purposeKey: "copilot.local" }))).status).toBe(404);
+  });
   it("refuses a foreign or mismatched presentation before the database", async () => {
     const token = mintPathBPurposePresentation(input).token;
     const other = mintPathBPurposePresentation({ ...input, accountId: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee" }).token;
@@ -161,6 +179,25 @@ describe("the person's choices", () => {
     const offer = view!.choices.find(c => c.purpose === "ancestry" && c.direction === "uploader")!.offer!;
     expect(readPathBPurposePresentation(offer.token)).toMatchObject({ direction: "uploader", artifactKey: "consent.share-with-adult" });
   });
+  it("offers Copilot to the person who added the file only, signed under the same text as every share", async () => {
+    mocks.rpc.mockResolvedValueOnce({ data: [{ ...person, uploaderShare: { decision: "allow", gate: null } }], error: null });
+    const [view] = (await preparePathBChoices())!;
+    const copilot = view!.choices.filter(c => c.purpose === "copilot.local");
+    expect(copilot.map(c => c.direction)).toEqual(["uploader"]);
+    expect(readPathBPurposePresentation(copilot[0]!.offer!.token)).toMatchObject({ accountId, sessionId, subjectId,
+      purpose: "copilot.local", direction: "uploader", artifactKey: "consent.share-with-adult" });
+    // No "for you" Copilot presentation can be minted or read.
+    expect(() => mintPathBPurposePresentation({ ...input, purpose: "copilot.local", direction: "self", artifactKey: "consent.share-with-adult" }))
+      .toThrow();
+  });
+  it("lists a current Copilot grant as an ordinary row the person can turn off with its one-time value", async () => {
+    mocks.rpc.mockResolvedValueOnce({ data: [{ ...person, grants: [...person.grants,
+      { grantId: copilotGrant, purpose: "copilot.local", direction: "uploader", grantedAt: "2026-11-20T10:00:00Z" }] }], error: null });
+    const [view] = (await preparePathBChoices())!;
+    const row = view!.choices.find(c => c.purpose === "copilot.local")!;
+    expect(row).toMatchObject({ grantId: copilotGrant, offer: null });
+    expect(row.revokeNonce).toEqual(expect.any(String));
+  });
   it("is nothing outside TEST-LOCAL or signed out", async () => {
     mocks.getUser.mockResolvedValueOnce({ data: { user: null } });
     expect(await preparePathBChoices()).toBeNull();
@@ -176,8 +213,15 @@ describe("the person's choices", () => {
     expect(html).toContain('data-slot="path-b-choices"');
     expect(text).toContain(COPY.heading);
     expect(text).toContain(COPY.detail);
-    expect(html.match(/data-slot="path-b-choice"/g)).toHaveLength(6);
-    expect(html.match(/role="note"/g)).toHaveLength(3);
+    // 6 rows and 3 closed-sharing notes until 20 November 2026; the Copilot row for the person who added the
+    // file (owner decision "G8.5: Copilot for another adult's record opens") is the seventh, closed like its
+    // three siblings while sharing with that person is closed.
+    expect(html.match(/data-slot="path-b-choice"/g)).toHaveLength(7);
+    expect(html.match(/role="note"/g)).toHaveLength(4);
+    expect(html.match(/data-slot="path-b-copilot"/g)).toHaveLength(1);
+    expect(html).toContain('data-purpose="copilot.local" data-direction="uploader"');
+    expect(html).not.toContain('data-purpose="copilot.local" data-direction="self"');
+    expect(text).toContain(COPY.copilotConsequence);
     expect(text).toContain(COPY.shareClosed);
     expect(text).toContain(`${COPY.turnOff}: ${COPY.layers.ancestry}, ${COPY.forYou.toLowerCase()}`);
     expect(text).toContain(COPY.affirmSelf);

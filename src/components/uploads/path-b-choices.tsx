@@ -7,7 +7,7 @@ import { route } from "@/lib/primary-routes";
 import { useCsrf } from "@/components/security/csrf-provider";
 import { Button } from "@/components/ui/button";
 import { PATH_B_CHOICES_COPY as COPY } from "@/copy/upload/other-adult";
-import { PATH_B_STATEMENTS, type PathBChoice, type PathBChoicesView } from "@/lib/uploads/path-b-purpose";
+import { PATH_B_STATEMENTS, type PathBChoice, type PathBChoicesView, type PathBPurpose } from "@/lib/uploads/path-b-purpose";
 
 /**
  * Path B's reading layer for the person a file was added for (TEST-LOCAL
@@ -15,6 +15,10 @@ import { PATH_B_STATEMENTS, type PathBChoice, type PathBChoicesView } from "@/li
  * person who added the file. Turning a row on signs its own approved text;
  * turning it off uses the ordinary revocation. A ready link names only the
  * person's explicitly granted and actually completed saved report layer.
+ * Since 20 November 2026 (owner decision "G8.5: Copilot for another adult's
+ * record opens") one more row, for the person who added the file only:
+ * Copilot, which lets that person's own local model read the report layers
+ * shared with them. It is signed and withdrawn like every other row.
  */
 function ChoiceRow({ subjectId, choice, open, onSaved }: {
   subjectId: string; choice: PathBChoice; open: boolean; onSaved: () => void;
@@ -25,7 +29,8 @@ function ChoiceRow({ subjectId, choice, open, onSaved }: {
   const inFlight = useRef(false);
   const revokeCsrf = useCsrf("api.consent-revoke"), grantCsrf = useCsrf("api.consents");
   const granted = choice.grantId !== null;
-  const layer = COPY.layers[choice.purpose];
+  const copilot = choice.purpose === "copilot.local";
+  const layer = choice.purpose === "copilot.local" ? COPY.copilotLabel : COPY.layers[choice.purpose];
   const who = choice.direction === "self" ? COPY.forYou : COPY.forThem;
 
   async function save() {
@@ -61,7 +66,7 @@ function ChoiceRow({ subjectId, choice, open, onSaved }: {
           <label className="rec-choice text-sm">
             <input type="checkbox" className="size-5 accent-forest" checked={affirmed} disabled={pending}
               aria-label={`${layer}: ${who}`} onChange={event => setAffirmed(event.target.checked)} />
-            <span>{choice.direction === "self" ? COPY.affirmSelf : COPY.affirmShare}</span>
+            <span>{copilot ? COPY.affirmCopilot : choice.direction === "self" ? COPY.affirmSelf : COPY.affirmShare}</span>
           </label>
         </>
       ) : null}
@@ -86,7 +91,7 @@ export function PathBChoices({ people }: { people: PathBChoicesView[] }) {
       {people.map(person => (
         <div key={person.subjectId} className="surface surface-pad-sm rec-stack">
           <p className="caption">{person.label}</p>
-          {(Object.keys(COPY.layers) as PathBChoice["purpose"][]).map(purpose => (
+          {(Object.keys(COPY.layers) as PathBPurpose[]).map(purpose => (
             <div key={purpose} className="rec-stack-sm">
               <h3 className="text-base font-medium">{COPY.layers[purpose]}</h3>
               {purpose !== "ancestry" && person.readGate?.[purpose] === "ready" ?
@@ -101,6 +106,19 @@ export function PathBChoices({ people }: { people: PathBChoicesView[] }) {
               </div>
             </div>
           ))}
+          {person.choices.some(choice => choice.purpose === "copilot.local") ? (
+            <div className="rec-stack-sm" data-slot="path-b-copilot">
+              <h3 className="text-base font-medium">{COPY.copilotLabel}</h3>
+              <p className="max-w-measure text-sm text-ink-muted">{COPY.copilotConsequence}</p>
+              <div className="grid gap-3 sm:grid-cols-2">
+                {person.choices.filter(choice => choice.purpose === "copilot.local").map(choice => (
+                  <ChoiceRow key={`${choice.direction}:${choice.grantId ?? choice.offer?.token ?? ""}`}
+                    subjectId={person.subjectId} choice={choice} open={person.shareOpen}
+                    onSaved={() => router.refresh()} />
+                ))}
+              </div>
+            </div>
+          ) : null}
         </div>
       ))}
     </section>

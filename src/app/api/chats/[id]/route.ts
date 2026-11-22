@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { readFamilyChatHistory } from '@/lib/copilot/family-chat';
 import { readCohortChatHistory } from '@/lib/copilot/cohort-chat';
 import { readOwnChatHistory } from '@/lib/copilot/own-chat';
+import { readSubjectChatHistory } from '@/lib/copilot/subject-chat';
 export async function GET(request: Request, context: {
     params: Promise<{
         id: string;
@@ -13,9 +14,11 @@ export async function GET(request: Request, context: {
         if (!z.uuid().safeParse(id).success || new URL(request.url).search)
             throw new Error('unavailable');
         // The own reader answers only self chats, the family reader only
-        // family group chats and the cohort reader only cohort chats; each
-        // resolves its own authority from the row.
-        const result = await readOwnChatHistory(id) ?? await readFamilyChatHistory(id) ?? await readCohortChatHistory(id);
+        // family group chats, the cohort reader only cohort chats and the
+        // subject reader only another adult's record's chats; each resolves
+        // its own authority from the row.
+        const result = await readOwnChatHistory(id) ?? await readFamilyChatHistory(id) ?? await readCohortChatHistory(id)
+            ?? await readSubjectChatHistory(id);
         if (!result)
             throw new Error('unavailable');
         return Response.json(result, { headers });

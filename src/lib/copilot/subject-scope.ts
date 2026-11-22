@@ -20,15 +20,19 @@ import type { SubjectSummary } from '@/lib/subjects';
  *   `trueNonSelfScopes`) on a runtime that is not a server-attested
  *   same-host local model. The page renders the registered
  *   `unavailablePageProjection` and nothing about the subject.
+ * - `uploader-or-grantee`: the same subject on a runtime that is one. Since
+ *   20 November 2026 (owner decision "G8.5: Copilot for another adult's
+ *   record opens") the page hands it to the one-record scope
+ *   (src/lib/copilot/subject-chat.ts), which mints a context token only
+ *   after the jurisdiction, the local model, the mitigation decision, the
+ *   person's own `copilot.local` grant for this relationship and at least one
+ *   shared report layer all pass, and answers 404 for every relationship it
+ *   does not confirm. A record another account holds as its own (the
+ *   grantee case) is not resolved here at all: the page asks that scope
+ *   directly.
  * - `refused`: every other subject the account resolves. No context token is
  *   minted, so the API can only answer resource-not-found-v1, and the page
  *   answers the copilot.scope parameter contract's resource-not-found-page-v1:
- *   - `adult-uploader-or-grantee` on a local runtime. Its authority is
- *     `copilot.local` signed by the adult subject principal for this recipient
- *     relationship, and no door writes that grant: `grant_path_b_purpose_v1`
- *     and `grant_purpose_rights_v1` refuse `copilot.local` ("no Path B Copilot
- *     scope"), and the Family door's `copilot.local` is read only by the Family
- *     group scope. Opening uploader access is the owner's decision.
  *   - `own-adult-subject`: an `other_adult` record the person holds
  *     themselves. The register has provider cases for it, but the own Copilot
  *     permission and authority (`grant_own_copilot_v1`,
@@ -46,7 +50,8 @@ import type { SubjectSummary } from '@/lib/subjects';
 export type CopilotSubjectScope =
   | { kind: 'own' }
   | { kind: 'true-non-self-unavailable' }
-  | { kind: 'refused'; case: 'adult-uploader-or-grantee' | 'own-adult-subject' | 'no-subject-case' | 'not-held' };
+  | { kind: 'uploader-or-grantee' }
+  | { kind: 'refused'; case: 'own-adult-subject' | 'no-subject-case' | 'not-held' };
 
 export function copilotSubjectScope(accountId: string, subject: Pick<SubjectSummary, 'subjectClass' | 'subjectAccountId'>,
   localTransportAvailable: boolean): CopilotSubjectScope {
@@ -54,7 +59,7 @@ export function copilotSubjectScope(accountId: string, subject: Pick<SubjectSumm
   if (subject.subjectClass === 'self') return held ? { kind: 'own' } : { kind: 'refused', case: 'not-held' };
   if (subject.subjectClass === 'other_adult') {
     if (held) return { kind: 'refused', case: 'own-adult-subject' };
-    return localTransportAvailable ? { kind: 'refused', case: 'adult-uploader-or-grantee' } : { kind: 'true-non-self-unavailable' };
+    return localTransportAvailable ? { kind: 'uploader-or-grantee' } : { kind: 'true-non-self-unavailable' };
   }
   return { kind: 'refused', case: 'no-subject-case' };
 }

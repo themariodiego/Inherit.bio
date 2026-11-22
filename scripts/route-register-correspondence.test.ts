@@ -1519,7 +1519,11 @@ const CLIENT_FORM_REVIEW: ClientFormReview[] = [
   // is re-reviewed after it gained the ChatProviderInfo type the retired panel
   // exported: still one actionless form whose onSubmit handler cancels native
   // submission before anything is sent, the same composer and target, api.chat.
-  { file: "src/components/chat/own-chat-panel.tsx", forms: 1, sha256: "9aef9697d1654b86d7565796b8ca50e59d19e3f96c45df77501e6079b1e53738" },
+  // G8.5 (2026-11-20, Copilot for another adult's record): re-reviewed after the
+  // panel's scope kind and its history check admit "subject" beside "self",
+  // "family" and "cohort" (was 9aef9697…). The form, its handler, preventDefault,
+  // target, headers and body are unchanged.
+  { file: "src/components/chat/own-chat-panel.tsx", forms: 1, sha256: "ccced9a6326ca35bffeaadbd6d2abb306927fa697d7f72e5d61da4d3d008d4d2" },
   { file: "src/components/embryo/co-parent-review-form.tsx", forms: 1, sha256: "3d53c662bcf1d25f9c27b7658a5495c981e8e5cf8d0669494a29542dd1495b16" },
   { file: "src/components/embryo/invitation-refusal-form.tsx", forms: 1, sha256: "03e69daa6adbc9d39d555015d2b3a328fb42cddc2a5d6f16cbe48076bb5a0338" },
   // G5.6 (2026-10-23): both re-reviewed after their request gained the page's

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { OwnChatPanel } from "@/components/chat/own-chat-panel";
 import { CohortCopilotPage, FamilyCopilotPage, LocalTransportUnavailable } from "@/components/chat/group-scope-pages";
+import { SubjectCopilotPage } from "@/components/chat/subject-scope-page";
 import { Breadcrumbs } from "@/components/site/breadcrumbs";
 import { EmptyState } from "@/components/site/empty-state";
 import { Button } from "@/components/ui/button";
@@ -41,15 +42,23 @@ export default async function ChatPage(
     return <CohortCopilotPage cohortId={routeScope.id} gate={<EmbryoResultGate />} />;
   }
   const subject = await resolveSubjectForAccount(user.id, scope);
-  if (!subject) notFound();
+  // A record another account holds as its own: the one-record scope decides
+  // whether the asker is its grantee (a person on their Family pages), and
+  // answers everything else with the same 404 as an unknown segment.
+  if (!subject) {
+    if (routeScope.kind !== "subject") notFound();
+    return <SubjectCopilotPage subjectId={routeScope.id} />;
+  }
   // copilot-transport-availability-v1 classifies the resolved subject as own
-  // or true non-self; only an own self subject reaches a context token
-  // (src/lib/copilot/subject-scope.ts). A true non-self subject on a runtime
-  // with no attested same-host model gets the registered unavailable page,
-  // which names nothing about the subject; every other subject is the same
+  // or true non-self (src/lib/copilot/subject-scope.ts). A true non-self
+  // subject on a runtime with no attested same-host model gets the registered
+  // unavailable page, which names nothing about the subject; on one that has
+  // it, the one-record scope (G8.5, 20 November 2026). Only an own self
+  // subject reaches the own chat; every other subject is the same
   // non-enumerating 404 as an unknown segment.
   const subjectScope = copilotSubjectScope(user.id, subject, modelRuntime().localAllowed);
   if (subjectScope.kind === "true-non-self-unavailable") return <LocalTransportUnavailable />;
+  if (subjectScope.kind === "uploader-or-grantee") return <SubjectCopilotPage subjectId={subject.id} />;
   if (subjectScope.kind !== "own") notFound();
   const ownChat = await prepareOwnCopilotChat(subject.id);
   // Crumbs say where this is (round-2 M8): the record, then the page by its

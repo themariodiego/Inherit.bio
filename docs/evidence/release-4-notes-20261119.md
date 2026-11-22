@@ -639,3 +639,75 @@ The `alter table` takes ACCESS EXCLUSIVE on `private.invitation_terminal_notices
 ## What a person sees
 
 Only in test mode. No page changes. An adult who accepts through an account created after the invitation gets, 72 hours later, the email "Did you accept an invitation on Inherit?"; every adult who accepted through an account gets, 30 days after acceptance, "You can still change your mind on Inherit". Until the first is accepted by the provider, the uploader's sharing stays closed ("Sharing with the person who added your file is not open yet." on the person's choices, as before) and nothing is analysed; from 30 days until the second is accepted, the uploader sees nothing more. The wording of both emails is a draft for the owner (`src/copy/upload/other-adult-acceptance-notices.ts`).
+
+# Release notes: `20261120130000_subject_copilot_scope.sql`
+
+Local work only. Nothing here was run against production or any hosted database. Owner decision of 19 November 2026, "G8.5: Copilot for another adult's record opens" (`docs/protocol/decisions.md`): the self-hosted part, as the register describes it (`policyResolvers.scope-derived-v1.cases.subject:adult.principalRelationshipCases.uploader-or-grantee`). The cloud path is not built: `cloudProvider` stays `absolute-deny` and every hosted runtime renders the registered unavailable page. Nothing in this release opens in production: the scope runs only on a server-attested same-host local model (`copilot-transport-availability-v1`), which no hosted runtime is, and it needs `third_party_adult_analysis`, which no real jurisdiction permits; Path B, whose grant door it widens, is test-mode only.
+
+## What it changes
+
+- Six new functions, all `security definer`, `search_path=''`:
+  - `private.subject_copilot_uploader_grant_v1(uuid,text,uuid,uuid,bigint,bigint,uuid,uuid,uuid,bigint)`, stable, `{postgres=X/postgres}`: one exact current grant of `copilot.local`, `reports.monogenic` or `reports.polygenic` from a Path B person to the uploader: signer and data subject the person's own current principal, signature theirs at the record's binding and their jurisdiction revision, current hash-verified `consent.share-with-adult`, direction to this recipient over this exact `uploader` relationship and revision.
+  - `private.subject_copilot_authority_v1(uuid,uuid,uuid)`, `{postgres=X/postgres}`, and its service door `public.subject_copilot_scope_v1(uuid,uuid,uuid)`, `{postgres=X/postgres,service_role=X/postgres}`: the scope for one record, `ready` (with the exact authority a turn is bound to), `held`, `permission-missing`, or 42501 `not_found`. Grantee (another account's own `self` record): the Family recipient endpoints (no pause, the current `family_member` relationship), that person's `copilot.local` to the asker (`private.family_copilot_directional_grant_v1`, unchanged), then each report layer through `private.family_report_recipient_v1` (canonical only). Uploader (a confirmed Path B `other_adult` record the asker owns and its person holds with their own account): `private.other_adult_mitigation_v1` at `model-context-before-retrieval` first (anything but `allow` is `held`, or not found for the decision's own not-found), then the person's `copilot.local`, then each layer whose `private.path_b_result_read_v1` is ready, with its grant. No ancestry or variant projection.
+  - `private.subject_copilot_prune_v1(uuid,uuid)`, `{postgres=X/postgres}`: deletes a conversation's first ended turn and its suffix (`private.family_copilot_turn_state_v1`, unchanged); a conversation is unreadable while a pause stands or, for an `other_adult` record, while the mitigation decision at `derived-write-and-read` is not `allow`, with nothing deleted.
+  - `public.subject_copilot_chat_v1(text,uuid,uuid,uuid,uuid,jsonb)`, `{postgres=X/postgres,service_role=X/postgres}`: `check`, `list`, `history`, `commit`, modelled on `public.family_copilot_chat_v1`. A conversation is a `chats` row with `scope_kind 'subject'`, the record's id and `canonical_authority.scope 'subject-adult'` (with its relationship and provider); the asker's provider must be `local` and their exact current Copilot authority; the page's context token is single use; every turn pair carries `retrieved_subject_ids [record]`, `retrieved_purpose_keys` (`copilot.local` and each layer read) and one `copilot_turn_dependencies` row per record, grant and source; citations are the Family group scope's closed set.
+  - `private.purge_subject_copilot_chats_v1()`, `{postgres=X/postgres}`, and trigger `purge_subject_copilot_chats` (after update of lifecycle on `public.subjects`, an `other_adult` record turning `purged`): every account's turns that read the record go through `private.delete_pair_derived_rows_v1`, then the record's subject conversations are deleted whole.
+- One body patched in place, md5-guarded, one anchor, successor md5 and unchanged ACL, volatility and owner asserted: `private.grant_path_b_purpose_v1` (`9489db2b7f1295f4d1ec114b6c40402a` → `31c75e79e6660f3ab92d2e640fca693f`, `{postgres=X/postgres,service_role=X/postgres}`): `copilot.local` is accepted, in the `uploader` direction only. Everything else of the door (the person's own session and principal, the mitigation decision at `purpose-grant-create`, the one-time presentation, `consent.share-with-adult` and its four statements, the superseding of an older pair) is unchanged; its public wrapper queues no report job for it. It is withdrawn by the existing `revoke_directional_purpose_with_nonce_v1`.
+- Pinned, not changed: `private.other_adult_mitigation_v1` (`c5d5145da3cd9d178ebc87ea6c19702a`), `private.family_copilot_directional_grant_v1` (`b3a2114bf265870a2fad94337087d733`), `private.family_copilot_turn_state_v1` (`ecaa3458595f82351127ec80e26cd4c2`), `private.family_report_recipient_v1` (`692a52e391045b96addc465c8afbce0e`), `private.family_report_endpoints_v1` (`70683c77cef0f00c9803414a394fbd64`), `private.path_b_result_read_v1` (`d39c35dab17636d453a18f41bde4ede4`), `private.delete_pair_derived_rows_v1` (`8a094ce1d0a7ff92e00260204008dc07`), and `chats_scope_target_check` (`62a1bbb1b82b05d2e9267e691f28cf99`), which already admits a `subject` chat with its record and no other target.
+- No table, column, constraint or grant on an existing object changes. Fingerprint effect: 6 more rows in `functions`, 1 `def_md5` changes, 1 trigger added on `public.subjects`.
+
+## Which releases must come first
+
+1. Release 1 for the Family group scope (`20260929140000`) and Path B's reading layer and saved reports (`20260930220000`, `20260930236000`); release 2 for the subject delete (`20261016181000`) and transfer (`20261016221000`).
+2. `20261120120000` (D-141) in this release: the uploader case reads the mitigation decision as it leaves it; without it every uploader of an account created after the request stays held.
+3. This migration. It does not touch the objects of `20261120100000` or `20261120110000`. Locally it was applied forward to the shared database after `20261120110000`, which had not been applied there; that one was applied forward first, in file order, and recorded.
+
+## Read-only pre-checks (one SELECT; the release session and its `search_path`)
+
+Stop unless every `must_be_*` holds.
+
+```sql
+select
+ (select count(distinct x.signature) from pg_proc p join (values
+   ('private.grant_path_b_purpose_v1(uuid,uuid,uuid,text,text,integer,text,text,timestamptz,boolean)','9489db2b7f1295f4d1ec114b6c40402a','{postgres=X/postgres,service_role=X/postgres}'),
+   ('private.other_adult_mitigation_v1(uuid,uuid,text)','c5d5145da3cd9d178ebc87ea6c19702a','{postgres=X/postgres}'),
+   ('private.family_copilot_directional_grant_v1(uuid,uuid,uuid,jsonb,text)','b3a2114bf265870a2fad94337087d733','{postgres=X/postgres}'),
+   ('private.family_copilot_turn_state_v1(uuid,uuid,uuid)','ecaa3458595f82351127ec80e26cd4c2','{postgres=X/postgres}'),
+   ('private.family_report_recipient_v1(uuid,uuid,uuid,text)','692a52e391045b96addc465c8afbce0e','{postgres=X/postgres}'),
+   ('private.family_report_endpoints_v1(uuid,uuid,uuid,boolean)','70683c77cef0f00c9803414a394fbd64','{postgres=X/postgres}'),
+   ('private.path_b_result_read_v1(uuid,uuid,text)','d39c35dab17636d453a18f41bde4ede4','{postgres=X/postgres}'),
+   ('private.delete_pair_derived_rows_v1(uuid[],uuid,uuid[],text)','8a094ce1d0a7ff92e00260204008dc07','{postgres=X/postgres,service_role=X/postgres}')
+  ) as x(signature,body,acl) on p.oid=to_regprocedure(x.signature) and md5(pg_get_functiondef(p.oid))=x.body
+   and p.proacl::text=x.acl) as must_be_8_bodies_as_reviewed,
+ (select md5(pg_get_constraintdef(c.oid)) from pg_constraint c where c.conrelid='public.chats'::regclass
+   and c.conname='chats_scope_target_check' and c.contype='c' and c.convalidated)
+   ='62a1bbb1b82b05d2e9267e691f28cf99' as must_be_true_chat_target_check_as_reviewed,
+ (select count(*) from pg_proc where proname in ('subject_copilot_uploader_grant_v1','subject_copilot_authority_v1',
+   'subject_copilot_scope_v1','subject_copilot_prune_v1','subject_copilot_chat_v1','purge_subject_copilot_chats_v1'))
+   as must_be_zero_new_functions_present,
+ (select count(*) from pg_trigger where tgrelid='public.subjects'::regclass and tgname='purge_subject_copilot_chats')
+   as must_be_zero_purge_trigger,
+ (select count(*) from public.chats where scope_kind='subject') as context_subject_chats,
+ (select count(*) from public.purpose_grants where purpose='copilot.local' and revoked_at is null) as context_live_copilot_local_grants,
+ current_user as context_current_user,
+ current_setting('search_path') as context_search_path;
+```
+
+Locally, in the predecessor state rebuilt inside a rolled-back transaction (this migration's objects dropped and the patched body restored), every `must_be_*` held; the patched body's predecessor and successor md5s and the two Family helpers' md5s are also recomputed from source by `scripts/subject-copilot-scope-migration.test.ts`. `context_subject_chats` is expected to be 0 in production (no code before this release writes a `subject` chat), and `context_live_copilot_local_grants` 0 too (no real jurisdiction lets anyone sign one).
+
+## Locks and duration
+
+`create trigger` takes SHARE ROW EXCLUSIVE on `public.subjects`; everything else is catalog work, and the patch replaces one function body. Measured locally inside a rolled-back transaction that first rebuilt the predecessor state: about 16 ms, the predecessor checks included.
+
+## Deployed code between apply and deploy
+
+- **Migration applied, code not yet deployed.** The deployed code calls none of the new doors. The Path B grant door accepts `copilot.local` for the uploader direction, but the deployed body schema and presentation refuse that purpose before the database, so nothing can write one. The trigger runs on every purge of an `other_adult` record and finds no subject conversation to delete. Nothing opens early.
+- **Code deployed, migration not yet applied.** On a self-hosted local-model deployment under the test jurisdiction, the one-record page calls `subject_copilot_scope_v1`; PostgREST answers that it does not exist, and the page answers the same 404 as for no relationship; the Family person page and the Files page show no Copilot link (their probe fails closed). The Path B choices list a Copilot row whose turning on the database refuses (`22023 invalid_request`, answered 422; nothing is written). No token is minted, so the chat route reads nothing. On the hosted service every one of these pages renders the registered unavailable page, or no link, before any of this is read. Nothing opens early.
+
+## What a person sees
+
+Only on a self-hosted install with a local model and the test jurisdiction. A person who shares with someone on the Family pages sees no new wording: the "Copilot" row's consequence was already "They can ask Copilot about the reports you share, on a model that runs on their own computer."; turning it on with at least one report type now lets that person's Copilot answer about them, with no Health picture needed. The person who receives the share sees "Ask Copilot about {name}" on that person's Family page and a page headed "Ask about {name}" whose answers name whose results they used. A Path B person sees one more choice, "Copilot", for the person who added their file; that person sees "Ask Copilot about {name}" beside the shared reports on Files. Every new string is a draft for the owner. On the hosted service nothing changes: the same address shows "Copilot for other people is not open here".
+
+## Browser runs (local, this container)
+
+`e2e/copilot-subject.spec.ts` (6 tests) against one production build, on the `copilot-local` project (port 3103) and, for its hosted check, the main variant (port 3100): 6 of 6 passed. The canonical fixture daemon runs only in the isolated CI container (its TLS face listens on a container-only address); here a host-loopback stand-in started the same reviewed provider (`e2e/fixtures/canonical-copilot-provider.ts`, unchanged) on plain `127.0.0.1:8127` and answered the daemon's control protocol on `127.0.0.1:8130`. No CI flag was set and no network configuration changed. With it, on the same build: `copilot-family`, `copilot-cohort`, `copilot-redteam`, `copilot-group-scopes`, `copilot-scope-states`, `copilot-group-scopes.nojurisdiction`, `genome-family.nojurisdiction` and `family`, 100 of 100 in all; and the three Path B journeys of `other-adult-upload.spec.ts` that reach the person's choices, 3 of 3. No browser test ran the uploader case: its fixtures live inside `e2e/other-adult-upload.spec.ts` and drive the global Path B workers; `supabase/tests/subject_copilot_path_b.sql` drives it through the same database doors.
