@@ -787,3 +787,83 @@ The owner's approval of the five notices' wording and of the card's hand-over wo
 ## Browser runs (local, this container)
 
 `e2e/other-adult-upload-withdrawal.spec.ts` (2 tests) against one production build of this change, with this migration applied forward to the shared local database (the switch closed): 2 of 2 passed ("E2E contract passed: 2 result(s), no skips, no retries"; 3 browser uploads crossed the provider proxy). The second test is the closed branch: on a record its person holds with their own account the card shows the same sentence and offers no request, and nothing changes. No browser test runs the opened branch: the switch opens only by a migration; `supabase/tests/uploader_withdrawal_hand_over.sql` opens it inside its own rolled-back transaction.
+
+# Release notes: `20261122110000_adult_acceptance_inviter_reads.sql`
+
+Local work only. Nothing here was run against production or any hosted database. D-156 (`docs/protocol/defects.md`), owner decision of 22 November 2026, "The 72-hour hold covers an inviter's reads of the invited adult's own record" (`docs/protocol/decisions.md`): until 72 hours have passed and the second notice has been accepted by the mail provider, and from 30 days until the reminder has been accepted, the inviter sees nothing the new adult shares with them, through every Family reader and Copilot; the adult's own use of their record is not held. Path A's own-account acceptance is reached only under the test jurisdiction, and every Family read of another adult needs `third_party_adult_analysis`, which no real jurisdiction permits: in production no acceptance clock exists and no reader meets one.
+
+## What it changes
+
+- Two new functions, both `security definer`, stable, `search_path=''`:
+  - `private.adult_acceptance_inviter_held_v1(uuid,uuid)`, `{postgres=X/postgres}`: the one question. True only when the subject is another account's `self` record, the reader is the inviter (`subject_invitations.inviter_principal_id`) of an accepted `adult_subject` invitation whose `other_adult` record that account holds and has no draft (Path A; a Path B record keeps its confirmed draft), and that acceptance's clocks, read through `private.adult_acceptance_clock_state_v1`, hold it: an account recorded as created from the invitation until 72 hours after acceptance and until the second notice's provider acceptance; every account acceptance from 30 days until the reminder's. An acceptance with no clock (recorded before `20261120120000`) keeps the creation-time comparison `other-adult-mitigation-state-v1` keeps for it and is never released. A notice that ended unsent (failed or cancelled phase) never releases. The adult themselves, any other grantee and the inviter reading anyone else's record are never held.
+  - `public.adult_acceptance_inviter_held_subjects_v1(uuid,uuid[])`, `{postgres=X/postgres,service_role=X/postgres}`: of up to 1,000 named records, the ones the account reads as not shared now (22023 `invalid_request` for a missing account or a longer list). No reason is returned.
+- Five bodies patched in place, md5-guarded with their reviewed ACL, one anchor each, successor md5, unchanged ACL, volatility and owner asserted; each adds one call to the question at the reader's existing grant checkpoint and answers exactly as with no grant:
+  - `private.family_report_recipient_v1` (`692a52e391045b96addc465c8afbce0e` → `5e36eec0ee7f83911fd0966730081145`): 42501 `not_found`. Through it: `public.family_shared_report_results_v1`, `public.confirm_family_shared_report_results_v1`, `public.confirm_family_shared_readiness_v1`, the Family group Copilot's members (`private.family_copilot_member_v1`, so `public.family_copilot_scope_v1` and every `family_copilot_chat_v1` check and commit) and the one-record Copilot's grantee layers (`private.subject_copilot_authority_v1`, which then answers `permission-missing`).
+  - `private.family_ancestry_recipient_v1` (`5d379a615e41ef4a05ce84f1c8455d51` → `9ba008dab0144ba55a6ac57fb68f7172`): 42501 `not_found` (the shared ancestry read and its confirmation).
+  - `private.health_picture_direction_v1` (`5433a806e2f7ff6319dd2989a677b130` → `d496bc699608053982ded60110a64628`): 42501 `not_found` for the viewer's own inbound direction only (`p_account=p_viewer`), so the adult's own Health picture beside the inviter is never held. Through it: `private.health_picture_context_v1`, `public.health_picture_results_v1`, `public.confirm_health_picture_results_v1`.
+  - `private.family_portrait_authority_v1` (`1ff3da517b6bc473985e8fd3e073bcaa` → `437d6400ed4b83a6cb1da08be2195abf`): null, asked about the reader's counterpart only, so the adult's own view of the pair is never held. Through it: `public.family_portrait_navigation_v1`, `public.family_portrait_source_readiness_v1`, `public.family_portrait_carrier_calls_v1`, `private.export_subject_portrait_rows_v1`.
+  - `private.family_copilot_turn_state_v1` (`ecaa3458595f82351127ec80e26cd4c2` → `3ed921e9d872a5c557389a126a1af7ff`, still STABLE): a turn that read the held record reads `paused`, as during a pause: the Family group and one-record conversations are unreadable and unlisted, nothing is deleted, and the subject export leaves those turns out.
+- Pinned, not changed: `private.adult_acceptance_clock_state_v1` (`6f566115c807f64e1c2a9413f2669fe1`). `private.family_source_*` take no reader (the data subject's own authority over their own source) and are reached only through the recipients above.
+- Application code, same change: the Family graph (`src/lib/family/graph.ts`) asks the door once per read for the records that share with the viewer and leaves their grants out before anything is decided, so every page built on it (the Family hub, person and permissions pages, Health picture, the overview, `/genome/s-…` including the raw-browse pages, which read through the graph alone) shows what it shows when nothing is shared; the Portrait page's own pair read (`src/lib/family/portrait.ts`) asks the same for the other person's grant. Either fails closed: an unanswered question reads every record that shares with the viewer as not shared.
+- No table, column, constraint, trigger, grant on an existing object, queue, job or wording changes. Fingerprint effect: 2 more rows in `functions`, 5 `def_md5` values change; `tables` unchanged.
+
+## Which releases must come first
+
+1. Release 1 for the Family readers it patches (`20260907124212`, `20260907153506`, `20260915120846`, `20260923101135`, `20260929140000`).
+2. `20261120120000` (D-141) in this release: the clocks the question reads. `20261120130000` in this release: it pins the report recipient and the turn state at the md5s this migration starts from, so it must run first (its own pre-check would refuse after this one).
+3. This migration. It does not touch the objects of `20261122100000` (another change of the same day: the transfer, the other-adult withdrawal door, the subject delete and the one-record Copilot purge); locally it was applied forward after that one, which another session had already applied, and recorded.
+
+## Read-only pre-checks (one SELECT; the release session and its `search_path`)
+
+Stop unless every `must_be_*` holds.
+
+```sql
+select
+ (select count(distinct x.signature) from pg_proc p join (values
+   ('private.family_report_recipient_v1(uuid,uuid,uuid,text)','692a52e391045b96addc465c8afbce0e'),
+   ('private.family_ancestry_recipient_v1(uuid,uuid,uuid,text)','5d379a615e41ef4a05ce84f1c8455d51'),
+   ('private.health_picture_direction_v1(uuid,uuid,uuid,uuid,text)','5433a806e2f7ff6319dd2989a677b130'),
+   ('private.family_portrait_authority_v1(uuid,uuid,uuid,uuid)','1ff3da517b6bc473985e8fd3e073bcaa'),
+   ('private.family_copilot_turn_state_v1(uuid,uuid,uuid)','ecaa3458595f82351127ec80e26cd4c2'),
+   ('private.adult_acceptance_clock_state_v1(uuid)','6f566115c807f64e1c2a9413f2669fe1')
+  ) as x(signature,body) on p.oid=to_regprocedure(x.signature) and md5(pg_get_functiondef(p.oid))=x.body
+   and p.proacl::text='{postgres=X/postgres}') as must_be_6_bodies_as_reviewed,
+ (select count(*) from pg_proc where proname in ('adult_acceptance_inviter_held_v1','adult_acceptance_inviter_held_subjects_v1'))
+   as must_be_zero_new_functions_present,
+ (select count(*) from public.subject_invitations i where i.invitation_kind='adult_subject' and i.status='accepted'
+   and not exists(select 1 from public.adult_subject_drafts d where d.subject_id=i.target_id)) as context_accepted_path_a_invitations,
+ (select count(*) from public.directional_grants where status='current' and direction='subject_to_recipient')
+   as context_current_person_to_person_grants,
+ current_user as context_current_user,
+ current_setting('search_path') as context_search_path;
+```
+
+Locally, before the forward apply and again in the predecessor state rebuilt inside a rolled-back transaction (each patch reversed to its predecessor md5, the two functions dropped), every `must_be_*` held (6, 0; the shared database's context was 8 and 12). The six md5s are also recomputed from source by `scripts/adult-acceptance-inviter-reads-migration.test.ts`. No pinned header prints a `public` type. Both `context_*` counts are expected to be 0 in production; a non-zero `context_accepted_path_a_invitations` means acceptances exist whose inviters the question now asks about, under the rules above.
+
+## Locks and duration
+
+Catalog work only: two `create function` and five `create or replace function` (each takes a lock on its own `pg_proc` row); no table is locked or scanned. Measured locally inside a rolled-back transaction: about 30 ms, the pre-checks included.
+
+## Deployed code between apply and deploy
+
+- **Migration applied, code not yet deployed.** Every database reader answers a held inviter as with no grant. The deployed Family graph does not ask, so on a test-jurisdiction deployment the held inviter sees the adult's grants as on: the person page then gets `not_found` from the report read and answers the 404 page (not the "has not shared anything with you yet" state), Health picture and Portrait answer their unavailable or 404 states, both Copilot pages answer as with nothing shared, the permissions page shows the adult's rows as On, and the raw-browse pages (`/genome/s-…/data`, `/data/browser`), which the graph alone gates, still open the adult's variants. Nothing changes in production, where no acceptance clock exists.
+- **Code deployed, migration not yet applied.** The graph and the Portrait read call `adult_acceptance_inviter_held_subjects_v1` only when some record shares with the viewer; PostgREST answers that it does not exist, and both read every record that shares with that viewer as not shared, everyone's, not only an invitee's, while the old database readers answer as before: both Copilot scopes (which take their members from the database) still read a held invitee's reports on a self-hosted local-model deployment. In production no record shares with anyone (no jurisdiction permits it), so no call is made and nothing changes.
+- Both windows are closed by applying the migration and deploying the code together; neither opens anything in production.
+
+## What a person sees
+
+Only in test mode. No new wording: during the hold, and from 30 days until the reminder is accepted, the inviter sees on each surface exactly what it shows when the adult shares nothing, and the adult sees no change at all.
+
+- `/family`: the adult's card reads "Waiting for {name} to share".
+- `/family/s-{record}`: "{name} has not shared anything with you yet. You will see nothing here until they do." (`data-state="empty"`), and no "Ask Copilot about {name}" link.
+- `/family/s-{record}/permissions`: every row of the adult's column reads Off; the inviter's own column is unchanged.
+- `/genome/s-{record}`, its reports, report, ancestry, carrier, data and data browser pages: the not-found page, as for a person who shares none of the page's purposes.
+- `/family/health-picture` and the overview: the adult is not a column ("This page needs two people who have both agreed to be seen side by side. So far there is 1." when no one else is).
+- `/family/portrait/{pair}`: "Portrait is waiting for {name}" with "{name} has not: turned on Portrait from their own account".
+- `/copilot/family`: the adult is not under "Who Copilot can read" ("No one has let Copilot read what they share with you." when no one else is); `/copilot/s-{record}`: "{name} has not let Copilot read what they share with you." and "Only {name} can turn this on. They need Copilot and at least one report type on for you."; an earlier conversation that read the adult is not listed and its history answers 404, and returns whole once the reminder is accepted.
+
+Those sentences say the adult has not shared, which is not so during the hold; that is what "reads exactly as nothing shared" requires, and the owner may want to see it. When the clock clears, the next read shows what the adult shares: no job, queue or other step is needed.
+
+## Browser runs (local, this container)
+
+One production build of this change (test jurisdiction on), served by the standard runner (`scripts/run-upload-browser.mts --full`, the real Storage provider proxy) on the shared local database with this migration applied. `e2e/family.spec.ts`, whose Path A journey's invited adult has an account created before the invitation (no hold, and well inside 30 days), 13 of 13; `e2e/family-health-picture.spec.ts` 15 of 15; `e2e/portrait-no-file.spec.ts` (the Portrait pair read) 3 of 3; each "E2E contract passed … no skips, no retries". A first run of all three specs in one invocation passed `portrait-no-file` and the first four `family` tests, then stopped `family` and `family-health-picture` at the same early step: the invited adult's mailed review link answered "This link is unavailable. It may have expired or already been used." on `/withdraw/request`, before the acceptance and before anything this change reads. Both passed whole when run again, each on its own; the cause of that first refusal was not found. No browser journey drives the hold itself: a held acceptance needs an account created after the invitation and its clocks aged by 72 hours or 30 days, which `supabase/tests/adult_acceptance_inviter_reads.sql` does through the same database doors and `src/lib/family/graph-read.test.ts` checks on the application side.

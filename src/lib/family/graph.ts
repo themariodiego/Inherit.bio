@@ -26,6 +26,12 @@ import type { SubjectSummary } from "@/lib/subjects";
  *       accounts, so a person whose invitation row is gone but whose grant
  *       is live is still reachable.
  *
+ * A grant to the viewer from a record whose adult the viewer invited is read
+ * as not shared while that acceptance's 72-hour hold or due reminder stands
+ * (D-156, owner decision of 22 November 2026): the database answers which
+ * records, and the graph leaves their grants out, so every page built on it
+ * shows exactly what it shows when nothing is shared.
+ *
  * `minor` records are excluded everywhere (X2.3; design §2.7): a minor is
  * never listed, never resolved and never linked, so a `minor` segment is a
  * 404 like any unknown one.
@@ -109,6 +115,12 @@ export interface FamilyGraphRows {
   grants: readonly FamilyGrantRow[];
   /** Accounts with a current pause between them and the viewer. */
   pausedWithAccountIds: readonly string[];
+  /**
+   * Records whose grants to the viewer read as not shared right now: the
+   * viewer invited their adult, whose acceptance hold or due reminder stands
+   * (D-156, owner decision of 22 November 2026).
+   */
+  heldSharedSubjectIds: readonly string[];
 }
 
 const ACTIVE_LIFECYCLES = new Set(["active", "claimed_bound"]);
@@ -170,6 +182,13 @@ interface Candidate {
  */
 export function buildFamilyPeople(rows: FamilyGraphRows): FamilyPerson[] {
   const viewer = rows.viewerAccountId;
+  // A grant from a record the viewer reads as not shared (D-156) is left out
+  // before anything else is decided, so every page reads it exactly as if it
+  // did not exist. Grants the viewer gave are never held.
+  const held = new Set(rows.heldSharedSubjectIds);
+  const grants = rows.grants.filter(
+    (grant) => !(grant.recipientAccountId === viewer && held.has(grant.dataSubjectId)),
+  );
   const byId = new Map<string, FamilySubjectRow>();
   const selfByAccount = new Map<string, FamilySubjectRow>();
   for (const subject of rows.subjects) {
@@ -234,7 +253,7 @@ export function buildFamilyPeople(rows: FamilyGraphRows): FamilyPerson[] {
 
   // (c) Live grants in either direction, for a counterpart the two sources
   // above did not name.
-  for (const grant of rows.grants) {
+  for (const grant of grants) {
     const counterpart =
       grant.recipientAccountId === viewer
         ? grant.granterAccountId
@@ -264,7 +283,7 @@ export function buildFamilyPeople(rows: FamilyGraphRows): FamilyPerson[] {
     if (!usable(counterpartSelf)) continue;
     const grantsToViewer = new Set<Purpose>();
     const grantsFromViewer = new Set<Purpose>();
-    for (const grant of rows.grants) {
+    for (const grant of grants) {
       if (
         grant.granterAccountId === candidate.counterpartAccountId &&
         grant.recipientAccountId === viewer
@@ -308,6 +327,38 @@ export function familySegmentId(segment: string): string | null {
 
 function unique(values: readonly (string | null | undefined)[]): string[] {
   return [...new Set(values.filter((value): value is string => Boolean(value)))];
+}
+
+export type HeldSharedSubjectsRpc = (
+  name: "adult_acceptance_inviter_held_subjects_v1",
+  args: { p_account_id: string; p_subject_ids: string[] },
+) => PromiseLike<{ data: unknown; error: unknown }>;
+
+/**
+ * Of the records that share something with this account, the ones it reads
+ * as not shared right now (D-156, owner decision of 22 November 2026): the
+ * database's one question (`private.adult_acceptance_inviter_held_v1`),
+ * asked once per graph read. No reason comes back. A failed or unexpected
+ * answer reads every one of them as not shared, never as shared.
+ */
+export async function readHeldSharedSubjects(
+  rpc: HeldSharedSubjectsRpc,
+  accountId: string,
+  subjectIds: readonly string[],
+): Promise<string[]> {
+  if (subjectIds.length === 0) return [];
+  try {
+    const { data, error } = await rpc("adult_acceptance_inviter_held_subjects_v1", {
+      p_account_id: accountId,
+      p_subject_ids: [...subjectIds],
+    });
+    if (error || !Array.isArray(data)) return [...subjectIds];
+    const held = data.filter((id): id is string => typeof id === "string");
+    if (held.length !== data.length || held.some((id) => !subjectIds.includes(id))) return [...subjectIds];
+    return held;
+  } catch {
+    return [...subjectIds];
+  }
 }
 
 /** Reads every row the graph needs for one account, then builds the people. */
@@ -367,6 +418,14 @@ export async function readFamilyGraphRows(accountId: string): Promise<FamilyGrap
           .or(`expires_at.is.null,expires_at.gt.${now}`)
       : { data: [] as never[] },
   ]);
+
+  // The records that share with this account and that it reads as not shared
+  // now (D-156); buildFamilyPeople leaves their grants out.
+  const heldSharedSubjectIds = await readHeldSharedSubjects(
+    admin.rpc.bind(admin) as unknown as HeldSharedSubjectsRpc,
+    accountId,
+    unique((toMeBase ?? []).map((row) => row.target_id)),
+  );
 
   const fromMeIds = (fromMeBase ?? []).map((row) => row.grant_id);
   const { data: fromMeDirections } = fromMeIds.length
@@ -526,6 +585,7 @@ export async function readFamilyGraphRows(accountId: string): Promise<FamilyGrap
     invitations,
     grants,
     pausedWithAccountIds,
+    heldSharedSubjectIds,
   };
 }
 
