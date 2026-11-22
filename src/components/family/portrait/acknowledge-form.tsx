@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useCsrf } from "@/components/security/csrf-provider";
 import { Button } from "@/components/ui/button";
 import {
   ACKNOWLEDGE_BUTTON,
@@ -26,12 +27,16 @@ import {
 export function AcknowledgeForm({
   subjectId,
   consentsHref,
+  operationNonce,
 }: {
   /** The viewer's own subject in the pair, server-derived. */
   subjectId: string;
   consentsHref: string;
+  /** The one-time nonce the page rendered for this acknowledgement (G5.6, 23 Oct 2026). */
+  operationNonce: string;
 }) {
   const router = useRouter();
+  const csrf = useCsrf("api.family-acknowledge");
   const [read, setRead] = useState(false);
   const [pending, setPending] = useState(false);
   const [failed, setFailed] = useState(false);
@@ -39,6 +44,7 @@ export function AcknowledgeForm({
   return (
     <section
       data-slot="portrait-acknowledge"
+      data-operation-nonce={operationNonce}
       aria-label={ACKNOWLEDGE_CHECKBOX_LABEL}
       className="surface surface-pad max-w-measure space-y-4"
     >
@@ -65,11 +71,12 @@ export function AcknowledgeForm({
           onClick={async () => {
             setPending(true);
             setFailed(false);
-            const response = await fetch("/api/family/acknowledge", {
+            const response = await csrf.send((csrfToken) => fetch("/api/family/acknowledge", {
               method: "POST",
-              headers: { "content-type": "application/json" },
+              headers: { "content-type": "application/json", "X-Inherit-Operation-Nonce": operationNonce,
+                "X-Inherit-CSRF": csrfToken },
               body: JSON.stringify({ acknowledgement: "portrait", subjectId, affirmed: true }),
-            });
+            }));
             setPending(false);
             if (!response.ok) {
               setFailed(true);

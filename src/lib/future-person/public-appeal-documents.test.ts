@@ -1,4 +1,5 @@
 import crypto from "node:crypto";
+import { readFileSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("server-only", () => ({}));
 const native = vi.hoisted(() => ({ rpc: vi.fn(), wrapped: [] as Buffer[] }));
@@ -21,9 +22,12 @@ vi.mock("@/lib/supabase/admin", async () => {
   } }
  }) };
 });
+// The one-time X-Inherit-CSRF gate passes through here; it is tested on this
+// route, through the same handler, in src/lib/security/session-csrf-routes.test.ts.
+vi.mock("@/lib/security/session-csrf", async (importOriginal) =>
+ (await import("@/lib/security/session-csrf.test-support")).admitEverySessionCsrf(await importOriginal()));
 import { POST } from "@/app/api/appeals/session/documents/route";
-import { publicAppealCsrf } from "./public-appeal-session";
-import { EVIDENCE_COOKIE, EVIDENCE_CSRF_HEADER, EVIDENCE_COMPLETE_NONCE_HEADER } from "./evidence-session";
+import { EVIDENCE_COOKIE, EVIDENCE_SESSION_CSRF_HEADER, EVIDENCE_COMPLETE_NONCE_HEADER } from "./evidence-session";
 import { RIGHTS_COOKIE_NAME, rightsSessionHash } from "@/lib/embryos/rights-session";
 import { mintPublicFormToken } from "@/lib/embryos/operation-token";
 import { claimDataKey } from "./document-envelope";
@@ -33,7 +37,8 @@ const opened = () => ({ status: "open", session, documentKind: "appeal-photo-ide
 function request(extra: Record<string, unknown> = {}, headers: Record<string, string> = {}, signal?: AbortSignal) {
  return new Request("https://inherit.bio/api/appeals/session/documents", { method: "POST", signal, headers: {
   cookie: `${RIGHTS_COOKIE_NAME}=${secret}`, origin: "https://inherit.bio", "sec-fetch-site": "same-origin", "content-type": "application/json",
-  "x-inherit-csrf": publicAppealCsrf(hash, "document"), "x-inherit-operation-nonce": mintPublicFormToken("appeal-document", Date.now(), hash), ...headers,
+  // 2026-11-19 (G8.5): the rights session's one-time token, admitted by the gate above; it was publicAppealCsrf(hash, "document").
+  "x-inherit-csrf": "the-rights-session-token-the-gate-admitted", "x-inherit-operation-nonce": mintPublicFormToken("appeal-document", Date.now(), hash), ...headers,
  }, body: JSON.stringify({ documentKind: "appeal-photo-identity", mediaType: "application/pdf", sizeBytes: 5000, sha256: "b".repeat(64), ...extra }) });
 }
 beforeEach(() => {
@@ -53,13 +58,30 @@ describe("public appeal independent document sessions", () => {
   expect(args.p_session_hash).toBe(hash); expect(args.p_cookie_hash).toMatch(/^[0-9a-f]{64}$/u);
   const key = claimDataKey(String(args.p_wrapped_document_key).slice(2)); expect(key).toHaveLength(32);key.fill(0);
   expect(response.headers.get("set-cookie")).toContain(`${EVIDENCE_COOKIE}=`);
-  expect(response.headers.get(EVIDENCE_CSRF_HEADER)).toMatch(/^[0-9a-f]{64}$/u);expect(response.headers.get(EVIDENCE_COMPLETE_NONCE_HEADER)).toBeTruthy();
+  // 2026-11-19 (G8.5): the evidence session's value travels in its own answer header, so the answer's
+  // X-Inherit-CSRF is free for the rights session's successor (it was EVIDENCE_CSRF_HEADER, x-inherit-csrf).
+  // 2026-11-19 (G8.5, the migration stage): the header holds the evidence session's first two session
+  // tokens, the chunk stream's and the completion's (it held the evidence digest, /^[0-9a-f]{64}$/).
+  expect(response.headers.get(EVIDENCE_SESSION_CSRF_HEADER)).toMatch(/^\d{13}\.[A-Za-z0-9_-]{43}\.[0-9a-f]{64} \d{13}\.[A-Za-z0-9_-]{43}\.[0-9a-f]{64}$/u);expect(response.headers.get("x-inherit-csrf")).toBeNull();
+  expect(response.headers.get(EVIDENCE_COMPLETE_NONCE_HEADER)).toBeTruthy();
   expect(native.wrapped).toHaveLength(1);expect(native.wrapped[0]!.every(byte => byte === 0)).toBe(true);
  });
  it.each([{ subjectId: session }, { reviewer: session }, { bucket: "legal-evidence" }, { objectKey: "synthetic/object" }, { nonce: "body-operation" }, { sizeBytes: 20_000_001 }])(
   "refuses expanded authority or bounds before native work %j", async extra => {
    expect((await POST(request(extra))).status).toBe(404);expect(native.rpc).not.toHaveBeenCalled();expect(native.wrapped).toHaveLength(0);
   });
+ it("answers a case at its document limit with the register's public-capacity-limited-v1 and no cookie (G8.5, 24 October 2026)", async () => {
+  native.rpc.mockResolvedValue({ data: { status: "capacity_limited" }, error: null }); const response = await POST(request());
+  const register = JSON.parse(readFileSync("docs/route-register.json", "utf8")) as {
+   responseContracts: Record<string, { status: number; body: { error: { const: string } }; headers: Record<string, string> }>;
+   responseContractBindings: { routes: Record<string, string[]> } };
+  expect(register.responseContractBindings.routes["api.appeal-document-session"]).toContain("public-capacity-limited-v1");
+  const contract = register.responseContracts["public-capacity-limited-v1"];
+  expect(response.status).toBe(contract.status); expect(await response.json()).toEqual({ error: contract.body.error.const });
+  expect(response.headers.get("referrer-policy")).toBe(contract.headers["Referrer-Policy"]);
+  expect(response.headers.get("cache-control")).toContain(contract.headers["Cache-Control"]);
+  expect(response.headers.get("retry-after")).toBe("900"); expect(response.headers.get("set-cookie")).toBeNull();
+ });
  it("does not relabel another native document kind", async () => {
   native.rpc.mockResolvedValue({ data: { ...opened(), documentKind: "appeal-genetic-parent-authority" }, error: null });
   expect((await POST(request())).status).toBe(503);expect(native.rpc).toHaveBeenCalledOnce();expect(native.wrapped[0]!.every(byte => byte === 0)).toBe(true);
@@ -68,6 +90,13 @@ describe("public appeal independent document sessions", () => {
   native.rpc.mockRejectedValue(new Error("synthetic lost response")); const response = await POST(request());
   expect(response.status).toBe(503);expect(await response.json()).toEqual({ error: "unavailable" });
   expect(native.rpc).toHaveBeenCalledOnce();expect(native.wrapped[0]!.every(byte => byte === 0)).toBe(true);
+ });
+ it("requires the operation token in X-Inherit-Operation-Nonce, never in X-Inherit-CSRF (G8.5, 19 November 2026)", async () => {
+  native.rpc.mockResolvedValue({ data: opened(), error: null });
+  const token = mintPublicFormToken("appeal-document", Date.now(), hash);
+  for (const headers of [{ "x-inherit-operation-nonce": "" }, { "x-inherit-operation-nonce": "", "x-inherit-csrf": token }] as Record<string, string>[])
+   expect((await POST(request({}, headers))).status).toBe(404);
+  expect(native.rpc).not.toHaveBeenCalled();expect(native.wrapped).toHaveLength(0);
  });
  it("keeps the default TEST scope closed before native or key work", async () => {
   vi.stubEnv("INHERIT_TEST_REQUESTER_STATEMENTS", "0");expect((await POST(request())).status).toBe(404);

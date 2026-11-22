@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { route } from "@/lib/primary-routes";
+import type { CsrfHandle } from "@/lib/security/session-csrf-client";
 import type { OwnReportChoicesView } from "./own-report-purpose";
 import { subjectNormalizationReceipt, subjectSynchronousReportReceipt } from "./subject-upload-contract";
 
@@ -10,14 +11,18 @@ const grantReceipt = z.object({ recordKind: z.literal("purpose_grant"), recordId
 }).strict();
 const revokeReceipt = z.object({ revoked: z.literal(true), effectiveAt: z.iso.datetime({ offset: true }) }).strict();
 
-/** Only closed, target-matching receipts change the permission controls. */
-export async function enableOwnReportChoice(subjectId: string, choice: Choice): Promise<void> {
-  const response = await fetch(route("api.consents"), { method: "POST", headers: {
-    "content-type": "application/json", "x-inherit-csrf": choice.token,
+/**
+ * Only closed, target-matching receipts change the permission controls.
+ * `csrf` is api.consents' one-time X-Inherit-CSRF token; the page's
+ * presentation token travels only in the body (G8.5, 19 November 2026).
+ */
+export async function enableOwnReportChoice(subjectId: string, choice: Choice, csrf: CsrfHandle): Promise<void> {
+  const response = await csrf.send((csrfToken) => fetch(route("api.consents"), { method: "POST", headers: {
+    "content-type": "application/json", "x-inherit-csrf": csrfToken,
   }, body: JSON.stringify({ action: "grant-purpose", subjectId, purposeKey: choice.purposeKey,
     artifactVersion: choice.artifact.version, artifactPresentationToken: choice.token,
     affirmed: true, statementKeys: choice.statementKeys,
-  }) });
+  }) }));
   const receipt = grantReceipt.safeParse(await response.json());
   if (response.status !== 201 || !receipt.success || receipt.data.purposeKey !== choice.purposeKey
     || receipt.data.artifactKey !== choice.artifact.key || receipt.data.artifactVersion !== choice.artifact.version) {
@@ -25,15 +30,21 @@ export async function enableOwnReportChoice(subjectId: string, choice: Choice): 
   }
 }
 
-export async function disableOwnReportChoice(grantId: string): Promise<void> {
+/**
+ * `nonce` is the one-time nonce the page rendered for this grant's revocation
+ * (G5.6, 23 Oct 2026); `csrf`, api.consent-revoke's one-time X-Inherit-CSRF token.
+ */
+export async function disableOwnReportChoice(grantId: string, nonce: string, csrf: CsrfHandle): Promise<void> {
   if (!z.uuid().safeParse(grantId).success) throw new Error("invalid_grant");
-  const response = await fetch(route("api.consent-revoke", { id: grantId }), { method: "POST" });
+  const response = await csrf.send((csrfToken) => fetch(route("api.consent-revoke", { id: grantId }), { method: "POST",
+    headers: { "X-Inherit-Operation-Nonce": nonce, "X-Inherit-CSRF": csrfToken } }));
   if (response.status !== 200 || !revokeReceipt.safeParse(await response.json()).success) throw new Error("choice_not_saved");
 }
 
-export async function generateOwnReports(fileId: string): Promise<"ready" | "not_generated"> {
+export async function generateOwnReports(fileId: string, csrf: CsrfHandle): Promise<"ready" | "not_generated"> {
   if (!z.uuid().safeParse(fileId).success) throw new Error("invalid_file");
-  const response = await fetch(route("api.file-process", { id: fileId }), { method: "POST" });
+  const response = await csrf.send((csrfToken) => fetch(route("api.file-process", { id: fileId }), { method: "POST",
+    headers: { "X-Inherit-CSRF": csrfToken } }));
   const body: unknown = await response.json();
   if (response.status !== 200) throw new Error("generation_unavailable");
   const generated = subjectSynchronousReportReceipt.safeParse(body);

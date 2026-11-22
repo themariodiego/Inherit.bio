@@ -1,4 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+vi.mock("@/lib/security/session-csrf", async (importOriginal) =>
+  (await import("@/lib/security/session-csrf.test-support")).admitEverySessionCsrf(await importOriginal()));
 const source = vi.hoisted(() => ({ rpc: vi.fn(), claims: true, appeals: true }));
 const id = (n: number) => `84000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
 const account = { user: { id: id(8) }, sessionId: id(9) };
@@ -17,7 +19,7 @@ vi.mock("@/lib/supabase/server", async () => {
 import { GET } from "@/app/api/legal-evidence/[id]/review-download/route";
 import { POST as acknowledge } from "@/app/api/downloads/[session]/chunks/[sequence]/acknowledge/route";
 import { downloadCookie, downloadCookieHash } from "./review";
-import { mintReceiptAckNonce, receiptCsrf } from "./review-receipt";
+import { mintReceiptAckNonce } from "./review-receipt";
 beforeEach(() => { vi.clearAllMocks(); source.claims = true; source.appeals = true; vi.stubEnv("BYOK_ENCRYPTION_KEY", Buffer.alloc(32, 83).toString("base64")); });
 afterEach(() => vi.unstubAllEnvs());
 const request = () => new Request(`https://inherit.bio/api/legal-evidence/${id(4)}/review-download`, { headers: { "sec-fetch-site": "same-origin" } });
@@ -54,7 +56,8 @@ function ackRequest() {
  const hash = downloadCookieHash(new Request("https://inherit.bio", { headers: { cookie } }))!;
  return new Request(`https://inherit.bio/api/downloads/${id(5)}/chunks/0/acknowledge`, { method: "POST", headers: {
   origin: "https://inherit.bio", "sec-fetch-site": "same-origin", "content-type": "application/json", cookie,
-  "x-inherit-csrf": receiptCsrf(id(5), hash, account.user.id, account.sessionId),
+  // The reviewer's one-time token, which the branch's gate spends (session-csrf-routes.test.ts; G8.5).
+  "x-inherit-csrf": "reviewer-session-token-checked-by-the-gate",
  }, body: JSON.stringify({ proof: "a".repeat(64), nonce: mintReceiptAckNonce(id(5), 0, hash, account.user.id, account.sessionId) }) });
 }
 describe("ACK keeps fresh native transport and independent feature scope", () => {

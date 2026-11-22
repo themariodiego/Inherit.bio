@@ -36,7 +36,7 @@ export function LegalPage({
     <div className="mx-auto max-w-6xl px-6 py-section">
       <header className="reading-head">
         <p className="eyebrow">{eyebrow}</p>
-        <h1 className="display display-lg">{title}</h1>
+        <h1 className="display">{title}</h1>
         {effectiveDate && (
           <p className="caption">
             Effective{" "}
@@ -61,8 +61,10 @@ export function LegalPage({
 
       <details className="mt-block">
         <summary className="eyebrow min-h-11 w-fit cursor-pointer content-center">On this page</summary>
+        {/* The list keeps the prose measure: its entries are one heading each,
+            and a column wider than 68ch is a measure breach (brief X6.3). */}
         <nav aria-label="On this page">
-          <ol className="mt-2 flex flex-col gap-2">
+          <ol className="mt-2 flex max-w-measure flex-col gap-2">
             {sections.map((section) => (
               <li key={section.id}>
                 <a className="link-target" href={`#${section.id}`}>{section.heading}</a>

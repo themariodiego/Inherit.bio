@@ -44,7 +44,7 @@ const route=(f:Fixture)=>`${ORIGIN}/api/subjects/${f.subject}/export`;
 function post(f:Fixture,proof:{operation:string;nonce:string;csrf:string},headers:Record<string,string>={},
  body:unknown={operation:proof.operation,nonce:proof.nonce}){
  return new Request(route(f),{method:"POST",headers:{origin:ORIGIN,"sec-fetch-site":"same-origin","sec-fetch-mode":"cors",
-  "content-type":"application/json","x-inherit-csrf":proof.csrf,...headers},body:JSON.stringify(body)});
+  "content-type":"application/json","x-inherit-operation-proof":proof.csrf,...headers},body:JSON.stringify(body)});
 }
 async function presentation(f:Fixture){
  const value=await presentSubjectExportCreate(f.deps,f.subject,new AbortController().signal);
@@ -87,7 +87,7 @@ describe("api.subject-export HTTP",()=>{
  });
  it("states the one closed refusal while the record has live joint results, before any field is read",async()=>{
   const f=fixture(),proof=await presentation(f);f.refuse(JOINT);f.rpc.mockClear();
-  for(const request of [post(f,proof),post(f,proof,{"content-type":"text/plain"}),post(f,proof,{},{operation:"create"}),post(f,proof,{"x-inherit-csrf":"forged"})]){
+  for(const request of [post(f,proof),post(f,proof,{"content-type":"text/plain"}),post(f,proof,{},{operation:"create"}),post(f,proof,{"x-inherit-operation-proof":"forged"})]){
    const refused=await postSubjectExport(request,f.subject,f.deps);
    expect(refused.status).toBe(422);expect(await refused.json()).toEqual({error:"invalid_request",issues:["jointResults"]});
   }
@@ -122,7 +122,10 @@ describe("api.subject-export HTTP",()=>{
   for(const header of ["origin","sec-fetch-site","sec-fetch-mode"])
    expect((await postSubjectExport(post(f,proof,{[header]:""}),f.subject,f.deps)).status).toBe(403);
   expect(f.rpc).not.toHaveBeenCalled();
-  expect((await postSubjectExport(post(f,proof,{"x-inherit-csrf":"forged"}),f.subject,f.deps)).status).toBe(403);
+  // 2026-11-19 (G8.5): the sealed proof travels in X-Inherit-Operation-Proof (it was X-Inherit-CSRF, now the
+  // account session's one-time token, tested at the route); forged, or only in the old header, it is refused.
+  expect((await postSubjectExport(post(f,proof,{"x-inherit-operation-proof":"forged"}),f.subject,f.deps)).status).toBe(403);
+  expect((await postSubjectExport(post(f,proof,{"x-inherit-operation-proof":"","x-inherit-csrf":proof.csrf}),f.subject,f.deps)).status).toBe(403);
   expect((await postSubjectExport(post(f,proof,{},{operation:"create",nonce:"forged"}),f.subject,f.deps)).status).toBe(404);
   expect((await postSubjectExport(post(f,proof,{},{operation:"create",nonce:proof.nonce,extra:1}),f.subject,f.deps)).status).toBe(422);
   expect((await postSubjectExport(new Request(route(f)+"?x=1",post(f,proof)),f.subject,f.deps)).status).toBe(422);

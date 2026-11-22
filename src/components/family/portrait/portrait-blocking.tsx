@@ -42,6 +42,8 @@ export interface PortraitBlockingProps {
   people: readonly [BlockingPerson, BlockingPerson];
   missing: readonly MissingStep[];
   consentsHref: string;
+  /** The one-time nonce for the viewer's own acknowledgement, when the page offers it (G5.6). */
+  acknowledgeNonce: string | null;
 }
 
 function stepLine(person: BlockingPerson, step: PortraitStep): string {
@@ -49,7 +51,7 @@ function stepLine(person: BlockingPerson, step: PortraitStep): string {
   return missingStep(person.displayLabel, PORTRAIT_STEPS[step]);
 }
 
-export function PortraitBlocking({ people, missing, consentsHref }: PortraitBlockingProps) {
+export function PortraitBlocking({ people, missing, consentsHref, acknowledgeNonce }: PortraitBlockingProps) {
   const waitingOn = people.filter((person) =>
     missing.some((entry) => entry.subjectId === person.subjectId),
   );
@@ -88,8 +90,8 @@ export function PortraitBlocking({ people, missing, consentsHref }: PortraitBloc
             )),
         )}
       </ul>
-      {viewer && viewerMustAcknowledge ? (
-        <AcknowledgeForm subjectId={viewer.subjectId} consentsHref={consentsHref} />
+      {viewer && viewerMustAcknowledge && acknowledgeNonce ? (
+        <AcknowledgeForm subjectId={viewer.subjectId} consentsHref={consentsHref} operationNonce={acknowledgeNonce} />
       ) : (
         <div>
           <Button asChild variant="outline">

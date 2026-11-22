@@ -39,6 +39,7 @@ import { parseArtifactFile } from "../src/lib/legal/artifact-file";
 import { ADULT_NON_ACCOUNT_HOLDER_KEEP_DAYS, artifactStatements, heldFinalizationReceipt } from "../src/lib/uploads/other-adult-upload";
 import { directUploadReceipt } from "../src/lib/uploads/subject-upload-contract";
 import { localE2eProject } from "../scripts/local-e2e-project";
+import { signOut as signOutWithToken } from "./helpers/session-csrf";
 
 /**
  * Another adult's DNA under the register's Path B, "I have their file"
@@ -119,7 +120,7 @@ function mailTo(address: string, subject: string) {
 }
 
 async function signOut(page: Page) {
-  await page.request.post("/auth/sign-out");
+  await signOutWithToken(page);
   await page.context().clearCookies();
 }
 

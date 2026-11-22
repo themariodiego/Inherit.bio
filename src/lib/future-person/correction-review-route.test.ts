@@ -1,5 +1,7 @@
 import crypto from "node:crypto";
 import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
+vi.mock("@/lib/security/session-csrf", async (importOriginal) =>
+  (await import("@/lib/security/session-csrf.test-support")).admitEverySessionCsrf(await importOriginal()));
 const mocks = vi.hoisted(() => ({ account: vi.fn(), rpc: vi.fn() }));
 vi.mock("@/lib/account-deletion", () => ({ getSensitiveAccountContext: mocks.account }));
 vi.mock("@/lib/supabase/server", () => ({ createClient: async () => ({
@@ -9,7 +11,8 @@ vi.stubEnv("INHERIT_TEST_JURISDICTION", "1");
 vi.stubEnv("INHERIT_TEST_REQUESTER_STATEMENTS", "1");
 const { GET, POST } = await import("@/app/api/reviews/future-person/corrections/[id]/route");
 const { sealNewCorrection, readCorrectionReviewNonce, mintCorrectionReviewNonce } = await import("./correction-case-envelope");
-const { correctionReviewCsrf } = await import("./correction-review");
+// The gate is driven on this route in src/lib/security/session-csrf-routes.test.ts (G8.5, the migration stage).
+const REVIEWER_GATE_STAND_IN = "reviewer-session-token-checked-by-the-gate";
 const { unwrapNewCaseKey, openNewCaseBytes } = await import("./new-case-envelope-crypto");
 const { hmacSecret } = await import("@/lib/crypto");
 afterAll(() => vi.unstubAllEnvs());
@@ -44,7 +47,7 @@ function get(headers: Record<string, string> = { "sec-fetch-site": "same-origin"
 }
 function post(given: unknown, headers: Record<string, string> = {}) {
   return new Request(url, { method: "POST", headers: { origin: "https://test.e2e.local", "sec-fetch-site": "same-origin",
-    "content-type": "application/json", "x-inherit-csrf": correctionReviewCsrf(CASE, ACCOUNT, SESSION), ...headers },
+    "content-type": "application/json", "x-inherit-csrf": REVIEWER_GATE_STAND_IN, ...headers },
     body: JSON.stringify(given) });
 }
 const body = (decision = "reject", extra: Record<string, unknown> = {}) => ({ decision, correctionRevision: 1, reason,
@@ -79,7 +82,9 @@ describe("GET /api/reviews/future-person/corrections/[id]", () => {
     expect(JSON.stringify(result)).not.toContain("d".repeat(64));
     expect(JSON.stringify(result)).not.toMatch(/wrapped|ciphertext|contact|parent|rawGenotype|objectPath|bucket|credential|correctedValue/iu);
     expect(readCorrectionReviewNonce(response.headers.get("x-inherit-review-nonce") ?? "", CASE, binding, deadlineIso)).toBeTruthy();
-    expect(response.headers.get("x-inherit-csrf")).toBe(correctionReviewCsrf(CASE, ACCOUNT, SESSION));
+    // 2026-11-19 (G8.5, the migration stage): the case GET issues no X-Inherit-CSRF value; it returned
+    // the correction's digest. The reviewer's one-time token is rendered by the page.
+    expect(response.headers.get("x-inherit-csrf")).toBeNull();
   });
   it("is one opaque 404 when the TEST switch, segment, query, origin, caller or database refuses", async () => {
     const cases: [string, () => void, Request?][] = [
@@ -138,8 +143,7 @@ describe("POST /api/reviews/future-person/corrections/[id]", () => {
       ...["subjectId", "claimantId", "ownerId", "parentId", "newVariant", "genotype", "correctedValue"].map(field =>
         [`forbidden ${field}`, post(body("reject", { [field]: "x" }))] as [string, Request]),
       ["short reason", post(body("reject", { reason: "too short" }))],
-      ["missing CSRF", post(body(), { "x-inherit-csrf": "" })],
-      ["foreign CSRF", post(body(), { "x-inherit-csrf": correctionReviewCsrf(id(8), ACCOUNT, SESSION) })],
+      // 2026-11-19 (G8.5): "missing CSRF" and "foreign CSRF" left this list; the gate refuses both before the handler (session-csrf-routes.test.ts).
       ["cross-origin", post(body(), { origin: "https://other.example" })],
       ["text body", post(body(), { "content-type": "text/plain" })],
       ["stale correction revision", post(body("reject", { correctionRevision: 2 }))],

@@ -12,6 +12,7 @@ import {
   type PermissionState,
 } from "@/copy/family/permissions";
 import { submitFamilyPermission, type PermissionAction } from "@/lib/family/permission-response";
+import { useCsrf } from "@/components/security/csrf-provider";
 
 /**
  * <PermissionGrantRow> — one purpose, one direction, one control (brief §3
@@ -53,6 +54,8 @@ export function PermissionGrantRow({
   disabledReason?: string;
 }) {
   const router = useRouter();
+  const grantCsrf = useCsrf("api.consents");
+  const revokeCsrf = useCsrf("api.consent-revoke");
   const [pending, setPending] = useState(false);
   const [failed, setFailed] = useState(false);
 
@@ -95,7 +98,7 @@ export function PermissionGrantRow({
             setPending(true);
             setFailed(false);
             try {
-              if (!await submitFamilyPermission(action)) {
+              if (!await submitFamilyPermission(action, { grant: grantCsrf, revoke: revokeCsrf })) {
                 setFailed(true);
                 return;
               }

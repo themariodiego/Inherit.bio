@@ -6,12 +6,37 @@ import { sniffFileV2 } from "../genome/parsers/sniff-browser";
 import { hasZipMagic, openOwnUploadZip, OwnUploadZipError } from "./own-upload-zip";
 import { route } from "../primary-routes";
 import { heldFinalizationReceipt } from "./other-adult-upload";
+import type { ReadCallingRefusal } from "../genome/reads/browser-read-calls";
+import type { ReadCallSummary } from "../genome/reads/read-calls";
+import { csrfHandle, type CsrfHandle } from "../security/session-csrf-client";
 import { declaredSubjectFormat, directUploadReceipt, subjectFinalizationReceipt, subjectFinalizationRetryBody, subjectNormalizationReceipt, subjectPreparationCapacityRefusal, subjectPreparationTooLargeRefusal, subjectProcessingReceipt, subjectReportGenerationFailure, uploadCeilingBytes, uploadSessionBody, type OwnUploadLimits } from "./subject-upload-contract";
 
-export type UploadProgress = { step: "checking" | "hashing" | "uploading" | "validating"; pct: number };
+/**
+ * The one-time X-Inherit-CSRF tokens of the three routes an upload sends to
+ * (api.file-upload-session, api.file-finalize, api.file-process). Each request
+ * sends its route's current value and keeps the successor its response issues.
+ */
+export interface UploadCsrf { session?: CsrfHandle; finalize?: CsrfHandle; process?: CsrfHandle }
+
+/** A route with no handle sends no token, as before: a handle of no rendered value. */
+const UNRENDERED = csrfHandle(undefined);
+
+export type UploadProgress = { step: "checking" | "calling" | "hashing" | "uploading" | "validating"; pct: number };
+/** Read calling's own refusals (TEST-LOCAL only, ADR 0038); a reads file that
+ * is not readable at all keeps the ordinary `unrecognised_format`. */
+export type ReadCallingFailureCode = Exclude<ReadCallingRefusal, "reads_unreadable">;
 export type UploadFailureCode = "pdf_not_data" | "subject_source_not_single_sample" | "unrecognised_format" | "archive_invalid" |
   "too_large" | "account_full" | "decompressed_too_large" | "upload_integrity_mismatch" | "unauthorized" |
-  "uploads_paused" | "unavailable";
+  "uploads_paused" | "unavailable" | ReadCallingFailureCode;
+/** What a TEST-LOCAL deployment adds to the own-DNA picker (ADR 0038). */
+export interface ReadCallingOptions {
+  /** Server-decided: true only where `readCallingBuilt()` is, never in production. */
+  readCalling?: boolean;
+  /** The other files chosen with this one (a CRAM's reference FASTA). */
+  companions?: readonly File[];
+  /** Told what was called, once the VCF is ready and before it is uploaded. */
+  onReadCalls?: (summary: ReadCallSummary) => void;
+}
 export class BrowserUploadError extends Error {
   /** `limitBytes` is set only where the refusing ceiling is known exactly at
    * the throw site. It never crosses the wire; the register forbids unknown
@@ -33,15 +58,16 @@ export class BrowserPreparationError extends Error {
 
 /** Preparation is covered by storage consent, not an extra analysis choice.
  * Retry this exact file without uploading its bytes again. */
-export async function prepareSubjectFile(fileId: string, options: { signal?: AbortSignal } = {}) {
+export async function prepareSubjectFile(fileId: string, options: { signal?: AbortSignal; csrf?: CsrfHandle } = {}) {
   if (!subjectNormalizationReceipt.shape.fileId.safeParse(fileId).success) throw new BrowserPreparationError("unavailable");
   const deadline = Date.now() + 3_600_000;
   let jobId: string | undefined;
   for (;;) {
     if (options.signal?.aborted || Date.now() >= deadline) throw new BrowserPreparationError("unavailable");
-    const response = await fetch(route("api.file-process", { id: fileId }), {
+    const response = await (options.csrf ?? UNRENDERED).send((csrfToken) => fetch(route("api.file-process", { id: fileId }), {
       method: "POST", credentials: "same-origin", cache: "no-store", redirect: "error", signal: options.signal,
-    }).catch(() => { throw new BrowserPreparationError("unavailable"); });
+      headers: { "X-Inherit-CSRF": csrfToken },
+    })).catch(() => { throw new BrowserPreparationError("unavailable"); });
     const value: unknown = await response.json().catch(() => null);
     if (!response.ok) {
       const reportFailure = subjectReportGenerationFailure.safeParse(value);
@@ -92,26 +118,44 @@ async function responseFailure(response: Response): Promise<never> {
 /** One ephemeral create-only bearer, no normal auth token, persisted resume
  * fingerprint, filename metadata, background retry or implicit analysis. */
 export async function uploadSubjectFile(file: File, subjectId: string, onProgress: (value: UploadProgress) => void,
-  limits?: OwnUploadLimits | null) {
-  const uploadId = await stageSubjectFile(file, subjectId, onProgress, limits);
+  limits?: OwnUploadLimits | null, readCalling: ReadCallingOptions = {}, csrf: UploadCsrf = {}) {
+  const uploadId = await stageSubjectFile(file, subjectId, onProgress, limits, readCalling, csrf);
   onProgress({ step: "validating", pct: 0 });
-  return finishStagedUpload(uploadId);
+  return finishStagedUpload(uploadId, csrf);
 }
 
 /** Another adult's file under Path B: the same transport, finished as held
  * (TEST-LOCAL). The file is stored and validated, then waits, unreadable, for
  * its subject to confirm it; the upload-time notice is queued with it. */
 export async function uploadHeldSubjectFile(file: File, subjectId: string, onProgress: (value: UploadProgress) => void,
-  limits?: OwnUploadLimits | null) {
-  const uploadId = await stageSubjectFile(file, subjectId, onProgress, limits);
+  limits?: OwnUploadLimits | null, csrf: UploadCsrf = {}) {
+  const uploadId = await stageSubjectFile(file, subjectId, onProgress, limits, {}, csrf);
   onProgress({ step: "validating", pct: 0 });
-  return finishHeldUpload(uploadId);
+  return finishHeldUpload(uploadId, csrf);
 }
 
 /** Checks, hashes and sends the bytes to their one staging key; returns the upload. */
 async function stageSubjectFile(file: File, subjectId: string, onProgress: (value: UploadProgress) => void,
-  limits?: OwnUploadLimits | null): Promise<string> {
+  limits?: OwnUploadLimits | null, readCalling: ReadCallingOptions = {}, csrf: UploadCsrf = {}): Promise<string> {
   onProgress({ step: "checking", pct: 0 });
+  // TEST-LOCAL read calling (ADR 0038): BAM or CRAM reads are called here, on
+  // the device, and only the VCF that results goes on through the unchanged
+  // path below. Production never takes this branch, so a reads file there
+  // still meets the ordinary refusal before any upload session is issued.
+  const companions = readCalling.companions ?? [];
+  if (readCalling.readCalling) {
+    const { readCallsFromChosenFiles, ReadCallingRefused } = await import("../genome/reads/browser-read-calls");
+    try {
+      const called = await readCallsFromChosenFiles([file, ...companions], pct => onProgress({ step: "calling", pct }));
+      if (called) { file = called.vcf; readCalling.onReadCalls?.(called.summary); }
+      else if (companions.length) throw new BrowserUploadError("unrecognised_format");
+    } catch (error) {
+      if (error instanceof ReadCallingRefused) {
+        throw new BrowserUploadError(error.code === "reads_unreadable" ? "unrecognised_format" : error.code);
+      }
+      throw error;
+    }
+  } else if (companions.length) throw new BrowserUploadError("unrecognised_format");
   // This upload-path bound is known even when deployment limits could not be
   // read. Refuse before hashing or sending bytes; an edge 413 may otherwise
   // arrive only as a closed connection minutes into the single POST.
@@ -157,8 +201,9 @@ async function stageSubjectFile(file: File, subjectId: string, onProgress: (valu
   // upload authorization. Never substitute a login or server-side credential.
   const apiKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   if (!apiKey || apiKey.length > 4096 || /\s/.test(apiKey)) throw new BrowserUploadError("unavailable");
-  const response = await fetch(route("api.file-upload-session"), { method: "POST", credentials: "same-origin",
-    headers: { "Content-Type": "application/json" }, body: JSON.stringify(declaration.data), cache: "no-store", redirect: "error" });
+  const response = await (csrf.session ?? UNRENDERED).send((csrfToken) => fetch(route("api.file-upload-session"), { method: "POST", credentials: "same-origin",
+    headers: { "Content-Type": "application/json", "X-Inherit-CSRF": csrfToken },
+    body: JSON.stringify(declaration.data), cache: "no-store", redirect: "error" }));
   if (response.status !== 201) await responseFailure(response);
   const parsed = directUploadReceipt.safeParse(await response.json().catch(() => null));
   if (!parsed.success || parsed.data.maximumBytes < file.size || Date.parse(parsed.data.expiresAt) <= Date.now()) {
@@ -221,8 +266,8 @@ const NO_DECISION_STATUSES = new Set([408, 502, 504]);
  * refused, deliberately, so that two requests can never drive one
  * finalization. That refusal carries `stagedUploadId` too: the bytes are still
  * there and asking later still works. */
-export async function finishStagedUpload(uploadId: string) {
-  const finalized = await requestFinalization(uploadId);
+export async function finishStagedUpload(uploadId: string, csrf: UploadCsrf = {}) {
+  const finalized = await requestFinalization(uploadId, csrf);
   const receipt = subjectFinalizationReceipt.safeParse(await finalized.json().catch(() => null));
   if (!receipt.success) throw new BrowserUploadError("unavailable");
   return receipt.data;
@@ -230,18 +275,19 @@ export async function finishStagedUpload(uploadId: string) {
 
 /** The held counterpart: the same request, answered stored and quarantined
  * with the notice queued (register file-finalize-v1, the other-adult outcome). */
-export async function finishHeldUpload(uploadId: string) {
-  const finalized = await requestFinalization(uploadId);
+export async function finishHeldUpload(uploadId: string, csrf: UploadCsrf = {}) {
+  const finalized = await requestFinalization(uploadId, csrf);
   const receipt = heldFinalizationReceipt.safeParse(await finalized.json().catch(() => null));
   if (!receipt.success) throw new BrowserUploadError("unavailable");
   return receipt.data;
 }
 
-async function requestFinalization(uploadId: string): Promise<Response> {
+async function requestFinalization(uploadId: string, csrf: UploadCsrf): Promise<Response> {
   if (!directUploadReceipt.shape.uploadId.safeParse(uploadId).success) throw new BrowserUploadError("unavailable");
   const staged = (code: UploadFailureCode) => new BrowserUploadError(code, undefined, uploadId);
-  const finalized = await fetch(route("api.file-finalize", { id: uploadId }), { method: "POST",
-    credentials: "same-origin", cache: "no-store", redirect: "error" }).catch(() => null);
+  const finalized = await (csrf.finalize ?? UNRENDERED).send((csrfToken) => fetch(route("api.file-finalize", { id: uploadId }), { method: "POST",
+    credentials: "same-origin", cache: "no-store", redirect: "error",
+    headers: { "X-Inherit-CSRF": csrfToken } })).catch(() => null);
   if (!finalized || NO_DECISION_STATUSES.has(finalized.status)) throw staged("unavailable");
   // Preserve the existing handle on upload-level refusal or on the new explicit
   // retry response. Other application failures make no promise of resumability.

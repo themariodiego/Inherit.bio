@@ -56,8 +56,10 @@ run.** Launch requires:
 - Grading blind and external, against `scripts/comprehension/rubric.md`, with a
   10% independent re-grade reaching at least 90% agreement.
 - **≥ 10/12 per task** on T1, T2, T3, T4, T8, T9; **zero** prohibited answers on
-  T5, T6, T7; zero "no route found" answers on T10; T9 within 8 actions and with
-  no account created.
+  T5, T6, T7; zero "no route found" answers on T10; T9 within six in-app actions
+  and with no account created. Six, not eight: the owner decided this on
+  22 September 2026 (`docs/protocol/decisions.md`), and a mailed-link or
+  typed-URL entry is recorded separately and not counted.
 - Results committed to `docs/comprehension-results-<date>.md`.
 - Where any task returns below 10/12, the simulated threshold for that task rises
   to 29/30, the simulated round is re-run, and the human round is repeated.
@@ -132,6 +134,17 @@ issued, the derived rows gone inside 60 seconds, the source bytes gone inside
 seven days, and unrelated data of the same account and of other accounts intact
 afterwards. A local pgTAP assertion is necessary and is not this.
 
+### B8. Real email-provider delivery is observed on the hosted system
+
+The owner decided on 16 October 2026 that G5.4 is judged under TEST-LOCAL with
+local mail capture accepted as delivery proof, and that real email-provider
+delivery becomes a release-checklist item (`docs/protocol/decisions.md`,
+"2026-10-16 — G5.4 is judged on the brief's minimum under TEST-LOCAL"). The
+browser suite proves the accountless rights mail only through a local capture
+mock. Launch requires that mail observed on hosted infrastructure, sent through
+the real email provider and received by its addressee. A captured message is
+necessary and is not this.
+
 ---
 
 ## What launching without one of these means
@@ -156,3 +169,75 @@ None of these announces itself at launch. That is why they are on a checklist.
 The reserved `20260930240000_future_person_document_keys.sql` migration requires the legacy private claim-document session store to be empty. The guarded release must confirm this read-only prerequisite. If legacy encrypted sessions exist, stop this migration and prepare a separately reviewed re-encryption plan that preserves the current bytes, live authority and fixed deadlines. Do not delete valid sessions or substitute independent keys for ciphertext sealed under the old identity key. Fresh TEST-LOCAL fixtures use independent synthetic wrapped envelopes, and the runtime uses the existing deployment key; no new owner secret is required.
 
 The named-reviewer PDF display requires the generated `public/review-document-assets/6.3.289` directory from the same pinned build. The build and development commands prepare it before starting Next. Hosted browser partitions must carry that directory with the build or run `pnpm exec tsx scripts/prepare-review-pdf-assets.mts` after the frozen dependency install. These files contain library code, fonts and manifests only; document bytes remain in the browser's memory. Missing or mismatched support assets fail closed and cannot enable the human read checkbox. Full app browser execution remains required before release.
+
+### Guarded production releases outstanding · 19 November 2026
+
+Three guarded releases are outstanding, and they run in this order. `main`
+deploys to production, so a branch whose code needs a release merges straight
+after that release reads back EQUAL, never before. Each release runs on the
+owner's go, given by one clickable question after the read-only pre-checks and
+before the dry run, with a new short-lived `SUPABASE_ACCESS_TOKEN` that the
+owner revokes afterwards. Each commits its evidence under its kit's
+`results/run-<UTC date>/`.
+
+1. **PR 324: 25 migrations**, `20261016120000_embryo_table_mapping_route.sql`
+   to `20261016221000_subject_transfer.sql`. Kit:
+   `docs/evidence/pr324-production-apply-20261022/`, rehearsed against the
+   migration tree of `538dcee6`. PR 324 merges straight after its fourth batch.
+2. **The follow-up: 7 migrations**, `20261022100000_neanderthal_ancestry_content`,
+   `20261022110000_read_called_input_provenance`,
+   `20261023100000_subject_export_joint_results`,
+   `20261023110000_export_completeness`,
+   `20261023120000_legal_audit_attribution_completeness`,
+   `20261023130000_legal_audit_attribution_remaining` and
+   `20261023140000_review_download_clock`. Kit:
+   `docs/evidence/followup-production-apply-20261023/`, rehearsed against the
+   migration tree of `77d04563`. It runs only after release 1 is complete and PR
+   324 is merged and deployed. Its step 4 also runs D-081's read-only
+   release-time check, `scripts/tools/d081-retirement-precheck.sql`, and its step
+   7 the four status-only checks of the retired routes. The follow-up branch now
+   carries four more migrations than that tree, so the kit's migration-tree
+   precondition fails until the two are reconciled. A merge after this release
+   and before release 3 must be of a commit carrying tree `259a56dd`; the last
+   such commit on the follow-up branch is `e81bd2be`. **Open point for the owner, not decided:**
+   merge a `259a56dd` commit after release 2 and the rest after release 3; or run
+   releases 2 and 3 back to back and merge once; or split release 3 at
+   `91b955a7` (`docs/evidence/followup-2-production-apply-20261119/guarded/README.md`,
+   "Open point for the owner").
+3. **Four later migrations, kit built and rehearsed locally, not run**:
+   `20261024110000_copilot_settings_delete_nonce`,
+   `20261024220000_session_csrf_tokens`,
+   `20261025200000_consent_revoke_provider_nonce` and
+   `20261025400000_path_a_account_accept_typed_name`. The owner placed the last
+   in the release after the follow-up (D-103, 23 October 2026, in
+   `docs/protocol/decisions.md`). Kit:
+   `docs/evidence/followup-2-production-apply-20261119/`, two batches (#1-#3,
+   #4) that end at 284 rows, rehearsed against release 2's post-state with
+   production's drift, which it reproduces byte for byte. Its first rehearsal
+   found that `20261025400000` refused there: it pinned the commented body of
+   `private.current_adult_subject_invitation_v1`, which production holds
+   comment-stripped (D-136). The guard now accepts exactly those two reviewed
+   bodies, and the kit was rehearsed again: both batches apply and read back
+   EQUAL. That change was an engineering decision, not an owner decision. The
+   owner accepted it later on 19 November 2026
+   (`docs/protocol/decisions.md`,
+   "2026-11-19 — D-136: the owner accepts the guard change"). The kit pins the migrations tree
+   `be49d283`, which the follow-up branch carries from the commit that fixed the
+   guard; the head that merges after it must carry it too. It runs only after release 2 is
+   complete and code carrying tree `259a56dd` is merged and deployed with its
+   fingerprint unchanged. Batch 2 breaks the deployed code's Path A confirmation
+   until the merge is deployed, so the merge follows batch 2 at once; merging
+   before batch 2 would refuse every request on the 38 CSRF-bound routes.
+4. **One further migration, written and tested locally on 19 November, with
+   no kit yet**: `20261119110000_dropped_bucket_literals_and_guard.sql`. It
+   removes the two dropped buckets from three bucket CHECKs and makes three
+   invitation guards refuse a NULL jurisdiction flag (D-130, D-140). It runs
+   only after release 3 reads back EQUAL, and it needs its own kit, rehearsal,
+   token and go. Its read-only pre-check query, locks and ordering are in
+   `docs/evidence/release-4-notes-20261119.md`. **It changes which commit
+   merges after release 3:** release 3's kit pins the migrations tree
+   `be49d283`, and this file changes that tree, so the head merged after
+   release 3 must be a commit that still carries `be49d283`; the last one on
+   the follow-up branch is `6252566a`. More migrations are expected to join
+   this fourth release (the remaining CSRF routes, D-139, D-141), so its kit
+   is best built once they exist.

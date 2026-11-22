@@ -5120,3 +5120,1162 @@ Owner decisions (clickable chat answers):
   isolated CI browser runtime deliberately blocks database access. That
   isolation is not widened for this.
 - G5.4 closes on this evidence once PR 324 merges and main CI passes.
+
+## 2026-10-22 — Density rule corrections (G2.5)
+
+Measured on 22 October: on 15 of the 28 public and auth rows, the required text
+alone already exceeds the 0.6 successor-ink ceiling. The text-only floor is a
+diagnostic capture with every border, fill, underline and icon removed and
+every glyph kept, and these floors range from 0.605 to 1.075. Owner decisions
+(clickable chat answers):
+
+- **Text-bound pages.** A row whose text-only floor exceeds 0.6 passes the
+  successor-ink rule if its ink is at most its floor + 0.05. Both values are
+  measured by the unchanged measurement modules on the same capture. The 0.6
+  ceiling, the frozen 31 August baseline and every other budget stay as they
+  are, and no required text may move or be hidden to pass.
+- **Outlined primary buttons.** The forest-outline primary actions stay: the
+  auth submit buttons, the header's Get started/Overview pill and the
+  landing page's first action. Targets stay 44px.
+- **45ch floor.** The floor applies to prose paragraphs, not to link lists or
+  one-line link paragraphs (D-115).
+- **Section gaps.** Gaps are measured in visual order, not DOM order, for
+  side-by-side panes and CSS-reordered sections.
+- **700-character cap.** On signed legal documents, only the characters
+  actually visible above the fold count, not a whole pre-formatted text node.
+- **Auth flows.** Sign-in and sign-up may carry up to 10 interactive controls,
+  against 7 elsewhere, because all of them are required.
+
+These readings change how budgets are evaluated, not the measurement modules
+or the baseline. G2.5 still needs every required capture, including the
+authenticated ones that run only on the owned-Linux runtime.
+
+## 2026-10-23 — Stated behaviour change: `api.subject-export` with joint results
+
+This applies the owner decisions of 16 October ("Subject export with joint
+results: built in two steps" and "The subjects endpoints (G2.1)": "Joint
+results are included only while each other contributor's permission is
+live"). It is not a new decision.
+
+- **Before:** the one-record export refused with `jointResults` (0A000
+  `export_joint_results_pending`) whenever the record was in any family pair
+  that was not purged, any Portrait result named it as a parent, or it held a
+  role in an embryo cohort that was not purged.
+- **After:**
+  - A family pair no longer refuses the record. Its row (id, revision,
+    status, created_at) leaves in the record's `portrait.json`, with both
+    contributor subject ids withheld.
+  - A Portrait result naming the record leaves only while the other parent's
+    Portrait permission is live: the pair is current, both exact
+    `family.portrait` grants are current, sharing is not paused, and both
+    parents have acknowledged Portrait and signed in themselves. It carries
+    the record's own nine fields. It never carries the holding account,
+    either parent's subject id or the source fingerprint. Otherwise it is left
+    out. A result holding an identifier, or one whose parents are not the
+    live pair, refuses the whole request.
+  - The refusal stays for a live embryo cohort role, and for a canonical
+    family Copilot conversation of the record's own account with a turn that
+    is anchored on a pair naming the record or read its data. A group
+    conversation that read the record now refuses, where before it was left
+    out of the archive without a word.
+- **Where:** migration `20261023100000_subject_export_joint_results.sql`. Its
+  guards expect PR 324's bodies, so it goes in the follow-up guarded release
+  after PR 324's. The whole-account export is unchanged.
+- **Wording:** unchanged. The refusal sentence on `/settings/data` ("This
+  record cannot be exported on its own while it has results made with another
+  person's DNA.") is still true of every case that refuses.
+- **Tests:** `supabase/tests/subject_export_joint_results.sql`, section 4 of
+  `supabase/tests/subject_export.sql`, the one-record cases of
+  `src/lib/exports/account-archive-worker.test.ts`, and
+  `e2e/subject-export.spec.ts`, which now plants a family conversation for
+  the refusal. Recorded in `docs/test-diff-register.md`.
+
+## 2026-10-23 — Export completeness: family conversations, cohorts, empty classes (G5.6)
+
+Owner decisions (clickable chat answers):
+
+- **Family Copilot conversations in a one-record export.** The record's
+  conversation turns are exported as written, while every grant each turn used
+  is still current. Only structured identifiers (subject and account ids in
+  citations) are removed. While any grant a turn used has ended, that turn is
+  left out.
+- **Embryo cohorts in a parent's export.** A parent's export carries the
+  parent's own cohort records (roles, signatures and disposition proposals)
+  but no embryo results, until a reviewed consent covers exporting them. The
+  only cohort consent, `consent.upload-embryo` v1, covers analysis, not export.
+- **Classes with no production writer** (ancestry regions, attestation
+  contradictions, subject-control refusal authorities, suppressions, report
+  artifacts) count as complete. A pinned check refuses any export that finds a
+  row in one of them. The asynchronous archives already do this, and the
+  synchronous archive gets the same refusal.
+
+## 2026-10-23 — Stated behaviour change: export completeness and person attribution (G5.6)
+
+This applies the owner decisions of 23 October ("Export completeness: family
+conversations, cohorts, empty classes", above) and the attribution design of
+28 September (option A, with its one nonce rule, brief X1.5). It is not a new
+decision.
+
+- **Family Copilot conversations (one-record export).**
+  - **Before:** a canonical family conversation of the record's own account
+    on the record's pair, or one with a turn that read the record, refused the
+    export with `jointResults`.
+  - **After:** the record's family group conversations, which are anchored on
+    the account's self record, leave in its `chats.json` as written, while
+    every grant each turn used is current. A turn whose grant ended, whose
+    record ended or whose source changed, and a turn while sharing is paused,
+    is left out, with every later turn of its conversation, as the
+    conversation history drops the same suffix. In citations, an id or link
+    that names a person's record is removed; a publication's id and link stay;
+    a label holding an identifier refuses the request. The turns are bound
+    into the job's receipt, so a grant that ends mid-job fails the job. An
+    adult record carries none.
+  - **Still refused** with `jointResults`: a canonical conversation anchored
+    on a pair naming the record. No writer makes one, and this release has no
+    projection for it. The route's closed reason list is unchanged.
+- **Embryo cohorts.**
+  - **Before:** the whole-account export refused an account that owned an
+    embryo record or held a live cohort role, or whose cohort held embryos;
+    the one-record export refused any cohort role of the record.
+  - **After:** neither refuses. The whole-account export and the one-record
+    export of the self record carry the account's own cohort, basis,
+    participant-set, donor-attribution, disposition-proposal and confirmation
+    rows, redacted as before: the other parent and any donor appear only as
+    "is requester" flags, and evidence and signatures only as "recorded"
+    flags. The self record also carries the account's own cohort signatures
+    and attestations. The other parent's signatures, principal ids, account
+    ids and records never appear. Embryo results (embryos, quality, scores,
+    variants, figures, report artifacts) are left out, and every manifest that
+    carries cohort records says so in `excludedClasses`, in plain words
+    (`EXPORT_EMBRYO_RESULTS_NOTE`). An adult record carries no cohort record.
+    `jointResults` no longer fires for a cohort role.
+- **Classes with no production writer.** `GET /api/export` now refuses (503)
+  when any row of ancestry regions, attestation contradictions,
+  subject-control refusal authorities, suppressions or report artifacts is in
+  the requester's scope. The member plan marks the five `complete-empty`.
+- **TEST complete archive.** Its Portrait rows carry the same nine fields as
+  the one-record export, and a result holding an identifier refuses.
+- **Person attribution.**
+  - **Before:** nine writers consumed no nonce, so their events named no one:
+    the jurisdiction and chromosomal-sex declarations, the person route's
+    pause, resume and stop, the directional revocation, the Portrait
+    acknowledgement, the adult invitation, and the subject route's pause and
+    resume. A nonce recorded already consumed (subject delete, subject
+    transfer, the subject-sharing stop) was never seen. PR 324's eight
+    person-caused codes were not on the closed list.
+  - **After:** each of those routes requires the one-time nonce its page
+    rendered; its door records the nonce's hash before the writer runs, in the
+    same transaction, so the writer's events name the person and a replay
+    writes nothing. The Family permissions page now sends pause and resume to
+    the subject route, as it already sent stop. The attribution trigger also
+    fires on a nonce inserted already consumed. PR 324's eight codes are on
+    the list, each bound to its own account route; the rights-session
+    reaffirmation stays off it.
+  - **Unchanged:** the rights-session actors, which wait on the owner and
+    counsel; events written before 28 September stay unattributed.
+- **Where:** migrations `20261023110000_export_completeness.sql` and
+  `20261023120000_legal_audit_attribution_completeness.sql`. Their guards
+  expect PR 324's bodies and `20261023100000`'s, so they go in the same
+  follow-up guarded release, after them.
+- **Wording:** one new sentence, `EXPORT_EMBRYO_RESULTS_NOTE`, a plain
+  factual statement in the manifest. No legal text changes.
+- **Tests:** `supabase/tests/subject_export_family_conversations.sql`,
+  `supabase/tests/export_cohort_records.sql`,
+  `supabase/tests/legal_audit_attribution_completeness.sql`, the changed
+  cases in `supabase/tests/subject_export_joint_results.sql`,
+  `subject_export.sql`, `account_archive_graph_rows.sql`, `subject_delete.sql`
+  and `export_member_plan.sql`, and the route, worker and component tests
+  listed in `docs/test-diff-register.md`.
+
+## 2026-10-23 — Stated behaviour change: the last four person-caused event codes (G5.6)
+
+The coordinator's follow-up to the 23 October attribution item: check that the
+four of PR 324's eight codes not yet shown to name their actor do, and close
+any gap under the one nonce rule (brief X1.5). It is not a new decision.
+
+- **`purpose.reaffirmed` (api.consent-reaffirm): no change.** Its own
+  transaction already proves the actor: each grant function the reaffirmation
+  re-runs records the presentation's single-use nonce in
+  `purpose_grant_nonces` for the account, and that insert names it.
+- **`subject.account-bound` (api.adult-subject-bind).**
+  - **Before:** the bind's one nonce, the rights session's, was recorded with
+    no account, so the event named no one.
+  - **After:** the same nonce is recorded once with the signed-in account and
+    its auth session, so the event names the account. The rights-session
+    routes keep their controller unchanged. The door stays closed, as before:
+    no issuer registers the adult-subject-control purpose.
+- **`subject-draft.created` (api.subject-drafts, both Path B bodies).**
+  - **Before:** the upload page's draft token was verified and never recorded,
+    so it could be used again for ten minutes and the event named no one.
+  - **After:** the page renders a one-time operation nonce in its place, in the
+    same `x-inherit-csrf` header. Its hash is recorded before the draft is
+    written; a spent nonce is refused like a missing one (403).
+- **`download.session.created` (api.subject-download).**
+  - **Before:** the create step took no nonce and named no one.
+  - **After:** it requires `X-Inherit-Operation-Nonce` minted for the account,
+    session and file. A missing, wrong or spent nonce is `invalid-request-v1`
+    for a readable subject and the opaque 404 otherwise. No page links the
+    download yet; the browser proof mints its nonce as a page would.
+- **Where:** `20261023130000_legal_audit_attribution_remaining.sql`, after
+  `20261023120000`, in the same guarded release.
+- **Wording:** none.
+
+## 2026-10-23 — Density: visible characters on every page (G2.5)
+
+Owner decision (clickable chat answer, "All pages: visible chars"), extending
+the fifth reading of "2026-10-22 — Density rule corrections (G2.5)". Under the
+corrected rules, the 480/700-character cap counts only the characters actually
+visible above the fold on every page, not only on the seven signed legal
+documents. The caps themselves, the frozen measurement modules, the baseline
+and the contract rules (the verifier's default) do not change. A capture
+without its corrected readings is still judged on the frozen count.
+
+- **Where:** `scripts/density-current.ts` (`evaluateDensityCapture`, rule set
+  `corrected-2026-10-22`). `SIGNED_LEGAL_DOCUMENT_ROUTE_IDS` stays, because
+  each of those routes must still render its signed text as one pre-formatted
+  node.
+- **Test:** `scripts/density-corrected-readings.test.ts`, decision 5, with
+  planted defects (`docs/test-diff-register.md`).
+- **Effect on the 70 public captures:** derived from `evaluation-round3.json`,
+  three 390 legal rows now meet every budget, so 45 of 70 do. 21 captures still
+  have more than 700 characters on the first screen
+  (`docs/evidence/density-public-corrected-20261022/README.md`).
+- G2.5 stays NO. It still needs every required capture from the owned-Linux
+  runtime.
+
+## 2026-10-23 — G8.5: forms, CSRF, the server action and the Resend webhook
+
+Owner decisions (clickable chat answers), on the findings of G8.5's form check
+(`scripts/form-register-correspondence.test.ts`, ledger rows in
+`docs/register-contract-divergence.json`):
+
+- **Form shapes: code to the register, and the register lists the harmless
+  extras.** Engineering moves Settings → AI (`api.llm-settings`: `{mode, apiKey}`,
+  the `llm-settings-v1` answers, and the DELETE reads the registered nonce), the
+  Path A draft (`api.subject-drafts`: `{kind: "adult", contactEmail}`, 403 for an
+  unreviewed jurisdiction), the compatibility chat body (`api.chat`) and the
+  sign-out redirect (`/auth/sign-in`, as `sign-out-v1` says) to the register.
+  The register gains the extras that ship and harm nothing: `genome.browser`'s
+  `?q=`, `requestId` on the subject-draft forms, Path B's `withAccount`,
+  `api.chat`'s 409 and `api.future-person-claim`'s 404.
+- **CSRF: build the token everywhere.** The register's `csrfTransport` stays.
+  Engineering issues, binds and consumes the one-time session-bound
+  `X-Inherit-CSRF` on every listed route and its callers, following the pattern
+  the future-person flows already send. Sign-out becomes a scripted form that
+  sends it. Operation nonces remain separate (`operationNonceIsNotCsrf`).
+- **Server action: move to a registered route.** `acknowledgeEmbryoGate` is
+  replaced by a registered route handler with the checks of its Family twin
+  `api.family-acknowledge`. The product then has no server action.
+- **`webhooks.resend`: register what it does.** An auth contract for Resend's
+  signed webhook headers and a success contract of 204 (matched) or 202
+  (unmatched), with 401 for a bad signature and 503 when unavailable.
+
+Nothing here changes D-083 (counsel) or D-103 (the owner's readability choice).
+G8.5 stays NO until these land with their tests and the hosted suite passes.
+
+## 2026-10-23 — D-103: the owner signs the split `revocable` sentence
+
+Owner decision (clickable chat answer, "Split the sentence"), the first of the
+three choices recorded in `docs/protocol/copy-for-signature.md` on 14 September.
+The owner signs this wording for the `revocable` key:
+
+> I can take this back at any time. Inherit then deletes what was built from my
+> file, on the deadlines it publishes.
+
+It measured grade 4.79 on 14 September and makes the same promise. The other four
+statements stay exactly as approved on 14 September. The readability gate is
+unchanged: consent statements are not reclassified as legal copy. D-110 (the six
+co-parent statements already shipping in `co-parent-review-form.tsx`, three of
+them over grade 9) stays a separate item. This signature does not cover it.
+
+Wiring the five statements into the adult confirm body is engineering. It is
+done when they render as individually tickable statements, the request carries
+the register's `statementKeys`, and the readability gate measures them.
+
+## 2026-10-23 — Comprehension model key: Anthropic, with a US$50 workspace limit
+
+Owner decision (clickable chat answer). `COMPREHENSION_MODEL_API_KEY` is a key in
+its own Anthropic Console workspace (`inherit-comprehension`), with a workspace
+spend limit of US$50 set at the provider. The harness reaches it through the
+provider's OpenAI-compatible chat endpoint (`provider.kind:
+openai-compatible-chat`). The key is an environment variable of the cloud
+environment, read only by the operator's run, and never deployment
+configuration. The harness's own `limitMicroDollars` stays at most `50000000`, as
+a second cap. The pinned model identifier is chosen at calibration and recorded
+only where `docs/comprehension-runs/README.md` allows. The run order is
+unchanged: a stub smoke run, one calibration, then full runs.
+
+## 2026-10-23 — D-103: Path A acceptance includes a typed name
+
+Owner decision (clickable chat answer, "Yes, as the register says"). An adult
+who accepts through their own account (Path A) also types their name, as the
+register's `subjectArtifact.typedName` requires. The name is stored encrypted
+the way Path B's e-signature stores it. Today
+`private.adult_subject_invitation_response_v1` writes `signing_name_encrypted`
+as null for Path A, so this needs one guarded migration. It goes into the release
+after the follow-up, not the follow-up's pinned set.
+
+The same piece of work follows the earlier G8.5 decision ("code to the
+register"):
+- Path A's account confirmation moves to the route the register names,
+  `api.invitation-accept` (`adult-subject-confirmation-v1.modes.path-a-account-required.route`).
+- The register's `api.withdraw` confirm wording ("four-item array") is
+  corrected for the five D-103 statements and Path B's own list.
+
+## 2026-10-24 — G8.5: Settings → AI may omit `apiKey`
+
+Owner decision (clickable chat answer, "Register what ships"). In the hosted and
+remote bodies of `api.llm-settings`, an empty or absent `apiKey` keeps the stored
+key, and a remote HTTPS endpoint may be saved with no key. The register is
+amended to say so. The code already behaves this way. This closes the last
+Settings row in `formRequestDivergence`.
+
+## 2026-11-19 — The APT guard fix reaches PR 324's branch
+
+Owner decision (clickable chat answer, "Add to PR 324"). Asked: hosted CI on
+`main` and on PR 324's branch still runs an APT guard that refuses GitHub's
+newer runner images, so those runs fail at random; the fix exists only on the
+PR 326 branch; seven acceptance rows can close only on a green `main` CI run.
+How should the guard fix reach those branches? Offered: "Add to PR 324",
+"Separate PR to main", "Leave it for now". Chosen: "Add to PR 324". The three
+guard commits are cherry-picked onto PR 324's branch
+`claude/magical-bohr-2qgad6`. They touch only a CI script, its tests and docs,
+so PR 324's migrations and its rehearsed release kit stay valid; its CI reruns
+on the new head, and `main` gets the fix when PR 324 merges.
+
+Done the same day and pushed: `c27aa1e1`, `091a9a44` and `87bb33d8` on that
+branch are cherry-picks of `4367aec9`, `9c0998ff` and `f85a856e`, and its head
+moved from `cf79b1b6` to `87bb33d8`. The four guard files
+(`scripts/ci_apt_mirror_priority.py`, `scripts/test_ci_apt_mirror_priority.py`,
+`docs/ci-apt-mirror-priority.md`, `docs/ci-font-archive-cache.md`) are
+byte-identical to those on the PR 326 branch. The only conflict was
+`docs/test-diff-register.md`, resolved by keeping PR 324's register with the
+three new entries at its top. `git diff --quiet 538dcee6 87bb33d8 --
+supabase/migrations` succeeds, so the PR 324 kit's migration-tree precondition
+still holds. PR 324's earlier green run (39836851305) was for `cf79b1b6`, so its
+CI has to pass again on `87bb33d8`. `main` keeps the unfixed guard until PR 324
+merges.
+
+## 2026-11-19 — PR 324's guarded release: read-only pre-checks first
+
+Owner decision (clickable chat answer, "Read-only checks first"). Asked: seven
+acceptance rows (G1.7, G1.12, G2.1, G2.2, G4.2, G5.4, and G7.4 after the
+follow-up) close only after PR 324's guarded production release of 25
+migrations, then its merge; that release needs a fresh short-lived Supabase
+access token and the owner's go. Does the owner want to begin it? Offered:
+"Read-only checks first", "In a new session", "Not now". Chosen: "Read-only
+checks first". Once PR 324's CI is green on a head that has the guard fix, the
+session runs only the runbook's read-only pre-checks against production, shows
+the owner the results, and asks again before any dry run or write. The owner
+enters the token in a secure form; the session never sees its value.
+
+This answer is not the release's go. The go is still asked separately, as the
+PR 324 runbook requires, after the pre-check results are shown. As of this
+entry no production step has been run.
+
+## 2026-11-19 — G5.3: the expiry case meets "the 30-day expiry proven in a browser"
+
+Owner decision (clickable chat answer, "Yes, it meets it"). Asked: G5.3 still
+asks for "the 30-day expiry proven in a browser". The existing browser test
+moves a held upload's deadline 31 days into the past with a database update,
+then runs the real expiry job and checks the upload is gone; it passed on main
+CI. No browser actually waits 30 days. Does that test meet the row? Offered:
+"Yes, it meets it", "No, it needs more". Chosen: "Yes, it meets it".
+
+The expiry clause of G5.3 is met by the expiry case of
+`e2e/other-adult-upload.spec.ts` as it stands. The row stays NO until PR 324's
+release, its merge and a green main CI run, as its own reconciliation paragraph
+says.
+
+## 2026-11-19 — D-136: the owner accepts the guard change
+
+Owner decision (clickable chat answer, "Accept the fix"). Asked: a local
+rehearsal found defect D-136: migration `20261025400000` would have refused on
+production, because it checked one function against its commented source while
+production holds that function with two comment lines stripped. The session
+changed its guard to accept exactly those two versions and still refuse any
+other. That was the session's engineering decision, not the owner's. Does the
+owner accept it? Offered: "Accept the fix", "Use another approach", "Review it
+later". Chosen: "Accept the fix".
+
+The D-136 guard change in commit `a2a4d8e9` is owner-accepted. The release kit
+for the four later migrations
+(`docs/evidence/followup-2-production-apply-20261119/`) is unchanged by this
+entry and still needs its own token and go.
+
+## 2026-11-19 — G8.5: Path A's invitation stays one step
+
+Owner decision (clickable chat answer, "One step; amend register"). Asked: when
+someone invites another adult to upload their own DNA file, the signed route
+register says the inviter must first sign a statement, and that statement says
+the inviter holds the file, which is never true in this flow; the code sends
+the invitation in one step with no statement. Which should stand? Offered: "One
+step; amend register", "Add an inviter statement", "Leave it open". Chosen:
+"One step; amend register".
+
+The register is changed to describe what the code does: on Path A the
+invitation is sent in one call and the inviter signs nothing. No code change
+and no database change. This closes `api.subject-drafts`' Path A row in
+`endpointResponseDivergence`. Path B, where the uploader does hold the file, is
+unchanged.
+
+## 2026-11-19 — G8.5: the provider-key cloud consent request is removed
+
+Owner decision (clickable chat answer, "Remove it, keep withdrawal"). Asked: the
+server still accepts an older request that records a person's permission to
+send Copilot questions to a cloud AI provider without showing them the
+agreement text; no screen sends it any more, only two test fixtures do, and the
+register does not list it. What should happen to it? Offered: "Remove it, keep
+withdrawal", "Register it as it is", "Leave it open". Chosen: "Remove it, keep
+withdrawal".
+
+`api.consents` stops accepting the `{providerKey}` body. Withdrawing a
+permission given that way keeps working, as the register already describes.
+The two test fixtures that sent it are rewritten to use the consent route that
+shows the text. No database change: the function it called stays in the
+database, uncalled, until a later release retires it.
+
+## 2026-11-19 — G8.5: an invited adult's own account declaration counts
+
+Owner decision (clickable chat answer, "Account declaration counts"). Asked:
+when an invited adult accepts in their own account, the register asks for four
+jurisdiction fields, including a signed jurisdiction attestation; that
+attestation document does not exist yet and is with counsel (D-083); the code
+relies on the jurisdiction the person already declared on their account, which
+the register already accepts on the other acceptance path. Which should stand
+for this path? Offered: "Account declaration counts", "Keep the four fields".
+Chosen: "Account declaration counts".
+
+The register's `api.invitation-accept` body for an invited adult drops
+`jurisdictionCode`, `jurisdictionAttestationVersion`,
+`jurisdictionAttestationHash` and `jurisdictionAffirmed`, matching the code and
+Path B's account body (23 October). No code change and no database change. The
+co-parent body on the same route keeps its fields; D-083 stays with counsel.
+
+## 2026-11-19 — G8.5: the retired chat's 409 leaves the register
+
+Owner decision (clickable chat answer, "Delete it from the register"). Asked:
+the register still lists a chat answer, "no model provider saved" (status 409),
+that belonged to the old compatibility chat retired on 24 October; nothing in
+the code gives that answer now, and the Copilot page shows setup instructions
+instead. What should happen to the register entry? Offered: "Delete it from the
+register", "Bring the answer back". Chosen: "Delete it from the register".
+
+`copilot-provider-setup-required-v1` and its two references leave the register.
+No code change. This narrows the 23 October decision that registered
+`api.chat`'s 409s as harmless extras: the scientific-correction 409, which the
+own chat still gives, stays.
+
+## 2026-11-19 — G8.5: Copilot for an adult's own record is built
+
+Owner decision (clickable chat answer, "Build it"). Asked: when an adult accepts
+an invitation and their DNA file is held in their own account, asking Copilot
+about their own results gives a not-found page, because Copilot's permission
+only accepts an account's first `self` record; the signed register already
+describes this case as allowed, on the same terms as anyone's own genome.
+Should it be built? Offered: "Build it", "Build it, local models only", "Keep
+closed; amend register". Chosen: "Build it".
+
+Copilot's own-record permission is widened to an `other_adult` record the
+person holds themselves (`scope-derived-v1`, `subject:adult`, `own-subject`),
+for local models and approved cloud providers. It needs a database migration,
+so it ships in a later guarded release. The existing consent wording is reused;
+any wording that has to change comes back to the owner first.
+
+## 2026-11-19 — G8.5: the genome browser's read is registered as built
+
+Owner decision (clickable chat answer, "Register the read as built"). Asked:
+the genome browser reads a region by file, and only the signed-in person's own
+variants ever come back; the signed register describes a read by person, with a
+separate one-time browse token and paging, which would let a relative with
+access see the shared track. Which should stand? Offered: "Register the read as
+built", "Build the read by person", "Leave it open". Chosen: "Register the read
+as built".
+
+The register's `api.browse-region` is rewritten to the file-based read: the
+closed body `{file, chromosome, start, end}`, the answer the route gives, own
+variants only, protected by the session `X-Inherit-CSRF` token it already
+uses. No code change and no database change. A relative does not see the
+track. This closes the genome browser's row in `clientRequestDivergence`.
+
+## 2026-11-19 — G8.5: the two undescribed `genomes` key shapes
+
+Owner answer, in the owner's own words: "Do what is best for the long term."
+Asked: genome files are stored under random identifiers at the top of the
+storage bucket, with the link to the account and person kept in the database,
+and prepared (derived) files sit under a `prepared/` folder; the brief and the
+register describe folders per account and per person instead and do not
+mention `prepared/`; every upload since 6 September uses the flat form. Which
+side should change? Offered: "Change the documents", "Change the code to
+folders", "Leave it open".
+
+The owner left the choice to engineering. Engineering's judgment, which is the
+session's and not the owner's: change the documents. The reasons:
+- An opaque key carries no account or person identifier, so storage and
+  provider logs show no link between a file and a person. A folder key writes
+  that link into every object name.
+- A record can move between accounts (`api.subject-transfer`). With the link in
+  the database, a transfer moves no stored file; with folder keys it would have
+  to move the file or leave a key that names the wrong account.
+- Access and deletion are already decided from database rows that bind the
+  exact key. Folders would add a second place where that rule lives.
+- Moving stored genome files is the riskiest change this product can make, and
+  it would buy nothing a person can see.
+
+So the register's storage prefixes are to describe the flat key and the
+`prepared/` folder, and the brief's sentence is to be rewritten to match, with
+its pinned hash updated. As offered in the question, the exact brief sentence
+is shown to the owner before it is applied. Nothing is applied by this entry.
+
+## 2026-11-19 — G8.5: Copilot for another adult's record opens
+
+Owner answer, in the owner's own words, to "Should a person who uploaded
+another adult's DNA file, or was given access to it, be able to ask Copilot
+about that adult's results?" (offered: "Keep closed; amend register", "Build it
+for self-hosted", "Leave it open"): "a person who uploaded another adult's DNA
+file, or was given access to it, should be able to ask Copilot about that
+adult's results".
+
+Asked then where it should work, because the signed register allows it only on
+a self-hosted install with its own model and forbids sending another adult's
+results to a cloud AI provider, and the hosted service has only cloud
+providers. Offered: "As the register says", "On the hosted service too", "Hold
+this one for now". Owner decision (clickable chat answer): "On the hosted
+service too".
+
+What that answer sanctions, as the option was worded:
+- The self-hosted part is built now, as the register already describes it
+  (`scope-derived-v1`, `subject:adult`, `uploader-or-grantee`): a local model
+  only, after that adult gives their own `copilot.local` permission for this
+  relationship. It needs a permission route, a reader, conversation storage, a
+  database migration and a guarded release. The permission wording comes to
+  the owner for approval before it ships.
+- The cloud path on the hosted service is the owner's stated intent and is
+  **not** sanctioned to ship by this entry. The register's `cloudProvider`
+  `absolute-deny` for this relationship stays until a separate decision
+  rewrites it. Engineering brings the owner the register change and the consent
+  wording as that separate decision, and counsel should review it first.
+  Until then the hosted site keeps its "not available here" page.
+
+## 2026-11-19 — G8.5: where the register is stricter, engineering codes to it
+
+Owner decision (clickable chat answer, "Yes, code to the register"). Asked:
+several small differences remain where the code answers differently from the
+signed register and the register's version is the stricter or more private
+one; the examples given were ten endpoints that send a looser referrer policy
+than the register names, the embryo upload answering a foreign website with
+"refused" where the register says "not found", and deleting one file without
+the one-time confirmation the register requires for deletions. May engineering
+change the code to match the register in cases like these without asking each
+time? Offered: "Yes, code to the register", "Ask me each time". Chosen: "Yes,
+code to the register".
+
+The rule, as the option was worded: where the register is stricter or more
+private and no wording a person reads changes, engineering changes the code,
+records it in the ledgers and tells the owner afterwards. Anything that
+loosens a rule, changes wording, or changes what a person can do still comes
+to the owner. Some of these need a database migration and ship in a later
+guarded release. This rule does not let engineering edit the register.
+
+## 2026-11-19 — G8.5: route-specific error answers are registered as they ship
+
+Owner decision (clickable chat answer, "List them in the register"). Asked: a
+few routes give specific error answers that the register does not list, for
+example "this file is still processing" on file delete, "region too large" in
+the genome browser, and "service unavailable" on several routes; they tell the
+calling page what went wrong. Should the register list them, or should the
+code stop giving them? Offered: "List them in the register", "Remove them from
+the code". Chosen: "List them in the register".
+
+The register is amended to list each such answer as it ships, the way the
+harmless extras were registered on 23 October. No code change. Sign-in and
+wrong-origin refusals are not part of this; they follow the rule in the entry
+above.
+
+## 2026-11-19 — G8.5: the register names where each kind of consent is withdrawn
+
+Owner decision (clickable chat answer, "Register where each is withdrawn").
+Asked: the register describes one "withdraw consent" address that handles
+eleven kinds of permission; in the code that address withdraws two kinds
+(purpose grants and cloud AI permission), other kinds are withdrawn elsewhere,
+for example by deleting the record, restricting an embryo cohort or stopping
+family sharing, and one kind (donor attribution) cannot be given yet at all.
+Which should stand? Offered: "Register where each is withdrawn", "One address
+for all kinds", "Leave it open". Chosen: "Register where each is withdrawn".
+
+The register is amended to name, for each kind, the route that withdraws it
+today. No code change now. Before the amendment engineering traces every kind,
+and any kind that turns out to have no way to be withdrawn comes back to the
+owner; the amendment does not paper over it.
+
+## 2026-11-19 — G5.6: production exports are kept on Cloudflare R2
+
+Owner decision (clickable chat answer, "Cloudflare R2"). Asked: when a person
+asks for an export of their data, the finished archive must be kept somewhere
+until they download it; on 3 October the owner approved the private Cloudflare
+R2 store for the test flow, and that is the pipeline that was built and
+tested; production has no store chosen, so export requests there answer
+"unavailable". Which store should production use? Offered: "Cloudflare R2",
+"Supabase storage", "Keep exports off for now". Chosen: "Cloudflare R2".
+
+This answers "the export provider remains an unanswered owner choice"
+(`docs/account-archive-orchestration.md`). What it does and does not do:
+- It chooses the store. It does not switch exports on:
+  `approvedAccountArchiveGeneration()` stays closed until the production
+  composition is built and qualified, the deferred export classes and the
+  asynchronous delivery contract are done, and the guarded releases have run.
+- The owner creates the production bucket and its credentials. The question
+  said this is new spending. The repository's notes quote about US$0.015 per
+  GB per month for storage with free downloads
+  (`docs/resumable-originals-options.md`); the session did not verify current
+  prices, and no spending cap was set by this answer.
+- The 3 October conditions still hold for production: deletion is proved by
+  actual provider operations, and retained version history is not assumed.
+
+## 2026-11-19 — Correction: how the two fixtures reach a legacy cloud grant
+
+Not an owner decision. The entry "G8.5: the provider-key cloud consent request
+is removed" said, as the question's option did, that the two test fixtures
+that sent the body "are rewritten to use the consent route that shows the
+text", and that the database function it called stays "uncalled". Engineering
+found that this cannot be done as written: the consent route that shows the
+text writes a purpose grant, and the page those fixtures test,
+`/settings/consents`, lists only the legacy `consent_grants` rows that the
+removed body wrote. So the two fixtures (`e2e/settings.spec.ts` and
+`e2e/helpers/density-owned-state-fixtures.ts`) seed that legacy row with the
+service role through `grant_cloud_model_consent`, for the provider just saved.
+The function has no caller in `src/`; two browser fixtures and one database
+test call it. The decision itself is carried out as chosen: `api.consents`
+refuses the body, and withdrawal is unchanged. Whoever retires the function
+later rewrites those fixtures and decides what `/settings/consents` lists.
+
+## 2026-11-19 — G8.5: sign-out keeps an open rights session
+
+Owner decision (clickable chat answer, "Keep it at sign-out"). Asked: when
+someone signs out, the register says Inherit should also end any open rights
+session in that browser; a rights session is what a person gets after opening
+a mailed link, for example to accept an invitation, and the link itself works
+only once; today sign-out keeps it, so on a shared computer one person can
+sign out and the invited person can then sign in and finish accepting. Should
+sign-out end it? Offered: "Keep it at sign-out", "End it, as the register
+says". Chosen: "Keep it at sign-out".
+
+Behaviour stays as it is, and the register's `sign-out-v1.sessionEffect` is
+amended to say that the rights cookie is not cleared at sign-out. The session
+recommended this because the mailed link is already used up and it had not
+verified that a person could always get a fresh one; that verification is
+still owed, and the question can be reopened once it is done.
+
+## 2026-11-19 — G8.5: principles for the CSRF register amendments
+
+Owner decision (clickable chat answer, "Yes, on those principles"). Asked: the
+remaining 34 routes of the CSRF work (decided on 23 October: build the one-time
+session token everywhere) need technical amendments to the register, about
+where each one-time value travels in a request. May engineering make them on
+these principles and list each amendment for the owner afterwards?
+1. The `X-Inherit-CSRF` header carries only the session token.
+2. Other one-time values, such as operation or draft tokens, move to their own
+   header or body field and keep working as they do.
+3. File uploads sent in many chunks keep one session-bound value, with each
+   chunk reserved once, instead of a new token per chunk.
+4. Cookie names in the register follow the names the code really sets.
+Offered: "Yes, on those principles", "Bring each amendment to me". Chosen:
+"Yes, on those principles".
+
+Engineering amends the register route by route on the four principles, builds
+the code and the database migration, and gives the owner the list of
+amendments afterwards. The migration ships in a later guarded release, on the
+owner's go. Anything that does not fit the principles comes to the owner as
+its own question.
+
+## 2026-11-19 — G8.5: the strictest referrer setting applies to the whole route
+
+Owner decision (clickable chat answer, "Yes, strictest on the whole route").
+Asked: on three embryo routes the register names "send no referrer" only for
+the success answer and a looser setting for their other answers; the system
+can only set this per route, so today even the success answer gets the looser
+setting; may engineering apply the strictest setting to every answer of such a
+route, which is never less private but is stricter than the register states
+for those other answers? Offered: "Yes, strictest on the whole route", "Keep
+to the register exactly". Chosen: "Yes, strictest on the whole route".
+
+Where the register names `no-referrer` for any answer of a route, every answer
+of that route gets it, and the register is amended to say so. This settles
+D-138 (b) and gives the rule for D-138 (c).
+
+## 2026-11-19 — G8.5: a cross-site file delete is refused with the register's code
+
+Owner decision (clickable chat answer, "Use the register's code"). Asked: if a
+different website tries to make a signed-in person's browser delete one of
+their files, Inherit refuses, with an internal code that differs from the one
+the register names; using the register's code means that in that one case the
+Files page would show "Deletion did not finish. Please try Delete again. The
+file will stay listed until deletion is complete." instead of "Please sign in
+again and try Delete."; a person using Inherit normally never triggers it.
+Which should stand? Offered: "Use the register's code", "Keep the current
+code". Chosen: "Use the register's code".
+
+`api.file-delete`'s cross-origin refusal answers 403 `request_forbidden`, as
+`authenticated-mutation-v1` says. Both sentences already exist; no new wording
+is written.
+
+## 2026-11-19 — Correction: Copilot for an adult's own record is shelved
+
+Owner decision (clickable chat answer, "Shelve it"), after a correction. The
+entry "G8.5: Copilot for an adult's own record is built" rested on a premise
+the session gave the owner and got wrong: that an invited adult gets a
+not-found page when asking Copilot about their own results. The owner was told
+so and asked again. As put to the owner: after accepting an invitation the
+person's file sits on their main record, and Copilot already works for them
+there; the not-found page is only for a second, empty record that no screen
+links to; the builder built what the register describes anyway, with no
+visible effect, changes to three production database functions, and no way to
+reach it until a file can be uploaded to that second record. What should
+happen to that work? Offered: "Shelve it", "Merge it anyway", "Build the
+missing screen too". Chosen: "Shelve it".
+
+The work is not merged and not shipped. It is saved, unapplied, in
+`docs/evidence/own-adult-copilot-shelved-20261119/`. The person's own Copilot
+works on their main record (`/copilot/me`). The register's `own-subject` case
+for a second record stays unbuilt, and the difference is recorded in the G8.5
+row; it can be picked up if a second-record upload is ever built.
+
+## 2026-11-19 — A brief failure of the sign-in service is not treated as signed out
+
+Owner decision (clickable chat answer, "Retry, then the error page"). Asked:
+when Inherit's sign-in service fails for a moment (not when it says the person
+is not signed in), a signed-in person is sent to the sign-in page, or shown
+"not found", as if they had been signed out; their session is still valid and
+reloading usually works; this is the most likely cause of the test that fails
+now and then on CI, though that is not proven yet. What should a signed-in
+person see in that moment? Offered: "Retry, then the error page", "Keep it as
+it is", "Wait for proof first". Chosen: "Retry, then the error page".
+
+The server checks once more after a short pause. If the check still fails, the
+person sees the existing "This page did not load" page with its "Try again"
+button, not the sign-in page. A person who really has no session still goes to
+sign-in. No new wording is written, and no access is granted without a
+successful check.
+
+## 2026-11-19 — PR 324's release: the green run is accepted and read-only checks begin
+
+Owner decision (clickable chat answer, "Yes, start read-only checks"). Asked:
+PR 324's CI is green on its guard-fixed head `87bb33d8`, with every job, the
+aggregate check and the worker build passing together in one complete run, but
+it was the third attempt of run 44569610024: the first attempt had one browser
+test fail (the intermittent sign-in-service failure recorded as D-142, which
+is unrelated to PR 324's migrations), and the second was a partial re-run that
+cannot count. The release runbook asks for "every required check green on one
+attempt". Does the owner accept this green run and want the read-only checks
+started now? Offered: "Yes, start read-only checks", "Wait for a first-attempt
+green", "Not in this session". Chosen: "Yes, start read-only checks".
+
+The session asks for a new short-lived Supabase access token in a secure form,
+rebuilds and verifies the release kit, runs only the runbook's read-only
+probes and pre-checks against production, applies its stop rules, and shows
+the owner the results. This is not the release's go: the owner is asked again
+before any dry run or write. The token is stored on the session's cloud
+environment for the Supabase API host until the owner removes or revokes it.
+
+## 2026-11-19 — Register amendments that only describe decided behaviour
+
+Owner decision (clickable chat answer, "Yes, then list them"). Asked: several
+register amendments are needed only to describe behaviour the owner has
+already decided that day (the brief-outage handling, the whole-route referrer
+rule, sign-out keeping the rights session) and to add the Path A invitation
+route to the register's rate-limit list, a limit the database already
+enforces. May engineering make amendments of this kind and list each one for
+the owner afterwards? Offered: "Yes, then list them", "Show me each first".
+Chosen: "Yes, then list them".
+
+Where an amendment only writes down behaviour the owner has already decided,
+or a limit the system already enforces, engineering edits the register and
+gives the owner the list afterwards. Anything that changes what a person can
+do or see still comes to the owner first.
+
+## 2026-11-19 — The brief's storage sentences are replaced
+
+Owner decision (clickable chat answer, "Apply both"). The owner was shown the
+two proposed sentences of `docs/protocol/brief-corrections-proposed.md` item 22
+(22.1, where a subject file, a prepared file and a cohort file are stored;
+22.2, that legacy objects are read and deleted through their database rows and
+that no Storage policy lets a signed-in person read `genomes`) and asked
+whether to apply them to the brief. Offered: "Apply both", "Apply only the
+first", "Not yet". Chosen: "Apply both".
+
+Both sentences replace the brief's current ones and the brief's pinned hash in
+the register is updated. No code or stored file changes. Item 22.3, the
+sentences about signed download links, is not applied and stays a separate
+open correction.
+
+## 2026-11-19 — G8.5: a withdrawal is built for three kinds of consent
+
+Owner decision (clickable chat answer, "Build withdrawal for each"). Asked:
+three kinds of consent can only be withdrawn today by deleting things: a
+person's consent to upload their own file (deleting a file leaves the consent
+on record; only emptying the whole record or deleting the account ends it); an
+uploader's consent for another adult's file (only by deleting that adult's
+whole record, which also ends that adult's own confirmation); and a non-parent
+uploader's consent for an embryo upload (only by deleting their account). The
+second and third exist only in test mode; the first is live. How should the
+register treat these for now? Offered: "Register as built, list the gap",
+"Build withdrawal for each", "Decide later". Chosen: "Build withdrawal for
+each".
+
+A way to withdraw each kind is built, without deleting more than that consent
+covers: new routes and screens, wording for the owner's approval, database
+changes, and a later guarded release. Until then the three stay in the
+ledger's `consentWithdrawalNotRegistered` list. The design, including what
+withdrawing an uploader's consent does to the other adult's record and
+confirmation, comes back to the owner before it is built.
+
+## 2026-11-19 — PR 324's release: the token, and what the session could not do
+
+Not a decision to proceed. The token saved for release 1's read-only checks was
+refused by Supabase's management API on every request (401, "JWT could not be
+decoded"), so no probe and no pre-check ran. Asked how to continue (offered:
+"Show me the form again", "I'll fix it in settings", "Leave release 1 for
+now"), the owner answered in their own words: "I'm logged into Supabase on
+Brave, just do it yourself please".
+
+The session cannot do that. It runs in a cloud container with no computer
+attached, so it cannot reach the owner's browser; and making an access token
+through a logged-in browser would put the token's value in front of the
+session, which the release's rule against printing, logging or seeing the
+token is there to prevent. Release 1 stays where it is: runbook step 1 passed,
+PR 324's green run is recorded and accepted, and steps 3 and 4 wait for a
+working personal access token entered by the owner in the secure form or in
+the environment's settings.
+
+## 2026-11-19 — Withdrawing consent for a person's own DNA file deletes the files and all made from them
+
+Owner decision (clickable chat answer, "Delete files and all made from them").
+Asked: the consent text and the brief already say withdrawal deletes the files
+and everything made from them; an operation that does this exists in the
+database but no screen offers it; which withdrawal should be built? Offered:
+"Delete files and all made from them", "Delete files, keep family links",
+"Decide later". Chosen: "Delete files and all made from them".
+
+One control, in Settings and on the Files page, runs the whole-record emptying
+that the self case of `api.subject-delete` already registers: every file on
+the person's own record, every result, report and Copilot conversation made
+from them, and the sharing permissions and family links built on them. The
+account stays, and a new upload asks for the consent again. Deleting a single
+file stays what it is and is not a withdrawal. The wording of the control, the
+confirmation, the receipt and the email is shown to the owner before it ships.
+Design: `docs/evidence/consent-withdrawal-design-20261119/design.md`, section 1.
+
+## 2026-11-19 — An uploader's withdrawal for another adult's file deletes it, unless that adult holds the record themselves
+
+Owner decision (clickable chat answer, "Delete, unless they hold it
+themselves"). Asked: what should an uploader's withdrawal do to the other
+adult's record and to files they already confirmed as theirs (test mode only
+today)? Offered: "Delete, unless they hold it themselves", "Always delete the
+whole record", "Decide later". Chosen: "Delete, unless they hold it
+themselves".
+
+Where the other adult has no account of their own on the record, everything
+the uploader added is deleted, confirmed or not, and that adult is sent a short
+notice. Where they have taken the record over with their own account, their
+record and the files they confirmed stay theirs; the uploader's consent ends,
+unconfirmed files are deleted, and the uploader can add nothing more and keeps
+no access. Wording goes to the owner first. Design: the same file, section 2.
+
+## 2026-11-19 — A non-parent uploader's withdrawal for an embryo upload stops analysis and deletes, as they signed
+
+Owner decision (clickable chat answer, "Stop analysis and delete, as signed").
+Asked: the statement a non-parent uploader signs says Inherit then stops all
+analysis and deletes what it built; what should their withdrawal do once the
+upload is complete (test mode only; embryo upload is closed on the site)?
+Offered: "Stop analysis and delete, as signed", "Only remove the uploader",
+"Decide later". Chosen: "Stop analysis and delete, as signed".
+
+After the upload is complete the withdrawal runs the existing cohort
+restriction under the register's case `nonparent-required-uploader-basis-loss`:
+analysis stops, results and source files are deleted, permissions end, and the
+genetic parents are notified. Before it is complete the withdrawal deletes the
+draft and its files. It gives the uploader no parent role and no say over any
+other cohort. Wording goes to the owner first. Design: the same file,
+section 3.
+
+## 2026-11-19 — G8.5: the claim-objection address accepts either kind of session
+
+Owner decision (clickable chat answer, "One address accepts both"). Asked: the
+last route not yet on the one-time security token is "object to a claim",
+which a person can send from the emailed link (no account) or signed in from
+Settings, while the token rule ties one address to one kind of session; how
+should it be handled? Offered: "One address accepts both", "Separate address
+for signed-in", "Decide later". Chosen: "One address accepts both".
+
+`api.future-person-claim-objection` checks the emailed-link (rights) session
+first and then the signed-in account, and spends a one-time token of whichever
+it finds. Nothing changes for people. The token check and its tests change, no
+database change is needed, and the register is amended to say this route takes
+either kind.
+
+## 2026-11-19 — Merges to main happen as the work becomes safe to merge
+
+Owner instruction (typed in chat): "remember to merge to main as you go along
+and feel confident".
+
+This is standing permission to merge to `main` without a further question
+whenever a merge is safe. It does not change when a merge is safe. `main`
+deploys to production, and `docs/release-checklist.md` ("Guarded production
+releases outstanding") says a branch whose code needs a release merges straight
+after that release reads back EQUAL, never before. On 19 November none can be
+merged: production's database is behind every commit on PR 324 and on the
+follow-up, and release 1 waits for a working Supabase access token. Each
+release's database write still needs the owner's go after its read-only
+pre-checks; once a release reads back EQUAL, the matching commit is merged at
+once under this instruction.
+
+## 2026-11-20 — PR 324's release: the Supabase connector reads production, and what it cannot carry
+
+Not a decision to proceed. The owner wrote (typed in chat, 19 November): "I
+changed the supabase connector permissions." The Supabase connector now reaches
+the production project, and one small read-only query was run through it on 20
+November: the session user is `postgres`, the migration ledger holds 248 rows
+with highest version `20261011010251`, and no row at or after release 1's first
+version exists. That is the ledger state release 1's first batch expects.
+
+The release itself cannot go through the connector. It is four statements of
+91 KB to 340 KB of exact SQL (740 KB in all), each carrying md5 checks of every
+embedded migration, and the kit sends them from files through the Supabase
+Management API with an access token (`api/RUNBOOK.md`). The connector takes a
+query only as text the session writes out, which cannot be done byte for byte
+at that size. So release 1's runbook steps 3 to 7 still wait for a working
+personal access token (it starts `sbp_`) entered by the owner in the secure
+form or in the environment's settings; the value saved for `api.supabase.com`
+on 19 November is still refused (401). The connector read is an early check,
+not the runbook's step 4, which is run again with the kit when the token works.
+
+## 2026-11-22 — The wording of the own-file consent withdrawal is approved
+
+Owner decision (clickable chat answer, "Approve as written"). Asked: the
+withdrawal of a person's consent to store their own DNA file is built and
+passing; do you approve its wording (the page text, the confirmation, the
+receipt and the email, shown in full)? Offered: "Approve as written", "Not
+yet, I want changes". Chosen: "Approve as written".
+
+The strings of `src/copy/upload/withdrawal.ts` as listed in
+`docs/evidence/consent-withdrawal-design-20261119/own-file-wording.md` are
+approved, with the additions of the next entry.
+
+## 2026-11-22 — The own-file withdrawal's optional changes are left to engineering
+
+Owner answer, in the owner's own words, to "Which of these optional changes
+do you want on that withdrawal?" (offered, any or none: "Say that
+permissions end", "Say that exports go", "Require typing to confirm", "Drop
+the password line"): "You decide based on what is best from my intent".
+
+Engineering's choice under that delegation, from the intent the owner has
+stated (a withdrawal deletes the files and everything made from them, and a
+person is told plainly what goes and what stays):
+- Add both lines to the confirmation's list of what is deleted: "Every
+  permission you gave for your DNA ends." and "Any copy of your record we
+  prepared for you to download. Its download link stops working." Both are
+  true of what the withdrawal does (the emptying revokes every permission on
+  the record, and since D-144 it ends the record's exports), and a list that
+  leaves them out undersells what is deleted.
+- No typed confirmation. The account stays and the step is reversible by
+  uploading again with a new consent; a typed step would add friction to a
+  right the consent text promises ("You can withdraw this permission"), and
+  the two-step confirmation matches "Stop sharing".
+- Keep the email's last line, "If you did not do this, change your password
+  now." It is the one protection a person has if someone else used their
+  account to delete their data.
+
+## 2026-11-22 — An uploader's withdrawal hands a record its adult holds to that adult
+
+Owner decision (clickable chat answer, "Hand it to the adult"). Asked: when
+an uploader withdraws their permission for another adult's file and that
+adult has taken the record over with their own account, the decision of 19
+November says the record stays theirs and the uploader keeps no access; who
+owns the record afterwards? Offered: "Hand it to the adult", "Keep refusing
+for now", "Uploader stays owner, locked". Chosen: "Hand it to the adult".
+
+The withdrawal moves the record and the files the adult confirmed to the
+adult through the existing transfer rules (`subject-ownership-transfer-v1`),
+on the uploader's act; the uploader's consent ends, unconfirmed files are
+deleted and the uploader keeps no access. The transfer is closed until its
+three notices are worded and approved, so this branch stays refused until
+engineering brings the owner that wording and the owner approves it. Test
+mode only today.
+
+## 2026-11-22 — G8.5: the reviewer chunk-acknowledgement address accepts either kind of session
+
+Owner decision (clickable chat answer, "Yes, same pattern"). Asked: one
+route is still off the one-time security token, a test-only archive
+acknowledgement that shares its address with a reviewer route; moving it
+means that address accepts either a reviewer session or an account session,
+the pattern approved for "object to a claim"; apply it here too? Offered:
+"Yes, same pattern", "Leave it as it is". Chosen: "Yes, same pattern".
+
+`api.claim-review-chunk-acknowledgement` checks the reviewer session first
+and then the account, and spends a one-time token of whichever it finds;
+nothing changes for people. `csrfOwnDesign` then has no row.
+
+## 2026-11-22 — The wording of the two test-mode withdrawals is approved
+
+Owner decision (clickable chat answer, "Approve as written"). Asked: do you
+approve the wording of the two test-mode withdrawals (an uploader's
+permission for another adult's file, and a non-parent uploader's embryo
+upload), shown in full? Offered: "Approve as written", "Not yet, I want
+changes". Chosen: "Approve as written".
+
+The strings listed in
+`docs/evidence/consent-withdrawal-design-20261119/other-adult-and-embryo-wording.md`
+are approved. The line shown on a record the adult holds with their own
+account changes with the transfer branch decided the same day and comes back
+to the owner with the transfer's notices.
+
+## 2026-11-22 — The wording of the 72-hour notice and the 30-day reminder is approved
+
+Owner decision (clickable chat answer, "Approve as written"). Asked: do you
+approve the two emails sent to an adult who accepted an invitation, the
+second notice after 72 hours and the reminder after 30 days, shown in full,
+noting that the reminder cannot say "one click" because no in-account delete
+exists yet for these adults? Offered: "Approve as written", "Not yet, I want
+changes". Chosen: "Approve as written".
+
+The strings listed in `docs/evidence/adult-acceptance-hold-20261120/wording.md`
+are approved.
+
+## 2026-11-22 — The wording of Copilot for another adult's record is approved
+
+Owner decision (clickable chat answer, "Approve as written"). Asked: do you
+approve the wording of Copilot for another adult's record (self-hosted,
+local model only), shown in full, noting that the existing Family "Copilot"
+permission row now also opens the one-person page? Offered: "Approve as
+written", "Not yet, I want changes". Chosen: "Approve as written".
+
+The strings listed in `docs/evidence/subject-copilot-20261120/wording.md` are
+approved, and the Family "Copilot" row's existing sentence stands for both
+pages. The cloud path remains a separate decision; its draft is in the same
+folder for the owner and counsel.
+
+## 2026-11-22 — The 72-hour hold covers an inviter's reads of the invited adult's own record
+
+Owner decision (clickable chat answer, "Yes, cover the inviter's reads").
+Asked: for an invitation to share (Path A), the adult's file sits on their
+own record, which the hold does not cover, so the inviter can read what that
+adult shares with them during the first 72 hours and after 30 days without
+the reminder; should the hold cover the inviter's reads of that adult's own
+record too? Offered: "Yes, cover the inviter's reads", "No, the hold is for
+uploaded files only". Chosen: "Yes, cover the inviter's reads".
+
+Until 72 hours have passed and the second notice has been accepted by the
+mail provider, and from 30 days until the reminder has been accepted, the
+inviter sees nothing the new adult shares with them, through every Family
+reader and Copilot. The adult's own use of their record is not held. This
+closes D-156 when built. Test mode only today.
+
+## 2026-11-22 — The transfer notices are approved, with one added line, and the transfer is switched on
+
+Owner decision (clickable chat answers). Asked: when a record moves to the
+adult it is about (their own act, or an uploader's withdrawal), do you
+approve the emails to the adult, to the uploader and to any other account
+that lost access, and the uploader's card, shown in full? Offered: "Approve,
+with my picks below", "Not yet, I want changes". Chosen: "Approve, with my
+picks below". Asked: which adjustments? Offered (any): "Say exports end",
+"Mention deleted files only if any", "No email to the uploader who withdrew",
+"Drop the password line". Chosen: "Say exports end" only. Asked: once the
+wording is approved, switch the move on, which also opens an adult's own
+"move this record into my account" action (both test mode only today)?
+Offered: "Yes, switch it on", "Not yet". Chosen: "Yes, switch it on".
+
+The strings in `docs/evidence/uploader-hand-over-20261122/transfer-wording.md`
+are approved as shown, and the adult's emails (both versions) gain one line:
+"Any download copy of this record has stopped working. You can make a new
+one." The sentence about unconfirmed files is sent whether or not there were
+any; the password line and the email to an uploader who withdrew stay. One
+guarded migration opens `private.subject_transfer_open_v1()` for both acts,
+with these notices. Nothing changes in production, where such records cannot
+exist yet.
+
+## 2026-11-22 — Only a live download copy blocks deleting a single file
+
+Owner decision (clickable chat answer, "Yes, only live copies block"). Asked:
+deleting a single file from Files is refused for good while the record has
+any download copy, even an expired one (D-152), and the register states this
+rule; should an expired or already-ended copy stop blocking? Offered: "Yes,
+only live copies block", "Keep the rule as it is". Chosen: "Yes, only live
+copies block".
+
+An expired, failed or ended copy no longer blocks deleting one file. A copy
+that is still being made or can still be downloaded keeps blocking. The
+register's `file-delete-v1` refusal is amended to say so. This closes the
+first half of D-152 when built; whether a ready whole-account export should
+end with the own-file withdrawal stays open.
+
+## 2026-11-22 — Change requests are refused without the browser's same-origin marker, before the account is read
+
+Owner decision (clickable chat answer, "Strict, as the register says").
+Asked: the register's `policy.sameOriginRequired` says a change request must
+carry `Sec-Fetch-Site: same-origin` and be refused before the account context
+is read, while the code accepts a matching `Origin` alone and reads the
+account first; fixing the order is engineering; browsers older than about
+2023 do not send the marker; which rule? Offered: "Strict, as the register
+says", "Either header is enough". Chosen: "Strict, as the register says".
+
+Every route bound to `sameOriginRequired` refuses a request whose
+`Sec-Fetch-Site` is not `same-origin`, and one whose `Origin`, when sent, is
+not the site's own origin, before reading the account. The register is not
+amended.
+
+## 2026-11-22 — Twenty signed-in pages keep `same-origin`; the not-found contract's header binds its own answer
+
+Owner decision (clickable chat answer, "Keep same-origin; amend register").
+Asked: twenty signed-in pages are bound to `resource-not-found-page-v1`,
+which names `no-referrer`, through `resourceAuthorizationBindings`; read as
+the whole-route rule, every answer of those pages would send `no-referrer`;
+apply it to all twenty? Offered: "Keep same-origin; amend register", "Apply
+no-referrer to all 20". Chosen: "Keep same-origin; amend register".
+
+The pages' documents keep `Referrer-Policy: same-origin`. The register's
+whole-route referrer rule outside `/api/` is amended so that a contract bound
+through `resourceAuthorizationBindings` sets its headers on the answer it
+describes (the not-found page) only, not on every answer of the page.
+
+## 2026-11-22 — A hand-over refused for now says to try later (D-158)
+
+Owner decision (clickable chat answer, "New refusal line"). Asked: when an
+uploader's withdrawal would hand the record to the adult but the transfer
+refuses at that moment (a file still being checked, an unexpected file
+shape, the account gone), the card says "This did not work. Nothing was
+deleted. Please try again.", inviting a retry that fails again; which fix?
+Offered: "New refusal line", "Hide the button while it would fail". Chosen:
+"New refusal line".
+
+For these refusals the card says: "This cannot be done right now. Nothing was
+deleted. Try again later." This string is approved.
+
+## 2026-11-22 — Withdrawing consent for one's own file ends a finished download copy too (D-152)
+
+Owner decision (clickable chat answer, "Yes, end it too"). Asked: the
+own-file withdrawal stops download copies being prepared, but a finished
+whole-account copy that includes the file keeps working until it expires;
+should withdrawal end a finished copy too? Offered: "Yes, end it too", "No,
+let it run out". Chosen: "Yes, end it too".
+
+A finished copy that includes the withdrawn file stops working at once; the
+person can make a new one. This makes the confirmation's existing line true
+as written and closes the second half of D-152 when built.
+
+## 2026-11-22 — A person keeps their own access after the approved document's retention ends (D-166)
+
+Owner decision (clickable chat answer, "Yes, the person keeps access").
+Asked: an adult can confirm a DNA file someone else uploaded by e-signature
+or through a permission document a named reviewer approved; the approved
+document is kept for 730 days after acceptance, and when it is gone the
+adult also loses their own saved results and downloads of the record and
+their account, while an e-signature confirmation keeps both; the uploader
+losing access then matches the register; should the adult keep their own
+access after the document is gone? Offered: "Yes, the person keeps access",
+"No, both lose access". Chosen: "Yes, the person keeps access".
+
+Only the uploader's access to a `path-b-reviewed-document` record depends on
+the approved document still being retained. The person's own saved results
+and their downloads of the record and of their account continue after its
+retention ends, as after an e-signature. Test mode only today. This closes
+D-166 when built.

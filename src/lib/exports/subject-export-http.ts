@@ -11,12 +11,14 @@ import {approvedAccountArchiveGeneration} from "./account-archive-generation";
 import {currentAccountExportActor,type AccountExportHttpDependencies} from "./account-export-http";
 import {randomBytes,createHash} from "node:crypto";
 import {currentAccountExportReady,publicAccountExportReady} from "./account-export-delivery";
-import {ACCOUNT_ARCHIVE_CHUNK_BYTES,ACCOUNT_ARCHIVE_FILENAME,accountExportDownload} from "./account-export-delivery-contract";
+import {ACCOUNT_ARCHIVE_CHUNK_BYTES,ACCOUNT_ARCHIVE_FILENAME,EXPORT_PROOF_HEADER,accountExportDownload} from "./account-export-delivery-contract";
 import {configuredTestAccountArchive} from "./account-archive-test-capabilities";
 
 /** api.subject-export's closed refusal list (invalid-request-v1 issues). The
  * one stated reason the owner's two-step decision names: the record has live
- * joint results, which this first step never exports. */
+ * joint results that no projection exports yet. Step two (20261023100000)
+ * exports a family pair and a Portrait result under live permission; a live
+ * embryo cohort role and a family conversation on the record still refuse. */
 export const SUBJECT_EXPORT_REFUSALS=["jointResults"] as const;
 export type SubjectExportRefusal=(typeof SUBJECT_EXPORT_REFUSALS)[number];
 
@@ -130,7 +132,7 @@ export async function postSubjectExport(request:Request,subject:string,deps:Subj
   const rpc=deps.rpc(),value=await capture(rpc,actor,id,request.signal);
   if(url.search||request.headers.get("content-type")?.split(";")[0].trim().toLowerCase()!=="application/json")return invalid();
   const body=bodySchema.safeParse(await readBody(request));if(!body.success)return invalid();
-  const csrf=verifyAccountExportCsrf(request.headers.get("x-inherit-csrf"),{actor,originBinding:value.originBinding,
+  const csrf=verifyAccountExportCsrf(request.headers.get(EXPORT_PROOF_HEADER),{actor,originBinding:value.originBinding,
    authorityReceipt:value.authorityReceipt,operation:body.data.operation});if(!csrf)return forbidden();
   if(body.data.operation==="open-ready"){
    const cookie=readSubjectExportCookie(request,actor,id);if(!cookie)return notFound();

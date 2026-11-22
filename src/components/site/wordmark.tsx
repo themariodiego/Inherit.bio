@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { IntentLink } from "@/components/site/intent-link";
 import { cn } from "@/lib/utils";
 
 // The Inherit wordmark: Fraunces, two-tone (ink "In" + forest "herit" tail,
@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 // recreated; Inherit carries its own mark within the shared design language.
 export function Wordmark({ className }: { className?: string }) {
   return (
-    <Link
+    <IntentLink
       href="/"
       data-slot="wordmark"
       // The wordmark is a link home on every layout, so it is a tap target
@@ -26,13 +26,15 @@ export function Wordmark({ className }: { className?: string }) {
       <span aria-hidden className="text-forest">
         .
       </span>
-    </Link>
+    </IntentLink>
   );
 }
 
 export function Attribution({ className }: { className?: string }) {
   return (
-    <p className={cn("caption", className)}>
+    // One sentence, held to the prose measure: in the footer's wide column
+    // its box otherwise ran to 108ch with a one-line text (brief X6.3).
+    <p className={cn("caption max-w-measure", className)}>
       {/* "open-source" and "created by" never break at the hyphen or between
           their words in the 13rem rail (round-3 N14). */}
       Inherit · an <span className="whitespace-nowrap">open-source</span> project{" "}

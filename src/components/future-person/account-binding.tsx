@@ -3,13 +3,15 @@ import {useState} from "react";
 import Link from "next/link";
 import {z} from "zod";
 import {route} from "@/lib/primary-routes";
-export function ClaimantAccountBinding({nonce,csrf}:{nonce:string|null;csrf:string}) {
+import {useCsrf} from "@/components/security/csrf-provider";
+export function ClaimantAccountBinding({nonce}:{nonce:string|null}) {
+ const csrf=useCsrf("api.future-person-claimant-bind");
  const [confirmed,setConfirmed]=useState(false);const [busy,setBusy]=useState(false);const [done,setDone]=useState(false);const [message,setMessage]=useState("");
  async function bind(){
   if(!nonce||!confirmed||busy||done)return;setBusy(true);setMessage("");
   try {
-   const response=await fetch("/api/future-person/claim/session/account",{method:"POST",credentials:"same-origin",cache:"no-store",
-    headers:{"Content-Type":"application/json","X-Inherit-CSRF":csrf},body:JSON.stringify({nonce})});
+   const response=await csrf.send((csrfToken)=>fetch("/api/future-person/claim/session/account",{method:"POST",credentials:"same-origin",cache:"no-store",
+    headers:{"Content-Type":"application/json","X-Inherit-CSRF":csrfToken},body:JSON.stringify({nonce})}));
    const receipt=z.object({status:z.literal("account_bound")}).strict().safeParse(await response.json());
    if(response.status!==200||!receipt.success)throw new Error("unavailable");
    setDone(true);setMessage("Your record is now part of your account. This claim link has closed.");

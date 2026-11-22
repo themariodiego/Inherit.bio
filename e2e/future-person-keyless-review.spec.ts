@@ -2,7 +2,7 @@ import {expect,test} from "./audited-test";
 import {assertNoThirdParty,expectAxeClean,watchRequests} from "./helpers";
 import {createReviewCase,reviewFixtureSql,signInReviewer} from "./helpers/claim-review-fixture";
 import {observeNativeResponses} from "./helpers/native-response-observer";
-import {currentDocumentaryCase,expectNoUniqueKeylessResponse,keylessEffectProof,nativeReviewRequest,openSyntheticReviewPdf,reviewId} from "./helpers/keyless-review-journey";
+import {currentDocumentaryCase,expectNoUniqueKeylessResponse,freshReviewerCsrf,keylessEffectProof,nativeReviewRequest,openSyntheticReviewPdf,reviewId} from "./helpers/keyless-review-journey";
 import {keylessReviewDocument} from "./fixtures/keyless-review-documents";
 import {randomBytes} from "node:crypto";
 import {currentClaimDocumentReadProof} from "./helpers/claim-document-read-proof";
@@ -30,9 +30,12 @@ test("Keyless documentary review: actual full papers, read-only no-match and sep
     photoIdentityReviewed:true,birthRecordReviewed:true,adultAgeConfirmed:true}};
   const lookupPath=`/api/reviews/future-person/claims/${claim}/verify-documents`;
   const expectOpaque=async(path:string,body:unknown)=>phase("opaque-refusal",async()=>{
-    const response=await nativeReviewRequest(page,path,body,current.csrf);
+    // 2026-11-19 (G8.5, the migration stage): a fresh one-time reviewer token for the route, where the case digest was.
+    const response=await nativeReviewRequest(page,path,body,await freshReviewerCsrf(page,path));
     expect(response.status).toBe(404);expect(response.body).toEqual({error:"not_found"});
     expect(response.cache).toBe("private, no-store");expect(response.referrer).toBe("no-referrer");
+    // Only an admitted request carries a successor token, so this 404 is the route's own and not the gate's.
+    expect(response.csrf,"the reviewer gate admitted the token").not.toBeNull();
     expect(await phase("effect-proof",()=>keylessEffectProof(claim))).toBe(unchanged);
   });
   await expect(page.getByRole("button",{name:"Check details",exact:true})).toHaveCount(0);
@@ -77,8 +80,10 @@ test("Keyless documentary review: actual full papers, read-only no-match and sep
     const otherReviewer=await phase("other-reviewer-auth",()=>signInReviewer(other,baseURL));
     await reviewFixtureSql(`select private.grant_claim_reviewer_v1('${reviewId(otherReviewer)}'::uuid);`);
     const otherPage=await other.newPage();expect((await otherPage.goto(`/reviews/future-person/claims/${claim}`))?.status()).toBe(404);
-    const denied=await nativeReviewRequest(otherPage,lookupPath,lookup,current.csrf);expect(denied.status).toBe(404);
-    expect(denied.body).toEqual({error:"not_found"});expect(await phase("effect-proof",()=>keylessEffectProof(claim))).toBe(unchanged);
+    // The first reviewer's token, presented from the other reviewer's session, as the first reviewer's digest was.
+    const denied=await nativeReviewRequest(otherPage,lookupPath,lookup,await freshReviewerCsrf(page,lookupPath));expect(denied.status).toBe(404);
+    expect(denied.body).toEqual({error:"not_found"});expect(denied.csrf,"the reviewer gate refused another session's token").toBeNull();
+    expect(await phase("effect-proof",()=>keylessEffectProof(claim))).toBe(unchanged);
   }finally{await other.close();}
   const observed=watchRequests(page);await phase("a11y-themes",()=>expectAxeClean(page,async()=>{
     // A real reload invalidates local rendered/read attestations. Re-read both
@@ -109,10 +114,12 @@ test("Keyless documentary review: actual full papers, read-only no-match and sep
   }finally{await decision.dispose();}
   await expect(page.getByRole("img")).toHaveCount(0);await expect(controls).toHaveCount(0);
   const closed=await phase("effect-proof",()=>keylessEffectProof(claim));expect(closed===unchanged).toBe(false);
-  const stale=await nativeReviewRequest(page,lookupPath,lookup,current.csrf);expect(stale.status).toBe(404);expect(stale.body).toEqual({error:"not_found"});
+  const stale=await nativeReviewRequest(page,lookupPath,lookup,await freshReviewerCsrf(page,lookupPath));expect(stale.status).toBe(404);expect(stale.body).toEqual({error:"not_found"});
+  expect(stale.csrf,"the reviewer gate admitted the token").not.toBeNull();
   const replay=await nativeReviewRequest(page,`/api/reviews/future-person/claims/${claim}`,{decision:"reject",reviewRevision:1,nonce:current.nonce,
-    reason:"The original documentary decision cannot be replayed after refusal."},current.csrf);
-  expect(replay.status).toBe(404);expect(replay.body).toEqual({error:"not_found"});expect(await phase("effect-proof",()=>keylessEffectProof(claim))).toBe(closed);
+    reason:"The original documentary decision cannot be replayed after refusal."},await freshReviewerCsrf(page,`/api/reviews/future-person/claims/${claim}`));
+  expect(replay.status).toBe(404);expect(replay.body).toEqual({error:"not_found"});expect(replay.csrf,"the reviewer gate admitted the token").not.toBeNull();
+  expect(await phase("effect-proof",()=>keylessEffectProof(claim))).toBe(closed);
   expect(await reviewFixtureSql(`select r.state||'/'||r.review_revision||'/'||
     (i.identity_key_shredded_at is not null and octet_length(i.wrapped_data_key)=29 and octet_length(i.identity_ciphertext)=29 and i.key_hash is null)||'/'||
     (select count(*) from private.claim_review_decisions d where d.review_id=r.id)||'/'||
@@ -148,7 +155,9 @@ test("Keyless documentary review: all bytes without the last acknowledgement rem
     expect(readProof).toEqual({authCurrent:true,documentCurrent:true,receiptsCurrent:true,deliveredChunks:1,expectedChunks:2,fullyRead:"f"});
     expect(readProof.fullyRead).toBe("f");
     const response=await nativeReviewRequest(page,`/api/reviews/future-person/claims/${claim}/verify-documents`,{reviewRevision:1,nonce:current.lookup,
-      documentaryAttestation:{fullName:"Synthetic Claimant",dateOfBirth:"2000-01-31",photoIdentityReviewed:true,birthRecordReviewed:true,adultAgeConfirmed:true}},current.csrf);
-    expect(response.status).toBe(404);expect(response.body).toEqual({error:"not_found"});expect(await keylessEffectProof(claim)).toBe(unchanged);
+      documentaryAttestation:{fullName:"Synthetic Claimant",dateOfBirth:"2000-01-31",photoIdentityReviewed:true,birthRecordReviewed:true,adultAgeConfirmed:true}},
+      await freshReviewerCsrf(page,`/api/reviews/future-person/claims/${claim}/verify-documents`));
+    expect(response.status).toBe(404);expect(response.body).toEqual({error:"not_found"});
+    expect(response.csrf,"the reviewer gate admitted the token").not.toBeNull();expect(await keylessEffectProof(claim)).toBe(unchanged);
   }finally{await first.dispose();await page.unroute("**/api/downloads/*/chunks/1/acknowledge");}
 });

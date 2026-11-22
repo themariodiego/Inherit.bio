@@ -2,6 +2,7 @@
 
 import { useRef, useState, useSyncExternalStore, type FormEvent, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
+import { useCsrf } from "@/components/security/csrf-provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,6 +17,7 @@ import {
 import { uploadHeldSubjectFile, type UploadProgress } from "@/lib/uploads/subject-upload-browser";
 import type { OwnUploadLimits } from "@/lib/uploads/subject-upload-contract";
 import { day, latestFileLine } from "./other-adult-lines";
+import { OtherAdultWithdrawal } from "./other-adult-withdrawal";
 
 const EMPTY_PERSON = { name: "", email: "", birth: "" };
 const subscribeNever = () => () => {};
@@ -36,18 +38,19 @@ export function OtherAdultNewPersonForm({ token, documentFlow = false }: { token
   const [birthError, setBirthError] = useState(false);
   const [failed, setFailed] = useState(false);
   const [saving, setSaving] = useState(false);
+  const draftsCsrf = useCsrf("api.subject-drafts");
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!isAdultOn(person.birth)) { setBirthError(true); return; }
     setSaving(true); setFailed(false);
     try {
-      const response = await fetch("/api/subject-drafts", {
+      const response = await draftsCsrf.send((csrfToken) => fetch("/api/subject-drafts", {
         method: "POST", credentials: "same-origin", cache: "no-store",
-        headers: { "content-type": "application/json", "x-inherit-csrf": token },
+        headers: { "content-type": "application/json", "x-inherit-csrf": csrfToken, "x-inherit-operation-nonce": token },
         body: JSON.stringify({ kind: "adult", adultFlow: documentFlow ? flow : "path-b-subject-esignature", displayName: person.name.trim(),
           dateOfBirth: person.birth, contactEmail: person.email.trim(), requestId }),
-      });
+      }));
       if (response.status !== 201) throw new Error("not_saved");
       setPerson(EMPTY_PERSON);
       setRequestId(crypto.randomUUID());
@@ -141,6 +144,8 @@ export function ConsentFields({ consent, checked, setChecked, typedName, setType
  */
 export function OtherAdultUploadCard({ target, limits = null }: { target: OtherAdultTarget; limits?: OwnUploadLimits | null }) {
   const router = useRouter();
+  const sessionCsrf = useCsrf("api.file-upload-session"), finalizeCsrf = useCsrf("api.file-finalize");
+  const consentsCsrf = useCsrf("api.consents"), invitationsCsrf = useCsrf("api.invitations");
   // The server preview has no file-change handler. Keep the picker closed
   // until hydration attaches it so an early selection cannot be lost.
   const interactive = useSyncExternalStore(subscribeNever, clientReady, serverReady);
@@ -155,16 +160,26 @@ export function OtherAdultUploadCard({ target, limits = null }: { target: OtherA
   const [progress, setProgress] = useState<UploadProgress | null>(null);
   const [heldNow, setHeldNow] = useState(false);
   const [uploadError, setUploadError] = useState(false);
+  const [withdrawn, setWithdrawn] = useState(false);
 
   const heading = <h3 className="title">{target.label} · {COPY.requestedOn(day(target.requestedAt))}</h3>;
   const latest = latestFileLine(target.label, target.latest);
   const card = (children: ReactNode, slot?: string) =>
     <article className="surface surface-pad rec-stack" data-slot={slot}>{heading}{children}</article>;
+  // The withdrawal of the uploader's permission (owner decision of 19
+  // November 2026) is the last child of every card that offers it, at the
+  // same place, so its steps and receipt survive the card changing around it.
+  const withdrawal = <OtherAdultWithdrawal key="withdrawal" subjectId={target.subjectId} name={target.label}
+    view={target.withdrawal} onWithdrawn={() => setWithdrawn(true)} />;
 
+  if (withdrawn) return card(<>{null}{withdrawal}</>, "other-adult-withdrawn");
   if (heldNow || target.state === "pending") {
     return card(<>
-      <p role="status" className="max-w-measure text-sm">{COPY.pendingStatus(target.label)}</p>
-      {target.latest?.deleteBy ? <p className="max-w-measure text-sm text-ink-muted">{COPY.pendingDeadline(day(target.latest.deleteBy))}</p> : null}
+      <>
+        <p role="status" className="max-w-measure text-sm">{COPY.pendingStatus(target.label)}</p>
+        {target.latest?.deleteBy ? <p className="max-w-measure text-sm text-ink-muted">{COPY.pendingDeadline(day(target.latest.deleteBy))}</p> : null}
+      </>
+      {withdrawal}
     </>, "other-adult-held");
   }
   if (target.blockedBy) {
@@ -179,15 +194,15 @@ export function OtherAdultUploadCard({ target, limits = null }: { target: OtherA
   const consent = target.consent;
   async function signIfNeeded(): Promise<boolean> {
     if (!consent) return true;
-    const response = await fetch(route("api.consents"), {
+    const response = await consentsCsrf.send((csrfToken) => fetch(route("api.consents"), {
       method: "POST", credentials: "same-origin", cache: "no-store",
-      headers: { "content-type": "application/json", "x-inherit-csrf": consent.token },
+      headers: { "content-type": "application/json", "x-inherit-csrf": csrfToken },
       body: JSON.stringify({
         action: "sign-artifact", signatureClass: "tier2", subjectDraftId: target.subjectId,
         artifactVersion: consent.version, artifactPresentationToken: consent.token, affirmed: true,
         statementKeys: consent.statements.map(statement => statement.key), typedName: typedName.trim(),
       }),
-    });
+    }));
     return response.status === 201;
   }
 
@@ -202,11 +217,12 @@ export function OtherAdultUploadCard({ target, limits = null }: { target: OtherA
       try {
         if (!(await signIfNeeded())) throw new Error("not_signed");
         if (sending) {
-          const response = await fetch("/api/invitations", {
+          const response = await invitationsCsrf.send((csrfToken) => fetch("/api/invitations", {
             method: "POST", credentials: "same-origin", cache: "no-store",
-            headers: { "content-type": "application/json", "x-inherit-csrf": target.operationToken ?? "" },
+            headers: { "content-type": "application/json", "x-inherit-csrf": csrfToken,
+              "x-inherit-operation-nonce": target.operationToken ?? "" },
             body: JSON.stringify({ targetSubjectDraftId: target.subjectId, contactEmail: email.trim() }),
-          });
+          }));
           if (response.status !== 202) throw new Error("not_sent");
         }
         router.refresh();
@@ -233,7 +249,7 @@ export function OtherAdultUploadCard({ target, limits = null }: { target: OtherA
     inFlight.current = true;
     setUploadError(false);
     try {
-      await uploadHeldSubjectFile(file, target.subjectId, setProgress, limits);
+      await uploadHeldSubjectFile(file, target.subjectId, setProgress, limits, { session: sessionCsrf, finalize: finalizeCsrf });
       setHeldNow(true);
       router.refresh();
     } catch { setUploadError(true); setProgress(null); }
@@ -243,7 +259,7 @@ export function OtherAdultUploadCard({ target, limits = null }: { target: OtherA
     }
   }
   const busy = progress !== null && !uploadError;
-  return card(<>
+  return card(<><>
     {latest ? <p role="status" className="max-w-measure text-sm">{latest}</p> : null}
     <input ref={inputRef} type="file" className="sr-only" aria-hidden tabIndex={-1} aria-label={COPY.chooseLabel}
       data-slot="other-adult-file" disabled={!interactive || busy}
@@ -262,5 +278,5 @@ export function OtherAdultUploadCard({ target, limits = null }: { target: OtherA
         : progress?.step === "validating" ? <p>{COPY.progress.validating}</p> : null}
       {uploadError ? <p role="alert" className="text-danger">{COPY.uploadFailed}</p> : null}
     </div>
-  </>, "other-adult-ready");
+  </>{withdrawal}</>, "other-adult-ready");
 }

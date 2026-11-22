@@ -1,0 +1,80 @@
+# LOCAL ONLY, 2026-11-19, local stack 127.0.0.1:54322 (project "sequence").
+# 20261025400000_path_a_account_accept_typed_name.sql, as first written (tree 151259da...),
+# refused on the state production will hold after the follow-up's release. Steps 1-5 are
+# the first rehearsal, before any change; steps 6-8 the fix and the re-rehearsal.
+
+Pre-state: the follow-up kit's rehearsed post-state, rebuilt by build-mirror.sh
+(fingerprint byte-identical to the follow-up's rehearsed final mirror, 3a0f4d68...;
+summary EQUAL to its batch-2 post-state; ledger 280 rows, max 20261023140000).
+
+1. The migration as the CLI runs it (steps.py, psql -1 -f), after #1-#3 applied:
+   psql:.../m04.sql:71: ERROR:  path a typed name prerequisite differs
+   CONTEXT:  PL/pgSQL function inline_code_block line 21 at RAISE
+   The same on batch 1's guarded post-state (rehearse.sh, "b2" row), and through the kit:
+   local/measure-all.sql over both batches: rc 3, ERROR:  path a typed name prerequisite differs.
+
+2. The predecessor block (file lines 49-71), each predicate on the pre-state:
+   shared body private.adult_subject_invitation_response_v1, md5 824901bf + ACL   true
+   the six callee bodies, md5 each (count must be 6)                              5 of 6
+   public.consent_signatures.signing_name_encrypted is bytea                      true
+   both doors absent                                                              true
+
+3. The one callee that differs (md5(pg_get_functiondef) under the session's settings,
+   search_path "$user", public, extensions, as the batches restore them):
+   private.current_adult_subject_invitation_v1(uuid,uuid)
+     required by the file (line 58)   7fa7e1fe73fc4db2ecf9af8a7b26d265  (the repository body, 62 lines, 2 full-line comments)
+     held by the pre-state            78d147935e25d657d8df631583c6faea  (60 lines, no comment line)
+   Under the fingerprint's pinned settings (search_path pg_catalog) the pre-state body is
+   e98e44bb5c1f2f88a294e250fc887f0c, which is production's own def_md5 for this function in
+   its 2026-10-22 read-back (../../pr323-production-apply-20261016/results/run-2026-10-22/fp-after-merge.json).
+   This is one of the 8 bodies production holds without their full-line comments
+   (PR 324 kit, guarded/README.md, "Function bodies, definitions and the comment-stripping
+   drift"; its rehearsal/data/prod-linehash.txt). No migration of PR 324 or the follow-up
+   rewrites it, so production will still hold the stripped body when this release runs.
+   The md5 also depends on search_path (its definition differs under pg_catalog).
+
+4. Cause confirmed, in one rolled-back transaction on the pre-state: the repository text of
+   that one function (captured before the drift was applied) restored with CREATE OR
+   REPLACE, then the file run: md5 7fa7e1fe..., the file applies and
+   public.accept_adult_subject_invitation_v1 exists. After the rollback the body is
+   78d14793... again and the door absent.
+
+5. Why CI and the local suites pass: a fresh build (supabase db reset) has the repository
+   body, so the guard holds there (path_a_account_accept_typed_name.sql 52/52 on a fresh
+   build; ../data/pgtap-summaries.txt). Only production's drift, which the rehearsal
+   mirror carries, makes it refuse.
+
+Effect on production if run as written: the batch holding 20261025400000 refuses at its
+predecessor block, as a whole, with nothing written (a safe failure). The release cannot
+complete, and the branch that needs public.accept_adult_subject_invitation_v1 cannot merge.
+
+Options recorded at the time (a decision for whoever directs the work, not this kit's): accept the stripped
+body's md5 as well as the repository's for this callee; guard it by a comment-insensitive
+digest; or drop the md5 pin on this callee.
+
+OUTCOME (same day). The choice below was an engineering decision made in the session that
+ran this rehearsal. It was NOT an owner decision when it was made.
+Later on 19 November 2026 the owner reviewed it and accepted it
+(docs/protocol/decisions.md, "2026-11-19 - D-136: the owner accepts the guard change").
+
+6. Decision: the first option. For this one callee the predecessor block accepts exactly
+   two reviewed bodies, the repository body (7fa7e1fe...) and the same body without its
+   two full-line comments, as production holds it (78d14793...). The block now counts
+   distinct signatures, so a second body cannot stand in for a missing callee; the other
+   five pins, the doors, the grants and the patches are unchanged (git diff: one callee
+   row added, count(*) -> count(distinct x.signature), six comment lines).
+
+7. Proof that the two bodies differ only by comments (../data/callee-bodies.txt): the
+   repository body (fresh build) and the mirror's body, both pg_get_functiondef under the
+   session settings, differ by exactly two removed lines, both full-line `--` comments;
+   the repository body without its full-line comments equals the mirror body. 78d14793...
+   was re-derived on the mirror under every search_path that holds public; under
+   pg_catalog alone it is e98e44bb..., production's own 2026-10-22 value.
+
+8. Re-rehearsal of the whole kit against the revised file (pinned tree be49d283...):
+   both batches, the whole-release dry run, the negatives and the order equivalence
+   (guarded/README.md, "Rehearsal results"). On the mirror the file applies; a third
+   body (one token changed), the callee missing, and another callee's body changed each
+   refuse with `path a typed name prerequisite differs` and write nothing
+   (../data/guard-cases.tsv). On a fresh build it applies,
+   path_a_account_accept_typed_name.sql passes 52/52 and the whole suite passes.

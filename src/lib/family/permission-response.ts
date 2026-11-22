@@ -1,16 +1,27 @@
 import { z } from "zod";
+import type { CsrfHandle } from "@/lib/security/session-csrf-client";
 import type { GrantPurposeRequest } from "./grant-token";
 
 export type PermissionAction =
   | { kind: "grant"; request: GrantPurposeRequest }
-  | { kind: "revoke"; grantId: string };
+  /** `nonce` is the one-time nonce the page rendered for this grant's revocation (G5.6, 23 Oct 2026). */
+  | { kind: "revoke"; grantId: string; nonce: string };
+
+/** The one-time X-Inherit-CSRF tokens of the two routes a permission row sends to. */
+export interface PermissionCsrf { grant: CsrfHandle; revoke: CsrfHandle }
 
 /** Consume the exact operation receipt before a refresh can replace this row. */
-export async function submitFamilyPermission(action: PermissionAction): Promise<boolean> {
+export async function submitFamilyPermission(action: PermissionAction, csrf: PermissionCsrf): Promise<boolean> {
+  // The registered grant-purpose body, field by field: the minted request is
+  // typed, not closed, so it is never forwarded as it arrived (G8.5).
   const response = action.kind === "grant"
-    ? await fetch("/api/consents", { method: "POST", headers: { "content-type": "application/json" },
-      body: JSON.stringify(action.request) })
-    : await fetch(`/api/consents/${action.grantId}/revoke`, { method: "POST" });
+    ? await csrf.grant.send((csrfToken) => fetch("/api/consents", { method: "POST", headers: { "content-type": "application/json",
+      "X-Inherit-CSRF": csrfToken }, body: JSON.stringify({ action: "grant-purpose",
+        subjectId: action.request.subjectId, purposeKey: action.request.purposeKey,
+        artifactVersion: action.request.artifactVersion, artifactPresentationToken: action.request.artifactPresentationToken,
+        affirmed: true, statementKeys: action.request.statementKeys }) }))
+    : await csrf.revoke.send((csrfToken) => fetch(`/api/consents/${action.grantId}/revoke`, { method: "POST",
+      headers: { "X-Inherit-Operation-Nonce": action.nonce, "X-Inherit-CSRF": csrfToken } }));
   const receipt: unknown = await response.json().catch(() => null);
   if (action.kind === "revoke") {
     return response.status === 200 && z.object({ revoked: z.literal(true), effectiveAt: z.iso.datetime() })

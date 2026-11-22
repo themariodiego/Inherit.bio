@@ -1,0 +1,1667 @@
+{
+  "base": "http://localhost:3190",
+  "measuredAt": "2026-11-22T14:50:37.744Z",
+  "boundRoutes": {
+    "api.file-delete DELETE /api/files/<random-uuid>": {
+      "good (own Origin, Sec-Fetch-Site same-origin) | signed in, fresh token": {
+        "status": 404,
+        "headers": {
+          "content-type": "application/json",
+          "cache-control": "private, no-store",
+          "referrer-policy": "same-origin",
+          "x-content-type-options": "nosniff",
+          "content-security-policy": "frame-ancestors 'none'",
+          "x-frame-options": "DENY",
+          "x-inherit-csrf": "(present)",
+          "cdn-cache-control": "no-store",
+          "vercel-cdn-cache-control": "no-store",
+          "pragma": "no-cache"
+        },
+        "body": "{\"error\":\"not_found\"}"
+      },
+      "good (own Origin, Sec-Fetch-Site same-origin) | signed out": {
+        "status": 401,
+        "headers": {
+          "content-type": "application/json",
+          "cache-control": "private, no-store",
+          "referrer-policy": "same-origin",
+          "x-content-type-options": "nosniff",
+          "content-security-policy": "frame-ancestors 'none'",
+          "x-frame-options": "DENY",
+          "cdn-cache-control": "no-store",
+          "vercel-cdn-cache-control": "no-store",
+          "pragma": "no-cache"
+        },
+        "body": "{\"error\":\"unauthenticated\"}"
+      },
+      "own Origin, no Sec-Fetch-Site | signed in, fresh token": {
+        "status": 404,
+        "headers": {
+          "content-type": "application/json",
+          "cache-control": "private, no-store",
+          "referrer-policy": "same-origin",
+          "x-content-type-options": "nosniff",
+          "content-security-policy": "frame-ancestors 'none'",
+          "x-frame-options": "DENY",
+          "x-inherit-csrf": "(present)",
+          "cdn-cache-control": "no-store",
+          "vercel-cdn-cache-control": "no-store",
+          "pragma": "no-cache"
+        },
+        "body": "{\"error\":\"not_found\"}"
+      },
+      "own Origin, no Sec-Fetch-Site | signed out": {
+        "status": 401,
+        "headers": {
+          "content-type": "application/json",
+          "cache-control": "private, no-store",
+          "referrer-policy": "same-origin",
+          "x-content-type-options": "nosniff",
+          "content-security-policy": "frame-ancestors 'none'",
+          "x-frame-options": "DENY",
+          "cdn-cache-control": "no-store",
+          "vercel-cdn-cache-control": "no-store",
+          "pragma": "no-cache"
+        },
+        "body": "{\"error\":\"unauthenticated\"}"
+      },
+      "cross-site (foreign Origin) | signed in, fresh token": {
+        "status": 403,
+        "headers": {
+          "content-type": "application/json",
+          "cache-control": "private, no-store",
+          "referrer-policy": "same-origin",
+          "x-content-type-options": "nosniff",
+          "content-security-policy": "frame-ancestors 'none'",
+          "x-frame-options": "DENY",
+          "cdn-cache-control": "no-store",
+          "vercel-cdn-cache-control": "no-store",
+          "pragma": "no-cache"
+        },
+        "body": "{\"error\":\"request_forbidden\"}"
+      },
+      "cross-site (foreign Origin) | signed out": {
+        "status": 403,
+        "headers": {
+          "content-type": "application/json",
+          "cache-control": "private, no-store",
+          "referrer-policy": "same-origin",
+          "x-content-type-options": "nosniff",
+          "content-security-policy": "frame-ancestors 'none'",
+          "x-frame-options": "DENY",
+          "cdn-cache-control": "no-store",
+          "vercel-cdn-cache-control": "no-store",
+          "pragma": "no-cache"
+        },
+        "body": "{\"error\":\"request_forbidden\"}"
+      },
+      "same-site (own Origin) | signed in, fresh token": {
+        "status": 404,
+        "headers": {
+          "content-type": "application/json",
+          "cache-control": "private, no-store",
+          "referrer-policy": "same-origin",
+          "x-content-type-options": "nosniff",
+          "content-security-policy": "frame-ancestors 'none'",
+          "x-frame-options": "DENY",
+          "x-inherit-csrf": "(present)",
+          "cdn-cache-control": "no-store",
+          "vercel-cdn-cache-control": "no-store",
+          "pragma": "no-cache"
+        },
+        "body": "{\"error\":\"not_found\"}"
+      },
+      "same-site (own Origin) | signed out": {
+        "status": 401,
+        "headers": {
+          "content-type": "application/json",
+          "cache-control": "private, no-store",
+          "referrer-policy": "same-origin",
+          "x-content-type-options": "nosniff",
+          "content-security-policy": "frame-ancestors 'none'",
+          "x-frame-options": "DENY",
+          "cdn-cache-control": "no-store",
+          "vercel-cdn-cache-control": "no-store",
+          "pragma": "no-cache"
+        },
+        "body": "{\"error\":\"unauthenticated\"}"
+      },
+      "none (own Origin) | signed in, fresh token": {
+        "status": 404,
+        "headers": {
+          "content-type": "application/json",
+          "cache-control": "private, no-store",
+          "referrer-policy": "same-origin",
+          "x-content-type-options": "nosniff",
+          "content-security-policy": "frame-ancestors 'none'",
+          "x-frame-options": "DENY",
+          "x-inherit-csrf": "(present)",
+          "cdn-cache-control": "no-store",
+          "vercel-cdn-cache-control": "no-store",
+          "pragma": "no-cache"
+        },
+        "body": "{\"error\":\"not_found\"}"
+      },
+      "none (own Origin) | signed out": {
+        "status": 401,
+        "headers": {
+          "content-type": "application/json",
+          "cache-control": "private, no-store",
+          "referrer-policy": "same-origin",
+          "x-content-type-options": "nosniff",
+          "content-security-policy": "frame-ancestors 'none'",
+          "x-frame-options": "DENY",
+          "cdn-cache-control": "no-store",
+          "vercel-cdn-cache-control": "no-store",
+          "pragma": "no-cache"
+        },
+        "body": "{\"error\":\"unauthenticated\"}"
+      },
+      "foreign Origin, Sec-Fetch-Site same-origin | signed in, fresh token": {
+        "status": 403,
+        "headers": {
+          "content-type": "application/json",
+          "cache-control": "private, no-store",
+          "referrer-policy": "same-origin",
+          "x-content-type-options": "nosniff",
+          "content-security-policy": "frame-ancestors 'none'",
+          "x-frame-options": "DENY",
+          "cdn-cache-control": "no-store",
+          "vercel-cdn-cache-control": "no-store",
+          "pragma": "no-cache"
+        },
+        "body": "{\"error\":\"request_forbidden\"}"
+      },
+      "foreign Origin, Sec-Fetch-Site same-origin | signed out": {
+        "status": 403,
+        "headers": {
+          "content-type": "application/json",
+          "cache-control": "private, no-store",
+          "referrer-policy": "same-origin",
+          "x-content-type-options": "nosniff",
+          "content-security-policy": "frame-ancestors 'none'",
+          "x-frame-options": "DENY",
+          "cdn-cache-control": "no-store",
+          "vercel-cdn-cache-control": "no-store",
+          "pragma": "no-cache"
+        },
+        "body": "{\"error\":\"request_forbidden\"}"
+      },
+      "no Origin, Sec-Fetch-Site same-origin | signed in, fresh token": {
+        "status": 404,
+        "headers": {
+          "content-type": "application/json",
+          "cache-control": "private, no-store",
+          "referrer-policy": "same-origin",
+          "x-content-type-options": "nosniff",
+          "content-security-policy": "frame-ancestors 'none'",
+          "x-frame-options": "DENY",
+          "x-inherit-csrf": "(present)",
+          "cdn-cache-control": "no-store",
+          "vercel-cdn-cache-control": "no-store",
+          "pragma": "no-cache"
+        },
+        "body": "{\"error\":\"not_found\"}"
+      },
+      "no Origin, Sec-Fetch-Site same-origin | signed out": {
+        "status": 401,
+        "headers": {
+          "content-type": "application/json",
+          "cache-control": "private, no-store",
+          "referrer-policy": "same-origin",
+          "x-content-type-options": "nosniff",
+          "content-security-policy": "frame-ancestors 'none'",
+          "x-frame-options": "DENY",
+          "cdn-cache-control": "no-store",
+          "vercel-cdn-cache-control": "no-store",
+          "pragma": "no-cache"
+        },
+        "body": "{\"error\":\"unauthenticated\"}"
+      },
+      "neither header | signed in, fresh token": {
+        "status": 403,
+        "headers": {
+          "content-type": "application/json",
+          "cache-control": "private, no-store",
+          "referrer-policy": "same-origin",
+          "x-content-type-options": "nosniff",
+          "content-security-policy": "frame-ancestors 'none'",
+          "x-frame-options": "DENY",
+          "cdn-cache-control": "no-store",
+          "vercel-cdn-cache-control": "no-store",
+          "pragma": "no-cache"
+        },
+        "body": "{\"error\":\"request_forbidden\"}"
+      },
+      "neither header | signed out": {
+        "status": 403,
+        "headers": {
+          "content-type": "application/json",
+          "cache-control": "private, no-store",
+          "referrer-policy": "same-origin",
+          "x-content-type-options": "nosniff",
+          "content-security-policy": "frame-ancestors 'none'",
+          "x-frame-options": "DENY",
+          "cdn-cache-control": "no-store",
+          "vercel-cdn-cache-control": "no-store",
+          "pragma": "no-cache"
+        },
+        "body": "{\"error\":\"request_forbidden\"}"
+      },
+      "X-Forwarded-Host spoof (Origin and forwarded host foreign, same-origin) | signed in, fresh token": {
+        "status": 403,
+        "headers": {
+          "content-type": "application/json",
+          "cache-control": "private, no-store",
+          "referrer-policy": "same-origin",
+          "x-content-type-options": "nosniff",
+          "content-security-policy": "frame-ancestors 'none'",
+          "x-frame-options": "DENY",
+          "cdn-cache-control": "no-store",
+          "vercel-cdn-cache-control": "no-store",
+          "pragma": "no-cache"
+        },
+        "body": "{\"error\":\"request_forbidden\"}"
+      },
+      "X-Forwarded-Host spoof (Origin and forwarded host foreign, same-origin) | signed out": {
+        "status": 403,
+        "headers": {
+          "content-type": "application/json",
+          "cache-control": "private, no-store",
+          "referrer-policy": "same-origin",
+          "x-content-type-options": "nosniff",
+          "content-security-policy": "frame-ancestors 'none'",
+          "x-frame-options": "DENY",
+          "cdn-cache-control": "no-store",
+          "vercel-cdn-cache-control": "no-store",
+          "pragma": "no-cache"
+        },
+        "body": "{\"error\":\"request_forbidden\"}"
+      }
+    },
+    "api.subject-upload-issue POST /api/uploads": {
+      "good (own Origin, Sec-Fetch-Site same-origin) | signed in, fresh token": {
+        "status": 422,
+        "headers": {
+          "content-type": "application/json",
+          "cache-control": "private, no-store",
+          "referrer-policy": "no-referrer",
+          "x-content-type-options": "nosniff",
+          "content-security-policy": "frame-ancestors 'none'",
+          "x-frame-options": "DENY",
+          "x-inherit-csrf": "(present)",
+          "cdn-cache-control": "no-store",
+          "vercel-cdn-cache-control": "no-store",
+          "pragma": "no-cache"
+        },
+        "body": "{\"error\":\"invalid_request\"}"
+      },
+      "good (own Origin, Sec-Fetch-Site same-origin) | signed out": {
+        "status": 422,
+        "headers": {
+          "content-type": "application/json",
+          "cache-control": "private, no-store",
+          "referrer-policy": "no-referrer",
+          "x-content-type-options": "nosniff",
+          "content-security-policy": "frame-ancestors 'none'",
+          "x-frame-options": "DENY",
+          "cdn-cache-control": "no-store",
+          "vercel-cdn-cache-control": "no-store",
+          "pragma": "no-cache"
+        },
+        "body": "{\"error\":\"invalid_request\"}"
+      },
+      "own Origin, no Sec-Fetch-Site | signed in, fresh token": {
+        "status": 403,
+        "headers": {
+          "content-type": "application/json",
+          "cache-control": "private, no-store",
+          "referrer-policy": "no-referrer",
+          "x-content-type-options": "nosniff",
+          "content-security-policy": "frame-ancestors 'none'",
+          "x-frame-options": "DENY",
+          "x-inherit-csrf": "(present)",
+          "cdn-cache-control": "no-store",
+          "vercel-cdn-cache-control": "no-store",
+          "pragma": "no-cache"
+        },
+        "body": "{\"error\":\"forbidden\"}"
+      },
+      "own Origin, no Sec-Fetch-Site | signed out": {
+        "status": 403,
+        "headers": {
+          "content-type": "application/json",
+          "cache-control": "private, no-store",
+          "referrer-policy": "no-referrer",
+          "x-content-type-options": "nosniff",
+          "content-security-policy": "frame-ancestors 'none'",
+          "x-frame-options": "DENY",
+          "cdn-cache-control": "no-store",
+          "vercel-cdn-cache-control": "no-store",
+          "pragma": "no-cache"
+        },
+        "body": "{\"error\":\"forbidden\"}"
+      },
+      "cross-site (foreign Origin) | signed in, fresh token": {
+        "status": 403,
+        "headers": {
+          "content-type": "application/json",
+          "cache-control": "private, no-store",
+          "referrer-policy": "no-referrer",
+          "x-content-type-options": "nosniff",
+          "content-security-policy": "frame-ancestors 'none'",
+          "x-frame-options": "DENY",
+          "x-inherit-csrf": "(present)",
+          "cdn-cache-control": "no-store",
+          "vercel-cdn-cache-control": "no-store",
+          "pragma": "no-cache"
+        },
+        "body": "{\"error\":\"forbidden\"}"
+      },
+      "cross-site (foreign Origin) | signed out": {
+        "status": 403,
+        "headers": {
+          "content-type": "application/json",
+          "cache-control": "private, no-store",
+          "referrer-policy": "no-referrer",
+          "x-content-type-options": "nosniff",
+          "content-security-policy": "frame-ancestors 'none'",
+          "x-frame-options": "DENY",
+          "cdn-cache-control": "no-store",
+          "vercel-cdn-cache-control": "no-store",
+          "pragma": "no-cache"
+        },
+        "body": "{\"error\":\"forbidden\"}"
+      },
+      "same-site (own Origin) | signed in, fresh token": {
+        "status": 403,
+        "headers": {
+          "content-type": "application/json",
+          "cache-control": "private, no-store",
+          "referrer-policy": "no-referrer",
+          "x-content-type-options": "nosniff",
+          "content-security-policy": "frame-ancestors 'none'",
+          "x-frame-options": "DENY",
+          "x-inherit-csrf": "(present)",
+          "cdn-cache-control": "no-store",
+          "vercel-cdn-cache-control": "no-store",
+          "pragma": "no-cache"
+        },
+        "body": "{\"error\":\"forbidden\"}"
+      },
+      "same-site (own Origin) | signed out": {
+        "status": 403,
+        "headers": {
+          "content-type": "application/json",
+          "cache-control": "private, no-store",
+          "referrer-policy": "no-referrer",
+          "x-content-type-options": "nosniff",
+          "content-security-policy": "frame-ancestors 'none'",
+          "x-frame-options": "DENY",
+          "cdn-cache-control": "no-store",
+          "vercel-cdn-cache-control": "no-store",
+          "pragma": "no-cache"
+        },
+        "body": "{\"error\":\"forbidden\"}"
+      },
+      "none (own Origin) | signed in, fresh token": {
+        "status": 403,
+        "headers": {
+          "content-type": "application/json",
+          "cache-control": "private, no-store",
+          "referrer-policy": "no-referrer",
+          "x-content-type-options": "nosniff",
+          "content-security-policy": "frame-ancestors 'none'",
+          "x-frame-options": "DENY",
+          "x-inherit-csrf": "(present)",
+          "cdn-cache-control": "no-store",
+          "vercel-cdn-cache-control": "no-store",
+          "pragma": "no-cache"
+        },
+        "body": "{\"error\":\"forbidden\"}"
+      },
+      "none (own Origin) | signed out": {
+        "status": 403,
+        "headers": {
+          "content-type": "application/json",
+          "cache-control": "private, no-store",
+          "referrer-policy": "no-referrer",
+          "x-content-type-options": "nosniff",
+          "content-security-policy": "frame-ancestors 'none'",
+          "x-frame-options": "DENY",
+          "cdn-cache-control": "no-store",
+          "vercel-cdn-cache-control": "no-store",
+          "pragma": "no-cache"
+        },
+        "body": "{\"error\":\"forbidden\"}"
+      },
+      "foreign Origin, Sec-Fetch-Site same-origin | signed in, fresh token": {
+        "status": 403,
+        "headers": {
+          "content-type": "application/json",
+          "cache-control": "private, no-store",
+          "referrer-policy": "no-referrer",
+          "x-content-type-options": "nosniff",
+          "content-security-policy": "frame-ancestors 'none'",
+          "x-frame-options": "DENY",
+          "x-inherit-csrf": "(present)",
+          "cdn-cache-control": "no-store",
+          "vercel-cdn-cache-control": "no-store",
+          "pragma": "no-cache"
+        },
+        "body": "{\"error\":\"forbidden\"}"
+      },
+      "foreign Origin, Sec-Fetch-Site same-origin | signed out": {
+        "status": 403,
+        "headers": {
+          "content-type": "application/json",
+          "cache-control": "private, no-store",
+          "referrer-policy": "no-referrer",
+          "x-content-type-options": "nosniff",
+          "content-security-policy": "frame-ancestors 'none'",
+          "x-frame-options": "DENY",
+          "cdn-cache-control": "no-store",
+          "vercel-cdn-cache-control": "no-store",
+          "pragma": "no-cache"
+        },
+        "body": "{\"error\":\"forbidden\"}"
+      },
+      "no Origin, Sec-Fetch-Site same-origin | signed in, fresh token": {
+        "status": 403,
+        "headers": {
+          "content-type": "application/json",
+          "cache-control": "private, no-store",
+          "referrer-policy": "no-referrer",
+          "x-content-type-options": "nosniff",
+          "content-security-policy": "frame-ancestors 'none'",
+          "x-frame-options": "DENY",
+          "x-inherit-csrf": "(present)",
+          "cdn-cache-control": "no-store",
+          "vercel-cdn-cache-control": "no-store",
+          "pragma": "no-cache"
+        },
+        "body": "{\"error\":\"forbidden\"}"
+      },
+      "no Origin, Sec-Fetch-Site same-origin | signed out": {
+        "status": 403,
+        "headers": {
+          "content-type": "application/json",
+          "cache-control": "private, no-store",
+          "referrer-policy": "no-referrer",
+          "x-content-type-options": "nosniff",
+          "content-security-policy": "frame-ancestors 'none'",
+          "x-frame-options": "DENY",
+          "cdn-cache-control": "no-store",
+          "vercel-cdn-cache-control": "no-store",
+          "pragma": "no-cache"
+        },
+        "body": "{\"error\":\"forbidden\"}"
+      },
+      "neither header | signed in, fresh token": {
+        "status": 403,
+        "headers": {
+          "content-type": "application/json",
+          "cache-control": "private, no-store",
+          "referrer-policy": "no-referrer",
+          "x-content-type-options": "nosniff",
+          "content-security-policy": "frame-ancestors 'none'",
+          "x-frame-options": "DENY",
+          "x-inherit-csrf": "(present)",
+          "cdn-cache-control": "no-store",
+          "vercel-cdn-cache-control": "no-store",
+          "pragma": "no-cache"
+        },
+        "body": "{\"error\":\"forbidden\"}"
+      },
+      "neither header | signed out": {
+        "status": 403,
+        "headers": {
+          "content-type": "application/json",
+          "cache-control": "private, no-store",
+          "referrer-policy": "no-referrer",
+          "x-content-type-options": "nosniff",
+          "content-security-policy": "frame-ancestors 'none'",
+          "x-frame-options": "DENY",
+          "cdn-cache-control": "no-store",
+          "vercel-cdn-cache-control": "no-store",
+          "pragma": "no-cache"
+        },
+        "body": "{\"error\":\"forbidden\"}"
+      },
+      "X-Forwarded-Host spoof (Origin and forwarded host foreign, same-origin) | signed in, fresh token": {
+        "status": 403,
+        "headers": {
+          "content-type": "application/json",
+          "cache-control": "private, no-store",
+          "referrer-policy": "no-referrer",
+          "x-content-type-options": "nosniff",
+          "content-security-policy": "frame-ancestors 'none'",
+          "x-frame-options": "DENY",
+          "x-inherit-csrf": "(present)",
+          "cdn-cache-control": "no-store",
+          "vercel-cdn-cache-control": "no-store",
+          "pragma": "no-cache"
+        },
+        "body": "{\"error\":\"forbidden\"}"
+      },
+      "X-Forwarded-Host spoof (Origin and forwarded host foreign, same-origin) | signed out": {
+        "status": 403,
+        "headers": {
+          "content-type": "application/json",
+          "cache-control": "private, no-store",
+          "referrer-policy": "no-referrer",
+          "x-content-type-options": "nosniff",
+          "content-security-policy": "frame-ancestors 'none'",
+          "x-frame-options": "DENY",
+          "cdn-cache-control": "no-store",
+          "vercel-cdn-cache-control": "no-store",
+          "pragma": "no-cache"
+        },
+        "body": "{\"error\":\"forbidden\"}"
+      }
+    },
+    "api.file-upload-session (not bound) POST /api/files/upload-session": {
+      "good (own Origin, Sec-Fetch-Site same-origin) | signed in, fresh token": {
+        "status": 422,
+        "headers": {
+          "content-type": "application/json",
+          "cache-control": "private, no-store",
+          "referrer-policy": "no-referrer",
+          "x-content-type-options": "nosniff",
+          "content-security-policy": "frame-ancestors 'none'",
+          "x-frame-options": "DENY",
+          "x-inherit-csrf": "(present)",
+          "cdn-cache-control": "no-store",
+          "vercel-cdn-cache-control": "no-store",
+          "pragma": "no-cache"
+        },
+        "body": "{\"error\":\"invalid_request\"}"
+      },
+      "good (own Origin, Sec-Fetch-Site same-origin) | signed out": {
+        "status": 422,
+        "headers": {
+          "content-type": "application/json",
+          "cache-control": "private, no-store",
+          "referrer-policy": "no-referrer",
+          "x-content-type-options": "nosniff",
+          "content-security-policy": "frame-ancestors 'none'",
+          "x-frame-options": "DENY",
+          "cdn-cache-control": "no-store",
+          "vercel-cdn-cache-control": "no-store",
+          "pragma": "no-cache"
+        },
+        "body": "{\"error\":\"invalid_request\"}"
+      },
+      "own Origin, no Sec-Fetch-Site | signed in, fresh token": {
+        "status": 403,
+        "headers": {
+          "content-type": "application/json",
+          "cache-control": "private, no-store",
+          "referrer-policy": "no-referrer",
+          "x-content-type-options": "nosniff",
+          "content-security-policy": "frame-ancestors 'none'",
+          "x-frame-options": "DENY",
+          "x-inherit-csrf": "(present)",
+          "cdn-cache-control": "no-store",
+          "vercel-cdn-cache-control": "no-store",
+          "pragma": "no-cache"
+        },
+        "body": "{\"error\":\"forbidden\"}"
+      },
+      "own Origin, no Sec-Fetch-Site | signed out": {
+        "status": 403,
+        "headers": {
+          "content-type": "application/json",
+          "cache-control": "private, no-store",
+          "referrer-policy": "no-referrer",
+          "x-content-type-options": "nosniff",
+          "content-security-policy": "frame-ancestors 'none'",
+          "x-frame-options": "DENY",
+          "cdn-cache-control": "no-store",
+          "vercel-cdn-cache-control": "no-store",
+          "pragma": "no-cache"
+        },
+        "body": "{\"error\":\"forbidden\"}"
+      },
+      "cross-site (foreign Origin) | signed in, fresh token": {
+        "status": 403,
+        "headers": {
+          "content-type": "application/json",
+          "cache-control": "private, no-store",
+          "referrer-policy": "no-referrer",
+          "x-content-type-options": "nosniff",
+          "content-security-policy": "frame-ancestors 'none'",
+          "x-frame-options": "DENY",
+          "x-inherit-csrf": "(present)",
+          "cdn-cache-control": "no-store",
+          "vercel-cdn-cache-control": "no-store",
+          "pragma": "no-cache"
+        },
+        "body": "{\"error\":\"forbidden\"}"
+      },
+      "cross-site (foreign Origin) | signed out": {
+        "status": 403,
+        "headers": {
+          "content-type": "application/json",
+          "cache-control": "private, no-store",
+          "referrer-policy": "no-referrer",
+          "x-content-type-options": "nosniff",
+          "content-security-policy": "frame-ancestors 'none'",
+          "x-frame-options": "DENY",
+          "cdn-cache-control": "no-store",
+          "vercel-cdn-cache-control": "no-store",
+          "pragma": "no-cache"
+        },
+        "body": "{\"error\":\"forbidden\"}"
+      },
+      "same-site (own Origin) | signed in, fresh token": {
+        "status": 403,
+        "headers": {
+          "content-type": "application/json",
+          "cache-control": "private, no-store",
+          "referrer-policy": "no-referrer",
+          "x-content-type-options": "nosniff",
+          "content-security-policy": "frame-ancestors 'none'",
+          "x-frame-options": "DENY",
+          "x-inherit-csrf": "(present)",
+          "cdn-cache-control": "no-store",
+          "vercel-cdn-cache-control": "no-store",
+          "pragma": "no-cache"
+        },
+        "body": "{\"error\":\"forbidden\"}"
+      },
+      "same-site (own Origin) | signed out": {
+        "status": 403,
+        "headers": {
+          "content-type": "application/json",
+          "cache-control": "private, no-store",
+          "referrer-policy": "no-referrer",
+          "x-content-type-options": "nosniff",
+          "content-security-policy": "frame-ancestors 'none'",
+          "x-frame-options": "DENY",
+          "cdn-cache-control": "no-store",
+          "vercel-cdn-cache-control": "no-store",
+          "pragma": "no-cache"
+        },
+        "body": "{\"error\":\"forbidden\"}"
+      },
+      "none (own Origin) | signed in, fresh token": {
+        "status": 403,
+        "headers": {
+          "content-type": "application/json",
+          "cache-control": "private, no-store",
+          "referrer-policy": "no-referrer",
+          "x-content-type-options": "nosniff",
+          "content-security-policy": "frame-ancestors 'none'",
+          "x-frame-options": "DENY",
+          "x-inherit-csrf": "(present)",
+          "cdn-cache-control": "no-store",
+          "vercel-cdn-cache-control": "no-store",
+          "pragma": "no-cache"
+        },
+        "body": "{\"error\":\"forbidden\"}"
+      },
+      "none (own Origin) | signed out": {
+        "status": 403,
+        "headers": {
+          "content-type": "application/json",
+          "cache-control": "private, no-store",
+          "referrer-policy": "no-referrer",
+          "x-content-type-options": "nosniff",
+          "content-security-policy": "frame-ancestors 'none'",
+          "x-frame-options": "DENY",
+          "cdn-cache-control": "no-store",
+          "vercel-cdn-cache-control": "no-store",
+          "pragma": "no-cache"
+        },
+        "body": "{\"error\":\"forbidden\"}"
+      },
+      "foreign Origin, Sec-Fetch-Site same-origin | signed in, fresh token": {
+        "status": 403,
+        "headers": {
+          "content-type": "application/json",
+          "cache-control": "private, no-store",
+          "referrer-policy": "no-referrer",
+          "x-content-type-options": "nosniff",
+          "content-security-policy": "frame-ancestors 'none'",
+          "x-frame-options": "DENY",
+          "x-inherit-csrf": "(present)",
+          "cdn-cache-control": "no-store",
+          "vercel-cdn-cache-control": "no-store",
+          "pragma": "no-cache"
+        },
+        "body": "{\"error\":\"forbidden\"}"
+      },
+      "foreign Origin, Sec-Fetch-Site same-origin | signed out": {
+        "status": 403,
+        "headers": {
+          "content-type": "application/json",
+          "cache-control": "private, no-store",
+          "referrer-policy": "no-referrer",
+          "x-content-type-options": "nosniff",
+          "content-security-policy": "frame-ancestors 'none'",
+          "x-frame-options": "DENY",
+          "cdn-cache-control": "no-store",
+          "vercel-cdn-cache-control": "no-store",
+          "pragma": "no-cache"
+        },
+        "body": "{\"error\":\"forbidden\"}"
+      },
+      "no Origin, Sec-Fetch-Site same-origin | signed in, fresh token": {
+        "status": 403,
+        "headers": {
+          "content-type": "application/json",
+          "cache-control": "private, no-store",
+          "referrer-policy": "no-referrer",
+          "x-content-type-options": "nosniff",
+          "content-security-policy": "frame-ancestors 'none'",
+          "x-frame-options": "DENY",
+          "x-inherit-csrf": "(present)",
+          "cdn-cache-control": "no-store",
+          "vercel-cdn-cache-control": "no-store",
+          "pragma": "no-cache"
+        },
+        "body": "{\"error\":\"forbidden\"}"
+      },
+      "no Origin, Sec-Fetch-Site same-origin | signed out": {
+        "status": 403,
+        "headers": {
+          "content-type": "application/json",
+          "cache-control": "private, no-store",
+          "referrer-policy": "no-referrer",
+          "x-content-type-options": "nosniff",
+          "content-security-policy": "frame-ancestors 'none'",
+          "x-frame-options": "DENY",
+          "cdn-cache-control": "no-store",
+          "vercel-cdn-cache-control": "no-store",
+          "pragma": "no-cache"
+        },
+        "body": "{\"error\":\"forbidden\"}"
+      },
+      "neither header | signed in, fresh token": {
+        "status": 403,
+        "headers": {
+          "content-type": "application/json",
+          "cache-control": "private, no-store",
+          "referrer-policy": "no-referrer",
+          "x-content-type-options": "nosniff",
+          "content-security-policy": "frame-ancestors 'none'",
+          "x-frame-options": "DENY",
+          "x-inherit-csrf": "(present)",
+          "cdn-cache-control": "no-store",
+          "vercel-cdn-cache-control": "no-store",
+          "pragma": "no-cache"
+        },
+        "body": "{\"error\":\"forbidden\"}"
+      },
+      "neither header | signed out": {
+        "status": 403,
+        "headers": {
+          "content-type": "application/json",
+          "cache-control": "private, no-store",
+          "referrer-policy": "no-referrer",
+          "x-content-type-options": "nosniff",
+          "content-security-policy": "frame-ancestors 'none'",
+          "x-frame-options": "DENY",
+          "cdn-cache-control": "no-store",
+          "vercel-cdn-cache-control": "no-store",
+          "pragma": "no-cache"
+        },
+        "body": "{\"error\":\"forbidden\"}"
+      },
+      "X-Forwarded-Host spoof (Origin and forwarded host foreign, same-origin) | signed in, fresh token": {
+        "status": 403,
+        "headers": {
+          "content-type": "application/json",
+          "cache-control": "private, no-store",
+          "referrer-policy": "no-referrer",
+          "x-content-type-options": "nosniff",
+          "content-security-policy": "frame-ancestors 'none'",
+          "x-frame-options": "DENY",
+          "x-inherit-csrf": "(present)",
+          "cdn-cache-control": "no-store",
+          "vercel-cdn-cache-control": "no-store",
+          "pragma": "no-cache"
+        },
+        "body": "{\"error\":\"forbidden\"}"
+      },
+      "X-Forwarded-Host spoof (Origin and forwarded host foreign, same-origin) | signed out": {
+        "status": 403,
+        "headers": {
+          "content-type": "application/json",
+          "cache-control": "private, no-store",
+          "referrer-policy": "no-referrer",
+          "x-content-type-options": "nosniff",
+          "content-security-policy": "frame-ancestors 'none'",
+          "x-frame-options": "DENY",
+          "cdn-cache-control": "no-store",
+          "vercel-cdn-cache-control": "no-store",
+          "pragma": "no-cache"
+        },
+        "body": "{\"error\":\"forbidden\"}"
+      }
+    }
+  },
+  "plainText401s": {
+    "api.export GET /api/export (link)": {
+      "status": 401,
+      "headers": {
+        "content-type": "text/plain;charset=UTF-8",
+        "cache-control": "private, no-store",
+        "referrer-policy": "no-referrer",
+        "x-content-type-options": "nosniff",
+        "content-security-policy": "frame-ancestors 'none'",
+        "x-frame-options": "DENY",
+        "cdn-cache-control": "no-store",
+        "vercel-cdn-cache-control": "no-store",
+        "pragma": "no-cache"
+      },
+      "body": "Unauthorized"
+    },
+    "api.export POST /api/export": {
+      "status": 401,
+      "headers": {
+        "content-type": "application/json",
+        "cache-control": "private, no-store",
+        "referrer-policy": "no-referrer",
+        "x-content-type-options": "nosniff",
+        "content-security-policy": "frame-ancestors 'none'",
+        "x-frame-options": "DENY",
+        "cdn-cache-control": "no-store",
+        "vercel-cdn-cache-control": "no-store",
+        "pragma": "no-cache"
+      },
+      "body": "{\"error\":\"unauthenticated\"}"
+    },
+    "api.file-download GET /api/files/<uuid>/download (link)": {
+      "status": 401,
+      "headers": {
+        "content-type": "text/plain;charset=UTF-8",
+        "cache-control": "private, no-store",
+        "referrer-policy": "no-referrer",
+        "x-content-type-options": "nosniff",
+        "content-security-policy": "frame-ancestors 'none'",
+        "x-frame-options": "DENY",
+        "cdn-cache-control": "no-store",
+        "vercel-cdn-cache-control": "no-store",
+        "pragma": "no-cache"
+      },
+      "body": "Unauthorized"
+    },
+    "api.file-process POST /api/files/<uuid>/process": {
+      "status": 401,
+      "headers": {
+        "content-type": "text/plain;charset=UTF-8",
+        "cache-control": "private, no-store",
+        "referrer-policy": "no-referrer",
+        "x-content-type-options": "nosniff",
+        "content-security-policy": "frame-ancestors 'none'",
+        "x-frame-options": "DENY",
+        "cdn-cache-control": "no-store",
+        "vercel-cdn-cache-control": "no-store",
+        "pragma": "no-cache"
+      },
+      "body": "Unauthorized"
+    },
+    "api.account-delete POST /api/account/delete": {
+      "status": 401,
+      "headers": {
+        "content-type": "text/plain;charset=UTF-8",
+        "cache-control": "private, no-store",
+        "referrer-policy": "same-origin",
+        "x-content-type-options": "nosniff",
+        "content-security-policy": "frame-ancestors 'none'",
+        "x-frame-options": "DENY",
+        "cdn-cache-control": "no-store",
+        "vercel-cdn-cache-control": "no-store",
+        "pragma": "no-cache"
+      },
+      "body": "Unauthorized"
+    }
+  },
+  "pages": {
+    "app.overview": {
+      "document": {
+        "path": "/overview",
+        "status": 200,
+        "headers": {
+          "content-type": "text/html; charset=utf-8",
+          "cache-control": "private, no-store",
+          "referrer-policy": "same-origin",
+          "x-content-type-options": "nosniff",
+          "content-security-policy": "frame-ancestors 'none'",
+          "x-frame-options": "DENY",
+          "cdn-cache-control": "no-store",
+          "vercel-cdn-cache-control": "no-store",
+          "pragma": "no-cache"
+        },
+        "body": "(html 75994 bytes; <title>Overview · Inherit</title>; meta referrer: none)"
+      },
+      "notFound": "no URL-reachable not-found answer (fixed path; the page resolves the acting account)"
+    },
+    "embryos.request-data": {
+      "document": {
+        "path": "/embryos/request-data",
+        "status": 200,
+        "headers": {
+          "content-type": "text/html; charset=utf-8",
+          "cache-control": "private, no-store",
+          "referrer-policy": "same-origin",
+          "x-content-type-options": "nosniff",
+          "content-security-policy": "frame-ancestors 'none'",
+          "x-frame-options": "DENY",
+          "cdn-cache-control": "no-store",
+          "vercel-cdn-cache-control": "no-store",
+          "pragma": "no-cache"
+        },
+        "body": "(html 58321 bytes; <title>How to get your embryo files · Embryos · Inherit</title>; meta referrer: none)"
+      },
+      "notFound": "no URL-reachable not-found answer (fixed path; the page resolves the acting account)"
+    },
+    "embryos.upload": {
+      "document": {
+        "path": "/embryos/upload",
+        "status": 200,
+        "headers": {
+          "content-type": "text/html; charset=utf-8",
+          "cache-control": "private, no-store",
+          "referrer-policy": "same-origin",
+          "x-content-type-options": "nosniff",
+          "content-security-policy": "frame-ancestors 'none'",
+          "x-frame-options": "DENY",
+          "cdn-cache-control": "no-store",
+          "vercel-cdn-cache-control": "no-store",
+          "pragma": "no-cache"
+        },
+        "body": "(html 58283 bytes; <title>Add embryo files · Embryos · Inherit</title>; meta referrer: none)"
+      },
+      "notFound": "no URL-reachable not-found answer (fixed path; the page resolves the acting account)"
+    },
+    "family.health-picture": {
+      "document": {
+        "path": "/family/health-picture",
+        "status": 200,
+        "headers": {
+          "content-type": "text/html; charset=utf-8",
+          "cache-control": "private, no-store",
+          "referrer-policy": "same-origin",
+          "x-content-type-options": "nosniff",
+          "content-security-policy": "frame-ancestors 'none'",
+          "x-frame-options": "DENY",
+          "cdn-cache-control": "no-store",
+          "vercel-cdn-cache-control": "no-store",
+          "pragma": "no-cache"
+        },
+        "body": "(html 56748 bytes; <title>Family health picture · Inherit</title>; meta referrer: none)"
+      },
+      "notFound": "no URL-reachable not-found answer (fixed path; the page resolves the acting account)"
+    },
+    "family.invite": {
+      "document": {
+        "path": "/family/invite",
+        "status": 200,
+        "headers": {
+          "content-type": "text/html; charset=utf-8",
+          "cache-control": "private, no-store",
+          "referrer-policy": "same-origin",
+          "x-content-type-options": "nosniff",
+          "content-security-policy": "frame-ancestors 'none'",
+          "x-frame-options": "DENY",
+          "cdn-cache-control": "no-store",
+          "vercel-cdn-cache-control": "no-store",
+          "pragma": "no-cache"
+        },
+        "body": "(html 58051 bytes; <title>Invite another adult · Inherit</title>; meta referrer: none)"
+      },
+      "notFound": "no URL-reachable not-found answer (fixed path; the page resolves the acting account)"
+    },
+    "family.permissions": {
+      "document": {
+        "path": "/family/s-<random-uuid>/permissions",
+        "status": 404,
+        "headers": {
+          "content-type": "text/html; charset=utf-8",
+          "cache-control": "private, no-store",
+          "referrer-policy": "same-origin",
+          "x-content-type-options": "nosniff",
+          "content-security-policy": "frame-ancestors 'none'",
+          "x-frame-options": "DENY",
+          "cdn-cache-control": "no-store",
+          "vercel-cdn-cache-control": "no-store",
+          "pragma": "no-cache"
+        },
+        "body": "(html 37177 bytes; <title>Inherit — your genome, on your terms</title>; meta referrer: none)"
+      },
+      "notFound": {
+        "path": "/family/s-<random-uuid>/permissions",
+        "status": 404,
+        "headers": {
+          "content-type": "text/html; charset=utf-8",
+          "cache-control": "private, no-store",
+          "referrer-policy": "same-origin",
+          "x-content-type-options": "nosniff",
+          "content-security-policy": "frame-ancestors 'none'",
+          "x-frame-options": "DENY",
+          "cdn-cache-control": "no-store",
+          "vercel-cdn-cache-control": "no-store",
+          "pragma": "no-cache"
+        },
+        "body": "(html 37177 bytes; <title>Inherit — your genome, on your terms</title>; meta referrer: none)"
+      }
+    },
+    "family.person": {
+      "document": {
+        "path": "/family/me",
+        "status": 404,
+        "headers": {
+          "content-type": "text/html; charset=utf-8",
+          "cache-control": "private, no-store",
+          "referrer-policy": "same-origin",
+          "x-content-type-options": "nosniff",
+          "content-security-policy": "frame-ancestors 'none'",
+          "x-frame-options": "DENY",
+          "cdn-cache-control": "no-store",
+          "vercel-cdn-cache-control": "no-store",
+          "pragma": "no-cache"
+        },
+        "body": "(html 36427 bytes; <title>Inherit — your genome, on your terms</title>; meta referrer: none)"
+      },
+      "notFound": {
+        "path": "/family/s-<random-uuid>",
+        "status": 404,
+        "headers": {
+          "content-type": "text/html; charset=utf-8",
+          "cache-control": "private, no-store",
+          "referrer-policy": "same-origin",
+          "x-content-type-options": "nosniff",
+          "content-security-policy": "frame-ancestors 'none'",
+          "x-frame-options": "DENY",
+          "cdn-cache-control": "no-store",
+          "vercel-cdn-cache-control": "no-store",
+          "pragma": "no-cache"
+        },
+        "body": "(html 36499 bytes; <title>Inherit — your genome, on your terms</title>; meta referrer: none)"
+      }
+    },
+    "files.index": {
+      "document": {
+        "path": "/files",
+        "status": 200,
+        "headers": {
+          "content-type": "text/html; charset=utf-8",
+          "cache-control": "private, no-store",
+          "referrer-policy": "same-origin",
+          "x-content-type-options": "nosniff",
+          "content-security-policy": "frame-ancestors 'none'",
+          "x-frame-options": "DENY",
+          "cdn-cache-control": "no-store",
+          "vercel-cdn-cache-control": "no-store",
+          "pragma": "no-cache"
+        },
+        "body": "(html 77693 bytes; <title>My files · Inherit</title>; meta referrer: none)"
+      },
+      "notFound": "no URL-reachable not-found answer (fixed path; the page resolves the acting account)"
+    },
+    "files.upload": {
+      "document": {
+        "path": "/files/upload",
+        "status": 200,
+        "headers": {
+          "content-type": "text/html; charset=utf-8",
+          "cache-control": "private, no-store",
+          "referrer-policy": "same-origin",
+          "x-content-type-options": "nosniff",
+          "content-security-policy": "frame-ancestors 'none'",
+          "x-frame-options": "DENY",
+          "cdn-cache-control": "no-store",
+          "vercel-cdn-cache-control": "no-store",
+          "pragma": "no-cache"
+        },
+        "body": "(html 65801 bytes; <title>Add a file · Inherit</title>; meta referrer: none)"
+      },
+      "notFound": "no URL-reachable not-found answer (fixed path; the page resolves the acting account)"
+    },
+    "genome.ancestry": {
+      "document": {
+        "path": "/genome/me/ancestry",
+        "status": 200,
+        "headers": {
+          "content-type": "text/html; charset=utf-8",
+          "cache-control": "private, no-store",
+          "referrer-policy": "same-origin",
+          "x-content-type-options": "nosniff",
+          "content-security-policy": "frame-ancestors 'none'",
+          "x-frame-options": "DENY",
+          "cdn-cache-control": "no-store",
+          "vercel-cdn-cache-control": "no-store",
+          "pragma": "no-cache"
+        },
+        "body": "(html 309533 bytes; <title>You · Ancestry · Inherit</title>; meta referrer: none)"
+      },
+      "notFound": {
+        "path": "/genome/s-<random-uuid>/ancestry",
+        "status": 404,
+        "headers": {
+          "content-type": "text/html; charset=utf-8",
+          "cache-control": "private, no-store",
+          "referrer-policy": "same-origin",
+          "x-content-type-options": "nosniff",
+          "content-security-policy": "frame-ancestors 'none'",
+          "x-frame-options": "DENY",
+          "cdn-cache-control": "no-store",
+          "vercel-cdn-cache-control": "no-store",
+          "pragma": "no-cache"
+        },
+        "body": "(html 37127 bytes; <title>Inherit — your genome, on your terms</title>; meta referrer: none)"
+      }
+    },
+    "genome.browser": {
+      "document": {
+        "path": "/genome/me/data/browser",
+        "status": 200,
+        "headers": {
+          "content-type": "text/html; charset=utf-8",
+          "cache-control": "private, no-store",
+          "referrer-policy": "same-origin",
+          "x-content-type-options": "nosniff",
+          "content-security-policy": "frame-ancestors 'none'",
+          "x-frame-options": "DENY",
+          "cdn-cache-control": "no-store",
+          "vercel-cdn-cache-control": "no-store",
+          "pragma": "no-cache"
+        },
+        "body": "(html 76531 bytes; <title>Genome browser · Inherit</title>; meta referrer: none)"
+      },
+      "notFound": {
+        "path": "/genome/s-<random-uuid>/data/browser",
+        "status": 404,
+        "headers": {
+          "content-type": "text/html; charset=utf-8",
+          "cache-control": "private, no-store",
+          "referrer-policy": "same-origin",
+          "x-content-type-options": "nosniff",
+          "content-security-policy": "frame-ancestors 'none'",
+          "x-frame-options": "DENY",
+          "cdn-cache-control": "no-store",
+          "vercel-cdn-cache-control": "no-store",
+          "pragma": "no-cache"
+        },
+        "body": "(html 37634 bytes; <title>Inherit — your genome, on your terms</title>; meta referrer: none)"
+      }
+    },
+    "genome.carrier": {
+      "document": {
+        "path": "/genome/me/carrier",
+        "status": 200,
+        "headers": {
+          "content-type": "text/html; charset=utf-8",
+          "cache-control": "private, no-store",
+          "referrer-policy": "same-origin",
+          "x-content-type-options": "nosniff",
+          "content-security-policy": "frame-ancestors 'none'",
+          "x-frame-options": "DENY",
+          "cdn-cache-control": "no-store",
+          "vercel-cdn-cache-control": "no-store",
+          "pragma": "no-cache"
+        },
+        "body": "(html 58862 bytes; <title>You · A change you carry · Inherit</title>; meta referrer: none)"
+      },
+      "notFound": {
+        "path": "/genome/s-<random-uuid>/carrier",
+        "status": 404,
+        "headers": {
+          "content-type": "text/html; charset=utf-8",
+          "cache-control": "private, no-store",
+          "referrer-policy": "same-origin",
+          "x-content-type-options": "nosniff",
+          "content-security-policy": "frame-ancestors 'none'",
+          "x-frame-options": "DENY",
+          "cdn-cache-control": "no-store",
+          "vercel-cdn-cache-control": "no-store",
+          "pragma": "no-cache"
+        },
+        "body": "(html 36806 bytes; <title>Inherit — your genome, on your terms</title>; meta referrer: none)"
+      }
+    },
+    "genome.data": {
+      "document": {
+        "path": "/genome/me/data",
+        "status": 200,
+        "headers": {
+          "content-type": "text/html; charset=utf-8",
+          "cache-control": "private, no-store",
+          "referrer-policy": "same-origin",
+          "x-content-type-options": "nosniff",
+          "content-security-policy": "frame-ancestors 'none'",
+          "x-frame-options": "DENY",
+          "cdn-cache-control": "no-store",
+          "vercel-cdn-cache-control": "no-store",
+          "pragma": "no-cache"
+        },
+        "body": "(html 77469 bytes; <title>Data and methods · Inherit</title>; meta referrer: none)"
+      },
+      "notFound": {
+        "path": "/genome/s-<random-uuid>/data",
+        "status": 404,
+        "headers": {
+          "content-type": "text/html; charset=utf-8",
+          "cache-control": "private, no-store",
+          "referrer-policy": "same-origin",
+          "x-content-type-options": "nosniff",
+          "content-security-policy": "frame-ancestors 'none'",
+          "x-frame-options": "DENY",
+          "cdn-cache-control": "no-store",
+          "vercel-cdn-cache-control": "no-store",
+          "pragma": "no-cache"
+        },
+        "body": "(html 36798 bytes; <title>Inherit — your genome, on your terms</title>; meta referrer: none)"
+      }
+    },
+    "genome.report": {
+      "document": {
+        "path": "/genome/me/reports/no-such-report",
+        "status": 404,
+        "headers": {
+          "content-type": "text/html; charset=utf-8",
+          "cache-control": "private, no-store",
+          "referrer-policy": "same-origin",
+          "x-content-type-options": "nosniff",
+          "content-security-policy": "frame-ancestors 'none'",
+          "x-frame-options": "DENY",
+          "cdn-cache-control": "no-store",
+          "vercel-cdn-cache-control": "no-store",
+          "pragma": "no-cache"
+        },
+        "body": "(html 37594 bytes; <title>Inherit — your genome, on your terms</title>; meta referrer: none)"
+      },
+      "notFound": {
+        "path": "/genome/s-<random-uuid>/reports/no-such-report",
+        "status": 404,
+        "headers": {
+          "content-type": "text/html; charset=utf-8",
+          "cache-control": "private, no-store",
+          "referrer-policy": "same-origin",
+          "x-content-type-options": "nosniff",
+          "content-security-policy": "frame-ancestors 'none'",
+          "x-frame-options": "DENY",
+          "cdn-cache-control": "no-store",
+          "vercel-cdn-cache-control": "no-store",
+          "pragma": "no-cache"
+        },
+        "body": "(html 37666 bytes; <title>Inherit — your genome, on your terms</title>; meta referrer: none)"
+      }
+    },
+    "genome.subject": {
+      "document": {
+        "path": "/genome/me",
+        "status": 200,
+        "headers": {
+          "content-type": "text/html; charset=utf-8",
+          "cache-control": "private, no-store",
+          "referrer-policy": "same-origin",
+          "x-content-type-options": "nosniff",
+          "content-security-policy": "frame-ancestors 'none'",
+          "x-frame-options": "DENY",
+          "cdn-cache-control": "no-store",
+          "vercel-cdn-cache-control": "no-store",
+          "pragma": "no-cache"
+        },
+        "body": "(html 77254 bytes; <title>You · My Genome · Inherit</title>; meta referrer: none)"
+      },
+      "notFound": {
+        "path": "/genome/s-<random-uuid>",
+        "status": 404,
+        "headers": {
+          "content-type": "text/html; charset=utf-8",
+          "cache-control": "private, no-store",
+          "referrer-policy": "same-origin",
+          "x-content-type-options": "nosniff",
+          "content-security-policy": "frame-ancestors 'none'",
+          "x-frame-options": "DENY",
+          "cdn-cache-control": "no-store",
+          "vercel-cdn-cache-control": "no-store",
+          "pragma": "no-cache"
+        },
+        "body": "(html 36288 bytes; <title>Inherit — your genome, on your terms</title>; meta referrer: none)"
+      }
+    },
+    "settings.consents": {
+      "document": {
+        "path": "/settings/consents",
+        "status": 200,
+        "headers": {
+          "content-type": "text/html; charset=utf-8",
+          "cache-control": "private, no-store",
+          "referrer-policy": "same-origin",
+          "x-content-type-options": "nosniff",
+          "content-security-policy": "frame-ancestors 'none'",
+          "x-frame-options": "DENY",
+          "cdn-cache-control": "no-store",
+          "vercel-cdn-cache-control": "no-store",
+          "pragma": "no-cache"
+        },
+        "body": "(html 55145 bytes; <title>Consents · Inherit</title>; meta referrer: none)"
+      },
+      "notFound": "no URL-reachable not-found answer (fixed path; the page resolves the acting account)"
+    },
+    "settings.copilot": {
+      "document": {
+        "path": "/settings/copilot",
+        "status": 200,
+        "headers": {
+          "content-type": "text/html; charset=utf-8",
+          "cache-control": "private, no-store",
+          "referrer-policy": "same-origin",
+          "x-content-type-options": "nosniff",
+          "content-security-policy": "frame-ancestors 'none'",
+          "x-frame-options": "DENY",
+          "cdn-cache-control": "no-store",
+          "vercel-cdn-cache-control": "no-store",
+          "pragma": "no-cache"
+        },
+        "body": "(html 60324 bytes; <title>Copilot settings · Inherit</title>; meta referrer: none)"
+      },
+      "notFound": "no URL-reachable not-found answer (fixed path; the page resolves the acting account)"
+    },
+    "settings.data": {
+      "document": {
+        "path": "/settings/data",
+        "status": 200,
+        "headers": {
+          "content-type": "text/html; charset=utf-8",
+          "cache-control": "private, no-store",
+          "referrer-policy": "same-origin",
+          "x-content-type-options": "nosniff",
+          "content-security-policy": "frame-ancestors 'none'",
+          "x-frame-options": "DENY",
+          "cdn-cache-control": "no-store",
+          "vercel-cdn-cache-control": "no-store",
+          "pragma": "no-cache"
+        },
+        "body": "(html 62883 bytes; <title>Data settings · Inherit</title>; meta referrer: none)"
+      },
+      "notFound": "no URL-reachable not-found answer (fixed path; the page resolves the acting account)"
+    },
+    "settings.index": {
+      "document": {
+        "path": "/settings",
+        "status": 200,
+        "headers": {
+          "content-type": "text/html; charset=utf-8",
+          "cache-control": "private, no-store",
+          "referrer-policy": "same-origin",
+          "x-content-type-options": "nosniff",
+          "content-security-policy": "frame-ancestors 'none'",
+          "x-frame-options": "DENY",
+          "cdn-cache-control": "no-store",
+          "vercel-cdn-cache-control": "no-store",
+          "pragma": "no-cache"
+        },
+        "body": "(html 92458 bytes; <title>Settings · Inherit</title>; meta referrer: none)"
+      },
+      "notFound": "no URL-reachable not-found answer (fixed path; the page resolves the acting account)"
+    },
+    "settings.people": {
+      "document": {
+        "path": "/settings/people",
+        "status": 200,
+        "headers": {
+          "content-type": "text/html; charset=utf-8",
+          "cache-control": "private, no-store",
+          "referrer-policy": "same-origin",
+          "x-content-type-options": "nosniff",
+          "content-security-policy": "frame-ancestors 'none'",
+          "x-frame-options": "DENY",
+          "cdn-cache-control": "no-store",
+          "vercel-cdn-cache-control": "no-store",
+          "pragma": "no-cache"
+        },
+        "body": "(html 70762 bytes; <title>People · Inherit</title>; meta referrer: none)"
+      },
+      "notFound": "no URL-reachable not-found answer (fixed path; the page resolves the acting account)"
+    },
+    "(unmatched path, root not-found)": {
+      "status": 404,
+      "headers": {
+        "content-type": "text/html; charset=utf-8",
+        "cache-control": "private, no-cache, no-store, max-age=0, must-revalidate"
+      },
+      "body": "(html 38333 bytes; <title>Inherit — your genome, on your terms</title>; meta referrer: none)"
+    }
+  },
+  "pagesInBrowser": {
+    "note": "Chromium (Playwright), signed in as the synthetic account; the Referer of fetch('/robots.txt?…') made by the page after it rendered",
+    "rows": {
+      "app.overview": {
+        "document": {
+          "path": "/overview",
+          "status": 200,
+          "referrerPolicyHeader": "same-origin",
+          "metaReferrer": null,
+          "refererOfOwnSameOriginRequest": "http://localhost:3190/overview"
+        },
+        "notFound": "no URL-reachable not-found answer (fixed path; the page resolves the acting account)"
+      },
+      "embryos.request-data": {
+        "document": {
+          "path": "/embryos/request-data",
+          "status": 200,
+          "referrerPolicyHeader": "same-origin",
+          "metaReferrer": null,
+          "refererOfOwnSameOriginRequest": "http://localhost:3190/embryos/request-data"
+        },
+        "notFound": "no URL-reachable not-found answer (fixed path; the page resolves the acting account)"
+      },
+      "embryos.upload": {
+        "document": {
+          "path": "/embryos/upload",
+          "status": 200,
+          "referrerPolicyHeader": "same-origin",
+          "metaReferrer": null,
+          "refererOfOwnSameOriginRequest": "http://localhost:3190/embryos/upload"
+        },
+        "notFound": "no URL-reachable not-found answer (fixed path; the page resolves the acting account)"
+      },
+      "family.health-picture": {
+        "document": {
+          "path": "/family/health-picture",
+          "status": 200,
+          "referrerPolicyHeader": "same-origin",
+          "metaReferrer": null,
+          "refererOfOwnSameOriginRequest": "http://localhost:3190/family/health-picture"
+        },
+        "notFound": "no URL-reachable not-found answer (fixed path; the page resolves the acting account)"
+      },
+      "family.invite": {
+        "document": {
+          "path": "/family/invite",
+          "status": 200,
+          "referrerPolicyHeader": "same-origin",
+          "metaReferrer": null,
+          "refererOfOwnSameOriginRequest": "http://localhost:3190/family/invite"
+        },
+        "notFound": "no URL-reachable not-found answer (fixed path; the page resolves the acting account)"
+      },
+      "family.permissions": {
+        "document": "not measured: the synthetic account has no target for this page's document",
+        "notFound": {
+          "path": "/family/s-<random-uuid>/permissions",
+          "status": 404,
+          "referrerPolicyHeader": "same-origin",
+          "metaReferrer": null,
+          "refererOfOwnSameOriginRequest": "http://localhost:3190/family/s-<random-uuid>/permissions"
+        }
+      },
+      "family.person": {
+        "document": "not measured: the synthetic account has no target for this page's document",
+        "notFound": {
+          "path": "/family/s-<random-uuid>",
+          "status": 404,
+          "referrerPolicyHeader": "same-origin",
+          "metaReferrer": null,
+          "refererOfOwnSameOriginRequest": "http://localhost:3190/family/s-<random-uuid>"
+        }
+      },
+      "files.index": {
+        "document": {
+          "path": "/files",
+          "status": 200,
+          "referrerPolicyHeader": "same-origin",
+          "metaReferrer": null,
+          "refererOfOwnSameOriginRequest": "http://localhost:3190/files"
+        },
+        "notFound": "no URL-reachable not-found answer (fixed path; the page resolves the acting account)"
+      },
+      "files.upload": {
+        "document": {
+          "path": "/files/upload",
+          "status": 200,
+          "referrerPolicyHeader": "same-origin",
+          "metaReferrer": null,
+          "refererOfOwnSameOriginRequest": "http://localhost:3190/files/upload"
+        },
+        "notFound": "no URL-reachable not-found answer (fixed path; the page resolves the acting account)"
+      },
+      "genome.ancestry": {
+        "document": {
+          "path": "/genome/me/ancestry",
+          "status": 200,
+          "referrerPolicyHeader": "same-origin",
+          "metaReferrer": null,
+          "refererOfOwnSameOriginRequest": "http://localhost:3190/genome/me/ancestry"
+        },
+        "notFound": {
+          "path": "/genome/s-<random-uuid>/ancestry",
+          "status": 404,
+          "referrerPolicyHeader": "same-origin",
+          "metaReferrer": null,
+          "refererOfOwnSameOriginRequest": "http://localhost:3190/genome/s-<random-uuid>/ancestry"
+        }
+      },
+      "genome.browser": {
+        "document": {
+          "path": "/genome/me/data/browser",
+          "status": 200,
+          "referrerPolicyHeader": "same-origin",
+          "metaReferrer": null,
+          "refererOfOwnSameOriginRequest": "http://localhost:3190/genome/me/data/browser"
+        },
+        "notFound": {
+          "path": "/genome/s-<random-uuid>/data/browser",
+          "status": 404,
+          "referrerPolicyHeader": "same-origin",
+          "metaReferrer": null,
+          "refererOfOwnSameOriginRequest": "http://localhost:3190/genome/s-<random-uuid>/data/browser"
+        }
+      },
+      "genome.carrier": {
+        "document": {
+          "path": "/genome/me/carrier",
+          "status": 200,
+          "referrerPolicyHeader": "same-origin",
+          "metaReferrer": null,
+          "refererOfOwnSameOriginRequest": "http://localhost:3190/genome/me/carrier"
+        },
+        "notFound": {
+          "path": "/genome/s-<random-uuid>/carrier",
+          "status": 404,
+          "referrerPolicyHeader": "same-origin",
+          "metaReferrer": null,
+          "refererOfOwnSameOriginRequest": "http://localhost:3190/genome/s-<random-uuid>/carrier"
+        }
+      },
+      "genome.data": {
+        "document": {
+          "path": "/genome/me/data",
+          "status": 200,
+          "referrerPolicyHeader": "same-origin",
+          "metaReferrer": null,
+          "refererOfOwnSameOriginRequest": "http://localhost:3190/genome/me/data"
+        },
+        "notFound": {
+          "path": "/genome/s-<random-uuid>/data",
+          "status": 404,
+          "referrerPolicyHeader": "same-origin",
+          "metaReferrer": null,
+          "refererOfOwnSameOriginRequest": "http://localhost:3190/genome/s-<random-uuid>/data"
+        }
+      },
+      "genome.report": {
+        "document": "not measured: the synthetic account has no target for this page's document",
+        "notFound": {
+          "path": "/genome/s-<random-uuid>/reports/no-such-report",
+          "status": 404,
+          "referrerPolicyHeader": "same-origin",
+          "metaReferrer": null,
+          "refererOfOwnSameOriginRequest": "http://localhost:3190/genome/s-<random-uuid>/reports/no-such-report"
+        }
+      },
+      "genome.subject": {
+        "document": {
+          "path": "/genome/me",
+          "status": 200,
+          "referrerPolicyHeader": "same-origin",
+          "metaReferrer": null,
+          "refererOfOwnSameOriginRequest": "http://localhost:3190/genome/me"
+        },
+        "notFound": {
+          "path": "/genome/s-<random-uuid>",
+          "status": 404,
+          "referrerPolicyHeader": "same-origin",
+          "metaReferrer": null,
+          "refererOfOwnSameOriginRequest": "http://localhost:3190/genome/s-<random-uuid>"
+        }
+      },
+      "settings.consents": {
+        "document": {
+          "path": "/settings/consents",
+          "status": 200,
+          "referrerPolicyHeader": "same-origin",
+          "metaReferrer": null,
+          "refererOfOwnSameOriginRequest": "http://localhost:3190/settings/consents"
+        },
+        "notFound": "no URL-reachable not-found answer (fixed path; the page resolves the acting account)"
+      },
+      "settings.copilot": {
+        "document": {
+          "path": "/settings/copilot",
+          "status": 200,
+          "referrerPolicyHeader": "same-origin",
+          "metaReferrer": null,
+          "refererOfOwnSameOriginRequest": "http://localhost:3190/settings/copilot"
+        },
+        "notFound": "no URL-reachable not-found answer (fixed path; the page resolves the acting account)"
+      },
+      "settings.data": {
+        "document": {
+          "path": "/settings/data",
+          "status": 200,
+          "referrerPolicyHeader": "same-origin",
+          "metaReferrer": null,
+          "refererOfOwnSameOriginRequest": "http://localhost:3190/settings/data"
+        },
+        "notFound": "no URL-reachable not-found answer (fixed path; the page resolves the acting account)"
+      },
+      "settings.index": {
+        "document": {
+          "path": "/settings",
+          "status": 200,
+          "referrerPolicyHeader": "same-origin",
+          "metaReferrer": null,
+          "refererOfOwnSameOriginRequest": "http://localhost:3190/settings"
+        },
+        "notFound": "no URL-reachable not-found answer (fixed path; the page resolves the acting account)"
+      },
+      "settings.people": {
+        "document": {
+          "path": "/settings/people",
+          "status": 200,
+          "referrerPolicyHeader": "same-origin",
+          "metaReferrer": null,
+          "refererOfOwnSameOriginRequest": "http://localhost:3190/settings/people"
+        },
+        "notFound": "no URL-reachable not-found answer (fixed path; the page resolves the acting account)"
+      }
+    }
+  }
+}

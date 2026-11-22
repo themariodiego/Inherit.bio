@@ -4,10 +4,12 @@
  * any body is parsed or any application/analytics script can start. The raw
  * credential is never put in the DOM, a global, or browser storage.
  */
-export function rightsInterstitialScript(formToken: string): string {
-  // The value is a server-minted sealed form, not a URL or user-controlled
-  // string. Still escape HTML's script terminator when serializing it.
+export function rightsInterstitialScript(formToken: string, csrfToken: string): string {
+  // The values are a server-minted sealed form and the candidate's one-time
+  // X-Inherit-CSRF token, not a URL or user-controlled string. Still escape
+  // HTML's script terminator when serializing them.
   const nonce = JSON.stringify(formToken).replaceAll("<", "\\u003c");
+  const csrf = JSON.stringify(csrfToken).replaceAll("<", "\\u003c");
   return `(() => {
   let token = '';
   let button;
@@ -43,7 +45,7 @@ export function rightsInterstitialScript(formToken: string): string {
       status.textContent = 'Opening your request…';
       const pending = fetch('/api/rights/activate', {
         method: 'POST', credentials: 'same-origin', cache: 'no-store',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-Inherit-CSRF': ${csrf} },
         body: JSON.stringify({ token, nonce: ${nonce} })
       });
       token = '';

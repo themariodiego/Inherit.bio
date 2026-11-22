@@ -4,7 +4,8 @@ import { mintAuthForm, readAuthForm, sha256Hex } from "./auth-form";
 import { AUTH_FORM_COOKIE, PKCE_COOKIE, RESET_CSRF_COOKIE, RESET_SESSION_COOKIE } from "./auth-cookies";
 import { parseAuthBody, passwordFits } from "./auth-request";
 import { newPkceFlow, readPkceFlow } from "./pkce-state";
-import { newResetSession, presentedResetCsrf, readResetSession, resetCsrf } from "./reset-session";
+import { newResetSession, presentedResetCsrf, readResetSessionHash } from "./reset-session";
+import { verifySessionCsrf } from "@/lib/security/session-csrf-core";
 
 /**
  * The parts the three auth endpoints and the callback are built from: the
@@ -154,30 +155,37 @@ describe("the reset session (authContracts.reset-session-api-v1)", () => {
   const reset = (secret: string) =>
     new Request(`${ORIGIN}/api/auth/reset-password`, { method: "POST", headers: { cookie: `${RESET_SESSION_COOKIE}=${secret}` } });
 
-  it("sets a Strict session cookie whose hash only the database keeps, and a Lax CSRF bound to it", () => {
+  // 2026-11-19 (G8.5, the migration stage): the Lax cookie carries the reset
+  // session's first one-time X-Inherit-CSRF token (it carried a keyed digest
+  // of the session hash, resetCsrf), and the token is checked and spent by
+  // the route's wrapper (src/lib/security/session-csrf-routes.test.ts), so
+  // the session reader reads the cookie alone.
+  it("sets a Strict session cookie whose hash only the database keeps, and a Lax cookie with the session's first token", () => {
     const session = newResetSession();
     const [sessionCookie, csrfCookie] = session.setCookies;
     expect(sessionCookie).toMatch(/^inherit-reset=[A-Za-z0-9_-]{43}; Path=\/; Max-Age=900; HttpOnly; SameSite=Strict$/);
-    expect(csrfCookie).toMatch(/^inherit-reset-csrf=[0-9a-f]{64}; Path=\/; Max-Age=900; HttpOnly; SameSite=Lax$/);
+    expect(csrfCookie).toMatch(/^inherit-reset-csrf=\d{13}\.[A-Za-z0-9_-]{43}\.[0-9a-f]{64}; Path=\/; Max-Age=900; HttpOnly; SameSite=Lax$/);
     expect(sha256Hex(cookieValue(sessionCookie!))).toBe(session.sessionHash);
-    expect(cookieValue(csrfCookie!)).toBe(resetCsrf(session.sessionHash));
+    const first = cookieValue(csrfCookie!);
+    expect(verifySessionCsrf(first, { kind: "reset-session", sessionHash: session.sessionHash }, "auth.reset-password-submit")).not.toBeNull();
+    expect(verifySessionCsrf(first, { kind: "reset-session", sessionHash: newResetSession().sessionHash }, "auth.reset-password-submit")).toBeNull();
     expect(RESET_CSRF_COOKIE).toBe("inherit-reset-csrf");
   });
 
-  it("authorizes only the session cookie together with its own CSRF value", () => {
+  it("reads the session from exactly one well-formed reset cookie", () => {
     const session = newResetSession();
     const secret = cookieValue(session.setCookies[0]!);
-    const csrf = cookieValue(session.setCookies[1]!);
-    const request = reset(secret);
-    expect(readResetSession(request, csrf)).toEqual({ sessionHash: session.sessionHash });
-    expect(readResetSession(request, resetCsrf(newResetSession().sessionHash))).toBeNull();
-    expect(readResetSession(request, null)).toBeNull();
-    expect(readResetSession(request, "not-hex")).toBeNull();
-    expect(readResetSession(reset("short"), csrf)).toBeNull();
+    expect(readResetSessionHash(reset(secret))).toBe(session.sessionHash);
+    expect(readResetSessionHash(reset("short"))).toBeNull();
+    expect(readResetSessionHash(new Request(`${ORIGIN}/api/auth/reset-password`, { method: "POST" }))).toBeNull();
+    expect(readResetSessionHash(new Request(`${ORIGIN}/api/auth/reset-password`, { method: "POST",
+      headers: { cookie: `${RESET_SESSION_COOKIE}=${secret}; ${RESET_SESSION_COOKIE}=${secret}` } }))).toBeNull();
   });
 
-  it("renders only a well-formed CSRF value", () => {
-    expect(presentedResetCsrf("a".repeat(64))).toBe("a".repeat(64));
+  it("renders only a well-formed token", () => {
+    const token = cookieValue(newResetSession().setCookies[1]!);
+    expect(presentedResetCsrf(token)).toBe(token);
+    expect(presentedResetCsrf("a".repeat(64)), "the old digest's shape is not a token").toBe("");
     expect(presentedResetCsrf("<script>")).toBe("");
     expect(presentedResetCsrf(undefined)).toBe("");
   });

@@ -8,6 +8,8 @@ import { isFixtureSlug } from "@/components/reports/library";
 import { Breadcrumbs } from "@/components/site/breadcrumbs";
 import { EmptyState } from "@/components/site/empty-state";
 import { SubjectBar } from "@/components/subjects/subject-bar";
+import { IntentLink } from "@/components/site/intent-link";
+import { askCopilotAboutButton } from "@/copy/copilot/subject-scope";
 import { TermDefinition } from "@/components/figures/term-definition";
 import { NAV_LABELS } from "@/copy/navigation";
 import {
@@ -37,6 +39,8 @@ import { resolveStoredSharedReport } from "@/lib/family/shared-report-display";
 import type { FindingLayer } from "@/lib/genome/taxonomy";
 import { route } from "@/lib/primary-routes";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { subjectCopilotOpens } from "@/lib/copilot/subject-chat";
+import { userForPage } from "@/lib/supabase/auth-check";
 import { createClient } from "@/lib/supabase/server";
 
 /**
@@ -55,9 +59,7 @@ import { createClient } from "@/lib/supabase/server";
 
 const loadPerson = cache(async (segment: string) => {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await userForPage(supabase.auth);
   if (!user) return null;
   const person = await resolveFamilyPerson(user.id, segment);
   return person ? { user, person } : null;
@@ -156,6 +158,10 @@ export default async function FamilyPersonPage(props: PageProps<"/family/[person
     hasAncestry = (await ancestry.confirm()).authorized;
   }
   const subject = { ...person.handle, displayLabel: person.displayLabel };
+  // Copilot about this one person (G8.5, 20 November 2026): linked only where
+  // the scope would open now, so only after every check its page makes.
+  const copilotOpens = allowed && !gated && person.sharing === "active" && layers.length > 0
+    ? await subjectCopilotOpens(person.dataSubjectId) : false;
 
   return (
     <div data-surface="standard" className="page-stack stack-blocks max-w-4xl">
@@ -288,6 +294,13 @@ export default async function FamilyPersonPage(props: PageProps<"/family/[person
         <p data-density-required-accuracy className="caption max-w-measure">
           {NOT_DIAGNOSTIC}
         </p>
+        {copilotOpens ? (
+          <p data-slot="person-copilot">
+            <IntentLink href={route("copilot.scope", { scope: `s-${person.dataSubjectId}` })} className="link-target quiet-link">
+              {askCopilotAboutButton(person.displayLabel)}
+            </IntentLink>
+          </p>
+        ) : null}
         <p className="caption max-w-measure">{COPILOT_LOCAL_ONLY}</p>
       </div>
     </div>

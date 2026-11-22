@@ -1,0 +1,6 @@
+# LOCAL ONLY lock trace (rehearsal/scripts/locktrace.py 1 4), one rolled-back transaction on the mirror of the follow-up's post-state (mirror build 7), 2026-11-19.
+#01 20261024110000_copilot_settings_delete_nonce.sql     0.005s locks on existing relations first taken here: information_schema.columns:AccessShare, public.account_operation_nonces:AccessExclusive; strong: public.account_operation_nonces:AccessExclusive
+#02 20261024220000_session_csrf_tokens.sql               0.003s locks on existing relations first taken here: -; strong: -
+#03 20261025200000_consent_revoke_provider_nonce.sql     0.001s locks on existing relations first taken here: -; strong: -
+#04 20261025400000_path_a_account_accept_typed_name.sql  0.008s locks on existing relations first taken here: -; strong: -
+total migration seconds 0.019

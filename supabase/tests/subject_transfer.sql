@@ -1,8 +1,11 @@
 -- api.subject-transfer (migration 20261016221000_subject_transfer; owner
 -- decisions 2026-10-16, "The subjects endpoints (G2.1)" and "Subjects delete
 -- and transfer: four further cases", and the 2026-10-22 rule for wording
--- nobody has approved). The door is built closed; the transfer behind it is
--- tested directly. A Path B record bound to the person's own account becomes
+-- nobody has approved). The door was built closed and the transfer behind it
+-- is tested directly; since 20261122120000 (owner decision of 22 November
+-- 2026, "The transfer notices are approved, with one added line, and the
+-- transfer is switched on") the door is open, and its closed branch is shown
+-- with the switch closed inside a savepoint. A Path B record bound to the person's own account becomes
 -- the person's: their completed result stays readable under their own grant,
 -- the uploader loses every access, nothing new is analysed, and each file is
 -- relocated to a fresh flat key by the worker's doors. A pending file refuses
@@ -16,6 +19,10 @@ select no_plan();
 \ir fixtures/path_b_source_setup.inc
 
 update auth.users set created_at=now()-interval '1 day' where id::text like '0b5e0000-%';
+-- D-163: relocations earlier local runs committed are set aside inside this
+-- transaction, so the relocation worker's next item is this suite's own.
+update private.subject_transfer_relocations set state='cancelled',cancelled_at=clock_timestamp(),current_attempt_id=null
+ where state in ('queued','copying');
 -- Reference selection is isolated to one published synthetic template.
 update public.report_templates set status='review' where status='published';
 insert into public.report_templates(slug,category,title,summary,status,evidence,layer,estimate_kind,variants)
@@ -109,16 +116,18 @@ create function pg_temp.transfer(p_account text,p_subject uuid,p_code text) retu
  $$ select private.transfer_subject_v1(pg_temp.a(p_account),pg_temp.s(p_account),p_subject,pg_temp.h(p_code),
    clock_timestamp()+interval '5 minutes') $$;
 create function pg_temp.untouched() returns boolean language sql as $$
- select (select count(*) from public.account_operation_nonces where operation='subject_transfer')=0
-  and (select count(*) from private.subject_ownership_transfers)=0
-  and (select count(*) from private.subject_transfer_relocations)=0
-  and not exists(select 1 from public.subjects where ownership_transferred_at is not null)
+ -- D-163: only this suite's own synthetic accounts and records are counted.
+ select (select count(*) from public.account_operation_nonces where operation='subject_transfer'
+   and account_id in (select pg_temp.a(x) from unnest(array['1','2','3','4','9']) x))=0
+  and (select count(*) from private.subject_ownership_transfers where subject_id in (select subject_id from fx))=0
+  and (select count(*) from private.subject_transfer_relocations where subject_id in (select subject_id from fx))=0
+  and not exists(select 1 from public.subjects where ownership_transferred_at is not null and id in (select subject_id from fx))
   and (select owner_account_id from public.subjects where id=pg_temp.sid('main'))=pg_temp.a('1')
   and (select state from public.other_adult_held_uploads where subject_id=pg_temp.sid('main'))='confirmed'
   and (select count(*) from private.path_b_report_bindings where subject_id=pg_temp.sid('main'))=2
 $$;
 
--- 1. Privileges and the closed door --------------------------------------------------------
+-- 1. Privileges and the door ---------------------------------------------------------------
 select ok(has_function_privilege('service_role','public.transfer_subject_v1(uuid,uuid,uuid,text,timestamptz)','execute')
  and not has_function_privilege('authenticated','public.transfer_subject_v1(uuid,uuid,uuid,text,timestamptz)','execute')
  and not has_function_privilege('anon','public.transfer_subject_v1(uuid,uuid,uuid,text,timestamptz)','execute')
@@ -140,14 +149,34 @@ select ok((select bool_and(not has_table_privilege(r,t,'select') and not has_tab
  from unnest(array['private.subject_ownership_transfers','private.subject_transfer_relocations',
   'private.subject_transfer_relocation_attempts']) t cross join unnest(array['anon','authenticated','service_role','inherit_upload_only']) r),
  'no API role reads or writes the transfer and relocation rows');
-select is(private.subject_transfer_open_v1(),false,
- 'the door is closed: the three notices have no approved wording (2026-10-22 rule)');
+select is(private.subject_transfer_open_v1(),true,
+ 'the door is open: the three notices are approved (owner decision of 22 November 2026, 20261122120000)');
+-- The closed branch, with the switch closed inside this savepoint only.
+savepoint closed_door;
+create or replace function private.subject_transfer_open_v1() returns boolean language sql immutable set search_path='' as
+ $$ select false $$;
 set local role service_role;
 select throws_ok($$select public.transfer_subject_v1('0b5e0000-0000-4000-8000-000000000002','0b5e0000-0000-4000-8000-000000000012',
  (select subject_id from fx where name='main'),encode(extensions.digest('subject-transfer:door','sha256'),'hex'),
- clock_timestamp()+interval '5 minutes')$$,'42501','not_found','the closed door answers not found even to the record''s own person');
+ clock_timestamp()+interval '5 minutes')$$,'42501','not_found',
+ 'with the switch closed the door answers not found even to the record''s own person');
 reset role;
-select ok(pg_temp.untouched(),'the closed door writes nothing');
+select ok(pg_temp.untouched(),'... and writes nothing');
+rollback to closed_door;
+-- The open door, undone after each probe so the refusals below start clean.
+savepoint open_door;
+set local role service_role;
+select is(public.transfer_subject_v1('0b5e0000-0000-4000-8000-000000000002','0b5e0000-0000-4000-8000-000000000012',
+ (select subject_id from fx where name='main'),encode(extensions.digest('subject-transfer:open-door','sha256'),'hex'),
+ clock_timestamp()+interval '5 minutes')->>'status','transferred','the open door runs the transfer for the record''s own person');
+reset role;
+rollback to open_door;
+set local role service_role;
+select throws_ok($$select public.transfer_subject_v1('0b5e0000-0000-4000-8000-000000000001','0b5e0000-0000-4000-8000-000000000011',
+ (select subject_id from fx where name='main'),encode(extensions.digest('subject-transfer:uploader-door','sha256'),'hex'),
+ clock_timestamp()+interval '5 minutes')$$,'42501','not_found','the open door answers not found to the uploader');
+reset role;
+select ok(pg_temp.untouched() and private.subject_transfer_open_v1(),'... which writes nothing, and the switch is open again');
 select ok((select pg_get_constraintdef(oid) like '%subject_transfer%' from pg_constraint
  where conname='account_operation_nonces_operation_check'),'the operation nonce check knows subject_transfer');
 select ok((select pg_get_constraintdef(oid) like '%subject_sharing_stop%' and pg_get_constraintdef(oid) like '%subject_delete%'
@@ -174,13 +203,19 @@ select ok(pg_temp.untouched() and (select owner_account_id from public.subjects 
 -- 3. The transfer -----------------------------------------------------------------------------
 create temporary table before_transfer as select s.lifecycle_revision,s.subject_binding_revision,
  (select count(*) from public.subject_consents where subject_id=s.id and revoked_at is null) consents,
+ (select count(*) from public.subject_consents where subject_id=s.id) consent_rows,
+ (select array_agg(c.id order by c.id) from public.subject_consents c where c.subject_id=s.id and c.revoked_at is null
+  and not (c.consent_type='upload_class' and c.account_id=s.owner_account_id)) other_live,
+ (select c.id from public.subject_consents c where c.subject_id=s.id and c.consent_type='upload_class'
+  and c.account_id=s.owner_account_id and c.revoked_at is null) uploader_consent,
  (select count(*) from public.consent_signatures where target_kind='subject' and target_id=s.id) signatures,
  (select count(*) from public.legal_audit_log) audit
  from public.subjects s where s.id=pg_temp.sid('main');
 create temporary table transferred as select pg_temp.transfer('2',pg_temp.sid('main'),'main') body;
 select is((select body->>'status' from transferred),'transferred','the transfer answers transferred');
 select is((select body->>'subjectId' from transferred),pg_temp.sid('main')::text,'... with the route subject');
-select ok((select (body->>'effectiveAt')::timestamptz=t.transferred_at from transferred,private.subject_ownership_transfers t),
+select ok((select (body->>'effectiveAt')::timestamptz=t.transferred_at from transferred,private.subject_ownership_transfers t
+  where t.subject_id=pg_temp.sid('main')),
  '... effective at the committed transfer time');
 select ok((select s.owner_account_id=pg_temp.a('2') and s.subject_account_id=pg_temp.a('2') and s.subject_class='other_adult'
   and s.lifecycle='active' and s.ownership_transferred_at is not null
@@ -220,14 +255,22 @@ select ok((select g.revoked_at is null and d.status='current' from public.purpos
 select is((select count(*) from public.subject_relationships where subject_id=pg_temp.sid('main')
  and status in ('pending','current') and recipient_account_id is distinct from pg_temp.a('2')),0::bigint,
  'every relationship naming another recipient ends');
-select ok((select (select count(*) from public.subject_consents where subject_id=pg_temp.sid('main') and revoked_at is null)=b.consents
+-- 20261122100000 (D-147): the uploader's upload consent no longer stays live
+-- after the record leaves it; every row is still kept.
+select ok((select (select count(*) from public.subject_consents where subject_id=pg_temp.sid('main'))=b.consent_rows
+ and (select array_agg(c.id order by c.id) from public.subject_consents c where c.subject_id=pg_temp.sid('main') and c.revoked_at is null)
+  is not distinct from b.other_live
+ and coalesce(cardinality(b.other_live),0)=b.consents-1
  and (select count(*) from public.consent_signatures where target_kind='subject' and target_id=pg_temp.sid('main'))=b.signatures
- from before_transfer b),'original consents and signatures are kept as they were');
+ from before_transfer b),'original consents and signatures are kept: every row stays, and every consent but the uploader''s stays live');
+select ok((select revoked_at is not null and revocation_reason='superseded' from public.subject_consents
+ where id=(select uploader_consent from before_transfer)),
+ 'D-147: the uploader''s upload consent ends as superseded by the person''s ownership, and is kept');
 select ok(exists(select 1 from public.legal_audit_log where event_code='subject.ownership_transferred')
  and (select count(*) from public.legal_audit_log)>(select audit from before_transfer),
  'one subject.ownership_transferred event is appended to the kept audit chain');
 select ok((select not (coded_context::text ~ '@|[0-9a-f]{64}') from public.legal_audit_log
- where event_code='subject.ownership_transferred'),'the audit event carries no contact or token');
+ where event_code='subject.ownership_transferred' and occurred_at>=now()),'the audit event carries no contact or token');
 select is((select count(*) from public.worker_jobs where subject_id=pg_temp.sid('main') and status in ('queued','running')),0::bigint,
  'no former-owner job is left queued or running');
 

@@ -8,6 +8,7 @@ import { testAppealIntakeOpen } from "@/lib/future-person/appeals-open";
 import { futurePersonClaimsOpen } from "@/lib/future-person/claims-open";
 import { composeClaimDocument, compositionPlan } from "@/lib/future-person/document-compose";
 import { completeNonceMatches, readEvidenceRequest } from "@/lib/future-person/evidence-session";
+import { readEvidenceCsrfSession, withPurposeCsrf } from "@/lib/security/session-csrf";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { permissionDocumentsOpen } from "@/lib/uploads/permission-document-open";
 
@@ -28,6 +29,11 @@ import { permissionDocumentsOpen } from "@/lib/uploads/permission-document-open"
  * (same nonce) may be sent again to ask. That interim answer is recorded in
  * docs/register-contract-divergence.json. A refused document gets one closed
  * reason and nothing else.
+ *
+ * Each request spends one of the evidence session's one-time `X-Inherit-CSRF`
+ * tokens before the handler runs (G8.5, the migration stage): the opening
+ * answer handed over the first, and every answer here carries the next, so
+ * a request that asks again for the scan's outcome carries the successor.
  */
 
 const COMPLETE_KEYS = ["documentId", "documentKind", "status"] as const;
@@ -73,10 +79,11 @@ async function answer(value: z.infer<typeof status>): Promise<Response> {
   }
 }
 
-export async function POST(request: Request, context: { params: Promise<{ session: string }> }) {
-  const { session } = await context.params;
-  return withoutReferrer(await complete(request, session));
-}
+export const POST = withPurposeCsrf("api.evidence-complete", readEvidenceCsrfSession,
+  async (request: Request, context: { params: Promise<{ session: string }> }) => {
+    const { session } = await context.params;
+    return withoutReferrer(await complete(request, session));
+  });
 
 async function complete(request: Request, session: string): Promise<Response> {
   if (!futurePersonClaimsOpen() && !testAppealIntakeOpen() && !permissionDocumentsOpen()) return notFound();

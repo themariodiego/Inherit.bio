@@ -58,3 +58,20 @@ describe("canonical input display facts", () => {
     expect(rpc.mock.calls.map(call => call[1].p_file_ids)).toEqual([ids.slice(0, 100), ids.slice(100)]);
   });
 });
+
+// G7.4, ADR 0038: the optional TEST-LOCAL read-calling object, in its closed shape only.
+describe("read-calling provenance in the canonical display facts", () => {
+  const readCalls = { version: "inherit-read-calls-v1", input: "BAM", minimumDepth: 10, minimumBaseQuality: 20,
+    minimumMappingQuality: 20, heterozygousLow: 0.25, heterozygousHigh: 0.75, homozygousMinimum: 0.9, reviewed: false };
+  it("accepts a source the database projected with its readCalls object", async () => {
+    const called = { ...source, snapshot: { ...source.snapshot, readCalls } };
+    const { db } = database([called]);
+    expect(await loadCanonicalInputSources(db, "subject", [id], { kind: "prepared" })).toEqual([called]);
+  });
+  it.each([{ ...readCalls, reviewed: true }, { ...readCalls, extra: 1 }, { ...readCalls, heterozygousHigh: 2 },
+    { ...readCalls, minimumDepth: 1.5 }, { ...readCalls, version: "other" }, "readCalls"])(
+    "refuses a source whose readCalls is not the closed shape %j", async (value) => {
+      const { db } = database([{ ...source, snapshot: { ...source.snapshot, readCalls: value } }]);
+      expect(await loadCanonicalInputSources(db, "subject", [id], { kind: "prepared" })).toEqual([]);
+    });
+});

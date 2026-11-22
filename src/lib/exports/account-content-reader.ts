@@ -5,7 +5,7 @@ import {accountArchiveScope} from "./account-archive-scope";
 import {ownExportSnapshotSchema,ownSubjectExportContent,type OwnExportRpc,type OwnExportSnapshot} from "./own-subject-content";
 import {anySignal} from "./abort-signals";
 const unavailable=()=>new Error("account_archive_content_unavailable");
-export type AccountContentOperation="history"|"chats"|"chat-messages"|"check"|"variants"|"observed"|"reports"|"prs"|"ancestry";
+export type AccountContentOperation="history"|"chats"|"chat-messages"|"family-turns"|"check"|"variants"|"observed"|"reports"|"prs"|"ancestry";
 export type AccountContentRpc=(name:"export_archive_account_content_v1",args:{p_operation:AccountContentOperation;
  p_export_id:string;p_attempt_id:string;p_authority_receipt:string;p_payload:Record<string,unknown>},signal:AbortSignal)
  =>PromiseLike<{data:unknown;error:unknown}>;

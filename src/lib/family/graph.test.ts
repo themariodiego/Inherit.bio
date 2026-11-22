@@ -1,9 +1,11 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   DIRECTIONAL_PURPOSES,
   buildFamilyPeople,
   familySegmentId,
   isPurpose,
+  readHeldSharedSubjects,
+  type FamilyGrantRow,
   type FamilyGraphRows,
   type FamilySubjectRow,
 } from "./graph";
@@ -55,6 +57,7 @@ function rows(overrides: Partial<FamilyGraphRows> & { viewerAccountId: string })
     invitations: [{ targetSubjectId: INVITED_B, inviterAccountId: ACCOUNT_A }],
     grants: [],
     pausedWithAccountIds: [],
+    heldSharedSubjectIds: [],
     ...overrides,
   };
 }
@@ -254,5 +257,74 @@ describe("family people graph", () => {
     ]);
     expect(isPurpose("reports.polygenic")).toBe(true);
     expect(isPurpose("embryo.analysis")).toBe(false);
+  });
+});
+
+/**
+ * D-156 (owner decision of 22 November 2026): while the adult the viewer
+ * invited is under their acceptance hold or a due reminder, the database
+ * names their record, and what it shares with the viewer reads exactly as if
+ * nothing were shared. The viewer's own grants, and every other viewer, are
+ * untouched.
+ */
+describe("a record the viewer reads as not shared (D-156)", () => {
+  const fromB = (purpose: FamilyGrantRow["purpose"]): FamilyGrantRow => ({
+    purpose, granterAccountId: ACCOUNT_B, dataSubjectId: SELF_B, recipientAccountId: ACCOUNT_A,
+  });
+  const fromA: FamilyGrantRow = {
+    purpose: "ancestry", granterAccountId: ACCOUNT_A, dataSubjectId: SELF_A, recipientAccountId: ACCOUNT_B,
+  };
+
+  it("shows the inviter the invited adult exactly as when they share nothing", () => {
+    const shared = [fromB("reports.polygenic"), fromB("copilot.local"), fromB("raw.browse"), fromB("family.heritability")];
+    const held = buildFamilyPeople(rows({ viewerAccountId: ACCOUNT_A, grants: [...shared, fromA], heldSharedSubjectIds: [SELF_B] }));
+    const nothingShared = buildFamilyPeople(rows({ viewerAccountId: ACCOUNT_A, grants: [fromA] }));
+    expect(held).toEqual(nothingShared);
+    expect(held).toHaveLength(1);
+    expect([...held[0].grantsToViewer]).toEqual([]);
+    expect([...held[0].grantsFromViewer]).toEqual(["ancestry"]);
+    // Released: the same rows read again, with nothing else changed.
+    const released = buildFamilyPeople(rows({ viewerAccountId: ACCOUNT_A, grants: [...shared, fromA] }));
+    expect([...released[0].grantsToViewer]).toEqual(["reports.polygenic", "copilot.local", "raw.browse", "family.heritability"]);
+  });
+
+  it("does not list a person reachable only through what they share, as when nothing is shared", () => {
+    const grantOnly = rows({ viewerAccountId: ACCOUNT_A, invitations: [], grants: [fromB("reports.monogenic")],
+      heldSharedSubjectIds: [SELF_B] });
+    expect(buildFamilyPeople(grantOnly)).toEqual(buildFamilyPeople(rows({ viewerAccountId: ACCOUNT_A, invitations: [] })));
+    expect(buildFamilyPeople(grantOnly)).toEqual([]);
+  });
+
+  it("holds only grants to the viewer from the named record: never what the viewer gives", () => {
+    const mine = rows({ viewerAccountId: ACCOUNT_A, grants: [fromA, fromB("ancestry")], heldSharedSubjectIds: [SELF_A] });
+    const [person] = buildFamilyPeople(mine);
+    expect([...person.grantsFromViewer]).toEqual(["ancestry"]);
+    expect([...person.grantsToViewer]).toEqual(["ancestry"]);
+  });
+
+  it("asks the database once, with exactly this account and the records that share with it", async () => {
+    const rpc = vi.fn(async () => ({ data: [SELF_B] as unknown, error: null as unknown }));
+    await expect(readHeldSharedSubjects(rpc, ACCOUNT_A, [SELF_B, MINOR])).resolves.toEqual([SELF_B]);
+    expect(rpc.mock.calls).toEqual([["adult_acceptance_inviter_held_subjects_v1",
+      { p_account_id: ACCOUNT_A, p_subject_ids: [SELF_B, MINOR] }]]);
+    const none = vi.fn(async () => ({ data: [] as unknown, error: null as unknown }));
+    await expect(readHeldSharedSubjects(none, ACCOUNT_A, [SELF_B])).resolves.toEqual([]);
+    const unasked = vi.fn(async () => ({ data: [] as unknown, error: null as unknown }));
+    await expect(readHeldSharedSubjects(unasked, ACCOUNT_A, [])).resolves.toEqual([]);
+    expect(unasked).not.toHaveBeenCalled();
+  });
+
+  it("reads every record as not shared when the answer fails or is not one it asked about", async () => {
+    const asked = [SELF_B, MINOR];
+    const answers: Array<() => Promise<{ data: unknown; error: unknown }>> = [
+      async () => ({ data: null, error: { code: "PGRST202" } }),
+      async () => ({ data: "not a list", error: null }),
+      async () => ({ data: [SELF_B, INVITED_B], error: null }),
+      async () => ({ data: [42], error: null }),
+      async () => { throw new Error("network"); },
+    ];
+    for (const answer of answers) {
+      await expect(readHeldSharedSubjects(vi.fn(answer), ACCOUNT_A, asked)).resolves.toEqual(asked);
+    }
   });
 });

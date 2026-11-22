@@ -4,6 +4,7 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { adminClient, ANON_KEY, completeOwnUploadConsent, createConfirmedUser, signIn, SUPABASE_URL } from "./helpers";
 import { directUploadReceipt, subjectFinalizationReceipt } from "../src/lib/uploads/subject-upload-contract";
+import { accountCsrf } from "./helpers/session-csrf";
 
 test.use({ trace: "off" }); // Keep the restricted bearer out of persisted traces.
 
@@ -16,11 +17,11 @@ test("a standard upload grant refuses TUS creation and upsert, then stores and f
   const bytes = readFileSync(path.join(process.cwd(), "e2e/fixtures/tiny-grch38.vcf"));
   const declaration = { subjectId: "me", declaredFormat: "VCF", sizeBytes: bytes.length,
     sha256: createHash("sha256").update(bytes).digest("hex") };
-  const issued = await page.evaluate(async declaration => {
+  const issued = await page.evaluate(async ({ declaration, csrf }) => {
     const response = await fetch("/api/files/upload-session", { method: "POST",
-      headers: { "content-type": "application/json" }, body: JSON.stringify(declaration) });
+      headers: { "content-type": "application/json", "X-Inherit-CSRF": csrf }, body: JSON.stringify(declaration) });
     return { status: response.status, body: await response.json() };
-  }, declaration);
+  }, { declaration, csrf: await accountCsrf(page, "api.file-upload-session") });
   expect(issued.status).toBe(201);
   const grant = directUploadReceipt.parse(issued.body);
   const provider = { origin: SUPABASE_URL, apiKey: ANON_KEY, grant };
@@ -108,10 +109,10 @@ test("a standard upload grant refuses TUS creation and upsert, then stores and f
   expect(source.error).toBeNull();
   expect(Buffer.from(await source.data!.arrayBuffer())).toEqual(bytes);
 
-  const finalized = await page.evaluate(async uploadId => {
-    const response = await fetch(`/api/files/${uploadId}/finalize`, { method: "POST" });
+  const finalized = await page.evaluate(async ({ uploadId, csrf }) => {
+    const response = await fetch(`/api/files/${uploadId}/finalize`, { method: "POST", headers: { "X-Inherit-CSRF": csrf } });
     return { status: response.status, body: await response.json() };
-  }, grant.uploadId);
+  }, { uploadId: grant.uploadId, csrf: await accountCsrf(page, "api.file-finalize") });
   expect(finalized.status).toBe(200);
   const { fileId } = subjectFinalizationReceipt.parse(finalized.body);
   const file = await admin.from("genome_files").select("bucket_path,sha256,user_id").eq("id", fileId).single();

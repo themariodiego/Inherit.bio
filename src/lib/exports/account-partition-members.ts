@@ -3,7 +3,7 @@ import {z} from "zod";
 import {accountArchiveContextSchema} from "./bound-account-archive-worker";
 import {accountArchiveScope} from "./account-archive-scope";
 import {ACCOUNT_HISTORY_KINDS,type AccountHistoryKind,type prepareAccountHistoryInventory} from "./account-history-inventory";
-import {accountClassRowSchemas,type AccountProjectedClass,type prepareAccountClassInventory} from "./account-class-inventory";
+import {accountClassRowSchemas,accountJointClassRowSchemas,type AccountJointClass,type AccountProjectedClass,type prepareAccountClassInventory} from "./account-class-inventory";
 import type {prepareAccountArchiveMetadata} from "./account-member-metadata";
 import type {FuturePersonMemberFactory} from "./future-person-member-plan";
 import {anySignal} from "./abort-signals";
@@ -19,6 +19,8 @@ const historyMembers:Record<AccountHistoryKind,AccountMetadataMember>={subjects:
 const classMembers:Record<AccountProjectedClass,AccountMetadataMember>={attestation_contradictions:"attestations",directional_grants:"consents",
  family_sharing_pauses:"portrait",family_sharing_stops:"portrait",future_person_claim_objections:"embryos",future_person_claimant_principals:"embryos",
  future_person_claims:"embryos",subject_control_refusal_authorities:"subject",subject_relationships:"subject",suppressions:"reports"};
+/** Live-permission joint results (one-record export only) sit beside the pair. */
+const jointClassMembers:Record<AccountJointClass,AccountMetadataMember>={portrait_results:"portrait"};
 type Projected={kind:string;scope:"subject"|"requester-account-history";row:unknown};
 const unavailable=()=>new Error("account_archive_partition_unavailable"),encoder=new TextEncoder();
 
@@ -73,6 +75,12 @@ export async function prepareAccountPartitionMembers(options:{context:Context;hi
   for(const kind of Object.keys(accountClassRowSchemas) as AccountProjectedClass[])if(member===undefined||classMembers[kind]===member)
    for await(const item of options.classes.records(kind,signal)){
     const at=location(item.subjectId);yield {subjectId:at.subjectId,member:classMembers[kind],value:{kind,scope:at.scope,row:item.row}};
+   }
+  for(const kind of Object.keys(accountJointClassRowSchemas) as AccountJointClass[])if(member===undefined||jointClassMembers[kind]===member)
+   for await(const item of options.classes.records(kind,signal)){
+    // A joint row is always the record's own; it never becomes account history.
+    if(item.subjectId===null||!selected.has(item.subjectId))throw unavailable();
+    yield {subjectId:item.subjectId,member:jointClassMembers[kind],value:{kind,scope:"subject" as const,row:item.row}};
    }
   if(options.metadata.profiles.length!==1||options.metadata.profiles[0].id!==context.actor.accountId)throw unavailable();
   if(member===undefined||member==="subject")for(const row of options.metadata.profiles)yield {subjectId:anchor,member:"subject",value:{kind:"profile",scope:"requester-account-history",row}};

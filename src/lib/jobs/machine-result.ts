@@ -75,6 +75,18 @@ export function machineJobResult(outcome: JobOutcome): Response {
   );
 }
 
+/**
+ * `machine-api-v1.missingInvalidExpiredOrWrongCredential`: the register's
+ * JSON 401 `{"error":"unauthenticated"}` for a missing or wrong job
+ * credential, with the contract's headers. It never says which credential
+ * was expected. Until 19 November 2026 the job routes answered plain text
+ * `Unauthorized` (G8.5, "where the register is stricter, engineering codes
+ * to it").
+ */
+export function machineUnauthenticated(): Response {
+  return Response.json({ error: "unauthenticated" }, { status: 401, headers: { ...MACHINE_JOB_RESULT_HEADERS } });
+}
+
 /** `machineJobResult(jobOutcome(work))`, the form every drain uses. */
 export function machineJobDrained(work: { done: number; failed: number }): Response {
   return machineJobResult(jobOutcome(work));

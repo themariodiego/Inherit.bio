@@ -1,7 +1,7 @@
 import { getSensitiveAccountContext } from "@/lib/account-deletion";
 import { notFound, unavailable } from "@/lib/embryos/api";
 import { embryoFragmentStore, type EmbryoFragmentStore, type FragmentTargets } from "@/lib/embryos/fragment-store";
-import { accountJurisdictionDenied, unauthorized } from "@/lib/embryos/guards";
+import { accountJurisdictionDenied, unauthenticated } from "@/lib/embryos/guards";
 import {
   chunkBinding,
   chunkCommit,
@@ -69,7 +69,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 export async function PUT(request: Request, context: { params: Promise<{ session: string; sequence: string }> }) {
   const { session, sequence: rawSequence } = await context.params;
   const account = await getSensitiveAccountContext();
-  if (!account) return noReferrer(unauthorized());
+  if (!account) return noReferrer(unauthenticated());
   const refused = await accountJurisdictionDenied(account.user.id);
   if (refused) return noReferrer(refused);
   const store = embryoFragmentStore();

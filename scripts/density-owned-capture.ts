@@ -20,7 +20,7 @@ export type DensityNativeObservers = {
   [K in Provider]: Pick<NonNullable<DensityRuntimeFixtureAssemblyInput[K]>, "observeState">;
 };
 const providerPorts: Record<Provider, 3100 | 3102 | 3103 | 3104 | 3105> = {
-  publicAndAuth: 3100, accountAndOwn: 3100, pairedFamily: 3100, ownReport: 3100,
+  publicAndAuth: 3100, accountAndOwn: 3100, pairedFamily: 3100, ownReport: 3100, ownCarrier: 3100,
   cohortEntry: 3100, fileTransfer: 3100, publishedCohort: 3105, unansweredCopilot: 3100,
   jurisdiction: 3100, liveCohort: 3105, withdrawal: 3100, claimProcessing: 3100,
   statisticalCohort: 3105, appealReview: 3102, claimReview: 3100, subjectAccessProcessing: 3102,

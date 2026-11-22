@@ -7,9 +7,11 @@ import { ownSubjectIds, subjectRecordOf, subjectRecordRowCount } from "@/lib/exp
 import { ownChatsForExport } from "@/lib/export/own-chats";
 import { EXPORT_CHATS_EMPTY, EXPORT_LEGAL_AUDIT_DESCRIPTION, exportLegalAuditNote } from "@/copy/settings/data-export";
 import { LEGAL_AUDIT_SCHEMA_VERSION, ownLegalAuditEvents } from "@/lib/export/legal-audit";
+import { writerlessClassesEmpty } from "@/lib/export/writerless-classes";
 import { originalDownloadName, originalFileExtension } from "@/lib/uploads/original-download-name";
 import { assertPreparedMetadataBounds } from "@/lib/genome/prepared-source/canonical-manifest";
 import { preparedOriginalDownloadSourceSchema, streamPreparedOriginalDownload } from "@/lib/uploads/prepared-original-download";
+import { downloadUnauthenticated } from "@/lib/uploads/subject-original-download";
 import {
   getGenotypesByRsid,
   getProcessedFiles,
@@ -26,6 +28,7 @@ import { ownSubjectExportContent, renderOwnSubjectReport, type OwnExportRpc, typ
 import { ownSubjectPurposeGranted } from "@/lib/genome/own-analysis-access";
 import {accountExportHttpDependencies,postAccountExport,pollAccountExport} from "@/lib/exports/account-export-http";
 import {hasAccountExportCookie} from "@/lib/exports/account-export-session";
+import {withAccountCsrf} from "@/lib/security/session-csrf";
 
 /** The two report selections the legacy half of this archive answers to (D-099). */
 const REPORT_PURPOSES = ["reports.monogenic", "reports.polygenic"] as const;
@@ -356,7 +359,11 @@ function renderReportsTxt(
 // report results + polygenic scores + ancestry + consents + chat history,
 // as a ZIP stream. Free, forever — there is deliberately no billing,
 // quota, or fee code path here, and never will be (see /terms).
-export async function POST(request:Request){return postAccountExport(request,accountExportHttpDependencies());}
+/** The shell's one-time X-Inherit-CSRF token for the account session is
+ * verified and spent before `create` or `open-ready` runs (G8.5); the
+ * action's sealed export proof travels in X-Inherit-Operation-Proof and is
+ * bound into the operation exactly as before. GET only polls and needs none. */
+export const POST=withAccountCsrf("api.export",async(request:Request)=>postAccountExport(request,accountExportHttpDependencies()));
 
 export async function GET(request?:Request) {
   if(request&&hasAccountExportCookie(request))return pollAccountExport(request,accountExportHttpDependencies());
@@ -364,7 +371,9 @@ export async function GET(request?:Request) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return new Response("Unauthorized", { status: 401 });
+  // authenticated-api-v1.unauthenticated with the downloadOrExport headers
+  // (G8.5, 22 November 2026; it answered a plain-text "Unauthorized").
+  if (!user) return downloadUnauthenticated();
 
   const admin = createAdminClient();
   let stopped = false;
@@ -372,7 +381,7 @@ export async function GET(request?:Request) {
   const assertActive = () => { if (stopped) throw new Error("export unavailable"); };
   const { data: claimsData } = await supabase.auth.getClaims();
   if (claimsData?.claims?.sub !== user.id || typeof claimsData.claims.session_id !== "string") {
-    return new Response("Unauthorized", { status: 401 });
+    return downloadUnauthenticated();
   }
   const exportActor = { accountId: user.id, sessionId: claimsData.claims.session_id };
   const ownContent = ownSubjectExportContent(admin.rpc.bind(admin) as unknown as OwnExportRpc,
@@ -381,7 +390,7 @@ export async function GET(request?:Request) {
   try { canonical = await ownContent.list(); } catch { return new Response("Export unavailable", { status: 503 }); }
 
   const [legacyFiles, { data: legacyAncestry, error: ancestryError }, { data: consents },
-    subjectRecord, legalAudit] =
+    subjectRecord, legalAudit, writerlessEmpty] =
     await Promise.all([
       fetchAllRows((from, to) => admin.from("genome_files").select("*").eq("user_id", user.id)
         .is("single_logical_sample_verified_at", null).order("id").range(from, to)),
@@ -392,10 +401,14 @@ export async function GET(request?:Request) {
         .eq("user_id", user.id),
       subjectRecordOf(admin, user.id),
       ownLegalAuditEvents(admin.rpc.bind(admin) as unknown as Parameters<typeof ownLegalAuditEvents>[0], exportActor),
+      // The five classes no writer fills have no member here: any row of
+      // them refuses the archive (owner decision, 23 Oct 2026).
+      writerlessClassesEmpty(admin.rpc.bind(admin) as unknown as Parameters<typeof writerlessClassesEmpty>[0], exportActor),
     ]);
   if (ancestryError) return new Response("Export unavailable", { status: 503 });
   if (subjectRecord === null) return new Response("Export unavailable", { status: 503 });
   if (legalAudit === null) return new Response("Export unavailable", { status: 503 });
+  if (!writerlessEmpty) return new Response("Export unavailable", { status: 503 });
 
   const files = [...legacyFiles, ...canonical.map(snapshot => snapshot.file)];
   const legacyIds = new Set(legacyFiles.map(file => file.id));

@@ -45,7 +45,6 @@ import { acknowledged } from "@/lib/embryos/tier2";
 import { readPendingEmbryoInput } from "@/lib/embryos/pending-input-read";
 import { route } from "@/lib/primary-routes";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { acknowledgeEmbryoGate } from "../acknowledge";
 import { loadCohorts, loadViewer } from "../context";
 
 /**
@@ -198,7 +197,7 @@ export default async function EmbryoDetailPage(props: PageProps<"/embryos/[embry
       );
       break;
     case "gated":
-      body = <EmbryoResultGate action={acknowledgeEmbryoGate} />;
+      body = <EmbryoResultGate />;
       break;
     case "complete": {
       let savedHold: Awaited<ReturnType<typeof loadSavedEmbryoCarrierHold>>;

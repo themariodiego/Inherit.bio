@@ -3,6 +3,7 @@ import {randomUUID} from "node:crypto";
 import {adminClient,createConfirmedUser,signIn} from "../helpers";
 import {reviewFixtureSql} from "./claim-review-fixture";
 import {observeNativeResponses} from "./native-response-observer";
+import {accountCsrf} from "./session-csrf";
 import {readEmbryoDispositionReceipt} from "../../src/lib/embryos/disposition-receipt";
 
 const UUID=/^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/u;
@@ -95,8 +96,11 @@ export async function proveNativeDispositionAndProfile(input:{owner:Page;other:P
     parentNames:["Synthetic Parent","Synthetic Parent"],consentSignatureId:await profile.locator('input[name="consentSignatureId"]').inputValue()};
   const proof={operationNonce:await profile.locator('input[name="operationNonce"]').inputValue(),csrf:await profile.locator('input[name="csrf"]').inputValue()};
   const countBefore=await nonceCount(embryo);
+  // 2026-11-19 (G8.5): the page's derived proof travels in X-Inherit-Operation-Proof (it was X-Inherit-CSRF), and
+  // X-Inherit-CSRF is a fresh one-time token for the sender's own session, so each 404 is the route's own answer.
   const cross=await other.request.put(`/api/embryos/${sibling}/future-person-identity`,{headers:{Origin:new URL(other.url()).origin,
-    "X-Inherit-Operation-Nonce":proof.operationNonce,"X-Inherit-CSRF":proof.csrf},data:payload});
+    "X-Inherit-Operation-Nonce":proof.operationNonce,"X-Inherit-Operation-Proof":proof.csrf,
+    "X-Inherit-CSRF":await accountCsrf(other,"api.future-person-identity-profile")},data:payload});
   expect(cross.status()).toBe(404);expect(await cross.json()).toEqual({error:"not_found"});
   expect(await nonceCount(embryo)).toBe(countBefore);
   const strangerContext=await browser.newContext({baseURL:new URL(other.url()).origin});
@@ -106,7 +110,8 @@ export async function proveNativeDispositionAndProfile(input:{owner:Page;other:P
     await stranger.goto("/settings/data");await expect(stranger.locator('[data-slot="embryo-disposition-control"]')).toHaveCount(0);
     await expect(stranger.locator('[data-slot="future-person-profile-control"]')).toHaveCount(0);
     const denied=await stranger.request.put(`/api/embryos/${embryo}/future-person-identity`,{headers:{Origin:new URL(stranger.url()).origin,
-      "X-Inherit-Operation-Nonce":proof.operationNonce,"X-Inherit-CSRF":proof.csrf},data:payload});
+      "X-Inherit-Operation-Nonce":proof.operationNonce,"X-Inherit-Operation-Proof":proof.csrf,
+      "X-Inherit-CSRF":await accountCsrf(stranger,"api.future-person-identity-profile")},data:payload});
     expect(denied.status()).toBe(404);expect(await denied.json()).toEqual({error:"not_found"});
   }finally{await strangerContext.close();}
   expect(await nonceCount(embryo)).toBe(countBefore);

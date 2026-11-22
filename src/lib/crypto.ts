@@ -4,14 +4,17 @@ import crypto from "node:crypto";
 // the deployment env (BYOK_ENCRYPTION_KEY, 32 bytes base64) and never lives
 // in the database; ciphertext lives in llm_keys, which has no client grants.
 
-function dataKey(): Buffer {
-  const raw = process.env.BYOK_ENCRYPTION_KEY;
+function decodeDataKey(raw: string | undefined): Buffer {
   if (!raw) throw new Error("BYOK_ENCRYPTION_KEY is not set");
   const key = Buffer.from(raw, "base64");
   if (key.length !== 32) {
     throw new Error("BYOK_ENCRYPTION_KEY must be 32 bytes of base64");
   }
   return key;
+}
+
+function dataKey(): Buffer {
+  return decodeDataKey(process.env.BYOK_ENCRYPTION_KEY);
 }
 
 export function encryptSecret(plaintext: string): Buffer {
@@ -39,8 +42,22 @@ export function decryptSecret(blob: Buffer): string {
  * not reuse the same key material directly.
  */
 export function hmacSecret(value: string, context: string): string {
+  return hmacUnder(dataKey(), value, context);
+}
+
+/**
+ * The same digest under a key the caller supplies (32 bytes base64), for a
+ * local browser test helper that mints with the local server's test key
+ * without setting it in its own process environment. Product code uses
+ * `hmacSecret`.
+ */
+export function hmacSecretWithKey(value: string, context: string, encodedKey: string): string {
+  return hmacUnder(decodeDataKey(encodedKey), value, context);
+}
+
+function hmacUnder(key: Buffer, value: string, context: string): string {
   const subKey = crypto
-    .createHmac("sha256", dataKey())
+    .createHmac("sha256", key)
     .update(context, "utf8")
     .digest();
   return crypto.createHmac("sha256", subKey).update(value, "utf8").digest("hex");

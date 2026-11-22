@@ -532,7 +532,7 @@ describe("states and the gate", () => {
   });
 
   it("renders the gate with the exact checkbox, the session sentence, one primary action and no result", () => {
-    const html = renderToStaticMarkup(h(EmbryoResultGate, { action: async () => ({ ok: true }) }));
+    const html = renderToStaticMarkup(h(EmbryoResultGate));
     expect(html).toContain(GATE_CHECKBOX_LABEL);
     expect(html).toContain(GATE_SESSION_NOTE);
     expect(html).toContain(`>${GATE_BUTTON}<`);

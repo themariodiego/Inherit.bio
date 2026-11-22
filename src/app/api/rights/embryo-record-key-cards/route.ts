@@ -5,6 +5,7 @@ import { readRecordKeyCardsRightsRequest } from "@/lib/embryos/record-key-cards-
 import { recordKeyCardsBody } from "@/lib/embryos/routes";
 import { isTestJurisdictionEnabled } from "@/lib/legal/jurisdictions";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { readRightsCsrfSession, withPurposeCsrf } from "@/lib/security/session-csrf";
 
 /**
  * `POST /api/rights/embryo-record-key-cards` (register
@@ -12,10 +13,11 @@ import { createAdminClient } from "@/lib/supabase/admin";
  * `POST /api/embryo-cohorts/[id]/record-key-cards`: one exact current
  * no-account Record Key recipient collects their own cards once, through
  * their rights session instead of an account session. The body is the
- * one-time form nonce the rights page served for that session, sent again in
- * `X-Inherit-CSRF`; the cohort, the recipient and every revision come from
- * the session in `deliver_embryo_record_key_cards_rights_v1`, never from the
- * request.
+ * one-time form nonce the rights page served for that session; the cohort,
+ * the recipient and every revision come from the session in
+ * `deliver_embryo_record_key_cards_rights_v1`, never from the request. The
+ * rights session's one-time X-Inherit-CSRF token is verified and spent before
+ * this runs (G8.5); until 19 November 2026 the header repeated the nonce.
  *
  * The raw keys exist in this one response and nowhere else. Every failure,
  * including a missing, stale, consumed or non-recipient session, is the same
@@ -26,7 +28,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
 
 const DELIVERY_KEYS = ["cohort_id", "recipient_set_revision", "key_revision", "record_key_cards"] as const;
 
-export async function POST(request: Request) {
+export const POST = withPurposeCsrf("api.embryo-record-key-cards-rights", readRightsCsrfSession, handlePost);
+async function handlePost(request: Request) {
   if (!isTestJurisdictionEnabled()) return notFound();
   const parsed = recordKeyCardsBody.safeParse(await readJson(request));
   if (!parsed.success) return notFound();

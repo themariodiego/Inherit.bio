@@ -1,4 +1,6 @@
 import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
+vi.mock("@/lib/security/session-csrf", async (importOriginal) =>
+  (await import("@/lib/security/session-csrf.test-support")).admitEverySessionCsrf(await importOriginal()));
 const mocks = vi.hoisted(() => ({ account: vi.fn(), rpc: vi.fn(), open: vi.fn(() => true) }));
 vi.mock("@/lib/account-deletion", () => ({ getSensitiveAccountContext: mocks.account }));
 vi.mock("@/lib/supabase/server", () => ({ createClient: async () => ({ rpc: mocks.rpc }) }));
@@ -8,7 +10,8 @@ const { GET, POST } = await import("@/app/api/reviews/future-person/claim-object
 const { sealNoticePackage } = await import("./notice-package");
 const { sealOwnerObjection } = await import("./owner-objection");
 const { mintAssignedObjectionNonce, readAssignedObjectionNonce } = await import("./objection-review");
-const { reviewCsrf } = await import("./review");
+// The gate is driven on this route in src/lib/security/session-csrf-routes.test.ts (G8.5, the migration stage).
+const REVIEWER_GATE_STAND_IN = "reviewer-session-token-checked-by-the-gate";
 const { claimDataKey, openDocumentBytes } = await import("./document-envelope");
 afterAll(() => vi.unstubAllEnvs());
 const id = (n: number) => `62000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
@@ -36,7 +39,7 @@ function body(decision = "uphold-objection") {
 function request(given: unknown = body(), headers: Record<string, string> = {}) {
   return new Request(`https://test.e2e.local/api/reviews/future-person/claim-objections/${OBJECTION}`, { method: "POST",
     headers: { origin: "https://test.e2e.local", "sec-fetch-site": "same-origin", "content-type": "application/json",
-      "x-inherit-csrf": reviewCsrf(OBJECTION, ACCOUNT, SESSION), ...headers }, body: JSON.stringify(given) });
+      "x-inherit-csrf": REVIEWER_GATE_STAND_IN, ...headers }, body: JSON.stringify(given) });
 }
 const context = () => ({ params: Promise.resolve({ id: OBJECTION }) });
 beforeEach(() => {

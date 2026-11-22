@@ -168,7 +168,9 @@ export async function buildAccountArchive(options:{job:{exportId:string;principa
   // prove their content/EOF again. Repeating all factories' context reads for
   // every ZIP header/byte would multiply the same full-graph authorization.
   const current=complete?async(current:AbortSignal)=>{await check(current);await complete.check(current);}:check;
-  plan=await prepareAccountArchivePlan({context,...(complete?{completeContext:complete.context}:{}),resultSources:pathB.resultSources,factories:bufferAccountMemberFactories(factories,containsStatements,statementRuntime),files,sources,signal,check:current,sensitiveRuntime:containsStatements?statementRuntime:undefined,ownStatements:ownCapture});
+  // The server's routed cohort classes decide the manifest's embryo-results statement.
+  const cohortRecords=graph.receipts.some(receipt=>receipt.kind!=="family_pairs"&&receipt.rows>0);
+  plan=await prepareAccountArchivePlan({context,...(complete?{completeContext:complete.context}:{}),resultSources:pathB.resultSources,factories:bufferAccountMemberFactories(factories,containsStatements,statementRuntime),files,sources,signal,check:current,sensitiveRuntime:containsStatements?statementRuntime:undefined,ownStatements:ownCapture,cohortRecords});
  }
  try{
   const summary=await storeArchiveSegments({sensitiveRuntime:statementRuntime,sensitiveBuffers:()=>containsStatements,exportId:options.job.exportId,principalHash:options.job.principalHash,

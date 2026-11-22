@@ -1,0 +1,23 @@
+# LOCAL ONLY lock trace (rehearsal/scripts/locktrace.py 1 21), relk4, 2026-11-22: all 21 migrations in one transaction on the mirror of release 3's post-state, rolled back. A lock is attributed to the first migration after which it appears; only locks beyond ACCESS SHARE on tables that existed before are listed.
+#01 20261119110000_dropped_bucket_literals_and_guard.sql 0.016s: public.account_deletion_storage_entries:AccessExclusive, public.embryo_ingest_delete_objects:AccessExclusive, public.genome_storage_objects:AccessExclusive
+#02 20261119120000_session_csrf_purpose_kinds.sql 0.024s: -
+#03 20261119134500_path_a_sealed_invitation_note.sql 0.010s: public.mail_outbox:AccessExclusive, public.mail_outbox:RowExclusive, public.mail_outbox:ShareRowExclusive
+#04 20261119150000_own_upload_consent_withdrawal.sql 0.004s: -
+#05 20261119160000_other_adult_upload_consent_withdrawal.sql 0.009s: private.invitation_terminal_notices:AccessExclusive
+#06 20261119170000_embryo_uploader_consent_withdrawal.sql 0.008s: -
+#07 20261120100000_self_withdrawal_deletes_exports.sql 0.008s: -
+#08 20261120110000_file_delete_operation_nonce.sql 0.007s: public.account_operation_nonces:AccessExclusive
+#09 20261120120000_adult_acceptance_hold_and_renotice.sql 0.017s: private.invitation_terminal_notices:ShareRowExclusive
+#10 20261120130000_subject_copilot_scope.sql 0.010s: public.subjects:ShareRowExclusive
+#11 20261122100000_uploader_withdrawal_hands_record_to_adult.sql 0.023s: -
+#12 20261122110000_adult_acceptance_inviter_reads.sql 0.006s: -
+#13 20261122120000_subject_transfer_open.sql 0.004s: -
+#14 20261122130000_file_delete_live_exports_only.sql 0.006s: -
+#15 20261122140000_adult_acceptance_inviter_archive_reads.sql 0.005s: -
+#16 20261122150000_file_delete_live_account_copies.sql 0.003s: -
+#17 20261122160000_transferred_record_exports.sql 0.022s: -
+#18 20261122170000_inviter_grants_and_reviewed_document_decision.sql 0.004s: -
+#19 20261122180000_path_b_reviewed_document_readers.sql 0.013s: -
+#20 20261122190000_reviewed_document_person_access.sql 0.065s: -
+#21 20261122200000_reviewed_document_person_appeal.sql 0.095s: -
+total migration seconds 0.358

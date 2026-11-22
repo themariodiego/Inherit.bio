@@ -93,7 +93,10 @@ describe("real paired Family density providers", () => {
   });
   it("requires independent own-session purpose and personal acknowledgements before a live Portrait empty capture", () => {
     const source = read("e2e/helpers/density-family-state-fixtures.ts");
-    for (const text of ['await page.request.post("/auth/sign-out"); await signIn(page, bEmail, password)',
+    // G8.5 (2026-10-23): the real sign-out now carries its one-time token
+    // through the shared helper (e2e/helpers/session-csrf.ts).
+    expect(source).toMatch(/import \{[^}]*\bsignOut\b[^}]*\} from "\.\/session-csrf";/u);
+    for (const text of ['await signOut(page); await signIn(page, bEmail, password)',
       'await turnOn(page, selfA.id as string, recipe === "health-paused"',
       'await turnOn(capturedPage, handle, recipe === "health-paused"',
       'await acknowledgeOwnPortrait(page, pair.id as string, selfB.id as string)',

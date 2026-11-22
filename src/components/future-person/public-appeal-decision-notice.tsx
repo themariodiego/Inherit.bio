@@ -12,7 +12,7 @@ const labels = {
 export function PublicAppealDecisionNotice({ notice }: { notice: Notice }) {
  return <section className="mx-auto max-w-3xl px-6 py-section">
   <header className="reading-head">
-   <h1 className="display display-lg">Review of your files</h1>
+   <h1 className="display">Review of your files</h1>
    <p className="lede reading-intro">This is the review of a file from your request.</p>
   </header>
   <ul className="mt-8 space-y-8">

@@ -113,8 +113,11 @@ describe("genuine additional Health Picture density states", () => {
   });
   it("keeps each original audit in a real independent session and binds the mailed token to the actual runtime origin", () => {
     expect(source).toContain('adultInvitationUrl(token, origin.origin)');
-    expect(source).toContain('await establishPair(page);\n            await page.request.post("/auth/sign-out")');
-    expect(source).toContain('if (recipe === "partial" || recipe === "uncovered") await capturedPage.request.post("/auth/sign-out")');
+    // G8.5 (2026-10-23): the real sign-out now carries its one-time token
+    // through the shared helper (e2e/helpers/session-csrf.ts).
+    expect(source).toMatch(/import \{[^}]*\bsignOut\b[^}]*\} from "\.\/session-csrf";/u);
+    expect(source).toContain('await establishPair(page);\n            await signOut(page)');
+    expect(source).toContain('if (recipe === "partial" || recipe === "uncovered") await signOut(capturedPage)');
     expect(source).not.toContain('await page.context().clearCookies()');
   });
   it("accepts the exact one-layer native withdrawal without changing sources or the joint grant", () => {

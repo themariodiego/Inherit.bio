@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useCsrf } from "@/components/security/csrf-provider";
 import { Button } from "@/components/ui/button";
 import {
   COUNSELLOR_NO_ROUTE,
@@ -18,17 +19,15 @@ import {
  * §1.5; brief lines 968-972). One checkbox, one sentence about its scope,
  * one primary action, and the counsellor line in its no-route state.
  *
- * The answer is recorded by the page's server action as an httpOnly session
- * cookie — never in device storage, never in this component's state — so
- * the page that renders this gate has fetched nothing derived about any
- * embryo. The action is passed in so the component never names a route.
+ * The answer is recorded by POST /api/embryos/acknowledge
+ * (api.embryo-acknowledge) as an httpOnly session cookie — never in device
+ * storage, never in this component's state — so the page that renders this
+ * gate has fetched nothing derived about any embryo. It is the same request
+ * the Family gate makes to its own route, with the Embryo body.
  */
-export function EmbryoResultGate({
-  action,
-}: {
-  action: () => Promise<{ ok: boolean }>;
-}) {
+export function EmbryoResultGate() {
   const router = useRouter();
+  const csrf = useCsrf("api.embryo-acknowledge");
   const [understood, setUnderstood] = useState(false);
   const [pending, setPending] = useState(false);
   const [failed, setFailed] = useState(false);
@@ -71,7 +70,12 @@ export function EmbryoResultGate({
           setFailed(false);
           let ok = false;
           try {
-            ok = (await action()).ok;
+            const response = await csrf.send((csrfToken) => fetch("/api/embryos/acknowledge", {
+              method: "POST",
+              headers: { "content-type": "application/json", "X-Inherit-CSRF": csrfToken },
+              body: JSON.stringify({ acknowledgement: "embryo-result-gate", affirmed: true }),
+            }));
+            ok = response.ok;
           } catch {
             ok = false;
           }

@@ -86,6 +86,25 @@ describe("preparing the own-upload page (brief X1.5)", () => {
     expect(mocks.calls).toContain("rpc(own_upload_context_v1)");
   });
 
+  // Owner decision of 19 November 2026: withdrawing the own-upload consent
+  // marks its upload_class row withdrawn and keeps every signature, and a new
+  // upload asks for the consent again. The page reads exactly that row.
+  it("asks for the upload consent again once its upload_class row is withdrawn, with both signatures still on record", async () => {
+    mocks.context.mockReturnValue({ data: { ...revisions, birthDateState: "adult" }, error: null });
+    const signatures = ["disclosure.insurance-and-discrimination", "consent.upload-self"].map((key, index) => ({
+      id: `eeeeeeee-eeee-4eee-8eee-00000000000${index}`, artifact_key: key, artifact_version: 1, artifact_body_sha256: sha }));
+    mocks.tables.consent_signatures = { data: signatures, error: null };
+    mocks.tables.subject_consents = { data: [{ signature_id: signatures[1]!.id }], error: null };
+    expect(await prepareOwnUpload()).toEqual({ kind: "ready", subjectId: SUBJECT });
+    // The withdrawn row is no longer read as live (revoked_at is not null).
+    mocks.tables.subject_consents = { data: [], error: null };
+    const view = await prepareOwnUpload();
+    expect(view.kind).toBe("consent");
+    expect(readOwnConsentPresentation((view as { token: string }).token)).toMatchObject({
+      artifactKey: "consent.upload-self", artifactVersion: 1, subjectId: SUBJECT });
+    expect(writes()).toEqual([]);
+  });
+
   it("mints a fresh token on every render, with nothing to remember between them", async () => {
     mocks.context.mockReturnValue({ data: { ...revisions, birthDateState: "adult" }, error: null });
     const first = await prepareOwnUpload() as { token: string };

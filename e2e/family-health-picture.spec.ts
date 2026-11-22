@@ -1,4 +1,5 @@
 import { type Page } from "@playwright/test";
+import { settingsOperationNonce } from "./helpers/operation-nonce";
 import { expect, test } from "./audited-test";
 import { randomUUID } from "node:crypto";
 import fs from "node:fs";
@@ -24,6 +25,7 @@ import {
 } from "./helpers";
 import { CARRIER_FIXTURE_POSITIONS, type FixtureGenotype } from "./fixtures/carrier-pair-positions";
 import { buildCarrierPairVcf, verify, type FixtureCheck } from "./fixtures/carrier-pair-fixture";
+import { accountCsrf, signOut } from "./helpers/session-csrf";
 
 /** Ten Health Picture journeys through actual canonical upload, selected report
  * generation, invitation acceptance and freshly signed directional permissions.
@@ -348,7 +350,7 @@ test("both adults prepare their real source and generate chosen reports before s
     await signIn(page, account.email, account.password);
     sourceFileIds.push(await uploadOwnFileWithChosenReports(page, fixture, { fileType: "vcf",
       purposes: ["reports.monogenic", "reports.polygenic"] }));
-    await page.request.post("/auth/sign-out");
+    await signOut(page);
   }
   sourceBefore = await sourceReceipt();
   ownGrantsBefore = await ownGrantReceipt();
@@ -378,7 +380,7 @@ test("both adults prepare their real source and generate chosen reports before s
     .map(email => (Array.isArray(email.to) ? email.to : [email.to]).includes(B.email)
       ? adultInvitationToken(email.html) : undefined)
     .find(found => found !== undefined), "the invitation");
-  await page.request.post("/auth/sign-out");
+  await signOut(page);
   await acceptAdultInvitation({
     page, invitationUrl: adultInvitationUrl(token), email: B.email, password: B.password,
   });
@@ -414,7 +416,7 @@ test("both adults prepare their real source and generate chosen reports before s
     .eq("id", binding.data!.account_principal_id).single();
   expect(boundSelf.error).toBeNull();
   expect(boundSelf.data).toEqual({ account_id: accountB, subject_id: selfSubjectB, principal_kind: "account_subject", status: "active" });
-  await page.request.post("/auth/sign-out");
+  await signOut(page);
   // B signs in independently and only reads the permission presentation.
   await signIn(page, B.email, B.password);
   await page.goto(`/family/s-${selfSubjectA}/permissions`);
@@ -430,10 +432,10 @@ test("the page withholds every result until the one Tier-2 gate is passed", asyn
   // continues to use both self IDs, never the invitation representative.
   await signIn(page, A.email, A.password);
   for (const purpose of GRANTED_PURPOSES) await setSharingPurpose(page, invitedSubjectB, purpose, true);
-  await page.request.post("/auth/sign-out");
+  await signOut(page);
   await signIn(page, B.email, B.password);
   for (const purpose of GRANTED_PURPOSES) grantsFromB.set(purpose, (await setSharingPurpose(page, selfSubjectA, purpose, true))!);
-  await page.request.post("/auth/sign-out");
+  await signOut(page);
   await signIn(page, A.email, A.password);
   await page.goto("/family/health-picture");
   await expect(
@@ -859,7 +861,7 @@ test("/family/health-picture partial-coverage: without that layer's own grant, t
     .in("grant_id", [grantsFromB.get("reports.monogenic")!, grantsFromB.get("family.heritability")!]);
   expect(remaining.error).toBeNull(); expect(remaining.data).toHaveLength(2);
   expect(remaining.data!.every(row => row.revoked_at === null)).toBe(true);
-  await page.request.post("/auth/sign-out");
+  await signOut(page);
 
   await signIn(page, A.email, A.password);
   await passGate(page);
@@ -1037,7 +1039,7 @@ test("/family/health-picture empty: revoking one direction leaves the page count
   await signIn(page, B.email, B.password);
   await setSharingPurpose(page, selfSubjectA, "family.heritability", false);
   await expectSourcesAndOwnPermissionsPreserved();
-  await page.request.post("/auth/sign-out");
+  await signOut(page);
 
   // Under two columns the page states so before the gate: nothing to pass.
   await signIn(page, A.email, A.password);
@@ -1075,7 +1077,8 @@ test("changing where B lives ends every Family permission B took part in, and le
   const { data: published } = await adminClient().from("consent_artifacts").select("version, body_sha256")
     .eq("artifact_key", "attestation.jurisdiction").is("superseded_at", null).single();
   const answer = await page.request.put("/api/settings/jurisdiction", {
-    headers: { origin: "http://localhost:3100", "content-type": "application/json" },
+    headers: { origin: "http://localhost:3100", "content-type": "application/json",
+      "x-inherit-operation-nonce": await settingsOperationNonce(page.request, "jurisdiction"), "x-inherit-csrf": await accountCsrf(page, "api.jurisdiction") },
     data: { code: "XX", attestationVersion: published!.version, attestationHash: published!.body_sha256, affirmed: true },
   });
   expect(answer.status()).toBe(200);

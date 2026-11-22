@@ -16,7 +16,7 @@ import {
 } from "@/copy/embryos/signing";
 import { typedNameIsValid } from "@/lib/embryos/basis";
 import type { SignableArtifact } from "@/lib/embryos/upload-stage";
-import { UPLOAD_CSRF_HEADER } from "@/lib/embryos/upload-transport";
+import { useCsrf } from "@/components/security/csrf-provider";
 
 /**
  * <ArtifactSigningForm> — the Tier-2 signing of one or more embryo artifacts
@@ -47,6 +47,7 @@ export function ArtifactSigningForm({
   children?: React.ReactNode;
 }) {
   const router = useRouter();
+  const consentsCsrf = useCsrf("api.consents");
   const [status, setStatus] = useState<"ready" | "pending" | "failed">("ready");
   const [nameError, setNameError] = useState(false);
   const submitting = useRef(false);
@@ -68,16 +69,19 @@ export function ArtifactSigningForm({
     const ids: Partial<Record<SignableArtifact["key"], string>> = {};
     try {
       for (const artifact of artifacts) {
-        const response = await fetch("/api/consents", {
+        // The artifact's one-time operation token travels in
+        // X-Inherit-Operation-Nonce; X-Inherit-CSRF carries the shell's
+        // one-time session token (G8.5, 19 November 2026).
+        const response = await consentsCsrf.send((sessionToken) => fetch("/api/consents", {
           method: "POST", credentials: "same-origin", cache: "no-store",
-          headers: { "Content-Type": "application/json", [UPLOAD_CSRF_HEADER]: artifact.csrfToken },
+          headers: { "Content-Type": "application/json", "X-Inherit-CSRF": sessionToken, "X-Inherit-Operation-Nonce": artifact.csrfToken },
           body: JSON.stringify({
             ...(cohortId ? { action: "grant-purpose", cohortId, purposeKey: "embryo.analysis" }
               : { action: "sign-artifact", signatureClass: "tier2", cohortDraftId: draftId }),
             artifactVersion: artifact.version, artifactPresentationToken: artifact.presentationToken,
             affirmed: true, statementKeys: artifact.statementKeys, typedName,
           }),
-        });
+        }));
         if (response.status !== 201) throw new Error("refused");
         const receipt = (await response.json()) as { recordId?: unknown };
         if (typeof receipt.recordId !== "string") throw new Error("refused");

@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import AdmZip from "adm-zip";
+import { readFileSync } from "node:fs";
 const mocks = vi.hoisted(() => ({ prepared: false, retired: false, stateInvalid: false, stateError: false, authorityFail: false, changedSource: false,
   stateRead: false, failAfterState: false, failFinalStreamCheck: false, originalReads: [] as string[], streamReads: 0, authChecks: 0, failStreamCheck: false,
   preparedId: "12345678-1234-4234-8234-000000000003", manifestId: "12345678-1234-4234-8234-000000000004",
@@ -18,6 +19,9 @@ const mocks = vi.hoisted(() => ({ prepared: false, retired: false, stateInvalid:
   tableRows: null as null | Record<string, Array<Record<string, unknown>>>, fromReads: [] as Array<{ table: string; select: string }>,
   // The legal audit slice the database answers, one page per call.
   legalAuditPages: [] as unknown[], legalAuditCalls: [] as Array<Record<string, unknown>>, legalAuditError: false,
+  // The count of rows in the five classes no writer fills (20261023110000).
+  writerless: { version: "export-writerless-classes-v1", rows: 0 } as unknown, writerlessCalls: [] as Array<Record<string, unknown>>,
+  writerlessError: false,
   project(row: Record<string, unknown>, select: string): Record<string, unknown> {
     if (select.trim() === "*") return { ...row };
     const out: Record<string, unknown> = {};
@@ -49,6 +53,10 @@ vi.mock("@/lib/supabase/admin", () => ({ createAdminClient: () => {
     return builder;
   };
   return { from, rpc: (name: string, args: { p_expected?: Record<string, unknown>; p_subject_id?: string; p_purpose?: string }) => {
+    if (name === "own_export_writerless_rows_v1") {
+      mocks.writerlessCalls.push(args);
+      return Promise.resolve(mocks.writerlessError ? { data: null, error: { message: "unavailable" } } : { data: mocks.writerless, error: null }) as never;
+    }
     if (name === "own_legal_audit_events_v1") {
       mocks.legalAuditCalls.push(args);
       const page = mocks.legalAuditPages[mocks.legalAuditCalls.length - 1] ?? { version: "legal-audit-slice-v1",
@@ -142,7 +150,8 @@ import { exportMemberPlan, exportedTable } from "@/lib/export/member-plan";
 beforeEach(() => { mocks.prepared = false; mocks.stateRead = false; mocks.failAfterState = false; mocks.failFinalStreamCheck = false; mocks.retired = false; mocks.stateInvalid = false; mocks.stateError = false; mocks.authorityFail = false; mocks.changedSource = false; mocks.originalReads = []; mocks.streamReads = 0; mocks.authChecks = 0; mocks.failStreamCheck = false; mocks.variantReads = 0; mocks.fail = false; mocks.count = 2; mocks.pauseOriginal = null; mocks.reportReads = 0; mocks.ancestryFailure = false; mocks.legacyRows = []; mocks.pauseSecondAncestry = null; mocks.secondAncestryStarted = false;
   mocks.legacyFiles = []; mocks.processed = []; mocks.templates = []; mocks.grants = new Set(); mocks.genotypeReads = []; mocks.revokeAfterBuild = false; mocks.reportGrantChecks = 0;
   mocks.subjects = []; mocks.chats = []; mocks.chatFailure = false; mocks.chatCalls = []; mocks.tableRows = null; mocks.fromReads = [];
-  mocks.legalAuditPages = []; mocks.legalAuditCalls = []; mocks.legalAuditError = false; });
+  mocks.legalAuditPages = []; mocks.legalAuditCalls = []; mocks.legalAuditError = false;
+  mocks.writerless = { version: "export-writerless-classes-v1", rows: 0 }; mocks.writerlessCalls = []; mocks.writerlessError = false; });
 describe("canonical export ZIP integration", () => {
   it("keeps two same-label originals distinct and prints the identical captured findings", async () => {
     const response = await GET();
@@ -447,6 +456,28 @@ describe("legal-audit.json", () => {
 });
 
 /**
+ * G5.6, the five classes no production writer fills (owner decision, 23 Oct
+ * 2026): the archive has no member for them, so any row of them, or a count
+ * that does not answer, refuses the archive instead of leaving the row out.
+ */
+describe("the classes no writer fills", () => {
+  it("asks for this account's own count under this session, and ships the archive while it is zero", async () => {
+    expect((await GET()).status).toBe(200);
+    expect(mocks.writerlessCalls).toEqual([{ p_account_id: "12345678-1234-4234-8234-000000000001",
+      p_session_id: "12345678-1234-4234-8234-000000000002" }]);
+  });
+  it.each([
+    ["one row", () => { mocks.writerless = { version: "export-writerless-classes-v1", rows: 1 }; }],
+    ["a count that fails", () => { mocks.writerlessError = true; }],
+    ["an answer of another shape", () => { mocks.writerless = { version: "export-writerless-classes-v1", rows: 0, kinds: [] }; }],
+    ["no answer", () => { mocks.writerless = null; }],
+  ])("refuses the export on %s", async (_label, plant) => {
+    plant();
+    expect((await GET()).status).toBe(503);
+  });
+});
+
+/**
  * G5.6, the export member plan held against a whole archive (28 Sep 2026).
  *
  * Every table the route reads answers with its WHOLE database row, built from
@@ -549,5 +580,27 @@ describe("the archive against the export member plan", () => {
     const names = (await archive()).map(entry => entry.name);
     const members = new Set(names.map(name => (name.includes("/") ? name.slice(0, name.indexOf("/") + 1) : name)));
     expect(members).toEqual(producerArchiveMembers("legacy-account"));
+  });
+});
+
+/**
+ * G8.5: api.export's one open response divergence, driven rather than
+ * described. A signed-in GET without the __Host-inherit-export cookie, which
+ * is what /settings/data's export link sends, answers the synchronous ZIP;
+ * the register says that request is resource-not-found-v1. The row in
+ * docs/register-contract-divergence.json records it, and this test fails the
+ * day either side changes, so the row cannot outlive the behaviour.
+ */
+describe("the cookieless GET against the register (G8.5)", () => {
+  it("answers the synchronous archive where the register names resource-not-found-v1, and the ledger says so", async () => {
+    const response = await GET(new Request("https://inherit.test/api/export", { headers: { cookie: "sb-session=synthetic" } }));
+    expect(response.status).toBe(200);
+    expect(response.headers.get("content-type")).toBe("application/zip");
+    expect(new AdmZip(Buffer.from(await response.arrayBuffer())).getEntries().map(entry => entry.entryName)).toContain("manifest.json");
+    const register = JSON.parse(readFileSync("docs/route-register.json", "utf8")) as { routes: { id: string; methodRequestContracts?: { GET?: Record<string, unknown> } }[] };
+    expect(register.routes.find(route => route.id === "api.export")?.methodRequestContracts?.GET?.missingPrincipalBoundExportCookie)
+      .toBe("resource-not-found-v1");
+    const ledger = JSON.parse(readFileSync("docs/register-contract-divergence.json", "utf8")) as { endpointResponseDivergence: { routeId: string; method: string; case: string }[] };
+    expect(ledger.endpointResponseDivergence.map(row => `${row.routeId} ${row.method} ${row.case}`)).toContain("api.export GET no-export-cookie");
   });
 });

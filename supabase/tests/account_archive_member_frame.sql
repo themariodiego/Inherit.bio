@@ -151,6 +151,24 @@ select is(pg_temp.member_metadata('context'),(select counts from actual_member_m
 reset role;rollback to empty_statement;
 savepoint actual_file_purge;
 set local role service_role;
+-- 2026-11-22 (D-152 follow-up, 20261122150000): the whole-account copy being
+-- built here includes the record, so it is a live download copy of it and
+-- deleting one of its files is refused while it is live; its member request
+-- is unchanged.
+select throws_ok($$select public.prepare_genome_file_deletion_v1('77900000-0000-4000-8000-000000000001',
+ '77900000-0000-4000-8000-000000000010','77900000-0000-4000-8000-000000000063')$$,'55000','file_delete_shared_graph',
+ 'a live whole-account copy being built blocks deleting one of its files (D-152)');
+select is(pg_temp.member_metadata('context'),(select counts from actual_member_metadata),
+ 'and the copy''s exact member request is unchanged');
+reset role;
+-- Synthetic: the copy's 24 hours pass (its job's clock moves into the past),
+-- so it is no longer live and the file may be deleted. The clock is put back
+-- after the finish, so that only the old receipt can refuse the copy then.
+create temporary table member_job_clock as select export_id,created_at,deadline from private.export_archive_jobs
+ where export_id=(select (created->>'exportId')::uuid from actual_member_job);
+update private.export_archive_jobs set created_at=statement_timestamp()-interval '25 hours',deadline=statement_timestamp()-interval '1 hour'
+ where export_id=(select export_id from member_job_clock);
+set local role service_role;
 create temporary table member_file_deletion as select public.prepare_genome_file_deletion_v1(
  '77900000-0000-4000-8000-000000000001','77900000-0000-4000-8000-000000000010',
  '77900000-0000-4000-8000-000000000063') manifest;
@@ -176,6 +194,9 @@ select is((select count(*) from public.report_observed_calls where file_id='7790
  'actual deletion retains no observed source rows');
 select is((select count(*) from public.genome_files where id='77900000-0000-4000-8000-000000000040'),1::bigint,
  'deleting one source preserves the other actual normalized source');
+reset role;
+update private.export_archive_jobs j set created_at=c.created_at,deadline=c.deadline from member_job_clock c where j.export_id=c.export_id;
+set local role service_role;
 select throws_ok($$select pg_temp.member_metadata('context')$$,'42501','not_found',
  'after deletion no member bytes or metadata can leave under the old whole-account source receipt');
 reset role;

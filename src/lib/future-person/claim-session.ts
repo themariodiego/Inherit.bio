@@ -2,7 +2,7 @@ import "server-only";
 
 import crypto from "node:crypto";
 import { mintPublicFormToken, readPublicFormToken } from "@/lib/embryos/operation-token";
-import { hmacSecret } from "@/lib/crypto";
+import { mintSessionCsrf } from "@/lib/security/session-csrf-core";
 
 /**
  * The two browser credentials of a Future Person claim.
@@ -124,15 +124,18 @@ export function newClaimSessionRotation() {
   };
 }
 
-type ClaimMutation = "documents" | "complete";
-/** A distinct CSRF value bound to the claim and the one-use operation token.
- * Rotation invalidates this value together with the old cookie and nonce. */
-export function claimMutationCsrf(claimHash: string, operation: ClaimMutation, token: string): string {
-  return hmacSecret(`${claimHash}|${operation}|${token}`, "claim-mutation-csrf-v1");
-}
-
-export function claimMutationCsrfMatches(presented: string | null, claimHash: string,
-  operation: ClaimMutation, token: string): boolean {
-  return Boolean(presented && /^[0-9a-f]{64}$/u.test(presented)
-    && crypto.timingSafeEqual(Buffer.from(presented), Buffer.from(claimMutationCsrf(claimHash, operation, token))));
+/**
+ * The claim page's one-time `X-Inherit-CSRF` tokens for the claim session's
+ * two routes (G8.5, the migration stage; `src/lib/security/session-csrf.ts`).
+ * They replace the digest of the claim, the operation and its one-use token
+ * this module rendered before; the one-use tokens stay in the bodies.
+ * Rotation invalidates the tokens together with the old cookie, because each
+ * is bound to the cookie's hash and spent against the live claim session.
+ */
+export function claimSessionCsrf(claimHash: string): { documents: string; complete: string } {
+  const session = { kind: "claim-session", sessionHash: claimHash } as const;
+  return {
+    documents: mintSessionCsrf(session, "api.future-person-claim-document-session"),
+    complete: mintSessionCsrf(session, "api.future-person-claim-complete"),
+  };
 }

@@ -13,8 +13,12 @@ vi.mock("@/lib/supabase/admin", async () => {
     } },
   }) };
 });
+// The one-time X-Inherit-CSRF gate passes through here; it is tested on this
+// route, through the same handler, in src/lib/security/session-csrf-routes.test.ts.
+vi.mock("@/lib/security/session-csrf", async (importOriginal) =>
+  (await import("@/lib/security/session-csrf.test-support")).admitEverySessionCsrf(await importOriginal()));
 import { POST } from "@/app/api/future-person/claim/session/corrections/route";
-import { claimantCsrf, loadClaimantRights } from "./rights";
+import { loadClaimantRights } from "./rights";
 import { RIGHTS_COOKIE_NAME, rightsSessionHash } from "@/lib/embryos/rights-session";
 import { mintCorrectionIntakeNonce, readCorrectionIntakeNonce } from "./correction-intake-nonce";
 import { correctionField, openNewCorrection } from "./correction-case-envelope";
@@ -26,7 +30,8 @@ const statement = "This is the complete synthetic original correction statement.
 const safeView = { safeClaimedSubjectLabel: "Your claimed record", lifecycleState: "claimed_unbound", retentionMaximumDays: null, allowedActionIds: ["correct"] };
 function request(body: unknown, extra: Record<string, string> = {}, query = "") {
   return new Request(`https://synthetic.invalid/api/future-person/claim/session/corrections${query}`, { method: "POST",
-    headers: { "content-type": "application/json", cookie, origin: "https://synthetic.invalid", "sec-fetch-site": "same-origin", "x-inherit-csrf": claimantCsrf(session), ...extra },
+    // 2026-11-19 (G8.5): the rights session's one-time token, admitted by the gate above; it was claimantCsrf(session).
+    headers: { "content-type": "application/json", cookie, origin: "https://synthetic.invalid", "sec-fetch-site": "same-origin", "x-inherit-csrf": "the-rights-session-token-the-gate-admitted", ...extra },
     body: typeof body === "string" ? body : JSON.stringify(body) });
 }
 function body(field = "display-label") { return { field, statement, nonce: mintCorrectionIntakeNonce(session) }; }
@@ -80,9 +85,11 @@ describe("genuine correction intake stays bound to native claimant authority", (
       expect(native.rpc).not.toHaveBeenCalled(); vi.stubEnv(key, "1");
     }
   });
-  it("refuses cross-origin, duplicate cookie, bad CSRF, crossed session and URL selectors before RPC", async () => {
+  // 2026-11-19 (G8.5): a bad X-Inherit-CSRF is the rights-session gate's refusal before this
+  // handler runs (session-csrf-routes.test.ts); it was a claimantCsrf digest checked here.
+  it("refuses cross-origin, duplicate cookie, crossed session and URL selectors before RPC", async () => {
     const headers: Record<string, string>[] = [{ origin: "https://foreign.invalid" }, { "sec-fetch-site": "cross-site" }, { cookie: `${cookie}; ${cookie}` },
-      { "x-inherit-csrf": "f".repeat(64) }, { cookie: `${RIGHTS_COOKIE_NAME}=${Buffer.alloc(32, 74).toString("base64url")}` }];
+      { cookie: `${RIGHTS_COOKIE_NAME}=${Buffer.alloc(32, 74).toString("base64url")}` }];
     for (const extra of headers) expect((await POST(request(body(), extra))).status).toBe(404);
     expect((await POST(request(body(), {}, "?subjectId=forbidden"))).status).toBe(404); expect(native.rpc).not.toHaveBeenCalled();
   });

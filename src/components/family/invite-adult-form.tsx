@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { useCsrf } from "@/components/security/csrf-provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -26,9 +27,19 @@ import {
  * invited person accepts in their own account, adds their own file and
  * grants from their side; nothing here touches their data. The secondary
  * Path B link is not rendered, because Path B has no screen to link to.
+ *
+ * It sends the register's Path A body (closed-subject-draft-create-v1,
+ * owner decision of 23 October 2026): the kind, the flow, `contactEmail`,
+ * the request id and the optional note. The attestation box is required by
+ * the browser before anything is sent; the registered body has no field for
+ * it, so it is not sent.
  */
-export function InviteAdultForm() {
+export function InviteAdultForm({ operationNonce }: {
+  /** The one-time nonce the page rendered for this invitation (G5.6, 23 Oct 2026). */
+  operationNonce: string;
+}) {
   const requestId = useRef(crypto.randomUUID());
+  const csrf = useCsrf("api.subject-drafts");
   const [pending, setPending] = useState(false);
   const [complete, setComplete] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -45,27 +56,27 @@ export function InviteAdultForm() {
   return (
     <form
       className="surface surface-pad space-y-6"
+      data-operation-nonce={operationNonce}
       onSubmit={async (event) => {
         event.preventDefault();
         setPending(true);
         setError(null);
         const data = new FormData(event.currentTarget);
         const note = String(data.get("note") ?? "").trim();
-        const response = await fetch("/api/subject-drafts", {
+        const response = await csrf.send((csrfToken) => fetch("/api/subject-drafts", {
           method: "POST",
-          headers: { "content-type": "application/json" },
+          headers: { "content-type": "application/json", "X-Inherit-Operation-Nonce": operationNonce, "X-Inherit-CSRF": csrfToken },
           body: JSON.stringify({
-            kind: "other_adult",
+            kind: "adult",
             adultFlow: "path-a-own-account",
-            email: String(data.get("email") ?? ""),
-            adultAttestation: data.get("adultAttestation") === "on",
+            contactEmail: String(data.get("email") ?? ""),
             requestId: requestId.current,
             ...(note.length > 0 ? { note } : {}),
           }),
-        });
+        }));
         setPending(false);
         if (!response.ok) {
-          setError(response.status === 409 ? BLOCKED_HERE_STATUS : REQUEST_FAILED_STATUS);
+          setError(response.status === 403 ? BLOCKED_HERE_STATUS : REQUEST_FAILED_STATUS);
           return;
         }
         setComplete(true);

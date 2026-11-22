@@ -17,9 +17,10 @@ import { LOCAL_MODEL_ORIGIN } from "../scripts/ci-browser-config";
 import { allowCopilot, CAFFEINE_SLUG, lastToolResult, saveCopilotProvider, startCopilotFixture, type CopilotFixture }
   from "./fixtures/canonical-copilot-browser";
 import { FAMILY_EMPTY_NOTE, FAMILY_SCOPE_LABEL, familyMemberLine } from "../src/copy/copilot/group-scopes";
-import { COPILOT_LOCAL_ONLY } from "../src/copy/family/person";
+import { COPILOT_LOCAL_ONLY, GATE_BUTTON, GATE_CHECKBOX_LABEL } from "../src/copy/family/person";
 import { PERMISSION_ROWS } from "../src/copy/family/permissions";
 import { NOT_DIAGNOSTIC } from "../src/copy/reports/strings";
+import { accountCsrf, signOut } from "./helpers/session-csrf";
 
 /**
  * The Family group Copilot scope, end to end, on the one app variant that
@@ -155,7 +156,7 @@ test.describe("the Family group scope, end to end on the local model", () => {
     await signIn(pageB, B.email, B.password);
     // B holds BOTH layers; only the estimate layer is ever shared with A.
     await uploadOwnFileWithChosenReports(pageB, FIXTURE_VCF, { fileType: "vcf", purposes: ["reports.monogenic", "reports.polygenic"] });
-    await pageB.request.post("/auth/sign-out");
+    await signOut(pageB);
 
     await pageA.goto("/family/invite");
     await pageA.getByLabel("Their email address").fill(B.email);
@@ -173,7 +174,7 @@ test.describe("the Family group scope, end to end on the local model", () => {
     expect(invitation.error).toBeNull();
     invitedSubjectB = invitation.data!.target_id;
     // B's own later sign-in: the independent-login marker Health picture needs.
-    await pageB.request.post("/auth/sign-out");
+    await signOut(pageB);
     await signIn(pageB, B.email, B.password);
     for (const purpose of ["reports.polygenic", "family.heritability", "copilot.local"]) await setSharingPurpose(pageB, purpose, true);
 
@@ -182,6 +183,14 @@ test.describe("the Family group scope, end to end on the local model", () => {
     await expect(pageA.getByRole("region", { name: "Copilot permission", exact: true }))
       .toContainText("This model runs beside your self-hosted Inherit server.");
     await allowCopilot(pageA);
+    // A acknowledges the Family domain's one Tier-2 gate on B's person page,
+    // as e2e/family.spec.ts passes it, before asking: since D-157 the Family
+    // group scope asks for it too, like the one-record scope.
+    await pageA.goto(`/family/s-${invitedSubjectB}`);
+    const gate = pageA.locator('[data-slot="result-gate"]');
+    await gate.getByRole("checkbox", { name: GATE_CHECKBOX_LABEL, exact: true }).check();
+    await gate.getByRole("button", { name: GATE_BUTTON, exact: true }).click();
+    await expect(gate).toHaveCount(0);
   });
 
   test.afterAll(async () => {
@@ -272,7 +281,9 @@ test.describe("the Family group scope, end to end on the local model", () => {
     const history = await pageC.request.get(`/api/chats/${chatId}`);
     expect(history.status()).toBe(404);
     const origin = new URL(pageC.url()).origin;
-    const append = await pageC.request.post("/api/chat", { headers: { origin }, data: { chatId, message: "What did they share?" } });
+    // C's own fresh X-Inherit-CSRF token, so the 404 is the chat's own answer (G8.5).
+    const append = await pageC.request.post("/api/chat", { headers: { origin, "x-inherit-csrf": await accountCsrf(pageC, "api.chat") },
+      data: { chatId, message: "What did they share?" } });
     expect(append.status()).toBe(404);
     const scope = await pageC.goto("/copilot/family");
     expect(scope?.status()).toBe(200);

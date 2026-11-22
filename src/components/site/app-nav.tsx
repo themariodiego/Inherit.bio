@@ -1,7 +1,7 @@
 "use client";
 
 import { CircleDot, Dna, LayoutDashboard, Settings, Users } from "lucide-react";
-import Link from "next/link";
+import { IntentLink } from "@/components/site/intent-link";
 import { usePathname } from "next/navigation";
 import { useLayoutEffect, useRef, useState } from "react";
 import {
@@ -112,7 +112,7 @@ export function AppNav({
             const active = isActive(pathname, item);
             const Icon = ICONS[item.id];
             return (
-              <Link
+              <IntentLink
                 key={item.id}
                 href={item.href}
                 aria-current={active ? "page" : undefined}
@@ -129,7 +129,7 @@ export function AppNav({
               >
                 <Icon aria-hidden="true" className="size-5 shrink-0" />
                 {item.label}
-              </Link>
+              </IntentLink>
             );
           })}
         </div>
@@ -157,7 +157,7 @@ export function AppNav({
           const Icon = ICONS[item.id];
           const active = isActive(pathname, item);
           return (
-            <Link
+            <IntentLink
               key={item.id}
               href={item.href}
               aria-current={active ? "page" : undefined}
@@ -173,7 +173,7 @@ export function AppNav({
                 className="row-start-2 size-5 shrink-0"
               />
               <span className="row-start-3 min-h-4 pt-0.5">{item.label}</span>
-            </Link>
+            </IntentLink>
           );
         })}
       </nav>

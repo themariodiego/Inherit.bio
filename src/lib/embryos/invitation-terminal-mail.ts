@@ -3,7 +3,16 @@ import { decryptSecret, hmacSecret } from "@/lib/crypto";
 import { submitMail } from "@/lib/email";
 import type { createAdminClient } from "@/lib/supabase/admin";
 
-const noticeKind = z.enum(["invitation-refused", "draft-cancelled", "donor-attribution-ended"]);
+// 20261119160000 adds the notice of an uploader's withdrawal for another adult's file;
+// 20261120120000 (D-141) the second notice and the re-notice to an adult who accepted
+// through their own account (always an account recipient, its address read below).
+const invitationNoticeKind = z.enum(["invitation-refused", "draft-cancelled", "donor-attribution-ended",
+  "adult-acceptance-second-notice", "adult-revocation-renotice", "upload-permission-withdrawn"]);
+// 20261122100000: a record transfer's three notices, for both of its acts, each to an
+// account (queued only while the transfer is open).
+const transferNoticeKind = z.enum(["subject-transfer-new-owner", "subject-transfer-former-owner",
+  "subject-transfer-access-revoked", "withdrawal-transfer-new-owner", "withdrawal-transfer-former-owner"]);
+const noticeKind = z.union([invitationNoticeKind, transferNoticeKind]);
 
 /** Canonical outbox delivery; only the recipient envelope is draft-independent. */
 export async function drainInvitationTerminalMail(

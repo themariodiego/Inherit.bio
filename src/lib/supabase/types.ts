@@ -7803,6 +7803,17 @@ export type Database = {
         Args: { p_file_id: string; p_claim_token_hash: string }
         Returns: undefined
       }
+      accept_adult_subject_invitation_v1: {
+        Args: {
+          p_account_email_hmac_set: Json
+          p_account_id: string
+          p_auth_session_id: string
+          p_nonce: string
+          p_session_hash: string
+          p_signing_name_ciphertext: string
+        }
+        Returns: string | null
+      }
       accept_embryo_co_parent_invitation_v1: {
         Args: {
           p_account_email_hmac: string | null
@@ -8408,6 +8419,7 @@ export type Database = {
           p_contact_hmac: string | null
           p_contact_hmac_set?: Json
           p_idempotency_key: string
+          p_note_envelope?: Json
           p_quota_keys?: Json
           p_test_jurisdiction: boolean
         }
@@ -9138,6 +9150,72 @@ export type Database = {
         }
         Returns: Json
       }
+      empty_self_subject_with_notice_v1: {
+        Args: {
+          p_account_id: string
+          p_nonce_expires_at: string
+          p_nonce_hash: string
+          p_notice: Json
+          p_session_id: string
+          p_subject_id: string
+        }
+        Returns: Json
+      }
+      self_subject_withdrawal_readiness_v1: {
+        Args: {
+          p_account_id: string
+          p_subject_id: string
+        }
+        Returns: string
+      }
+      // 20261119160000_other_adult_upload_consent_withdrawal.sql.
+      withdraw_other_adult_upload_v1: {
+        Args: {
+          p_account_id: string
+          p_nonce_expires_at: string
+          p_nonce_hash: string
+          p_session_id: string
+          p_subject_id: string
+        }
+        Returns: Json
+      }
+      other_adult_withdrawal_readiness_v1: {
+        Args: {
+          p_account_id: string
+          p_subject_id: string
+        }
+        Returns: string
+      }
+      // 20261119170000_embryo_uploader_consent_withdrawal.sql.
+      withdraw_embryo_uploader_consent_v1: {
+        Args: {
+          p_account_id: string
+          p_nonce_expires_at: string
+          p_nonce_hash: string
+          p_session_id: string
+          p_signature_id: string
+        }
+        Returns: Json
+      }
+      embryo_uploader_withdrawal_readiness_v1: {
+        Args: {
+          p_account_id: string
+          p_signature_id: string
+        }
+        Returns: string
+      }
+      // 20261120120000_adult_acceptance_hold_and_renotice.sql (D-141).
+      run_due_adult_acceptance_notices_v1: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
+      adult_subject_acceptance_origin_v1: {
+        Args: {
+          p_account_id: string
+          p_subject_id: string
+        }
+        Returns: string | null
+      }
       transfer_subject_v1: {
         Args: {
           p_account_id: string
@@ -9147,6 +9225,173 @@ export type Database = {
           p_subject_id: string
         }
         Returns: Json
+      }
+      // 20261023120000_legal_audit_attribution_completeness.sql (G5.6): the
+      // doors that record the page's one-time nonce before the unchanged writer.
+      acknowledge_portrait_with_nonce_v1: {
+        Args: {
+          p_account_id: string
+          p_nonce_expires_at: string
+          p_nonce_hash: string
+          p_session_id: string
+          p_subject_id: string
+        }
+        Returns: string
+      }
+      create_adult_subject_invitation_with_nonce_v1: {
+        Args: {
+          p_account_id: string
+          p_contact_ciphertext: string
+          p_contact_hmac: string | null
+          p_contact_hmac_set: Json
+          p_idempotency_key: string
+          p_nonce_expires_at: string
+          p_nonce_hash: string
+          p_note_envelope?: Json
+          p_quota_keys: Json
+          p_session_id: string
+          p_test_jurisdiction: boolean
+        }
+        Returns: {
+          expires_at: string
+          invitation_id: string
+          subject_id: string
+        }[]
+      }
+      declare_chromosomal_sex_with_nonce_v1: {
+        Args: {
+          p_account_id: string
+          p_chromosomal_sex: string | null
+          p_nonce_expires_at: string
+          p_nonce_hash: string
+          p_session_id: string
+          p_subject_id: string
+        }
+        Returns: Json
+      }
+      consume_session_csrf_v1: {
+        Args: {
+          p_account_id?: string | null
+          p_expires_at: string
+          p_route_id: string
+          p_session_id?: string | null
+          p_session_kind: string
+          p_token_hash: string
+        }
+        Returns: boolean
+      }
+      consume_session_csrf_v2: {
+        Args: {
+          p_account_id?: string | null
+          p_cookie_hash?: string | null
+          p_expires_at: string
+          p_purpose_session_id?: string | null
+          p_route_id: string
+          p_session_id?: string | null
+          p_session_kind: string
+          p_token_hash: string
+        }
+        Returns: boolean
+      }
+      declare_jurisdiction_with_nonce_v1: {
+        Args: {
+          p_account_id: string
+          p_attestation_sha256: string
+          p_attestation_version: number
+          p_code: string
+          p_nonce_expires_at: string
+          p_nonce_hash: string
+          p_session_id: string
+          p_subdivision: string | null
+          p_test_jurisdiction: boolean
+        }
+        Returns: Json
+      }
+      pause_family_sharing_with_nonce_v1: {
+        Args: {
+          p_account_id: string
+          p_counterpart_account_id: string
+          p_nonce_expires_at: string
+          p_nonce_hash: string
+          p_session_id: string
+        }
+        Returns: number
+      }
+      pause_subject_sharing_v1: {
+        Args: {
+          p_account_id: string
+          p_counterpart_account_id: string
+          p_nonce_expires_at: string
+          p_nonce_hash: string
+          p_session_id: string
+          p_subject_id: string
+        }
+        Returns: number
+      }
+      resume_family_sharing_with_nonce_v1: {
+        Args: {
+          p_account_id: string
+          p_counterpart_account_id: string
+          p_nonce_expires_at: string
+          p_nonce_hash: string
+          p_session_id: string
+        }
+        Returns: number
+      }
+      resume_subject_sharing_v1: {
+        Args: {
+          p_account_id: string
+          p_counterpart_account_id: string
+          p_nonce_expires_at: string
+          p_nonce_hash: string
+          p_session_id: string
+          p_subject_id: string
+        }
+        Returns: number
+      }
+      revoke_directional_purpose_with_nonce_v1: {
+        Args: {
+          p_account_id: string
+          p_grant_id: string
+          p_nonce_expires_at: string
+          p_nonce_hash: string
+          p_session_id: string
+        }
+        Returns: string
+      }
+      revoke_cloud_model_consent_with_nonce_v1: {
+        Args: {
+          p_account_id: string
+          p_grant_id: string
+          p_nonce_expires_at: string
+          p_nonce_hash: string
+          p_session_id: string
+        }
+        Returns: boolean
+      }
+      revoke_own_copilot_with_nonce_v1: {
+        Args: {
+          p_account_id: string
+          p_expected: Json
+          p_nonce_expires_at: string
+          p_nonce_hash: string
+          p_session_id: string
+          p_subject_id: string
+        }
+        Returns: boolean
+      }
+      stop_family_sharing_with_nonce_v1: {
+        Args: {
+          p_account_id: string
+          p_counterpart_account_id: string
+          p_nonce_expires_at: string
+          p_nonce_hash: string
+          p_session_id: string
+        }
+        Returns: {
+          deleted_counts: Json
+          ended_at: string
+        }[]
       }
     }
     Enums: {

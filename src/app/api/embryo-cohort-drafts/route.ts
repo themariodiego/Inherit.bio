@@ -4,14 +4,14 @@ import { invalidRequest, rpcErrorResponse, unavailable } from "@/lib/embryos/api
 import { basisCaseFor, uploadSituationValue } from "@/lib/embryos/basis";
 import {
   closedResponse,
-  csrfOperation,
+  headerOperation,
   encryptedHex,
   encryptedLiteral,
   accountJurisdictionDenied,
   originDenied,
   readJson,
   requestForbidden,
-  unauthorized,
+  unauthenticated,
 } from "@/lib/embryos/guards";
 import {
   COHORT_DRAFT_CREATED_KEYS,
@@ -22,6 +22,7 @@ import {
   normalizeContact,
 } from "@/lib/embryos/routes";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { withAccountCsrf } from "@/lib/security/session-csrf";
 
 /**
  * `POST /api/embryo-cohort-drafts` (register api.embryo-cohort-drafts;
@@ -30,13 +31,17 @@ import { createAdminClient } from "@/lib/supabase/admin";
  * the basis derives. The acting account is the owner and, for its own
  * embryos, one genetic parent; for a third-party upload it is never a
  * parent. Every contact is normalised, keyed and encrypted here and read
- * back only by the mail worker. The one-time token in `x-inherit-csrf`
- * binds the request to this account and session; only its nonce reaches
- * the RPC, which records it before any write.
+ * back only by the mail worker. The one-time operation token in
+ * `x-inherit-operation-nonce` (it was sent in `x-inherit-csrf` until
+ * 19 November 2026) binds the request to this account and session; only its
+ * nonce reaches the RPC, which records it before any write. The shell's
+ * one-time X-Inherit-CSRF token for the account session is verified and
+ * spent before this runs (G8.5).
  */
-export async function POST(request: Request) {
+export const POST = withAccountCsrf("api.embryo-cohort-drafts", handlePost);
+async function handlePost(request: Request) {
   const context = await getSensitiveAccountContext();
-  if (!context?.user.email || !context.user.email_confirmed_at) return unauthorized();
+  if (!context?.user.email || !context.user.email_confirmed_at) return unauthenticated();
   const forbidden = originDenied(request);
   if (forbidden) return forbidden;
   const denied = await accountJurisdictionDenied(context.user.id);
@@ -47,7 +52,7 @@ export async function POST(request: Request) {
   const issues = draftRequestIssues(parsed.data, context.user.email);
   if (issues.length > 0) return invalidRequest(issues);
 
-  const claims = csrfOperation(request, {
+  const claims = headerOperation(request, {
     accountId: context.user.id,
     sessionId: context.sessionId,
     operation: "cohort_draft_create",

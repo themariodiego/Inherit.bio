@@ -45,8 +45,8 @@ export function capturedAncestryRows(content: OwnAncestryCapturedContent, comple
   const fileId = content.source.fileId;
   const rows: AncestryResultRow[] = [];
       rows.push({ kind: "admixture", result: content.admixture.result,
-        basis: content.schemaVersion === 4 ? readResultBasis(content.figureBasis.shares, content.admixture.basis) : content.admixture.basis,
-        ...(content.schemaVersion === 4 ? { coverageBasis: readResultBasis(content.figureBasis.coverage, "observed") } : {}),
+        basis: content.schemaVersion === 4 || content.schemaVersion === 5 ? readResultBasis(content.figureBasis.shares, content.admixture.basis) : content.admixture.basis,
+        ...(content.schemaVersion === 4 || content.schemaVersion === 5 ? { coverageBasis: readResultBasis(content.figureBasis.coverage, "observed") } : {}),
         support_note: content.admixture.support_note, file_id: fileId,
         model_id: content.admixture.model_id, model_version: content.admixture.model_version, created_at: completedAt });
       for (const lineage of content.schemaVersion !== 1 ? content.lineages : [])
@@ -57,4 +57,34 @@ export function capturedAncestryRows(content: OwnAncestryCapturedContent, comple
         rows.push({ kind: lineage.kind, result: null, support_note: UNCOMPUTED_LINEAGE,
           file_id: fileId, model_id: null, model_version: null, created_at: completedAt });
   return rows;
+}
+
+/**
+ * The Neanderthal estimate captured in a revision-5 result, or null for every
+ * earlier revision (which never carried one). This is a SEPARATE projection
+ * from `capturedAncestryRows`, and deliberately so: the estimate is not an
+ * admixture, mtDNA or Y row, is not shared in Family and is not a lineage, so
+ * folding it into the row list would surface it on readers that must not show
+ * it. Only the ancestry page's own loader reads this.
+ */
+export interface NeanderthalEstimateRow {
+  file_id: string;
+  created_at: string;
+  panelId: string;
+  panelVersion: string;
+  panelSites: number;
+  coveredSites: number;
+  archaicSites: number;
+  estimate: number | null;
+  interval: { low: number; high: number } | null;
+  basis: "modelled";
+}
+
+export function capturedNeanderthalEstimate(content: OwnAncestryCapturedContent, completedAt: string): NeanderthalEstimateRow | null {
+  if (content.schemaVersion !== 5) return null;
+  const neanderthal = content.neanderthal;
+  return { file_id: content.source.fileId, created_at: completedAt,
+    panelId: neanderthal.panelId, panelVersion: neanderthal.panelVersion, panelSites: neanderthal.panelSites,
+    coveredSites: neanderthal.coveredSites, archaicSites: neanderthal.archaicSites,
+    estimate: neanderthal.estimate, interval: neanderthal.interval, basis: "modelled" };
 }

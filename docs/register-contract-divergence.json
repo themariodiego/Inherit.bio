@@ -2,6 +2,7 @@
   "purpose": "The endpoint and storage-prefix halves of G8.5, recorded the way docs/route-divergence.json records the route half. That file answers which routes exist, which verbs they export, which status their redirects emit and which buckets their migrations create. This one answers the two questions nothing asked: does every one of the register's 88 endpoint entries resolve to the contracts it names, and does every storage prefix the register declares describe the buckets and object keys the live code actually addresses. scripts/route-register-correspondence.test.ts compares every list below in both directions, so an unlisted divergence fails and a listed one that is fixed, moved or no longer reproducible fails too.",
   "notAnApproval": "Listing a divergence records it; it does not bless it. An endpoint whose success contract is undefined has no declared success status or body, and an object key no declared prefix describes has no declared filename contract, retention id or disposition. Each entry names what is missing and what closing it needs.",
   "measured": "2026-09-10, against docs/route-register.json (160 routes: 62 pages, 88 endpoints, 10 redirects; 6 storagePrefixes over 4 buckets), src, worker/src, workers, supabase/migrations and docs/retention.md.",
+  "webhookContractsNote": "2026-10-23 (G8.5, owner decision \"webhooks.resend: register what it does\"). The three webhooks.resend rows are closed: the register now holds authContracts.resend-webhook-signature-v1 (the svix-id, svix-timestamp and svix-signature headers, the signed content, constant-time comparison, the 300-second clock skew, the replay and rotation behaviour, 401 for a missing, invalid, stale or unmatched signature), contractDefaults binds endpoint:resend-standard-webhook-signature to it, and the route names provider-webhook-acknowledgement-v1 (204 matched, 204 for an event type it does not record, 202 unmatched), bound with provider-webhook-unavailable-v1 (503). The rows' notATranscriptionGap objection was that only the brief's author could authorise describing the endpoint; the owner's decision is that authorisation. src/app/api/webhooks/resend/route.test.ts drives every answer with real signatures and reads the statuses from the register, so the two cannot drift apart.",
   "endpointAuthModeWithoutContract": [
     {
       "mode": "public",
@@ -19,39 +20,12 @@
       ],
       "why": "Every other endpoint auth mode resolves through contractDefaults[\"endpoint:<mode>\"] to an authContracts entry. \"public\" deliberately has no such default: the mode means no authentication, so there is no auth contract to point at. It is listed here rather than special-cased in the test so that the day a public endpoint does acquire a contract, or the day this stops being the only unauthenticated mode, the list has to be revisited.",
       "closing": "Nothing to close. This entry exists so the exemption is written down and counted."
-    },
-    {
-      "mode": "resend-standard-webhook-signature",
-      "verdict": "divergence",
-      "routeIds": [
-        "webhooks.resend"
-      ],
-      "why": "POST /api/webhooks/resend declares auth \"resend-standard-webhook-signature\" and the register defines no such scheme anywhere: contractDefaults has no \"endpoint:resend-standard-webhook-signature\" key, authContracts holds twelve contracts and none of them is a provider webhook signature, and machineAuthBindings names the seven jobs.* endpoints and not this one. So the one endpoint in the register that a third party calls directly is the one whose authentication is a name with nothing behind it. The route is built (src/app/api/webhooks/resend/route.ts) and its handler is the only description of the check that exists.",
-      "closing": "An authContracts entry for the Standard Webhooks signature scheme \u2014 the header set, the tolerated clock skew, the secret's rotation and the replay window \u2014 plus the contractDefaults line that binds the mode to it.",
-      "blocker": "none known \u2014 this is a transcription gap, not an authority one; the scheme is implemented and undescribed rather than undecided.",
-      "notATranscriptionGap": "Re-read 2026-09-10: docs/inherit-v2-brief.md mentions resend only as a dependency (line 63) and its API key in the secret allowlist (line 2579). It describes no webhook endpoint and no contract for one. Filling these entries from the handler would document an endpoint the brief never authorised, making the register agree with the code by abandoning what gives the register its authority. The handler is sound - svix signature verification via Resend.webhooks.verify, 503 when RESEND_WEBHOOK_SECRET is unset, and that key is declared in .env.example. Closing this needs the brief to describe the endpoint (an author's decision) or the register entry reconsidered; it is not closable by transcription, and anyone who transcribes it has quietly changed what the register is."
     }
   ],
-  "endpointSuccessContractUndefined": [
-    {
-      "routeId": "webhooks.resend",
-      "contract": "empty-provider-acknowledgement",
-      "why": "contractDefaults.bindingValidation requires that every response-contract reference \"resolve to an exact registered key\". responseContracts holds 93 entries and \"empty-provider-acknowledgement\" is not one of them. It is the only unresolvable success-contract reference among the 88 endpoints; the other 87 resolve. The name reads like an intent \u2014 acknowledge the provider with an empty body \u2014 and no status, body or header set is written down anywhere.",
-      "closing": "A responseContracts entry naming the acknowledgement status and the empty body, or a rebinding of this route to an existing contract. Either way the same name must then appear in responseContractBindings.routes[\"webhooks.resend\"], which is the entry below.",
-      "notATranscriptionGap": "Re-read 2026-09-10: docs/inherit-v2-brief.md mentions resend only as a dependency (line 63) and its API key in the secret allowlist (line 2579). It describes no webhook endpoint and no contract for one. Filling these entries from the handler would document an endpoint the brief never authorised, making the register agree with the code by abandoning what gives the register its authority. The handler is sound - svix signature verification via Resend.webhooks.verify, 503 when RESEND_WEBHOOK_SECRET is unset, and that key is declared in .env.example. Closing this needs the brief to describe the endpoint (an author's decision) or the register entry reconsidered; it is not closable by transcription, and anyone who transcribes it has quietly changed what the register is."
-    }
-  ],
+  "endpointSuccessContractUndefined": [],
   "nonceStoredBeforeUseNote": "Brief X1.5 (owner decision 2026-09-28): an operation nonce is rendered by the page that offers the operation, only the state-changing request consumes it, and no GET creates, rotates or stores one. scripts/route-register-correspondence.test.ts finds every call in shipped code to a database function named issue_*nonce*, and every insert into account_operation_nonces, and compares them with this list in both directions. Empty since 2026-09-28, and still checked: the account-deletion GET that stored a nonce on every visit to /settings/data, and the upload page render that stored one through issue_own_upload_nonce_v1, were both rebuilt so the POST records the nonce hash once, and both issuing functions are dropped. A render or GET that stores a nonce again fails the test until it is recorded here.",
   "nonceStoredBeforeUse": [],
-  "endpointSuccessContractUnbound": [
-    {
-      "routeId": "webhooks.resend",
-      "contract": "empty-provider-acknowledgement",
-      "why": "contractDefaults.bindingValidation also requires that \"every endpoint success contract must also appear in responseContractBindings.routes for that route\". responseContractBindings.routes holds 95 keys, all of them real route ids, and webhooks.resend is not among them \u2014 it is the only endpoint of the 88 with no binding entry at all. So this route's failure responses are undeclared as well as its success one: the bindings list is where a route's full response set is written.",
-      "closing": "The binding entry, once the contract above exists. Its failure branches \u2014 signature rejected, replay, unknown message id \u2014 belong in it too.",
-      "notATranscriptionGap": "Re-read 2026-09-10: docs/inherit-v2-brief.md mentions resend only as a dependency (line 63) and its API key in the secret allowlist (line 2579). It describes no webhook endpoint and no contract for one. Filling these entries from the handler would document an endpoint the brief never authorised, making the register agree with the code by abandoning what gives the register its authority. The handler is sound - svix signature verification via Resend.webhooks.verify, 503 when RESEND_WEBHOOK_SECRET is unset, and that key is declared in .env.example. Closing this needs the brief to describe the endpoint (an author's decision) or the register entry reconsidered; it is not closable by transcription, and anyone who transcribes it has quietly changed what the register is."
-    }
-  ],
+  "endpointSuccessContractUnbound": [],
   "storageCallSites": [
     {
       "site": "genomes src/app/api/export/route.ts",
@@ -161,96 +135,205 @@
   "declaredPrefixBucketNotAddressedNote": "The exact exports callsites are now visible through their imported constant, so no declared bucket is unaddressed in this source census. This retires only the scanner's false absence. The archive adapters do not by themselves prove the declared manifest namespace, route integration, authorization, export.generated-artifact-24h cleanup or provider readiness. The real object-key, R2 location and uncreated-bucket divergences remain below; G8.5 is not closed by this precision correction.",
   "declaredPrefixBucketNotAddressed": [],
   "liveCallSiteOnUncreatedBucket": [],
+  "objectKeyShapeNotDescribedByAnyPrefixNote": "2026-11-19, owner decision (\"G8.5: the two undescribed genomes key shapes\"; the owner left the side to engineering, which chose the documents): the register describes both genomes key shapes the code writes. storage.subject-v2 is amended in place to {object_uuid}, the flat key private.issue_own_storage_upload_v1, the held-upload issuer, finalization and subject-transfer relocation generate for every self and other_adult file (no released code wrote the four-segment form it used to name), and storage.prepared-v1 names prepared/{artifact_uuid}, the key private.own_preparation_artifacts reserves. The genomes-bare-uuid-object row closes and is removed; prepared-artifact-object narrows to its Cloudflare R2 half, which the decision did not cover. storage.cohort-v2 is unchanged: the cohort path's only genomes names are the four-segment {account_id}/{cohort_id}/{upload_id}/{object_id}.vcf|.tsv names the database reserves for embryo ingest fragments (20260905203457_embryo_ingest_unwind_runtime.sql), and its persistent sources live on R2. scripts/route-register-correspondence.test.ts now also holds each genomes shape the code writes to the prefix that describes it, anchored to the writer. The brief's sentence is proposed, not applied, in docs/protocol/brief-corrections-proposed.md item 22.",
   "objectKeyShapeNotDescribedByAnyPrefix": [
     {
-      "id": "genomes-bare-uuid-object",
-      "bucket": "genomes",
-      "segments": 1,
-      "shape": "<uuid>",
-      "declaredPrefixIds": [
-        "storage.subject-v2",
-        "storage.cohort-v2",
-        "storage.raw-legacy"
-      ],
-      "declaredSegments": [
-        4,
-        4,
-        3
-      ],
-      "evidence": [
-        {
-          "file": "supabase/migrations/20260906113021_own_upload_storage_authorization.sql",
-          "literal": "values(p_account_id,p_session_id,p_subject_id,gen_random_uuid()::text,p_size_bytes,p_sha256,"
-        },
-        {
-          "file": "supabase/migrations/20260906123327_subject_upload_finalization.sql",
-          "literal": "final_object_name=gen_random_uuid(),finalization_started_at=clock_timestamp()"
-        },
-        {
-          "file": "src/lib/uploads/subject-upload-contract.ts",
-          "literal": "bucket: z.literal(\"genomes\"), stagingKey: uuid,"
-        },
-        {
-          "file": "src/lib/uploads/subject-finalization.ts",
-          "literal": "bucket: z.literal(\"genomes\"), stagingKey: uuid, finalKey: uuid,"
-        }
-      ],
-      "why": "The register declares three prefixes for the genomes bucket and every one of them partitions the bucket by account first: {account_id}/{subject_id}/{upload_id}/{filename}, {account_id}/{cohort_id}/{upload_id}/{filename}, and the legacy {user_id}/{uuid}/{name}. The live own-upload path uses none of them. private.issue_own_storage_upload_v1 sets staging_object_name to gen_random_uuid()::text and storage_bucket to 'genomes', and private finalization sets final_object_name to another bare gen_random_uuid(); both are single-segment keys at the root of the bucket. So the persistent object holding a person's genome sits at /<uuid>, and storage.subject-v2 describes a four-segment path that nothing writes. The filename half of the contract is honoured \u2014 the name is server-generated, opaque and single-segment, and no original filename reaches it \u2014 and the access half does not depend on the folder, because the upload RLS policy binds the exact server-generated key and the upload session's jti rather than a path prefix. What is not honoured is the declared shape itself, and with it the account and subject partition that the prefix, not the policy, is the record of.",
-      "closing": "Decide which document moves. Either the two prefixes are rewritten to the flat server-generated key the database actually issues \u2014 in which case the account and subject binding has to be stated as what it is, a database join rather than a path \u2014 or issuance and finalization are changed to build the declared path. The first is the smaller change and the more honest one; the second is what the register currently claims.",
-      "blocker": "authority \u2014 both halves are binding documents, and which one is wrong is an owner decision, not an implementation one."
-    },
-    {
       "id": "prepared-artifact-object",
-      "bucket": "genomes",
+      "bucket": "inherit-prepared-*",
       "segments": 2,
       "shape": "prepared/<uuid>",
-      "declaredPrefixIds": [
-        "storage.subject-v2",
-        "storage.cohort-v2",
-        "storage.raw-legacy"
-      ],
-      "declaredSegments": [
-        4,
-        4,
-        3
-      ],
+      "declaredPrefixIds": [],
+      "declaredSegments": [],
       "evidence": [
         {
-          "file": "src/lib/genome/prepared-source/storage-common.ts",
-          "literal": "/^prepared\\/[0-9a-f]{8}-"
+          "file": "src/lib/genome/prepared-source/r2-transport.ts",
+          "literal": "bucket: z.string().regex(/^inherit-prepared-[a-z0-9-]{1,40}$/), objectKey: preparedObjectKeySchema,"
         },
         {
-          "file": "src/lib/genome/prepared-source/storage-writer.ts",
-          "literal": "`/storage/v1/object/genomes/${receipt.objectKey}`"
+          "file": "supabase/migrations/20260908233337_own_prepared_r2_provider.sql",
+          "literal": "or (provider='r2' and provider_bucket ~ '^inherit-prepared-[a-z0-9-]{1,40}$' and storage_object_id is null"
         }
       ],
-      "why": "Prepared canonical artifacts are written into the same genomes bucket under a two-segment key whose first segment is the literal \"prepared\" \u2014 outside every declared prefix, and outside the account partition all three of them describe. preparedObjectKeySchema pins the shape and createPreparedArtifactWriter POSTs to /storage/v1/object/genomes/<that key>, so these are real objects holding derived genome data. The register knows the artifacts exist \u2014 policyContracts.own-prepared-object-v1 governs their lifecycle and preparation.scratch-2h their retention \u2014 and storagePrefixes, the file that says where bytes live and under what filename and retention contract, does not mention them. The same artifacts have a second home the register describes even less: the v2 receipt path writes them to Cloudflare R2 under a bucket matching ^inherit-prepared-[a-z0-9-]{1,40}$ (src/lib/genome/prepared-source/r2-transport.ts, served by workers/prepared-artifacts/worker.mjs through an env-bound R2 binding), and no storagePrefixes entry names any R2 bucket at all \u2014 the register's six prefixes cover four Supabase buckets and no second provider.",
-      "closing": "A storagePrefixes entry for prepared/{artifact_id} in genomes with its filename contract and the preparation.scratch-2h and publication retention ids, and a second entry \u2014 or a declared provider field on the first \u2014 for the R2 bucket family, so the two homes of the same artifact are both written down. The R2 half is the larger gap: a whole storage provider holding derived genome data is absent from the file that is supposed to enumerate them.",
-      "blocker": "none known \u2014 the lifecycle is decided and described in policyContracts; only the storage location is undeclared."
+      "why": "Narrowed 2026-11-19 to its R2 half. The genomes half closed when the register gained storage.prepared-v1 (prepared/{artifact_uuid}) by the owner decision \"G8.5: the two undescribed genomes key shapes\". The same prepared artifacts have a second home: the v2 receipt path writes them, under the same prepared/<uuid> key the database reserves, to a private Cloudflare R2 bucket matching ^inherit-prepared-[a-z0-9-]{1,40}$ (src/lib/genome/prepared-source/r2-transport.ts, served by workers/prepared-artifacts/worker.mjs through an env-bound R2 binding; private.own_preparation_artifacts.provider_bucket), and no storagePrefixes entry names any R2 bucket: the register's prefixes cover four Supabase buckets and no second provider. That decision covered the genomes bucket only.",
+      "closing": "A storagePrefixes entry for the R2 bucket family (or a declared provider field on storage.prepared-v1) with its filename contract and the preparation.scratch-2h and source.revocation-7d retention ids, so the two homes of the same artifact are both written down; it is a register amendment, so it needs an owner decision first.",
+      "blocker": "authority: describing a second storage provider in the register is an owner decision, and the 19 November decision named the genomes bucket only."
     }
   ],
-  "allowlistedBucketNotCreatedNote": "A bucket a database CHECK constraint still admits, which no migration leaves in place. The three database-selected call sites choose their bucket from rows those constraints govern, so an admitted bucket is one a manifest could still name. scripts/route-register-correspondence.test.ts compares this list in both directions with the admitted, undeclared buckets that are not in the route ledger, and fails if a row's bucket is created again.",
-  "allowlistedBucketNotCreated": [
+  "allowlistedBucketNotCreatedNote": "A bucket a database CHECK constraint still admits, which no migration leaves in place. The three database-selected call sites choose their bucket from rows those constraints govern, so an admitted bucket is one a manifest could still name. scripts/route-register-correspondence.test.ts reads each bucket CHECK at its latest definition, in migration order, compares this list in both directions with the admitted, undeclared buckets that are not in the route ledger, and fails if a row's bucket is created again. Empty since supabase/migrations/20261119110000_dropped_bucket_literals_and_guard.sql: both manifest builders already read upload_sessions.storage_bucket (D-130; 20260929101000 and 20260930235000, restated by 20260930132000 and 20260930238000), so that migration removed 'genomes-staging' (dropped by 20260930140000) from the CHECKs of public.account_deletion_storage_entries and public.embryo_ingest_delete_objects, and 'generated-artifacts' (dropped by 20260930140100) from those two and public.genome_storage_objects, refusing to run while any row named either.",
+  "allowlistedBucketNotCreated": [],
+  "formRequestDivergenceNote": "2026-10-23 (G8.5, form verification). What every <form> in the shipped app sends, read from source by scripts/form-contract-census.ts and held against docs/route-register.json by scripts/form-register-correspondence.test.ts: the target, method, body keys and literal discriminators, required and CSRF headers, Content-Type and the statuses the code branches on. A native form is read from its markup; an actionless form through its submit handler, following local and imported functions, conditional bodies and the props a form hands its submission to. Each row is one (request file, route, method) and the issues it shows (since 2026-10-23 no request omits X-Inherit-CSRF, and the test fails if one does; see csrfTransportNote); the test computes the issue set and compares it with these rows in both directions, so a new divergence fails until recorded and a fixed one fails until its row is removed. closedBy names who has to act: owner (which document moves), counsel, or engineering. Listing a divergence records it; it does not bless it. 2026-10-23, owner decision (\"G8.5: forms, CSRF, the server action and the Resend webhook\", item 1): the register lists the harmless extras that ship, so five rows close and are removed: genome.browser's q (a closed queryContract), requestId on every subject-draft body, Path B's withAccount confirm body on api.withdraw, api.chat's 409s (copilot-provider-setup-required-v1 and own-chat-scientific-correction-v1) and api.future-person-claim's 404 (resource-not-found-v1). The CSRF rows close with item 2, the one-time session token, the same day (see csrfTransportNote). The Path A row (src/components/family/invite-adult-form.tsx) closes the same day: the form and src/app/api/subject-drafts/route.ts moved to the registered { kind: \"adult\", adultFlow: \"path-a-own-account\", contactEmail, requestId, note? } and answer an unreviewed jurisdiction with capability-denied-api-v1 (403). The compatibility chat row (src/components/chat/chat-panel.tsx) closes the same day: the panel sends the registered { contextToken, message } to api.chat with no query, under a token /copilot/[scope] mints for the account, its auth session and the subject (src/lib/copilot/compat-chat-token.ts), and the route's AI SDK transport branch is gone. 2026-10-24, owner decision (\"G8.5: Settings \u2192 AI may omit `apiKey`\"): the register's hosted and remote-openai-compatible bodies of api.llm-settings say apiKey is optional (an absent key keeps the stored key for the same destination, a remote HTTPS endpoint may be saved with no key, and a POST that cannot reuse a stored key answers llm-settings-v1.keyRequired, 409), so the last Settings row closes and is removed. The co-parent jurisdiction fields (D-083, counsel) are the one row left. 2026-10-24 (G8.5): the compatibility Copilot panel (src/components/chat/chat-panel.tsx) is retired with its api.chat branch; the form census reads 25 forms (1 native, 24 handler-submitted) and 27 requests in 22 files, and this table is unchanged. 2026-11-19, owner decision (\"G8.5: the retired chat's 409 leaves the register\"): copilot-provider-setup-required-v1, which nothing has answered since the compatibility branch of api.chat was retired on 24 October, leaves the register with its two references (api.chat's responseContractBindings entry and its zeroFindingClosedBranches entry). api.chat's one registered 409 is now own-chat-scientific-correction-v1, which the own chat still answers, so a form that branches on 409 still matches a bound contract. This table is unchanged.",
+  "csrfTransportNote": "2026-10-23 (G8.5; owner decision \"CSRF: build the token everywhere\"). The register's csrfTransport stands and is built. src/lib/security/session-csrf-core.ts mints X-Inherit-CSRF as <expiresAt>.<random>.<mac>: a keyed digest of the session kind, the session (the account and its auth session, or the SHA-256 of the rights-session or activation-candidate cookie), the registered route and a twelve-hour expiry, none of which travels in the token. The page or the signed-in shell renders it and stores nothing. The route verifies it against the live request, and public.consume_session_csrf_v1 (20261024220000_session_csrf_tokens.sql, a guarded production release) spends its hash once, refusing a spent token, an expiry beyond the lifetime and an authenticated token whose auth session is no longer live; the response that spends one carries its successor in the same header. A missing, spent, other-session or other-route token is refused before the handler runs: authenticated-mutation-v1's 403 request_forbidden on an authenticated route, the 404 not_found of token-api-v1 or token-candidate-api-v1 on a purpose-session route. Operation nonces are unchanged and separate (operationNonceIsNotCsrf). The 74 routes of SESSION_CSRF_ROUTES require it (37, and api.embryo-acknowledge since the merge with G8.5's form shapes; api.subjects, api.future-person-claimant-bind, api.future-person-correction and api.appeal-complete since 2026-11-19, moved from csrfOwnDesign; fourteen more the same day in stage two, with api.consents and api.subject-drafts now gated on every body; eighteen more in the migration stage, the same day, on five more session kinds that public.consume_session_csrf_v2 spends and holds to their live rows, with api.future-person-claim-objection taking a rights or an account token), with api.embryo-withdraw sharing api.cohort-restrict's token as its policy.aliasOf; src/lib/security/session-csrf-routes.test.ts drives each through its handler, and scripts/form-register-correspondence.test.ts finds no client request, form or not, that omits the header. auth.sign-out is a scripted form that sends it and checks the exact Origin. No route the register binds keeps an X-Inherit-CSRF of its own design since the migration stage, and no branch either since 2026-11-22: csrfOwnDesign is empty (the owner's decision of that day, \"G8.5: the reviewer chunk-acknowledgement address accepts either kind of session\": api.claim-review-chunk-acknowledgement takes a reviewer token first and an account token second, the second route SESSION_CSRF_SECOND_KINDS declares, and the TEST account archive's per-chunk proof moved to X-Inherit-Operation-Proof). api.evidence-chunk's value is verified on every chunk and not spent (principle 3). No formRequestDivergence row records a CSRF omission any more.",
+  "formRequestDivergence": [
     {
-      "bucket": "genomes-staging",
-      "droppedBy": "supabase/migrations/20260930140000_drop_genomes_staging_bucket.sql",
-      "constraints": [
-        "public.account_deletion_storage_entries",
-        "public.embryo_ingest_delete_objects"
+      "file": "src/components/embryo/co-parent-review-form.tsx",
+      "routeId": "api.invitation-accept",
+      "method": "POST",
+      "issues": [
+        "omits jurisdictionAffirmed, which the registered body requires",
+        "omits jurisdictionAttestationHash, which the registered body requires",
+        "omits jurisdictionAttestationVersion, which the registered body requires"
       ],
-      "why": "The bucket is dropped: nothing had written it since 20260906133807_cutover_subject_upload_transport.sql, and the drop refuses to run while it holds anything. Two manifest builders still carry the literal (D-130), public.claim_due_account_deletion_v1 and public.prepare_embryo_ingest_unwind_v1, so the CHECK constraints on the two tables they fill still admit it. The account-deletion leg joins storage.objects on the bucket and so matches nothing. The embryo-ingest leg does not join; ingest is unbuilt (G2.6), so nothing runs it.",
-      "closing": "Fix D-130 in both builders (read upload_sessions.storage_bucket instead of the literal), then drop 'genomes-staging' from both CHECK constraints and remove this row. The embryo half belongs to the embryo-ingest work."
+      "why": "D-083. The co-parent acceptance sends jurisdictionCode only, by the decision recorded in docs/protocol/decisions.md (\"the co-parent acceptance body carries jurisdictionCode only\"), and docs/route-divergence.json#unhashableAttestationFields already records the version and hash for api.invitation-accept. jurisdictionAffirmed belongs to the same decision but is outside that list, which names the version and hash only, so it is recorded here rather than left unseen.",
+      "closing": "Counsel, then engineering: the jurisdiction artifact the fields attest to is authored and approved (D-083; owner decision 2026-10-16 keeps serving these fields a counsel item under G8.5), then the form sends all three and these rows and the unhashableAttestationFields row go stale together.",
+      "closedBy": "counsel"
+    }
+  ],
+  "formSubmissionReviewNote": "Forms whose submission the census cannot read as a request, each with literal evidence that must still be present, so a reviewed form that changes how it submits fails until it is re-reviewed. Compared in both directions with the forms that yield no request.",
+  "formSubmissionReview": [
+    {
+      "file": "src/components/auth/auth-form.tsx",
+      "usage": "src/app/auth/sign-in/page.tsx",
+      "submits": "Supabase Auth signInWithPassword",
+      "evidence": [
+        {
+          "file": "src/app/auth/sign-in/page.tsx",
+          "literal": "await supabase.auth.signInWithPassword({"
+        }
+      ],
+      "why": "Sign-in is the one AuthForm usage that calls no Inherit route: its onSubmit calls the Supabase client's signInWithPassword, which posts to the auth provider's own /auth/v1/token. The register describes /auth/sign-in as a page and registers no sign-in submit endpoint; the owner decision of 2026-10-16 moved sign-up, forgot-password and reset to /api/auth/* and left sign-in on the provider. So there is no Inherit endpoint whose register entry the request could match.",
+      "closing": "Nothing while sign-in stays on the provider. If a /api/auth/sign-in route is ever registered, this row goes and the census reads the request."
     },
     {
-      "bucket": "generated-artifacts",
-      "droppedBy": "supabase/migrations/20260930140100_drop_generated_artifacts_bucket.sql",
-      "constraints": [
-        "public.genome_storage_objects",
-        "public.account_deletion_storage_entries",
-        "public.embryo_ingest_delete_objects"
+      "file": "src/components/embryo/upload/upload-stage.tsx",
+      "usage": "src/components/embryo/upload/upload-stage.tsx",
+      "submits": "sendEmbryoFile upload-session transport",
+      "evidence": [
+        {
+          "file": "src/components/embryo/upload/upload-stage.tsx",
+          "literal": "await sendEmbryoFile({ file: chosen, session: finalized.session,"
+        },
+        {
+          "file": "src/lib/embryos/upload-transport.ts",
+          "literal": "const send = input.fetch ?? fetch;"
+        }
       ],
-      "why": "Owner decision 2026-09-28 (evening): the bucket is dropped and the single-object export archive form it was made for is retired. Nothing in src ever wrote it, and the drop refuses to run while it holds anything or any row still records an object in it. The three column CHECKs written on 2026-08-31 and 2026-09-05 still list the literal, and this list is read from them. None can be reached: the migration adds genome_storage_objects_genomes_only, so a recorded object is a genome source in genomes and never an export archive, and account-deletion manifests copy their bucket from those rows. No function carries the literal as a bucket; the two own-report purge functions carry it as the retention target id over database rows, which is a different name and stays.",
-      "closing": "Drop 'generated-artifacts' from the three column CHECKs, which also removes this row. It needs no other change; the embryo table's CHECK belongs to the embryo-ingest work, so the three go together when that work next touches it."
+      "why": "The embryo file form hands the chosen file to sendEmbryoFile, which sends through an injectable fetch to route addresses the configure response supplies at run time (session.configureRoute and the mapping, chunk and completion routes), so no target is a literal the census can read. Its requests are the registered upload-session endpoints (api.embryo-ingest-configure, -mapping, -chunk, -complete) and are held to their contracts by src/lib/embryos/upload-transport.test.ts and the embryo-ingest browser journey, not by this census.",
+      "closing": "Nothing while the transport takes its addresses from the session response."
     }
-  ]
+  ],
+  "clientRequestDivergenceNote": "2026-10-23 (G8.5). What every request the browser makes sends when no form makes it. scripts/form-contract-census.ts reads the client module graph (clientModules: every \"use client\" module and every local module one imports for a value) and every fetch call and chat transport in it (fileRequests), with no argument bound; a request a form makes is read by the form census instead and recorded in formRequestDivergence. scripts/form-register-correspondence.test.ts compares these rows with the census in both directions and fails if any request omits X-Inherit-CSRF. Several rows are the reader's limits rather than the product's (a value passed as an argument, a binary body, a status compared through a reused variable name); each says so and names what would let the census read it. Recorded, not fixed: body fields, nonce headers and statuses belong to the G8.5 form-shape work. 2026-10-24 (G8.5, owner decision of 23 October, item 1): of the 19 rows, 14 close and 2 (the IGV reference and the review PDF viewer, 3 issues) become reviewed entries. The code moved to the register where it left out what the register requires (the operation nonce on the provider and own-Copilot revocations, through two guarded doors, 20261025200000_consent_revoke_provider_nonce.sql; the grant, acknowledgement and appeal-reversal bodies named field by field). The register lists the harmless answers that ship (file-delete-v1, consent-revocation-v1, public-capacity-limited-v1 on both document-session routes). The census reads what it could not: binary bodies, a status compared on another block-scoped binding, a local function's calls with their arguments bound, string concatenation and a zod parse's output. The three requests that are not a request to an Inherit route are reviewed in clientRequestReview. Three rows remain: the genome browser's body (owner), the compatibility chat's provider consent (owner, with the compatibility chat) and D-103's Path A confirm (engineering, with Path A). 2026-10-24 (G8.5): the compatibility Copilot panel is retired with its api.chat branch, and with it src/components/chat/consent-dialog.tsx, the one client that sent api.consents the unregistered { providerKey } body; its row is removed (2 rows remain: the genome browser and the Path A adult confirm). The route still accepts that body (grant_cloud_model_consent) and nothing in the browser sends it: whether to retire it or register it is the owner's. 2026-11-19, owner decision (\"G8.5: the provider-key cloud consent request is removed\"): api.consents no longer accepts the { providerKey } body; it is refused as every other unregistered body is (400 invalid_request once the session token is admitted), grant_cloud_model_consent stays in the database with no caller in src/ (the two browser fixtures that sent the body now seed the legacy grant /settings/consents lists by calling it with the service role), and revoking a grant made that way still works (api.consent-revoke's cloud-model-provider-grant case). 2026-11-19, owner decision (\"G8.5: an invited adult's own account declaration counts\"): the register's adult body on api.invitation-accept carries no jurisdiction field (requestContract.adultAcceptBody), as Path B's account body on api.withdraw has not since 23 October, so the Path A adult acceptance row (src/components/embryo/adult-subject-review-form.tsx) closes and is removed. One row remains: the genome browser (owner). D-083's co-parent fields stay with counsel in formRequestDivergence. 2026-11-19, owner decision (\"G8.5: the genome browser's read is registered as built\"): the register's api.browse-region is the file-based read the browser sends and the handler answers: the closed body { file, chromosome, start, end }, the session X-Inherit-CSRF token with no body nonce and no cursor, the caller's own rows only (row-level security decides, so a relative's track reads nothing), and own-region-variants-v1 (200 { variants, truncated }), which replaces raw-region-v1. The genome browser row closes and is removed; no row remains.",
+  "clientRequestDivergence": [],
+  "clientRequestReviewNote": "2026-10-24 (G8.5). Requests the client census reads but cannot hold to a register entry because they are not a request to an Inherit route: a first-party static asset, or an object URL of bytes already in the page. Each lists the census issues it accounts for and literal evidence that must still be present, so a reviewed request that changes fails until it is re-reviewed. scripts/form-register-correspondence.test.ts compares them, with clientRequestDivergence, with the census in both directions.",
+  "clientRequestReview": [
+    {
+      "file": "src/components/browse/igv-reference.ts",
+      "issues": [
+        "sends to /genomes/hg38.chrom.sizes, which no register entry describes"
+      ],
+      "requests": "the public first-party chromosome-size reference public/genomes/hg38.chrom.sizes",
+      "evidence": [
+        {
+          "file": "src/components/browse/igv-reference.ts",
+          "literal": "const response = await fetch(\"/genomes/hg38.chrom.sizes\", {"
+        },
+        {
+          "file": "public/genomes/hg38.chrom.sizes",
+          "literal": "chr1\t248956422\n"
+        }
+      ],
+      "why": "The genome viewer fetches its own chromosome-size reference, a static file committed under public/ and served by the host as it is, so the installed viewer resolves no remote URL (the file's own comment). It is a GET with no credential, body or header the register governs, and the register describes routes only: no page or endpoint serves it, so no entry can describe it.",
+      "closing": "Nothing while the register describes routes only. If the owner decides the register also lists first-party static assets, the asset is added and this entry goes."
+    },
+    {
+      "file": "src/lib/future-person/review-pdf.ts",
+      "issues": [
+        "sends to /review-document-assets/6.3.289/manifest.json, which no register entry describes"
+      ],
+      "requests": "the inert PDF viewer's own asset manifest, generated into public/review-document-assets/ at build",
+      "evidence": [
+        {
+          "file": "src/lib/future-person/review-pdf.ts",
+          "literal": "const BASE=\"/review-document-assets/6.3.289/\";"
+        },
+        {
+          "file": "src/lib/future-person/review-pdf.ts",
+          "literal": "fetch(BASE+\"manifest.json\",{credentials:\"omit\",referrerPolicy:\"no-referrer\",signal})"
+        },
+        {
+          "file": "scripts/prepare-review-pdf-assets.mts",
+          "literal": "const target=join(process.cwd(),\"public\",\"review-document-assets\",version);"
+        }
+      ],
+      "why": "Since 2026-10-24 the census resolves the concatenated path. It is the reviewer viewer's first-party asset manifest, which scripts/prepare-review-pdf-assets.mts writes under public/ before every dev and build run and the host serves as a static file. The fetch omits credentials and the referrer, and no route serves the path, so no register entry can describe it.",
+      "closing": "Nothing while the register describes routes only. If the owner decides it also lists first-party static assets, the manifest is added and this entry goes."
+    },
+    {
+      "file": "src/lib/future-person/review-pdf.ts",
+      "issues": [
+        "sends to an unresolved target (url), which no register entry describes"
+      ],
+      "requests": "a blob: object URL of a document the reviewer's reader already downloaded and verified",
+      "evidence": [
+        {
+          "file": "src/lib/future-person/review-pdf.ts",
+          "literal": "const response=await bounded(fetch(url,{credentials:\"omit\",referrerPolicy:\"no-referrer\",signal}),signal);"
+        },
+        {
+          "file": "src/components/future-person/claim-review.tsx",
+          "literal": "const url=URL.createObjectURL(new Blob([Uint8Array.from(bytes)],{type}));"
+        },
+        {
+          "file": "src/components/future-person/public-appeal-review.tsx",
+          "literal": "const url = URL.createObjectURL(new Blob([Uint8Array.from(bytes)], { type: media })); objectUrl.current = url;"
+        }
+      ],
+      "why": "openReviewPdf is exported and fetches the URL its caller passes. Both callers (the claim review and the appeal review, through ReviewPdfDocument) pass a blob: URL they made with URL.createObjectURL from bytes readReviewDocument already read through the registered review download and checked against its digest. Fetching it reads memory in the same page: no request leaves the browser, and no route receives it, so there is no register entry to hold it to. The census reads an exported function's parameter as unresolved, correctly.",
+      "closing": "Nothing while both callers pass an object URL. A caller that passes a network URL changes the evidence and fails this entry until it is re-reviewed."
+    }
+  ],
+  "csrfOwnDesignNote": "2026-10-23 (G8.5). Every route the register binds to csrfTransport whose X-Inherit-CSRF is not the one-time session token of src/lib/security/session-csrf.ts, read from its handler: what the header carries, the kind (digest-not-one-time: a keyed digest of the session that a replay can repeat, so the paired one-time nonce or the session's own rotation is what refuses it; operation-token: the one-time operation or presentation value itself, which operationNonceIsNotCsrf says a CSRF value is not; derived-one-time: a distinct value bound to a one-time token; none), and whether it is one-time. branch marks a route whose other bodies use the session token. src/lib/security/session-csrf-routes.test.ts holds this list to the register in both directions, with SESSION_CSRF_ROUTES, and each row to the literal it cites. Moving a row onto the session token is engineering work once the owner says these designs should go; the two upload-session routes also need a carrier for the first token of a session a response opens. 2026-11-19 (G8.5 stage one, the owner's \"build the token everywhere\"): the four rows that fit without a migration or a design question moved onto the session token and left this list (api.subjects, api.future-person-claimant-bind, api.future-person-correction, api.appeal-complete); each kept its one-time nonce. Of the 34 left after it, 2026-11-19 (G8.5 stage two, under the owner's principles for the CSRF register amendments of the same day): fourteen whole rows and the two branch rows moved onto the session token and left this list (api.account-completion, api.invitations, api.embryo-cohort-drafts, api.legal-evidence-upload-session, api.embryo-record-key-cards-rights, api.export, api.subject-export, api.future-person-export, api.future-person-identity-profile, api.future-person-recovery-key, api.future-person-analysis-stop, api.future-person-delete, api.appeal-document-session, api.third-party-subject-export; api.consents, api.subject-drafts). Each kept its one-time operation value where the register now names it: a body field (presentationToken, artifactPresentationToken, nonce), X-Inherit-Operation-Nonce, or X-Inherit-Operation-Proof for the export routes' sealed proof and the identity profile's derived proof; the two evidence-session openers hand the evidence session's value over in X-Inherit-Evidence-CSRF. The 18 left: 17 need a session kind the consume function does not accept (reviewer, upload-session, claim-session, evidence-session, reset-session), so a migration; api.future-person-claim-objection needs the gate to accept two session kinds for one route (the rights session for its link branch and the account session for its registered accountEquivalent branch), which the owner's principles do not settle. 2026-11-19 (G8.5, the migration stage, under the same principles and the owner's decision of the same day \"G8.5: the claim-objection address accepts either kind of session\"): all 18 whole rows moved onto the session token and left this list. The seventeen that needed a session kind the consume function did not accept are spent by public.consume_session_csrf_v2 (20261119120000_session_csrf_purpose_kinds.sql, a guarded production release), which holds each kind to its live row: reviewer (api.legal-evidence-review, api.appeal-review, api.future-person-documentary-verification, api.future-person-claim-review, api.future-person-claim-release, api.future-person-claim-objection-review, api.future-person-correction-review, api.claim-review-receipt, api.claim-review-chunk-acknowledgement), upload-session (api.embryo-ingest-configure, api.embryo-ingest-mapping, api.embryo-ingest-complete), claim-session (api.future-person-claim-document-session, api.future-person-claim-complete), evidence-session (api.evidence-chunk, api.evidence-complete) and reset-session (auth.reset-password-submit). api.future-person-claim-objection takes a rights token first and an account token second (SESSION_CSRF_SECOND_KINDS, the only route that declares one). Each kept its one-time value where it was (the review, receipt, acknowledgement, claim, completion, mapping and objection nonces in their bodies), except api.embryo-ingest-complete's ingest_complete_csrf operation token, which moved to X-Inherit-Operation-Nonce. The review pages render the reviewer's tokens and the case GETs return none; an opening answer hands over the opened session's first tokens in X-Inherit-Evidence-CSRF or X-Inherit-Upload-CSRF; the reset callback puts the reset session's first token in its Lax cookie; api.evidence-chunk keeps one session-bound value for the chunk stream (principle 3). One branch row stays: the TEST account archive's acknowledgement on api.claim-review-chunk-acknowledgement's path keeps its own per-chunk value. 2026-11-22 (G8.5, the owner's decision of the same day \"G8.5: the reviewer chunk-acknowledgement address accepts either kind of session\"): the last branch row left this list. api.claim-review-chunk-acknowledgement checks the signed-in reviewer's one-time token first and the signed-in account's second (SESSION_CSRF_SECOND_KINDS, which now declares this route beside api.future-person-claim-objection, and withReviewerOrAccountCsrf), spends whichever it finds and runs only that principal's branch. The TEST account archive's per-chunk acknowledgement proof is unchanged and checked as before; under principle 2 it travels in X-Inherit-Operation-Proof both ways (the chunk's GET answer hands it over, the acknowledgement sends it back), where X-Inherit-CSRF carried it. The acknowledgements of one download go one after another, so each spends a one-time account token and carries the previous answer's successor; like the reviewer's, they are not a chunk stream (principle 3 names uploads). The settings data page renders that account token only while the TEST archive delivery is on. No migration: consume_session_csrf_v1 spends the account token as it spends every authenticated one. This list now has no row.",
+  "csrfOwnDesign": [],
+  "endpointResponseDivergenceNote": "2026-10-23 (G8.5). A registered endpoint whose method matches the register but whose answer does not. Each row names the register text it departs from and literal evidence in the code that produces the answer; scripts/form-register-correspondence.test.ts checks both, and src/app/api/export/route.test.ts drives the cookieless GET itself, so the row fails as stale the day the behaviour or the register changes. api.export is the case docs/route-divergence.json#methodDivergenceNote describes since 1 October: verb correspondence only. 2026-10-24 (D-103 and G8.5's \"code to the register\"): api.subject-drafts' Path A answer joins them. The register's subject-draft-created-v1 (201) and reserved draft wait on a product decision, because the draft's next step is an uploader artifact that Path A's inviter, who never holds the file, cannot truthfully sign; the row says which two decisions would close it. 2026-11-19, owner decision (\"G8.5: Path A's invitation stays one step\"): the register describes what the route does on Path A. api.subject-drafts' policy.pathAOneStepInvitation reserves the draft and creates the invitation and its mail in one transaction, with no inviter artifact, and answers path-a-invitation-created-v1 (202 { accepted: true }, bound to the route as policy.pathASuccessResponseContract); api.invitations no longer takes a Path A draft. Path B keeps subject-draft-created-v1 and the uploader artifact. The Path A row closes and is removed; the two api.export rows remain.",
+  "endpointResponseDivergence": [
+    {
+      "routeId": "api.export",
+      "method": "GET",
+      "case": "no-export-cookie",
+      "registered": "methodRequestContracts.GET.missingPrincipalBoundExportCookie is resource-not-found-v1 (404 JSON), and methodPolicies.GET is poll-status-only with zero enqueue, session, cookie, credential or other write side effects.",
+      "built": "200 application/zip: the synchronous account archive, streamed by the original GET for any signed-in request without the __Host-inherit-export cookie, the request /settings/data's export link makes. Signed out it answers 401 text/plain, and a failed read 503 text/plain.",
+      "evidence": [
+        {
+          "file": "src/app/api/export/route.ts",
+          "literal": "if(request&&hasAccountExportCookie(request))return pollAccountExport(request,accountExportHttpDependencies());"
+        },
+        {
+          "file": "src/app/api/export/route.ts",
+          "literal": "\"Content-Type\": \"application/zip\","
+        },
+        {
+          "file": "src/app/(app)/settings/data/page.tsx",
+          "literal": "<a href=\"/api/export\">"
+        }
+      ],
+      "why": "The register describes only the asynchronous large-export contract (G5.6, owner decision 2026-09-25). The synchronous GET is the export people actually use today: the cookie-present GET and the POST exist since 1 October, but the POST cannot create an archive (next row), so retiring the synchronous GET now would leave no working export, which G5.6 forbids. docs/account-archive-orchestration.md records it as kept \"unchanged for compatibility\".",
+      "closing": "Owner, then engineering: the export provider and delivery choice (docs/register-divergence-proposals.md: \"The export storage/delivery proposal is awaiting the owner's answer\"); then the complete asynchronous transition retires the synchronous GET, this row goes stale and src/app/api/export/route.test.ts's register check is updated with it.",
+      "closedBy": "owner"
+    },
+    {
+      "routeId": "api.export",
+      "method": "POST",
+      "case": "capability-unconfigured",
+      "registered": "operation create enqueues and answers large-export-delivery-v1.pending (202); open-ready creates a download session. No response contract bound to api.export declares a 503.",
+      "built": "503 {\"error\":\"unavailable\"} for create, after the CSRF and nonce checks, because approvedAccountArchiveGeneration() returns null; open-ready answers 404 while no export is ready, and would answer the same 503 if one were, because no delivery capability is configured.",
+      "evidence": [
+        {
+          "file": "src/lib/exports/account-archive-generation.ts",
+          "literal": "export function approvedAccountArchiveGeneration():AccountArchiveGenerationCapability|null{return null;}"
+        },
+        {
+          "file": "src/lib/exports/account-export-http.ts",
+          "literal": "if(!deps.generation)return unavailable();"
+        },
+        {
+          "file": "src/lib/exports/account-export-http.ts",
+          "literal": "const unavailable=()=>ownUploadJson({error:\"unavailable\"},503);"
+        }
+      ],
+      "why": "The POST is built closed on purpose until a provider is approved (docs/account-archive-orchestration.md: \"the export provider remains an unanswered owner choice. The actual POST refuses before durable create\"), and no public page offers it. Its refusal is a status the register does not let the route answer.",
+      "closing": "Owner: the same provider decision. Until then either the register binds a closed-capability response to api.export, or the door answers a bound contract, as the other routes built closed do with resource-not-found-v1 (engineering, once the owner picks).",
+      "closedBy": "owner"
+    }
+  ],
+  "consentWithdrawalNotRegisteredNote": "2026-11-19 (G8.5, owner decision \"the register names where each kind of consent is withdrawn\"). The decision says any kind that turns out to have no way to be withdrawn comes back to the owner and the amendment does not paper over it. api.consent-revoke's policy.withdrawalRoutes.cases names the routes that withdraw all eleven dispositionCases kinds (donor attribution as a consent that cannot be given yet; self-upload-class-consent since the owner decision of 2026-11-19, \"Withdrawing consent for a person's own DNA file deletes the files and all made from them\"; other-adult-uploader-consent.upload-other-adult since the owner decision of 2026-11-19, \"An uploader's withdrawal for another adult's file deletes it, unless that adult holds the record themselves\", for a record whose adult holds no account of their own on it, the own-account branch waiting on the owner; and embryo-nonparent-uploader-own-upload-artifact since the owner decision of 2026-11-19, \"A non-parent uploader's withdrawal for an embryo upload stops analysis and deletes, as they signed\"). No row remains: each kind that had no way to be withdrawn short of deleting the whole record or the account now has one. scripts/route-register-correspondence.test.ts compares the kinds the register names with these rows in both directions, so a kind gaining a registered route fails until its row is removed. Listing a kind records it; it does not bless it.",
+  "consentWithdrawalNotRegistered": []
 }

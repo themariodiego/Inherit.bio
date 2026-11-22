@@ -21,7 +21,6 @@ import {
  * never authority.
  */
 
-export const CORRECTION_REVIEW_CSRF_HEADER = "x-inherit-csrf";
 export const CORRECTION_REVIEW_NONCE_HEADER = "x-inherit-review-nonce";
 
 const revision = z.number().int().positive().safe();
@@ -129,15 +128,6 @@ export function correctionReviewCaseBody(row: CorrectionReviewCase) {
       analysisStopped: row.provenance.analysisStopped,
     },
   };
-}
-
-/** X-Inherit-CSRF for one reviewer, session and correction. */
-export function correctionReviewCsrf(correctionId: string, accountId: string, sessionId: string): string {
-  return hmacSecret(`${correctionId}|${accountId}|${sessionId}`, "correction-review-csrf-v1");
-}
-export function correctionReviewCsrfMatches(presented: string | null, correctionId: string, accountId: string, sessionId: string): boolean {
-  if (!presented || !/^[0-9a-f]{64}$/u.test(presented)) return false;
-  return crypto.timingSafeEqual(Buffer.from(presented), Buffer.from(correctionReviewCsrf(correctionId, accountId, sessionId)));
 }
 
 /** The binding's actor must be the caller's own verified account and session. */

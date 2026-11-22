@@ -145,8 +145,15 @@ insert into public.token_hashes(candidate_id,token_hash,token_revision,status)
 -- forge this half of it too.
 update public.subject_invitations set token_hash=repeat('e',64)
  where id=(select invitation_id from completion_invitation);
-select is(public.respond_adult_subject_invitation_v1(repeat('e',64),'confirm',
- '76100000-0000-4000-8000-000000000001',repeat('c',64)),'accepted','the fixture uses the actual adult acceptance transition');
+-- 20261025400000 (D-103): Path A's acceptance includes the typed name, through
+-- the rights session the token opens and the account door api.invitation-accept
+-- calls; the token alone accepts nothing.
+select is((select count(*) from public.activate_rights_session_v1(repeat('e',64),repeat('9',64),
+ 'own-completion-open-aaaaaaaaaa')),1::bigint,'the fixture token opens its rights session');
+select is(public.accept_adult_subject_invitation_v1(repeat('9',64),'own-completion-accept-aaaaaaaa',
+ '76100000-0000-4000-8000-000000000001','76100000-0000-4000-8000-000000000010',
+ jsonb_build_object('1',repeat('c',64)),decode(repeat('5a',28),'hex')),(select subject_id from completion_invitation),
+ 'the fixture uses the actual adult acceptance transition');
 update completion_target set id=(select subject_id from completion_invitation),subject_revision=2,binding_revision=1;
 select is(pg_temp.completion_context(),jsonb_build_object('accountRevision',2,'authSessionRevision',1,
  'jurisdictionRevision',1,'subjectBindingRevision',2,'accountBindingRevision',1,'birthDateState','adult'),

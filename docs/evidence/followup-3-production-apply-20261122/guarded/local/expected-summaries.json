@@ -1,0 +1,200 @@
+{
+ "measure_seconds": {
+  "batch1_seconds": 0.154842,
+  "batch2_seconds": 0.154822,
+  "batch3_seconds": 0.13337,
+  "batch4_seconds": 0.315045
+ },
+ "summaries": {
+  "batch0": {
+   "extensions": {
+    "count": 6,
+    "md5": "5c2a24b528337a3bf52348d5c2c8ac8a"
+   },
+   "functions": {
+    "count": 1423,
+    "md5": "befdb108eed2366bc37ec4481a082826"
+   },
+   "schema_acls": {
+    "count": 2,
+    "md5": "61bd2caad5658e5e02638b5bb94b48bd"
+   },
+   "sequences": {
+    "count": 9,
+    "md5": "dbbac44379a68bc662066f05e0d1dfd0"
+   },
+   "storage_buckets": {
+    "count": 4,
+    "md5": "08130193feb5c8420b5453b21be859c6"
+   },
+   "storage_policies": {
+    "count": 1,
+    "md5": "83f978bf2a86691480aca059d3285e5a"
+   },
+   "tables": {
+    "count": 268,
+    "md5": "5926d87969cd4127de47f5d9a1921027"
+   },
+   "types": {
+    "count": 5,
+    "md5": "12d5c67500e367470d000abab7e3cd4d"
+   },
+   "views": {
+    "count": 0,
+    "md5": "d751713988987e9331980363e24189ce"
+   }
+  },
+  "batch1": {
+   "extensions": {
+    "count": 6,
+    "md5": "5c2a24b528337a3bf52348d5c2c8ac8a"
+   },
+   "functions": {
+    "count": 1424,
+    "md5": "4ea3ebd3f5efbbfc9503922395501698"
+   },
+   "schema_acls": {
+    "count": 2,
+    "md5": "61bd2caad5658e5e02638b5bb94b48bd"
+   },
+   "sequences": {
+    "count": 9,
+    "md5": "dbbac44379a68bc662066f05e0d1dfd0"
+   },
+   "storage_buckets": {
+    "count": 4,
+    "md5": "08130193feb5c8420b5453b21be859c6"
+   },
+   "storage_policies": {
+    "count": 1,
+    "md5": "83f978bf2a86691480aca059d3285e5a"
+   },
+   "tables": {
+    "count": 268,
+    "md5": "4e9d957347138ad5177156f473ee725e"
+   },
+   "types": {
+    "count": 5,
+    "md5": "12d5c67500e367470d000abab7e3cd4d"
+   },
+   "views": {
+    "count": 0,
+    "md5": "d751713988987e9331980363e24189ce"
+   }
+  },
+  "batch2": {
+   "extensions": {
+    "count": 6,
+    "md5": "5c2a24b528337a3bf52348d5c2c8ac8a"
+   },
+   "functions": {
+    "count": 1433,
+    "md5": "e653c8724ade5ae1563ce725f52591e3"
+   },
+   "schema_acls": {
+    "count": 2,
+    "md5": "61bd2caad5658e5e02638b5bb94b48bd"
+   },
+   "sequences": {
+    "count": 9,
+    "md5": "dbbac44379a68bc662066f05e0d1dfd0"
+   },
+   "storage_buckets": {
+    "count": 4,
+    "md5": "08130193feb5c8420b5453b21be859c6"
+   },
+   "storage_policies": {
+    "count": 1,
+    "md5": "83f978bf2a86691480aca059d3285e5a"
+   },
+   "tables": {
+    "count": 268,
+    "md5": "205e9670a6ff48c5f8baec42376c2541"
+   },
+   "types": {
+    "count": 5,
+    "md5": "12d5c67500e367470d000abab7e3cd4d"
+   },
+   "views": {
+    "count": 0,
+    "md5": "d751713988987e9331980363e24189ce"
+   }
+  },
+  "batch3": {
+   "extensions": {
+    "count": 6,
+    "md5": "5c2a24b528337a3bf52348d5c2c8ac8a"
+   },
+   "functions": {
+    "count": 1435,
+    "md5": "77b3e4c2548070f1aa0a39fcd57e59b1"
+   },
+   "schema_acls": {
+    "count": 2,
+    "md5": "61bd2caad5658e5e02638b5bb94b48bd"
+   },
+   "sequences": {
+    "count": 9,
+    "md5": "dbbac44379a68bc662066f05e0d1dfd0"
+   },
+   "storage_buckets": {
+    "count": 4,
+    "md5": "08130193feb5c8420b5453b21be859c6"
+   },
+   "storage_policies": {
+    "count": 1,
+    "md5": "83f978bf2a86691480aca059d3285e5a"
+   },
+   "tables": {
+    "count": 268,
+    "md5": "9e3d34707d84e14296bd31412997354e"
+   },
+   "types": {
+    "count": 5,
+    "md5": "12d5c67500e367470d000abab7e3cd4d"
+   },
+   "views": {
+    "count": 0,
+    "md5": "d751713988987e9331980363e24189ce"
+   }
+  },
+  "batch4": {
+   "extensions": {
+    "count": 6,
+    "md5": "5c2a24b528337a3bf52348d5c2c8ac8a"
+   },
+   "functions": {
+    "count": 1453,
+    "md5": "fae4d5388eb86c58676aff75b735d388"
+   },
+   "schema_acls": {
+    "count": 2,
+    "md5": "61bd2caad5658e5e02638b5bb94b48bd"
+   },
+   "sequences": {
+    "count": 9,
+    "md5": "dbbac44379a68bc662066f05e0d1dfd0"
+   },
+   "storage_buckets": {
+    "count": 4,
+    "md5": "08130193feb5c8420b5453b21be859c6"
+   },
+   "storage_policies": {
+    "count": 1,
+    "md5": "83f978bf2a86691480aca059d3285e5a"
+   },
+   "tables": {
+    "count": 268,
+    "md5": "8a57c47443a10561267fa48a5da6ef51"
+   },
+   "types": {
+    "count": 5,
+    "md5": "12d5c67500e367470d000abab7e3cd4d"
+   },
+   "views": {
+    "count": 0,
+    "md5": "d751713988987e9331980363e24189ce"
+   }
+  }
+ }
+}

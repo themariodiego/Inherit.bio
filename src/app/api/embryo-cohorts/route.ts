@@ -1,12 +1,14 @@
 import { getSensitiveAccountContext } from "@/lib/account-deletion";
 import { notFound, rpcErrorResponse, sensitiveJson } from "@/lib/embryos/api";
 import { cohortCreatedBody, cohortFinalizeBody, ingestCookieParts } from "@/lib/embryos/cohort-create";
-import { accountJurisdictionDenied, originDenied, readJson, unauthorized } from "@/lib/embryos/guards";
+import { accountJurisdictionDenied, originDenied, readJson, unauthenticated } from "@/lib/embryos/guards";
 import { ingestRequestOrigin } from "@/lib/embryos/ingest-http";
-import { ingestCookie } from "@/lib/embryos/ingest-session";
+import { ingestCookie, uploadSessionCsrf } from "@/lib/embryos/ingest-session";
+import { UPLOAD_SESSION_CSRF_HEADER } from "@/lib/security/opened-session-csrf";
 import { mintIngestSessionOperation, verifyEmbryoOperation } from "@/lib/embryos/operation-token";
 import { isTestJurisdictionEnabled } from "@/lib/legal/jurisdictions";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { withAccountCsrf } from "@/lib/security/session-csrf";
 
 /**
  * `POST /api/embryo-cohorts` (register `api.embryo-cohorts`). The entry point
@@ -41,9 +43,10 @@ import { createAdminClient } from "@/lib/supabase/admin";
  * (G5.5). The route exists so the journey can be proved where it is permitted,
  * not to open one where it is not.
  */
-export async function POST(request: Request) {
+export const POST = withAccountCsrf("api.embryo-cohorts", handlePost);
+async function handlePost(request: Request) {
   const account = await getSensitiveAccountContext();
-  if (!account) return unauthorized();
+  if (!account) return unauthenticated();
   const forbidden = originDenied(request);
   if (forbidden) return forbidden;
   // The register puts an `embryo_analysis` guard at route scope. Without it
@@ -106,5 +109,8 @@ export async function POST(request: Request) {
   const body = cohortCreatedBody(data, operationNonce);
   return sensitiveJson(body, 201, {
     "set-cookie": ingestCookie(cookie.session, cookie.secret, cookie.expiresAt),
+    // The upload session's first one-time X-Inherit-CSRF tokens (G8.5): this
+    // answer's own X-Inherit-CSRF carries api.embryo-cohorts' successor.
+    [UPLOAD_SESSION_CSRF_HEADER]: uploadSessionCsrf(cookie.session, cookie.secret),
   });
 }

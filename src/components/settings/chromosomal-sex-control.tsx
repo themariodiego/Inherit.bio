@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { useCsrf } from "@/components/security/csrf-provider";
 import { Button } from "@/components/ui/button";
 import {
   CHROMOSOMAL_SEX_BODY,
@@ -31,11 +32,15 @@ import type { ChromosomalSexValue } from "@/lib/family/chromosomal-sex";
 export function ChromosomalSexControl({
   subjectId,
   declared,
+  operationNonce,
 }: {
   subjectId: string;
   declared: ChromosomalSexValue | null;
+  /** The one-time nonce the page rendered for this record (G5.6, 23 Oct 2026). */
+  operationNonce: string;
 }) {
   const router = useRouter();
+  const csrf = useCsrf("api.chromosomal-sex");
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState(false);
   // The control shows the choice as soon as it is made and puts it back if the
@@ -55,11 +60,11 @@ export function ChromosomalSexControl({
     setFailed(false);
     setChosen(chromosomalSex);
     try {
-      const response = await fetch("/api/chromosomal-sex", {
+      const response = await csrf.send((csrfToken) => fetch("/api/chromosomal-sex", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "X-Inherit-Operation-Nonce": operationNonce, "X-Inherit-CSRF": csrfToken },
         body: JSON.stringify({ subjectId, chromosomalSex }),
-      });
+      }));
       if (!response.ok) {
         setFailed(true);
         setChosen(recorded);
@@ -86,7 +91,7 @@ export function ChromosomalSexControl({
   return (
     // A plate like the declaration above it: the label in the head, the
     // three sentences, then the ruled choices (round-3 R3).
-    <section data-slot="chromosomal-sex" className="plate">
+    <section data-slot="chromosomal-sex" data-operation-nonce={operationNonce} className="plate">
       <div className="plate-head"><h2 className="eyebrow">{CHROMOSOMAL_SEX_HEADING}</h2></div>
       <div className="plate-body rec-stack">
         <div className="rec-stack-sm max-w-measure">

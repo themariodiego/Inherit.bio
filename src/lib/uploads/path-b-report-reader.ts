@@ -35,11 +35,16 @@ export async function listPathBReportMetadata(): Promise<PathBReportMetadata[]> 
   return response.error || !parsed.success ? [] : parsed.data;
 }
 
+/** Both Path B flows: the e-signature request, and the request a reviewed
+ * permission document allows (D-165, as the database readers read them since
+ * 20261122180000). */
+const PATH_B_FLOWS = ["path-b-subject-esignature", "path-b-reviewed-document"];
+
 /** Classify before any ordinary own-record loader can address a Path B source.
  * This query contains no genetic data or permission decision. */
 export async function isPathBSubject(subjectId: string): Promise<boolean> {
   const response = await createAdminClient().from("adult_subject_drafts").select("id")
-    .eq("subject_id", subjectId).eq("adult_flow", "path-b-subject-esignature").maybeSingle();
+    .eq("subject_id", subjectId).in("adult_flow", PATH_B_FLOWS).maybeSingle();
   // A failed classification cannot admit an ordinary reader.
   if (response.error) throw new Error("subject_unavailable");
   return response.data !== null;

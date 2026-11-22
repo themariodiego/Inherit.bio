@@ -115,8 +115,24 @@ select ok((select pg.revoked_at is null and dg.status='current' and pg.grant_rev
  join public.directional_grants dg on dg.grant_id=pg.grant_id where pg.grant_id=(select id from own_grant)),
  'every refusal left the prior pair current and unchanged');
 
+-- G5.6 (20261023130000, owner decision of 23 October 2026): the
+-- reaffirmation's own transaction proves who acted. The grant function it
+-- re-runs records the presentation's single-use nonce in purpose_grant_nonces
+-- for the account, and that insert names the account. The actor is
+-- transaction-local, so it is cleared here where production would have
+-- committed, and no user JWT is present.
+savepoint unproven_reaffirm;
+drop trigger legal_audit_actor_on_consume on public.purpose_grant_nonces;
+select set_config('request.jwt.claims','{"role":"service_role"}',true),set_config('inherit.legal_audit_actor','',true);
+select pg_temp.reaffirm((select id from own_grant),(select o from own_offer),'reaffirm-nonce-own-00000005');
+select is((select audit_principal_id from public.legal_audit_log where event_code='purpose.reaffirmed' and route_id='api.consent-reaffirm' order by seq desc limit 1),null::uuid,
+ 'planted: a reaffirmation whose nonce names no account records no one');
+rollback to unproven_reaffirm;
+select set_config('request.jwt.claims','{"role":"service_role"}',true),set_config('inherit.legal_audit_actor','',true);
 create temporary table own_receipt as select pg_temp.reaffirm((select id from own_grant),(select o from own_offer),
  'reaffirm-nonce-own-00000005') r;
+select ok(coalesce((select audit_principal_id from public.legal_audit_log where event_code='purpose.reaffirmed' and route_id='api.consent-reaffirm' order by seq desc limit 1)
+  =(select audit_principal_id from private.legal_audit_account_principals where account_id=(select one from fx)),false),'the reaffirmation names the account that reaffirmed');
 select ok((select r->>'recordKind'='purpose_grant' and r->>'purposeKey'='reports.monogenic'
   and (r->>'artifactVersion')::integer=(pg_temp.current('consent.own-monogenic')).version
   and r->>'artifactKey'='consent.own-monogenic' and (r->>'recordId')::uuid<>(select id from own_grant) from own_receipt),

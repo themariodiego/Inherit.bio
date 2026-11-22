@@ -1,6 +1,8 @@
 import "server-only";
 
 import { createHash } from "node:crypto";
+import { uploadSessionCsrfValue } from "@/lib/security/opened-session-csrf";
+import { mintSessionCsrf } from "@/lib/security/session-csrf-core";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const SECRET = /^[A-Za-z0-9_-]{43}$/;
@@ -24,6 +26,25 @@ export function ingestCookie(session: string, secret: string, expiresAt: Date, s
   ];
   if (secure) attributes.push("Secure");
   return attributes.join("; ");
+}
+
+/**
+ * The `X-Inherit-Upload-CSRF` value of the answer that opens the session
+ * (api.embryo-cohorts' 201; G8.5, the migration stage): the first one-time
+ * `X-Inherit-CSRF` token of each of the session's three token routes, bound
+ * to this session id and this cookie's hash
+ * (`src/lib/security/opened-session-csrf.ts`). The opening answer's own
+ * `X-Inherit-CSRF` carries api.embryo-cohorts' successor.
+ */
+export function uploadSessionCsrf(session: string, secret: string): string {
+  if (!isIngestSessionId(session) || !SECRET.test(secret)) throw new Error("invalid ingest session");
+  const bound = { kind: "upload-session", sessionId: session,
+    sessionHash: createHash("sha256").update(secret, "utf8").digest("hex") } as const;
+  return uploadSessionCsrfValue({
+    configure: mintSessionCsrf(bound, "api.embryo-ingest-configure"),
+    mapping: mintSessionCsrf(bound, "api.embryo-ingest-mapping"),
+    complete: mintSessionCsrf(bound, "api.embryo-ingest-complete"),
+  });
 }
 
 /** Reject duplicate names rather than relying on browser/proxy ordering. */

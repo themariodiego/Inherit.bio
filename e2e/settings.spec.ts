@@ -10,6 +10,7 @@ import {
   COPILOT_PRESET_NAMES,
 } from "../src/copy/settings/copilot-providers";
 import { COPILOT_PROVIDER_PRESETS } from "../src/lib/copilot/provider-presets";
+import { LLM_DATA_CLASSES, providerKeyFor } from "../src/lib/llm";
 
 /**
  * Three account-management route states, driven on a fresh confirmed account
@@ -37,7 +38,7 @@ const SECTIONS = [
  * — chosen there because `allowedModelAddress` blocks every documentation
  * range (192.0.2/24, 198.51.100/24, 203.0.113/24) and this one sits just
  * outside the last of them, so it classifies as a remote cloud recipient.
- * Nothing here connects to it; the consent gate refuses before any model step.
+ * Nothing here connects to it: no Copilot question is asked.
  */
 const SYNTHETIC_CLOUD_ENDPOINT = "https://203.0.114.10:8123/v1";
 /** The provider key `providerKeyFor` derives from that endpoint. */
@@ -59,25 +60,30 @@ async function saveSyntheticCloudProvider(page: Page) {
 }
 
 /**
- * Walks the only path that writes a `consent_grants` row: ask one question,
- * meet the cloud consent gate, consent in the dialog it offers. See the header
- * above the processing test for why no shorter path exists.
+ * Seeds one legacy `consent_grants` row, for the provider just saved, through
+ * the only thing that ever wrote one: `grant_cloud_model_consent`. Until 24
+ * October 2026 the compatibility Copilot panel's dialog reached it through the
+ * provider-key body of `POST /api/consents`, after the chat route's
+ * `consent_required`. That panel is retired (G8.5), and on the owner's
+ * decision of 19 November 2026 the route no longer accepts the body: it
+ * recorded a cloud permission without showing its text. The consent route
+ * that shows the text writes a purpose grant, which this page does not list.
+ * So a row this page lists and revokes exists only for a person who granted
+ * through the old door, and that person's rows are seeded here by the same
+ * function, with the service role: the signature, the subject consent and
+ * the legacy grant together, as the door wrote them.
  */
-async function grantCloudModelConsent(page: Page) {
-  await page.goto("/copilot/me");
-  await page.getByLabel("Message the copilot").fill("What is my caffeine genotype?");
-  const refused = page.waitForResponse(r => new URL(r.url()).pathname === "/api/chat");
-  await page.getByRole("button", { name: "Send", exact: true }).click();
-  const refusal = await refused;
-  expect(refusal.status()).toBe(403);
-  expect(await refusal.json()).toEqual({ error: "consent_required", provider_key: SYNTHETIC_PROVIDER_KEY });
-  const review = page.getByRole("button", { name: "Review what would be shared", exact: true });
-  await expect(review, "the cloud consent gate refused before any model step").toBeVisible();
-  await review.click();
-  const granted = page.waitForResponse((response) =>
-    new URL(response.url()).pathname === "/api/consents" && response.request().method() === "POST");
-  await page.getByTestId("consent-grant").click();
-  expect((await granted).status()).toBe(200);
+async function grantCloudModelConsent(accountId: string) {
+  const admin = adminClient();
+  const saved = await admin.from("llm_settings").select("provider, base_url").eq("user_id", accountId).single();
+  expect(saved.error).toBeNull();
+  expect(providerKeyFor(saved.data!.provider, saved.data!.base_url), "the grant names the provider just saved")
+    .toBe(SYNTHETIC_PROVIDER_KEY);
+  const granted = await admin.rpc("grant_cloud_model_consent", {
+    p_account_id: accountId, p_provider_key: SYNTHETIC_PROVIDER_KEY, p_data_classes: [...LLM_DATA_CLASSES],
+  });
+  expect(granted.error).toBeNull();
+  expect(granted.data).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
 }
 
 test.describe.configure({ mode: "serial" });
@@ -429,12 +435,29 @@ test("the People settings page says it is not built, and blames no jurisdiction"
  *      provider, key or model step.
  *   3. consent in the dialog it offers. THAT is what writes the row.
  *
+ * SINCE 24 OCTOBER 2026 (G8.5) steps 2 and 3 are gone from the product: the
+ * compatibility panel and its dialog are retired, `/copilot/me` answers every
+ * self subject through the own chat, and no screen sends the provider-key
+ * body. The route still takes it and this page still lists and revokes the
+ * row, so `grantCloudModelConsent` sends the dialog's request itself, with
+ * the route's one-time token, and asserts its response. What this test
+ * proves about the revoke control is unchanged.
+ *
+ * SINCE 19 NOVEMBER 2026 (owner decision, G8.5) the route refuses the
+ * provider-key body too, and nothing in the product writes the row. It is a
+ * person's legacy grant, which this page still lists and withdraws, so
+ * `grantCloudModelConsent` seeds it with the service role through the same
+ * database function the door called, for the provider just saved, and
+ * asserts the function's answer. What this test proves about the revoke
+ * control is still unchanged.
+ *
  * WHICH ALSO SETTLES A QUESTION LEFT OPEN. The empty-state copy above says
  * "No cloud-LLM consent grants. None are needed for local models", and it was
  * unclear whether a local grant could land in a list captioned that way. It
  * cannot: `api/chat/route.ts` consults and requires `consent_grants` only
  * inside its `if (!local)` branch, and nothing else inserts into that table.
- * The copy is accurate.
+ * The copy is accurate. (Since G8.5 the chat route reads `consent_grants` not
+ * at all; the own chat's cloud permission is a purpose grant.)
  *
  * AND STEP 2 DID NOT WORK, which is the more valuable half of this. Every
  * question the compatibility panel sent came back 400 `invalid_request`, and
@@ -455,7 +478,7 @@ test("the People settings page says it is not built, and blames no jurisdiction"
 test("/settings/consents processing: the revoke control says Working while its request is in flight", async ({ page }) => {
   const email = `settings-consents-processing-${randomUUID()}@e2e.local`;
   const password = "e2e-settings-consents-processing-pw";
-  await createConfirmedUser(email, password);
+  const accountId = await createConfirmedUser(email, password);
   await signIn(page, email, password);
 
   // The grant this page needs a row for. Both steps assert the RESPONSE, not
@@ -463,7 +486,7 @@ test("/settings/consents processing: the revoke control says Working while its r
   // generic failure the panel shows for anything, so asserting the button
   // alone would have re-proven the bug this fixture found.
   await saveSyntheticCloudProvider(page);
-  await grantCloudModelConsent(page);
+  await grantCloudModelConsent(accountId);
 
   // Now the state under test: one revocable row, and its control held open.
   let release!: () => void;
@@ -551,10 +574,10 @@ test("/settings/data complete: both exit rights render, and the export names wha
 test("/settings/consents complete: the grant names its recipient, its date, its scope and its way out", async ({ page }) => {
   const email = `settings-consents-complete-${randomUUID()}@e2e.local`;
   const password = "e2e-settings-consents-complete-pw";
-  await createConfirmedUser(email, password);
+  const accountId = await createConfirmedUser(email, password);
   await signIn(page, email, password);
   await saveSyntheticCloudProvider(page);
-  await grantCloudModelConsent(page);
+  await grantCloudModelConsent(accountId);
 
   await page.goto("/settings/consents");
   await expect(page.locator("main h1")).toHaveText("Consents");
@@ -733,4 +756,36 @@ test("the chromosomal sex declaration is recorded, read back and withdrawn", asy
   await page.goto("/settings");
   await expect(section.getByRole("radio", { name: "XX", exact: true })).not.toBeChecked();
   await expect(section.getByRole("button", { name: "Remove this", exact: true })).toHaveCount(0);
+});
+
+/**
+ * G8.5 (owner decision of 23 October 2026, "CSRF: build the token
+ * everywhere"): the shell's sign-out is a scripted form that sends the
+ * session's one-time X-Inherit-CSRF token and lands on the sign-in page. A
+ * bare POST from this same origin, with no token, is refused and ends
+ * nothing. A fresh account, so no other test's session is touched.
+ */
+test("the shell's Sign out button ends the session with its one-time token, and a bare request without one is refused", async ({ page }) => {
+  const email = `settings-sign-out-${randomUUID()}@e2e.local`, password = "e2e-settings-sign-out-pw";
+  await createConfirmedUser(email, password);
+  await signIn(page, email, password);
+  await page.goto("/settings");
+  const origin = new URL(page.url()).origin;
+
+  const bare = await page.request.post("/auth/sign-out", { headers: { origin }, maxRedirects: 0 });
+  expect(bare.status()).toBe(403);
+  expect(await bare.json()).toEqual({ error: "request_forbidden" });
+  await page.goto("/settings");
+  await expect(page.locator("main").getByText(email, { exact: true }), "the session survived the bare request").toBeVisible();
+
+  const signedOut = page.waitForResponse(response => new URL(response.url()).pathname === "/auth/sign-out"
+    && response.request().method() === "POST");
+  await page.getByRole("button", { name: "Sign out", exact: true }).click();
+  const response = await signedOut;
+  expect(response.status()).toBe(303);
+  expect(new URL(response.headers()["location"], origin).href).toBe(`${origin}/auth/sign-in`);
+  expect(response.request().headers()["x-inherit-csrf"]).toMatch(/^\d{13}\.[A-Za-z0-9_-]{43}\.[0-9a-f]{64}$/u);
+  await page.waitForURL(`${origin}/auth/sign-in`);
+  await page.goto("/settings");
+  await expect(page).toHaveURL(/\/auth\/sign-in/u);
 });

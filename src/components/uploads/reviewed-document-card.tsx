@@ -2,10 +2,13 @@
 
 import { useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
+import { useCsrf } from "@/components/security/csrf-provider";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { OTHER_ADULT_UPLOAD_COPY as COPY, REVIEWED_DOCUMENT_COPY as DOCUMENT } from "@/copy/upload/other-adult";
 import { sniffDocumentType } from "@/lib/future-person/document-sniff";
+import { readEvidenceSessionCsrf } from "@/lib/security/opened-session-csrf";
+import { csrfHandle } from "@/lib/security/session-csrf-client";
 import { route } from "@/lib/primary-routes";
 import { otherAdultTypedNameIsValid, type ReviewedDocumentTarget } from "@/lib/uploads/other-adult-upload";
 import { day } from "./other-adult-lines";
@@ -40,6 +43,9 @@ export function ReviewedDocumentCard({ target }: { target: ReviewedDocumentTarge
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState(false);
   const [status, setStatus] = useState<DocumentStatus | null>(null);
+  const subjectsCsrf = useCsrf("api.subjects");
+  const consentsCsrf = useCsrf("api.consents");
+  const documentSessionCsrf = useCsrf("api.legal-evidence-upload-session");
 
   const card = (children: ReactNode, slot: string) => <article className="surface surface-pad rec-stack" data-slot={slot}>
     <h3 className="title">{target.label} · {COPY.requestedOn(day(target.requestedAt))}</h3>{children}
@@ -62,15 +68,15 @@ export function ReviewedDocumentCard({ target }: { target: ReviewedDocumentTarge
       if (!otherAdultTypedNameIsValid(typedName)) { setNameError(true); return; }
       setBusy(true); setFailed(false);
       try {
-        const response = await fetch(route("api.consents"), {
+        const response = await consentsCsrf.send((csrfToken) => fetch(route("api.consents"), {
           method: "POST", credentials: "same-origin", cache: "no-store",
-          headers: { "content-type": "application/json", "x-inherit-csrf": consent!.token },
+          headers: { "content-type": "application/json", "x-inherit-csrf": csrfToken },
           body: JSON.stringify({
             action: "sign-artifact", signatureClass: "tier2", subjectDraftId: target.subjectId,
             artifactVersion: consent!.version, artifactPresentationToken: consent!.token, affirmed: true,
             statementKeys: consent!.statements.map((statement) => statement.key), typedName: typedName.trim(),
           }),
-        });
+        }));
         // Read to the end, so no response is left open behind the refresh.
         await response.arrayBuffer().catch(() => null);
         if (response.status !== 201) throw new Error("not_signed");
@@ -100,12 +106,12 @@ export function ReviewedDocumentCard({ target }: { target: ReviewedDocumentTarge
         const mediaType = sniffDocumentType(bytes);
         if (!mediaType) return setStatus("type");
         const sha256 = hex(await crypto.subtle.digest("SHA-256", bytes));
-        const opened = await fetch("/api/legal-evidence/upload-session", {
+        const opened = await documentSessionCsrf.send((csrfToken) => fetch("/api/legal-evidence/upload-session", {
           method: "POST", credentials: "same-origin", cache: "no-store",
-          headers: { "content-type": "application/json", "x-inherit-csrf": token },
+          headers: { "content-type": "application/json", "x-inherit-csrf": csrfToken, "x-inherit-operation-nonce": token },
           body: JSON.stringify({ documentKind: "adult-signed-permission", subjectDraftId: target.subjectId, mediaType,
             sizeBytes: bytes.length, sha256 }),
-        });
+        }));
         if (opened.status === 422) {
           const issues = ((await opened.json().catch(() => null)) as { issues?: unknown } | null)?.issues;
           return setStatus(Array.isArray(issues) && issues.includes("capacity") ? "limited" : "failed");
@@ -113,23 +119,27 @@ export function ReviewedDocumentCard({ target }: { target: ReviewedDocumentTarge
         if (opened.status === 403 || opened.status === 404) return setStatus("expired");
         if (opened.status !== 201) return setStatus("failed");
         const session = ((await opened.json()) as { session: string }).session;
-        const csrf = opened.headers.get("x-inherit-csrf") ?? "";
+        // The evidence session's first values (the chunk stream's one value and the
+        // completion's first one-time token); the answer's x-inherit-csrf is the account session's successor (G8.5).
+        const csrf = readEvidenceSessionCsrf(opened.headers);
+        if (!csrf) return setStatus("failed");
+        const completion = csrfHandle(csrf.complete);
         const completeNonce = opened.headers.get("x-inherit-complete-nonce") ?? "";
         const chunkCount = Math.ceil(bytes.length / CHUNK_BYTES);
         for (let sequence = 0; sequence < chunkCount; sequence++) {
           const sent = await fetch(`/api/evidence/${session}/chunks/${sequence}`, {
             method: "PUT", credentials: "same-origin", cache: "no-store",
-            headers: { "content-type": "application/octet-stream", "x-inherit-csrf": csrf },
+            headers: { "content-type": "application/octet-stream", "x-inherit-csrf": csrf.chunk },
             body: bytes.slice(sequence * CHUNK_BYTES, (sequence + 1) * CHUNK_BYTES),
           });
           if (sent.status !== 204) return setStatus(sent.status === 404 ? "expired" : "integrity");
         }
         for (let poll = 0; poll < POLLS; poll++) {
-          const done = await fetch(`/api/evidence/${session}/complete`, {
+          const done = await completion.send((token) => fetch(`/api/evidence/${session}/complete`, {
             method: "POST", credentials: "same-origin", cache: "no-store",
-            headers: { "content-type": "application/json", "x-inherit-csrf": csrf },
+            headers: { "content-type": "application/json", "x-inherit-csrf": token },
             body: JSON.stringify({ chunkCount, nonce: completeNonce }),
-          });
+          }));
           if (done.status === 201) { setStatus("received"); router.refresh(); return; }
           if (done.status === 422) {
             const reason = ((await done.json().catch(() => null)) as { reason?: string } | null)?.reason;
@@ -163,17 +173,17 @@ export function ReviewedDocumentCard({ target }: { target: ReviewedDocumentTarge
   }
 
   if (target.state === "awaiting-request" && target.finalize && target.documentId && target.legalReviewId) {
-    const { nonce, csrf } = target.finalize;
+    const { nonce } = target.finalize;
     const documentId = target.documentId, legalReviewId = target.legalReviewId;
     async function request() {
       setBusy(true); setFailed(false);
       try {
-        const response = await fetch("/api/subjects", {
+        const response = await subjectsCsrf.send((csrfToken) => fetch("/api/subjects", {
           method: "POST", credentials: "same-origin", cache: "no-store",
-          headers: { "content-type": "application/json", "x-inherit-csrf": csrf },
+          headers: { "content-type": "application/json", "x-inherit-csrf": csrfToken },
           body: JSON.stringify({ subjectDraftId: target.subjectId, permissionEvidenceDocumentId: documentId,
             legalReviewId, nonce }),
-        });
+        }));
         // subject-created-v1 is the same for every address; anything else is a failure.
         const receipt = (await response.json().catch(() => null)) as { status?: unknown; next?: unknown } | null;
         if (response.status !== 202 || receipt?.status !== "received" || receipt.next !== "awaiting_subject_confirmation") {

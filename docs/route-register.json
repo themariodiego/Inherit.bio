@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "baselineSha": "864736979c92a08ba77e8580d61946eba6864918",
-  "briefSha256": "d1d98666febfacc5ae7214e533cb51dd8ef23bd99c5cfa7f1e663d4951557fa4",
+  "briefSha256": "021616b28bdc44c4981ffb330ff418b888829e50046932e8a6d08f0bdc91caf2",
   "canonicalOrigin": "https://inherit.bio",
   "originAliases": [
     {
@@ -127,6 +127,14 @@
         "source": "open-locally-in-ephemeral-memory-with-no-filesystem-extraction; the-exact-contained-DNA-file-is-the-source-for-the-existing-hash-lease-storage-finalization-preparation-and-original-download-contracts; ZIP-container-names-comments-and-extra-metadata-are-not-sent-or-saved",
         "disclosure": "before-file-selection-say-that-only-the-file-inside-is-saved-and-display-the-archive-and-contained-file-bound; normal-server-format-and-single-sample-validation-remain-authoritative",
         "adr": "docs/adr/0031-own-upload-zip-preflight.md"
+      },
+      "ownReadCallingPreflight": {
+        "scope": "TEST-LOCAL-only (readCallingBuilt() = isTestJurisdictionEnabled()); own-subject-browser-file-picker-only; production-keeps-the-browser-refusal-before-issuance-with-OWN_UPLOAD_COPY.sequenceReadsUnavailable",
+        "input": "one-BAM-or-one-CRAM-3.x-with-raw-gzip-or-rANS4x8-blocks-plus-its-reference-FASTA; reads-aligned-to-GRCh38-by-the-file's-own-sequence-dictionary; anything-else-is-refused-on-the-device-before-any-network-request",
+        "calling": "targeted-genotype-calling-at-data/ref/read-calling-loci.json-only (report, ancestry and carrier single-letter GRCh38 positions); thresholds-in-src/lib/genome/reads/thresholds.ts-are-engineering-defaults-pending-scientific-review; a-position-with-no-read-is-not-listed; too-few-or-unclear-reads-are-./.",
+        "source": "the-reads-and-the-reference-never-leave-the-device-and-are-never-stored; the-called-single-sample-VCF-is-the-only-source-for-the-existing-declaration-hash-lease-storage-finalization-normalization-and-original-download-contracts; no-server-format-limit-or-declared-format-changes",
+        "provenance": "the-VCF-header-names-Inherit's-read-caller-and-its-thresholds; under-TEST-LOCAL-only-the-normalization-records-a-closed-readCalls-object-for-that-exact-header-and-read_own_input_sources_v1-projects-it (20261022110000)",
+        "adr": "docs/adr/0038-test-local-read-calling.md"
       },
       "serverPreflight": "independently-sniff-the-first-decoded-bytes-before-parse-and-never-trust-extension-content-type-or-browser-result; after-an-embryo-ingest-session-and-its-due-phase-exist-any-terminal-format-or-header-failure-dispatches-policyResolvers.embryo-ingest-session-v1.attemptFailure-and-never-deletes-the-session-due-target-or-fragments-first",
       "selfOrAdultBypass": "if-a-PDF-or-unsupported-file-bypasses-browser-preflight-delete-the-object-set-the-file-error-and-return-file-processing-v1.pdf-415-with-zero-derived-row",
@@ -2188,7 +2196,8 @@
             "copilot-transport-unavailable-v1",
             "copilot-denial-v1",
             "copilot-refusal-v1",
-            "embryo-closed-schema-v1"
+            "embryo-closed-schema-v1",
+            "own-chat-scientific-correction-v1"
           ],
           "api.chat-history": [
             "copilot-transport-unavailable-v1",
@@ -2392,6 +2401,7 @@
         }
       },
       "authenticatedTransaction": "consume-the-rights-session-operation-nonce-lock-the-pending-invitation-contact-HMAC-global-bar-and-exact-reserved-draft-and-recheck-no-live-refusal-bar-zero-preactivation-subject-file-source-or-upload-revision; select-exactly-one-immutable-flow-branch: path-a-own-account-consumes-the-reserved-draft-UUID-into-one-other_adult-subject-with-owner_account_id-equals-subject_account_id-equals-auth.uid()-upload_class-other_adult-and-zero-inviter-uploader-grantee-file-or-upload-authority; path-b-subject-esignature-consumes-the-reserved-draft-UUID-into-one-other_adult-subject-with-owner_account_id-equal-to-the-immutable-draft-uploader-and-subject_account_id-auth.uid()-and-current-evidence_kind-esignature; path-b-reviewed-document-rechecks-the-exact-current-approved-document-hash-review-and-evidence-revisions-then-consumes-that-reserved-draft-UUID-into-one-other_adult-subject-with-owner_account_id-equal-to-the-immutable-draft-uploader-subject_account_id-auth.uid()-and-current-evidence_kind-uploaded_document; record-the-current-subject-artifact-and-own-jurisdiction-increment-the-subject-binding-revision-once-terminalize-the-invitation-start-adult.acceptance-hold-72h-only-when-a-server-owned-auth-account-creation-binding-proves-this-account-was-created-from-this-exact-invitation-start-adult.re-notice-30d-for-every-account-acceptance-and-enqueue-the-required-subject-notices-atomically; accountBindingUploadRevisionTransition-is-inapplicable-because-every-branch-has-zero-preactivation-revisions; an-existing-account-has-no-72-hour-hold; path-b-owner-transfer-remains-a-separate-operation-but-path-a-ownership-is-established-here; any-bar-address-flow-target-artifact-jurisdiction-document-review-outbox-owner-or-binding-conflict-rolls-back",
+      "accountOriginBinding": "registered-2026-11-20-G8.5-where-the-register-is-stricter-engineering-codes-to-it-(owner-decision-2026-11-19;D-141;20261120120000): the-server-owned-auth-account-creation-binding-is-read-inside-the-account-acceptance-transaction-from-the-accepting-account's-auth.users.created_at-and-this-exact-invitation's-issuance-time-and-never-from-the-request; only-an-account-the-auth-row-shows-existed-before-this-invitation-was-issued-is-an-existing-account, and-every-other-account-including-one-with-no-recorded-creation-time-is-treated-as-created-from-this-invitation; the-transaction-starts-adult.re-notice-30d-for-every-account-acceptance-and-adult.acceptance-hold-72h-only-for-an-account-treated-as-created-from-this-invitation, each-as-one-retention-row-on-the-accepted-invitation-with-its-one-registered-notice-enqueue-phase-whose-fixed-deadline-is-acceptance-plus-72-hours-or-plus-30-days, and-the-re-notice-phase's-immutable-envelope-records-the-origin-and-the-two-times-it-was-decided-from; api.invitation-accept-answers-invitation-accepted-v1-from-that-record; the-noAccountTransaction-starts-no-adult.re-notice-30d-yet",
       "accountBindingUploadRevisionTransition": {
         "confirmed": "carry-a-confirmed-revision-to-the-new-binding-revision-only-when-the-locked-confirming-principal-is-proven-continuous-with-the-invited-subject-account-through-the-exact-current-invitation-contact-and-subject-artifact-and-preserve-its-immutable-upload-revision-id-confirmed_at-file-hash-fixed-deadline-and-confirmation-provenance; otherwise-fail-the-whole-acceptance",
         "pending": "preserve-pending-state-upload-revision-id-file-binding-and-fixed-deadline-rebind-authority-to-the-new-subject-account-and-binding-revision-revoke-every-old-adult-upload-confirmation-hash-candidate-rights-session-and-nonce-and-enqueue-exactly-one-new-clamped-candidate-per-pending-revision-to-the-account-contact-in-the-same-transaction",
@@ -2472,7 +2482,7 @@
       ]
     },
     "other-adult-mitigation-state-v1": {
-      "subjectSource": "the-exact-server-resolved-other_adult-subject-its-confirmation-principal-account-binding-invitation-origin-session-acceptance-clock-notice-delivery-and-retention-revisions",
+      "subjectSource": "the-exact-server-resolved-other_adult-subject-its-confirmation-principal-account-binding-invitation-origin-session-acceptance-clock-notice-delivery-and-retention-revisions; registered-2026-11-22-D-154-both-path-b-flows-(20261122170000): a-path-b-subject-is-resolved-through-the-accepted-invitation-of-its-confirmed-draft-of-either-path-b-flow (path-b-subject-esignature-or-path-b-reviewed-document), so-a-reviewed-document-subject-gets-the-same-hold-re-notice-release-no-account-and-subjectOwnRightsBypass-answers-as-an-e-signature-subject-at-every-checkpoint-instead-of-not-found; registered-2026-11-22-D-165-every-path-b-reader-(20261122180000): the-readers-behind-these-checkpoints-resolve-a-path-b-subject-the-same-way (the-person's-choices-and-sharing-with-the-uploader, the-uploader's-shares-and-saved-results, the-held-files, the-uploader's-one-record-copilot, the-account-export-of-the-record-and-of-the-whole-account-before-and-after-a-transfer, the-held-upload-job-and-the-purged-grant-cleanup, account-deletion's-refusal-of-a-grant-on-the-record, and-the-public-appeal's-resolution-of-a-subject-objection): each-takes-a-confirmed-draft-of-either-path-b-flow-exactly-where-it-took-a-confirmed-e-signature-draft; a-reviewed-document-draft-is-confirmed-only-once-its-person-confirmed-a-request-bound-to-the-named-reviewer's-approval-of-the-exact-document, so-a-request-not-answered, a-document-approved-but-never-sent-and-a-refused-document-reach-none-of-them",
       "cases": {
         "account-created-from-invitation": "deny-analysis-and-derived-read-until-adult.acceptance-hold-72h-has-ended-and-the-independent-boundary-notice-has-provider-submission-acceptance-or-named-human-reviewed-undeliverability",
         "all-class-b-re-notice": "at-the-fixed-adult.re-notice-30d-boundary-deny-every-further-uploader-or-grantee-analysis-derived-read-export-download-or-model-retrieval-until-provider-submission-acceptance-or-named-human-reviewed-undeliverability-commits-with-no-deadline-extension",
@@ -2493,6 +2503,7 @@
         "every-download-chunk"
       ],
       "subjectOwnRightsBypass": "an-adult-subjects-own-current-account-session-or-current-non-account-subject-control-session-may-always-read-the-closed-rights-projection-export-refuse-or-delete-its-own-data-despite-a-notice-delivery-failure-or-hold; this-bypass-never-authorizes-an-uploader-grantee-analysis-model-or-share-operation-and-every-current-lifecycle-and-upload-revision-binding-still-applies",
+      "invitedAdultOwnRecordInviterReads": "registered-2026-11-22-the-72-hour-hold-covers-an-inviter's-reads-of-the-invited-adult's-own-record-(owner-decision-2026-11-22;D-156;20261122110000): for-a-path-a-account-acceptance-the-same-adult.acceptance-hold-72h-and-adult.re-notice-30d-state-also-binds-the-inviter's-reads-of-the-invited-adult's-own-self-subject: until-72-hours-after-acceptance-and-the-second-notice's-provider-submission-acceptance-when-the-account-was-treated-as-created-from-the-invitation, and-from-the-30-day-boundary-until-the-re-notice's-provider-submission-acceptance-for-every-account-acceptance, every-family-recipient-read-of-that-subject-by-the-inviter (reports-and-their-confirmation, ancestry, the-inviter's-inbound-family.heritability-direction, the-inviter's-side-of-a-family.portrait-pair, raw.browse-and-every-page-built-on-the-family-graph) and-both-copilot-scopes (the-family-group-member-and-the-subject:adult-grantee-layers, their-conversation-history-unreadable-and-unlisted-with-nothing-deleted) answer-exactly-as-when-nothing-is-shared-with-no-gate-or-reason-shown; the-adult's-own-reads-and-rights (their-own-view-of-a-pair-included), every-other-grantee's-reads, a-path-b-subject-and-its-uploader and-the-inviter's-reads-of-any-other-subject-are-unchanged; a-notice-that-never-reaches-provider-submission-acceptance-keeps-the-inviter's-reads-closed, an-acceptance-recorded-before-20261120120000-keeps-the-creation-time-comparison-and-is-never-released, and-when-a-clock-clears-the-reads-resume-with-no-queued-work; registered-2026-11-22-D-156-the-inviter's-own-account-archive-is-held-too-(20261122140000): the-native-complete-archive's-recipient-branch (export.share-link-and-raw.export, read-through-account_archive_complete_subjects_v1, account_archive_complete_subject_authority_v1, account_archive_export_recipient_v1-and-account_archive_raw_authority_v1) answers-the-held-inviter-exactly-as-with-no-grant: the-subject-is-not-listed-through-its-grants-to-the-inviter, a-subject-listed-by-another-link (a-family-pair) is-excluded-as-export-recipient-consent-required-with-no-raw-authority, and-the-recipient-and-raw-authorities-answer-not_found; an-archive-queued-building-or-ready-when-a-hold-or-a-due-reminder-starts-is-refused-at-build, readiness, delivery, every-manifest-page-and-every-chunk-issue-and-acknowledgement-by-its-existing-authority-receipt-currentness, and-is-current-again-with-no-job-run-when-the-clock-clears; the-preserved-account-export-already-refuses-any-account-holding-a-live-recipient-grant-and-is-unchanged; registered-2026-11-22-D-156-the-inviter's-own-class-of-grants-received-leaves-out-the-held-adult's-grants-(20261122170000): the-directional_grants-class-of-the-account-export-and-archive (private.export_account_class_projection_v1-and-every-caller: the-class-inventory, the-legacy-classes, the-complete-archive's-class-census-source-and-class-rows, the-subject-and-scoped-class-projections) lists-no-grant-whose-subject-the-reading-account-is-held-from, so-the-held-inviter's-export-carries-no-trace-of-the-adult's-grants (no-grant-id-revision-status-or-time), exactly-as-with-no-grant-and-as-the-family-permissions-page-shows-them-off; every-other-class, and-that-class-for-every-account-not-held, is-unchanged",
       "failure": "zero-uploader-or-grantee-protected-fetch-source-read-derived-row-serialization-export-download-model-call-or-new-job-and-return-the-routes-registered-consent-required-or-opaque-not-found-contract-without-blocking-subjectOwnRightsBypass",
       "contracts": [
         "adult-subject-confirmation-v1",
@@ -2912,7 +2923,7 @@
       "targetResolution": "only-a-named-human-reviewer-with-MFA-recent-auth-and-an-operation-specific-assignment-may-compare-the-current-finalized-kind-bound-documents-and-resolve-exactly-one-immutable-target-kind-target-id-principal-id-source-or-cohort-revision-and-evidence-revision; zero-multiple-conflicting-expired-cross-case-or-cross-kind-matches-are-non-approvable",
       "provisionalTargetResolver": {
         "authority": "pre-review-hold-target-selection-only-and-never-final-target-resolution-or-evidence-approval",
-        "subject-objection": "constant-time-match-only-the-activated-random-case-principals-current-verified-intake-contact-versioned-HMAC-to-exactly-one-current-adult-subject-confirmation-contact-HMAC-under-locked-case-contact-principal-subject-authority-and-lifecycle-revisions",
+        "subject-objection": "constant-time-match-only-the-activated-random-case-principals-current-verified-intake-contact-versioned-HMAC-to-exactly-one-current-adult-subject-confirmation-contact-HMAC-under-locked-case-contact-principal-subject-authority-and-lifecycle-revisions; registered-2026-11-22-D-166-the-person's-objection-keeps-its-record-(owner-decision-2026-11-22;20261122200000): a-path-b-reviewed-document-subject's-confirmation-stays-current-for-this-match-after-its-approved-document's-legal-evidence.adult-permission-24mo-retention-ends, exactly-as-a-path-b-subject-esignature-subject's (the-recheck-reads-the-record's-own-confirmation-not-the-uploader's-upload-basis), so-an-objection-from-the-person's-own-confirmation-contact-still-resolves-to-and-provisionally-holds-that-record",
         "genetic-parent-objection": "constant-time-match-only-that-same-current-case-contact-HMAC-to-exactly-one-current-evidenced-genetic-parent-contact-relation-and-from-that-relation-to-one-whole-current-parent-controlled-cohort-under-locked-case-contact-principal-parent-relation-cohort-basis-and-lifecycle-revisions",
         "forbiddenSelectors": [
           "subjectReference",
@@ -3312,11 +3323,6 @@
           "requiredGrantContract": "raw-export-grant-v1",
           "grantApplication": "required-only-for-an-uploader-or-grantee; an-own-subject-account-needs-no-grant",
           "projection": "exact-subject-variants-only"
-        },
-        "raw-variant-region-read": {
-          "requiredGrantContract": "raw-export-grant-v1",
-          "grantApplication": "required-only-for-an-uploader-or-grantee; an-own-subject-account-needs-no-grant",
-          "projection": "exact-subject-and-requested-region-only"
         }
       }
     },
@@ -3356,7 +3362,7 @@
               ],
               "flowBasisCases": {
                 "path-b-subject-esignature-completed": "the-subject-row-retains-immutable-adult_flow-path-b-subject-esignature-and-evidence_kind-esignature-and-is-bound-to-one-current-terminally-completed-non-account-or-account-subject-confirmation-principal-artifact-and-confirmation-revision; a-pending-invitation-or-draft-is-never-sufficient",
-                "path-b-reviewed-document": "the-subject-row-retains-immutable-adult_flow-path-b-reviewed-document-and-evidence_kind-uploaded_document-the-exact-adult-signed-permission-document-plus-current-named-human-approved-review-revisions-remain-current-and-the-subject-is-bound-to-one-current-terminally-completed-non-account-or-account-subject-confirmation-principal-artifact-and-confirmation-revision; api.subjects-receipt-or-a-hidden-pending-invitation-is-never-sufficient",
+                "path-b-reviewed-document": "the-subject-row-retains-immutable-adult_flow-path-b-reviewed-document-and-evidence_kind-uploaded_document-the-exact-adult-signed-permission-document-plus-current-named-human-approved-review-revisions-remain-current-and-the-subject-is-bound-to-one-current-terminally-completed-non-account-or-account-subject-confirmation-principal-artifact-and-confirmation-revision; api.subjects-receipt-or-a-hidden-pending-invitation-is-never-sufficient; registered-2026-11-22-D-166-the-person-keeps-their-own-access-(owner-decision-2026-11-22;20261122190000): the-approved-document-remaining-current-under-legal-evidence.adult-permission-24mo-binds-only-the-uploader-at-every-checkpoint (its-upload-sessions-finalization-and-upload-card, its-saved-results-and-every-report-of-a-layer-shared-with-it, and-its-one-record-copilot); once-that-retention-ends the-confirmed-person's-own-saved-results (with-the-source-reads-and-derived-writes-they-need) and-their-export-of-the-record-and-of-their-whole-account continue-exactly-as-for-path-b-subject-esignature-completed",
                 "path-a-own-account": "absolute-deny-to-the-inviter-uploader-or-any-grantee; only-the-own-subject-account-case-may-upload",
                 "pending-or-barred": "absolute-deny-with-the-same-opaque-nonauthorizing-state"
               }
@@ -4960,7 +4966,8 @@
                   "cloudProvider": "absolute-deny"
                 }
               },
-              "conjunctionAndRevisionBinding": "copilot.local-is-required-in-addition-to-every-selected-projection-purpose-or-raw-export-grant-and-all-grant-subject-recipient-relationship-and-mitigation-revisions-bind-the-context-token-message-provenance-and-history-row-and-are-rechecked-before-every-retrieval-model-call-and-history-read"
+              "conjunctionAndRevisionBinding": "copilot.local-is-required-in-addition-to-every-selected-projection-purpose-or-raw-export-grant-and-all-grant-subject-recipient-relationship-and-mitigation-revisions-bind-the-context-token-message-provenance-and-history-row-and-are-rechecked-before-every-retrieval-model-call-and-history-read",
+              "builtProjections": "registered-2026-11-20-G8.5-copilot-for-another-adult's-record-opens-(owner-decision-2026-11-19;20261120130000): built-on-a-local-provider-only-for-two-relationships-and-the-reports-projection-only; uploader-is-a-confirmed-path-b-other_adult-subject-the-acting-account-owns-whose-subject_account_id-is-the-person's-own-account; grantee-is-another-account's-own-self-subject-whose-person-the-acting-account-reads-through-a-current-family_member-relationship (the-family-graph's-dataSubjectId); in-order-other-adult-mitigation-state-v1-at-model-context-before-retrieval-for-an-other_adult-subject (the-resolver-has-no-case-for-a-self-subject-and-the-family-recipient-reader-has-never-asked-it), then-copilot.local-signed-by-the-exact-current-adult-subject-principal-to-this-recipient-over-the-current-uploader-or-family_member-relationship-and-revision, then-each-report-layer's-own-purpose-read-through-that-relationship's-existing-recipient-reader-(saved-reports-only); the-ancestry-and-variants-projections-are-not-built-and-no-tool-reads-them-although-this-case-permits-them-with-their-further-grants; every-turn-pair-records-the-subject-in-retrieved_subject_ids-and-copilot.local-plus-each-layer-read-in-retrieved_purpose_keys-with-one-copilot_turn_dependencies-row-per-subject-grant-and-source; cloudProvider-stays-absolute-deny; registered-2026-11-22-the-72-hour-hold-covers-an-inviter's-reads-of-the-invited-adult's-own-record-(owner-decision-2026-11-22;D-156;20261122110000): since-20261122110000-the-family-recipient-reader-asks-other-adult-mitigation-state-v1.invitedAdultOwnRecordInviterReads-for-a-self-subject, so-while-it-holds-the-acting-account-as-the-inviter-of-the-subject's-path-a-acceptance-no-report-layer-is-readable, the-grantee-case-is-permission-missing, and-its-conversations-are-unreadable-and-unlisted-with-nothing-deleted"
             }
           }
         },
@@ -5366,7 +5373,7 @@
       "readingScreens": "TEST-LOCAL-existing-genome.reports-and-genome.report-routes-use-only-current-queued-saved-results-for-confirmed-Path-B-subjects; metadata-has-no-genetics; uploader-must-pass-the-existing-session-Tier-2-gate-before-capture; a-server-only-digest-covers-the-exact-current-session-subject-purpose-grant-full-binding-source-catalog-and-result-projection-and-is-recomputed-under-the-existing-authority-locks-as-the-last-awaited-operation-before-serialization; no-ordinary-own-legacy-source-fallback-and-no-raw-ancestry-or-Copilot-authority-is-created",
       "normalizationQueue": "bounded-oldest-first-admission-terminalizes-only-an-exact-queued-normalization-job-whose-current-authority-no-longer-matches-its-immutable-snapshot-before-any-genetic-source-read; proceeds-to-the-next-current-job-within-the-same-100-row-limit; internal-errors-abort-and-no-stale-admission-publishes-or-grants-permission",
       "revocation": "revoke-supersede-or-end-the-exact-purpose-or-direction-cancels-its-queued-running-job-and-deletes-its-private-staged-and-completed-result-in-the-same-transaction; source-disposition-and-account-removal-cascade-the-binding; no-replay-revives-a-revoked-result",
-      "unimplementedMitigations": "adult.non-account-holder-24mo-adult.acceptance-hold-72h-and-adult.re-notice-30d-remain-closed-without-their-required-current-evidence",
+      "unimplementedMitigations": "adult.non-account-holder-24mo-adult.acceptance-hold-72h-and-adult.re-notice-30d-remain-closed-without-their-required-current-evidence; registered-2026-11-20-G8.5-where-the-register-is-stricter-engineering-codes-to-it-(owner-decision-2026-11-19;D-141;20261120120000): for-an-account-acceptance-both-now-have-their-evidence: the-uploader-is-held-until-72-hours-after-acceptance-and-the-second-notice's-provider-submission-acceptance-when-the-account-was-treated-as-created-from-the-invitation, and-from-the-30-day-boundary-until-the-re-notice's-provider-submission-acceptance; the-normalization-authority-leaves-the-30-day-boundary-to-other-adult-mitigation-state-v1; named-human-reviewed-undeliverability-and-the-no-account-re-notice-are-not-built-so-those-cases-stay-closed",
       "contracts": [
         "analysis-eligibility-v1",
         "worker-job-enqueue-v1",
@@ -8091,6 +8098,7 @@
     },
     "subject-ownership-transfer-v1": {
       "eligibleSubject": "adult-subject-with-a-server-verified-subject_account_id-equal-to-the-acting-account",
+      "uploaderWithdrawalActorCase": "registered-2026-11-22-owner-decision-an-uploader's-withdrawal-hands-a-record-its-adult-holds-to-that-adult: a-second-actor-case-besides-eligibleSubject: the-owning-uploader's-withdrawal-of-its-other-adult-uploader-consent.upload-other-adult-sent-as-api.subject-delete's-adult-case-to-withdraw_other_adult_upload_v1-for-a-confirmed-active-path-b-record-whose-server-verified-subject_account_id-is-the-adult's-own-account-runs-this-transfer-on-the-uploader's-act: the-record-and-the-files-the-adult-confirmed-move-to-that-account-under-every-rule-of-this-contract; every-file-the-adult-has-not-confirmed-is-deleted-as-withdrawn; the-uploader's-upload_class-consent-is-marked-withdrawn-and-kept; the-uploader-keeps-no-access; the-adult-is-told-through-this-contract's-notices; registered-2026-11-22-transfer-open: the-transfer-and-this-case-are-open-since-migration-20261122120000 (owner-decision-of-2026-11-22-the-transfer-notices-are-approved-with-one-added-line-and-the-transfer-is-switched-on), and-the-three-notices-carry-their-approved-wording",
       "databaseTransaction": "atomically-lock-the-subject-and-every-current-file-object-reference-set-subjects.owner_account_id-to-subject_account_id-rebind-only-the-subjects-files-and-closed-subject-derived-result-rows-cancel-former-owner-jobs-and-create-one-idempotent-object-relocation-row-per-exact-object-with-object-id-old-owner-new-owner-subject-transfer-revision-expected-source-object-version-size-and-sha256; preserve-every-immutable-consent-signature-attestation-and-audit-provenance-row-with-its-original-principal-and-write-nothing-unless-every-relocation-row-enqueues",
       "conversations": "never-reassign-chats-or-chat_messages-because-they-contain-the-former-accounts-authored-and-joint-context; revoke-them-immediately-and-delete-subject-retrieving-rows-under-derived.revocation-60s",
       "oldOwnerAccess": "revoke-in-the-same-transaction-every-prior-owner-grant-and-invalidate-download-chat-upload-and-generated-export-credentials; create-or-require-new-subject-owned-current-grants-for-any-later-access-never-rebind-an-old-signature",
@@ -8131,6 +8139,7 @@
       "prefixIds": [
         "storage.subject-v2",
         "storage.cohort-v2",
+        "storage.prepared-v1",
         "storage.raw-legacy"
       ],
       "authenticatedSelect": "deny-for-new-and-legacy-objects",
@@ -8379,10 +8388,11 @@
         "transportAvailabilityResolver": "copilot-transport-availability-v1"
       },
       "api.browse-region": {
-        "targetSource": "required-closed-POST-body.subject-resolved-before-region-validation-and-joined-to-the-subject-row",
-        "operation": "raw-variant-region-read",
-        "resolver": "subject-route-v1",
-        "transport": "subject-region-cursor-and-nonce-never-URL-query-path-log-analytics-trace-error-referrer-or-audit-detail"
+        "registeredBy": "owner-decision-2026-11-19-G8.5-the-genome-browser's-read-is-registered-as-built",
+        "targetSource": "required-closed-POST-body.file-read-under-the-acting-account's-own-Supabase-session-with-no-service-role-and-no-subject-resolver",
+        "operation": "own-variant-region-read",
+        "authorization": "public.user_variants-row-level-security-alone: policy-user_variants_select_own-admits-a-row-only-when-its-user_id-is-the-acting-account-and-its-file-is-not-a-file-of-an-other_adult-subject (private.is_path_b_file_v1, 20260930231000_path_b_normalization.sql); a-file-whose-rows-the-caller-cannot-read-answers-an-empty-variants-list-and-never-another-account's-row",
+        "transport": "file-and-region-never-URL-query-path-log-analytics-trace-error-referrer-or-audit-detail"
       },
       "api.file-download": {
         "targetSource": "route-file-row-joined-to-subject-or-cohort",
@@ -8450,6 +8460,10 @@
       "api.family-acknowledge": {
         "targetSource": "acting-account-and-for-the-portrait-case-the-exact-subject-whose-subject_account_id-is-the-acting-account",
         "operation": "family-acknowledgement-write"
+      },
+      "api.embryo-acknowledge": {
+        "targetSource": "acting-account-and-its-current-auth-session",
+        "operation": "embryo-gate-acknowledgement-cookie"
       },
       "api.family-sharing": {
         "targetSource": "route-family-person-resolved-through-the-family-graph-to-exactly-one-counterpart-account-and-every-grant-relationship-and-pair-between-the-two-accounts",
@@ -9149,6 +9163,7 @@
         "auth.forgot-password-submit",
         "api.subjects",
         "api.invitations",
+        "api.subject-drafts",
         "api.rights-activate",
         "api.rights-reissue",
         "api.subject-access-request",
@@ -9264,7 +9279,9 @@
     "authCallback": [
       "auth.callback"
     ],
-    "antiFramingRule": "every-authenticated-user-data-reviewer-token-rights-download-export-auth-recovery-and-callback-response-including-errors-and-redirects-must-carry-frame-ancestors-none-and-X-Frame-Options-DENY; a-route-bound-to-multiple-profiles-uses-the-strict-union"
+    "antiFramingRule": "every-authenticated-user-data-reviewer-token-rights-download-export-auth-recovery-and-callback-response-including-errors-and-redirects-must-carry-frame-ancestors-none-and-X-Frame-Options-DENY; a-route-bound-to-multiple-profiles-uses-the-strict-union",
+    "wholeRouteReferrerRule": "registered-2026-11-19-G8.5-the-strictest-referrer-setting-applies-to-the-whole-route: an-endpoint-under-/api/-that-a-profile-above-with-Referrer-Policy-no-referrer-binds-or-to-which-responseContractBindings.routes-binds-a-response-contract-whose-headers-name-no-referrer-sends-Referrer-Policy-no-referrer-on-every-answer-including-its-errors-and-the-proxy's-own-refusals-and-not-only-on-the-answers-that-profile-or-contract-describes; its-other-headers-are-still-the-ones-its-profiles-and-contracts-name (D-138-b-and-c)",
+    "wholeRouteReferrerRuleOutsideApi": "registered-2026-11-19-G8.5-the-strictest-referrer-setting-applies-to-the-whole-route, for-pages-and-for-endpoints-outside-/api/ (under-Register-amendments-that-only-describe-decided-behaviour): a-page-or-an-endpoint-outside-/api/-that-a-profile-above-with-Referrer-Policy-no-referrer-binds-or-to-which-responseContractBindings.routes-binds-a-response-contract-whose-headers-name-no-referrer-sends-Referrer-Policy-no-referrer-on-every-answer-including-its-not-found-error-and-redirect-answers-and-the-proxy's-own-redirects-rewrite-and-refusals-and-not-only-on-the-answers-that-profile-or-contract-describes-because-the-proxy-sets-the-policy-before-the-page-chooses-its-answer; its-other-headers-are-still-the-ones-its-profiles-and-contracts-name; authenticated-page-signin-redirect-v1-is-the-proxy's-own-answer-so-every-redirect-to-auth.sign-in-carries-no-referrer-exactly-and-it-does-not-change-the-Referrer-Policy-of-the-page's-other-answers (D-138-d); registered-2026-11-22-G8.5 (owner decision: twenty signed-in pages keep same-origin; the not-found contract's header binds its own answer): a-response-contract-bound-to-a-page-through-resourceAuthorizationBindings (failureContractBySurface.page, mirrored-in-responseContractBindings.resourceAuthorizationBindings.page: resource-not-found-page-v1) sets-its-headers-on-the-answer-it-describes, the-page's-not-found-answer, only, and-not-on-every-answer-of-the-page; this-rule-does-not-read-that-binding, so-a-page-it-binds-whose-other-statements-name-no-referrer-for-no-answer keeps-on-its-other-answers-the-Referrer-Policy-those-statements-give-them (same-origin-for-an-authenticated-page)"
   },
   "observabilityCodeRegistries": {
     "featureBlockedOperationIds": [
@@ -9779,6 +9796,17 @@
         "routeFrom": "app.overview"
       }
     },
+    "authServiceUnavailable": {
+      "registeredBy": "owner-decision-2026-11-19-a-brief-failure-of-the-sign-in-service-is-not-treated-as-signed-out",
+      "appliesTo": "every-page-contractDefaults-binds-to-authenticatedSignedOut-and-the-two-reviewer-pages-reviews.future-person-claim-and-reviews.appeal; a-public-or-authenticated-page-renders-its-public-branch-as-publicOrAuthenticated.failure-says",
+      "unavailableCases": "the-auth-service-did-not-answer-who-the-user-is: an-AuthRetryableFetchError (no-answer-because-of-a-network-failure-reset-timeout-or-abort-a-500-to-504-or-520-to-530-or-an-unreadable-success) or-an-AuthApiError-with-status-429-or-any-other-5xx; the-server-asks-once-more-after-250-ms-and-only-a-second-such-answer-is-this-case; a-second-answer-of-no-session-is-authenticatedSignedOut-and-a-confirmed-user-proceeds (src/lib/supabase/auth-check.ts)",
+      "disposition": "no-redirect; the-existing-error-surface-renders-at-the-requested-URL: the-error-boundary's-This-page-did-not-load-whose-Try-again-asks-the-server-for-that-URL-again",
+      "status": 500,
+      "accountData": "none-is-read: no-profile-account-subject-record-jurisdiction-or-CSRF-token-is-read-before-the-error-and-no-access-is-granted-without-a-successful-check",
+      "cookies": "no-auth-cookie-is-removed; tokens-a-refresh-rotated-before-the-failed-read-are-kept",
+      "mechanism": "the-proxy-rewrites-a-protected-page-to-the-internal-page-src/app/session-check-unavailable/page.tsx-with-a-marker-request-header-only-that-rewrite-carries-and-that-page-throws; the-app-layout-the-page-level-session-checks-and-resolvers-and-the-reviewer-pages'-account-read-each-throw-the-same-error; a-direct-visit-to-the-internal-page-reads-no-session-cookie-or-row-and-is-the-ordinary-not-found-page",
+      "headers": "the-sensitive-response-headers-every-other-answer-of-the-requested-page-carries"
+    },
     "publicOrAuthenticated": {
       "privatePositiveSession": "authContracts.authenticated-session-v1",
       "signedOut": "render-the-registered-public-marketing-and-legality-state-server-side-with-zero-account-subject-cookie-derived-or-user-specific-fetch-and-no-auth-redirect-before-it",
@@ -9791,6 +9819,7 @@
   "contractDefaults": {
     "all:page-endpoint-redirect-worker-background": "observabilitySinkContract",
     "all:authenticated-positive-session": "authContracts.authenticated-session-v1",
+    "all:endpoint-whose-request-reaches-the-proxy's-session-check": "authContracts.session-check-unavailable-api-v1",
     "page:authenticated": "pageAuthContract.authenticatedSignedOut",
     "page:public-or-authenticated": "pageAuthContract.publicOrAuthenticated",
     "endpoint:authenticated": "authContracts.authenticated-api-v1",
@@ -9804,6 +9833,7 @@
     "endpoint:token-candidate": "authContracts.token-candidate-api-v1",
     "endpoint:jobs-secret": "authContracts.machine-api-v1",
     "endpoint:method-specific": "authContracts.machine-api-v1",
+    "endpoint:resend-standard-webhook-signature": "authContracts.resend-webhook-signature-v1",
     "endpoint:gone": "responseContracts.gone-endpoint-v1",
     "redirect:*": "responseContracts.registered-compat-redirect-v1",
     "successEncoding": "a-route-with-successResponseContract-delegates-every-success-status-and-body-to-that-single-contract; a-route-with-methodSuccessResponseContracts-delegates-each-listed-methods-success-status-and-body-to-that-methods-exact-contract-and-every-listed-method-must-have-one; otherwise-successStatus-applies-to-every-listed-method-when-scalar-and-successStatuses-names-every-allowed-success-branch",
@@ -9875,6 +9905,45 @@
         "unknownFieldsRecursively": "forbidden"
       },
       "failureAppliesTo": "missing-invalid-expired-unknown-user-missing-session_id-missing-revoked-expired-rotated-or-account-revision-stale-session",
+      "redirectsForbidden": true
+    },
+    "session-check-unavailable-api-v1": {
+      "registeredBy": "owner-decision-2026-11-19-a-brief-failure-of-the-sign-in-service-is-not-treated-as-signed-out",
+      "appliesTo": "every-registered-endpoint-under-/api/-whose-request-reaches-the-proxy's-session-check-whatever-its-auth-mode; the-proxy-passes-the-exceptRouteIds-before-it-reads-any-session-and-no-endpoint-outside-/api/-receives-it",
+      "exceptRouteIds": [
+        "auth.sign-up-submit",
+        "auth.forgot-password-submit",
+        "auth.reset-password-submit",
+        "api.subject-access-request",
+        "api.rights-activate",
+        "api.withdraw",
+        "api.third-party-subject-export",
+        "api.future-person-claim",
+        "api.future-person-claim-document-session",
+        "api.future-person-claim-complete",
+        "api.future-person-claim-objection",
+        "api.future-person-export",
+        "api.future-person-claimant-bind",
+        "api.future-person-recovery-key",
+        "api.future-person-correction",
+        "api.future-person-analysis-stop",
+        "api.future-person-own-correction-statement",
+        "api.evidence-chunk",
+        "api.evidence-complete"
+      ],
+      "when": "the-request-carries-a-Supabase-session-cookie-and-the-auth-service-did-not-answer-who-the-user-is-twice-250-ms-apart-as-pageAuthContract.authServiceUnavailable.unavailableCases-says; without-a-session-cookie-the-auth-client-answers-no-session-without-asking-the-service-so-a-signed-out-or-machine-request-without-one-never-receives-it; a-second-answer-of-no-session-or-of-a-user-is-answered-as-before",
+      "unavailable": {
+        "status": 503,
+        "contentType": "application/json",
+        "body": {
+          "error": {
+            "const": "unavailable"
+          }
+        },
+        "unknownFieldsRecursively": "forbidden"
+      },
+      "effects": "the-proxy-answers-before-the-route-handler-runs-and-reads-no-profile-account-or-other-row; no-auth-cookie-is-removed-and-tokens-a-refresh-rotated-before-the-failed-read-are-kept",
+      "headers": "sensitiveResponseHeaders.authenticatedUserData-with-the-Referrer-Policy-every-other-answer-of-the-route-carries",
       "redirectsForbidden": true
     },
     "authenticated-mutation-v1": {
@@ -9962,7 +10031,7 @@
         "issuedBy": {
           "routeFrom": "rights.withdraw-request"
         },
-        "shape": "non-authorizing-secure-httpOnly-sameSite-strict-__Host-inherit-candidate-cookie-plus-a-one-time-form-nonce; it-is-not-bound-to-or-evidence-of-a-token-until-the-activation-transaction"
+        "shape": "non-authorizing-secure-httpOnly-sameSite-strict-__Host-inherit-rights-candidate-cookie-plus-a-one-time-form-nonce; it-is-not-bound-to-or-evidence-of-a-token-until-the-activation-transaction"
       },
       "missingInvalidExpiredScannerPrefetchedOrWrongPurpose": {
         "status": 404,
@@ -10000,7 +10069,7 @@
       "originSessionBinding": "authContracts.authenticated-session-v1.authenticatedDerivedCapability-for-an-authenticated-origin-and-the-exact-independent-token-claim-reset-or-purpose-session-authority-for-a-nonauthenticated-origin",
       "origin": "exact-canonical-origin-required",
       "fetchMetadata": "same-origin-required",
-      "csrfHeader": "X-Inherit-CSRF-bound-to-the-evidence-session-and-rotated-or-consumed-on-every-state-changing-request",
+      "csrfHeader": "X-Inherit-CSRF-bound-to-the-evidence-session-and-rotated-or-consumed-on-every-state-changing-request-except-the-chunk-stream; registered-2026-11-19-G8.5 (principle 3): api.evidence-chunk-carries-the-evidence-session's-one-session-bound-chunk-stream-value-on-every-chunk-verified-and-never-spent-or-rotated-because-each-session-sequence-is-reserved-once (api.evidence-chunk.requestContract.chunkAuthority); api.evidence-complete-spends-a-one-time-token-and-each-of-its-answers-carries-the-successor",
       "missingInvalidExpiredCompletedWrongPrincipalWrongTargetOrWrongSession": {
         "status": 404,
         "contentType": "application/json",
@@ -10083,6 +10152,36 @@
         "unknownFieldsRecursively": "forbidden"
       },
       "credentialCodeOrIdentityBodyLogAnalyticsAudit": "forbidden"
+    },
+    "resend-webhook-signature-v1": {
+      "appliesTo": "webhooks.resend",
+      "registeredBy": "owner-decision-2026-10-23-G8.5-webhooks.resend-register-what-it-does",
+      "scheme": "Standard-Webhooks-v1-HMAC-SHA256-as-Resend-signs-each-delivery-through-Svix",
+      "verifier": "the-resend-SDK-webhooks.verify-which-delegates-to-standardwebhooks-Webhook.verify",
+      "verifierConstruction": "the-SDK-client-is-built-from-RESEND_API_KEY; with-it-unset-the-client-cannot-be-built-and-every-delivery-is-answered-as-missingInvalidStaleOrUnmatchedSignature",
+      "headers": {
+        "svix-id": "required-provider-delivery-message-id",
+        "svix-timestamp": "required-integer-unix-seconds",
+        "svix-signature": "required-space-separated-list-of-v1-comma-base64-signatures-of-which-at-least-one-must-match"
+      },
+      "signedContent": "svix-id-dot-svix-timestamp-dot-the-exact-raw-request-body-text-read-once-before-any-parse",
+      "secret": "RESEND_WEBHOOK_SECRET-the-endpoint-whsec_-prefixed-base64-signing-secret-held-in-the-server-environment-only",
+      "comparison": "constant-time",
+      "clockSkew": "the-timestamp-must-be-within-300-seconds-of-server-time-in-either-direction",
+      "replay": "no-separate-replay-store; a-verified-redelivery-inside-the-300-second-window-reapplies-the-same-monotone-coded-delivery-state-and-changes-nothing-further; outside-the-window-it-is-refused-as-stale",
+      "rotation": "one-current-secret; rotating-the-endpoint-secret-at-the-provider-requires-replacing-RESEND_WEBHOOK_SECRET; a-delivery-signed-only-with-a-secret-the-server-no-longer-holds-is-refused-and-left-to-provider-redelivery",
+      "bodyParse": "only-after-a-signature-matches; a-matching-signature-over-a-body-that-is-not-JSON-is-refused-the-same-way",
+      "secretUnset": "responseContracts.provider-webhook-unavailable-v1-before-the-body-is-read",
+      "missingInvalidStaleOrUnmatchedSignature": {
+        "status": 401,
+        "contentType": "text/plain;charset=UTF-8",
+        "body": {
+          "const": "Invalid signature"
+        },
+        "writes": 0
+      },
+      "redirectsForbidden": true,
+      "secretSignatureOrPayloadEchoBodyLogAnalyticsOrAudit": "forbidden"
     }
   },
   "mutationSecurityBindings": {
@@ -10103,7 +10202,7 @@
         "const": "X-Inherit-CSRF"
       },
       "requiredFor": "every-state-changing-method-including-a-body-forbidden-route-except-api.embryo-ingest-chunk-as-declared-by-its-policy.requestAuthority",
-      "binding": "one-time-and-bound-to-the-current-authenticated-or-purpose-session",
+      "binding": "one-time-and-bound-to-the-current-authenticated-or-purpose-session; registered-2026-11-19-G8.5 (principle 3): api.evidence-chunk's-value-is-the-evidence-session's-one-session-bound-chunk-stream-value-verified-on-every-chunk-and-not-spent (authContracts.evidence-session-api-v1.csrfHeader)",
       "operationNonceIsNotCsrf": true
     },
     "sessionRule": "each-state-changing-session-route-requires-exact-Origin-Sec-Fetch-Site-same-origin-and-the-X-Inherit-CSRF-header-bound-to-that-session-in-addition-to-any-distinct-operation-nonce; only-api.embryo-ingest-chunk-omits-the-CSRF-and-operation-nonce-headers-under-its-policy.requestAuthority",
@@ -10134,6 +10233,15 @@
         "nonce": {
           "header": "X-Inherit-Operation-Nonce"
         }
+      },
+      {
+        "routeId": "api.file-delete",
+        "method": "DELETE",
+        "operation": "file-deletion",
+        "nonce": {
+          "header": "X-Inherit-Operation-Nonce"
+        },
+        "registeredBy": "registered-2026-11-20-owner-decision-2026-11-19-G8.5-where-the-register-is-stricter-engineering-codes-to-it"
       },
       {
         "routeId": "api.subject-sharing",
@@ -10432,7 +10540,8 @@
             "const": "path-a-own-account"
           },
           "contactEmail": "normalized-valid-address-at-most-254-bytes",
-          "note": "optional-zero-through-500-Unicode-characters-used-only-in-the-minimal-invitation-template"
+          "note": "optional-zero-through-500-Unicode-characters-used-only-in-the-minimal-invitation-template",
+          "requestId": "required-client-generated-UUID-idempotency-key-one-per-form-instance-so-a-retried-submission-reserves-one-draft-or-invitation; registered-2026-10-23-G8.5"
         },
         {
           "kind": {
@@ -10443,7 +10552,8 @@
           },
           "displayName": "two-through-120-Unicode-characters",
           "dateOfBirth": "valid-ISO-date-proving-18-or-older-by-server-UTC-calculation",
-          "contactEmail": "normalized-valid-address-at-most-254-bytes"
+          "contactEmail": "normalized-valid-address-at-most-254-bytes",
+          "requestId": "required-client-generated-UUID-idempotency-key-one-per-form-instance-so-a-retried-submission-reserves-one-draft-or-invitation; registered-2026-10-23-G8.5"
         },
         {
           "kind": {
@@ -10454,7 +10564,8 @@
           },
           "displayName": "two-through-120-Unicode-characters",
           "dateOfBirth": "valid-ISO-date-proving-18-or-older-by-server-UTC-calculation",
-          "contactEmail": "normalized-valid-address-at-most-254-bytes"
+          "contactEmail": "normalized-valid-address-at-most-254-bytes",
+          "requestId": "required-client-generated-UUID-idempotency-key-one-per-form-instance-so-a-retried-submission-reserves-one-draft-or-invitation; registered-2026-10-23-G8.5"
         }
       ],
       "unknownMissingOrInvalid": "invalid-request-v1",
@@ -10835,7 +10946,7 @@
       "location": {
         "routeFrom": "auth.sign-in"
       },
-      "sessionEffect": "revoke-the-current-server-session-and-clear-every-Inherit-auth-rights-upload-evidence-claim-download-and-candidate-cookie-before-the-response",
+      "sessionEffect": "revoke-the-current-server-session-and-clear-every-Inherit-auth-upload-evidence-claim-download-and-candidate-cookie-before-the-response; the-rights-cookie-is-not-cleared-at-sign-out-so-an-open-rights-session-whose-mailed-link-is-already-spent-survives (owner-decision-2026-11-19-G8.5-sign-out-keeps-an-open-rights-session)",
       "headers": {
         "Cache-Control": "no-store",
         "Referrer-Policy": "no-referrer"
@@ -11030,6 +11141,17 @@
       },
       "unknownFieldsRecursively": "forbidden",
       "when": "the-consumed-single-use-artifact-presentation-token-version-or-server-embedded-hash-does-not-match-the-current-committed-artifact-after-the-server-recomputes-it; the-request-never-supplies-a-raw-body-hash"
+    },
+    "hand-over-not-now-v1": {
+      "status": 409,
+      "contentType": "application/json",
+      "body": {
+        "error": {
+          "const": "try_later"
+        }
+      },
+      "unknownFieldsRecursively": "forbidden",
+      "when": "registered-2026-11-22-owner-decision-a-hand-over-refused-for-now-says-to-try-later-(D-158): the-owning-uploader's-withdrawal-of-a-record-whose-adult-holds-it-with-their-own-account-(subject-ownership-transfer-v1.uploaderWithdrawalActorCase)-is-refused-at-that-moment-because-a-file-is-still-being-validated-a-file-has-a-shape-the-transfer-does-not-expect-or-the-adult's-account-is-gone; nothing-is-written-and-no-code-is-spent; every-other-refusal-stays-resource-not-found-v1"
     },
     "file-processing-v1": {
       "success": [
@@ -11382,6 +11504,22 @@
       "failureEffects": "delete-every-staging-or-uncommitted-promoted-object-and-write-zero-final-file-authority-adult_upload_revision-canonical-genetic-row-derived-row-result-or-job",
       "unknownFieldsRecursively": "forbidden",
       "subjectContactObjectPathUploadTokenPurposeOrJobInternalsExceptOpaqueJobId": "forbidden"
+    },
+    "own-chat-scientific-correction-v1": {
+      "status": 409,
+      "contentType": "application/json",
+      "body": {
+        "error": {
+          "const": "report_scientific_correction"
+        },
+        "notice": "the-fixed-OWN_CHAT_CORRECTION_NOTICE-from-src/copy/reports/scientific-correction.ts"
+      },
+      "when": "the-own-scope-branch-finds-a-report-in-the-bound-context-under-a-scientific-correction; before-the-context-token-nonce-is-consumed-and-before-history-or-tools-reach-a-model",
+      "headers": "private-no-store-no-referrer",
+      "registeredBy": "owner-decision-2026-10-23-G8.5-the-register-lists-the-harmless-extras-api.chat's-409",
+      "unknownFieldsRecursively": "forbidden",
+      "writes": 0,
+      "modelCalls": 0
     },
     "own-copilot-unavailable-v1": {
       "status": 403,
@@ -11887,6 +12025,32 @@
         "contentType": "application/json",
         "unknownFieldsRecursively": "forbidden"
       },
+      "keyRequired": {
+        "registeredBy": "owner-decision-2026-10-24-G8.5-Settings-AI-may-omit-apiKey",
+        "status": 409,
+        "contentType": "application/json",
+        "body": {
+          "error": {
+            "const": "key_required"
+          }
+        },
+        "when": "a-POST-without-apiKey-where-no-stored-key-may-be-reused: the-stored-key-belongs-to-another-provider-or-origin-or-the-hosted-provider-has-no-stored-key",
+        "effects": "none; the-stored-setting-key-and-every-permission-are-unchanged",
+        "unknownFieldsRecursively": "forbidden"
+      },
+      "unavailable": {
+        "registeredBy": "owner-decision-2026-10-23-G8.5-the-register-lists-the-harmless-extras",
+        "status": 503,
+        "contentType": "application/json",
+        "body": {
+          "error": {
+            "const": "unavailable"
+          }
+        },
+        "when": "the-settings-writer-or-the-removal-door-failed-or-answered-outside-its-closed-shape",
+        "effects": "none-committed",
+        "unknownFieldsRecursively": "forbidden"
+      },
       "invalid": "invalid-request-v1"
     },
     "embryo-ingest-chunk-v1": {
@@ -12028,7 +12192,7 @@
           "challenge": "one-CSPRNG-at-least-128-bit-base64url-transport-challenge-bound-to-this-session-and-ingest-revision-and-stored-hash-only",
           "revision": "positive-random-safe-integer-stored-with-the-challenge",
           "completionNonce": "the-next-operation-nonce: one-time-nonce-bound-to-this-upload-session-for-exactly-one-api.embryo-ingest-complete-request",
-          "csrfToken": "the-X-Inherit-CSRF-value-bound-to-this-upload-session-that-api.embryo-ingest-complete-requires"
+          "csrfToken": "the-one-time-ingest_complete_csrf-operation-value-bound-to-this-upload-session-that-api.embryo-ingest-complete-requires-in-X-Inherit-Operation-Nonce (registered-2026-11-19-G8.5: not-the-X-Inherit-CSRF-session-token)"
         },
         "unknownFields": "forbidden",
         "use": "the-browser-writes-build-challenge-and-revision-into-the-regenerated-##inheritTable=1-header-of-every-chunk-through-src/lib/embryos/table-transport.ts"
@@ -12509,7 +12673,7 @@
           }
         }
       ],
-      "embryoSetCookie": "secure-httpOnly-sameSite-strict-__Host-inherit-upload",
+      "embryoSetCookie": "secure-httpOnly-sameSite-strict-__Host-inherit-ingest-<session>-one-cookie-per-upload-session-named-by-its-session-id",
       "headers": "private-no-store-no-referrer",
       "directTokenHandling": "ephemeral-browser-memory-and-the-exact-Storage-Authorization-header-only; URL-cookie-browser-persistence-service-worker-cache-logs-analytics-errors-and-use-outside-this-one-INSERT-are-forbidden",
       "embryoHandleHandling": "ephemeral-browser-memory-only-and-rewrite-source-sample-values-before-the-first-byte-is-sent; never-URL-cookie-browser-storage-service-worker-cache-log-analytics-error-audit-export-or-reuse",
@@ -13291,6 +13455,19 @@
       "unknownFieldsRecursively": "forbidden",
       "headers": "private-no-store-no-referrer"
     },
+    "embryo-acknowledged-v1": {
+      "status": 200,
+      "contentType": "application/json",
+      "body": {
+        "acknowledgement": {
+          "const": "embryo-result-gate"
+        },
+        "acknowledgedAt": "ISO-8601-UTC-server-timestamp"
+      },
+      "unknownFieldsRecursively": "forbidden",
+      "headers": "private-no-store-no-referrer",
+      "setCookie": "httpOnly-Secure-SameSite-Lax-path-root-session-cookie-inherit_embryo_gate-with-no-Max-Age-or-Expires"
+    },
     "signup-v1": {
       "status": 202,
       "contentType": "application/json",
@@ -13321,31 +13498,52 @@
       "body": "empty",
       "effects": "atomically-change-the-password-revoke-every-auth-session-of-the-account-and-consume-the-recovery-session; the-response-clears-every-auth-cookie-and-the-person-signs-in-again"
     },
-    "raw-region-v1": {
+    "own-region-variants-v1": {
+      "registeredBy": "owner-decision-2026-11-19-G8.5-the-genome-browser's-read-is-registered-as-built",
       "status": 200,
       "contentType": "application/json",
       "body": {
-        "subjectId": "the-exact-authorized-request-subject-id",
-        "region": {
-          "chromosome": "server-normalized-contig",
-          "start": "positive-integer",
-          "end": "positive-integer"
-        },
         "variants": [
           {
-            "chromosome": "server-normalized-contig",
-            "position": "positive-integer",
-            "reference": "validated-DNA-allele",
-            "alternate": "validated-DNA-allele",
-            "genotype": "validated-subject-genotype",
-            "rsid": "validated-rsid-or-null",
-            "quality": "bounded-number-or-null"
+            "rsid": "stored-numeric-part-of-the-rsID-or-null",
+            "chrom": "stored-chromosome-number-1-through-22-or-23-X-24-Y-25-MT",
+            "pos": "stored-positive-integer-position",
+            "ref": "stored-reference-allele-or-null",
+            "alt": "stored-alternate-allele-or-null",
+            "genotype": "stored-genotype-text-diploid-A/G-haploid-A-or-two-dashes-for-a-no-call"
           }
         ],
-        "nextCursor": "opaque-subject-region-and-revision-bound-cursor-or-null"
+        "truncated": "boolean-true-exactly-when-variants-holds-policy.bounds.maximumRowsPerPage-rows"
+      },
+      "rows": "the-acting-account's-own-public.user_variants-rows-of-the-requested-file-chromosome-and-inclusive-start-to-end-span-in-ascending-position-order-at-most-policy.bounds.maximumRowsPerPage; a-file-whose-rows-the-caller-cannot-read-answers-an-empty-variants-list",
+      "invalid": {
+        "registeredBy": "owner-decision-2026-11-19-G8.5-route-specific-error-answers-are-registered-as-they-ship",
+        "status": 422,
+        "contentType": "application/json",
+        "body": {
+          "error": {
+            "const": "invalid_request"
+          }
+        },
+        "when": "the-body-is-not-JSON-or-not-exactly-the-closed-body-or-names-a-chromosome-the-route-does-not-map-or-ends-before-it-starts; unlike-invalid-request-v1-it-carries-no-issues-list",
+        "effects": "no-row-is-read",
+        "unknownFieldsRecursively": "forbidden"
+      },
+      "regionTooLarge": {
+        "registeredBy": "owner-decision-2026-11-19-G8.5-route-specific-error-answers-are-registered-as-they-ship",
+        "status": 422,
+        "contentType": "application/json",
+        "body": {
+          "error": {
+            "const": "region_too_large"
+          }
+        },
+        "when": "end-minus-start-exceeds-policy.bounds.maximumRequestedSpanBases",
+        "effects": "no-row-is-read",
+        "unknownFieldsRecursively": "forbidden"
       },
       "unknownFields": "forbidden",
-      "objectKeyOriginalFilenameContributorOrOtherSubject": "forbidden"
+      "objectKeyOriginalFilenameSubjectIdContributorOrOtherAccountRow": "forbidden"
     },
     "subject-transfer-v1": {
       "status": 200,
@@ -13390,6 +13588,19 @@
       },
       "unknownFields": "forbidden",
       "contactOwnerOrReviewState": "never-returned"
+    },
+    "path-a-invitation-created-v1": {
+      "registeredBy": "owner-decision-2026-11-19-G8.5-Path-A's-invitation-stays-one-step",
+      "status": 202,
+      "contentType": "application/json",
+      "body": {
+        "accepted": {
+          "const": true
+        }
+      },
+      "when": "a-path-a-own-account-body-on-api.subject-drafts-after-its-one-transaction-reserved-the-draft-and-created-the-invitation-and-its-mail; a-barred-address-or-an-exhausted-attempt-quota-creates-no-draft-invitation-token-or-mail-and-a-repeated-requestId-reserves-nothing-new-and-each-answers-the-identical-status-and-body",
+      "subjectDraftIdContactTokenStateOrExpiry": "never-returned",
+      "unknownFields": "forbidden"
     },
     "cohort-draft-created-v1": {
       "status": 201,
@@ -13456,6 +13667,127 @@
         }
       },
       "unknownFields": "forbidden"
+    },
+    "consent-revocation-v1": {
+      "registeredBy": "owner-decision-2026-10-23-G8.5-the-register-lists-the-harmless-extras",
+      "contentType": "application/json",
+      "outcomes": [
+        {
+          "status": 200,
+          "when": "a-directional-purpose-grant-is-revoked-now-by-revoke_directional_purpose_with_nonce_v1",
+          "body": {
+            "revoked": {
+              "const": true
+            },
+            "effectiveAt": "server-committed-ISO-8601-UTC"
+          }
+        },
+        {
+          "status": 200,
+          "when": "the-own-Copilot-permission-or-a-dispositionCases.cloud-model-provider-grant-is-revoked-now",
+          "body": {
+            "revoked": {
+              "const": true
+            }
+          }
+        },
+        {
+          "status": 202,
+          "when": "every-other-dispositionCases-entry-whose-revocation-completes-asynchronously",
+          "schemaFrom": "responseContracts.lifecycle-accepted-v1"
+        }
+      ],
+      "invalid": {
+        "registeredBy": "owner-decision-2026-11-19-G8.5-route-specific-error-answers-are-registered-as-they-ship",
+        "status": 400,
+        "contentType": "application/json",
+        "body": {
+          "error": {
+            "const": "invalid_request"
+          }
+        },
+        "when": "the-route-id-is-not-a-canonical-UUID-checked-before-the-handler-reads-the-user; or-in-any-case-including-the-own-Copilot-permission-the-X-Inherit-Operation-Nonce-is-missing-or-is-not-a-current-nonce-minted-for-this-account-auth-session-and-grant; or-the-database-door-refuses-it-with-22023-invalid_operation_nonce-because-it-was-already-spent",
+        "effects": "nothing-is-revoked-and-no-nonce-is-recorded",
+        "unknownFieldsRecursively": "forbidden"
+      },
+      "unavailable": {
+        "registeredBy": "owner-decision-2026-11-19-G8.5-route-specific-error-answers-are-registered-as-they-ship",
+        "status": 503,
+        "contentType": "application/json",
+        "body": {
+          "error": {
+            "const": "consent_unavailable"
+          }
+        },
+        "when": "the-cloud-model-provider-grant-case-where-revoke_cloud_model_consent_with_nonce_v1-errors-with-anything-other-than-a-nonce-refusal; the-own-Copilot-case's-failure-is-service-unavailable-v1",
+        "detail": "the-database's-own-message-never-leaves-the-server",
+        "unknownFieldsRecursively": "forbidden"
+      },
+      "headers": "private-no-store",
+      "unknownFieldsRecursively": "forbidden"
+    },
+    "file-delete-v1": {
+      "registeredBy": "owner-decision-2026-10-23-G8.5-the-register-lists-the-harmless-extras",
+      "deleted": {
+        "status": 204,
+        "contentType": "empty",
+        "body": "empty",
+        "when": "the-database-prepared-and-authorised-the-cleanup-Storage-removed-the-original-and-finish_genome_file_deletion_v1-committed"
+      },
+      "pending": {
+        "status": 202,
+        "contentType": "application/json",
+        "body": {
+          "error": {
+            "const": "file_delete_pending"
+          }
+        },
+        "when": "the-database-cleanup-has-not-completed; the-client-repeats-the-same-owner-authorized-DELETE-with-its-next-X-Inherit-CSRF-and-a-timeout-never-means-deleted",
+        "nextOperationNonce": "registered-2026-11-20-owner-decision-2026-11-19-G8.5-where-the-register-is-stricter-engineering-codes-to-it: this-answer-alone-also-carries-an-X-Inherit-Operation-Nonce-response-header, the-next-one-time-file_delete-value-minted-for-the-same-account-session-and-file-as-the-Files-page-mints-it, which-the-repeat-sends-and-spends (mutationSecurityBindings.operationNonceIssuance: a-registered-response-issues-the-next-nonce); a-pending-answer-without-one-ends-the-repeats-as-pending-and-the-Files-page-renders-a-fresh-value",
+        "unknownFieldsRecursively": "forbidden"
+      },
+      "processing": {
+        "registeredBy": "owner-decision-2026-11-19-G8.5-route-specific-error-answers-are-registered-as-they-ship",
+        "status": 409,
+        "contentType": "application/json",
+        "body": {
+          "error": {
+            "const": "file_delete_processing"
+          }
+        },
+        "when": "the-database-refuses-the-deletion-because-the-file-is-still-uploading-or-being-parsed-or-has-a-queued-or-running-worker-job (file_delete_processing)",
+        "effects": "nothing-is-deleted-or-made-unreadable",
+        "unknownFieldsRecursively": "forbidden"
+      },
+      "subjectUnavailable": {
+        "registeredBy": "owner-decision-2026-11-19-G8.5-route-specific-error-answers-are-registered-as-they-ship",
+        "status": 409,
+        "contentType": "application/json",
+        "body": {
+          "error": {
+            "const": "file_delete_subject_unavailable"
+          }
+        },
+        "when": "the-database-refuses-the-deletion-because-the-file-is-not-on-the-caller's-own-active-self-record (file_delete_subject_unavailable) or-that-record-has-shared-or-generated-material-that-needs-its-subject-level-disposition-a-pending-or-current-family-pair-or-one-with-joint-results-a-current-relationship-to-another-account-a-live-download-copy-of-the-record (registered-2026-11-22-D-152: a-generated-export-of-the-record, or-of-the-whole-account-whose-parts-include-the-record, still-being-made-(queued-or-building)-or-still-downloadable-(ready-before-its-expiry), either-before-its-job's-deadline; an-expired-failed-revoked-or-otherwise-ended-copy-no-longer-blocks) a-report-artifact-an-embryo-variant-from-this-file-or-an-unattributed-legacy-chat (file_delete_shared_graph)",
+        "effects": "nothing-is-deleted-or-made-unreadable",
+        "unknownFieldsRecursively": "forbidden"
+      },
+      "failed": {
+        "registeredBy": "owner-decision-2026-11-19-G8.5-route-specific-error-answers-are-registered-as-they-ship",
+        "status": 503,
+        "contentType": "application/json",
+        "body": {
+          "error": {
+            "const": "file_delete_failed"
+          }
+        },
+        "when": "the-database-preparation-failed-for-any-other-reason-or-answered-a-cleanup-target-outside-its-closed-shape-or-Storage-did-not-acknowledge-the-removal-or-finish_genome_file_deletion_v1-failed-or-the-handler-threw",
+        "effects": "a-file-the-database-already-prepared-stays-unreadable-and-the-source.revocation-7d-backstop-redoes-the-removal-and-finish",
+        "unknownFieldsRecursively": "forbidden"
+      },
+      "headers": {
+        "Cache-Control": "private, no-store"
+      }
     },
     "embryo-disposition-v1": {
       "contentType": "application/json",
@@ -13652,6 +13984,19 @@
       "unknownFieldsRecursively": "forbidden",
       "existenceLeak": "forbidden"
     },
+    "service-unavailable-v1": {
+      "registeredBy": "owner-decision-2026-11-19-G8.5-route-specific-error-answers-are-registered-as-they-ship",
+      "status": 503,
+      "contentType": "application/json",
+      "body": {
+        "error": {
+          "const": "unavailable"
+        }
+      },
+      "when": "a-database-read-or-door-the-bound-route-depends-on-errored-threw-or-answered-outside-its-closed-shape: api.browse-region's-variant-read-errored; the-own-Copilot-case-of-api.consent-revoke-threw; api.future-person-claim-document-session's-door-failed-with-a-code-other-than-42501-23505-or-22023-or-answered-a-session-it-cannot-read; api.appeal-document-session's-door-failed-with-a-code-other-than-42501-23505-or-22023-answered-neither-a-capacity-limit-nor-a-matching-open-session-threw-or-left-its-intake-runtime-holding-cleanup-or-unsettled-work; (registered-2026-11-19-owner-decision-a-non-parent-uploader's-withdrawal-for-an-embryo-upload-stops-analysis-and-deletes-as-they-signed) the-non-parent-uploader's-embryo-upload-signature-case-of-api.consent-revoke-whose-door-withdraw_embryo_uploader_consent_v1-failed-with-a-code-other-than-42501-or-55000-or-a-nonce-refusal",
+      "detail": "the-database's-own-message-never-leaves-the-server; the-answer-does-not-say-whether-a-write-committed",
+      "unknownFieldsRecursively": "forbidden"
+    },
     "revoked-resource-v1": {
       "detail": {
         "status": 404,
@@ -13718,7 +14063,7 @@
           "challenge": "one-CSPRNG-at-least-128-bit-base64url-transport-challenge-bound-to-this-session-and-ingest-revision-and-stored-hash-only",
           "revision": "positive-random-safe-integer-stored-with-the-challenge",
           "completionNonce": "one-time-nonce-bound-to-this-upload-session-for-exactly-one-api.embryo-ingest-complete-request",
-          "csrfToken": "the-X-Inherit-CSRF-value-bound-to-this-upload-session-that-api.embryo-ingest-complete-requires"
+          "csrfToken": "the-one-time-ingest_complete_csrf-operation-value-bound-to-this-upload-session-that-api.embryo-ingest-complete-requires-in-X-Inherit-Operation-Nonce (registered-2026-11-19-G8.5: not-the-X-Inherit-CSRF-session-token)"
         },
         "unknownFields": "forbidden",
         "headers": "private-no-store-no-referrer",
@@ -13777,7 +14122,7 @@
         },
         "unknownFieldsRecursively": "forbidden",
         "headers": {
-          "X-Inherit-CSRF": "receipt-session-bound-CSRF-distinct-from-every-chunk-operation-nonce"
+          "X-Inherit-CSRF": "registered-2026-11-19-G8.5: the-successor-of-this-route's-one-time-reviewer-session-token; each-chunk-acknowledgement-carries-its-own-route's-reviewer-token-from-the-review-page's-chain-and-no-receipt-session-value"
         }
       },
       "objectPathUrlOrCredentialInBody": "forbidden-except-the-explicit-short-lived-acknowledgement-nonce"
@@ -13788,6 +14133,47 @@
         "body": "empty"
       },
       "cache": "private-no-store",
+      "unknownFields": "forbidden"
+    },
+    "provider-webhook-acknowledgement-v1": {
+      "registeredBy": "owner-decision-2026-10-23-G8.5-webhooks.resend-register-what-it-does",
+      "recordedEventTypes": {
+        "email.delivered": "delivered",
+        "email.delivery_delayed": "accepted",
+        "email.complained": "complained",
+        "email.bounced": "bounced",
+        "email.failed": "reviewed_undeliverable",
+        "email.suppressed": "reviewed_undeliverable"
+      },
+      "matched": {
+        "status": 204,
+        "contentType": "empty",
+        "body": "empty",
+        "when": "a-verified-event-of-a-recorded-type-matched-one-recorded-provider-attempt-by-the-keyed-hash-of-its-email_id-and-its-coded-delivery-state-was-written"
+      },
+      "notRecorded": {
+        "status": 204,
+        "contentType": "empty",
+        "body": "empty",
+        "when": "a-verified-event-whose-type-is-not-one-of-recordedEventTypes-or-whose-data-carries-no-email_id; nothing-is-read-or-written"
+      },
+      "unmatched": {
+        "status": 202,
+        "contentType": "empty",
+        "body": "empty",
+        "when": "a-verified-event-of-a-recorded-type-whose-keyed-message-id-matches-no-current-recorded-attempt; nothing-is-written"
+      },
+      "disclosure": "only-a-caller-holding-the-signing-secret-reaches-these-answers; 204-and-202-differ-only-in-whether-a-recorded-attempt-matched-and-neither-carries-a-recipient-target-subject-or-message-id",
+      "unknownFields": "forbidden"
+    },
+    "provider-webhook-unavailable-v1": {
+      "status": 503,
+      "contentType": "text/plain;charset=UTF-8",
+      "body": {
+        "const": "Webhook unavailable"
+      },
+      "when": "RESEND_WEBHOOK_SECRET-is-unset-checked-before-the-body-is-read-or-the-coded-delivery-state-write-failed-after-verification",
+      "redelivery": "left-to-the-provider; the-answer-carries-no-error-detail",
       "unknownFields": "forbidden"
     },
     "test-requester-own-correction-statement-v1": {
@@ -13928,7 +14314,8 @@
         "copilot-refusal-v1",
         "embryo-closed-schema-v1",
         "chat-completion-v1",
-        "own-copilot-unavailable-v1"
+        "own-copilot-unavailable-v1",
+        "own-chat-scientific-correction-v1"
       ],
       "api.chat-history": [
         "chat-history-v1",
@@ -13941,9 +14328,10 @@
         "search-results-v1"
       ],
       "api.browse-region": [
-        "raw-region-v1",
+        "own-region-variants-v1",
         "invalid-request-v1",
-        "resource-not-found-v1"
+        "resource-not-found-v1",
+        "service-unavailable-v1"
       ],
       "api.file-process": [
         "file-processing-v1",
@@ -13998,6 +14386,7 @@
       ],
       "api.subject-drafts": [
         "subject-draft-created-v1",
+        "path-a-invitation-created-v1",
         "unsupported-subject-kind-v1",
         "invalid-request-v1",
         "consent-required-v1",
@@ -14017,7 +14406,8 @@
       ],
       "api.subject-delete": [
         "lifecycle-accepted-v1",
-        "resource-not-found-v1"
+        "resource-not-found-v1",
+        "hand-over-not-now-v1"
       ],
       "api.subject-sharing": [
         "sharing-updated-v1",
@@ -14035,6 +14425,10 @@
         "family-acknowledged-v1",
         "invalid-request-v1",
         "resource-not-found-v1"
+      ],
+      "api.embryo-acknowledge": [
+        "embryo-acknowledged-v1",
+        "invalid-request-v1"
       ],
       "api.family-sharing": [
         "sharing-updated-v1",
@@ -14078,8 +14472,10 @@
         "opaque-public-acceptance-v1"
       ],
       "api.consent-revoke": [
+        "consent-revocation-v1",
         "lifecycle-accepted-v1",
-        "resource-not-found-v1"
+        "resource-not-found-v1",
+        "service-unavailable-v1"
       ],
       "api.consents-revoke-all": [
         "lifecycle-accepted-v1",
@@ -14166,7 +14562,10 @@
       ],
       "api.future-person-claim-document-session": [
         "evidence-session-v1",
-        "resource-not-found-v1"
+        "public-capacity-limited-v1",
+        "resource-not-found-v1",
+        "service-unavailable-v1",
+        "embryo-closed-schema-v1"
       ],
       "api.evidence-chunk": [
         "evidence-chunk-v1",
@@ -14213,7 +14612,10 @@
       ],
       "api.appeal-document-session": [
         "evidence-session-v1",
-        "resource-not-found-v1"
+        "public-capacity-limited-v1",
+        "resource-not-found-v1",
+        "service-unavailable-v1",
+        "embryo-closed-schema-v1"
       ],
       "api.appeal-complete": [
         "appeal-evidence-submitted-v1",
@@ -14231,7 +14633,8 @@
       "api.future-person-claim": [
         "invalid-request-v1",
         "future-person-claim-acceptance-v1",
-        "public-capacity-limited-v1"
+        "public-capacity-limited-v1",
+        "resource-not-found-v1"
       ],
       "api.future-person-claim-complete": [
         "future-person-claim-acceptance-v1",
@@ -14386,6 +14789,7 @@
         "capability-denied-api-v1"
       ],
       "api.file-delete": [
+        "file-delete-v1",
         "resource-not-found-v1",
         "capability-denied-api-v1"
       ],
@@ -14401,6 +14805,10 @@
         "test-requester-own-correction-statement-v1",
         "resource-not-found-v1",
         "embryo-closed-schema-v1"
+      ],
+      "webhooks.resend": [
+        "provider-webhook-acknowledgement-v1",
+        "provider-webhook-unavailable-v1"
       ]
     }
   },
@@ -14535,7 +14943,7 @@
       "awaiting-choice": "These pages manage the account itself — its settings, consents, Copilot model and own data — and none of them offers an analysis to choose. The choice is made on /genome/[subject]/reports and the invitation to make it renders on /overview.",
       "partial-coverage": "Account management does not render an uploaded-file result.",
       "not-covered": "Account management does not render an uploaded-file result.",
-      "error": "These settings pages parse no parameter and no request can drive it into a fault — bad input answers notFound() and the product carries no fault, injection or simulate seam (re-measured 2026-09-12) — and there is no browser proof to require. The four error boundaries and their unit coverage stand. Owner decision 2026-09-12.",
+      "error": "These settings pages parse no parameter, so bad input cannot drive them into a fault — bad input answers notFound() and the product carries no fault, injection or simulate seam (re-measured 2026-09-12). Since 19 November 2026 a fault that no request causes reaches them: when the auth service fails to answer the sign-in check twice, the proxy or the app layout renders the existing error surface at the requested address instead of the sign-in page (pageAuthContract.authServiceUnavailable; owner decision 2026-11-19, D-142). It is proven by unit tests (src/proxy.test.ts, src/app/(app)/layout.test.ts, src/lib/supabase/auth-check.test.ts and src/app/boundaries.test.ts); no browser proof can be written, because nothing can make the auth service fail on demand, so here too there is no browser proof to require. The four error boundaries and their unit coverage stand. Owner decision 2026-09-12.",
       "consent-required": "These pages manage the account itself — its settings, its consents, its Copilot model and its own data — and render no result derived from an uploaded file, so there is no analysis for a consent to gate. Owner decision 2026-09-12, corrections item 6.",
       "jurisdiction-unavailable": "No capability in data/jurisdictions.json governs these pages, and none of the five calls a capability resolver (measured 2026-09-12). Managing your own account, consents and data is not a reviewed capability. Owner decision 2026-09-12, corrections item 5.",
       "initial-form": "People renders FeatureNotBuilt unconditionally and contains no authentication credential form. Its actual not-built state stays supported; it cannot enter the authentication initial-form state. Source read 2026-10-11."
@@ -14632,7 +15040,7 @@
         "not-covered": "Authentication does not render an uploaded-file result.",
         "consent-required": "Authentication structurally precedes genetic-data consent.",
         "jurisdiction-unavailable": "Authentication remains available in every jurisdiction.",
-        "error": "A failed sign-in, sign-up or reset renders its message inside the form, so no request can drive it into a fault — bad input answers notFound() and the product carries no fault, injection or simulate seam (re-measured 2026-09-12) — and there is no browser proof to require. The four error boundaries and their unit coverage stand. Owner decision 2026-09-12.",
+        "error": "A failed sign-in, sign-up or reset renders its message inside the form, so bad input cannot drive it into a fault — bad input answers notFound() and the product carries no fault, injection or simulate seam (re-measured 2026-09-12). Since 19 November 2026 a fault that no request causes reaches the two reviewer pages on this profile: when the auth service fails to answer the sign-in check twice, the page's account read throws and the root error surface renders at the requested address instead of the not-found page (pageAuthContract.authServiceUnavailable; owner decision 2026-11-19, D-142). It is proven by unit tests (src/lib/page-account-context.test.ts, src/lib/supabase/auth-check-sites.test.ts, src/lib/supabase/auth-check.test.ts and src/app/boundaries.test.ts); no browser proof can be written, because nothing can make the auth service fail on demand, so here too there is no browser proof to require. The four error boundaries and their unit coverage stand. Owner decision 2026-09-12.",
         "not-built": "The current consumers are the two authenticated reviewer pages. Each requires its live case authority before rendering the implemented review controls, or answers notFound(); neither renders FeatureNotBuilt. Source read 2026-10-11.",
         "initial-form": "The current consumers are authenticated reviewer case pages, not sign-in, sign-up or password-reset pages. Their review decision form is part of the existing complete case view; it is not the initial authentication credential form. Source read 2026-10-11."
       }
@@ -14649,7 +15057,7 @@
         "jurisdiction-unavailable"
       ],
       "notApplicable": {
-        "error": "An unknown subject, person, pair, embryo or scope is answered with notFound(), so no request can drive it into a fault — bad input answers notFound() and the product carries no fault, injection or simulate seam (re-measured 2026-09-12) — and there is no browser proof to require. The four error boundaries and their unit coverage stand. Owner decision 2026-09-12.",
+        "error": "An unknown subject, person, pair, embryo or scope is answered with notFound(), so bad input cannot drive it into a fault — bad input answers notFound() and the product carries no fault, injection or simulate seam (re-measured 2026-09-12). Since 19 November 2026 a fault that no request causes reaches these pages: when the auth service fails to answer the sign-in check twice, an authenticated page renders the existing error surface at the requested address instead of the sign-in or not-found page, while family.index renders its public branch as before (pageAuthContract.authServiceUnavailable; owner decision 2026-11-19, D-142). It is proven by unit tests (src/proxy.test.ts, src/app/(app)/layout.test.ts, src/lib/family/subject-route-auth-check.test.ts, src/app/(app)/embryos/context.test.ts, src/lib/supabase/auth-check.test.ts, src/lib/supabase/auth-check-sites.test.ts and src/app/boundaries.test.ts); no browser proof can be written, because nothing can make the auth service fail on demand, so here too there is no browser proof to require. The four error boundaries and their unit coverage stand. Owner decision 2026-09-12.",
         "not-built": "Every current consumer renders its implemented subject, family, embryo, report or Copilot surface and the existing result or refusal shapes. None uses the unbuilt-page shell; a missing result or unavailable capability remains its already declared state. Source read 2026-10-11.",
         "initial-form": "initial-form denotes only the pre-submit authentication credential form on the four auth routes. These current consumers render their own non-authentication surface; any input or review form here is not that authentication state. Complete route and source census read 2026-10-11."
       }
@@ -14665,7 +15073,7 @@
       ],
       "notApplicable": {
         "awaiting-choice": "/files and /files/upload are about the file itself rather than what to make from it, and /copilot/[scope] answers questions about results that already exist. None of the three renders an invitation to choose an analysis.",
-        "error": "An unknown subject, person, pair, embryo or scope is answered with notFound(), so no request can drive it into a fault — bad input answers notFound() and the product carries no fault, injection or simulate seam (re-measured 2026-09-12) — and there is no browser proof to require. The four error boundaries and their unit coverage stand. Owner decision 2026-09-12.",
+        "error": "An unknown subject, person, pair, embryo or scope is answered with notFound(), so bad input cannot drive it into a fault — bad input answers notFound() and the product carries no fault, injection or simulate seam (re-measured 2026-09-12). Since 19 November 2026 a fault that no request causes reaches these pages: when the auth service fails to answer the sign-in check twice, the proxy or the app layout renders the existing error surface at the requested address instead of the sign-in page (pageAuthContract.authServiceUnavailable; owner decision 2026-11-19, D-142). It is proven by unit tests (src/proxy.test.ts, src/app/(app)/layout.test.ts, src/lib/supabase/auth-check.test.ts and src/app/boundaries.test.ts); no browser proof can be written, because nothing can make the auth service fail on demand, so here too there is no browser proof to require. The four error boundaries and their unit coverage stand. Owner decision 2026-09-12.",
         "jurisdiction-unavailable": "No capability these routes surface appears in data/jurisdictions.json. Its twelve restricted capabilities are all Family or Embryo Analysis: /files and /files/upload handle the account's own files, and /copilot/[scope] resolves the viewer's own subjects only, so an s-{person} scope does not resolve there at all. G2.2 forbids this n/a only where the route's capability IS in that file, which is why these three may take it and /family/[person] may not. Corrections item 5, signed 2026-09-12; this is the profile split it names as the remaining step. NOT a standing exemption: scripts/jurisdiction-gate.ts pins that capability list, so a thirteenth capability fails the gate and returns these three declarations to the table. On 2026-09-28 /copilot/[scope] moved to the product-result profile: its Family scope surfaces third_party_adult_analysis and family_heritability, so this declaration now covers /files and /files/upload only.",
         "not-built": "The current consumers are the implemented own-file list and uploader. Neither renders FeatureNotBuilt; their existing empty, processing, coverage and consent states remain separate. Source read 2026-10-11.",
         "initial-form": "initial-form denotes only the pre-submit authentication credential form on the four auth routes. These current consumers render their own non-authentication surface; any input or review form here is not that authentication state. Complete route and source census read 2026-10-11."
@@ -14683,7 +15091,7 @@
         "empty": "All four routes read 2026-09-12. /family/invite is a form. /family/[person]/permissions always renders both columns and all seven rows; its youSeeNothing branch gates a note beside the populated columns. /embryos/upload and /embryos/request-data always render. Corrections item 8, signed 2026-09-13.",
         "partial-coverage": "This single-purpose flow does not render a result derived from an uploaded file.",
         "not-covered": "This single-purpose flow does not render a result derived from an uploaded file.",
-        "error": "An unknown person, embryo or invitation is answered with notFound(), so no request can drive it into a fault — bad input answers notFound() and the product carries no fault, injection or simulate seam (re-measured 2026-09-12) — and there is no browser proof to require. The four error boundaries and their unit coverage stand. Owner decision 2026-09-12.",
+        "error": "An unknown person, embryo or invitation is answered with notFound(), so bad input cannot drive it into a fault — bad input answers notFound() and the product carries no fault, injection or simulate seam (re-measured 2026-09-12). Since 19 November 2026 a fault that no request causes reaches these pages: when the auth service fails to answer the sign-in check twice, the page renders the existing error surface at the requested address instead of the sign-in or not-found page (pageAuthContract.authServiceUnavailable; owner decision 2026-11-19, D-142). It is proven by unit tests (src/proxy.test.ts, src/app/(app)/layout.test.ts, src/lib/page-account-context.test.ts, src/app/(app)/embryos/context.test.ts, src/lib/supabase/auth-check.test.ts, src/lib/supabase/auth-check-sites.test.ts and src/app/boundaries.test.ts); no browser proof can be written, because nothing can make the auth service fail on demand, so here too there is no browser proof to require. The four error boundaries and their unit coverage stand. Owner decision 2026-09-12.",
         "not-built": "The current invitation, permission, embryo-upload and request-letter routes render their implemented flows or existing authority and jurisdiction refusals. None renders the unbuilt-page shell. Source read 2026-10-11.",
         "initial-form": "initial-form denotes only the pre-submit authentication credential form on the four auth routes. These current consumers render their own non-authentication surface; any input or review form here is not that authentication state. Complete route and source census read 2026-10-11."
       }
@@ -14698,7 +15106,7 @@
         "awaiting-choice": "These pages manage the account itself — its settings, consents, Copilot model and own data — and none of them offers an analysis to choose. The choice is made on /genome/[subject]/reports and the invitation to make it renders on /overview.",
         "partial-coverage": "Account management does not render an uploaded-file result.",
         "not-covered": "Account management does not render an uploaded-file result.",
-        "error": "These settings pages parse no parameter and no request can drive it into a fault — bad input answers notFound() and the product carries no fault, injection or simulate seam (re-measured 2026-09-12) — and there is no browser proof to require. The four error boundaries and their unit coverage stand. Owner decision 2026-09-12.",
+        "error": "These settings pages parse no parameter, so bad input cannot drive them into a fault — bad input answers notFound() and the product carries no fault, injection or simulate seam (re-measured 2026-09-12). Since 19 November 2026 a fault that no request causes reaches them: when the auth service fails to answer the sign-in check twice, the proxy or the app layout renders the existing error surface at the requested address instead of the sign-in page (pageAuthContract.authServiceUnavailable; owner decision 2026-11-19, D-142). It is proven by unit tests (src/proxy.test.ts, src/app/(app)/layout.test.ts, src/lib/supabase/auth-check.test.ts and src/app/boundaries.test.ts); no browser proof can be written, because nothing can make the auth service fail on demand, so here too there is no browser proof to require. The four error boundaries and their unit coverage stand. Owner decision 2026-09-12.",
         "consent-required": "These pages manage the account itself — its settings, its consents, its Copilot model and its own data — and render no result derived from an uploaded file, so there is no analysis for a consent to gate. Owner decision 2026-09-12, corrections item 6.",
         "jurisdiction-unavailable": "No capability in data/jurisdictions.json governs these pages, and none of the five calls a capability resolver (measured 2026-09-12). Managing your own account, consents and data is not a reviewed capability. Owner decision 2026-09-12, corrections item 5.",
         "not-built": "The current settings, own-data, Copilot settings and consent pages render their implemented management controls and existing outcomes. The separate People unbuilt page uses settings-unbuilt-render, not this profile. Source read 2026-10-11.",
@@ -15495,6 +15903,25 @@
       "auth": "authenticated",
       "surface": "standard",
       "width": "64rem",
+      "queryContract": {
+        "registeredBy": "owner-decision-2026-10-23-G8.5-the-register-lists-the-harmless-extras",
+        "closed": {
+          "q": {
+            "schema": "optional-free-text-search-term-trimmed-by-the-server-read-as-an-rsID-a-chromosome-position-or-range-a-gene-symbol-or-a-trait-word-in-that-order",
+            "linkSource": {
+              "routeFrom": "genome.browser"
+            },
+            "submittedBy": "the-page's-own-native-GET-search-form-rendered-only-while-the-subject-has-a-prepared-file",
+            "bound": "no-length-bound-beyond-the-request-line; a-position-reads-at-most-the-200-row-region-limit-and-a-gene-symbol-at-most-100-reference-positions",
+            "content": "a-reference-coordinate-symbol-or-word-the-reader-typed; never-a-file-subject-or-genotype-identifier"
+          }
+        },
+        "absentOrEmptyAfterTrim": "render-the-search-box-with-no-result-rows-and-no-search-read",
+        "withoutAPreparedFile": "ignored-with-no-search-read",
+        "noMatch": "render-the-registered-no-reference-match-sentence-with-the-reports-link-and-no-result-rows",
+        "unrecognizedChromosome": "render-the-registered-unrecognized-chromosome-sentence-and-no-result-rows",
+        "unknownParameters": "ignored-and-never-echoed"
+      },
       "stateProfile": "product-result",
       "notApplicableStates": {
         "awaiting-choice": "This route shows what a subject's file already produced. The invitation to choose an analysis renders on /overview alone, and its link points at /genome/[subject]/reports.",
@@ -16120,7 +16547,8 @@
         "transportAvailabilityResolver": "copilot-transport-availability-v1",
         "pageBranches": {
           "available": "after-scope-purpose-jurisdiction-provider-and-transport-availability-all-pass-render-the-authorized-chat-surface-and-mint-one-context-token",
-          "true-non-self-unavailable": "render-only-policyResolvers.copilot-transport-availability-v1.cases.true-non-self.unavailablePageProjection-with-no-context-token-composer-input-history-result-or-target-fetch"
+          "true-non-self-unavailable": "render-only-policyResolvers.copilot-transport-availability-v1.cases.true-non-self.unavailablePageProjection-with-no-context-token-composer-input-history-result-or-target-fetch",
+          "subject-adult-uploader-or-grantee": "registered-2026-11-20-G8.5-copilot-for-another-adult's-record-opens-(owner-decision-2026-11-19;20261120130000): for-an-s-segment-whose-subject-the-acting-account-uploaded-(scope-derived-v1.cases.subject:adult.principalRelationshipCases.uploader-or-grantee.builtProjections)-or-holds-as-a-grantee-and-only-on-the-available-transport, render-exactly-one-of-in-order: jurisdiction-unavailable-with-jurisdiction-v1-userFacingCopy-for-third_party_adult_analysis; provider-required-when-the-acting-account's-own-provider-is-not-classified-local-or-has-no-current-copilot-permission; held-when-other-adult-mitigation-state-v1-denies-with-a-gate-other-than-not-found-and-no-reason-or-gate-shown; permission-missing-when-the-person-has-no-current-copilot.local-to-the-acting-account-or-no-shared-report-layer-without-saying-which (registered-2026-11-22-the-72-hour-hold-covers-an-inviter's-reads-of-the-invited-adult's-own-record-(owner-decision-2026-11-22;D-156;20261122110000): a-layer-other-adult-mitigation-state-v1.invitedAdultOwnRecordInviterReads-keeps-from-the-acting-account-is-not-shared-here, so-that-inviter-sees-permission-missing-and-never-held); the-tier-2-acknowledgement-gate; then-the-authorized-chat-surface-whose-h1-thread-header-names-the-one-subject-and-mint-one-context-token-bound-to-the-subject-the-provider-authority-and-the-exact-relationship-copilot-and-layer-grant-revisions; any-other-or-unrelated-subject-is-resource-not-found-page-v1; off-the-available-transport-a-resolved-uploader-or-grantee-subject-renders-true-non-self-unavailable"
         },
         "contextToken": "mint-only-after-the-path-scope-resolves-authorizes-and-the-current-transport-availability-case-is-available"
       },
@@ -16141,6 +16569,7 @@
         "partial-coverage": "The same. Corrections item 10, signed 2026-09-13."
       },
       "policy": {
+        "pathBCopilotChoice": "registered-2026-11-20-G8.5-copilot-for-another-adult's-record-opens-(owner-decision-2026-11-19;20261120130000): the-person-a-path-b-file-was-added-for-who-holds-the-record-with-their-own-account-turns-copilot.local-on-and-off-for-the-uploader-only-beside-their-result-layer-choices-on-this-page (no-for-you-copilot-row); turning-it-on-is-api.consents-grant-purpose-under-the-same-server-sealed-path-b-presentation-consent.share-with-adult-and-four-statements-as-a-result-layer-for-the-uploader-and-other-adult-mitigation-state-v1-at-purpose-grant-create, signed-by-the-person's-own-current-account-principal-over-the-current-uploader-relationship (api.consents.signerCases.other-adult-subject-artifact-or-purpose); turning-it-off-is-api.consent-revoke-with-its-one-time-consent_revoke-value-and-is-purpose-revocation-v1; the-no-account-person's-rights-session-door-still-refuses-copilot.local-because-no-reader-exists-for-a-no-account-record; the-uploader's-line-for-a-ready-shared-report-links-to-copilot.scope-for-that-record-only-while-its-subject-adult-uploader-or-grantee-branch-would-render-the-chat-surface",
         "contracts": [
           "resource-authorization-v1",
           "other-adult-mitigation-state-v1"
@@ -16655,7 +17084,7 @@
       "stateProfile": "endpoint",
       "policy": {
         "sessionContract": "authContracts.authenticated-session-v1",
-        "transaction": "lock-the-exact-current-auth.sessions-row-from-the-validated-JWT-session_id-and-sub-revoke-or-delete-that-row-and-its-refresh-token-and-invalidate-every-authenticatedDerivedCapability-row-originating-from-that-session-before-returning-success-clear-the-host-only-session-upload-evidence-export-download-and-model-capability-cookies-and-write-no-user-session-token-or-capability-detail-to-observability; a-stolen-pre-signout-access-JWT-upload-bearer-or-purpose-cookie-fails-the-database-live-session-check-immediately-even-before-its-bounded-expiry",
+        "transaction": "lock-the-exact-current-auth.sessions-row-from-the-validated-JWT-session_id-and-sub-revoke-or-delete-that-row-and-its-refresh-token-and-invalidate-every-authenticatedDerivedCapability-row-originating-from-that-session-before-returning-success-clear-the-host-only-session-upload-evidence-export-and-download-cookies-and-write-no-user-session-token-or-capability-detail-to-observability; the-rights-cookie-is-not-cleared-at-sign-out (sign-out-v1.sessionEffect); a-stolen-pre-signout-access-JWT-upload-bearer-or-purpose-cookie-fails-the-database-live-session-check-immediately-even-before-its-bounded-expiry",
         "scope": {
           "const": "current-session-only"
         }
@@ -16720,7 +17149,7 @@
         "requiredSignals": [
           "Origin-exactly-canonical-origin",
           "Sec-Fetch-Site-same-origin",
-          "X-Inherit-CSRF-header-matching-the-account-completion-presentation"
+          "X-Inherit-CSRF-header-bound-to-the-current-live-authenticated-session-and-spent-once; the-account-completion-presentation-travels-only-in-body.presentationToken"
         ],
         "forbiddenFields": [
           "accountId",
@@ -16825,7 +17254,8 @@
             "create": "requires-no-current-live-export-for-this-route-principal-or-explicitly-supersedes-only-the-same-principals-terminal-or-expired-row-and-enqueues",
             "open-ready": "requires-one-current-ready-export-cookie-bound-to-this-exact-route-principal-and-revisions-and-creates-only-the-download-session-with-zero-export-enqueue"
           },
-          "unknownMissingInvalidStaleOrInapplicable": "invalid-request-v1"
+          "unknownMissingInvalidStaleOrInapplicable": "invalid-request-v1",
+          "exportProof": "registered-2026-11-19-G8.5: X-Inherit-Operation-Proof-carries-the-sealed-one-time-export-proof-the-page-rendered-with-the-explicit-action-bound-to-the-account-auth-session-origin-authority-receipt-and-operation-whose-hash-the-operation-envelope-and-the-database-bind-as-the-request's-csrf-binding-exactly-as-before-and-not-X-Inherit-CSRF-which-is-the-one-time-account-session-token; a-GET-poll-sends-neither"
         },
         "GET": {
           "body": "forbidden",
@@ -17027,22 +17457,18 @@
       ],
       "authRequirements": [
         "exact-same-origin",
-        "X-Inherit-CSRF-bound-to-the-authenticated-session",
-        "one-time-browse-operation-nonce"
+        "X-Inherit-CSRF-bound-to-the-authenticated-session"
       ],
       "requestContract": {
+        "registeredBy": "owner-decision-2026-11-19-G8.5-the-genome-browser's-read-is-registered-as-built",
         "contentType": "application/json",
         "closedBody": {
-          "subject": "required-subject-id-or-me-alias",
-          "region": {
-            "chromosome": "required-normalized-autosomal-contig",
-            "start": "required-positive-safe-integer",
-            "end": "required-positive-safe-integer-not-less-than-start"
-          },
-          "cursor": "optional-opaque-server-cursor",
-          "nonce": "required-session-bound-one-time-browse-operation-nonce"
+          "file": "required-canonical-UUID-of-a-genome_files-row",
+          "chromosome": "required-one-through-five-characters-naming-1-through-22-X-Y-M-or-MT-with-or-without-a-chr-prefix-in-any-case",
+          "start": "required-positive-safe-integer",
+          "end": "required-positive-safe-integer-not-less-than-start"
         },
-        "unknownMissingOrInvalid": "invalid-request-v1",
+        "unknownMissingOrInvalid": "own-region-variants-v1.invalid",
         "forbiddenFields": [
           "accountId",
           "ownerId",
@@ -17054,25 +17480,23 @@
       "stateProfile": "endpoint",
       "policy": {
         "mode": "resolved",
-        "resolver": "subject-route-v1",
-        "operation": "raw-variant-region-read",
-        "projection": "exact-authorized-subject-region-and-bounded-page-only",
-        "transport": "subject-region-cursor-and-nonce-are-body-only-and-forbidden-in-the-URL-query-path-logs-analytics-traces-errors-referrers-and-audit-detail; consume-the-browse-nonce-before-the-read",
+        "registeredBy": "owner-decision-2026-11-19-G8.5-the-genome-browser's-read-is-registered-as-built",
+        "operation": "own-variant-region-read",
+        "reach": "own-variants-only: the-read-runs-under-the-acting-account's-own-Supabase-session-so-public.user_variants-row-level-security-alone-decides-which-rows-exist (resourceAuthorizationBindings.api.browse-region.authorization); no-subject-resolver-purpose-grant-raw-export-grant-or-raw.browse-purpose-is-read-and-none-widens-it",
+        "relative": "a-relative-never-sees-the-track: genome.browser-renders-it-for-a-subject-another-account-holds-and-this-read-then-answers-an-empty-variants-list-because-no-row-of-another-account-is-readable",
+        "projection": "the-acting-account's-own-rows-of-the-requested-file-chromosome-and-inclusive-span-only",
+        "transport": "file-and-region-are-body-only-and-forbidden-in-the-URL-query-path-logs-analytics-traces-errors-referrers-and-audit-detail",
+        "csrf": "every-read-spends-the-session's-one-time-X-Inherit-CSRF-token-for-this-route-before-the-handler-runs-and-the-answer-carries-its-successor (mutationSecurityBindings.csrfTransport); no-body-nonce-and-no-cursor",
         "bounds": {
           "maximumRequestedSpanBases": 1000000,
           "maximumRowsPerPage": 500,
-          "maximumEncodedResponseBytes": {
-            "constFrom": "payloadBoundaryContract.ingestChunkMaximumBytes"
-          },
-          "cursor": "opaque-server-signed-and-bound-to-subject-normalized-region-result-revision-page-size-and-principal"
+          "paging": "none: one-read-returns-at-most-maximumRowsPerPage-rows-in-ascending-position-order-and-own-region-variants-v1.truncated-says-whether-it-reached-that-limit"
         },
         "contracts": [
-          "resource-authorization-v1",
-          "raw-export-grant-v1",
-          "other-adult-mitigation-state-v1"
+          "resource-authorization-v1"
         ]
       },
-      "successResponseContract": "raw-region-v1",
+      "successResponseContract": "own-region-variants-v1",
       "disposition": "kept"
     },
     {
@@ -17387,7 +17811,9 @@
         "body": "forbidden",
         "pathParameter": {
           "id": "canonical lowercase UUID of a file the caller's account owns"
-        }
+        },
+        "requiredHeader": "X-Inherit-Operation-Nonce-from-the-files-page",
+        "operationNonce": "registered-2026-11-20-owner-decision-2026-11-19-G8.5-where-the-register-is-stricter-engineering-codes-to-it: authenticated-mutation-v1.destructiveNonce-for-deleting-one-file; files.index-renders-one-value-per-file-row-as-mutationSecurityBindings.operationNonceIssuance-says (a-stateless-HMAC-bound-to-the-account-its-originating-auth-session-the-operation-file_delete-and-that-file, expiring-within-10-minutes, stored-nowhere); prepare_own_prepared_file_cleanup_with_nonce_v1-records-its-hash-in-account_operation_nonces-in-the-same-transaction-as-the-deletion's-first-write-and-before-it (20261120110000), so-a-refused-deletion-spends-nothing-and-a-replayed-value-writes-nothing; a-missing-malformed-expired-spent-or-foreign-value (another-account-session-operation-or-file) is-refused-with-authenticated-mutation-v1.failure-before-anything-is-deleted; each-request-spends-its-own-value, and-a-file-delete-v1.pending-answer-issues-the-next (file-delete-v1.pending.nextOperationNonce); X-Inherit-CSRF-is-the-one-time-account-session-token-and-never-carries-it (operationNonceIsNotCsrf)"
       },
       "stateProfile": "endpoint",
       "policy": {
@@ -17397,12 +17823,13 @@
         "sameOriginRequired": "sec-fetch-site-must-equal-same-origin-or-the-request-is-refused-before-the-account-context-is-read",
         "scopeSource": "database-owned-file-row",
         "ordering": "the database prepares and authorises the cleanup, the original object is then removed from Storage, and only then is deletion finished; a repeated attempt after a partial failure is idempotent, because the provider's empty removal list is its acknowledgement that a previous attempt already removed the object",
-        "successResponse": "no-content-with-no-body, so this route registers no successResponseContract",
+        "successResponse": "file-delete-v1: 204 with no body once deletion is finished, and 202 file_delete_pending while the database cleanup is still running, which the client repeats (registered 2026-10-24, G8.5)",
         "storageAccessContract": "genomes-server-mediated-v1",
         "contracts": [
           "resource-authorization-v1"
         ]
       },
+      "successResponseContract": "file-delete-v1",
       "disposition": "kept"
     },
     {
@@ -17634,7 +18061,8 @@
         },
         "manifestRule": "chunkCount-must-equal-the-exact-server-owned-contiguous-zero-based-fragment-manifest-cardinality-with-no-gap-extra-duplicate-or-client-selected-sequence",
         "unknownMissingOrInvalid": "invalid-request-v1",
-        "requiredHeader": "X-Inherit-CSRF-bound-to-the-upload-session"
+        "requiredHeader": "X-Inherit-CSRF-bound-to-the-upload-session",
+        "operationToken": "registered-2026-11-19-G8.5: X-Inherit-Operation-Nonce-carries-the-one-time-ingest_complete_csrf-operation-value (the-csrfToken-the-configure-or-mapping-answer-issued)-and-not-X-Inherit-CSRF-which-is-the-upload-session's-one-time-token (operationNonceIsNotCsrf)"
       },
       "stateProfile": "endpoint",
       "policy": {
@@ -17714,7 +18142,7 @@
               "mode": "hosted",
               "provider": "required-allowlisted-hosted-provider-key",
               "model": "required-allowlisted-provider-model-id",
-              "apiKey": "required-bounded-secret",
+              "apiKey": "optional-bounded-secret-of-4-through-500-characters; absent-keeps-the-stored-key-when-the-stored-setting-is-the-same-hosted-provider-and-origin; with-no-reusable-stored-key-llm-settings-v1.keyRequired",
               "baseUrl": "forbidden"
             },
             {
@@ -17724,7 +18152,7 @@
               },
               "model": "required-bounded-model-id",
               "baseUrl": "required-https-endpoint-URL",
-              "apiKey": "required-bounded-secret"
+              "apiKey": "optional-bounded-secret-of-4-through-500-characters; absent-keeps-the-stored-key-when-the-stored-setting-has-the-same-provider-and-origin; with-no-stored-key-the-HTTPS-endpoint-is-saved-key-free; a-stored-key-is-never-sent-to-another-destination-and-a-changed-destination-with-none-sent-is-llm-settings-v1.keyRequired"
             },
             {
               "mode": "same-host-local",
@@ -17736,6 +18164,10 @@
               "apiKey": "optional-bounded-secret-only-in-model-endpoint-v1.localMode"
             }
           ],
+          "apiKeyOmission": {
+            "registeredBy": "owner-decision-2026-10-24-G8.5-Settings-AI-may-omit-apiKey",
+            "hostedAndRemote": "an-absent-apiKey-keeps-the-stored-key-for-the-same-destination-and-a-remote-HTTPS-endpoint-may-be-saved-with-no-key; the-settings-form-sends-no-apiKey-when-its-key-field-is-empty; an-empty-string-is-not-a-bounded-secret-and-is-invalid-request-v1"
+          },
           "unknownMissingInvalidOrAmbiguous": "invalid-request-v1"
         },
         "DELETE": {
@@ -17782,7 +18214,10 @@
       ],
       "requestContract": {
         "contentType": "application/json",
-        "schema": "closed-subject-draft-create-v1"
+        "schema": "closed-subject-draft-create-v1",
+        "requiredHeader": "X-Inherit-Operation-Nonce-from-the-invite-page-for-the-path-a-adult-invitation",
+        "operationNonce": "recorded-in-account_operation_nonces-before-the-writer-in-the-same-transaction-so-its-legal-audit-event-names-the-actor-G5.6-2026-10-23",
+        "pathBDraftNonce": "both-path-b-bodies-carry-the-upload-page's-one-time-draft-nonce-in-X-Inherit-Operation-Nonce-recorded-in-account_operation_nonces-before-the-draft-is-written-20261023130000; X-Inherit-CSRF-is-the-one-time-account-session-token-on-every-body"
       },
       "stateProfile": "endpoint",
       "policy": {
@@ -17794,7 +18229,9 @@
           "immutable-contact-encryption-and-HMAC"
         ],
         "flowDiscriminator": "closed-subject-draft-create-v1.adultFlow-is-stored-once-and-immutably-selects-path-a-account-required-or-path-b-token-or-account-and-for-path-b-exactly-esignature-or-uploaded_document; no-later-request-token-reviewer-or-account-state-may-change-it",
-        "transaction": "reserve-one-no-data-no-analysis-adult-subject-draft-UUID-that-is-also-the-only-future-subject-id-bind-inviter-owner-upload-class-adult-flow-adult-confirmation-mode-evidence-kind-and-envelope-encrypted-contact-with-its-versioned-HMAC-and-fixed-adult.subject-draft-30d-deadline-or-write-nothing; path-b-also-binds-display-name-and-date-of-birth-and-path-a-uses-only-a-neutral-server-label-until-acceptance; an-optional-path-a-note-is-envelope-encrypted-and-may-flow-only-to-that-invitation-template; this-reservation-is-not-consent-and-cannot-accept-an-invitation-evidence-or-file-until-the-acting-account-signs-current-consent.upload-other-adult-against-this-exact-subjectDraftId; only-an-eligible-api.invitations-transaction-may-advance-path-a-or-path-b-esignature-and-only-reviewed-document-api.subjects-may-consume-path-b-reviewed-document; no-flow-may-change-the-UUID-contact-flow-mode-evidence-kind-or-deadline",
+        "transaction": "reserve-one-no-data-no-analysis-adult-subject-draft-UUID-that-is-also-the-only-future-subject-id-bind-inviter-owner-upload-class-adult-flow-adult-confirmation-mode-evidence-kind-and-envelope-encrypted-contact-with-its-versioned-HMAC-and-fixed-adult.subject-draft-30d-deadline-or-write-nothing; path-b-also-binds-display-name-and-date-of-birth-and-path-a-uses-only-a-neutral-server-label-until-acceptance; an-optional-path-a-note-is-envelope-encrypted-and-may-flow-only-to-that-invitation-template; this-reservation-is-not-consent-and-a-path-b-reservation-cannot-accept-an-invitation-evidence-or-file-until-the-acting-account-signs-current-consent.upload-other-adult-against-this-exact-subjectDraftId; only-an-eligible-api.invitations-transaction-may-advance-path-b-esignature-and-only-reviewed-document-api.subjects-may-consume-path-b-reviewed-document; path-a-own-account-is-reserved-and-invited-in-this-one-transaction-under-pathAOneStepInvitation; no-flow-may-change-the-UUID-contact-flow-mode-evidence-kind-or-deadline",
+        "pathAOneStepInvitation": "registered-2026-11-19-G8.5: a-path-a-own-account-body-reserves-the-draft-and-in-the-same-transaction-creates-its-hidden-adult_subject-invitation-token-candidate-and-invitation-mail-row-unless-global-contact-refusal-bar-v1-or-the-attempt-quota-refuses-the-address-then-answers-pathASuccessResponseContract; the-inviter-signs-no-uploader-artifact-because-consent.upload-other-adult-says-its-signer-holds-the-other-adult's-file-and-a-path-a-inviter-never-holds-or-uploads-it (adult-subject-confirmation-v1.pathAOwnershipInvariant); the-draft-UUID-is-never-returned-and-api.invitations-never-advances-a-path-a-draft (create_adult_subject_invitation_with_nonce_v1)",
+        "pathASuccessResponseContract": "path-a-invitation-created-v1",
         "contact": "plaintext-contact-or-note-exists-only-in-bounded-request-and-mail-worker-memory-and-envelope-encrypted-draft-fields-never-response-log-analytics-or-audit; replacement-retargeting-and-cross-account-reuse-are-forbidden",
         "geneticDataPurposeOrAnalysis": "zero-file-source-purpose-grant-variant-derived-chat-or-analysis-writes-and-every-path-a-draft-remains-non-upload-authorizing-until-recipient-account-acceptance",
         "contracts": [
@@ -17830,7 +18267,7 @@
         "globalBar": "before-any-subject-transition-invitation-token-or-invitation-mail-lock-and-recheck-the-drafts-versioned-contact-HMAC-under-invitation.refusal-hash-365d; eligible-and-barred-return-the-identical-subject-created-v1-receipt-timing-and-caller-visible-draft-capabilities; barred-creates-no-subject-invitation-token-or-invitation-mail-but-may-enqueue-only-the-same-minimal-protective-blocked-attempt-notice-as-api.invitations",
         "transition": "for-an-eligible-unbarred-contact-preserve-the-reserved-draft-with-zero-subject-file-or-upload-authority-create-one-hidden-purpose-bound-path-b-reviewed-document-subject-confirmation-invitation-bound-to-the-draft-document-and-review-revisions-enqueue-it-through-mail-token-delivery-v1-and-start-invitation.pending-30d; for-a-barred-contact-create-none-of-those; neither-branch-creates-a-purpose-grant-analysis-row-file-upload-capability-or-caller-visible-pollable-state",
         "recipientActivation": "only-api.invitation-accept-or-the-path-b-token-confirmation-may-atomically-consume-the-reserved-draft-UUID-into-the-uploader-owned-other_adult-subject-after-rechecking-the-global-bar-document-review-and-every-flow-revision; the-uploader-cannot-open-a-file-upload-session-before-that-commit",
-        "otherAdultFlows": "path-a-own-account-and-path-b-subject-esignature-are-rejected-here-and-use-api.invitations; no-flow-may-change-adultFlow-confirmation-mode-or-evidence-kind",
+        "otherAdultFlows": "path-a-own-account-and-path-b-subject-esignature-are-rejected-here; path-b-subject-esignature-uses-api.invitations-and-path-a-own-account-is-invited-by-api.subject-drafts.policy.pathAOneStepInvitation; no-flow-may-change-adultFlow-confirmation-mode-or-evidence-kind",
         "selfCreation": "auth.sign-up-submit-only",
         "embryoCreation": "api.embryo-cohorts-only-and-an-embryo-attempt-returns-embryo-cohort-required-v1",
         "unsupportedKinds": [
@@ -17871,6 +18308,11 @@
           "file": "required-genome-file-id-joined-server-side-to-the-route-subject"
         },
         "unknownMissingOrInvalid": "invalid-request-v1"
+      },
+      "requestContract": {
+        "requiredHeader": "X-Inherit-Operation-Nonce-bound-to-this-account-session-and-query.file",
+        "operationNonce": "recorded-in-account_operation_nonces-before-the-session-is-created-in-the-same-transaction-so-its-legal-audit-event-names-the-actor-G5.6-2026-10-23",
+        "missingOrInvalidNonce": "invalid-request-v1-only-for-a-readable-subject-else-resource-not-found-v1"
       },
       "stateProfile": "endpoint",
       "policy": {
@@ -17950,7 +18392,8 @@
             "create": "requires-no-current-live-export-for-this-route-principal-or-explicitly-supersedes-only-the-same-principals-terminal-or-expired-row-and-enqueues",
             "open-ready": "requires-one-current-ready-export-cookie-bound-to-this-exact-route-principal-and-revisions-and-creates-only-the-download-session-with-zero-export-enqueue"
           },
-          "unknownMissingInvalidStaleOrInapplicable": "invalid-request-v1"
+          "unknownMissingInvalidStaleOrInapplicable": "invalid-request-v1",
+          "exportProof": "registered-2026-11-19-G8.5: X-Inherit-Operation-Proof-carries-the-sealed-one-time-export-proof-the-page-rendered-with-the-explicit-action-bound-to-the-account-auth-session-origin-authority-receipt-and-operation-whose-hash-the-operation-envelope-and-the-database-bind-as-the-request's-csrf-binding-exactly-as-before-and-not-X-Inherit-CSRF-which-is-the-one-time-account-session-token; a-GET-poll-sends-neither"
         },
         "GET": {
           "body": "forbidden",
@@ -18046,7 +18489,8 @@
           "self": {
             "actorRole": "owning-account",
             "scope": "route-subject-only",
-            "dispositionContract": "revocation-and-purge-v1"
+            "dispositionContract": "revocation-and-purge-v1",
+            "withdrawal": "registered-2026-11-19-owner-decision-withdrawing-consent-for-a-person's-own-DNA-file-deletes-the-files-and-all-made-from-them: this-case-is-the-withdrawal-of-the-self-upload-class-consent; the-route-sends-a-self-record-to-empty_self_subject_with_notice_v1-which-runs-this-door's-self-case-unchanged-and-in-the-same-transaction-queues-one-upload-consent-withdrawn-email-per-spent-nonce-to-the-account's-own-principal-at-the-confirmed-address-the-route-sealed-from-the-signed-in-account; no-confirmed-address-or-an-address-changed-since-the-route-read-it-refuses-the-whole-request-with-resource-not-found-v1-and-deletes-nothing"
           },
           "adult": {
             "actorRoleAnyOf": [
@@ -18054,7 +18498,8 @@
               "owning-account"
             ],
             "scope": "route-subject-only",
-            "dispositionContract": "revocation-and-purge-v1"
+            "dispositionContract": "revocation-and-purge-v1",
+            "withdrawal": "registered-2026-11-19-owner-decision-an-uploader's-withdrawal-for-another-adult's-file-deletes-it-unless-that-adult-holds-the-record-themselves: the-owning-account's-request-is-the-withdrawal-of-its-other-adult-uploader-consent.upload-other-adult; the-route-sends-it-only-to-withdraw_other_adult_upload_v1, which-under-the-invitation-transition-lock-runs-delete_subject_v1's-unchanged-Path-B-delete-as-withdrawn-and-in-the-same-transaction-queues-one-upload-permission-withdrawn-terminal-notice-per-spent-nonce-to-the-adult's-own-sealed-contact-bound-to-the-request-they-accepted-unless-that-contact-is-barred-then-or-when-the-notice-is-sent; a-record-the-adult-holds-with-their-own-account-(subject_account_id-set)-is-handed-to-them-under-lifecycleDispositionContracts.subject-ownership-transfer-v1.uploaderWithdrawalActorCase (registered-2026-11-22-owner-decision-an-uploader's-withdrawal-hands-a-record-its-adult-holds-to-that-adult); that-transfer-is-open-and-runs-on-the-owning-account's-request (registered-2026-11-22-transfer-open), and-a-hand-over-refused-at-that-moment-answers-hand-over-not-now-v1 (registered-2026-11-22-owner-decision-a-hand-over-refused-for-now-says-to-try-later), and-delete_subject_v1-itself-refuses-the-owning-account-on-such-a-record-in-every-state; a-record-whose-notice-cannot-be-addressed-is-refused-whole; the-verified-subject-account's-own-delete-is-unchanged"
           },
           "embryo-transferred-unclaimed": {
             "actorRole": "one-exact-current-member-of-policyResolvers.embryo-basis-authority-v1.dispositionAuthorities-for-the-route-embryos-cohort",
@@ -18101,12 +18546,14 @@
           {
             "operation": {
               "const": "pause"
-            }
+            },
+            "nonce": "required-recent-one-time-operation-nonce"
           },
           {
             "operation": {
               "const": "resume"
-            }
+            },
+            "nonce": "required-recent-one-time-operation-nonce"
           },
           {
             "operation": {
@@ -18115,7 +18562,8 @@
             "nonce": "required-recent-one-time-operation-nonce"
           }
         ],
-        "unknownMissingInvalidOrAmbiguous": "invalid-request-v1"
+        "unknownMissingInvalidOrAmbiguous": "invalid-request-v1",
+        "operationNonce": "recorded-in-account_operation_nonces-before-the-writer-in-the-same-transaction-so-its-legal-audit-event-names-the-actor-G5.6-2026-10-23"
       },
       "stateProfile": "endpoint",
       "policy": {
@@ -18173,7 +18621,9 @@
           "revision",
           "updatedAt",
           "derivedFrom"
-        ]
+        ],
+        "requiredHeader": "X-Inherit-Operation-Nonce-from-the-settings-page-for-this-subject",
+        "operationNonce": "recorded-in-account_operation_nonces-before-the-writer-in-the-same-transaction-so-its-legal-audit-event-names-the-actor-G5.6-2026-10-23"
       },
       "stateProfile": "endpoint",
       "policy": {
@@ -18229,7 +18679,9 @@
           "pairId",
           "counterpartSubjectId",
           "acknowledgedAt"
-        ]
+        ],
+        "requiredHeader": "X-Inherit-Operation-Nonce-from-the-portrait-page-for-the-portrait-acknowledgement",
+        "operationNonce": "recorded-in-account_operation_nonces-before-the-writer-in-the-same-transaction-so-its-legal-audit-event-names-the-actor-G5.6-2026-10-23"
       },
       "stateProfile": "endpoint",
       "policy": {
@@ -18256,6 +18708,57 @@
       "disposition": "kept"
     },
     {
+      "id": "api.embryo-acknowledge",
+      "path": "/api/embryos/acknowledge",
+      "kind": "endpoint",
+      "domain": "api",
+      "auth": "authenticated",
+      "methods": [
+        "POST"
+      ],
+      "requestContract": {
+        "contentType": "application/json",
+        "closedBody": {
+          "acknowledgement": {
+            "const": "embryo-result-gate"
+          },
+          "affirmed": {
+            "const": true
+          }
+        },
+        "unknownMissingInvalidOrAmbiguous": "invalid-request-v1",
+        "forbiddenFields": [
+          "accountId",
+          "cohortId",
+          "embryoId",
+          "acknowledgedAt"
+        ],
+        "origin": "the-api.family-acknowledge-check: an-Origin-header-must-equal-the-request-origin-and-without-one-Sec-Fetch-Site-must-be-same-origin"
+      },
+      "stateProfile": "endpoint",
+      "policy": {
+        "mode": "right",
+        "jurisdictionBypass": true,
+        "actorRole": "acting-account",
+        "registeredBy": "owner-decision-2026-10-23-G8.5-the-server-action-acknowledgeEmbryoGate-moves-to-a-registered-route-with-the-checks-of-api.family-acknowledge",
+        "operationCases": {
+          "embryo-result-gate": {
+            "effect": "set-one-httpOnly-Secure-SameSite-Lax-session-cookie-inherit_embryo_gate-whose-value-is-a-keyed-digest-of-the-account-id-and-the-current-auth-session-id-under-its-own-embryo-digest-context-with-no-Max-Age; auth.sign-out-clears-it; localStorage-is-forbidden",
+            "writes": "none",
+            "operationNonce": "none-as-for-the-api.family-acknowledge-tier2-result-gate-case: a-reading-acknowledgement-that-destroys-nothing-and-grants-no-authority",
+            "readBy": "embryos.compare-embryos.detail-and-copilot.scope-for-a-cohort-scope-fetch-nothing-derived-until-the-cookie-verifies-server-side",
+            "separation": "never-opens-the-Family-gate-and-the-Family-gate-never-opens-it"
+          }
+        },
+        "protectedFetchSerializeEnqueueOrModelCall": "forbidden",
+        "contracts": [
+          "resource-authorization-v1"
+        ]
+      },
+      "successResponseContract": "embryo-acknowledged-v1",
+      "disposition": "kept"
+    },
+    {
       "id": "api.family-sharing",
       "path": "/api/family/[person]/sharing",
       "kind": "endpoint",
@@ -18273,12 +18776,14 @@
           {
             "operation": {
               "const": "pause"
-            }
+            },
+            "nonce": "required-recent-one-time-operation-nonce"
           },
           {
             "operation": {
               "const": "resume"
-            }
+            },
+            "nonce": "required-recent-one-time-operation-nonce"
           },
           {
             "operation": {
@@ -18294,7 +18799,8 @@
           "subjectId",
           "pairId",
           "grantIds"
-        ]
+        ],
+        "operationNonce": "recorded-in-account_operation_nonces-before-the-writer-in-the-same-transaction-so-its-legal-audit-event-names-the-actor-G5.6-2026-10-23"
       },
       "stateProfile": "endpoint",
       "policy": {
@@ -18338,6 +18844,7 @@
         "POST"
       ],
       "requestContract": {
+        "oneTimeValues": "registered-2026-11-19-G8.5: the-two-embryo-bodies (sign-artifact-with-cohortDraftId-and-grant-purpose-with-cohortId)-carry-the-page's-one-time-embryo-operation-token (artifact_sign-or-cohort_purpose_grant)-in-X-Inherit-Operation-Nonce; every-other-body's-one-time-value-is-its-body.artifactPresentationToken; X-Inherit-CSRF-is-the-one-time-account-session-token-on-every-body-and-never-repeats-either-value (operationNonceIsNotCsrf)",
         "contentType": "application/json",
         "oneOfClosedBodies": [
           {
@@ -18802,7 +19309,8 @@
       ],
       "requestContract": {
         "body": "forbidden",
-        "requiredHeader": "X-Inherit-Operation-Nonce-from-the-consent-page"
+        "requiredHeader": "X-Inherit-Operation-Nonce-from-the-consent-page",
+        "operationNonce": "the-directional-purpose-revocation-recorded-in-account_operation_nonces-before-the-writer-in-the-same-transaction-so-its-legal-audit-event-names-the-actor-G5.6-2026-10-23; since-2026-10-24-G8.5-the-cloud-model-provider-grant-and-the-own-Copilot-permission-record-it-the-same-way-revoke_cloud_model_consent_with_nonce_v1-and-revoke_own_copilot_with_nonce_v1; registered-2026-11-19-owner-decision-a-non-parent-uploader's-withdrawal-for-an-embryo-upload-stops-analysis-and-deletes-as-they-signed: the-non-parent-uploader's-consent.upload-embryo-signature-records-the-same-consent_revoke-nonce-minted-for-that-signature-the-same-way-withdraw_embryo_uploader_consent_v1"
       },
       "stateProfile": "endpoint",
       "policy": {
@@ -18824,6 +19332,137 @@
           "embryo.analysis-purpose-grant-by-one-current-requiredUploadPrincipal": "purpose-revocation-v1-for-the-exact-cohort-purpose-principal-and-grant-revision-with-zero-source-delete",
           "consent.upload-embryo-or-current-parent-source-authority-artifact-by-one-current-dispositionAuthority": "contradiction-v1-plus-cohort-restriction-v1-for-the-whole-current-parent-controlled-cohort-after-locking-the-current-policyResolvers.embryo-basis-authority-v1-basis-five-set-and-artifact-revisions"
         },
+        "withdrawalRoutes": {
+          "registeredBy": "owner-decision-2026-11-19-G8.5-the-register-names-where-each-kind-of-consent-is-withdrawn",
+          "basis": "api.consent-revoke-itself-resolves-only-a-public.purpose_grants-row-or-a-public.consent_grants-row-or-(registered-2026-11-19-owner-decision-a-non-parent-uploader's-withdrawal-for-an-embryo-upload-stops-analysis-and-deletes-as-they-signed)-a-public.consent_signatures-row-that-is-a-consent.upload-embryo-signature-of-purpose-embryo-upload-uploader-class, exactly-one-of-the-three-must-match, and-answers-resource-not-found-v1-for-any-other-id-including-every-other-signature; cases-names-for-each-dispositionCases-kind-the-routes-that-withdraw-it-today-and-the-database-door-each-of-those-routes-calls, and-a-kind-cases-does-not-name-has-no-registered-withdrawal-route-yet",
+          "cases": {
+            "analytic-purpose-grant-including-cohort-scoped-embryo.analysis": {
+              "routes": [
+                "api.consent-revoke",
+                "api.consents-revoke-all",
+                "api.subject-sharing",
+                "api.family-sharing"
+              ],
+              "doors": [
+                "revoke_directional_purpose_with_nonce_v1",
+                "revoke_all_own_consents_v1",
+                "stop_subject_sharing_v1",
+                "stop_family_sharing_with_nonce_v1"
+              ],
+              "how": "api.consent-revoke-ends-one-public.purpose_grants-row-and-its-direction-row-and-api.consents-revoke-all-every-grant-the-acting-account-signed; a-grant-to-another-account-also-ends-when-sharing-between-the-two-accounts-is-stopped-through-stop_family_sharing_v1"
+            },
+            "raw-export-grant": {
+              "routes": [
+                "api.consent-revoke",
+                "api.consents-revoke-all",
+                "api.subject-sharing",
+                "api.family-sharing"
+              ],
+              "doors": [
+                "revoke_directional_purpose_with_nonce_v1",
+                "revoke_all_own_consents_v1",
+                "stop_subject_sharing_v1",
+                "stop_family_sharing_with_nonce_v1"
+              ],
+              "how": "a-raw.export-or-raw.browse-grant-is-a-public.purpose_grants-row-and-ends-as-an-analytic-purpose-grant-does"
+            },
+            "cloud-model-provider-grant": {
+              "routes": [
+                "api.consent-revoke",
+                "api.consents-revoke-all"
+              ],
+              "doors": [
+                "revoke_cloud_model_consent_with_nonce_v1",
+                "revoke_own_copilot_with_nonce_v1",
+                "revoke_all_own_consents_v1"
+              ],
+              "how": "api.consent-revoke-ends-one-public.consent_grants-provider-grant-or-the-own-Copilot-permission-and-api.consents-revoke-all-every-such-grant-of-the-acting-account"
+            },
+            "family-pair-or-portrait-grant": {
+              "routes": [
+                "api.consent-revoke",
+                "api.subject-sharing",
+                "api.family-sharing",
+                "api.consents-revoke-all"
+              ],
+              "doors": [
+                "revoke_directional_purpose_with_nonce_v1",
+                "stop_subject_sharing_v1",
+                "stop_family_sharing_with_nonce_v1",
+                "revoke_all_own_consents_v1"
+              ],
+              "how": "api.consent-revoke-ends-one-family.portrait-or-family.heritability-grant-and-returns-a-Portrait-pair-to-pending; a-sharing-stop-ends-every-grant-between-the-two-accounts-and-api.consents-revoke-all-every-grant-the-acting-account-signed"
+            },
+            "self-upload-class-consent": {
+              "routes": [
+                "api.subject-delete"
+              ],
+              "doors": [
+                "empty_self_subject_with_notice_v1"
+              ],
+              "how": "registered-2026-11-19-owner-decision-withdrawing-consent-for-a-person's-own-DNA-file-deletes-the-files-and-all-made-from-them: one-control-on-settings.consents-and-on-files.index-shown-only-while-the-account-holds-a-live-upload_class-consent-on-its-own-self-record leads-to-one-confirmation-that-names-what-is-deleted-and-what-is-kept-and-sends-api.subject-delete-for-that-record-with-the-page's-one-time-X-Inherit-Operation-Nonce-and-the-route's-X-Inherit-CSRF-token; the-route-sends-a-self-record-only-to-empty_self_subject_with_notice_v1, which-runs-delete_subject_v1's-unchanged-self-case-private.empty_self_subject_v1 (every-file-on-the-record, every-result-report-and-Copilot-conversation-made-from-them, the-sharing-permissions-family-links-and-other-accounts'-copies-built-on-them-end, every-consent-on-the-record-is-marked-withdrawn-and-kept, the-account-and-its-record-stay) and-queues-the-upload-consent-withdrawn-confirmation-email-to-the-account's-own-confirmed-address-in-the-same-transaction; a-later-upload-asks-for-consent.upload-self-again; api.file-delete-deletes-one-file-and-is-not-a-withdrawal"
+            },
+            "other-adult-uploader-consent.upload-other-adult": {
+              "routes": [
+                "api.subject-delete"
+              ],
+              "doors": [
+                "withdraw_other_adult_upload_v1"
+              ],
+              "how": "registered-2026-11-19-owner-decision-an-uploader's-withdrawal-for-another-adult's-file-deletes-it-unless-that-adult-holds-the-record-themselves: one-control-on-the-uploader's-card-for-that-person-on-files.upload, shown-only-while-the-uploader-holds-a-live-upload_class-consent-on-a-confirmed-active-Path-B-record, says-from-other_adult_withdrawal_readiness_v1-which-outcome-applies-to-that-record, and-for-a-record-whose-adult-holds-no-account-of-their-own-on-it-leads-to-one-confirmation-that-sends-api.subject-delete-for-that-record-with-the-page's-one-time-X-Inherit-Operation-Nonce-and-the-route's-X-Inherit-CSRF-token; the-route-sends-the-owning-account's-request-only-to-withdraw_other_adult_upload_v1, which-runs-delete_subject_v1's-unchanged-Path-B-delete-as-withdrawn (every-file-the-uploader-added-ends-confirmed-or-not, the-record-is-purged, its-contact-shredded, every-upload_class-consent-on-it-marked-withdrawn-and-kept, no-subject-controlled-bar) and-in-the-same-transaction-queues-one-upload-permission-withdrawn-terminal-notice-to-the-adult's-sealed-contact-unless-barred; a-record-the-adult-holds-with-their-own-account-is-handed-to-them-through-the-transfer-(subject-ownership-transfer-v1.uploaderWithdrawalActorCase, registered-2026-11-22-owner-decision-an-uploader's-withdrawal-hands-a-record-its-adult-holds-to-that-adult): the-transfer-is-open (registered-2026-11-22-transfer-open), so-the-card-reads-hand-over-and-the-same-confirmation-sends-it, and-on-hand-over-not-now-v1-says-this-cannot-be-done-right-now-nothing-was-deleted-try-again-later (registered-2026-11-22-owner-decision-a-hand-over-refused-for-now-says-to-try-later); delete_subject_v1-refuses-the-uploader-on-such-a-record-in-every-state; the-adult's-own-delete-everything-about-me-through-api.withdraw-or-api.subject-delete-also-marks-this-consent-withdrawn, as-before"
+            },
+            "adult-data-subject-own-consent.subject-adult": {
+              "routes": [
+                "api.withdraw",
+                "api.subject-delete"
+              ],
+              "doors": [
+                "respond_adult_upload_revision_v1",
+                "delete_subject_v1"
+              ],
+              "how": "for-a-path-b-subject-api.withdraw-under-its-adult-upload-revision-rights-session-with-operation-delete-ends-the-subject-through-delete_path_b_subject_v1-and-api.subject-delete-by-the-subject's-own-bound-account-ends-it-through-delete_path_b_subject_for_route_v1-with-the-subject-controlled-contact-bar; for-a-path-a-record-that-holds-no-file-api.subject-delete-by-its-own-account-ends-it-through-purge_path_a_subject_v1"
+            },
+            "embryo-nonparent-uploader-own-upload-artifact": {
+              "routes": [
+                "api.consent-revoke"
+              ],
+              "doors": [
+                "withdraw_embryo_uploader_consent_v1"
+              ],
+              "how": "registered-2026-11-19-owner-decision-a-non-parent-uploader's-withdrawal-for-an-embryo-upload-stops-analysis-and-deletes-as-they-signed: api.consent-revoke-resolves-the-uploader's-own-consent.upload-embryo-signature-of-purpose-embryo-upload-uploader-class, and-one-control-for-the-account-that-signed-it-as-the-cohort's-or-draft's-non-parent-uploader, on-the-cohort's-card-on-embryos.index-after-finalisation-and-on-embryos.upload-before-it, leads-to-one-confirmation-that-sends-it-with-the-page's-one-time-consent_revoke-X-Inherit-Operation-Nonce-for-that-signature-and-the-route's-X-Inherit-CSRF-token; withdraw_embryo_uploader_consent_v1-records-the-nonce-and-the-legal-audit-event-embryo.upload-consent.withdrawn, then-after-finalisation-runs-private.restrict_embryo_cohort_core_v1-under-cohort-restriction-v1.actorCases.nonparent-required-uploader-basis-loss (bound-to-this-route-alone, the-cohort's-own-current-class-D-non-parent-uploader-principal-in-its-own-withdrawal-transaction, outside-every-participant-set; analysis-stops, derived-rows-and-source-files-are-deleted-as-a-withdrawal, Record-Keys-and-permissions-end, every-current-notice-recipient-is-told) and-before-it-ends-the-draft's-pending-invitations-without-a-notice, cancels-the-draft-and-queues-it-on-the-refused-invitation-draft-purge-that-deletes-its-evidence-objects-signatures-attestations-invitations-contacts-and-draft-principals; neither-gives-the-uploader-a-parent-role-disposition-choice-claim-right-or-say-over-any-other-cohort, and-the-answer-is-lifecycle-accepted-v1"
+            },
+            "consent.embryo-donor-attribution-by-the-current-donor-subject-principal": {
+              "routes": [],
+              "doors": [],
+              "how": "none-because-the-consent-cannot-be-given-yet: no-consent.embryo-donor-attribution-artifact-is-published-and-api.embryo-cohort-drafts-refuses-the-identified-donor-subject-intent-with-identified_donor_attribution_unavailable, so-no-such-consent-exists-to-withdraw"
+            },
+            "embryo.analysis-purpose-grant-by-one-current-requiredUploadPrincipal": {
+              "routes": [
+                "api.consent-revoke",
+                "api.consents-revoke-all"
+              ],
+              "doors": [
+                "revoke_directional_purpose_with_nonce_v1",
+                "revoke_all_own_consents_v1"
+              ],
+              "how": "the-signer's-own-cohort-scoped-public.purpose_grants-row-ends-as-an-analytic-purpose-grant-does; api.consents-revoke-all-first-requires-the-signer-to-be-a-current-required_upload_principals-member; neither-deletes-a-source-byte"
+            },
+            "consent.upload-embryo-or-current-parent-source-authority-artifact-by-one-current-dispositionAuthority": {
+              "routes": [
+                "api.cohort-restrict",
+                "api.embryo-withdraw",
+                "api.withdraw",
+                "api.subject-delete"
+              ],
+              "doors": [
+                "restrict_embryo_cohort_v1",
+                "respond_embryo_parent_withdrawal_v1",
+                "delete_subject_v1"
+              ],
+              "how": "api.cohort-restrict-and-its-alias-api.embryo-withdraw-and-api.withdraw-under-the-embryo-parent-withdrawal-rights-session-with-operation-refuse-or-delete-each-run-private.restrict_embryo_cohort_core_v1-for-the-whole-cohort, as-api.subject-delete-does-for-an-unclaimed-untransferred-embryo"
+            }
+          }
+        },
         "mutuallyExclusiveClassifier": "first-match-is-forbidden; derive-one-normalized-consent-kind-principal-role-target-class-and-current-revision-in-the-database-and-require-exactly-one-case",
         "unknownConsentKind": "fail-closed-with-no-write",
         "directionalGrantRevocation": "public.revoke_directional_purpose_v1(p_account_id, p_grant_id)-terminalises-the-purpose_grants-base-row-and-the-directional_grants-direction-row-together-only-for-the-account-that-holds-the-data-subject-principal-deletes-the-exact-subject-and-purpose-derived-rows-the-recipient-held-returns-a-family.portrait-pair-to-pending-and-enqueues-the-purpose.derived-60s-revoke_purge-worker-job",
@@ -18838,7 +19477,7 @@
           "contradiction-v1"
         ]
       },
-      "successResponseContract": "lifecycle-accepted-v1",
+      "successResponseContract": "consent-revocation-v1",
       "disposition": "kept"
     },
     {
@@ -18902,7 +19541,7 @@
         "contentType": "application/json",
         "oneOfClosedBodies": [
           {
-            "targetSubjectDraftId": "required-canonical-lowercase-UUID-for-an-account-owned-path-a-own-account-or-path-b-subject-esignature-adult-draft",
+            "targetSubjectDraftId": "required-canonical-lowercase-UUID-for-an-account-owned-path-b-subject-esignature-adult-draft",
             "contactEmail": "normalized-valid-address-at-most-254-bytes"
           },
           {
@@ -18910,6 +19549,7 @@
             "contactEmail": "normalized-valid-address-at-most-254-bytes"
           }
         ],
+        "operationToken": "registered-2026-11-19-G8.5: X-Inherit-Operation-Nonce-carries-the-one-time-operation-token-the-page-rendered-for-the-target-draft (invitation_create-for-a-cohort-draft-or-request-send-for-a-path-b-subject-esignature-draft)-and-not-X-Inherit-CSRF-which-is-the-one-time-account-session-token (operationNonceIsNotCsrf)",
         "mutuallyExclusive": [
           "targetSubjectDraftId",
           "targetCohortDraftId"
@@ -18937,14 +19577,14 @@
         "mode": "resolved",
         "resolver": "invitation-kind-v1",
         "operation": "invitation-create",
-        "actorTargetRule": "actor-owns-the-exact-adult-or-cohort-draft; an-adult-draft-must-have-immutable-adultFlow-path-a-own-account-or-path-b-subject-esignature; for-an-embryo-draft-the-contact-must-match-exactly-one-server-typed-unfilled-parent-or-identified-donor-subject-slot-and-the-client-can-never-select-the-role",
+        "actorTargetRule": "actor-owns-the-exact-adult-or-cohort-draft; an-adult-draft-must-have-immutable-adultFlow-path-b-subject-esignature; for-an-embryo-draft-the-contact-must-match-exactly-one-server-typed-unfilled-parent-or-identified-donor-subject-slot-and-the-client-can-never-select-the-role",
         "kindAndPurpose": "re-derived-from-the-server-draft-target-slot-role-adultFlow-evidenceKind-and-confirmationMode-never-request-data",
         "capabilityRecheck": "in-the-same-transaction-lock-and-recheck-the-acting-draft-owners-current-jurisdiction-declaration-attestation-revision-and-the-selected-invitation-kind-v1-capability-third_party_adult_analysis-or-embryo_analysis-before-any-invitation-or-mail-row; defer-only-the-invited-principals-own-jurisdiction-until-recipient-activation-and-return-capability-denied-api-v1-on-an-acting-principal-denial-with-zero-invitation-token-or-outbox-write",
         "contactBinding": "normalize-and-HMAC-the-submitted-contact-in-bounded-memory-and-require-a-constant-time-exact-match-to-one-immutable-encrypted-contact-reference-and-its-server-typed-slot; never-overwrite-retarget-or-change-the-slot-role-and-return-the-same-opaque-response-on-mismatch",
         "globalBar": "before-any-invitation-row-or-mail-HMAC-the-normalized-newly-submitted-address-lock-the-global-contact-HMAC-bar-and-recheck-it; when-live-create-no-token-or-mail; for-an-identified_donor_subject-slot-atomically-run-identified-donor-refusal-v1.silenceExpiryOrInviterCancellation-without-creating-or-refreshing-the-existing-bar-so-the-optional-intent-normalizes-to-anonymous-and-the-original-draft-deadline-and-parent-capability-remain; for-adult_subject-or-co_parent-preserve-their-existing-nonauthorizing-draft-state; every-branch-enqueues-at-most-the-registered-minimal-protective-notice-and-returns-invitation-created-v1-with-identical-bounded-timing-and-no-cross-account-refusal-projection",
         "blockedAttemptNotice": "may-use-only-the-newly-submitted-address-in-bounded-memory-for-the-required-single-protective-notice-then-discard-it; never-reconstruct-or-retain-the-prior-address-and-never-include-inviter-target-genetic-token-donor-or-parent data",
         "adultFlowMatrix": {
-          "path-a-own-account": "store-adult_confirmation_mode-path-a-account-required-and-evidence-kind-none; api.invitation-accept-requires-an-authenticated-recipient-account-and-transfers-both-owner_account_id-and-subject_account_id-to-that-account-before-any-file-authority",
+          "path-a-own-account": "cannot-enter-this-route-and-is-invited-by-api.subject-drafts.policy.pathAOneStepInvitation; its-draft-stores-adult_confirmation_mode-path-a-account-required-and-evidence-kind-none-and-api.invitation-accept-requires-an-authenticated-recipient-account-and-transfers-both-owner_account_id-and-subject_account_id-to-that-account-before-any-file-authority; registered-2026-11-19-G8.5",
           "path-b-subject-esignature": "store-adult_confirmation_mode-path-b-token-or-account-and-evidence-kind-esignature; the-recipient-may-complete-their-current-subject-artifact-through-the-rights-session-with-or-without-an-account-and-only-that-terminal-completed-confirmation-principal-plus-revision-can-authorize-the-uploader",
           "path-b-reviewed-document": "cannot-enter-this-route-before-api.subjects-and-uses-api.subjects-globalBar"
         },
@@ -19008,12 +19648,6 @@
               "artifactKey": {
                 "const": "consent.subject-adult"
               }
-            },
-            "jurisdictionCode": "normalized-code-valid-under-data/jurisdictions.json-determination.resolutionGrammar",
-            "jurisdictionAttestationVersion": "required-current-server-published-version",
-            "jurisdictionAttestationHash": "required-lowercase-sha256-matching-the-current-server-artifact",
-            "jurisdictionAffirmed": {
-              "const": true
             }
           },
           {
@@ -19073,6 +19707,7 @@
             }
           }
         ],
+        "adultAcceptBody": "registered-2026-11-19-G8.5: the-adult_subject-body-sends-the-subjectArtifact-and-no-jurisdiction-fields-because-the-accepting-account's-own-current-declared-jurisdiction-is-the-one-that-counts-and-the-body-cannot-name-the-account, as-api.withdraw's-accountConfirmBody-registered-2026-10-23; the-co_parent-and-identified_donor_subject-bodies-are-unchanged (src/lib/embryos/adult-subject-review.ts#adultSubjectAcceptBody)",
         "unknownMissingInvalidStaleOrKindMismatch": "resource-not-found-v1",
         "forbiddenFields": [
           "token",
@@ -19254,7 +19889,8 @@
       ],
       "requestContract": {
         "contentType": "application/json",
-        "schema": "closed-embryo-cohort-draft-v1"
+        "schema": "closed-embryo-cohort-draft-v1",
+        "operationToken": "registered-2026-11-19-G8.5: X-Inherit-Operation-Nonce-carries-the-one-time-cohort_draft_create-operation-token-the-upload-page-rendered-for-this-account-session-and-not-X-Inherit-CSRF-which-is-the-one-time-account-session-token (operationNonceIsNotCsrf)"
       },
       "stateProfile": "endpoint",
       "policy": {
@@ -19297,6 +19933,7 @@
       "stateProfile": "endpoint",
       "policy": {
         "mode": "guarded-draft-finalize",
+        "uploadSessionCsrf": "registered-2026-11-19-G8.5: the-201-answer-that-opens-the-embryo-upload-session-hands-the-browser-its-first-one-time-X-Inherit-CSRF-tokens (authContracts.upload-session-api-v1.stateChangingRequest)-in-the-X-Inherit-Upload-CSRF-answer-header-as-'<configure> <mapping> <complete>'-one-per-token-route-bound-to-the-session-id-and-its-inherit-ingest-<session>-cookie; each-answer-of-those-routes-carries-its-route's-successor; api.embryo-ingest-chunk-carries-none; this-answer's-own-X-Inherit-CSRF-carries-the-successor-of-this-route's-one-time-account-session-token",
         "operation": "cohort-create",
         "actorTargetRule": "acting-account-owns-the-current-cohort-draft-and-must-be-either-one-exact-current-member-of-policyResolvers.embryo-basis-authority-v1.requiredUploadPrincipals-for-embryo_own-or-the-current-class-D-nonparent-uploader-for-embryo_third_party; ownership-never-adds-the-actor-to-any-of-the-five-output-sets-or-grants-donor-disposition-notice-Card-restriction-withdrawal-or-profile-authority",
         "orderedPrerequisites": {
@@ -19514,6 +20151,7 @@
             "sha256": "required-lowercase-hex"
           }
         ],
+        "operationToken": "registered-2026-11-19-G8.5: X-Inherit-Operation-Nonce-carries-the-one-time-document-session-operation-token-the-reviewed-document-card-rendered-for-this-draft-and-not-X-Inherit-CSRF-which-is-the-one-time-account-session-token (operationNonceIsNotCsrf)",
         "unknownMissingInvalidOrAmbiguous": "invalid-request-v1",
         "forbiddenFields": [
           "bucket",
@@ -19527,6 +20165,7 @@
       },
       "stateProfile": "endpoint",
       "policy": {
+        "evidenceSessionCsrf": "registered-2026-11-19-G8.5: the-201-answer-hands-the-browser-the-new-evidence-session's-first-two-X-Inherit-CSRF-values (authContracts.evidence-session-api-v1.csrfHeader)-in-the-X-Inherit-Evidence-CSRF-answer-header-as-'<chunk> <complete>': the-chunk-stream's-one-session-bound-value-for-api.evidence-chunk (principle 3) and-the-first-one-time-token-for-api.evidence-complete-whose-answers-carry-each-successor; this-answer's-own-X-Inherit-CSRF-carries-the-successor-of-this-route's-one-time-account-session-token",
         "mode": "resolved",
         "resolver": "evidence-ingest-session-v1",
         "operation": "legal-evidence-upload-session-create",
@@ -19630,6 +20269,7 @@
           ]
         },
         "clientModeOverride": "forbidden",
+        "evidenceSessionCsrf": "registered-2026-11-19-G8.5: the-201-answer-hands-the-browser-the-new-evidence-session's-first-two-X-Inherit-CSRF-values-in-the-X-Inherit-Evidence-CSRF-answer-header-as-api.legal-evidence-upload-session's-does; this-answer's-own-X-Inherit-CSRF-carries-the-successor-of-this-route's-one-time-claim-session-token-minted-for-the-rotated-claim-cookie (authContracts.claim-session-api-v1.rotation)",
         "storageAccessContract": "restricted-evidence-v1",
         "contracts": [
           "resource-authorization-v1",
@@ -19661,7 +20301,7 @@
         },
         "clientRangeOffsetOrObjectPath": "forbidden",
         "requiredHeaders": {
-          "X-Inherit-CSRF": "one-time-token-bound-to-the-evidence-session"
+          "X-Inherit-CSRF": "registered-2026-11-19-G8.5 (principle 3): the-evidence-session's-one-session-bound-chunk-stream-value-from-the-opening-answer's-X-Inherit-Evidence-CSRF-sent-unchanged-on-every-chunk-verified-and-never-spent; each-session-sequence-is-reserved-once (chunkAuthority)"
         },
         "chunkAuthority": "owner-decision-2026-09-28: the-server-reserves-each-session-sequence-once-in-the-transaction-that-rechecks-the-session-principal-target-lifecycle-cumulative-bytes-and-the-server-computed-chunk-sha256; a-replayed-or-reused-sequence-is-refused-so-no-separate-one-time-chunk-nonce-is-required"
       },
@@ -19949,6 +20589,7 @@
             "parentNames": "one-through-four-names-each-two-through-120-Unicode-characters",
             "consentSignatureId": "current-artifact-consent-signature-by-the-acting-policyResolvers.embryo-basis-authority-v1.recordKeyRecipients-member"
           },
+          "derivedProof": "registered-2026-11-19-G8.5: X-Inherit-Operation-Proof-carries-the-profile-page's-keyed-proof-derived-from-the-claims-of-its-one-time-operation-token-in-X-Inherit-Operation-Nonce-and-checked-together-with-it-as-before-and-not-X-Inherit-CSRF-which-is-the-one-time-account-session-token",
           "unknownMissingOrInvalid": "invalid-request-v1",
           "forbiddenFields": [
             "subjectId",
@@ -19961,7 +20602,8 @@
         },
         "DELETE": {
           "body": "forbidden",
-          "requiredHeader": "X-Inherit-Operation-Nonce-from-the-profile-page"
+          "requiredHeader": "X-Inherit-Operation-Nonce-from-the-profile-page",
+          "derivedProof": "registered-2026-11-19-G8.5: X-Inherit-Operation-Proof-carries-the-profile-page's-keyed-proof-derived-from-the-claims-of-its-one-time-operation-token-in-X-Inherit-Operation-Nonce-and-checked-together-with-it-as-before-and-not-X-Inherit-CSRF-which-is-the-one-time-account-session-token"
         }
       },
       "stateProfile": "endpoint",
@@ -20164,6 +20806,7 @@
       },
       "stateProfile": "endpoint",
       "policy": {
+        "evidenceSessionCsrf": "registered-2026-11-19-G8.5: the-201-answer-hands-the-browser-the-new-evidence-session's-first-two-X-Inherit-CSRF-values (authContracts.evidence-session-api-v1.csrfHeader)-in-the-X-Inherit-Evidence-CSRF-answer-header-as-'<chunk> <complete>': the-chunk-stream's-one-session-bound-value-for-api.evidence-chunk (principle 3) and-the-first-one-time-token-for-api.evidence-complete-whose-answers-carry-each-successor; this-answer's-own-X-Inherit-CSRF-carries-the-successor-of-this-route's-one-time-rights-session-token",
         "mode": "appeal-evidence-document-session-create",
         "jurisdictionBypass": true,
         "resolver": "withdrawal-target-v1",
@@ -20425,6 +21068,7 @@
       "requestContract": {
         "contentType": "application/json",
         "schema": "closed-future-person-claim-intake-v1",
+        "claimsClosedNoVerifiedFormTokenOrReplayedForm": "resource-not-found-v1-the-same-opaque-answer-for-all-three-registered-2026-10-23-G8.5",
         "requiredSignals": [
           "Origin-exactly-canonical-origin",
           "Sec-Fetch-Site-same-origin",
@@ -20871,6 +21515,7 @@
         "jurisdictionBypass": true,
         "actorRole": "the-exact-current-owner_user_id-notice-recipient-bound-by-the-active-future-person-claim-objection-rights-session-before-or-at-the-server-owned-owner-notice-deadline",
         "accountEquivalent": "under-claimObjectionCredential-the-same-current-owner-may-use-independent-own-live-Auth-recent-reauthentication-and-configured-MFA-with-an-encrypted-ten-minute-form-proof-bound-to-that-account-session-exact-notice-and-current-revision; own-JWT-subject-first-authority-is-rechecked-at-write-and-a-link-cookie-or-service-actor-never-substitutes-for-account-authority",
+        "sessionCsrf": "registered-2026-11-19-G8.5 (owner decision: the claim-objection address accepts either kind of session): X-Inherit-CSRF-is-a-one-time-session-token-of-the-emailed-link's-rights-session-checked-first-or-of-the-signed-in-account (accountEquivalent)-checked-second; the-route-spends-the-token-of-whichever-it-finds-and-runs-only-that-principal's-branch; each-branch's-one-time-objection-nonce-stays-in-body.nonce; one-other-route-takes-two-kinds (registered-2026-11-22-G8.5, owner decision: the reviewer chunk-acknowledgement address accepts either kind of session): api.claim-review-chunk-acknowledgement-reviewer-first-and-account-second; no-other-route-takes-two-kinds",
         "expiry": "after-the-notice-deadline-or-any-release-refusal-withdrawal-terminalization-or-prior-objection-decision-return-resource-not-found-v1-with-zero-writes-and-atomically-invalidate-every-objection-credential-session-and-nonce",
         "effect": "atomically-suspend-only-the-current-release-enter-claim-release-objection-freeze-v1-persist-its-minimum-of-objection_at-plus-30-days-and-submission_at-plus-92-days-deadline-supersede-the-day-62-no-objection-transition-for-this-package-invalidate-any-pending-release-job-and-create-one-current-named-human-objection-reviewer-assignment-before-return; never-enter-generic-contradiction.freeze-and-never-delete-freeze-or-restrict-the-embryo-subject-source-or-results",
         "statementStorage": "application-envelope-encrypted-reviewer-only-no-log-no-analytics-and-purged-at-final-resolution-or-the-applicable-persisted-deadline-owned-by-retention-id-future-person.keyless-notice-release-62d-or-future-person.claim-objection-review-30d-leaving-only-a-coded-objection-outcome-and-pseudonymized-audit",
@@ -21424,7 +22069,7 @@
               "affirmed": {
                 "const": true
               },
-              "statementKeys": "exact-server-published-four-item-array-with-every-item-individually-actuated",
+              "statementKeys": "exact-server-published-nonempty-array-with-every-item-individually-actuated",
               "typedName": "at-least-two-whitespace-separated-tokens-of-at-least-two-characters"
             },
             "jurisdictionCode": "normalized-code-valid-under-data/jurisdictions.json-determination.resolutionGrammar",
@@ -21432,6 +22077,24 @@
             "jurisdictionAttestationHash": "required-lowercase-sha256-matching-the-current-server-artifact",
             "jurisdictionAffirmed": {
               "const": true
+            }
+          },
+          {
+            "operation": {
+              "const": "confirm"
+            },
+            "nonce": "required-one-time-operation-nonce",
+            "withAccount": {
+              "const": true
+            },
+            "subjectArtifact": {
+              "artifactVersion": "required-current-positive-integer",
+              "artifactPresentationToken": "required-short-lived-single-use-server-signed-current-consent.subject-adult-key-version-and-body-hash",
+              "affirmed": {
+                "const": true
+              },
+              "statementKeys": "exact-server-published-nonempty-array-with-every-item-individually-actuated",
+              "typedName": "at-least-two-whitespace-separated-tokens-of-at-least-two-characters"
             }
           },
           {
@@ -21457,6 +22120,7 @@
           }
         ],
         "confirmBodySelection": "the-server-stored-rights-purpose-current-authority-state-and-invitation-kind-select-exactly-one-closed-confirm-body-before-validation; only-a-path-b-adult_subject-invitation-requires-the-full-subjectArtifact-and-jurisdiction-body-while-every-current-adult-upload-revision-requires-only-uploadRevisionAffirmed-true-and-nonce; co_parent-and-identified_donor_subject-confirm-are-forbidden-here-and-use-api.invitation-accept; cross-shape-or-extra-fields-are-invalid-request-v1",
+        "accountConfirmBody": "registered-2026-10-23-G8.5: a-path-b-adult_subject-invitation-whose-invited-address-is-the-signed-in-account-may-send-withAccount-true-with-the-same-subjectArtifact-and-no-jurisdiction-fields-because-that-account's-own-current-declared-jurisdiction-is-the-one-that-counts-and-the-body-cannot-name-the-account; TEST-LOCAL-only-as-the-account-branch-is (src/lib/uploads/other-adult-upload.ts#pathBAccountConfirmBody)",
         "unknownMissingInvalidOrAmbiguous": "invalid-request-v1",
         "forbiddenFields": [
           "rawToken",
@@ -21591,7 +22255,9 @@
             "const": true
           }
         },
-        "unknownMissingInvalidStaleOrHashMismatch": "invalid-request-v1"
+        "unknownMissingInvalidStaleOrHashMismatch": "invalid-request-v1",
+        "requiredHeader": "X-Inherit-Operation-Nonce-from-the-settings-page",
+        "operationNonce": "recorded-in-account_operation_nonces-before-the-writer-in-the-same-transaction-so-its-legal-audit-event-names-the-actor-G5.6-2026-10-23"
       },
       "stateProfile": "endpoint",
       "policy": {
@@ -21919,7 +22585,7 @@
         ]
       },
       "disposition": "kept",
-      "successResponseContract": "empty-provider-acknowledgement"
+      "successResponseContract": "provider-webhook-acknowledgement-v1"
     },
     {
       "id": "api.claim-review-receipt",
@@ -21992,7 +22658,9 @@
           "resource-authorization-v1",
           "claim-review-receipt-v1"
         ],
-        "authority": "current-named-reviewer-assignment-live-MFA-and-recent-auth-session-revision"
+        "authority": "current-named-reviewer-assignment-live-MFA-and-recent-auth-session-revision",
+        "sessionCsrf": "registered-2026-11-22-G8.5 (owner decision: the reviewer chunk-acknowledgement address accepts either kind of session): X-Inherit-CSRF-is-a-one-time-session-token-of-the-signed-in-reviewer-checked-first-or-of-the-signed-in-account-checked-second-for-the-TEST-account-archive's-acknowledgement-on-this-path (INHERIT_TEST_ACCOUNT_ARCHIVE_R2-closed-in-production); the-route-spends-the-token-of-whichever-it-finds-and-runs-only-that-principal's-branch; the-acknowledgements-of-one-download-go-one-after-another-each-spending-a-one-time-token-and-carrying-the-previous-answer's-successor (not-a-chunk-stream: principle-3-names-uploads); the-reviewer's-one-time-acknowledgement-nonce-stays-in-body.nonce; no-other-reviewer-route-takes-two-kinds",
+        "archiveAcknowledgementProof": "registered-2026-11-22-G8.5 (principle 2): the-TEST-account-archive-branch's-per-chunk-acknowledgement-proof (a-keyed-digest-of-the-account-download-cookie-ordinal-and-the-chunk's-challenge-digest-and-size)-is-handed-over-by-that-chunk's-GET-answer (api.download-chunk)-in-X-Inherit-Operation-Proof-and-sent-back-on-that-chunk's-one-acknowledgement-in-X-Inherit-Operation-Proof-checked-exactly-as-before-and-not-X-Inherit-CSRF-which-is-the-one-time-account-session-token"
       },
       "successResponseContract": "empty-acknowledgement-v1",
       "disposition": "kept"
@@ -22107,10 +22775,11 @@
     {
       "id": "storage.subject-v2",
       "bucket": "genomes",
-      "prefix": "{account_id}/{subject_id}/{upload_id}/{filename}",
+      "prefix": "{object_uuid}",
       "disposition": "kept",
-      "filenameContract": "the-filename-placeholder-is-one-server-generated-opaque-single-segment-name-with-an-allowlisted-normalized-extension; slash-backslash-dot-segments-control-characters-and-original-filenames-are-forbidden",
-      "authority": "Database-owned upload session; clients never supply an arbitrary object path or object-name segment."
+      "keyShape": "registered-2026-11-19-G8.5: one-flat-segment-at-the-bucket-root-for-the-staging-and-the-final-object-of-every-self-and-other_adult-subject-file; private.issue_own_storage_upload_v1-and-the-other_adult-held-upload-issuer-set-upload_sessions.staging_object_name-to-gen_random_uuid()::text-with-storage_bucket-genomes, finalization-sets-the-uuid-column-final_object_name-to-gen_random_uuid(), and-subject-transfer-relocation-copies-to-a-fresh-uuid-key-the-database-chooses; upload_sessions.staging_object_name-and-genome_storage_objects.object_name-have-admitted-only-a-lowercase-UUID-v4-since-20260831224054; no-released-code-wrote-the-earlier-registered-{account_id}/{subject_id}/{upload_id}/{filename}-form, so-it-is-amended-in-place-rather-than-kept-beside-a-new-entry",
+      "filenameContract": "the-whole-key-is-one-server-generated-opaque-single-segment-lowercase-UUID-v4-with-no-folder-extension-or-account-subject-file-or-upload-identifier; slash-backslash-dot-segments-control-characters-and-original-filenames-are-forbidden",
+      "authority": "Database-owned upload session, genome_files and genome_storage_objects rows bind each exact key to its account, subject, file and upload revision; access, transfer and deletion are decided from those rows and never from the key, and clients never supply an arbitrary object path or object-name segment."
     },
     {
       "id": "storage.cohort-v2",
@@ -22121,6 +22790,22 @@
       "authority": "Database-owned cohort upload session after server-stream autosomal sanitization; every persistent object is one embryo subject projection and unsanitized or multisample embryo bytes never enter persistent Storage.",
       "contracts": [
         "embryo-autosomal-only-v1"
+      ]
+    },
+    {
+      "id": "storage.prepared-v1",
+      "bucket": "genomes",
+      "prefix": "prepared/{artifact_uuid}",
+      "disposition": "kept",
+      "keyShape": "registered-2026-11-19-G8.5: the-literal-prepared-folder-and-one-database-generated-lowercase-UUID-v4; private.own_preparation_artifacts.object_key-defaults-to-prepared/-plus-gen_random_uuid()-and-its-check-admits-nothing-else (20260908164616_own_preparation_job_authority.sql); src/lib/genome/prepared-source/storage-writer.ts-writes-it-create-only-for-a-Supabase-v1-receipt-and-the-Storage-metadata-trigger-keeps-the-namespace-reserved",
+      "filenameContract": "prepared/-then-one-server-generated-opaque-lowercase-UUID-v4-with-no-account-subject-file-job-or-extension-segment-and-no-original-filename; a-raw-original's-flat-UUID-key-is-never-a-prepared-artifact",
+      "authority": "private.own_preparation_artifacts reserves each exact key with its job, attempt, sequence, expected bytes and SHA-256 before the create-only write; reads, publication and cleanup resolve the key from that row and the prepared manifest, never from the folder.",
+      "retentionIds": [
+        "preparation.scratch-2h",
+        "source.revocation-7d"
+      ],
+      "contracts": [
+        "own-prepared-object-v1"
       ]
     },
     {

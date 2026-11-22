@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "panelId": "neanderthal-sprime-1kg-v1",
+  "panelVersion": "browning2018-sprime-ceu-chb-gih-grch38-2026-10-22",
+  "sourceDoi": "10.17632/y7hyt83vxr.1",
+  "sourceFiles": {
+    "CEU": {
+      "file": "CEU_sprime_results.tar.gz",
+      "sha256": "f695e484db15d1974d0fb6bd15a3e8d769a872f2a3803908d9197a057b9472f0"
+    },
+    "CHB": {
+      "file": "CHB_sprime_results.tar.gz",
+      "sha256": "345885d49379477ec48bb470bb8489bb339f24898db09676fcc10840e7337c05"
+    },
+    "GIH": {
+      "file": "GIH_sprime_results.tar.gz",
+      "sha256": "e1c26d457bf04cab9e548b28446b7733d7ad7a61e690761ccc3ee39b1e701e48"
+    }
+  },
+  "chainSha256": "351de3cd4a01d9fcffd38881981767b697090d2eba876740891b96d5c546b100",
+  "perPopulationSelected": {
+    "CEU": 1105,
+    "CHB": 925,
+    "GIH": 1266
+  },
+  "counts": {
+    "selected": 3296,
+    "merged": 3119,
+    "conflicting": 0,
+    "unmapped": 9,
+    "collisions": 0
+  },
+  "siteCount": 3110,
+  "sitesSha256": "21f0862ed04f21ddd3fc338b599088e8f5d24b1f928547b4b79030a1b4709e93"
+}

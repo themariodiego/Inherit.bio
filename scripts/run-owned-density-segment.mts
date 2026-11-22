@@ -87,11 +87,64 @@ export async function runOwnedDensitySegment(owner: unknown, rootInput: { baseli
     source, remainingCaptureCount: required.length - 1, resumable: false, g2_5Acceptance: false };
 }
 
+const BASELINE_ORIGINALS_PACKET = "baseline-originals.json";
+const SEGMENT_FLAGS = new Set(["--owner", "--baseline-originals", "--baseline-originals-sha256"]);
+
+/** Root's pinned packet, read once by a stable no-follow descriptor. Its size
+ * comes from the file itself; its sha256 comes only from the operator. */
+function privatePacketBytes(file: string) {
+  const directory = path.dirname(file), parent = fs.lstatSync(directory, { bigint: true });
+  assert(fs.realpathSync(directory) === directory && parent.isDirectory() && parent.uid === BigInt(process.getuid!())
+    && (parent.mode & BigInt(0o7777)) === BigInt(0o700), "Root's private 0700 baseline-originals directory required");
+  assert(fs.realpathSync(file) === file, "Baseline originals packet must not be a link");
+  const fd = fs.openSync(file, fs.constants.O_RDONLY | fs.constants.O_NOFOLLOW);
+  try {
+    const a = fs.fstatSync(fd, { bigint: true });
+    assert(a.isFile() && a.nlink === BigInt(1) && a.uid === BigInt(process.getuid!()) && (a.mode & BigInt(0o7777)) === BigInt(0o600)
+      && a.size > BigInt(0) && a.size <= BigInt(1024 * 1024), "One private 0600 baseline originals packet of at most 1 MiB required");
+    const bytes = fs.readFileSync(fd), b = fs.fstatSync(fd, { bigint: true });
+    assert(BigInt(bytes.length) === a.size && a.dev === b.dev && a.ino === b.ino && a.size === b.size
+      && a.mtimeNs === b.mtimeNs && a.ctimeNs === b.ctimeNs, "Baseline originals packet changed while read");
+    return bytes;
+  } finally { fs.closeSync(fd); }
+}
+
+/** The complete command line. Every refusal happens before an owned runtime
+ * is established, and nothing here supplies a default or a runtime value. */
+export function parseOwnedDensitySegmentArguments(argv: readonly string[]): {
+  owner: unknown; baselineOriginals?: DensityBaselineOriginalsInput;
+} {
+  assert(Array.isArray(argv) && argv.length % 2 === 0 && argv.length >= 2 && argv.length <= 6, "Flag and value pairs required");
+  const values = new Map<string, string>();
+  for (let index = 0; index < argv.length; index += 2) {
+    const flag = argv[index], value = argv[index + 1];
+    assert(typeof flag === "string" && SEGMENT_FLAGS.has(flag) && !values.has(flag), "Each known flag at most once");
+    assert(typeof value === "string" && value.length > 0 && !value.startsWith("--"), "Every flag takes one value");
+    values.set(flag, value);
+  }
+  const argument = values.get("--owner"); assert(argument !== undefined, "--owner required");
+  const encoded = Buffer.from(argument, "base64url"), text = encoded.toString("utf8");
+  assert(encoded.length > 0 && encoded.length <= 65_536 && encoded.toString("base64url") === argument && Buffer.from(text, "utf8").equals(encoded));
+  const owner: unknown = JSON.parse(text);
+  const file = values.get("--baseline-originals"), digest = values.get("--baseline-originals-sha256");
+  assert((file === undefined) === (digest === undefined), "--baseline-originals and --baseline-originals-sha256 come together");
+  if (file === undefined || digest === undefined) return { owner };
+  assert(/^[a-f0-9]{64}$/.test(digest), "Full lowercase sha256 required");
+  assert(path.isAbsolute(file) && path.resolve(file) === file && path.basename(file) === BASELINE_ORIGINALS_PACKET,
+    `Absolute path to Root's ${BASELINE_ORIGINALS_PACKET} required`);
+  const bytes = privatePacketBytes(file);
+  assert(sha256(bytes) === digest, "Baseline originals packet sha256 differs");
+  return { owner, baselineOriginals: densityBaselineOriginalsInputSchema.parse({
+    directory: path.dirname(file), packetBytes: bytes.length, packetSha256: digest }) };
+}
+
+export async function runOwnedDensitySegmentCommand(argv: readonly string[], run: typeof runOwnedDensitySegment = runOwnedDensitySegment) {
+  const { owner, baselineOriginals } = parseOwnedDensitySegmentArguments(argv);
+  return baselineOriginals === undefined ? run(owner) : run(owner, { baselineOriginals });
+}
+
 async function main() {
-  const argv = process.argv.slice(2); assert(argv.length === 2 && argv[0] === "--owner");
-  const encoded = Buffer.from(argv[1], "base64url"), text = encoded.toString("utf8");
-  assert(encoded.length > 0 && encoded.length <= 65_536 && encoded.toString("base64url") === argv[1] && Buffer.from(text, "utf8").equals(encoded));
-  console.log(JSON.stringify(await runOwnedDensitySegment(JSON.parse(text))));
+  console.log(JSON.stringify(await runOwnedDensitySegmentCommand(process.argv.slice(2))));
 }
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   main().catch(() => { console.error("Owned density segment refused; no private values printed"); process.exitCode = 1; });

@@ -6,14 +6,17 @@ import {closedResponse} from "@/lib/embryos/guards";
 import {futurePersonClaimsOpen} from "@/lib/future-person/claims-open";
 import {readBoundedJson} from "@/lib/future-person/bounded-body";
 import {keylessCurrentReview,keylessDeliveryAddress,keylessReleaseDecisionBody,readKeylessReleaseNonce} from "@/lib/future-person/keyless-release";
-import {isCanonicalId,reviewCsrfMatches,REVIEW_CSRF_HEADER,sealDocumentaryAttestation,sealReason,verifiedIdentityDigestSet} from "@/lib/future-person/review";
+import {isCanonicalId,sealDocumentaryAttestation,sealReason,verifiedIdentityDigestSet} from "@/lib/future-person/review";
+import {withReviewerCsrf} from "@/lib/security/session-csrf";
 import {sha256Hex} from "@/lib/future-person/claim-session";
 import {sealClaimantContact} from "@/lib/future-person/claimant-contact";
 import {createClient} from "@/lib/supabase/server";
-export async function POST(request:Request,context:{params:Promise<{id:string}>}) {
+/** The reviewer's one-time X-Inherit-CSRF token is spent before the handler
+ * runs (G8.5, the migration stage); it was a digest of the case. */
+export const POST=withReviewerCsrf("api.future-person-claim-release",async(request:Request,context:{params:Promise<{id:string}>})=>{
   const {id}=await context.params,response=await decide(request,id);
   response.headers.set("Referrer-Policy","no-referrer");return response;
-}
+});
 /** A separate fresh named-human operation. The closed native body accepts
  * neither caller identity/selectors nor clocks; SQL rechecks every effect. */
 async function decide(request:Request,id:string):Promise<Response> {
@@ -22,7 +25,7 @@ async function decide(request:Request,id:string):Promise<Response> {
     ||request.headers.get("sec-fetch-site")!=="same-origin"
     ||request.headers.get("content-type")?.split(";")[0]?.trim().toLowerCase()!=="application/json")return notFound();
   const account=await getSensitiveAccountContext();
-  if(!account||!reviewCsrfMatches(request.headers.get(REVIEW_CSRF_HEADER),id,account.user.id,account.sessionId))return notFound();
+  if(!account)return notFound();
   const body=keylessReleaseDecisionBody.safeParse(await readBoundedJson(request,16*1024));if(!body.success)return notFound();
   const ownJwt=await createClient();
   const current=await ownJwt.rpc("read_keyless_current_review_v1",{p_review:id});

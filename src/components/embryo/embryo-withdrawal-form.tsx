@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useCsrf } from "@/components/security/csrf-provider";
 import { EMBRYO_WITHDRAWAL_COPY as COPY } from "@/copy/rights/embryo-withdrawal";
 import type { EmbryoWithdrawalOperation, RightsEmbryoWithdrawal } from "@/lib/embryos/embryo-parent-withdrawal";
 
@@ -15,16 +16,17 @@ type Status = "ready" | "pending" | EmbryoWithdrawalOperation | "failed";
 
 export function EmbryoWithdrawalForm({ view, nonce }: { view: RightsEmbryoWithdrawal; nonce: string }) {
   const [status, setStatus] = useState<Status>("ready");
+  const csrf = useCsrf("api.withdraw");
 
   async function act(operation: EmbryoWithdrawalOperation) {
     if (status !== "ready" && status !== "failed") return;
     setStatus("pending");
     try {
-      const response = await fetch("/api/withdraw/session", {
+      const response = await csrf.send((csrfToken) => fetch("/api/withdraw/session", {
         method: "POST", credentials: "same-origin", cache: "no-store",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "X-Inherit-CSRF": csrfToken },
         body: JSON.stringify({ operation, nonce }),
-      });
+      }));
       const body = await response.json().catch(() => null);
       if (response.status !== 202 || body?.status !== "accepted" || body?.operation !== operation) {
         setStatus("failed");

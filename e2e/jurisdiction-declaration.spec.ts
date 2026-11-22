@@ -2,6 +2,8 @@ import { type Page } from "@playwright/test";
 import { expect, test } from "./audited-test";
 import { randomUUID } from "node:crypto";
 import { adminClient, anonClient, createConfirmedUser, signIn } from "./helpers";
+import { settingsOperationNonce } from "./helpers/operation-nonce";
+import { accountCsrf } from "./helpers/session-csrf";
 
 /**
  * G5.1a in a browser, on the MAIN server (TEST-LOCAL flag on). ADR 0032.
@@ -43,8 +45,11 @@ async function attestation(): Promise<{ version: number; body_sha256: string }> 
 /** Declares through the real route, from the signed-in page's own context, as the settings form does. */
 async function declare(page: Page, code: string, subdivision?: string) {
   const { version, body_sha256 } = await attestation();
+  // The one-time nonce the settings page renders for this session (G5.6, 23 Oct 2026).
+  const nonce = await settingsOperationNonce(page.request, "jurisdiction");
   return page.request.put("/api/settings/jurisdiction", {
-    headers: { origin: MAIN, "content-type": "application/json" },
+    headers: { origin: MAIN, "content-type": "application/json", "x-inherit-operation-nonce": nonce,
+      "x-inherit-csrf": await accountCsrf(page, "api.jurisdiction") },
     data: { code, ...(subdivision === undefined ? {} : { subdivision }), attestationVersion: version,
       attestationHash: body_sha256, affirmed: true },
   });
@@ -115,8 +120,12 @@ test("/settings: the first sign-in answers where the person lives, from a select
   expect(profile!.jurisdiction_declared_at).toBeTruthy();
   const { data: events } = await adminClient().from("legal_audit_log").select("coded_context, audit_principal_id")
     .eq("event_code", "jurisdiction.declared").gte("occurred_at", startedAt);
+  // Since G5.6 (decisions, "Stated behaviour change: export completeness and person attribution")
+  // the declaration names its actor, by pseudonym only; supabase/tests/legal_audit_attribution_completeness.sql
+  // proves the pseudonym is this account's.
   expect((events ?? []).some(event => event.coded_context.code === "FR" && event.coded_context.first === true
-    && event.audit_principal_id === null), "one pseudonymized ledger event records the first declaration").toBe(true);
+    && typeof event.audit_principal_id === "string" && event.audit_principal_id !== accountId),
+  "one ledger event records the first declaration and names its actor by pseudonym").toBe(true);
 
   // Declared: product pages open, and settings shows the answer and what changing it ends.
   await page.goto("/overview");
@@ -242,13 +251,14 @@ test("/family/health-picture jurisdiction-unavailable: an account declared as th
   await expect(page.getByRole("heading", { name: REFUSAL_HEADING })).toBeVisible();
   await expect(page.getByLabel("Their email address")).toHaveCount(0);
 
+  // The register's Path A body and its capability-denied-api-v1 answer (G8.5, 23 October 2026).
   const draft = await page.request.post("/api/subject-drafts", {
-    headers: { origin: MAIN },
-    data: { kind: "other_adult", adultFlow: "path-a-own-account", email: `someone-${runId}@e2e.local`,
-      adultAttestation: true, requestId: randomUUID() },
+    headers: { origin: MAIN, "x-inherit-csrf": await accountCsrf(page, "api.subject-drafts") },
+    data: { kind: "adult", adultFlow: "path-a-own-account", contactEmail: `someone-${runId}@e2e.local`,
+      requestId: randomUUID() },
   });
-  expect(draft.status()).toBe(409);
-  expect(await draft.json()).toEqual({ error: "jurisdiction_unavailable" });
+  expect(draft.status()).toBe(403);
+  expect(await draft.json()).toEqual({ error: "jurisdiction_unavailable", message: TEST_DENY_SENTENCE });
 
   // Adult self-analysis is the one capability no jurisdiction restricts.
   await page.goto("/genome/me");
@@ -271,7 +281,7 @@ test("/family/invite: a declaration changed between page load and submit decides
   await page.getByRole("checkbox").check();
   const submitted = page.waitForResponse(response => response.url().endsWith("/api/subject-drafts"));
   await page.getByRole("button", { name: "Send invitation" }).click();
-  expect((await submitted).status()).toBe(409);
+  expect((await submitted).status()).toBe(403);
   await expect(page.locator("form").getByRole("alert")).toHaveText("Inherit cannot send invitations here yet.");
   const { count } = await adminClient().from("adult_subject_drafts").select("id", { count: "exact", head: true })
     .eq("owner_account_id", accountId);

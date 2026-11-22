@@ -6,7 +6,7 @@ import {withEmbryoJourney} from "../scripts/ci-embryo-journey";
 import {participantCPassword,seedParticipantC,type ParticipantCMail} from "./participant-c-journey";
 import {createReviewCase,reviewFixtureSql,signInReviewer} from "./helpers/claim-review-fixture";
 import {syntheticHistoricalTransfer} from "./helpers/historical-embryo-transfer";
-import {currentDocumentaryCase,keylessEffectProof,nativeReviewRequest,openSyntheticReviewPdf,reviewId} from "./helpers/keyless-review-journey";
+import {currentDocumentaryCase,freshReviewerCsrf,keylessEffectProof,nativeReviewRequest,openSyntheticReviewPdf,reviewId} from "./helpers/keyless-review-journey";
 import {expectFullDocumentReceipts,keylessSourceProof,otherCurrentParent,saveNativeMatchingDetails,
   sendSyntheticDeliveredCallback,syntheticDeliveredCallback} from "./helpers/keyless-positive-journey";
 import {observeNativeResponses} from "./helpers/native-response-observer";
@@ -71,8 +71,12 @@ test("Keyless positive documentary match: native owner notice, authenticated syn
       await expect(review.getByRole("button",{name:"Check details",exact:true})).toHaveCount(0);
       const lookup={reviewRevision:1,nonce:documentary.lookup,documentaryAttestation:{fullName:identity.fullName,dateOfBirth:identity.dateOfBirth,
         photoIdentityReviewed:true,birthRecordReviewed:true,adultAgeConfirmed:true}};
-      const unread=await nativeReviewRequest(review,`/api/reviews/future-person/claims/${claim}/verify-documents`,lookup,documentary.csrf);
-      expect(unread.status).toBe(404);expect(unread.body).toEqual({error:"not_found"});expect(await keylessEffectProof(claim)).toBe(initial);
+      // 2026-11-19 (G8.5, the migration stage): a fresh one-time reviewer token, where the case digest was.
+      const unread=await nativeReviewRequest(review,`/api/reviews/future-person/claims/${claim}/verify-documents`,lookup,
+        await freshReviewerCsrf(review,`/api/reviews/future-person/claims/${claim}/verify-documents`));
+      expect(unread.status).toBe(404);expect(unread.body).toEqual({error:"not_found"});
+      // Only an admitted request carries a successor token, so this 404 is the route's own and not the gate's.
+      expect(unread.csrf,"the reviewer gate admitted the token").not.toBeNull();expect(await keylessEffectProof(claim)).toBe(initial);
       await openSyntheticReviewPdf(review,"photo");await openSyntheticReviewPdf(review,"birth");
       await expectFullDocumentReceipts(claim,reviewer,papers);
       const comparison=review.getByRole("group",{name:"Identity checked from both documents",exact:true});
@@ -143,7 +147,8 @@ test("Keyless positive documentary match: native owner notice, authenticated syn
       expect((await fresh.goto(`/reviews/future-person/claims/${claim}`))?.status()).toBe(200);
       const current=await nativeReviewRequest(fresh,`/api/reviews/future-person/claims/${claim}`);
       expect(current.status).toBe(200);const record=reviewPageCase.parse(current.body);
-      expect(Boolean(current.csrf&&/^[a-f0-9]{64}$/u.test(current.csrf)&&current.nonce&&current.nonce.length<=2048)).toBe(true);
+      // 2026-11-19 (G8.5): the GET issues no X-Inherit-CSRF value (it issued the case digest).
+      expect(current.csrf).toBeNull();expect(Boolean(current.nonce&&current.nonce.length<=2048)).toBe(true);
       expect(record.reviewRevision).toBe(2);expect(record.notice.state).toBe("notice_pending");
       await expect(fresh.getByRole("button",{name:"Save choice",exact:true})).toHaveCount(0);
       await expect(fresh.getByText("This claim is waiting. Open the case again when its next review is assigned.",{exact:true})).toBeVisible();
@@ -168,9 +173,11 @@ test("Keyless positive documentary match: native owner notice, authenticated syn
       for(const nonce of [documentary.nonce,current.nonce]){
         const response=await nativeReviewRequest(fresh,`/api/reviews/future-person/claims/${claim}/release`,{
           decision:"approve-release",reviewRevision:2,noticeRevision:2,nonce,
-          reason:"A synthetic callback is not thirty days of elapsed owner notice or an issued final release scope."},current.csrf??undefined);
+          reason:"A synthetic callback is not thirty days of elapsed owner notice or an issued final release scope."},
+          await freshReviewerCsrf(fresh,`/api/reviews/future-person/claims/${claim}/release`));
         expect(response.status).toBe(404);expect(response.body).toEqual({error:"not_found"});
         expect(response.cache).toBe("private, no-store");expect(response.referrer).toBe("no-referrer");expect(await keylessEffectProof(claim)).toBe(hold);
+        expect(response.csrf,"the reviewer gate admitted the token").not.toBeNull();
         expect(await secondDocumentProof()).toBe("0/0/0/0");
       }
       expect(await keylessSourceProof(seeded.cohortId)).toBe(source);

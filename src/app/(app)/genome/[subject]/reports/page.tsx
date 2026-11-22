@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import { IntentLink } from "@/components/site/intent-link";
 import { notFound, redirect } from "next/navigation";
 import { cache } from "react";
 import { CapabilityUnavailable } from "@/components/capability-unavailable";
@@ -282,7 +282,7 @@ export default async function ReportsPage(
         seed={5}
         action={headAction ? (
           <Button asChild size="lg">
-            <Link href={route("files.upload", { query: { subject: subject.routeSegment } })}>{ADD_A_FILE}</Link>
+            <IntentLink href={route("files.upload", { query: { subject: subject.routeSegment } })}>{ADD_A_FILE}</IntentLink>
           </Button>
         ) : undefined}
       >
@@ -332,9 +332,9 @@ export default async function ReportsPage(
           <p className="max-w-measure text-sm text-ink-muted">
             <Count value={estimateCount} layerClass="estimate" wording="unavailable"
               describedBy="layer-estimate-definition" />{" "}
-            <Link href={CANNOT_NUMBER_HREF} className="prose-link">
+            <IntentLink href={CANNOT_NUMBER_HREF} className="prose-link">
               {CANNOT_NUMBER_WHY}
-            </Link>
+            </IntentLink>
           </p>
         ) : null}
       </RecordHead>
@@ -343,7 +343,7 @@ export default async function ReportsPage(
       {nonEmptyLayers.length > 1 ? (
         <nav aria-label="Report groups" className="flex flex-wrap gap-x-2 border-b border-line">
           {nonEmptyLayers.map((layer) => (
-            <Link
+            <IntentLink
               key={layer}
               href={route("genome.reports", subjectParams, { query: { layer } })}
               aria-current={layer === activeLayer ? "page" : undefined}
@@ -356,7 +356,7 @@ export default async function ReportsPage(
               )}
             >
               {LAYER_LABELS[layer]}
-            </Link>
+            </IntentLink>
           ))}
         </nav>
       ) : null}

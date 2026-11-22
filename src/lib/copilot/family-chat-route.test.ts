@@ -11,10 +11,11 @@ import type { SharedReportResult } from "@/lib/family/shared-report-results";
 const mocks = vi.hoisted(() => ({
   actor: vi.fn(), subject: vi.fn(), prepare: vi.fn(), token: vi.fn(), stream: vi.fn(), providerFetch: vi.fn(),
   members: vi.fn(), capture: vi.fn(), check: vi.fn(), rpc: vi.fn(), jurisdiction: vi.fn(), isChat: vi.fn(),
-  localAllowed: vi.fn(), built: vi.fn(), capturedFetch: null as typeof fetch | null,
+  localAllowed: vi.fn(), built: vi.fn(), acknowledged: vi.fn(), capturedFetch: null as typeof fetch | null,
 }));
 vi.mock("@/lib/uploads/own-upload-context", () => ({ currentOwnUploadAccount: mocks.actor }));
 vi.mock("@/lib/subjects", () => ({ resolveSubjectForAccount: mocks.subject }));
+vi.mock("@/lib/family/tier2", () => ({ acknowledged: mocks.acknowledged }));
 vi.mock("./own-provider-authority", () => ({ prepareOwnCopilotProvider: mocks.prepare }));
 vi.mock("./family-chat-token", () => ({ readFamilyChatToken: mocks.token }));
 vi.mock("./own-chat-token", () => ({ snapshotHash: (value: unknown) => JSON.stringify(value) }));
@@ -71,6 +72,7 @@ beforeEach(() => {
   mocks.built.mockReturnValue(true);
   mocks.localAllowed.mockReturnValue(true);
   mocks.jurisdiction.mockResolvedValue(true);
+  mocks.acknowledged.mockResolvedValue(true);
   mocks.subject.mockResolvedValue({ id: selfId, subjectClass: "self", displayLabel: "You" });
   mocks.prepare.mockResolvedValue({ authority: provider, settings: { provider: "openai_compatible", base_url: "http://127.0.0.1:8127/v1", model: "synthetic" },
     createFetch: (authorize: () => Promise<boolean>) => async (...args: Parameters<typeof fetch>) => {
@@ -233,6 +235,25 @@ describe("the Family group scope's chat route", () => {
     expect((await familyChatResponse(request(first), first, options)).status).toBe(403);
     expect(mocks.prepare).not.toHaveBeenCalled();
     expect(mocks.members).not.toHaveBeenCalled();
+  });
+
+  it("refuses a turn without this session's Tier-2 acknowledgement before anything is read (D-157)", async () => {
+    mocks.acknowledged.mockResolvedValue(false);
+    for (const body of [first, { chatId, message: "And now?" }]) {
+      const response = await familyChatResponse(request(body), body, options);
+      // The refusal the one-record and cohort scopes give.
+      expect(response.status).toBe(403);
+      expect(await response.json()).toEqual({ error: "copilot_unavailable" });
+      expect(response.headers.get("cache-control")).toBe("private, no-store");
+    }
+    expect(mocks.acknowledged).toHaveBeenCalledWith({ id: accountId });
+    // No group, no history, no report, no recheck, no model and no write.
+    expect(mocks.members).not.toHaveBeenCalled();
+    expect(mocks.rpc).not.toHaveBeenCalled();
+    expect(mocks.capture).not.toHaveBeenCalled();
+    expect(mocks.check).not.toHaveBeenCalled();
+    expect(mocks.stream).not.toHaveBeenCalled();
+    expect(mocks.providerFetch).not.toHaveBeenCalled();
   });
 
   it("serves nothing where the scope is not built", async () => {

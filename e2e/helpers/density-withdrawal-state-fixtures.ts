@@ -8,6 +8,7 @@ import { densityCapturePlan, type DensityStateCase } from "../../scripts/density
 import { withdrawalDensityRecipe } from "../../scripts/density-withdrawal-states";
 import type { DensityRegister } from "../../scripts/density-current";
 import type { DensityStateFixture } from "./density-current-capture";
+import { signOut } from "./session-csrf";
 
 interface ActualEmail { to: string[] | string; subject: string; html?: string }
 type Facts = Record<string, Record<string, unknown>[]>;
@@ -183,7 +184,7 @@ export function realWithdrawalDensityFixtures(input: {
           const invitation = invited.data![0], tokenRow = credential.data![0];
           const scope: Scope = { inviterId, invitationId: invitation.id, subjectId: invitation.target_id,
             tokenId: tokenRow.id, candidateId: tokenRow.candidate_id, emailHmac: invitation.email_hmac };
-          const signedOut = await page.request.post("/auth/sign-out"); expect(signedOut.status()).toBeLessThan(400);
+          const signedOut = await signOut(page); expect(signedOut.status()).toBeLessThan(400);
           await context.clearCookies(); expect(await context.cookies()).toEqual([]);
           expect((await page.goto(adultInvitationUrl(token, origin.origin)))?.status()).toBe(200);
           await expect(page).toHaveURL(`${origin.origin}/withdraw/request`);

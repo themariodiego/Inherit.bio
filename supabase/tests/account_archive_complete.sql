@@ -153,8 +153,11 @@ select is((select target_id from public.token_candidates where id=(select candid
  'the positive adult source uses its actual issued invitation mail token');
 select is((select count(*) from public.activate_rights_session_v1((select hash from adult_token),repeat('7',64),
  'complete-adult-open-00000001')),1::bigint,'the issued token opens its real rights session');
-select is(public.respond_adult_subject_invitation_session_v1(repeat('7',64),'confirm','complete-adult-confirm-00000001',
- '77900000-0000-4000-8000-000000000001',repeat('5',64)),'accepted',
+-- 20261025400000 (D-103): Path A's acceptance includes the typed name, through
+-- the account door api.invitation-accept calls.
+select is(public.accept_adult_subject_invitation_v1(repeat('7',64),'complete-adult-confirm-00000001',
+ '77900000-0000-4000-8000-000000000001','77900000-0000-4000-8000-000000000010',
+ jsonb_build_object('1',repeat('5',64)),decode(repeat('5a',28),'hex')),(select subject_id from accepted_adult),
  'the actual person accepts the existing signed Path A scope in their own account');
 select is((select count(*) from public.subject_consents c join public.consent_signatures sig on sig.id=c.signature_id
  where c.subject_id=(select subject_id from accepted_adult) and c.consent_type='adult_source'

@@ -24,7 +24,9 @@ function fixture(claims = input) {
   const { token } = mintOwnReportPresentation(claims);
   return { body: { action: "grant-purpose", subjectId: input.subjectId, purposeKey: input.purpose,
     artifactVersion: 1, artifactPresentationToken: token, affirmed: true, statementKeys: ["make-this-result-for-me"] },
-  headers: { origin: "https://inherit.bio", "sec-fetch-site": "same-origin", "x-inherit-csrf": token } };
+  // 2026-11-19 (G8.5): the account session's one-time token, verified by api.consents before this module runs;
+  // it repeated the presentation token, which now travels in the body alone.
+  headers: { origin: "https://inherit.bio", "sec-fetch-site": "same-origin", "x-inherit-csrf": "the-account-session-token-the-gate-admitted" } };
 }
 function send(body: unknown, headers: Record<string, string>) {
   return ownReportConsent(new Request("https://inherit.bio/api/consents", { method: "POST", headers }), body);
@@ -66,7 +68,9 @@ describe("independent own-report choices", () => {
       p_snapshot: input.snapshot, p_purpose: "reports.monogenic", p_nonce_hash: expect.stringMatching(/^[a-f0-9]{64}$/),
     })]);
   });
-  it.each(["origin", "sec-fetch-site", "x-inherit-csrf"])("requires %s", async key => {
+  // 2026-11-19 (G8.5): "x-inherit-csrf" left this list. The header no longer repeats the presentation token:
+  // api.consents verifies and spends the account session's one-time X-Inherit-CSRF token before this module runs (src/lib/security/session-csrf-routes.test.ts), and the token is required in the body (the foreign cases below).
+  it.each(["origin", "sec-fetch-site"])("requires %s", async key => {
     const { body, headers } = fixture(); const changed: Record<string, string> = { ...headers }; delete changed[key];
     expect((await send(body, changed)).status).toBe(403); expect(mocks.rpc).not.toHaveBeenCalled();
   });

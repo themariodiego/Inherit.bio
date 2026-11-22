@@ -1,4 +1,5 @@
 import { AUTH_FORM_ERRORS } from "@/copy/auth";
+import { csrfHandle, type CsrfHandle } from "@/lib/security/session-csrf-client";
 
 /**
  * The browser half of the three auth endpoints: one same-origin JSON POST
@@ -14,15 +15,24 @@ export interface AuthEndpointAnswer {
   issues: string[];
 }
 
-export async function postAuthEndpoint(path: AuthEndpoint, csrf: string, body: Record<string, string>): Promise<AuthEndpointAnswer> {
+/**
+ * `csrf` is the page's value. The sign-up and forgot-password forms send
+ * their one-time form token as it is; the reset form's is the reset
+ * session's one-time token (G8.5, the migration stage), sent through its
+ * chain (`chained`, `session-csrf-client.ts`), so a second submission after
+ * a refused password carries the successor the first answer issued.
+ */
+export async function postAuthEndpoint(path: AuthEndpoint, csrf: string, body: Record<string, string>,
+  chained = false): Promise<AuthEndpointAnswer> {
+  const handle: CsrfHandle = chained ? csrfHandle(csrf) : { send: (request) => request(csrf) };
   try {
-    const response = await fetch(path, {
+    const response = await handle.send((token) => fetch(path, {
       method: "POST",
       credentials: "same-origin",
       cache: "no-store",
-      headers: { "content-type": "application/json", "x-inherit-csrf": csrf },
+      headers: { "content-type": "application/json", "x-inherit-csrf": token },
       body: JSON.stringify(body),
-    });
+    }));
     let issues: string[] = [];
     if (response.status === 422) {
       const json = (await response.json().catch(() => null)) as { issues?: unknown } | null;

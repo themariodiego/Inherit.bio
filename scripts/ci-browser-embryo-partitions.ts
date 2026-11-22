@@ -7,15 +7,17 @@ export const EMBRYO_BROWSER_JOURNEYS = Object.freeze({
   "embryo-qc-seed": "embryo-qc-second-seed-journey.spec.ts",
   "future-person-keyless": "reviews-keyless-owner-notice-journey.spec.ts",
   "embryo-third-party": "embryo-third-party-journey.spec.ts",
+  "future-person-claimed-record": "future-person-claimed-record-journey.spec.ts",
 });
 type FileCases = { project: string; file: string; cases: number };
 
-/** The five real journeys need an empty split queue. Native partitions must put
+/** The six real journeys need an empty split queue. Native partitions must put
  * them in separate fresh jobs; this never changes native case assignment. */
 export function assertEmbryoJourneyPartition(rows: readonly FileCases[], full: boolean): void {
   const projects = ["embryo-ingest", "embryo-mixed-qc"];
   const chromiumJourneys: readonly string[] = [EMBRYO_BROWSER_JOURNEYS["embryo-qc-seed"],
-    EMBRYO_BROWSER_JOURNEYS["future-person-keyless"], EMBRYO_BROWSER_JOURNEYS["embryo-third-party"]];
+    EMBRYO_BROWSER_JOURNEYS["future-person-keyless"], EMBRYO_BROWSER_JOURNEYS["embryo-third-party"],
+    EMBRYO_BROWSER_JOURNEYS["future-person-claimed-record"]];
   const files: string[] = Object.values(EMBRYO_BROWSER_JOURNEYS);
   const journeys = rows.filter(row => projects.includes(row.project) || files.includes(row.file));
   for (const row of journeys) {
@@ -32,6 +34,35 @@ export function assertEmbryoJourneyPartition(rows: readonly FileCases[], full: b
 export function assertEmbryoCiShard(shard: number | null, env: Readonly<Record<string, string | undefined>>): void {
   assert(env.CI !== "true" || shard !== null,
     "The embryo journeys require separate fresh native CI partitions; unsharded CI is unsupported");
+}
+
+/** Exact imported, uncommented calls and the one fixed 3105 origin. AST only:
+ * a comment, alias or unconnected lookalike never counts. */
+function connectedJourneyCalls(file: ts.SourceFile, imports: readonly ts.ImportDeclaration[],
+  required: readonly (readonly [string, string, number])[]): { connected: boolean; origins: number } {
+  const calls: Record<string, number> = {};
+  let origins = 0;
+  function visit(node: ts.Node) {
+    if (ts.isCallExpression(node)) {
+      if (ts.isIdentifier(node.expression)) calls[node.expression.text] = (calls[node.expression.text] ?? 0) + 1;
+      if (ts.isPropertyAccessExpression(node.expression) && ts.isIdentifier(node.expression.expression)
+        && node.expression.expression.text === "test" && node.expression.name.text === "use"
+        && node.arguments.length === 1 && ts.isObjectLiteralExpression(node.arguments[0])
+        && node.arguments[0].properties.length === 1) {
+        const property = node.arguments[0].properties[0];
+        if (ts.isPropertyAssignment(property) && property.name.getText(file) === "baseURL"
+          && ts.isStringLiteral(property.initializer) && property.initializer.text === "http://localhost:3105") origins++;
+      }
+    }
+    ts.forEachChild(node, visit);
+  }
+  visit(file);
+  const connected = required.every(([symbol, module, count]) => imports.some(statement => ts.isStringLiteral(statement.moduleSpecifier)
+    && statement.moduleSpecifier.text === module && !statement.importClause?.isTypeOnly
+    && statement.importClause?.namedBindings && ts.isNamedImports(statement.importClause.namedBindings)
+    && statement.importClause.namedBindings.elements.some(binding => binding.name.text === symbol && !binding.propertyName && !binding.isTypeOnly))
+    && calls[symbol] === count);
+  return { connected, origins };
 }
 
 /** The real publication journeys must retain the permanent context audit.
@@ -131,6 +162,23 @@ export function assertEmbryoJourneyAudits(sources: Readonly<Record<string, strin
       }
 `,
       "Keyless notice journey requires both real held document GET refusals, four zero counters and unchanged effects");
+    }
+    if (name === EMBRYO_BROWSER_JOURNEYS["future-person-claimed-record"]) {
+      // G5.4's five steps on their real doors: the published cohort and the
+      // TEST-only transfer, the Record Key claim with real papers, the full
+      // reads, the captured release mail and the closed delete on this app.
+      const { connected, origins } = connectedJourneyCalls(file, imports, [
+        ["seedParticipantC", "./participant-c-journey", 1],
+        ["withEmbryoJourney", "../scripts/ci-embryo-journey", 1],
+        ["syntheticHistoricalTransfer", "./helpers/historical-embryo-transfer", 1],
+        ["createReviewCase", "./helpers/claim-review-fixture", 1],
+        ["openSyntheticReviewPdf", "./helpers/keyless-review-journey", 2],
+        ["expectFullDocumentReceipts", "./helpers/keyless-positive-journey", 1],
+        ["drainMailUntil", "./helpers", 1],
+        ["proveClaimantDeleteClosed", "./helpers/claimant-delete-closed", 1],
+      ]);
+      assert(connected, "Claimed-record journey requires its exact connected claim, review, release mail and closed-delete calls");
+      assert(origins === 1, "Claimed-record journey requires the exact isolated 3105 origin");
     }
     if (name === EMBRYO_BROWSER_JOURNEYS["embryo-qc-seed"]) {
       const exactImport = (original: string, module: string) => imports.some(statement => ts.isStringLiteral(statement.moduleSpecifier)

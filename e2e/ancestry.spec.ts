@@ -6,7 +6,8 @@ import path from "node:path";
 import { axeViolations, createConfirmedUser, firstViewportInteractives, signIn } from "./helpers";
 import { FIGURE_BASES, MODELLED_MARKER } from "../src/lib/figures/contract";
 import { LINEAGE_NO_BRANCH, LINEAGE_NO_POSITIONS, LINEAGE_NO_RANGE, LINEAGE_RESOLUTION_LIMIT,
-  LINEAGE_UNREADABLE, NEANDERTHAL_BODY, UNKNOWN_REFERENCE_TREE } from "../src/copy/ancestry";
+  LINEAGE_UNREADABLE, NEANDERTHAL_NOT_COVERED, NEANDERTHAL_RESOLUTION_LIMIT,
+  NEANDERTHAL_WHAT_IT_IS, UNKNOWN_REFERENCE_TREE } from "../src/copy/ancestry";
 import { REGIONAL_CAVEAT, REGIONAL_RANGE_NOTE } from "../src/lib/genome/regional-admixture";
 import regionalManifest from "../data/ref/aims-seven-region-manifest.json";
 import { LINEAGE_TREES } from "../src/lib/ancestry/panel";
@@ -37,6 +38,7 @@ const RUN_ID = randomUUID();
 const GREY_USER = { email: `ancestry-grey-${RUN_ID}@e2e.local`, password: "e2e-ancestry-grey-pw" };
 const SHOWN_USER = { email: `ancestry-shown-${RUN_ID}@e2e.local`, password: "e2e-ancestry-shown-pw" };
 const LINEAGE_USER = { email: `ancestry-lineage-${RUN_ID}@e2e.local`, password: "e2e-ancestry-lineage-pw" };
+const NEANDERTHAL_USER = { email: `ancestry-neanderthal-${RUN_ID}@e2e.local`, password: "e2e-ancestry-neanderthal-pw" };
 
 const ANCESTRY = "/genome/me/ancestry";
 const TINY_FIXTURE = "e2e/fixtures/tiny-grch38.vcf";
@@ -45,6 +47,10 @@ const MIXED_FIXTURE = "e2e/fixtures/aims-mixed-grch38.vcf";
  * describing no real person. It carries no AIMs at all, which is the point:
  * the two halves of this page are read separately and must say so separately. */
 const LINEAGE_FIXTURE = "e2e/fixtures/lineage-grch38.vcf";
+/** A synthetic file covering a subset of the Neanderthal panel's sites and no
+ * AIMs or lineage markers, so the TEST-LOCAL estimate renders while the rest
+ * of the page stays grey. Describes no real person. */
+const NEANDERTHAL_FIXTURE = "e2e/fixtures/neanderthal-grch38.vcf";
 
 test.afterEach(async ({ page }, info) => {
   if (info.status !== "passed") return;
@@ -96,6 +102,7 @@ test.beforeAll(async () => {
   await createConfirmedUser(GREY_USER.email, GREY_USER.password);
   await createConfirmedUser(SHOWN_USER.email, SHOWN_USER.password);
   await createConfirmedUser(LINEAGE_USER.email, LINEAGE_USER.password);
+  await createConfirmedUser(NEANDERTHAL_USER.email, NEANDERTHAL_USER.password);
 });
 
 /** Real preparation precedes a separate explicit ancestry choice; no annotated
@@ -274,7 +281,12 @@ test("/genome/[subject]/ancestry not-covered: the grey state's exact sentence, n
 
   await expect(page.locator("#neanderthal")).toBeVisible();
   await expect(page.locator("#neanderthal")).toContainText("How much of your DNA came from Neanderthals");
-  await expect(page.locator("#neanderthal").getByText(NEANDERTHAL_BODY, { exact: true })).toBeVisible();
+  // Under TEST-LOCAL the capability is ON (playwright sets the flag), so the
+  // card no longer shows the production "not switched on here" body. This file
+  // covers none of the Neanderthal panel's sites, so the card shows the
+  // not-covered state: a plain file limit, no figure and no percent. See
+  // docs/test-diff-register.md for why the old NEANDERTHAL_BODY assertion moved.
+  await expect(page.locator("#neanderthal").getByText(NEANDERTHAL_NOT_COVERED, { exact: true })).toBeVisible();
   await expect(page.locator("#neanderthal [data-figure-kind]")).toHaveCount(0);
   await expect(page.locator("#neanderthal")).not.toContainText("%");
   expect(await page.content()).not.toContain("archaic-hominin");
@@ -581,5 +593,64 @@ test("/genome/[subject]/ancestry shown: a file carrying defining markers renders
     await page.goto(ANCESTRY);
     await page.waitForLoadState("networkidle");
     expect(await axeViolations(page, theme), `${ANCESTRY} populated lineage (${theme})`).toEqual([]);
+  }
+});
+
+/**
+ * The Neanderthal estimate, under TEST-LOCAL, seen in a browser.
+ *
+ * A synthetic file that covers a subset of the committed Neanderthal panel's
+ * sites (`e2e/fixtures/neanderthal-grch38.vcf`, no real person) drives the
+ * whole journey — upload, preparation, an explicit ancestry choice, the
+ * canonical read — and the card shows the estimate: a modelled share with its
+ * bootstrap range, the covered-site count as an observed coverage figure, the
+ * panel and its version, and the resolution limit (G4.4), all in `#neanderthal`.
+ * The comparison figure stays hidden (no comparator sentence is shipped), and
+ * `archaic-hominin` appears nowhere (acceptance 32).
+ */
+test("/genome/[subject]/ancestry Neanderthal: the TEST-LOCAL estimate renders with its range, covered count, panel/version and limits, and no comparator", async ({
+  page,
+}) => {
+  test.setTimeout(240_000);
+  await signIn(page, NEANDERTHAL_USER.email, NEANDERTHAL_USER.password);
+  await ingestAndWait(page, NEANDERTHAL_FIXTURE);
+  await page.goto(ANCESTRY);
+
+  const card = page.locator("#neanderthal");
+  await expect(card).toBeVisible();
+  await expect(card).toContainText("How much of your DNA came from Neanderthals");
+
+  // The estimate is a modelled ancestry-share figure read against the
+  // Neanderthal panel (not the region admixture module), with a range unit.
+  const share = card.locator('[data-figure-kind="ancestry-share"]');
+  await expect(share).toHaveCount(1);
+  await expect(share).toHaveAttribute("data-figure-basis", "modelled");
+  await expect(share).toHaveAttribute("data-provenance", "computed:src/lib/genome/neanderthal.ts");
+  await expect(share.locator('[data-slot="figure-value"]')).toHaveText(/^\d+\.\d%$/);
+  await expect(share.locator('[data-slot="figure-unit"]')).toHaveText(/^\(\d+\.\d–\d+\.\d%\)$/);
+
+  // The number of covered panel sites, as an observed coverage figure.
+  const coverage = card.locator('[data-figure-kind="coverage"]');
+  await expect(coverage).toHaveCount(1);
+  await expect(coverage).toHaveAttribute("data-figure-basis", "observed");
+
+  // G4.4 provenance and the plain limits beside the number.
+  const provenance = card.locator('[data-slot="neanderthal-provenance"]');
+  await expect(provenance).toContainText("version browning2018-sprime-ceu-chb-gih-grch38-2026-10-22");
+  await expect(provenance).toContainText(NEANDERTHAL_RESOLUTION_LIMIT);
+  await expect(card).toContainText(NEANDERTHAL_WHAT_IT_IS);
+
+  // The not-covered body never shows here, and the comparison figure stays
+  // hidden: no comparator slot, and no ranking vocabulary (brief §7.6).
+  await expect(card).not.toContainText(NEANDERTHAL_NOT_COVERED);
+  await expect(page.locator('[data-slot="neanderthal-comparator"]')).toHaveCount(0);
+  await expect(card.getByText(/more Neanderthal than|Neanderthal (?:percentile|rank|score)/i)).toHaveCount(0);
+  expect(await page.content()).not.toContain("archaic-hominin");
+
+  for (const theme of ["light", "dark"] as const) {
+    await page.emulateMedia({ colorScheme: theme });
+    await page.goto(ANCESTRY);
+    await page.waitForLoadState("networkidle");
+    expect(await axeViolations(page, theme), `${ANCESTRY} Neanderthal estimate (${theme})`).toEqual([]);
   }
 });

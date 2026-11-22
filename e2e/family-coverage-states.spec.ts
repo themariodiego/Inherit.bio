@@ -27,6 +27,7 @@ import {
   reportsLede,
 } from "../src/copy/family/person";
 import { OWN_UPLOAD_COPY } from "../src/copy/upload/consent";
+import { signOut } from "./helpers/session-csrf";
 
 /**
  * `/family/[person] not-covered`: another adult has shared both report layers
@@ -169,7 +170,7 @@ test("A invites B, B accepts, prepares a file that covers nothing the product re
   const token = adultInvitationToken(message.html);
   expect(token, "the invitation mail carries one fragment-form review link").toBeTruthy();
 
-  await page.request.post("/auth/sign-out");
+  await signOut(page);
   await acceptAdultInvitation({
     page, invitationUrl: adultInvitationUrl(token!), email: B.email, password: B.password,
   });
@@ -213,7 +214,7 @@ test("/family/[person] not-covered: with both report layers shared and a prepare
   page,
 }) => {
   expect(invitedSubjectId && sourceFileId, "the journey above ran").toBeTruthy();
-  await page.request.post("/auth/sign-out");
+  await signOut(page);
   await signIn(page, A.email, A.password);
   await page.goto(`/family/s-${invitedSubjectId}`);
   await expect(page.getByRole("heading", { level: 1, name: PERSON_H1 })).toBeVisible();

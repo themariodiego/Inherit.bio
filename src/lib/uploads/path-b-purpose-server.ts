@@ -1,3 +1,4 @@
+import { mintPersonOperationNonce } from "@/lib/person-operation-nonce";
 import "server-only";
 
 import crypto from "node:crypto";
@@ -8,10 +9,11 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { currentPathBAccount, heldUploadRpc } from "./other-adult-upload-server";
 import { ownUploadJson } from "./own-upload-context";
 import {
+  PATH_B_CHOICE_PURPOSES,
   PATH_B_DIRECTIONS,
   PATH_B_GRANT_TEXT,
-  PATH_B_PURPOSES,
   PATH_B_STATEMENTS,
+  pathBGrantText,
   pathBPersonChoices,
   pathBPurposeBody,
   pathBUploaderShares,
@@ -33,12 +35,12 @@ const LIFETIME_MS = 540_000;
 const uuid = z.uuid().regex(/^[0-9a-f-]+$/);
 const presentation = z.object({
   accountId: uuid, sessionId: uuid, subjectId: uuid,
-  purpose: z.enum(PATH_B_PURPOSES), direction: z.enum(PATH_B_DIRECTIONS),
+  purpose: z.enum(PATH_B_CHOICE_PURPOSES), direction: z.enum(PATH_B_DIRECTIONS),
   artifactKey: z.string().max(64), artifactVersion: z.number().int().positive().safe(),
   artifactBodySha256: z.string().regex(/^[0-9a-f]{64}$/),
   nonce: z.string().regex(/^[A-Za-z0-9_-]{32}$/),
   issuedAt: z.number().int().positive().safe(), expiresAt: z.number().int().positive().safe(),
-}).strict().refine(c => c.artifactKey === PATH_B_GRANT_TEXT[c.direction][c.purpose]);
+}).strict().refine(c => c.artifactKey === pathBGrantText(c.direction, c.purpose));
 export type PathBPurposePresentation = z.infer<typeof presentation>;
 
 export function mintPathBPurposePresentation(input: Omit<PathBPurposePresentation, "nonce" | "issuedAt" | "expiresAt">,
@@ -81,9 +83,11 @@ export async function pathBPurposeConsent(request: Request, payload: unknown): P
   const parsed = pathBPurposeBody.safeParse(payload);
   if (!parsed.success) return ownUploadJson({ error: "invalid_request" }, 422);
   const body = parsed.data;
+  // The presentation token is the body's artifactPresentationToken, checked
+  // below; api.consents verifies and spends the account session's
+  // X-Inherit-CSRF before this runs (G8.5, 19 November 2026).
   if (request.headers.get("origin") !== new URL(request.url).origin
-    || request.headers.get("sec-fetch-site") !== "same-origin"
-    || request.headers.get("x-inherit-csrf") !== body.artifactPresentationToken) return ownUploadJson({ error: "forbidden" }, 403);
+    || request.headers.get("sec-fetch-site") !== "same-origin") return ownUploadJson({ error: "forbidden" }, 403);
   const actor = await currentPathBAccount();
   if (!actor) return ownUploadJson({ error: "unauthorized" }, 401);
   const c = readPathBPurposePresentation(body.artifactPresentationToken);
@@ -145,12 +149,17 @@ export async function preparePathBChoices(now = Date.now()): Promise<PathBChoice
   return people.data.map(person => {
     const shareOpen = person.uploaderShare.decision === "allow";
     const choices: PathBChoice[] = [];
-    for (const purpose of PATH_B_PURPOSES) {
+    for (const purpose of PATH_B_CHOICE_PURPOSES) {
       for (const direction of PATH_B_DIRECTIONS) {
+        // Copilot is a choice for the person who added the file only.
+        const text = pathBGrantText(direction, purpose);
+        if (!text) continue;
         const grant = person.grants.find(g => g.purpose === purpose && g.direction === direction) ?? null;
-        const artifact = artifacts.get(PATH_B_GRANT_TEXT[direction][purpose]);
+        const artifact = artifacts.get(text);
         const canOffer = !grant && artifact && (direction === "self" || shareOpen);
         choices.push({ purpose, direction, grantId: grant?.grantId ?? null,
+          revokeNonce: grant ? mintPersonOperationNonce({ accountId: actor.accountId, sessionId: actor.sessionId,
+            operation: "consent_revoke", targetId: grant.grantId }, now) : null,
           offer: canOffer ? {
             token: mintPathBPurposePresentation({ accountId: actor.accountId, sessionId: actor.sessionId,
               subjectId: person.subjectId, purpose, direction, artifactKey: artifact.artifact_key,

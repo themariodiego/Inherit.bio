@@ -5,6 +5,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { readBoundedJson } from "@/lib/future-person/bounded-body";
 import { readPublicAppealMutation } from "@/lib/future-person/public-appeal-session";
 import { createAppealIntakeRuntime } from "@/lib/future-person/appeal-intake-runtime";
+import { readRightsCsrfSession, withPurposeCsrf } from "@/lib/security/session-csrf";
 const common = { photoIdentityDocumentId: z.uuid(), affirmed: z.literal(true), nonce: z.string().min(1).max(2048) };
 export const publicAppealCompletionBody = z.union([
  z.object({ ...common, subjectSourceControlDocumentId: z.uuid() }).strict(),
@@ -14,8 +15,11 @@ export const publicAppealCompletionBody = z.union([
 ]);
 const receipt = z.object({ status: z.literal("review_pending"), deadline: z.iso.datetime({ offset: true }) }).strict();
 /** Native case kind chooses the exact two documents. A handle does not grant
- * access, prove parentage, select a target or approve any evidence. */
-export async function POST(request: Request) {
+ * access, prove parentage, select a target or approve any evidence. The
+ * page's one-time X-Inherit-CSRF token for the rights session is verified and
+ * spent before this runs (G8.5); the completion nonce is checked as before. */
+export const POST = withPurposeCsrf("api.appeal-complete", readRightsCsrfSession, handlePost);
+async function handlePost(request: Request) {
  const owner = createAppealIntakeRuntime(request.signal); let result: z.infer<typeof receipt> | null = null; let refused = false;
  try {
   const parsed = publicAppealCompletionBody.safeParse(await owner.wait(owner.read(() => readBoundedJson(request, 4096))));

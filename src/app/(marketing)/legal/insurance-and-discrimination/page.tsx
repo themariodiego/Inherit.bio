@@ -73,7 +73,7 @@ export default async function InsurancePage() {
                 renders the stored artifact rather than a copy of it, so it cannot drift from the
                 text a person confirms in the product.
               </p>
-              <p className="break-all font-mono text-xs">sha256 {artifact.body_sha256}</p>
+              <p className="max-w-measure break-all font-mono text-xs">sha256 {artifact.body_sha256}</p>
               {/*
                 * A link alone in its own paragraph is a target, not a word in
                 * a sentence, so SC 2.5.8's Inline exception does not reach it

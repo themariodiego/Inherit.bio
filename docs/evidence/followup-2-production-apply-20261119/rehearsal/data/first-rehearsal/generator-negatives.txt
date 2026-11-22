@@ -1,0 +1,4 @@
+# LOCAL ONLY: generate.py refusals (rehearsal/scripts/generator-negatives.sh), 2026-11-19, in a scratch clone (git clone --shared): the synthetic commits (no ref) exist only there.
+A (REV = a commit whose tree changes one earlier migration): earlier migration changed or missing in 1ac331d5: supabase/migrations/20261023140000_review_download_clock.sql
+B (--head a commit whose tree changes 20261025400000): head 226962515bb6df61092fca9762a9cf4ade5e2d5d: supabase/migrations tree 2da8b7cb7463f56ecff5225472f4d4e0d3d7bfaf is not the rehearsed d8dcb61a tree 151259da5cb41959a57d767c4ed814621829436c
+control (--head d8dcb61a): head d8dcb61a0beb4f4616046b38a03ab5ed4d9c666c: supabase/migrations tree 151259da5cb41959a57d767c4ed814621829436c == d8dcb61a

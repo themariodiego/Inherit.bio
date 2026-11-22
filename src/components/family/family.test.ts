@@ -160,7 +160,7 @@ describe("permission columns", () => {
         rows: rows.map((row) =>
           row.id === "family.portrait"
             ? { ...row, lockedReason: permissions.INDEPENDENT_LOGIN_REQUIRED }
-            : { ...row, action: { kind: "revoke" as const, grantId: "55555555-5555-4555-8555-555555555555" } },
+            : { ...row, action: { kind: "revoke" as const, grantId: "55555555-5555-4555-8555-555555555555", nonce: "revoke-nonce" } },
         ),
       }),
     );
@@ -180,7 +180,7 @@ describe("permission columns", () => {
         consequence: permissions.PERMISSION_ROWS[2].consequence,
         personName: "Bo",
         state: "on",
-        action: { kind: "revoke", grantId: "55555555-5555-4555-8555-555555555555" },
+        action: { kind: "revoke", grantId: "55555555-5555-4555-8555-555555555555", nonce: "revoke-nonce" },
       }),
     );
     expect(html).toContain('data-slot="permission-glyph"');
@@ -196,10 +196,9 @@ describe("sharing actions", () => {
     const active = renderToStaticMarkup(
       h(SharingActions, {
         personName: "Bo",
-        personSegment: `s-${HANDLE}`,
         subjectId: HANDLE,
         paused: false,
-        stopNonce: "nonce",
+        nonces: { pause: "pause-nonce", resume: "resume-nonce", stop: "stop-nonce" },
       }),
     );
     expect(active).toContain("Pause sharing");
@@ -212,10 +211,9 @@ describe("sharing actions", () => {
     const paused = renderToStaticMarkup(
       h(SharingActions, {
         personName: "Bo",
-        personSegment: `s-${HANDLE}`,
         subjectId: HANDLE,
         paused: true,
-        stopNonce: "nonce",
+        nonces: { pause: "pause-nonce", resume: "resume-nonce", stop: "stop-nonce" },
       }),
     );
     expect(paused).toContain("Resume sharing");

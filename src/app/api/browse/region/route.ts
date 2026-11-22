@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { chromToNumber } from "@/lib/genome/types";
 import { createClient } from "@/lib/supabase/server";
+import { withAccountCsrf } from "@/lib/security/session-csrf";
 
 /**
  * User variants within a genomic region, for the embedded genome browser.
@@ -8,9 +9,9 @@ import { createClient } from "@/lib/supabase/server";
  *
  * This route was a GET carrying `file`, `chrom`, `start` and `end` in the
  * query string. `docs/route-register.json#routes` registers it as a POST whose
- * `policy.transport` reads "subject-region-cursor-and-nonce-are-body-only-and-
- * forbidden-in-the-URL-query-path-logs-analytics-traces-errors-referrers-and-
- * audit-detail", and a GET cannot carry a body — so a person's file identifier
+ * `policy.transport` reads "file-and-region-are-body-only-and-forbidden-in-the-
+ * URL-query-path-logs-analytics-traces-errors-referrers-and-audit-detail", and
+ * a GET cannot carry a body — so a person's file identifier
  * and the exact stretch of their genome they were reading travelled in a URL,
  * which is written to server logs, referrers and traces by default. That is the
  * defect this shape closes, and it is why the parameters move into the body
@@ -21,13 +22,15 @@ import { createClient } from "@/lib/supabase/server";
  * registered 500. Both now read the registered numbers. Narrowing them is safe
  * for the one caller: `locusAround` asks for a 10 kb window.
  *
- * What is still not built, so that this comment is not read as conformance:
- * `authRequirements` also names an `X-Inherit-CSRF` token bound to the
- * authenticated session and a one-time browse operation nonce, and
- * `successResponseContract` `raw-region-v1` names a server-signed opaque
- * `nextCursor` and a subject-shaped body. Those need a nonce-minting
- * presentation and a signing key this route cannot invent. The same-origin
- * half of the requirement is enforced here because it needs neither.
+ * Since 19 November 2026 (owner decision "G8.5: the genome browser's read is
+ * registered as built") the register describes this read as it is built: the
+ * closed body `{ file, chromosome, start, end }`; the session `X-Inherit-CSRF`
+ * token, which `withAccountCsrf` spends and renews, with no browse nonce and no
+ * cursor; the caller's own rows only, because the read runs under the caller's
+ * session and `user_variants` row-level security decides, so a relative's
+ * track reads nothing; and `own-region-variants-v1`, `{ variants, truncated }`.
+ * Its refusals are registered as they ship: `own-region-variants-v1.invalid`
+ * and `.regionTooLarge`, and `service-unavailable-v1`.
  */
 
 /** The registered bounds, read from docs/route-register.json#api.browse-region. */
@@ -52,14 +55,18 @@ function response(body: unknown, status: number) {
   } });
 }
 
-export async function POST(request: Request) {
+export const POST = withAccountCsrf("api.browse-region", handlePost);
+async function handlePost(request: Request) {
+  // The register's generic refusals: `authenticated-mutation-v1.failure` for a
+  // request from anywhere but this origin, `authenticated-api-v1.unauthenticated`
+  // for one with no session.
   if (request.headers.get("origin") !== new URL(request.url).origin
     || request.headers.get("sec-fetch-site") !== "same-origin") {
-    return response({ error: "forbidden" }, 403);
+    return response({ error: "request_forbidden" }, 403);
   }
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return response({ error: "unauthorized" }, 401);
+  if (!user) return response({ error: "unauthenticated" }, 401);
 
   const parsed = regionRequest.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return response({ error: "invalid_request" }, 422);

@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { IntentLink } from "@/components/site/intent-link";
 import { ArrowUpRight } from "lucide-react";
 
 // One Overview entry box (docs/route-register.json →
@@ -35,7 +35,7 @@ export function EntryBoxGrid({
           const descriptionId = `${box.id}-description`;
           return (
             <li key={box.id} data-overview-box>
-              <Link
+              <IntentLink
                 href={box.href}
                 aria-labelledby={labelId}
                 aria-describedby={descriptionId}
@@ -48,7 +48,7 @@ export function EntryBoxGrid({
                   {box.description}
                 </span>
                 <ArrowUpRight aria-hidden="true" className="link-arrow size-4 shrink-0 text-forest" />
-              </Link>
+              </IntentLink>
             </li>
           );
         })}
@@ -62,7 +62,7 @@ export function EntryBoxGrid({
         const descriptionId = `${box.id}-description`;
         return (
           <li key={box.id} data-overview-box>
-            <Link
+            <IntentLink
               href={box.href}
               aria-labelledby={labelId}
               aria-describedby={descriptionId}
@@ -75,7 +75,7 @@ export function EntryBoxGrid({
               <span id={descriptionId} className="mt-2 block text-sm text-ink-muted">
                 {box.description}
               </span>
-            </Link>
+            </IntentLink>
           </li>
         );
       })}

@@ -4,23 +4,26 @@ import {futurePersonClaimsOpen} from "@/lib/future-person/claims-open";
 import {readBoundedJson} from "@/lib/future-person/bounded-body";
 import {notFound,unavailable} from "@/lib/embryos/api";
 import {closedResponse} from "@/lib/embryos/guards";
-import {isCanonicalId,openClaimReviewIdentity,reviewCsrfMatches,REVIEW_CSRF_HEADER} from "@/lib/future-person/review";
+import {isCanonicalId,openClaimReviewIdentity} from "@/lib/future-person/review";
+import {withReviewerCsrf} from "@/lib/security/session-csrf";
 import {keylessVerificationBody,keylessLookupNonceMatches,keylessVerificationIndexes,shapeKeylessVerification} from "@/lib/future-person/keyless-verification";
 import {sealKeylessVerificationProof} from "@/lib/future-person/keyless-verification-proof";
 
 /** The assigned human's read-only documentary lookup. A positive projection
- * creates no approval, notice, claimant, release or retained identity field. */
-export async function POST(request:Request,context:{params:Promise<{id:string}>}) {
+ * creates no approval, notice, claimant, release or retained identity field.
+ * The reviewer's one-time X-Inherit-CSRF token is spent before the handler
+ * runs (G8.5, the migration stage); it was a digest of the case. */
+export const POST=withReviewerCsrf("api.future-person-documentary-verification",async(request:Request,context:{params:Promise<{id:string}>})=>{
   const {id}=await context.params;
   const response=await verify(request,id);response.headers.set("Referrer-Policy","no-referrer");return response;
-}
+});
 async function verify(request:Request,id:string):Promise<Response> {
   const url=new URL(request.url);
   if(!futurePersonClaimsOpen()||!isCanonicalId(id)||url.search!==""
     ||request.headers.get("origin")!==url.origin||request.headers.get("sec-fetch-site")!=="same-origin"
     ||request.headers.get("content-type")?.split(";")[0]?.trim().toLowerCase()!=="application/json")return notFound();
   const account=await getSensitiveAccountContext();
-  if(!account||!reviewCsrfMatches(request.headers.get(REVIEW_CSRF_HEADER),id,account.user.id,account.sessionId))return notFound();
+  if(!account)return notFound();
   const body=keylessVerificationBody.safeParse(await readBoundedJson(request,16*1024));
   if(!body.success||!keylessLookupNonceMatches(body.data.nonce,id,account.user.id,account.sessionId))return notFound();
   const supabase=await createClient();

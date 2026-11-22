@@ -61,6 +61,10 @@ import { FuturePersonOwnerNoticeEmail, type FuturePersonOwnerNoticeProps } from 
 import { InvitationTerminalNoticeEmail, type InvitationTerminalNoticeProps } from "@/emails/invitation-terminal-notice";
 import { AccountDeletionAffectedEmail, AccountDeletionAffectedCancelledEmail,
   type AccountDeletionAffectedProps, type AccountDeletionAffectedCancelledProps } from "@/emails/account-deletion-affected";
+import { UploadConsentWithdrawnEmail, type UploadConsentWithdrawnProps } from "@/emails/upload-consent-withdrawn";
+import { OWN_UPLOAD_WITHDRAWAL_EMAIL_COPY } from "@/copy/upload/withdrawal";
+import { ADULT_ACCEPTANCE_SECOND_NOTICE_COPY, ADULT_REVOCATION_RENOTICE_COPY } from "@/copy/upload/other-adult-acceptance-notices";
+import { SUBJECT_TRANSFER_NOTICES } from "@/copy/upload/subject-transfer-notices";
 
 /** Every template id, paired with the props its component renders. */
 interface MailPayloads {
@@ -84,6 +88,7 @@ interface MailPayloads {
   "embryo-draft-expired": EmbryoDraftExpiredProps;
   "embryo-ingest-abandoned": EmbryoIngestAbandonedProps;
   "invitation-terminal-notice": InvitationTerminalNoticeProps;
+  "upload-consent-withdrawn": UploadConsentWithdrawnProps;
 }
 
 export type MailTemplateId = keyof MailPayloads;
@@ -128,6 +133,7 @@ const renderers: {
   "embryo-draft-expired": () => createElement(EmbryoDraftExpiredEmail),
   "embryo-ingest-abandoned": () => createElement(EmbryoIngestAbandonedEmail),
   "invitation-terminal-notice": (payload) => createElement(InvitationTerminalNoticeEmail, payload),
+  "upload-consent-withdrawn": (payload) => createElement(UploadConsentWithdrawnEmail, payload),
 };
 
 // Subjects are fixed per template. The Record Key addendum is the one
@@ -152,6 +158,7 @@ const subjects: { [K in Exclude<MailTemplateId, "record-key-addendum">]: string 
   "embryo-draft-expired": "An embryo upload draft expired",
   "embryo-ingest-abandoned": "The embryo upload did not complete",
   "invitation-terminal-notice": "An invitation on Inherit has ended",
+  "upload-consent-withdrawn": OWN_UPLOAD_WITHDRAWAL_EMAIL_COPY.emailSubject,
 };
 
 const addendumSubjects: Record<RecordKeyAddendumProps["kind"], string> = {
@@ -163,6 +170,20 @@ const addendumSubjects: Record<RecordKeyAddendumProps["kind"], string> = {
 export function mailSubject(mail: MailTemplate): string {
   if (mail.id === "record-key-addendum") {
     return addendumSubjects[mail.payload.kind];
+  }
+  // D-141 (20261120120000): the two notices to an adult who accepted through
+  // their own account are not endings, so each carries its own subject line.
+  if (mail.id === "invitation-terminal-notice" && mail.payload.kind === "adult-acceptance-second-notice") {
+    return ADULT_ACCEPTANCE_SECOND_NOTICE_COPY.subject;
+  }
+  if (mail.id === "invitation-terminal-notice" && mail.payload.kind === "adult-revocation-renotice") {
+    return ADULT_REVOCATION_RENOTICE_COPY.subject;
+  }
+  // 20261122100000: a record transfer's notices say what moved, not that an
+  // invitation ended, so each carries its own subject line.
+  if (mail.id === "invitation-terminal-notice") {
+    const transfer = (SUBJECT_TRANSFER_NOTICES as Partial<Record<string, { subject: string }>>)[mail.payload.kind];
+    if (transfer) return transfer.subject;
   }
   // The register's Path B request (TEST-LOCAL only) asks for a signature, not an account.
   if (mail.id === "adult-subject-invitation" && mail.payload.request === "esignature") {

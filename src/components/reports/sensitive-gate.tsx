@@ -18,6 +18,7 @@
 // only the memory is lost, so the gate simply reappears next time.
 
 import Link from "next/link";
+import { IntentLink } from "@/components/site/intent-link";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
@@ -106,7 +107,7 @@ export function SensitiveGate({
             </Link>
           </Button>
           <Button asChild variant="outline">
-            <Link href={returnHref}>Not now</Link>
+            <IntentLink href={returnHref}>Not now</IntentLink>
           </Button>
         </div>
         <p className="caption max-w-measure">

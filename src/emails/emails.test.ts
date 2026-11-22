@@ -4,6 +4,10 @@ import { createElement } from "react";
 import { render, toPlainText } from "@react-email/components";
 import { describe, expect, it } from "vitest";
 import { ADULT_UPLOAD_DERIVED_LIST as DERIVED, ADULT_UPLOAD_REVISION_COPY as REVISION } from "@/copy/upload/other-adult";
+import { OWN_UPLOAD_WITHDRAWAL_EMAIL_COPY as WITHDRAWN } from "@/copy/upload/withdrawal";
+import { UPLOAD_PERMISSION_WITHDRAWN_NOTICE_COPY as UPLOAD_WITHDRAWN } from "@/copy/upload/other-adult-withdrawal";
+import { ADULT_ACCEPTANCE_SECOND_NOTICE_COPY as SECOND_NOTICE, ADULT_REVOCATION_RENOTICE_COPY as RENOTICE } from "@/copy/upload/other-adult-acceptance-notices";
+import { SUBJECT_TRANSFER_NOTICES } from "@/copy/upload/subject-transfer-notices";
 import { ReportReadyEmail } from "./report-ready";
 import { ResearchDigestEmail } from "./research-digest";
 import { AdultSubjectInvitationEmail } from "./adult-subject-invitation";
@@ -350,6 +354,102 @@ describe("embryo draft expired email", () => {
     expect(html).toContain("no longer works");
     expect(html).not.toContain("href=");
     expectSafeBody(html);
+  });
+});
+
+// Owner decision of 19 November 2026: withdrawing the consent to store one's
+// own DNA file sends a confirmation (brief §2.7). Its words are drafts for the
+// owner (src/copy/upload/withdrawal.ts); this pins that they are the ones sent.
+describe("own-upload consent withdrawn email", () => {
+  it("states the day, what is deleted, what ends and what stays, with no link, address or genetic value", async () => {
+    const mail = { id: "upload-consent-withdrawn", payload: { withdrawnAt: "2026-11-19T23:30:00.123456+00:00" } } as const;
+    expect(mailSubject(mail)).toBe(WITHDRAWN.emailSubject);
+    expect(mailSubject(mail).length).toBeLessThanOrEqual(78);
+    const html = stripMarkers(await renderMail(mail));
+    for (const line of [WITHDRAWN.heading, WITHDRAWN.withdrawnOn("19 November 2026"), WITHDRAWN.deleting,
+      WITHDRAWN.sharing, WITHDRAWN.afterwards, WITHDRAWN.security]) {
+      expect(html).toContain(line);
+    }
+    expect(html).not.toContain("href=");
+    expectSafeBody(html);
+  });
+});
+
+// Owner decision of 19 November 2026: an uploader's withdrawal for another
+// adult's file sends that adult a short notice through the terminal-notice
+// queue (20261119160000). Its words are drafts for the owner
+// (src/copy/upload/other-adult-withdrawal.ts); this pins that they are sent.
+describe("upload permission withdrawn notice", () => {
+  it("says what was deleted and that nothing is asked of them, with no name, file, link or address", async () => {
+    const mail = { id: "invitation-terminal-notice", payload: { kind: "upload-permission-withdrawn" } } as const;
+    expect(mailSubject(mail)).toBe("An invitation on Inherit has ended");
+    const html = stripMarkers(await renderMail(mail));
+    expect(html).toContain(UPLOAD_WITHDRAWN.heading);
+    expect(html).toContain(UPLOAD_WITHDRAWN.body);
+    expect(html).not.toContain("href=");
+    expectSafeBody(html);
+  });
+});
+
+// D-141 (20261120120000): the second notice 72 hours after an account created
+// from the invitation accepted it, and the re-notice 30 days after any account
+// acceptance, through the same queue. Their words are drafts for the owner
+// (src/copy/upload/other-adult-acceptance-notices.ts); this pins that they are
+// the ones sent, each under its own subject, with no name, link or address.
+describe("the notices to an adult who accepted through their own account", () => {
+  it.each([
+    ["adult-acceptance-second-notice", SECOND_NOTICE],
+    ["adult-revocation-renotice", RENOTICE],
+  ] as const)("%s says what happened and where to turn, with no name, file, link or address", async (kind, copy) => {
+    const mail = { id: "invitation-terminal-notice", payload: { kind } } as const;
+    expect(mailSubject(mail)).toBe(copy.subject);
+    const html = stripMarkers(await renderMail(mail));
+    expect(html).toContain(copy.heading);
+    expect(html).toContain(copy.body.replaceAll("'", "&#x27;"));
+    expect(html).not.toContain("href=");
+    // The contact of last resort, once, and no other address.
+    expectSafeBody(html, true);
+  });
+
+  it("leaves every other kind's subject as it was", () => {
+    for (const kind of ["invitation-refused", "draft-cancelled", "donor-attribution-ended", "upload-permission-withdrawn"] as const) {
+      expect(mailSubject({ id: "invitation-terminal-notice", payload: { kind } })).toBe("An invitation on Inherit has ended");
+    }
+  });
+});
+
+// 20261122100000: a record transfer's three notices (register
+// subject-ownership-transfer-v1), for the person's own act and for the
+// uploader's withdrawal, through the same queue. Their words were approved
+// on 22 November 2026, with one added line in the two emails to the person
+// who now holds the record (src/copy/upload/subject-transfer-notices.ts), and
+// the transfer opened with 20261122120000; this pins that they are the ones
+// sent, each under its own subject, with no name, link or address.
+describe("the record transfer's notices", () => {
+  it.each(Object.entries(SUBJECT_TRANSFER_NOTICES))("%s says what moved and what ended, with no name, file, link or address",
+    async (kind, copy) => {
+      const mail = { id: "invitation-terminal-notice", payload: { kind } } as MailTemplate;
+      expect(mailSubject(mail)).toBe(copy.subject);
+      const html = stripMarkers(await renderMail(mail));
+      expect(html).toContain(copy.heading);
+      expect(html).toContain(copy.body.replaceAll("'", "&#x27;"));
+      expect(html).not.toContain("href=");
+      expectSafeBody(html);
+    });
+
+  it("has one kind per act and recipient, and no two kinds share a body", () => {
+    expect(Object.keys(SUBJECT_TRANSFER_NOTICES).sort()).toEqual(["subject-transfer-access-revoked",
+      "subject-transfer-former-owner", "subject-transfer-new-owner", "withdrawal-transfer-former-owner",
+      "withdrawal-transfer-new-owner"]);
+    expect(new Set(Object.values(SUBJECT_TRANSFER_NOTICES).map(copy => copy.body)).size).toBe(5);
+  });
+
+  it("tells only the person who now holds the record that every download copy has stopped", async () => {
+    const line = "Any download copy of this record has stopped working. You can make a new one.";
+    for (const kind of Object.keys(SUBJECT_TRANSFER_NOTICES)) {
+      const html = stripMarkers(await renderMail({ id: "invitation-terminal-notice", payload: { kind } } as MailTemplate));
+      expect(html.includes(line), kind).toBe(kind.endsWith("-new-owner"));
+    }
   });
 });
 

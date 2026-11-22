@@ -5,7 +5,7 @@ vi.mock("@/lib/subjects", () => ({ resolveSubjectForAccount: mocks.subject }));
 vi.mock("./own-provider-authority", () => ({ prepareOwnCopilotProvider: mocks.provider, ownCopilotProviderStatus: mocks.status, assertOwnCopilotAuthority: mocks.assert }));
 vi.mock("./own-chat-token", () => ({ mintOwnChatToken: mocks.mint, snapshotHash: (value: unknown) => JSON.stringify(value) }));
 vi.mock("@/lib/supabase/admin", () => ({ createAdminClient: () => ({ from: mocks.from, rpc: mocks.rpc }) }));
-import { hasCanonicalCopilotScope, prepareOwnCopilotChat, readOwnChatHistory, ownChatHistorySchema } from "./own-chat";
+import { prepareOwnCopilotChat, readOwnChatHistory, ownChatHistorySchema } from "./own-chat";
 import { correctionProjection, correctionReport } from "./own-chat-correction.test-fixture";
 import { ownChatCorrection } from "./own-chat-correction";
 const accountId = "80000000-0000-4000-8000-000000000001", subjectId = "80000000-0000-4000-8000-000000000002", chatId = "80000000-0000-4000-8000-000000000003";
@@ -13,15 +13,12 @@ const projection = { sources: [], legacySources: [], unavailableSources: [] };
 const citations = [{ id: "pmid:12345678", label: "Captured source", href: "https://pubmed.ncbi.nlm.nih.gov/12345678/" }];
 const messages = [{ id: "80000000-0000-4000-8000-000000000004", role: "user", content: [{ type: "text", text: "Question" }], turn_ordinal: 1, citations: [], created_at: "2026-09-07T10:00:00+00:00" },
     { id: "80000000-0000-4000-8000-000000000005", role: "assistant", content: [{ type: "text", text: "Answer" }], turn_ordinal: 1, citations, created_at: "2026-09-07T10:00:01+00:00" }];
-let canonical = true;
-function query(table: string) {
-    const result = { data: table === "consent_signatures" && canonical ? [{ id: accountId }] : [], error: null };
-    const q = { select: () => q, eq: () => q, or: () => q, not: () => q, limit: () => q, maybeSingle: async () => ({ data: { subject_id: subjectId, scope_kind: "self", legacy_unverified: false }, error: null }), then: (resolve: (v: unknown) => unknown) => Promise.resolve(result).then(resolve) };
+function query() {
+    const q = { select: () => q, eq: () => q, maybeSingle: async () => ({ data: { subject_id: subjectId, scope_kind: "self", legacy_unverified: false }, error: null }) };
     return q;
 }
 beforeEach(() => {
     vi.clearAllMocks();
-    canonical = true;
     mocks.mint.mockReturnValue("context-token");
     mocks.actor.mockResolvedValue({ accountId, sessionId: accountId });
     mocks.subject.mockResolvedValue({ id: subjectId, subjectClass: "self", displayLabel: "You" });
@@ -34,9 +31,18 @@ beforeEach(() => {
     }) => ({ error: null, data: args.p_operation === "prepare" ? projection : args.p_operation === "list" ? [] : args.p_operation === "history" ? { chatId, messages, projection, lastOrdinal: 1 } : true }));
 });
 describe("own Copilot preparation and durable history", () => {
-    it("keeps the configured legacy-only experience behind the same verified classification", async () => { canonical = false; expect(await prepareOwnCopilotChat(subjectId)).toEqual({ kind: "legacy" }); expect(mocks.provider).not.toHaveBeenCalled(); });
+    // G8.5 (24 October 2026): no legacy classification. A self subject with no
+    // canonical consent, source or chat is answered by its own status, here the
+    // missing permission, and nothing reads the old classification tables.
+    it("answers a self subject with no canonical upload consent by its own status, with no legacy fallback", async () => {
+        mocks.status.mockResolvedValue("consent_required");
+        expect(await prepareOwnCopilotChat(subjectId)).toEqual({ kind: "unavailable", reason: "consent_required" });
+        expect(mocks.status).toHaveBeenCalledExactlyOnceWith(subjectId);
+        expect(mocks.from).not.toHaveBeenCalled();
+        expect(mocks.provider).not.toHaveBeenCalled();
+    });
     it.each(["provider_unavailable", "transport_unavailable", "consent_required"])("distinguishes %s without fallback", async (reason) => { mocks.status.mockResolvedValue(reason); expect(await prepareOwnCopilotChat(subjectId)).toEqual({ kind: "unavailable", reason }); expect(mocks.provider).not.toHaveBeenCalled(); });
-    it("fails closed on classification query errors", async () => { mocks.from.mockImplementation(() => { throw new Error("private detail"); }); await expect(hasCanonicalCopilotScope(subjectId)).rejects.toThrow(); expect(await prepareOwnCopilotChat(subjectId)).toEqual({ kind: "unavailable", reason: "scope_unavailable" }); });
+    it("fails closed when the status read throws", async () => { mocks.status.mockRejectedValue(new Error("private detail")); expect(await prepareOwnCopilotChat(subjectId)).toEqual({ kind: "unavailable", reason: "scope_unavailable" }); expect(mocks.provider).not.toHaveBeenCalled(); });
     it("serializes only public provider information and a server context", async () => { expect(await prepareOwnCopilotChat(subjectId)).toMatchObject({ kind: "ready", contextToken: "context-token", providerInfo: { configured: true, local: true, hasConsent: true }, chats: [] }); });
     it("keeps the client context key across new nonces but changes it for an actually changed projection", async () => {
         let current = correctionProjection;

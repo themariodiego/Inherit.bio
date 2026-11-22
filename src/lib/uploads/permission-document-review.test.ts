@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("server-only", () => ({}));
 
 import { decryptSecret } from "@/lib/crypto";
-import { mintReviewNonce, reviewCsrf } from "@/lib/future-person/review";
+import { mintReviewNonce } from "@/lib/future-person/review";
 import { decidePermissionDocument, permissionDocumentDecisionBody, permissionReviewContext } from "./permission-document-review";
 
 const documentId = "44444444-4444-4444-8444-444444444444";
@@ -25,7 +25,10 @@ function rpcAnswering(answer: (name: string, args: Record<string, unknown>) => {
   return { rpc, calls };
 }
 
-function decide(body: Record<string, unknown>, csrf = reviewCsrf(documentId, reviewerId, sessionId)) {
+// 2026-11-19 (G8.5, the migration stage): X-Inherit-CSRF is the reviewer's one-time session token,
+// which api.legal-evidence-review's gate spends before this branch runs (session-csrf-routes.test.ts);
+// the branch no longer reads it. A stand-in is sent where the case digest was.
+function decide(body: Record<string, unknown>, csrf = "reviewer-session-token-checked-by-the-gate") {
   return { request: new Request(`https://inherit.bio/api/legal-evidence/${documentId}/review`, {
     method: "POST", body: JSON.stringify(body),
     headers: { "content-type": "application/json", "x-inherit-csrf": csrf },
@@ -70,12 +73,13 @@ describe("the named-human review of a signed-permission document", () => {
     expect(calls).toEqual([]);
   });
 
-  it("refuses a stale revision, another object, a foreign CSRF or nonce, and every forbidden field before the database", async () => {
+  // 2026-11-19 (G8.5): the foreign case digest left this list (decide(body(), reviewCsrf(documentId, reviewerId,
+  // documentId))); the gate refuses a foreign token before the handler, in session-csrf-routes.test.ts.
+  it("refuses a stale revision, another object, a foreign nonce, and every forbidden field before the database", async () => {
     const { rpc, calls } = rpcAnswering(() => ({ data: null, error: null }));
     const account = { userId: reviewerId, sessionId };
     const cases = [
       decide(body({ reviewRevision: 2 })), decide(body({ documentSha256: "c".repeat(64) })),
-      decide(body(), reviewCsrf(documentId, reviewerId, documentId)),
       decide(body({ nonce: mintReviewNonce(documentId, sessionId, sessionId) })),
       decide(body({ nonce: mintReviewNonce(sessionId, reviewerId, sessionId) })),
       decide(body({ reason: "too short" })),

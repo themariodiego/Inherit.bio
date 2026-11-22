@@ -6,6 +6,7 @@ import { acceptAdultInvitation, adminClient, adultInvitationToken, adultInvitati
 import { uploadOwnFileWithChosenReports } from "./own-report-helpers";
 import { OWN_UPLOAD_COPY } from "../src/copy/upload/consent";
 import { REGIONAL_CAVEAT } from "../src/lib/genome/regional-admixture";
+import { signOut } from "./helpers/session-csrf";
 
 /** Synthetic disposable-CI journey. Invitation delivery is captured locally on
  * the established mock provider. Never run this against a retained mail queue.
@@ -48,7 +49,7 @@ test("ancestry-only sharing: historical grant, fresh confirmation, exact saved r
   await expect(page.getByRole("status")).toContainText("Invitation requested");
   const mail = await drainMailUntil(request, () => captured.find(message => [message.to].flat().includes(b.email)), "synthetic Family ancestry invitation");
   const token = adultInvitationToken(mail.html); expect(token).toBeTruthy();
-  await page.request.post("/auth/sign-out");
+  await signOut(page);
   await acceptAdultInvitation({ page, invitationUrl: adultInvitationUrl(token!), email: b.email, password: b.password });
   const fileId = await uploadOwnFileWithChosenReports(page, path.join(process.cwd(), "e2e/fixtures/aims-regional-merged-grch38.vcf"), { fileType: "vcf", purposes: ["ancestry"] });
   const subjectA = await self(accountA), subjectB = await self(accountB);

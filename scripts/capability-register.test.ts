@@ -202,6 +202,42 @@ describe("reviewed-activation degradations under the 22 October decision", () =>
 });
 
 /**
+ * Owner decision, 16 October 2026 ("BAM/CRAM read calling and the Neanderthal
+ * estimate (G7.4)"): build BAM/CRAM calling and test it on synthetic data;
+ * TEST-LOCAL only, production unchanged. Its row opens with its own marker.
+ * These checks hold it to what it claims: it quotes the sentence production
+ * shows, cites a jurisdiction-off browser test that pins a quoted sentence,
+ * says what TEST-LOCAL delivers, registers the thresholds as pending
+ * scientific review, and names the relative-surface gap as open work.
+ */
+describe("refused-before-issuance degradations under the 16 October decision", () => {
+  const MARKER = "**Production: refused before any upload session.**";
+  const REFUSED = "Inherit does not accept BAM, CRAM or FASTQ files. Ask your lab for a VCF. Changing the file name does not change its format.";
+  const marked = () => capabilityRows().filter(row => row.uiState.startsWith(MARKER));
+
+  it("applies to exactly the BAM/CRAM row, and only as shipped-degraded", () => {
+    expect(marked().map(row => row.capability)).toEqual(["Sequence ingest (BAM, CRAM)"]);
+    for (const row of marked()) expect(row.status).toBe("shipped-degraded");
+  });
+
+  it("quotes production's sentence, cites a jurisdiction-off test that pins it, and keeps its open work honest", () => {
+    for (const row of marked()) {
+      expect(row.uiState).toContain(`"${REFUSED}"`);
+      expect(row.uiState).toContain("**Under TEST-LOCAL**");
+      const specs = [...row.evidence.matchAll(/e2e\/[a-z0-9.-]+\.nojurisdiction\.spec\.ts/g)].map(match => match[0]);
+      expect(specs.length).toBeGreaterThan(0);
+      for (const spec of specs) {
+        expect(existsSync(spec), spec).toBe(true);
+        expect(readFileSync(spec, "utf8"), `${spec} does not pin the production sentence`).toContain(REFUSED);
+      }
+      expect(row.openWork).toContain("engineering defaults pending scientific review");
+      expect(row.openWork).toContain("no scientist has reviewed them");
+      expect(row.openWork).toContain("`INPUT_PROVENANCE_COPY.external`");
+    }
+  });
+});
+
+/**
  * The decision index drifted silently: three accepted ADRs existed on disk
  * without a row in `docs/adr/README.md`, which is where a reader looks for the
  * decisions a feature must conform to. An unindexed decision is an invisible

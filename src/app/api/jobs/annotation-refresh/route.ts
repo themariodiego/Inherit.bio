@@ -1,6 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { bindEnsemblFrequencies, type EnsemblVariation } from "@/lib/genome/reference-evidence";
-import { machineJobDrained, machineJobResult } from "@/lib/jobs/machine-result";
+import { machineJobDrained, machineJobResult, machineUnauthenticated } from "@/lib/jobs/machine-result";
 
 export const maxDuration = 300;
 
@@ -90,11 +90,11 @@ async function runRefresh() {
 }
 
 export async function GET(request: Request) {
-  if (!authorized(request)) return new Response("Unauthorized", { status: 401 });
+  if (!authorized(request)) return machineUnauthenticated();
   return runRefresh();
 }
 
 export async function POST(request: Request) {
-  if (!authorized(request)) return new Response("Unauthorized", { status: 401 });
+  if (!authorized(request)) return machineUnauthenticated();
   return runRefresh();
 }

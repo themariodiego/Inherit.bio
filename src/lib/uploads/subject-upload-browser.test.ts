@@ -3,6 +3,11 @@ import { gzipSync } from "node:zlib";
 import AdmZip from "adm-zip";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { finishStagedUpload, prepareSubjectFile, uploadSubjectFile } from "./subject-upload-browser";
+import { csrfHandle } from "@/lib/security/session-csrf-client";
+// The three upload routes' rendered one-time X-Inherit-CSRF tokens (G8.5).
+const PROCESS_CSRF = `1800000000000.${"P".repeat(43)}.${"8".repeat(64)}`;
+const SESSION_CSRF = `1800000000000.${"S".repeat(43)}.${"9".repeat(64)}`;
+const FINALIZE_CSRF = `1800000000000.${"F".repeat(43)}.${"a".repeat(64)}`;
 import { syntheticOwnUploadFormats } from "../../../scripts/synthetic-own-upload-formats";
 import { SINGLE_REQUEST_MAXIMUM_BYTES } from "./subject-upload-transport";
 const key = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
@@ -42,10 +47,11 @@ describe("preparing an already finalized file", () => {
   it("distinguishes exact-file report failure and retries that file without another upload", async () => {
     fetchMock.mockReset().mockResolvedValueOnce(Response.json({ error: "report_generation_unavailable", fileId }, { status: 503 }))
       .mockResolvedValueOnce(Response.json({ fileId, status: "processed", analysisState: "active" }));
-    await expect(prepareSubjectFile(fileId)).rejects.toMatchObject({ code: "report_generation_unavailable", message: "report_generation_unavailable" });
-    expect(await prepareSubjectFile(fileId)).toEqual({ fileId, status: "processed", analysisState: "active" });
+    await expect(prepareSubjectFile(fileId, { csrf: csrfHandle(PROCESS_CSRF) })).rejects.toMatchObject({ code: "report_generation_unavailable", message: "report_generation_unavailable" });
+    expect(await prepareSubjectFile(fileId, { csrf: csrfHandle(PROCESS_CSRF) })).toEqual({ fileId, status: "processed", analysisState: "active" });
     expect(fetchMock.mock.calls).toEqual(Array.from({ length: 2 }, () => [`/api/files/${fileId}/process`, {
-      method: "POST", credentials: "same-origin", cache: "no-store", redirect: "error",
+      method: "POST", credentials: "same-origin", cache: "no-store", redirect: "error", signal: undefined,
+      headers: { "X-Inherit-CSRF": PROCESS_CSRF },
     }]));
     expect(requests).toHaveLength(0);
   });
@@ -93,9 +99,10 @@ describe("preparing an already finalized file", () => {
   it("makes one bodyless request for the exact file, without uploading or claiming reports exist", async () => {
     const normalized = { fileId, status: "normalization_complete", analysisState: "not_generated" };
     fetchMock.mockReset().mockResolvedValueOnce(Response.json(normalized));
-    expect(await prepareSubjectFile(fileId)).toEqual(normalized);
+    expect(await prepareSubjectFile(fileId, { csrf: csrfHandle(PROCESS_CSRF) })).toEqual(normalized);
     expect(fetchMock.mock.calls).toEqual([[`/api/files/${fileId}/process`, {
-      method: "POST", credentials: "same-origin", cache: "no-store", redirect: "error",
+      method: "POST", credentials: "same-origin", cache: "no-store", redirect: "error", signal: undefined,
+      headers: { "X-Inherit-CSRF": PROCESS_CSRF },
     }]]);
     expect(requests).toHaveLength(0);
   });
@@ -202,9 +209,11 @@ describe("browser-to-Storage own-subject upload", () => {
 
   it("sends a closed hash declaration, uses only its restricted bearer, and finalizes without a body", async () => {
     const progress = vi.fn(); const source = file();
-    expect(await uploadSubjectFile(source, subjectId, progress)).toEqual(completed);
+    expect(await uploadSubjectFile(source, subjectId, progress, undefined, {},
+      { session: csrfHandle(SESSION_CSRF), finalize: csrfHandle(FINALIZE_CSRF) })).toEqual(completed);
     expect(fetchMock).toHaveBeenCalledTimes(2);
     expect(fetchMock.mock.calls[0][0]).toBe("/api/files/upload-session");
+    expect(fetchMock.mock.calls[0][1].headers).toEqual({ "Content-Type": "application/json", "X-Inherit-CSRF": SESSION_CSRF });
     expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({ subjectId, declaredFormat: "VCF", sizeBytes: source.size,
       sha256: createHash("sha256").update(vcf).digest("hex") });
     expect(JSON.stringify(fetchMock.mock.calls)).not.toContain(source.name);
@@ -214,7 +223,8 @@ describe("browser-to-Storage own-subject upload", () => {
     expect(Object.keys(requests[0].headers).sort()).toEqual(["Authorization", "Content-Type", "apikey", "x-upsert"]);
     expect(requests[0].timeout).toBeGreaterThan(0);
     expect(fetchMock.mock.calls[1]).toEqual([`/api/files/${uploadId}/finalize`, {
-      method: "POST", credentials: "same-origin", cache: "no-store", redirect: "error" }]);
+      method: "POST", credentials: "same-origin", cache: "no-store", redirect: "error",
+      headers: { "X-Inherit-CSRF": FINALIZE_CSRF } }]);
     expect(progress).toHaveBeenCalledWith({ step: "uploading", pct: 50 });
     expect(progress.mock.calls.at(-1)?.[0]).toEqual({ step: "validating", pct: 0 });
     expect(fetchMock.mock.calls.some(([url]) => String(url).endsWith("/process"))).toBe(false);
@@ -283,10 +293,10 @@ describe("finishing an upload whose bytes are already stored", () => {
   const finalize = `/api/files/${uploadId}/finalize`;
   it("finishes with one bodyless POST and returns the receipt", async () => {
     fetchMock.mockReset().mockResolvedValueOnce(Response.json(completed));
-    expect(await finishStagedUpload(uploadId)).toEqual(completed);
+    expect(await finishStagedUpload(uploadId, { finalize: csrfHandle(FINALIZE_CSRF) })).toEqual(completed);
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(fetchMock.mock.calls[0]).toEqual([finalize, { method: "POST",
-      credentials: "same-origin", cache: "no-store", redirect: "error" }]);
+      credentials: "same-origin", cache: "no-store", redirect: "error", headers: { "X-Inherit-CSRF": FINALIZE_CSRF } }]);
   });
   it.each([
     ["a dropped connection", () => fetchMock.mockRejectedValueOnce(new TypeError("network error"))],

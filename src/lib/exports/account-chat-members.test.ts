@@ -1,4 +1,4 @@
-import {randomUUID} from "node:crypto";
+import {createHash,randomUUID} from "node:crypto";
 import {afterEach,describe,expect,it,vi} from "vitest";
 import {prepareAccountChatMembers} from "./account-chat-members";
 import {createAccountContentReader,type AccountContentRpc} from "./account-content-reader";
@@ -80,5 +80,78 @@ describe("actual consumed saved-chat factory",()=>{
   const f=await fixture(1);f.abort.abort();await expect(prepareAccountChatMembers(f.options)).rejects.toThrow();expect(f.contentRpc).not.toHaveBeenCalled();
   vi.useFakeTimers();const stalled=await fixture(1);stalled.check.mockImplementation(()=>new Promise<void>(()=>{}));
   const refused=expect(prepareAccountChatMembers(stalled.options)).rejects.toThrow();await vi.advanceTimersByTimeAsync(30_001);await refused;
+ });
+});
+
+// The one-record export also carries the record's family group conversation
+// turns (20261023110000, owner decision of 23 October 2026): the server's
+// projection pages them under a membership bound into the job's receipt.
+async function subjectFixture(turnCount=30){
+ const actor={accountId:randomUUID(),sessionId:randomUUID()},self=randomUUID(),abort=new AbortController();
+ const reference={exportId:randomUUID(),attemptId:randomUUID(),authorityReceipt:"b".repeat(64)};
+ const context={version:"account-archive-members-v1" as const,targetKind:"subject" as const,targetId:self,
+  authorityReceipt:reference.authorityReceipt,deadline:new Date(Date.now()+600000).toISOString(),capturedAt:date,actor,fileCount:0,
+  partitions:[{subjectId:self,class:"ordinary" as const,fileCount:0,fileIds:[]}]};
+ const own={id:randomUUID(),subject_id:self,scope_kind:"self",created_at:date,message_count:2};
+ const ownMessages=[0,1].map(i=>({id:randomUUID(),role:i?"assistant":"user",content:`Own turn ${i}`,citations:[],embryoFindings:[],createdAt:date}));
+ const chats=[randomUUID(),randomUUID()].sort();
+ const turns=Array.from({length:turnCount},(_,i)=>{const chat=chats[i<20?0:1],ordinal=Math.floor((i<20?i:i-20)/2)+1,role=i%2?"assistant":"user";
+  return {key:[chat,ordinal,i%2] as [string,number,number],row:{chat_id:chat,chat_created_at:date,id:randomUUID(),role,content:`Family turn ${i}`,
+   citations:role==="assistant"?[{label:"Shared by a relative"},{id:"pmid:12345678",label:"Synthetic study",href:"https://pubmed.ncbi.nlm.nih.gov/12345678/"}]:[],
+   created_at:date} as Record<string,unknown>};});
+ const membership=()=>{let digest=createHash("sha256").update("account-family-turns-v1").digest();
+  for(const t of turns)digest=createHash("sha256").update(digest).update(`${JSON.stringify(t.key)}:${JSON.stringify(t.row)}\n`).digest();
+  return {version:"account-family-turns-v1",rows:turns.length,membershipSha256:digest.toString("hex")};};
+ let captured=membership();
+ const memberRpc=vi.fn<AccountMemberRpc>(async(_name,args)=>({data:args.p_operation==="context"?structuredClone(context):[],error:null}));
+ const contentRpc=vi.fn<AccountContentRpc>(async(_name,args)=>{
+  if(args.p_operation==="chats")return {data:{chats:[structuredClone(own)],nextAfterChatId:null},error:null};
+  if(args.p_operation==="chat-messages")return {data:{messages:structuredClone(ownMessages),nextAfterOrdinal:null},error:null};
+  if(args.p_operation!=="family-turns")throw new Error("unexpected operation");
+  const after=args.p_payload.afterKey as [string,number,number]|null,cmp=(a:[string,number,number],b:[string,number,number])=>a[0]!==b[0]?(a[0]<b[0]?-1:1):a[1]!==b[1]?a[1]-b[1]:a[2]-b[2];
+  const rows=turns.filter(t=>after===null||cmp(t.key,after)>0).slice(0,25);
+  return {data:{version:"account-family-turns-page-v1",membership:structuredClone(captured),
+   rows:rows.map(t=>({identity:JSON.stringify(t.key),rowText:JSON.stringify(t.row)})),nextAfterKey:rows.length===25?rows.at(-1)!.key:null},error:null};
+ });
+ const check=vi.fn<(signal:AbortSignal)=>Promise<void>>(async()=>{});
+ const reader=await createAccountContentReader({reference,deadline:context.deadline,memberRpc,contentRpc,signal:abort.signal,check});
+ return {options:{reader,signal:abort.signal,check},turns,chats,own,ownMessages,contentRpc,self,abort,
+  recapture:()=>{captured=membership();},setMembership:(value:typeof captured)=>{captured=value;}};
+}
+describe("a one-record export's family group conversations",()=>{
+ it("files every current turn of each conversation in the record's chats.json, after its own chats, with the written fields only",async()=>{
+  const f=await subjectFixture(),prepared=await prepareAccountChatMembers(f.options);
+  expect(prepared.factories.map(x=>x.name)).toEqual([`subjects/${f.self}/chats.json`]);expect(prepared.factories[0].rows).toBe(3);
+  const actual=await read(prepared.factories[0],f.abort.signal);
+  expect(actual.rows).toHaveLength(3);
+  expect(actual.rows[0]).toEqual({...f.own,messages:f.ownMessages,message_count:undefined});
+  for(const [i,chat] of f.chats.entries()){
+   const expected=f.turns.filter(t=>t.row.chat_id===chat).map(t=>({id:t.row.id,role:t.row.role,content:t.row.content,citations:t.row.citations,createdAt:date}));
+   expect(actual.rows[i+1]).toEqual({id:chat,subject_id:null,scope_kind:"family",created_at:date,messages:expected});
+  }
+  const text=JSON.stringify(actual);for(const forbidden of ["turn_ordinal","chat_created_at","retrieved",f.options.reader.context.actor.accountId])expect(text).not.toContain(forbidden);
+  // Thirty rows are two pages of 25, read once to capture and once to write.
+  expect(f.contentRpc.mock.calls.filter(([,a])=>a.p_operation==="family-turns").map(([,a])=>a.p_payload.afterKey===null)).toEqual([true,false,true,false]);
+ });
+ it("never asks for family turns in a whole-account export",async()=>{
+  const f=await fixture(2);await prepareAccountChatMembers(f.options);
+  expect(f.contentRpc.mock.calls.some(([,a])=>a.p_operation==="family-turns")).toBe(false);
+ });
+ it("proves an empty selection without inventing a conversation",async()=>{
+  const f=await subjectFixture(0),prepared=await prepareAccountChatMembers(f.options);
+  expect(prepared.factories[0].rows).toBe(1);expect((await read(prepared.factories[0])).rows).toHaveLength(1);
+ });
+ it.each(["changed-turn","missing-turn","extra-turn","withheld-field","record-citation","role-key","membership-change"])("refuses %s",async fault=>{
+  const f=await subjectFixture(4);
+  if(fault==="membership-change"){const prepared=await prepareAccountChatMembers(f.options);f.turns.pop();f.recapture();
+   await expect(read(prepared.factories[0])).rejects.toThrow();return;}
+  if(fault==="changed-turn")f.turns[1].row.content="Changed answer";
+  if(fault==="missing-turn")f.turns.pop();
+  if(fault==="extra-turn")f.turns.push({key:[f.chats[0],9,0],row:{...f.turns[0].row,id:randomUUID()}});
+  if(fault==="withheld-field")Object.assign(f.turns[0].row,{turn_ordinal:1});
+  if(fault==="record-citation")(f.turns[1].row.citations as Record<string,unknown>[])[0]={label:"Shared",id:`person:s-${randomUUID()}`};
+  if(fault==="role-key")f.turns[0].key[2]=1;
+  if(fault!=="changed-turn"&&fault!=="missing-turn"&&fault!=="extra-turn"){f.recapture();}
+  await expect(prepareAccountChatMembers(f.options)).rejects.toThrow();
  });
 });

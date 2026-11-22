@@ -1,0 +1,3235 @@
+[
+ {
+  "routeId": "marketing.home",
+  "state": "complete",
+  "viewport": "390x844",
+  "measurementPath": "/",
+  "screenshotSha256": "23fe6633980574bac43f48ea5d385c7f0ed078b46d897813cfe195f5b81d6a0d",
+  "floorScreenshotSha256": "33e5d7c55b9b7208dcf8fffbb5a8dec493fde08ed5de9fdf377f4765578f4866",
+  "ink": 0.062757,
+  "floorInk": 0.057543,
+  "predecessorInk": 0.104861,
+  "ratio": 0.5984779851422358,
+  "floorRatio": 0.5487550185483641,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 23,
+   "excludedOneLineLinkParagraphCount": 0,
+   "minProseParagraphMeasureCh": 12.707,
+   "topLevelSectionRowCount": 3,
+   "minimumVisualSectionGapPx": 64,
+   "aboveFoldTextCharacterCount": 499
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 536,
+   "minProseMeasureCh": 12.707,
+   "minimumAdjacentSectionGapPx": 64,
+   "interactiveElementCount": 6
+  },
+  "contract": {
+   "misses": [],
+   "relative": {
+    "baselineRoute": "/",
+    "predecessorInk": 0.104861,
+    "ink": 0.062757,
+    "ratio": 0.5984779851422358,
+    "floorInk": null,
+    "floorRatio": null,
+    "textBound": false,
+    "within": true
+   }
+  },
+  "corrected": {
+   "misses": [],
+   "relative": {
+    "baselineRoute": "/",
+    "predecessorInk": 0.104861,
+    "ink": 0.062757,
+    "ratio": 0.5984779851422358,
+    "floorInk": 0.057543,
+    "floorRatio": 0.5487550185483641,
+    "textBound": false,
+    "within": true
+   }
+  }
+ },
+ {
+  "routeId": "marketing.home",
+  "state": "complete",
+  "viewport": "1280x800",
+  "measurementPath": "/",
+  "screenshotSha256": "1a0f48b6ebadaef9a60ae07537ef3b1cbf3f919edb773009c7417948316e40eb",
+  "floorScreenshotSha256": "810268663e16752ae9445baad2b7a52c451a4c8d3113a61631fa1523b47c907b",
+  "ink": 0.032057,
+  "floorInk": 0.030202,
+  "predecessorInk": 0.038919,
+  "ratio": 0.8236850895449523,
+  "floorRatio": 0.7760219943986227,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 22,
+   "excludedOneLineLinkParagraphCount": 1,
+   "minProseParagraphMeasureCh": 12.707,
+   "topLevelSectionRowCount": 3,
+   "minimumVisualSectionGapPx": 96,
+   "aboveFoldTextCharacterCount": 744
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 744,
+   "minProseMeasureCh": 12.707,
+   "minimumAdjacentSectionGapPx": 96,
+   "interactiveElementCount": 6
+  },
+  "contract": {
+   "misses": [
+    "visibleCharacters",
+    "proseMax",
+    "proseMin",
+    "relative"
+   ],
+   "relative": {
+    "baselineRoute": "/",
+    "predecessorInk": 0.038919,
+    "ink": 0.032057,
+    "ratio": 0.8236850895449523,
+    "floorInk": null,
+    "floorRatio": null,
+    "textBound": false,
+    "within": false
+   }
+  },
+  "corrected": {
+   "misses": [
+    "visibleCharacters",
+    "proseMax",
+    "proseMin"
+   ],
+   "relative": {
+    "baselineRoute": "/",
+    "predecessorInk": 0.038919,
+    "ink": 0.032057,
+    "ratio": 0.8236850895449523,
+    "floorInk": 0.030202,
+    "floorRatio": 0.7760219943986227,
+    "textBound": true,
+    "within": true
+   }
+  }
+ },
+ {
+  "routeId": "marketing.about",
+  "state": "complete",
+  "viewport": "390x844",
+  "measurementPath": "/about",
+  "screenshotSha256": "bbdc2072a09493d60ddb8c60e9bcffcf3bce584cd8ebec20804d752a8afbb51f",
+  "floorScreenshotSha256": "09ca30c5f03b3e4d023f21594b059ccb147944dcdf7fac5b247a4ac350ebaad2",
+  "ink": 0.077512,
+  "floorInk": 0.076191,
+  "predecessorInk": 0.070886,
+  "ratio": 1.0934740287221736,
+  "floorRatio": 1.074838473041221,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 20,
+   "excludedOneLineLinkParagraphCount": 0,
+   "minProseParagraphMeasureCh": 31.888,
+   "topLevelSectionRowCount": 6,
+   "minimumVisualSectionGapPx": 65,
+   "aboveFoldTextCharacterCount": 769
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 949,
+   "minProseMeasureCh": 18.001,
+   "minimumAdjacentSectionGapPx": 65,
+   "interactiveElementCount": 5
+  },
+  "contract": {
+   "misses": [
+    "visibleCharacters",
+    "relative"
+   ],
+   "relative": {
+    "baselineRoute": "/about",
+    "predecessorInk": 0.070886,
+    "ink": 0.077512,
+    "ratio": 1.0934740287221736,
+    "floorInk": null,
+    "floorRatio": null,
+    "textBound": false,
+    "within": false
+   }
+  },
+  "corrected": {
+   "misses": [
+    "visibleCharacters"
+   ],
+   "relative": {
+    "baselineRoute": "/about",
+    "predecessorInk": 0.070886,
+    "ink": 0.077512,
+    "ratio": 1.0934740287221736,
+    "floorInk": 0.076191,
+    "floorRatio": 1.074838473041221,
+    "textBound": true,
+    "within": true
+   }
+  }
+ },
+ {
+  "routeId": "marketing.about",
+  "state": "complete",
+  "viewport": "1280x800",
+  "measurementPath": "/about",
+  "screenshotSha256": "f3ad92eb0a5b1e7b91dadd436f8167fa365a516da86106c8680f2b9f5c0c5053",
+  "floorScreenshotSha256": "94ac128502786a32f6a0e8f08f64d9280d070d3adaea62dfbf43ab42bed71ae9",
+  "ink": 0.037333,
+  "floorInk": 0.036908,
+  "predecessorInk": 0.054536,
+  "ratio": 0.6845569898782455,
+  "floorRatio": 0.6767639724218865,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 18,
+   "excludedOneLineLinkParagraphCount": 2,
+   "minProseParagraphMeasureCh": 45.117,
+   "topLevelSectionRowCount": 6,
+   "minimumVisualSectionGapPx": 97,
+   "aboveFoldTextCharacterCount": 988
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 988,
+   "minProseMeasureCh": 29.209,
+   "minimumAdjacentSectionGapPx": 97,
+   "interactiveElementCount": 5
+  },
+  "contract": {
+   "misses": [
+    "visibleCharacters",
+    "proseMin",
+    "relative"
+   ],
+   "relative": {
+    "baselineRoute": "/about",
+    "predecessorInk": 0.054536,
+    "ink": 0.037333,
+    "ratio": 0.6845569898782455,
+    "floorInk": null,
+    "floorRatio": null,
+    "textBound": false,
+    "within": false
+   }
+  },
+  "corrected": {
+   "misses": [
+    "visibleCharacters"
+   ],
+   "relative": {
+    "baselineRoute": "/about",
+    "predecessorInk": 0.054536,
+    "ink": 0.037333,
+    "ratio": 0.6845569898782455,
+    "floorInk": 0.036908,
+    "floorRatio": 0.6767639724218865,
+    "textBound": true,
+    "within": true
+   }
+  }
+ },
+ {
+  "routeId": "auth.forgot-password",
+  "state": "initial-form",
+  "viewport": "390x844",
+  "measurementPath": "/auth/forgot-password",
+  "screenshotSha256": "076328f1b77de6eed9292772d4c489e6b81f8af8b7b66f11c15cb0e5c0b556fa",
+  "floorScreenshotSha256": "e09b698ab68171f4ed80ee544b08b96fd332d2649c12ee15ae6cf6fd49bf3e26",
+  "ink": 0.021388,
+  "floorInk": 0.017803,
+  "predecessorInk": 0.044781,
+  "ratio": 0.4776132734865233,
+  "floorRatio": 0.39755699962037466,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 2,
+   "excludedOneLineLinkParagraphCount": 1,
+   "minProseParagraphMeasureCh": 33.285,
+   "topLevelSectionRowCount": 0,
+   "minimumVisualSectionGapPx": null,
+   "aboveFoldTextCharacterCount": 158
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 158,
+   "minProseMeasureCh": 10.785,
+   "minimumAdjacentSectionGapPx": null,
+   "interactiveElementCount": 5
+  },
+  "contract": {
+   "misses": [],
+   "relative": {
+    "baselineRoute": "/auth/forgot-password",
+    "predecessorInk": 0.044781,
+    "ink": 0.021388,
+    "ratio": 0.4776132734865233,
+    "floorInk": null,
+    "floorRatio": null,
+    "textBound": false,
+    "within": true
+   }
+  },
+  "corrected": {
+   "misses": [],
+   "relative": {
+    "baselineRoute": "/auth/forgot-password",
+    "predecessorInk": 0.044781,
+    "ink": 0.021388,
+    "ratio": 0.4776132734865233,
+    "floorInk": 0.017803,
+    "floorRatio": 0.39755699962037466,
+    "textBound": false,
+    "within": true
+   }
+  }
+ },
+ {
+  "routeId": "auth.forgot-password",
+  "state": "initial-form",
+  "viewport": "1280x800",
+  "measurementPath": "/auth/forgot-password",
+  "screenshotSha256": "95112fd4491af16b2f84401afe6f6c400280b2e199eddb307aba4dd49e258c4e",
+  "floorScreenshotSha256": "f4db44d7d5aafcc7247330c402f1aca91755611acd505d87b24f07e1382cc499",
+  "ink": 0.007349,
+  "floorInk": 0.006114,
+  "predecessorInk": 0.015888,
+  "ratio": 0.4625503524672709,
+  "floorRatio": 0.3848187311178248,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 1,
+   "excludedOneLineLinkParagraphCount": 2,
+   "minProseParagraphMeasureCh": 38.04,
+   "topLevelSectionRowCount": 0,
+   "minimumVisualSectionGapPx": null,
+   "aboveFoldTextCharacterCount": 158
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 158,
+   "minProseMeasureCh": 10.785,
+   "minimumAdjacentSectionGapPx": null,
+   "interactiveElementCount": 5
+  },
+  "contract": {
+   "misses": [
+    "proseMin"
+   ],
+   "relative": {
+    "baselineRoute": "/auth/forgot-password",
+    "predecessorInk": 0.015888,
+    "ink": 0.007349,
+    "ratio": 0.4625503524672709,
+    "floorInk": null,
+    "floorRatio": null,
+    "textBound": false,
+    "within": true
+   }
+  },
+  "corrected": {
+   "misses": [
+    "proseMin"
+   ],
+   "relative": {
+    "baselineRoute": "/auth/forgot-password",
+    "predecessorInk": 0.015888,
+    "ink": 0.007349,
+    "ratio": 0.4625503524672709,
+    "floorInk": 0.006114,
+    "floorRatio": 0.3848187311178248,
+    "textBound": false,
+    "within": true
+   }
+  }
+ },
+ {
+  "routeId": "auth.reset-password",
+  "state": "initial-form",
+  "viewport": "390x844",
+  "measurementPath": "/auth/reset-password",
+  "screenshotSha256": "9599b4ff213865efe55fafbd561607711f8e86b6d13bd2ac8249b173b31076cb",
+  "floorScreenshotSha256": "513321a2dd552c4ca40e7f9d06c7827a822011bf1a2df6d952eaa8c524dea76f",
+  "ink": 0.021236,
+  "floorInk": 0.017554,
+  "predecessorInk": 0.043805,
+  "ratio": 0.4847848419130237,
+  "floorRatio": 0.4007305102157288,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 1,
+   "excludedOneLineLinkParagraphCount": 1,
+   "minProseParagraphMeasureCh": 41.699,
+   "topLevelSectionRowCount": 0,
+   "minimumVisualSectionGapPx": null,
+   "aboveFoldTextCharacterCount": 138
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 138,
+   "minProseMeasureCh": 10.785,
+   "minimumAdjacentSectionGapPx": null,
+   "interactiveElementCount": 5
+  },
+  "contract": {
+   "misses": [],
+   "relative": {
+    "baselineRoute": "/auth/reset-password",
+    "predecessorInk": 0.043805,
+    "ink": 0.021236,
+    "ratio": 0.4847848419130237,
+    "floorInk": null,
+    "floorRatio": null,
+    "textBound": false,
+    "within": true
+   }
+  },
+  "corrected": {
+   "misses": [],
+   "relative": {
+    "baselineRoute": "/auth/reset-password",
+    "predecessorInk": 0.043805,
+    "ink": 0.021236,
+    "ratio": 0.4847848419130237,
+    "floorInk": 0.017554,
+    "floorRatio": 0.4007305102157288,
+    "textBound": false,
+    "within": true
+   }
+  }
+ },
+ {
+  "routeId": "auth.reset-password",
+  "state": "initial-form",
+  "viewport": "1280x800",
+  "measurementPath": "/auth/reset-password",
+  "screenshotSha256": "30216fc89b5df646b4522aaadeac83646e98507d9da17452aea432a518a7ca0f",
+  "floorScreenshotSha256": "9c09e89c62323beddbe39b6de754e32c89cd1626c1376f9eb5f4a47bf846aa67",
+  "ink": 0.007349,
+  "floorInk": 0.006083,
+  "predecessorInk": 0.015574,
+  "ratio": 0.4718762039296263,
+  "floorRatio": 0.39058687556183386,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 0,
+   "excludedOneLineLinkParagraphCount": 2,
+   "minProseParagraphMeasureCh": null,
+   "topLevelSectionRowCount": 0,
+   "minimumVisualSectionGapPx": null,
+   "aboveFoldTextCharacterCount": 138
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 138,
+   "minProseMeasureCh": 10.785,
+   "minimumAdjacentSectionGapPx": null,
+   "interactiveElementCount": 5
+  },
+  "contract": {
+   "misses": [
+    "proseMin"
+   ],
+   "relative": {
+    "baselineRoute": "/auth/reset-password",
+    "predecessorInk": 0.015574,
+    "ink": 0.007349,
+    "ratio": 0.4718762039296263,
+    "floorInk": null,
+    "floorRatio": null,
+    "textBound": false,
+    "within": true
+   }
+  },
+  "corrected": {
+   "misses": [],
+   "relative": {
+    "baselineRoute": "/auth/reset-password",
+    "predecessorInk": 0.015574,
+    "ink": 0.007349,
+    "ratio": 0.4718762039296263,
+    "floorInk": 0.006083,
+    "floorRatio": 0.39058687556183386,
+    "textBound": false,
+    "within": true
+   }
+  }
+ },
+ {
+  "routeId": "auth.sign-in",
+  "state": "initial-form",
+  "viewport": "390x844",
+  "measurementPath": "/auth/sign-in",
+  "screenshotSha256": "dd6b56a351713ee31f972607b93d5583a769bc569edf40d9439fabd146647ebc",
+  "floorScreenshotSha256": "6b48a5f1e3e921a1f691473c3d18eb9de4ff301e4e23715a36b35a03c4875e7b",
+  "ink": 0.029153,
+  "floorInk": 0.021063,
+  "predecessorInk": 0.052148,
+  "ratio": 0.5590434916008283,
+  "floorRatio": 0.40390810769348773,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 1,
+   "excludedOneLineLinkParagraphCount": 3,
+   "minProseParagraphMeasureCh": 41.699,
+   "topLevelSectionRowCount": 0,
+   "minimumVisualSectionGapPx": null,
+   "aboveFoldTextCharacterCount": 189
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 189,
+   "minProseMeasureCh": 10.785,
+   "minimumAdjacentSectionGapPx": null,
+   "interactiveElementCount": 9
+  },
+  "contract": {
+   "misses": [
+    "interactive"
+   ],
+   "relative": {
+    "baselineRoute": "/auth/sign-in",
+    "predecessorInk": 0.052148,
+    "ink": 0.029153,
+    "ratio": 0.5590434916008283,
+    "floorInk": null,
+    "floorRatio": null,
+    "textBound": false,
+    "within": true
+   }
+  },
+  "corrected": {
+   "misses": [],
+   "relative": {
+    "baselineRoute": "/auth/sign-in",
+    "predecessorInk": 0.052148,
+    "ink": 0.029153,
+    "ratio": 0.5590434916008283,
+    "floorInk": 0.021063,
+    "floorRatio": 0.40390810769348773,
+    "textBound": false,
+    "within": true
+   }
+  }
+ },
+ {
+  "routeId": "auth.sign-in",
+  "state": "initial-form",
+  "viewport": "1280x800",
+  "measurementPath": "/auth/sign-in",
+  "screenshotSha256": "07bac6d503a83436dc9e619d16ade4717c6641239e8cc75defc346f630150c8c",
+  "floorScreenshotSha256": "7d3840a766fa15c140b8f60b52aed59a6d440e4fbc6092a172c94a8468b3f357",
+  "ink": 0.009908,
+  "floorInk": 0.007062,
+  "predecessorInk": 0.018338,
+  "ratio": 0.5402988330243211,
+  "floorRatio": 0.38510197404297086,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 0,
+   "excludedOneLineLinkParagraphCount": 4,
+   "minProseParagraphMeasureCh": null,
+   "topLevelSectionRowCount": 0,
+   "minimumVisualSectionGapPx": null,
+   "aboveFoldTextCharacterCount": 189
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 189,
+   "minProseMeasureCh": 10.785,
+   "minimumAdjacentSectionGapPx": null,
+   "interactiveElementCount": 9
+  },
+  "contract": {
+   "misses": [
+    "interactive",
+    "proseMin"
+   ],
+   "relative": {
+    "baselineRoute": "/auth/sign-in",
+    "predecessorInk": 0.018338,
+    "ink": 0.009908,
+    "ratio": 0.5402988330243211,
+    "floorInk": null,
+    "floorRatio": null,
+    "textBound": false,
+    "within": true
+   }
+  },
+  "corrected": {
+   "misses": [],
+   "relative": {
+    "baselineRoute": "/auth/sign-in",
+    "predecessorInk": 0.018338,
+    "ink": 0.009908,
+    "ratio": 0.5402988330243211,
+    "floorInk": 0.007062,
+    "floorRatio": 0.38510197404297086,
+    "textBound": false,
+    "within": true
+   }
+  }
+ },
+ {
+  "routeId": "auth.sign-up",
+  "state": "initial-form",
+  "viewport": "390x844",
+  "measurementPath": "/auth/sign-up",
+  "screenshotSha256": "f9e1d5e20395ce08baccbcfd045f7347422c77731977b3549bab95701a2e9948",
+  "floorScreenshotSha256": "ef3fd4c04742243cf0530bcfd7ef50318337b0b507afeb72766a677a703543c7",
+  "ink": 0.038294,
+  "floorInk": 0.032355,
+  "predecessorInk": 0.060196,
+  "ratio": 0.6361552262608812,
+  "floorRatio": 0.5374941856601768,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 3,
+   "excludedOneLineLinkParagraphCount": 2,
+   "minProseParagraphMeasureCh": 33.285,
+   "topLevelSectionRowCount": 0,
+   "minimumVisualSectionGapPx": null,
+   "aboveFoldTextCharacterCount": 353
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 353,
+   "minProseMeasureCh": 10.785,
+   "minimumAdjacentSectionGapPx": null,
+   "interactiveElementCount": 10
+  },
+  "contract": {
+   "misses": [
+    "interactive",
+    "relative"
+   ],
+   "relative": {
+    "baselineRoute": "/auth/sign-up",
+    "predecessorInk": 0.060196,
+    "ink": 0.038294,
+    "ratio": 0.6361552262608812,
+    "floorInk": null,
+    "floorRatio": null,
+    "textBound": false,
+    "within": false
+   }
+  },
+  "corrected": {
+   "misses": [
+    "relative"
+   ],
+   "relative": {
+    "baselineRoute": "/auth/sign-up",
+    "predecessorInk": 0.060196,
+    "ink": 0.038294,
+    "ratio": 0.6361552262608812,
+    "floorInk": 0.032355,
+    "floorRatio": 0.5374941856601768,
+    "textBound": false,
+    "within": false
+   }
+  }
+ },
+ {
+  "routeId": "auth.sign-up",
+  "state": "initial-form",
+  "viewport": "1280x800",
+  "measurementPath": "/auth/sign-up",
+  "screenshotSha256": "377a2781e31cfc1cf2ee63f0efba5196c8ee28d61b184640d91ae8c398e56c5f",
+  "floorScreenshotSha256": "dfa75ea5be5a79b423d5bedf2f1d989a0e4aebc92b436d1fba3885671d647666",
+  "ink": 0.012354,
+  "floorInk": 0.010375,
+  "predecessorInk": 0.020807,
+  "ratio": 0.5937424905080022,
+  "floorRatio": 0.49863026865958576,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 2,
+   "excludedOneLineLinkParagraphCount": 3,
+   "minProseParagraphMeasureCh": 38.04,
+   "topLevelSectionRowCount": 0,
+   "minimumVisualSectionGapPx": null,
+   "aboveFoldTextCharacterCount": 353
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 353,
+   "minProseMeasureCh": 10.785,
+   "minimumAdjacentSectionGapPx": null,
+   "interactiveElementCount": 10
+  },
+  "contract": {
+   "misses": [
+    "interactive",
+    "proseMin"
+   ],
+   "relative": {
+    "baselineRoute": "/auth/sign-up",
+    "predecessorInk": 0.020807,
+    "ink": 0.012354,
+    "ratio": 0.5937424905080022,
+    "floorInk": null,
+    "floorRatio": null,
+    "textBound": false,
+    "within": true
+   }
+  },
+  "corrected": {
+   "misses": [
+    "proseMin"
+   ],
+   "relative": {
+    "baselineRoute": "/auth/sign-up",
+    "predecessorInk": 0.020807,
+    "ink": 0.012354,
+    "ratio": 0.5937424905080022,
+    "floorInk": 0.010375,
+    "floorRatio": 0.49863026865958576,
+    "textBound": false,
+    "within": true
+   }
+  }
+ },
+ {
+  "routeId": "marketing.changelog",
+  "state": "complete",
+  "viewport": "390x844",
+  "measurementPath": "/changelog",
+  "screenshotSha256": "bb56fc4869baed84c66653189d03c6fb6cd234226bdc407f9c419eadc804895a",
+  "floorScreenshotSha256": "04675ed804412acaf91912d7fe0ac221c23b3dab69a14676db5761d5740c65a3",
+  "ink": 0.058944,
+  "floorInk": 0.05707,
+  "predecessorInk": 0.067839,
+  "ratio": 0.8688807323221157,
+  "floorRatio": 0.8412565043706424,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 6,
+   "excludedOneLineLinkParagraphCount": 0,
+   "minProseParagraphMeasureCh": 31.888,
+   "topLevelSectionRowCount": 0,
+   "minimumVisualSectionGapPx": null,
+   "aboveFoldTextCharacterCount": 462
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 462,
+   "minProseMeasureCh": 18.001,
+   "minimumAdjacentSectionGapPx": null,
+   "interactiveElementCount": 5
+  },
+  "contract": {
+   "misses": [
+    "relative"
+   ],
+   "relative": {
+    "baselineRoute": "/changelog",
+    "predecessorInk": 0.067839,
+    "ink": 0.058944,
+    "ratio": 0.8688807323221157,
+    "floorInk": null,
+    "floorRatio": null,
+    "textBound": false,
+    "within": false
+   }
+  },
+  "corrected": {
+   "misses": [],
+   "relative": {
+    "baselineRoute": "/changelog",
+    "predecessorInk": 0.067839,
+    "ink": 0.058944,
+    "ratio": 0.8688807323221157,
+    "floorInk": 0.05707,
+    "floorRatio": 0.8412565043706424,
+    "textBound": true,
+    "within": true
+   }
+  }
+ },
+ {
+  "routeId": "marketing.changelog",
+  "state": "complete",
+  "viewport": "1280x800",
+  "measurementPath": "/changelog",
+  "screenshotSha256": "733b05abb9293c0222f58b4a9f7e3d65f2a13f691ab3e3c3cf045ce00722f88f",
+  "floorScreenshotSha256": "1a099b3102b4844a6c81b00489185ce13bb80f6437bf78258ce2f5ef677da39f",
+  "ink": 0.026904,
+  "floorInk": 0.026262,
+  "predecessorInk": 0.031785,
+  "ratio": 0.8464369985842378,
+  "floorRatio": 0.8262387918829637,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 5,
+   "excludedOneLineLinkParagraphCount": 1,
+   "minProseParagraphMeasureCh": 45.117,
+   "topLevelSectionRowCount": 0,
+   "minimumVisualSectionGapPx": null,
+   "aboveFoldTextCharacterCount": 568
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 568,
+   "minProseMeasureCh": 29.209,
+   "minimumAdjacentSectionGapPx": null,
+   "interactiveElementCount": 6
+  },
+  "contract": {
+   "misses": [
+    "proseMin",
+    "relative"
+   ],
+   "relative": {
+    "baselineRoute": "/changelog",
+    "predecessorInk": 0.031785,
+    "ink": 0.026904,
+    "ratio": 0.8464369985842378,
+    "floorInk": null,
+    "floorRatio": null,
+    "textBound": false,
+    "within": false
+   }
+  },
+  "corrected": {
+   "misses": [],
+   "relative": {
+    "baselineRoute": "/changelog",
+    "predecessorInk": 0.031785,
+    "ink": 0.026904,
+    "ratio": 0.8464369985842378,
+    "floorInk": 0.026262,
+    "floorRatio": 0.8262387918829637,
+    "textBound": true,
+    "within": true
+   }
+  }
+ },
+ {
+  "routeId": "marketing.embryo-analysis",
+  "state": "jurisdiction-unavailable",
+  "viewport": "390x844",
+  "measurementPath": "/embryo-analysis",
+  "screenshotSha256": "17b8d51852e4a0a011fc1e78f710b8aa9f800c0ef62656aec9927d7afb511396",
+  "floorScreenshotSha256": "7af7ad297a6c581245b45be39600fc1535293f2d6f51d55e8b901f734d2dc918",
+  "ink": 0.077819,
+  "floorInk": 0.077142,
+  "predecessorInk": null,
+  "ratio": null,
+  "floorRatio": null,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 9,
+   "excludedOneLineLinkParagraphCount": 2,
+   "minProseParagraphMeasureCh": 27.226,
+   "topLevelSectionRowCount": 2,
+   "minimumVisualSectionGapPx": 64,
+   "aboveFoldTextCharacterCount": 574
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 574,
+   "minProseMeasureCh": 18.001,
+   "minimumAdjacentSectionGapPx": 64,
+   "interactiveElementCount": 4
+  },
+  "contract": {
+   "misses": [],
+   "relative": null
+  },
+  "corrected": {
+   "misses": [],
+   "relative": null
+  }
+ },
+ {
+  "routeId": "marketing.embryo-analysis",
+  "state": "jurisdiction-unavailable",
+  "viewport": "1280x800",
+  "measurementPath": "/embryo-analysis",
+  "screenshotSha256": "cd7ed9821d8d5b1db5d6a7c60ad3902dc7f228d957543e6552a00237ce72dcd4",
+  "floorScreenshotSha256": "dae54adfa3471fb52b2dcaf5affd6a49eab5d54413e73fb0c0df79174112d95d",
+  "ink": 0.032159,
+  "floorInk": 0.031948,
+  "predecessorInk": null,
+  "ratio": null,
+  "floorRatio": null,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 8,
+   "excludedOneLineLinkParagraphCount": 3,
+   "minProseParagraphMeasureCh": 45.117,
+   "topLevelSectionRowCount": 2,
+   "minimumVisualSectionGapPx": 96,
+   "aboveFoldTextCharacterCount": 613
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 613,
+   "minProseMeasureCh": 29.209,
+   "minimumAdjacentSectionGapPx": 96,
+   "interactiveElementCount": 4
+  },
+  "contract": {
+   "misses": [
+    "proseMin"
+   ],
+   "relative": null
+  },
+  "corrected": {
+   "misses": [],
+   "relative": null
+  }
+ },
+ {
+  "routeId": "rights.future-person-claim",
+  "state": "complete",
+  "viewport": "390x844",
+  "measurementPath": "/future-person/claim",
+  "screenshotSha256": "1eae189938d304ce1be76647604e76bf410099b0a53059cf064097bd42c622e7",
+  "floorScreenshotSha256": "e70b578a313bc0c244be0e926107d4de332b78ea47ce19248cd42da50d80bf08",
+  "ink": 0.083385,
+  "floorInk": 0.083093,
+  "predecessorInk": null,
+  "ratio": null,
+  "floorRatio": null,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 10,
+   "excludedOneLineLinkParagraphCount": 0,
+   "minProseParagraphMeasureCh": 27.226,
+   "topLevelSectionRowCount": 2,
+   "minimumVisualSectionGapPx": 64,
+   "aboveFoldTextCharacterCount": 640
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 640,
+   "minProseMeasureCh": 18.001,
+   "minimumAdjacentSectionGapPx": 64,
+   "interactiveElementCount": 4
+  },
+  "contract": {
+   "misses": [],
+   "relative": null
+  },
+  "corrected": {
+   "misses": [],
+   "relative": null
+  }
+ },
+ {
+  "routeId": "rights.future-person-claim",
+  "state": "complete",
+  "viewport": "1280x800",
+  "measurementPath": "/future-person/claim",
+  "screenshotSha256": "acd5e8f9f9040e5289d75c51cf0cae31a300a1051f95ecd19c41d3729bfaada4",
+  "floorScreenshotSha256": "1a603c83cfd25c5ac601ca62440bc8aa5b3203160228724ec3f6f06dd031162e",
+  "ink": 0.037921,
+  "floorInk": 0.037892,
+  "predecessorInk": null,
+  "ratio": null,
+  "floorRatio": null,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 9,
+   "excludedOneLineLinkParagraphCount": 1,
+   "minProseParagraphMeasureCh": 45.117,
+   "topLevelSectionRowCount": 2,
+   "minimumVisualSectionGapPx": 96,
+   "aboveFoldTextCharacterCount": 767
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 767,
+   "minProseMeasureCh": 29.209,
+   "minimumAdjacentSectionGapPx": 96,
+   "interactiveElementCount": 4
+  },
+  "contract": {
+   "misses": [
+    "visibleCharacters",
+    "proseMin"
+   ],
+   "relative": null
+  },
+  "corrected": {
+   "misses": [
+    "visibleCharacters"
+   ],
+   "relative": null
+  }
+ },
+ {
+  "routeId": "legal.index",
+  "state": "complete",
+  "viewport": "390x844",
+  "measurementPath": "/legal",
+  "screenshotSha256": "bec9ed29e7d395de3361c3ac6bfd454d0a866bbb65b8dac89d9bb7592ab35d4e",
+  "floorScreenshotSha256": "b9c6986228eb91dbbe71e6fae899c66f2f89dc8169d9349d7421356abadc3e1f",
+  "ink": 0.031699,
+  "floorInk": 0.029903,
+  "predecessorInk": null,
+  "ratio": null,
+  "floorRatio": null,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 5,
+   "excludedOneLineLinkParagraphCount": 0,
+   "minProseParagraphMeasureCh": 31.888,
+   "topLevelSectionRowCount": 0,
+   "minimumVisualSectionGapPx": null,
+   "aboveFoldTextCharacterCount": 225
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 225,
+   "minProseMeasureCh": 18.001,
+   "minimumAdjacentSectionGapPx": null,
+   "interactiveElementCount": 11
+  },
+  "contract": {
+   "misses": [],
+   "relative": null
+  },
+  "corrected": {
+   "misses": [],
+   "relative": null
+  }
+ },
+ {
+  "routeId": "legal.index",
+  "state": "complete",
+  "viewport": "1280x800",
+  "measurementPath": "/legal",
+  "screenshotSha256": "c5fbae0fd64a7ce0995bca6d51739b71e3074e78472faf588ff5b761710b7d0a",
+  "floorScreenshotSha256": "c7dd6f2acf0fe6552c076805235c1b830e645e574b01d164ed157246a92653a6",
+  "ink": 0.016536,
+  "floorInk": 0.015816,
+  "predecessorInk": null,
+  "ratio": null,
+  "floorRatio": null,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 4,
+   "excludedOneLineLinkParagraphCount": 1,
+   "minProseParagraphMeasureCh": 45.117,
+   "topLevelSectionRowCount": 0,
+   "minimumVisualSectionGapPx": null,
+   "aboveFoldTextCharacterCount": 316
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 316,
+   "minProseMeasureCh": 29.209,
+   "minimumAdjacentSectionGapPx": null,
+   "interactiveElementCount": 15
+  },
+  "contract": {
+   "misses": [
+    "proseMin"
+   ],
+   "relative": null
+  },
+  "corrected": {
+   "misses": [],
+   "relative": null
+  }
+ },
+ {
+  "routeId": "rights.subject-access",
+  "state": "complete",
+  "viewport": "390x844",
+  "measurementPath": "/legal/appeals",
+  "screenshotSha256": "81218a5e3cd9092b83af67575849093117075694c4c25b57699f06c32a853a67",
+  "floorScreenshotSha256": "0b90709ee3a218b9f9cd17dbfd1072a0b579e77f52e18b20a9b93b364a13582b",
+  "ink": 0.073624,
+  "floorInk": 0.072436,
+  "predecessorInk": null,
+  "ratio": null,
+  "floorRatio": null,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 15,
+   "excludedOneLineLinkParagraphCount": 0,
+   "minProseParagraphMeasureCh": 31.888,
+   "topLevelSectionRowCount": 5,
+   "minimumVisualSectionGapPx": 65,
+   "aboveFoldTextCharacterCount": 701
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 878,
+   "minProseMeasureCh": 18.001,
+   "minimumAdjacentSectionGapPx": 65,
+   "interactiveElementCount": 5
+  },
+  "contract": {
+   "misses": [
+    "visibleCharacters"
+   ],
+   "relative": null
+  },
+  "corrected": {
+   "misses": [
+    "visibleCharacters"
+   ],
+   "relative": null
+  }
+ },
+ {
+  "routeId": "rights.subject-access",
+  "state": "complete",
+  "viewport": "1280x800",
+  "measurementPath": "/legal/appeals",
+  "screenshotSha256": "a6a94f5a655f78ae28a830b9feb83bcbc883d3a482c062a2e30221cb6794a28f",
+  "floorScreenshotSha256": "c7ef5e1919c61ba3f932cedaaaf1a009570009109cb1f1d59803899770878df4",
+  "ink": 0.038628,
+  "floorInk": 0.038246,
+  "predecessorInk": null,
+  "ratio": null,
+  "floorRatio": null,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 14,
+   "excludedOneLineLinkParagraphCount": 1,
+   "minProseParagraphMeasureCh": 45.117,
+   "topLevelSectionRowCount": 5,
+   "minimumVisualSectionGapPx": 97,
+   "aboveFoldTextCharacterCount": 954
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 1008,
+   "minProseMeasureCh": 29.209,
+   "minimumAdjacentSectionGapPx": 97,
+   "interactiveElementCount": 5
+  },
+  "contract": {
+   "misses": [
+    "visibleCharacters",
+    "proseMin"
+   ],
+   "relative": null
+  },
+  "corrected": {
+   "misses": [
+    "visibleCharacters"
+   ],
+   "relative": null
+  }
+ },
+ {
+  "routeId": "legal.artifact",
+  "state": "complete",
+  "viewport": "390x844",
+  "measurementPath": "/legal/consent.own-polygenic",
+  "screenshotSha256": "62147c8c9e91141e25e4c3b928e473b60686844e8a0c2745a71f081c2e754a9a",
+  "floorScreenshotSha256": "3f37759e1af163deb245bd780a0db4e9af9dc6bd10b569de6c12b0272b377153",
+  "ink": 0.067454,
+  "floorInk": 0.066667,
+  "predecessorInk": null,
+  "ratio": null,
+  "floorRatio": null,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 9,
+   "excludedOneLineLinkParagraphCount": 1,
+   "minProseParagraphMeasureCh": 27.972,
+   "topLevelSectionRowCount": 1,
+   "minimumVisualSectionGapPx": null,
+   "aboveFoldTextCharacterCount": 559
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 931,
+   "minProseMeasureCh": 18.001,
+   "minimumAdjacentSectionGapPx": null,
+   "interactiveElementCount": 4
+  },
+  "contract": {
+   "misses": [
+    "visibleCharacters"
+   ],
+   "relative": null
+  },
+  "corrected": {
+   "misses": [],
+   "relative": null
+  }
+ },
+ {
+  "routeId": "legal.artifact",
+  "state": "complete",
+  "viewport": "1280x800",
+  "measurementPath": "/legal/consent.own-polygenic",
+  "screenshotSha256": "f201adcd4fb945037cad7e3405237057626cf23a5128f9aad9e39a35fd64dc7c",
+  "floorScreenshotSha256": "e39f03cae134696d8ac9e9535437bfe6d9f1892e5ea9650396d5307f67e1932c",
+  "ink": 0.028865,
+  "floorInk": 0.0286,
+  "predecessorInk": null,
+  "ratio": null,
+  "floorRatio": null,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 8,
+   "excludedOneLineLinkParagraphCount": 2,
+   "minProseParagraphMeasureCh": 45.117,
+   "topLevelSectionRowCount": 1,
+   "minimumVisualSectionGapPx": null,
+   "aboveFoldTextCharacterCount": 678
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 970,
+   "minProseMeasureCh": 29.209,
+   "minimumAdjacentSectionGapPx": null,
+   "interactiveElementCount": 4
+  },
+  "contract": {
+   "misses": [
+    "visibleCharacters",
+    "proseMin"
+   ],
+   "relative": null
+  },
+  "corrected": {
+   "misses": [],
+   "relative": null
+  }
+ },
+ {
+  "routeId": "legal.artifact-diff",
+  "state": "complete",
+  "viewport": "390x844",
+  "measurementPath": "/legal/consent.own-polygenic/diff/1/2",
+  "screenshotSha256": "fd4f7cc1f5dc7bee1f81d836f1eb3b273532257df7d51ce0b8fd03473f25a19e",
+  "floorScreenshotSha256": "cb7b310d1ab2a0ec9abd0df7fa2e5099f147c4a5c23cc2619fe86e83469aa7a9",
+  "ink": 0.069431,
+  "floorInk": 0.068906,
+  "predecessorInk": null,
+  "ratio": null,
+  "floorRatio": null,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 6,
+   "excludedOneLineLinkParagraphCount": 0,
+   "minProseParagraphMeasureCh": 31.888,
+   "topLevelSectionRowCount": 2,
+   "minimumVisualSectionGapPx": 64,
+   "aboveFoldTextCharacterCount": 536
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 712,
+   "minProseMeasureCh": 18.001,
+   "minimumAdjacentSectionGapPx": 64,
+   "interactiveElementCount": 4
+  },
+  "contract": {
+   "misses": [
+    "visibleCharacters"
+   ],
+   "relative": null
+  },
+  "corrected": {
+   "misses": [],
+   "relative": null
+  }
+ },
+ {
+  "routeId": "legal.artifact-diff",
+  "state": "complete",
+  "viewport": "1280x800",
+  "measurementPath": "/legal/consent.own-polygenic/diff/1/2",
+  "screenshotSha256": "d10666d462570dba18313be252a714ddb1a4a80c2356e88757e834407543d9ce",
+  "floorScreenshotSha256": "1f6c8c08ade87637dd5474644963aee4c0932d53b765ca50d7d73b9dea8881af",
+  "ink": 0.047642,
+  "floorInk": 0.047793,
+  "predecessorInk": null,
+  "ratio": null,
+  "floorRatio": null,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 5,
+   "excludedOneLineLinkParagraphCount": 1,
+   "minProseParagraphMeasureCh": 45.117,
+   "topLevelSectionRowCount": 1,
+   "minimumVisualSectionGapPx": null,
+   "aboveFoldTextCharacterCount": 1122
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 1351,
+   "minProseMeasureCh": 29.209,
+   "minimumAdjacentSectionGapPx": -598.84,
+   "interactiveElementCount": 4
+  },
+  "contract": {
+   "misses": [
+    "visibleCharacters",
+    "proseMin",
+    "sectionGap"
+   ],
+   "relative": null
+  },
+  "corrected": {
+   "misses": [
+    "visibleCharacters"
+   ],
+   "relative": null
+  }
+ },
+ {
+  "routeId": "legal.artifact-version",
+  "state": "complete",
+  "viewport": "390x844",
+  "measurementPath": "/legal/consent.own-polygenic/versions/1",
+  "screenshotSha256": "20ac9364a383e2a5728e4cde8d5289a42cc4f8b367dc5ce59c8adb67eace61f2",
+  "floorScreenshotSha256": "cdc7b2e64b38d3597942ac39f69f9b976343420fb0e7f9edc1a9458ace4c89df",
+  "ink": 0.067672,
+  "floorInk": 0.066579,
+  "predecessorInk": null,
+  "ratio": null,
+  "floorRatio": null,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 8,
+   "excludedOneLineLinkParagraphCount": 1,
+   "minProseParagraphMeasureCh": 27.972,
+   "topLevelSectionRowCount": 1,
+   "minimumVisualSectionGapPx": null,
+   "aboveFoldTextCharacterCount": 531
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 746,
+   "minProseMeasureCh": 18.001,
+   "minimumAdjacentSectionGapPx": null,
+   "interactiveElementCount": 4
+  },
+  "contract": {
+   "misses": [
+    "visibleCharacters"
+   ],
+   "relative": null
+  },
+  "corrected": {
+   "misses": [],
+   "relative": null
+  }
+ },
+ {
+  "routeId": "legal.artifact-version",
+  "state": "complete",
+  "viewport": "1280x800",
+  "measurementPath": "/legal/consent.own-polygenic/versions/1",
+  "screenshotSha256": "1aaa6d0ee7e2d56df46526cb952529e45f1aae265e49314392e865d54c45c62c",
+  "floorScreenshotSha256": "8bc4dc3bcc93c1546feb95083d1fac6a520523dfcd6067000523580ccd1747d4",
+  "ink": 0.028521,
+  "floorInk": 0.02817,
+  "predecessorInk": null,
+  "ratio": null,
+  "floorRatio": null,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 7,
+   "excludedOneLineLinkParagraphCount": 2,
+   "minProseParagraphMeasureCh": 45.117,
+   "topLevelSectionRowCount": 1,
+   "minimumVisualSectionGapPx": null,
+   "aboveFoldTextCharacterCount": 642
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 785,
+   "minProseMeasureCh": 29.209,
+   "minimumAdjacentSectionGapPx": null,
+   "interactiveElementCount": 4
+  },
+  "contract": {
+   "misses": [
+    "visibleCharacters",
+    "proseMin"
+   ],
+   "relative": null
+  },
+  "corrected": {
+   "misses": [],
+   "relative": null
+  }
+ },
+ {
+  "routeId": "legal.consent",
+  "state": "complete",
+  "viewport": "390x844",
+  "measurementPath": "/legal/consent/consent.own-polygenic",
+  "screenshotSha256": "62147c8c9e91141e25e4c3b928e473b60686844e8a0c2745a71f081c2e754a9a",
+  "floorScreenshotSha256": "3f37759e1af163deb245bd780a0db4e9af9dc6bd10b569de6c12b0272b377153",
+  "ink": 0.067454,
+  "floorInk": 0.066667,
+  "predecessorInk": null,
+  "ratio": null,
+  "floorRatio": null,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 9,
+   "excludedOneLineLinkParagraphCount": 1,
+   "minProseParagraphMeasureCh": 27.972,
+   "topLevelSectionRowCount": 1,
+   "minimumVisualSectionGapPx": null,
+   "aboveFoldTextCharacterCount": 559
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 931,
+   "minProseMeasureCh": 18.001,
+   "minimumAdjacentSectionGapPx": null,
+   "interactiveElementCount": 4
+  },
+  "contract": {
+   "misses": [
+    "visibleCharacters"
+   ],
+   "relative": null
+  },
+  "corrected": {
+   "misses": [],
+   "relative": null
+  }
+ },
+ {
+  "routeId": "legal.consent",
+  "state": "complete",
+  "viewport": "1280x800",
+  "measurementPath": "/legal/consent/consent.own-polygenic",
+  "screenshotSha256": "f201adcd4fb945037cad7e3405237057626cf23a5128f9aad9e39a35fd64dc7c",
+  "floorScreenshotSha256": "e39f03cae134696d8ac9e9535437bfe6d9f1892e5ea9650396d5307f67e1932c",
+  "ink": 0.028865,
+  "floorInk": 0.0286,
+  "predecessorInk": null,
+  "ratio": null,
+  "floorRatio": null,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 8,
+   "excludedOneLineLinkParagraphCount": 2,
+   "minProseParagraphMeasureCh": 45.117,
+   "topLevelSectionRowCount": 1,
+   "minimumVisualSectionGapPx": null,
+   "aboveFoldTextCharacterCount": 678
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 970,
+   "minProseMeasureCh": 29.209,
+   "minimumAdjacentSectionGapPx": null,
+   "interactiveElementCount": 4
+  },
+  "contract": {
+   "misses": [
+    "visibleCharacters",
+    "proseMin"
+   ],
+   "relative": null
+  },
+  "corrected": {
+   "misses": [],
+   "relative": null
+  }
+ },
+ {
+  "routeId": "legal.consent-diff",
+  "state": "complete",
+  "viewport": "390x844",
+  "measurementPath": "/legal/consent/consent.own-polygenic/diff/1/2",
+  "screenshotSha256": "c9edcce84559deb10525287e6902836c7491ab587ca9ec4b66e824cb3a9d1c04",
+  "floorScreenshotSha256": "4083052c7c0bc5a9e4ba9ad53cbac17a8ce7de466619babc17e0e35aa98188c3",
+  "ink": 0.069474,
+  "floorInk": 0.068948,
+  "predecessorInk": null,
+  "ratio": null,
+  "floorRatio": null,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 6,
+   "excludedOneLineLinkParagraphCount": 0,
+   "minProseParagraphMeasureCh": 31.888,
+   "topLevelSectionRowCount": 2,
+   "minimumVisualSectionGapPx": 64,
+   "aboveFoldTextCharacterCount": 536
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 712,
+   "minProseMeasureCh": 18.001,
+   "minimumAdjacentSectionGapPx": 64,
+   "interactiveElementCount": 4
+  },
+  "contract": {
+   "misses": [
+    "visibleCharacters"
+   ],
+   "relative": null
+  },
+  "corrected": {
+   "misses": [],
+   "relative": null
+  }
+ },
+ {
+  "routeId": "legal.consent-diff",
+  "state": "complete",
+  "viewport": "1280x800",
+  "measurementPath": "/legal/consent/consent.own-polygenic/diff/1/2",
+  "screenshotSha256": "b643095ac497076013a194eaf2df7e57b141645c222ea38e6790216d95a952df",
+  "floorScreenshotSha256": "a3c14bceffb004a667874b4aabf3c9a2792b69ee036ef4c782f73016f6f45bb0",
+  "ink": 0.047655,
+  "floorInk": 0.047807,
+  "predecessorInk": null,
+  "ratio": null,
+  "floorRatio": null,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 5,
+   "excludedOneLineLinkParagraphCount": 1,
+   "minProseParagraphMeasureCh": 45.117,
+   "topLevelSectionRowCount": 1,
+   "minimumVisualSectionGapPx": null,
+   "aboveFoldTextCharacterCount": 1122
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 1351,
+   "minProseMeasureCh": 29.209,
+   "minimumAdjacentSectionGapPx": -598.84,
+   "interactiveElementCount": 4
+  },
+  "contract": {
+   "misses": [
+    "visibleCharacters",
+    "proseMin",
+    "sectionGap"
+   ],
+   "relative": null
+  },
+  "corrected": {
+   "misses": [
+    "visibleCharacters"
+   ],
+   "relative": null
+  }
+ },
+ {
+  "routeId": "legal.consent-version",
+  "state": "complete",
+  "viewport": "390x844",
+  "measurementPath": "/legal/consent/consent.own-polygenic/v/1",
+  "screenshotSha256": "20ac9364a383e2a5728e4cde8d5289a42cc4f8b367dc5ce59c8adb67eace61f2",
+  "floorScreenshotSha256": "cdc7b2e64b38d3597942ac39f69f9b976343420fb0e7f9edc1a9458ace4c89df",
+  "ink": 0.067672,
+  "floorInk": 0.066579,
+  "predecessorInk": null,
+  "ratio": null,
+  "floorRatio": null,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 8,
+   "excludedOneLineLinkParagraphCount": 1,
+   "minProseParagraphMeasureCh": 27.972,
+   "topLevelSectionRowCount": 1,
+   "minimumVisualSectionGapPx": null,
+   "aboveFoldTextCharacterCount": 531
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 746,
+   "minProseMeasureCh": 18.001,
+   "minimumAdjacentSectionGapPx": null,
+   "interactiveElementCount": 4
+  },
+  "contract": {
+   "misses": [
+    "visibleCharacters"
+   ],
+   "relative": null
+  },
+  "corrected": {
+   "misses": [],
+   "relative": null
+  }
+ },
+ {
+  "routeId": "legal.consent-version",
+  "state": "complete",
+  "viewport": "1280x800",
+  "measurementPath": "/legal/consent/consent.own-polygenic/v/1",
+  "screenshotSha256": "1aaa6d0ee7e2d56df46526cb952529e45f1aae265e49314392e865d54c45c62c",
+  "floorScreenshotSha256": "8bc4dc3bcc93c1546feb95083d1fac6a520523dfcd6067000523580ccd1747d4",
+  "ink": 0.028521,
+  "floorInk": 0.02817,
+  "predecessorInk": null,
+  "ratio": null,
+  "floorRatio": null,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 7,
+   "excludedOneLineLinkParagraphCount": 2,
+   "minProseParagraphMeasureCh": 45.117,
+   "topLevelSectionRowCount": 1,
+   "minimumVisualSectionGapPx": null,
+   "aboveFoldTextCharacterCount": 642
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 785,
+   "minProseMeasureCh": 29.209,
+   "minimumAdjacentSectionGapPx": null,
+   "interactiveElementCount": 4
+  },
+  "contract": {
+   "misses": [
+    "visibleCharacters",
+    "proseMin"
+   ],
+   "relative": null
+  },
+  "corrected": {
+   "misses": [],
+   "relative": null
+  }
+ },
+ {
+  "routeId": "legal.consents",
+  "state": "complete",
+  "viewport": "390x844",
+  "measurementPath": "/legal/consents",
+  "screenshotSha256": "e080095a6361e4e7cd090efed0127bc7cbd09ae2881e7ba3065a751f7575a94f",
+  "floorScreenshotSha256": "b316ec01c3daf10ffab5d8aaabd8a2d197328c24c445201374b12feee4247d92",
+  "ink": 0.054508,
+  "floorInk": 0.053321,
+  "predecessorInk": null,
+  "ratio": null,
+  "floorRatio": null,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 10,
+   "excludedOneLineLinkParagraphCount": 0,
+   "minProseParagraphMeasureCh": 31.888,
+   "topLevelSectionRowCount": 3,
+   "minimumVisualSectionGapPx": 65,
+   "aboveFoldTextCharacterCount": 443
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 443,
+   "minProseMeasureCh": 18.001,
+   "minimumAdjacentSectionGapPx": 65,
+   "interactiveElementCount": 5
+  },
+  "contract": {
+   "misses": [],
+   "relative": null
+  },
+  "corrected": {
+   "misses": [],
+   "relative": null
+  }
+ },
+ {
+  "routeId": "legal.consents",
+  "state": "complete",
+  "viewport": "1280x800",
+  "measurementPath": "/legal/consents",
+  "screenshotSha256": "b16a662afdd308d7e35935d5c1fcf7ad030274f4f1be62ac12821e46010b8ce4",
+  "floorScreenshotSha256": "7151748ac37523ba8d1efe9cfc57b56e508aabf5c0b1b3ffbba9df9e9476ccb5",
+  "ink": 0.022581,
+  "floorInk": 0.022199,
+  "predecessorInk": null,
+  "ratio": null,
+  "floorRatio": null,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 9,
+   "excludedOneLineLinkParagraphCount": 1,
+   "minProseParagraphMeasureCh": 45.117,
+   "topLevelSectionRowCount": 3,
+   "minimumVisualSectionGapPx": 97,
+   "aboveFoldTextCharacterCount": 482
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 482,
+   "minProseMeasureCh": 29.209,
+   "minimumAdjacentSectionGapPx": 97,
+   "interactiveElementCount": 5
+  },
+  "contract": {
+   "misses": [
+    "proseMin"
+   ],
+   "relative": null
+  },
+  "corrected": {
+   "misses": [],
+   "relative": null
+  }
+ },
+ {
+  "routeId": "legal.deceased",
+  "state": "complete",
+  "viewport": "390x844",
+  "measurementPath": "/legal/deceased",
+  "screenshotSha256": "fffa029a0a1dd67894d393d69194d3ec7b7b1c1663e010fb9a812a050c1825a7",
+  "floorScreenshotSha256": "fd52cff4fbedbaa361edca3c04f4bf57e5244f85d12009202034bb5a16c5bcad",
+  "ink": 0.063164,
+  "floorInk": 0.061976,
+  "predecessorInk": 0.086092,
+  "ratio": 0.733680249035915,
+  "floorRatio": 0.7198810574734006,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 20,
+   "excludedOneLineLinkParagraphCount": 0,
+   "minProseParagraphMeasureCh": 31.888,
+   "topLevelSectionRowCount": 7,
+   "minimumVisualSectionGapPx": 65,
+   "aboveFoldTextCharacterCount": 687
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 699,
+   "minProseMeasureCh": 18.001,
+   "minimumAdjacentSectionGapPx": 65,
+   "interactiveElementCount": 5
+  },
+  "contract": {
+   "misses": [
+    "relative"
+   ],
+   "relative": {
+    "baselineRoute": "/legal/deceased",
+    "predecessorInk": 0.086092,
+    "ink": 0.063164,
+    "ratio": 0.733680249035915,
+    "floorInk": null,
+    "floorRatio": null,
+    "textBound": false,
+    "within": false
+   }
+  },
+  "corrected": {
+   "misses": [],
+   "relative": {
+    "baselineRoute": "/legal/deceased",
+    "predecessorInk": 0.086092,
+    "ink": 0.063164,
+    "ratio": 0.733680249035915,
+    "floorInk": 0.061976,
+    "floorRatio": 0.7198810574734006,
+    "textBound": true,
+    "within": true
+   }
+  }
+ },
+ {
+  "routeId": "legal.deceased",
+  "state": "complete",
+  "viewport": "1280x800",
+  "measurementPath": "/legal/deceased",
+  "screenshotSha256": "2702858ffbd1ce2b91b66fdd7c21d8e6a356be51fb36bd4549ecddb4b699ac6a",
+  "floorScreenshotSha256": "d5116bc500c4e8a6df8aa5472505a0a706a8252994804265027f79cda77823a0",
+  "ink": 0.02629,
+  "floorInk": 0.025908,
+  "predecessorInk": 0.050349,
+  "ratio": 0.5221553556177879,
+  "floorRatio": 0.5145683131740452,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 19,
+   "excludedOneLineLinkParagraphCount": 1,
+   "minProseParagraphMeasureCh": 45.117,
+   "topLevelSectionRowCount": 7,
+   "minimumVisualSectionGapPx": 97,
+   "aboveFoldTextCharacterCount": 738
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 738,
+   "minProseMeasureCh": 29.209,
+   "minimumAdjacentSectionGapPx": 97,
+   "interactiveElementCount": 5
+  },
+  "contract": {
+   "misses": [
+    "visibleCharacters",
+    "proseMin"
+   ],
+   "relative": {
+    "baselineRoute": "/legal/deceased",
+    "predecessorInk": 0.050349,
+    "ink": 0.02629,
+    "ratio": 0.5221553556177879,
+    "floorInk": null,
+    "floorRatio": null,
+    "textBound": false,
+    "within": true
+   }
+  },
+  "corrected": {
+   "misses": [
+    "visibleCharacters"
+   ],
+   "relative": {
+    "baselineRoute": "/legal/deceased",
+    "predecessorInk": 0.050349,
+    "ink": 0.02629,
+    "ratio": 0.5221553556177879,
+    "floorInk": 0.025908,
+    "floorRatio": 0.5145683131740452,
+    "textBound": false,
+    "within": true
+   }
+  }
+ },
+ {
+  "routeId": "legal.future-person",
+  "state": "complete",
+  "viewport": "390x844",
+  "measurementPath": "/legal/future-person",
+  "screenshotSha256": "74f50b07678b8e8cf186f5dc700752c8b2232e312dd141a982c49fadffc9aba6",
+  "floorScreenshotSha256": "44d9e282b0c38fca108b2f982d6116ba045662cba1dc2af5e229957e612839c4",
+  "ink": 0.066281,
+  "floorInk": 0.065093,
+  "predecessorInk": null,
+  "ratio": null,
+  "floorRatio": null,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 11,
+   "excludedOneLineLinkParagraphCount": 0,
+   "minProseParagraphMeasureCh": 31.888,
+   "topLevelSectionRowCount": 5,
+   "minimumVisualSectionGapPx": 65,
+   "aboveFoldTextCharacterCount": 628
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 778,
+   "minProseMeasureCh": 18.001,
+   "minimumAdjacentSectionGapPx": 65,
+   "interactiveElementCount": 5
+  },
+  "contract": {
+   "misses": [
+    "visibleCharacters"
+   ],
+   "relative": null
+  },
+  "corrected": {
+   "misses": [
+    "visibleCharacters"
+   ],
+   "relative": null
+  }
+ },
+ {
+  "routeId": "legal.future-person",
+  "state": "complete",
+  "viewport": "1280x800",
+  "measurementPath": "/legal/future-person",
+  "screenshotSha256": "12a70bb26d1eaddcbb6787695a9b51304a1ea323f330a2af80fbe07018cde481",
+  "floorScreenshotSha256": "0eb905f1133165a47cffb2410eb747f1c8cd67cbe05e28c982dd324c2bcfd931",
+  "ink": 0.033403,
+  "floorInk": 0.033021,
+  "predecessorInk": null,
+  "ratio": null,
+  "floorRatio": null,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 10,
+   "excludedOneLineLinkParagraphCount": 1,
+   "minProseParagraphMeasureCh": 45.117,
+   "topLevelSectionRowCount": 5,
+   "minimumVisualSectionGapPx": 97,
+   "aboveFoldTextCharacterCount": 843
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 843,
+   "minProseMeasureCh": 29.209,
+   "minimumAdjacentSectionGapPx": 97,
+   "interactiveElementCount": 5
+  },
+  "contract": {
+   "misses": [
+    "visibleCharacters",
+    "proseMin"
+   ],
+   "relative": null
+  },
+  "corrected": {
+   "misses": [
+    "visibleCharacters"
+   ],
+   "relative": null
+  }
+ },
+ {
+  "routeId": "legal.gdpr",
+  "state": "complete",
+  "viewport": "390x844",
+  "measurementPath": "/legal/gdpr",
+  "screenshotSha256": "e010fa8528798bdcb89119548f31f20ff5ac174622267822c13835d01a50a294",
+  "floorScreenshotSha256": "8780a1b5161bdfd3fbc3d9bfc65e26b068f7f2189d0e659c0adec202e13c1007",
+  "ink": 0.075805,
+  "floorInk": 0.074617,
+  "predecessorInk": null,
+  "ratio": null,
+  "floorRatio": null,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 19,
+   "excludedOneLineLinkParagraphCount": 0,
+   "minProseParagraphMeasureCh": 31.888,
+   "topLevelSectionRowCount": 5,
+   "minimumVisualSectionGapPx": 65,
+   "aboveFoldTextCharacterCount": 708
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 808,
+   "minProseMeasureCh": 18.001,
+   "minimumAdjacentSectionGapPx": 65,
+   "interactiveElementCount": 5
+  },
+  "contract": {
+   "misses": [
+    "visibleCharacters"
+   ],
+   "relative": null
+  },
+  "corrected": {
+   "misses": [
+    "visibleCharacters"
+   ],
+   "relative": null
+  }
+ },
+ {
+  "routeId": "legal.gdpr",
+  "state": "complete",
+  "viewport": "1280x800",
+  "measurementPath": "/legal/gdpr",
+  "screenshotSha256": "c110e0cb14f7d094ff17cda4c1e99ed7e144fc8974b2a05fefdd9b19acea7ba2",
+  "floorScreenshotSha256": "6f273a67f5cd99bd2914dfde1a3febca889f65295f340f189ff8e969c4729768",
+  "ink": 0.032188,
+  "floorInk": 0.031806,
+  "predecessorInk": null,
+  "ratio": null,
+  "floorRatio": null,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 18,
+   "excludedOneLineLinkParagraphCount": 1,
+   "minProseParagraphMeasureCh": 45.117,
+   "topLevelSectionRowCount": 5,
+   "minimumVisualSectionGapPx": 97,
+   "aboveFoldTextCharacterCount": 847
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 847,
+   "minProseMeasureCh": 29.209,
+   "minimumAdjacentSectionGapPx": 97,
+   "interactiveElementCount": 5
+  },
+  "contract": {
+   "misses": [
+    "visibleCharacters",
+    "proseMin"
+   ],
+   "relative": null
+  },
+  "corrected": {
+   "misses": [
+    "visibleCharacters"
+   ],
+   "relative": null
+  }
+ },
+ {
+  "routeId": "legal.gina",
+  "state": "complete",
+  "viewport": "390x844",
+  "measurementPath": "/legal/gina",
+  "screenshotSha256": "052a0e208914ccb279b02818b424d9cd2f829794926ba86d50eabf30d1f8adf2",
+  "floorScreenshotSha256": "72a9a70a7e0367a8f6dd6bea554e43726c4e9ad367ab176ede6c26951f206ff3",
+  "ink": 0.067144,
+  "floorInk": 0.065956,
+  "predecessorInk": 0.081826,
+  "ratio": 0.8205704788209126,
+  "floorRatio": 0.8060518661550119,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 15,
+   "excludedOneLineLinkParagraphCount": 0,
+   "minProseParagraphMeasureCh": 31.888,
+   "topLevelSectionRowCount": 4,
+   "minimumVisualSectionGapPx": 65,
+   "aboveFoldTextCharacterCount": 588
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 588,
+   "minProseMeasureCh": 18.001,
+   "minimumAdjacentSectionGapPx": 65,
+   "interactiveElementCount": 5
+  },
+  "contract": {
+   "misses": [
+    "relative"
+   ],
+   "relative": {
+    "baselineRoute": "/legal/gina",
+    "predecessorInk": 0.081826,
+    "ink": 0.067144,
+    "ratio": 0.8205704788209126,
+    "floorInk": null,
+    "floorRatio": null,
+    "textBound": false,
+    "within": false
+   }
+  },
+  "corrected": {
+   "misses": [],
+   "relative": {
+    "baselineRoute": "/legal/gina",
+    "predecessorInk": 0.081826,
+    "ink": 0.067144,
+    "ratio": 0.8205704788209126,
+    "floorInk": 0.065956,
+    "floorRatio": 0.8060518661550119,
+    "textBound": true,
+    "within": true
+   }
+  }
+ },
+ {
+  "routeId": "legal.gina",
+  "state": "complete",
+  "viewport": "1280x800",
+  "measurementPath": "/legal/gina",
+  "screenshotSha256": "0522ee38d1f3c8422fd5a9ce080e4dd9d6631b8dd350e6a09acdc8ea94f822b6",
+  "floorScreenshotSha256": "40e22495dc462df117751e4fbe96b010dfed041289f984d8ae79e0dcd3124b4f",
+  "ink": 0.033398,
+  "floorInk": 0.033017,
+  "predecessorInk": 0.057451,
+  "ratio": 0.5813301770204173,
+  "floorRatio": 0.5746984386694748,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 14,
+   "excludedOneLineLinkParagraphCount": 1,
+   "minProseParagraphMeasureCh": 45.117,
+   "topLevelSectionRowCount": 4,
+   "minimumVisualSectionGapPx": 97,
+   "aboveFoldTextCharacterCount": 924
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 999,
+   "minProseMeasureCh": 29.209,
+   "minimumAdjacentSectionGapPx": 97,
+   "interactiveElementCount": 5
+  },
+  "contract": {
+   "misses": [
+    "visibleCharacters",
+    "proseMin"
+   ],
+   "relative": {
+    "baselineRoute": "/legal/gina",
+    "predecessorInk": 0.057451,
+    "ink": 0.033398,
+    "ratio": 0.5813301770204173,
+    "floorInk": null,
+    "floorRatio": null,
+    "textBound": false,
+    "within": true
+   }
+  },
+  "corrected": {
+   "misses": [
+    "visibleCharacters"
+   ],
+   "relative": {
+    "baselineRoute": "/legal/gina",
+    "predecessorInk": 0.057451,
+    "ink": 0.033398,
+    "ratio": 0.5813301770204173,
+    "floorInk": 0.033017,
+    "floorRatio": 0.5746984386694748,
+    "textBound": false,
+    "within": true
+   }
+  }
+ },
+ {
+  "routeId": "legal.incident-response",
+  "state": "complete",
+  "viewport": "390x844",
+  "measurementPath": "/legal/incident-response",
+  "screenshotSha256": "134f3c5f440852da54affef94ff07b921d893cbb6ed01c128f87739f49e07666",
+  "floorScreenshotSha256": "f42f11b90eb0afcc431b0c53d61f7fcbcdf78e721491815e81a93fc675f8f496",
+  "ink": 0.065625,
+  "floorInk": 0.064087,
+  "predecessorInk": null,
+  "ratio": null,
+  "floorRatio": null,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 17,
+   "excludedOneLineLinkParagraphCount": 0,
+   "minProseParagraphMeasureCh": 31.888,
+   "topLevelSectionRowCount": 5,
+   "minimumVisualSectionGapPx": 65,
+   "aboveFoldTextCharacterCount": 615
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 641,
+   "minProseMeasureCh": 18.001,
+   "minimumAdjacentSectionGapPx": 65,
+   "interactiveElementCount": 6
+  },
+  "contract": {
+   "misses": [],
+   "relative": null
+  },
+  "corrected": {
+   "misses": [],
+   "relative": null
+  }
+ },
+ {
+  "routeId": "legal.incident-response",
+  "state": "complete",
+  "viewport": "1280x800",
+  "measurementPath": "/legal/incident-response",
+  "screenshotSha256": "7d0f41c3e54fb46f2809f37449a24eaa07fd546e3d63b5a58be75bf813e638d4",
+  "floorScreenshotSha256": "de69cf0eed70f18ebc02cd2efd1ad4adb61cd3eb952111589e22c6673e553864",
+  "ink": 0.028621,
+  "floorInk": 0.028127,
+  "predecessorInk": null,
+  "ratio": null,
+  "floorRatio": null,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 16,
+   "excludedOneLineLinkParagraphCount": 1,
+   "minProseParagraphMeasureCh": 45.117,
+   "topLevelSectionRowCount": 5,
+   "minimumVisualSectionGapPx": 97,
+   "aboveFoldTextCharacterCount": 785
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 846,
+   "minProseMeasureCh": 29.209,
+   "minimumAdjacentSectionGapPx": 97,
+   "interactiveElementCount": 6
+  },
+  "contract": {
+   "misses": [
+    "visibleCharacters",
+    "proseMin"
+   ],
+   "relative": null
+  },
+  "corrected": {
+   "misses": [
+    "visibleCharacters"
+   ],
+   "relative": null
+  }
+ },
+ {
+  "routeId": "legal.insurance-and-discrimination",
+  "state": "complete",
+  "viewport": "390x844",
+  "measurementPath": "/legal/insurance-and-discrimination",
+  "screenshotSha256": "920b4fdc61879692901b175fd6f7e9e4fe8b9c28ad9e4b77f1667a669ceaaf06",
+  "floorScreenshotSha256": "45b3229a8e9814e097d2fd8ab536e3a4fac0e9890713d67c3322d725e7167b1f",
+  "ink": 0.067633,
+  "floorInk": 0.066445,
+  "predecessorInk": null,
+  "ratio": null,
+  "floorRatio": null,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 10,
+   "excludedOneLineLinkParagraphCount": 1,
+   "minProseParagraphMeasureCh": 31.888,
+   "topLevelSectionRowCount": 3,
+   "minimumVisualSectionGapPx": 65,
+   "aboveFoldTextCharacterCount": 568
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 1913,
+   "minProseMeasureCh": 18.001,
+   "minimumAdjacentSectionGapPx": 65,
+   "interactiveElementCount": 5
+  },
+  "contract": {
+   "misses": [
+    "visibleCharacters"
+   ],
+   "relative": null
+  },
+  "corrected": {
+   "misses": [],
+   "relative": null
+  }
+ },
+ {
+  "routeId": "legal.insurance-and-discrimination",
+  "state": "complete",
+  "viewport": "1280x800",
+  "measurementPath": "/legal/insurance-and-discrimination",
+  "screenshotSha256": "957670bf70b32f7f4caaccb32abe60cb12a4df05cd454e80c9163dc7de4410e0",
+  "floorScreenshotSha256": "5e4936865f05e58db0730f58cdf133af2072e182686b993e0b92f6848f2be879",
+  "ink": 0.033583,
+  "floorInk": 0.033201,
+  "predecessorInk": null,
+  "ratio": null,
+  "floorRatio": null,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 9,
+   "excludedOneLineLinkParagraphCount": 2,
+   "minProseParagraphMeasureCh": 45.117,
+   "topLevelSectionRowCount": 3,
+   "minimumVisualSectionGapPx": 97,
+   "aboveFoldTextCharacterCount": 765
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 1952,
+   "minProseMeasureCh": 29.209,
+   "minimumAdjacentSectionGapPx": 97,
+   "interactiveElementCount": 5
+  },
+  "contract": {
+   "misses": [
+    "visibleCharacters",
+    "proseMin"
+   ],
+   "relative": null
+  },
+  "corrected": {
+   "misses": [
+    "visibleCharacters"
+   ],
+   "relative": null
+  }
+ },
+ {
+  "routeId": "legal.law-enforcement",
+  "state": "complete",
+  "viewport": "390x844",
+  "measurementPath": "/legal/law-enforcement",
+  "screenshotSha256": "51c86f3fa858e3d93df646e05b2dc6b2ef0544c15b13a9944ab90df816a55f0a",
+  "floorScreenshotSha256": "2a16cd474a3f7fc8aef8c1cc914ef37894b4aafd2a52790c462aada9d5b71806",
+  "ink": 0.070197,
+  "floorInk": 0.069009,
+  "predecessorInk": 0.079536,
+  "ratio": 0.8825814725407363,
+  "floorRatio": 0.86764484007242,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 14,
+   "excludedOneLineLinkParagraphCount": 0,
+   "minProseParagraphMeasureCh": 31.888,
+   "topLevelSectionRowCount": 5,
+   "minimumVisualSectionGapPx": 65,
+   "aboveFoldTextCharacterCount": 614
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 614,
+   "minProseMeasureCh": 18.001,
+   "minimumAdjacentSectionGapPx": 65,
+   "interactiveElementCount": 5
+  },
+  "contract": {
+   "misses": [
+    "relative"
+   ],
+   "relative": {
+    "baselineRoute": "/legal/law-enforcement",
+    "predecessorInk": 0.079536,
+    "ink": 0.070197,
+    "ratio": 0.8825814725407363,
+    "floorInk": null,
+    "floorRatio": null,
+    "textBound": false,
+    "within": false
+   }
+  },
+  "corrected": {
+   "misses": [],
+   "relative": {
+    "baselineRoute": "/legal/law-enforcement",
+    "predecessorInk": 0.079536,
+    "ink": 0.070197,
+    "ratio": 0.8825814725407363,
+    "floorInk": 0.069009,
+    "floorRatio": 0.86764484007242,
+    "textBound": true,
+    "within": true
+   }
+  }
+ },
+ {
+  "routeId": "legal.law-enforcement",
+  "state": "complete",
+  "viewport": "1280x800",
+  "measurementPath": "/legal/law-enforcement",
+  "screenshotSha256": "2970ea81455b0d848f55f9d3a4ef76a2560d32074dc709a895bf56cc4a316c10",
+  "floorScreenshotSha256": "dfb5ae56b47efb518841541c2a35374c86077095699a429f5182086985eec288",
+  "ink": 0.037442,
+  "floorInk": 0.037061,
+  "predecessorInk": 0.061296,
+  "ratio": 0.6108392064735056,
+  "floorRatio": 0.6046234664578438,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 13,
+   "excludedOneLineLinkParagraphCount": 1,
+   "minProseParagraphMeasureCh": 45.117,
+   "topLevelSectionRowCount": 5,
+   "minimumVisualSectionGapPx": 97,
+   "aboveFoldTextCharacterCount": 874
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 874,
+   "minProseMeasureCh": 29.209,
+   "minimumAdjacentSectionGapPx": 97,
+   "interactiveElementCount": 5
+  },
+  "contract": {
+   "misses": [
+    "visibleCharacters",
+    "proseMin",
+    "relative"
+   ],
+   "relative": {
+    "baselineRoute": "/legal/law-enforcement",
+    "predecessorInk": 0.061296,
+    "ink": 0.037442,
+    "ratio": 0.6108392064735056,
+    "floorInk": null,
+    "floorRatio": null,
+    "textBound": false,
+    "within": false
+   }
+  },
+  "corrected": {
+   "misses": [
+    "visibleCharacters"
+   ],
+   "relative": {
+    "baselineRoute": "/legal/law-enforcement",
+    "predecessorInk": 0.061296,
+    "ink": 0.037442,
+    "ratio": 0.6108392064735056,
+    "floorInk": 0.037061,
+    "floorRatio": 0.6046234664578438,
+    "textBound": true,
+    "within": true
+   }
+  }
+ },
+ {
+  "routeId": "legal.research-consent",
+  "state": "complete",
+  "viewport": "390x844",
+  "measurementPath": "/legal/research-consent",
+  "screenshotSha256": "89ceda8a237612f6b16cc7838544ab73dec36d99e359fc285507b4a23c519c2b",
+  "floorScreenshotSha256": "c6c11d8eb657a9b54385249a54c3b6369cd35d1e1c916e79b7e039e55bf32f09",
+  "ink": 0.06804,
+  "floorInk": 0.066852,
+  "predecessorInk": 0.082398,
+  "ratio": 0.8257481977717906,
+  "floorRatio": 0.81133037209641,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 14,
+   "excludedOneLineLinkParagraphCount": 0,
+   "minProseParagraphMeasureCh": 31.888,
+   "topLevelSectionRowCount": 4,
+   "minimumVisualSectionGapPx": 65,
+   "aboveFoldTextCharacterCount": 654
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 779,
+   "minProseMeasureCh": 18.001,
+   "minimumAdjacentSectionGapPx": 65,
+   "interactiveElementCount": 5
+  },
+  "contract": {
+   "misses": [
+    "visibleCharacters",
+    "relative"
+   ],
+   "relative": {
+    "baselineRoute": "/legal/research-consent",
+    "predecessorInk": 0.082398,
+    "ink": 0.06804,
+    "ratio": 0.8257481977717906,
+    "floorInk": null,
+    "floorRatio": null,
+    "textBound": false,
+    "within": false
+   }
+  },
+  "corrected": {
+   "misses": [
+    "visibleCharacters"
+   ],
+   "relative": {
+    "baselineRoute": "/legal/research-consent",
+    "predecessorInk": 0.082398,
+    "ink": 0.06804,
+    "ratio": 0.8257481977717906,
+    "floorInk": 0.066852,
+    "floorRatio": 0.81133037209641,
+    "textBound": true,
+    "within": true
+   }
+  }
+ },
+ {
+  "routeId": "legal.research-consent",
+  "state": "complete",
+  "viewport": "1280x800",
+  "measurementPath": "/legal/research-consent",
+  "screenshotSha256": "03e4645e6ce4267ad5128d594ab0b9f7ca014df0d75d5c20290678321850eaab",
+  "floorScreenshotSha256": "3457119109b4718a677175087c467d8b5a861a6f546079b71cca588aca9078c7",
+  "ink": 0.035239,
+  "floorInk": 0.034679,
+  "predecessorInk": 0.053738,
+  "ratio": 0.655755703598943,
+  "floorRatio": 0.6453347724143065,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 13,
+   "excludedOneLineLinkParagraphCount": 1,
+   "minProseParagraphMeasureCh": 45.117,
+   "topLevelSectionRowCount": 4,
+   "minimumVisualSectionGapPx": 97,
+   "aboveFoldTextCharacterCount": 876
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 876,
+   "minProseMeasureCh": 29.209,
+   "minimumAdjacentSectionGapPx": 97,
+   "interactiveElementCount": 6
+  },
+  "contract": {
+   "misses": [
+    "visibleCharacters",
+    "proseMin",
+    "relative"
+   ],
+   "relative": {
+    "baselineRoute": "/legal/research-consent",
+    "predecessorInk": 0.053738,
+    "ink": 0.035239,
+    "ratio": 0.655755703598943,
+    "floorInk": null,
+    "floorRatio": null,
+    "textBound": false,
+    "within": false
+   }
+  },
+  "corrected": {
+   "misses": [
+    "visibleCharacters"
+   ],
+   "relative": {
+    "baselineRoute": "/legal/research-consent",
+    "predecessorInk": 0.053738,
+    "ink": 0.035239,
+    "ratio": 0.655755703598943,
+    "floorInk": 0.034679,
+    "floorRatio": 0.6453347724143065,
+    "textBound": true,
+    "within": true
+   }
+  }
+ },
+ {
+  "routeId": "legal.self-hosting",
+  "state": "complete",
+  "viewport": "390x844",
+  "measurementPath": "/legal/self-hosting",
+  "screenshotSha256": "a6791d8c234d6ccfbc7994055a8bb0115e978e15f0c7402f0ead0f21051ee800",
+  "floorScreenshotSha256": "02b726bf6028c4deb0edf12a42016da07920392ab019e315dd369e8b14ac2869",
+  "ink": 0.062833,
+  "floorInk": 0.061645,
+  "predecessorInk": null,
+  "ratio": null,
+  "floorRatio": null,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 8,
+   "excludedOneLineLinkParagraphCount": 0,
+   "minProseParagraphMeasureCh": 31.888,
+   "topLevelSectionRowCount": 2,
+   "minimumVisualSectionGapPx": 65,
+   "aboveFoldTextCharacterCount": 526
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 663,
+   "minProseMeasureCh": 18.001,
+   "minimumAdjacentSectionGapPx": 65,
+   "interactiveElementCount": 5
+  },
+  "contract": {
+   "misses": [],
+   "relative": null
+  },
+  "corrected": {
+   "misses": [],
+   "relative": null
+  }
+ },
+ {
+  "routeId": "legal.self-hosting",
+  "state": "complete",
+  "viewport": "1280x800",
+  "measurementPath": "/legal/self-hosting",
+  "screenshotSha256": "733bc1706cd6b60466cddcf1b286a25cd68012584d6b598c4c111c465eaae0c0",
+  "floorScreenshotSha256": "8963871e0ee6c184f3e8da8b5b371aa9964f3e0a5859e618ba8e242bd2e159f9",
+  "ink": 0.024148,
+  "floorInk": 0.023767,
+  "predecessorInk": null,
+  "ratio": null,
+  "floorRatio": null,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 7,
+   "excludedOneLineLinkParagraphCount": 1,
+   "minProseParagraphMeasureCh": 45.117,
+   "topLevelSectionRowCount": 2,
+   "minimumVisualSectionGapPx": 97,
+   "aboveFoldTextCharacterCount": 527
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 527,
+   "minProseMeasureCh": 29.209,
+   "minimumAdjacentSectionGapPx": 97,
+   "interactiveElementCount": 5
+  },
+  "contract": {
+   "misses": [
+    "proseMin"
+   ],
+   "relative": null
+  },
+  "corrected": {
+   "misses": [],
+   "relative": null
+  }
+ },
+ {
+  "routeId": "legal.state-genetic-privacy",
+  "state": "complete",
+  "viewport": "390x844",
+  "measurementPath": "/legal/state-genetic-privacy",
+  "screenshotSha256": "73fe9668506ee3990b782d29724b0c953a063db83a619d048618c2a47958669e",
+  "floorScreenshotSha256": "d2b8f2d21b94152f80719a31c3dbcc75d4c70ab08b85b8b546d5c6fe6baea7b1",
+  "ink": 0.062435,
+  "floorInk": 0.061247,
+  "predecessorInk": null,
+  "ratio": null,
+  "floorRatio": null,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 9,
+   "excludedOneLineLinkParagraphCount": 0,
+   "minProseParagraphMeasureCh": 31.888,
+   "topLevelSectionRowCount": 2,
+   "minimumVisualSectionGapPx": 65,
+   "aboveFoldTextCharacterCount": 525
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 525,
+   "minProseMeasureCh": 18.001,
+   "minimumAdjacentSectionGapPx": 65,
+   "interactiveElementCount": 5
+  },
+  "contract": {
+   "misses": [],
+   "relative": null
+  },
+  "corrected": {
+   "misses": [],
+   "relative": null
+  }
+ },
+ {
+  "routeId": "legal.state-genetic-privacy",
+  "state": "complete",
+  "viewport": "1280x800",
+  "measurementPath": "/legal/state-genetic-privacy",
+  "screenshotSha256": "24ee30f2cd1fe0b71dff42c794e5edd8c8505109b238ad3df3795b5523da3c50",
+  "floorScreenshotSha256": "1caa812dac089cb87aa5bd4d59b4ed07c13856beb268ed302103a598f641b3e4",
+  "ink": 0.023868,
+  "floorInk": 0.023486,
+  "predecessorInk": null,
+  "ratio": null,
+  "floorRatio": null,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 8,
+   "excludedOneLineLinkParagraphCount": 1,
+   "minProseParagraphMeasureCh": 45.117,
+   "topLevelSectionRowCount": 2,
+   "minimumVisualSectionGapPx": 97,
+   "aboveFoldTextCharacterCount": 564
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 564,
+   "minProseMeasureCh": 29.209,
+   "minimumAdjacentSectionGapPx": 97,
+   "interactiveElementCount": 5
+  },
+  "contract": {
+   "misses": [
+    "proseMin"
+   ],
+   "relative": null
+  },
+  "corrected": {
+   "misses": [],
+   "relative": null
+  }
+ },
+ {
+  "routeId": "legal.where-inherit-works",
+  "state": "complete",
+  "viewport": "390x844",
+  "measurementPath": "/legal/where-inherit-works",
+  "screenshotSha256": "3800b42b20cb863fd737f269df044581873c3a11fef687d74b200c647e57960c",
+  "floorScreenshotSha256": "ef29b44a0df874000b02475bd17bafaa9249b2d4bd49426bf45e0ed07f4e58ea",
+  "ink": 0.064054,
+  "floorInk": 0.062866,
+  "predecessorInk": null,
+  "ratio": null,
+  "floorRatio": null,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 13,
+   "excludedOneLineLinkParagraphCount": 0,
+   "minProseParagraphMeasureCh": 31.888,
+   "topLevelSectionRowCount": 4,
+   "minimumVisualSectionGapPx": 65,
+   "aboveFoldTextCharacterCount": 599
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 599,
+   "minProseMeasureCh": 18.001,
+   "minimumAdjacentSectionGapPx": 65,
+   "interactiveElementCount": 5
+  },
+  "contract": {
+   "misses": [],
+   "relative": null
+  },
+  "corrected": {
+   "misses": [],
+   "relative": null
+  }
+ },
+ {
+  "routeId": "legal.where-inherit-works",
+  "state": "complete",
+  "viewport": "1280x800",
+  "measurementPath": "/legal/where-inherit-works",
+  "screenshotSha256": "71d4f785af882d29b13f3f10fa5aa11304a463d13586a190716a0e6f1006f671",
+  "floorScreenshotSha256": "e1fd6ae3975059c00ddbb37901a019d54508d5f8e8f6830f5bdfddc3d1edd573",
+  "ink": 0.027688,
+  "floorInk": 0.027307,
+  "predecessorInk": null,
+  "ratio": null,
+  "floorRatio": null,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 12,
+   "excludedOneLineLinkParagraphCount": 1,
+   "minProseParagraphMeasureCh": 45.117,
+   "topLevelSectionRowCount": 4,
+   "minimumVisualSectionGapPx": 97,
+   "aboveFoldTextCharacterCount": 638
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 638,
+   "minProseMeasureCh": 29.209,
+   "minimumAdjacentSectionGapPx": 97,
+   "interactiveElementCount": 5
+  },
+  "contract": {
+   "misses": [
+    "proseMin"
+   ],
+   "relative": null
+  },
+  "corrected": {
+   "misses": [],
+   "relative": null
+  }
+ },
+ {
+  "routeId": "legal.privacy",
+  "state": "complete",
+  "viewport": "390x844",
+  "measurementPath": "/privacy",
+  "screenshotSha256": "0b0e8d7239d0b15939515f438a27e754d1d1957421a5a150cab3d1e25e52d309",
+  "floorScreenshotSha256": "2adb7d09c938b7f6970f2def3202530ac20187c9b6368e045baddb051bc80003",
+  "ink": 0.082176,
+  "floorInk": 0.080605,
+  "predecessorInk": 0.087125,
+  "ratio": 0.9431965566714491,
+  "floorRatio": 0.9251649928263989,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 28,
+   "excludedOneLineLinkParagraphCount": 0,
+   "minProseParagraphMeasureCh": 31.888,
+   "topLevelSectionRowCount": 13,
+   "minimumVisualSectionGapPx": 65,
+   "aboveFoldTextCharacterCount": 705
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 705,
+   "minProseMeasureCh": 18.001,
+   "minimumAdjacentSectionGapPx": 65,
+   "interactiveElementCount": 6
+  },
+  "contract": {
+   "misses": [
+    "visibleCharacters",
+    "relative"
+   ],
+   "relative": {
+    "baselineRoute": "/privacy",
+    "predecessorInk": 0.087125,
+    "ink": 0.082176,
+    "ratio": 0.9431965566714491,
+    "floorInk": null,
+    "floorRatio": null,
+    "textBound": false,
+    "within": false
+   }
+  },
+  "corrected": {
+   "misses": [
+    "visibleCharacters"
+   ],
+   "relative": {
+    "baselineRoute": "/privacy",
+    "predecessorInk": 0.087125,
+    "ink": 0.082176,
+    "ratio": 0.9431965566714491,
+    "floorInk": 0.080605,
+    "floorRatio": 0.9251649928263989,
+    "textBound": true,
+    "within": true
+   }
+  }
+ },
+ {
+  "routeId": "legal.privacy",
+  "state": "complete",
+  "viewport": "1280x800",
+  "measurementPath": "/privacy",
+  "screenshotSha256": "977d661fd256759eff517d757a5c3390211e38bc0e9c878d529c401089dc1294",
+  "floorScreenshotSha256": "f28ff42752d02ad10185cecfde2f01dfa8c34a188c95f77a1e6da3f61892b72d",
+  "ink": 0.031256,
+  "floorInk": 0.03075,
+  "predecessorInk": 0.058602,
+  "ratio": 0.5333606361557626,
+  "floorRatio": 0.5247261185625064,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 27,
+   "excludedOneLineLinkParagraphCount": 1,
+   "minProseParagraphMeasureCh": 45.117,
+   "topLevelSectionRowCount": 13,
+   "minimumVisualSectionGapPx": 97,
+   "aboveFoldTextCharacterCount": 819
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 819,
+   "minProseMeasureCh": 29.209,
+   "minimumAdjacentSectionGapPx": 97,
+   "interactiveElementCount": 6
+  },
+  "contract": {
+   "misses": [
+    "visibleCharacters",
+    "proseMin"
+   ],
+   "relative": {
+    "baselineRoute": "/privacy",
+    "predecessorInk": 0.058602,
+    "ink": 0.031256,
+    "ratio": 0.5333606361557626,
+    "floorInk": null,
+    "floorRatio": null,
+    "textBound": false,
+    "within": true
+   }
+  },
+  "corrected": {
+   "misses": [
+    "visibleCharacters"
+   ],
+   "relative": {
+    "baselineRoute": "/privacy",
+    "predecessorInk": 0.058602,
+    "ink": 0.031256,
+    "ratio": 0.5333606361557626,
+    "floorInk": 0.03075,
+    "floorRatio": 0.5247261185625064,
+    "textBound": false,
+    "within": true
+   }
+  }
+ },
+ {
+  "routeId": "marketing.providers",
+  "state": "complete",
+  "viewport": "390x844",
+  "measurementPath": "/providers",
+  "screenshotSha256": "5f3ea99770f7eff9e33ad78deccc5b8dd9cd20339afd2655190eba6e79a00eca",
+  "floorScreenshotSha256": "f4916f581635ea75dde970bbeb09d94087d753798b4948cf0a625fd9f36ff1d7",
+  "ink": 0.065029,
+  "floorInk": 0.057158,
+  "predecessorInk": 0.091737,
+  "ratio": 0.7088633811875252,
+  "floorRatio": 0.6230637583526821,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 180,
+   "excludedOneLineLinkParagraphCount": 0,
+   "minProseParagraphMeasureCh": 16.274,
+   "topLevelSectionRowCount": 2,
+   "minimumVisualSectionGapPx": 64,
+   "aboveFoldTextCharacterCount": 483
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 594,
+   "minProseMeasureCh": 16.274,
+   "minimumAdjacentSectionGapPx": 64,
+   "interactiveElementCount": 7
+  },
+  "contract": {
+   "misses": [
+    "relative"
+   ],
+   "relative": {
+    "baselineRoute": "/providers",
+    "predecessorInk": 0.091737,
+    "ink": 0.065029,
+    "ratio": 0.7088633811875252,
+    "floorInk": null,
+    "floorRatio": null,
+    "textBound": false,
+    "within": false
+   }
+  },
+  "corrected": {
+   "misses": [
+    "relative"
+   ],
+   "relative": {
+    "baselineRoute": "/providers",
+    "predecessorInk": 0.091737,
+    "ink": 0.065029,
+    "ratio": 0.7088633811875252,
+    "floorInk": 0.057158,
+    "floorRatio": 0.6230637583526821,
+    "textBound": false,
+    "within": false
+   }
+  }
+ },
+ {
+  "routeId": "marketing.providers",
+  "state": "complete",
+  "viewport": "1280x800",
+  "measurementPath": "/providers",
+  "screenshotSha256": "2367d495f801f4e5c917e6e7e6a00b12784b3191cec2fb403eb898919efcdafc",
+  "floorScreenshotSha256": "205427c6b14f1587d370d85aba1281642be9d4b8665959e22834adc5af0f35dd",
+  "ink": 0.03794,
+  "floorInk": 0.034979,
+  "predecessorInk": 0.075202,
+  "ratio": 0.5045078588335417,
+  "floorRatio": 0.465133906013138,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 41,
+   "excludedOneLineLinkParagraphCount": 17,
+   "minProseParagraphMeasureCh": 45.117,
+   "topLevelSectionRowCount": 2,
+   "minimumVisualSectionGapPx": 96,
+   "aboveFoldTextCharacterCount": 829
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 829,
+   "minProseMeasureCh": 29.209,
+   "minimumAdjacentSectionGapPx": 96,
+   "interactiveElementCount": 7
+  },
+  "contract": {
+   "misses": [
+    "visibleCharacters",
+    "proseMax",
+    "proseMin"
+   ],
+   "relative": {
+    "baselineRoute": "/providers",
+    "predecessorInk": 0.075202,
+    "ink": 0.03794,
+    "ratio": 0.5045078588335417,
+    "floorInk": null,
+    "floorRatio": null,
+    "textBound": false,
+    "within": true
+   }
+  },
+  "corrected": {
+   "misses": [
+    "visibleCharacters",
+    "proseMax"
+   ],
+   "relative": {
+    "baselineRoute": "/providers",
+    "predecessorInk": 0.075202,
+    "ink": 0.03794,
+    "ratio": 0.5045078588335417,
+    "floorInk": 0.034979,
+    "floorRatio": 0.465133906013138,
+    "textBound": false,
+    "within": true
+   }
+  }
+ },
+ {
+  "routeId": "science.index",
+  "state": "complete",
+  "viewport": "390x844",
+  "measurementPath": "/science",
+  "screenshotSha256": "0bd16174471312a84d5d23ea2e110521c2987376f87bbc79a3f51b860a923443",
+  "floorScreenshotSha256": "91f4cea8046bef0d13e8ec0ec3f9e54e8a8d049c35f68ec703523a13855ec57a",
+  "ink": 0.054092,
+  "floorInk": 0.052904,
+  "predecessorInk": null,
+  "ratio": null,
+  "floorRatio": null,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 67,
+   "excludedOneLineLinkParagraphCount": 0,
+   "minProseParagraphMeasureCh": 31.247,
+   "topLevelSectionRowCount": 4,
+   "minimumVisualSectionGapPx": 64,
+   "aboveFoldTextCharacterCount": 405
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 405,
+   "minProseMeasureCh": 18.001,
+   "minimumAdjacentSectionGapPx": 64,
+   "interactiveElementCount": 6
+  },
+  "contract": {
+   "misses": [],
+   "relative": null
+  },
+  "corrected": {
+   "misses": [],
+   "relative": null
+  }
+ },
+ {
+  "routeId": "science.index",
+  "state": "complete",
+  "viewport": "1280x800",
+  "measurementPath": "/science",
+  "screenshotSha256": "6789880fa78cb90f78e2925d3973899be4ad765297f5c8446045ac3a0d9d5e8d",
+  "floorScreenshotSha256": "03e6a38f4290b3183bbdaebf16bdf10555c313e5115970840961bf1f11b85f5d",
+  "ink": 0.028748,
+  "floorInk": 0.028362,
+  "predecessorInk": null,
+  "ratio": null,
+  "floorRatio": null,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 66,
+   "excludedOneLineLinkParagraphCount": 1,
+   "minProseParagraphMeasureCh": 45.117,
+   "topLevelSectionRowCount": 4,
+   "minimumVisualSectionGapPx": 96,
+   "aboveFoldTextCharacterCount": 571
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 571,
+   "minProseMeasureCh": 29.209,
+   "minimumAdjacentSectionGapPx": 96,
+   "interactiveElementCount": 6
+  },
+  "contract": {
+   "misses": [
+    "proseMin"
+   ],
+   "relative": null
+  },
+  "corrected": {
+   "misses": [],
+   "relative": null
+  }
+ },
+ {
+  "routeId": "science.limits",
+  "state": "complete",
+  "viewport": "390x844",
+  "measurementPath": "/science/limits",
+  "screenshotSha256": "99c7867499ff26386bb86fb764f15a646e974aed38d2e0653f6e504681252967",
+  "floorScreenshotSha256": "4b727d3abab1a5dc4df1a72821353da8464bf709eb82a448d530d4331d87b838",
+  "ink": 0.063926,
+  "floorInk": 0.062738,
+  "predecessorInk": null,
+  "ratio": null,
+  "floorRatio": null,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 10,
+   "excludedOneLineLinkParagraphCount": 0,
+   "minProseParagraphMeasureCh": 31.888,
+   "topLevelSectionRowCount": 3,
+   "minimumVisualSectionGapPx": 65,
+   "aboveFoldTextCharacterCount": 524
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 574,
+   "minProseMeasureCh": 18.001,
+   "minimumAdjacentSectionGapPx": 65,
+   "interactiveElementCount": 5
+  },
+  "contract": {
+   "misses": [],
+   "relative": null
+  },
+  "corrected": {
+   "misses": [],
+   "relative": null
+  }
+ },
+ {
+  "routeId": "science.limits",
+  "state": "complete",
+  "viewport": "1280x800",
+  "measurementPath": "/science/limits",
+  "screenshotSha256": "ceff8935133ef255598d60fbeaa1b6a96b44633ce3337c7d6a22431143a8f3ea",
+  "floorScreenshotSha256": "5f404456a228ad568aa3b6360aca66931acbada88d18754c05ccd7f4a5b8043a",
+  "ink": 0.022243,
+  "floorInk": 0.021861,
+  "predecessorInk": null,
+  "ratio": null,
+  "floorRatio": null,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 9,
+   "excludedOneLineLinkParagraphCount": 1,
+   "minProseParagraphMeasureCh": 45.117,
+   "topLevelSectionRowCount": 3,
+   "minimumVisualSectionGapPx": 97,
+   "aboveFoldTextCharacterCount": 457
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 457,
+   "minProseMeasureCh": 29.209,
+   "minimumAdjacentSectionGapPx": 97,
+   "interactiveElementCount": 5
+  },
+  "contract": {
+   "misses": [
+    "proseMin"
+   ],
+   "relative": null
+  },
+  "corrected": {
+   "misses": [],
+   "relative": null
+  }
+ },
+ {
+  "routeId": "science.positions",
+  "state": "complete",
+  "viewport": "390x844",
+  "measurementPath": "/science/positions",
+  "screenshotSha256": "7bd3c63ffd2ec83206512b136d4be20d1dc547e184a7b4e6d86d5cbe09e160b8",
+  "floorScreenshotSha256": "2ae4d0557b7e6e996734ac52dcb09d2d82325b707f127da1ca42f8be66b7e9bb",
+  "ink": 0.059467,
+  "floorInk": 0.058279,
+  "predecessorInk": null,
+  "ratio": null,
+  "floorRatio": null,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 9,
+   "excludedOneLineLinkParagraphCount": 0,
+   "minProseParagraphMeasureCh": 31.888,
+   "topLevelSectionRowCount": 3,
+   "minimumVisualSectionGapPx": 65,
+   "aboveFoldTextCharacterCount": 480
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 509,
+   "minProseMeasureCh": 18.001,
+   "minimumAdjacentSectionGapPx": 65,
+   "interactiveElementCount": 5
+  },
+  "contract": {
+   "misses": [],
+   "relative": null
+  },
+  "corrected": {
+   "misses": [],
+   "relative": null
+  }
+ },
+ {
+  "routeId": "science.positions",
+  "state": "complete",
+  "viewport": "1280x800",
+  "measurementPath": "/science/positions",
+  "screenshotSha256": "0fdc6eae11f0df39b022d6342f24b10fa25e65298d26d2314f3c103a0c2e88cf",
+  "floorScreenshotSha256": "57e813bb0443a3d5847bb0138194b923af4e64717cc82c8edf193b87cbd3f7c4",
+  "ink": 0.02827,
+  "floorInk": 0.027888,
+  "predecessorInk": null,
+  "ratio": null,
+  "floorRatio": null,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 8,
+   "excludedOneLineLinkParagraphCount": 1,
+   "minProseParagraphMeasureCh": 45.117,
+   "topLevelSectionRowCount": 3,
+   "minimumVisualSectionGapPx": 97,
+   "aboveFoldTextCharacterCount": 548
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 548,
+   "minProseMeasureCh": 29.209,
+   "minimumAdjacentSectionGapPx": 97,
+   "interactiveElementCount": 5
+  },
+  "contract": {
+   "misses": [
+    "proseMin"
+   ],
+   "relative": null
+  },
+  "corrected": {
+   "misses": [],
+   "relative": null
+  }
+ },
+ {
+  "routeId": "legal.terms",
+  "state": "complete",
+  "viewport": "390x844",
+  "measurementPath": "/terms",
+  "screenshotSha256": "7c0f5904d672770d85543fc7e8b97e357fe703a2e7de307cdd9344dcfb44635b",
+  "floorScreenshotSha256": "5ff56e7841dd401f5fd0e292b30863f485f314b6f46d62decd103581ea69a1df",
+  "ink": 0.071916,
+  "floorInk": 0.070729,
+  "predecessorInk": 0.07586,
+  "ratio": 0.9480094911679409,
+  "floorRatio": 0.9323622462430794,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 25,
+   "excludedOneLineLinkParagraphCount": 0,
+   "minProseParagraphMeasureCh": 31.888,
+   "topLevelSectionRowCount": 12,
+   "minimumVisualSectionGapPx": 65,
+   "aboveFoldTextCharacterCount": 688
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 939,
+   "minProseMeasureCh": 18.001,
+   "minimumAdjacentSectionGapPx": 65,
+   "interactiveElementCount": 5
+  },
+  "contract": {
+   "misses": [
+    "visibleCharacters",
+    "relative"
+   ],
+   "relative": {
+    "baselineRoute": "/terms",
+    "predecessorInk": 0.07586,
+    "ink": 0.071916,
+    "ratio": 0.9480094911679409,
+    "floorInk": null,
+    "floorRatio": null,
+    "textBound": false,
+    "within": false
+   }
+  },
+  "corrected": {
+   "misses": [
+    "visibleCharacters"
+   ],
+   "relative": {
+    "baselineRoute": "/terms",
+    "predecessorInk": 0.07586,
+    "ink": 0.071916,
+    "ratio": 0.9480094911679409,
+    "floorInk": 0.070729,
+    "floorRatio": 0.9323622462430794,
+    "textBound": true,
+    "within": true
+   }
+  }
+ },
+ {
+  "routeId": "legal.terms",
+  "state": "complete",
+  "viewport": "1280x800",
+  "measurementPath": "/terms",
+  "screenshotSha256": "2b945603af53c1dbd79cbbb38774f5c466174ba32de7dfbf2aa38e6d365c9485",
+  "floorScreenshotSha256": "cb8761d89674e8555a92532ff374ef10a9aa36bfb358e2ffcb27f95e15b40abb",
+  "ink": 0.036487,
+  "floorInk": 0.036105,
+  "predecessorInk": 0.056184,
+  "ratio": 0.6494197636337747,
+  "floorRatio": 0.6426206749252457,
+  "readings": {
+   "moduleSha256": "f09f9b49811a9aede8b3aa338cba1f3b342bc97bbbb341e3419c1041ce908a64",
+   "proseParagraphCount": 24,
+   "excludedOneLineLinkParagraphCount": 1,
+   "minProseParagraphMeasureCh": 45.117,
+   "topLevelSectionRowCount": 12,
+   "minimumVisualSectionGapPx": 97,
+   "aboveFoldTextCharacterCount": 1035
+  },
+  "frozen": {
+   "visibleTextCharacterCount": 1035,
+   "minProseMeasureCh": 29.209,
+   "minimumAdjacentSectionGapPx": 97,
+   "interactiveElementCount": 6
+  },
+  "contract": {
+   "misses": [
+    "visibleCharacters",
+    "proseMin",
+    "relative"
+   ],
+   "relative": {
+    "baselineRoute": "/terms",
+    "predecessorInk": 0.056184,
+    "ink": 0.036487,
+    "ratio": 0.6494197636337747,
+    "floorInk": null,
+    "floorRatio": null,
+    "textBound": false,
+    "within": false
+   }
+  },
+  "corrected": {
+   "misses": [
+    "visibleCharacters"
+   ],
+   "relative": {
+    "baselineRoute": "/terms",
+    "predecessorInk": 0.056184,
+    "ink": 0.036487,
+    "ratio": 0.6494197636337747,
+    "floorInk": 0.036105,
+    "floorRatio": 0.6426206749252457,
+    "textBound": true,
+    "within": true
+   }
+  }
+ }
+]

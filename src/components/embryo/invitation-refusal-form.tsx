@@ -1,6 +1,7 @@
 "use client";
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import { useCsrf } from "@/components/security/csrf-provider";
 import { Button } from "@/components/ui/button";
 
 export function InvitationRefusalReceipt() {
@@ -13,16 +14,17 @@ export function InvitationRefusalReceipt() {
 
 export function InvitationRefusalForm({ nonce }: { nonce: string }) {
   const router = useRouter();
+  const csrf = useCsrf("api.withdraw");
   const [status, setStatus] = useState<"ready" | "pending" | "done" | "failed">("ready");
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (status === "pending") return;
     setStatus("pending");
     try {
-      const response = await fetch("/api/withdraw/session", {
-        method: "POST", headers: { "content-type": "application/json" },
+      const response = await csrf.send((csrfToken) => fetch("/api/withdraw/session", {
+        method: "POST", headers: { "content-type": "application/json", "X-Inherit-CSRF": csrfToken },
         body: JSON.stringify({ operation: "refuse", nonce }),
-      });
+      }));
       const body = await response.json();
       if (response.status !== 202 || body.status !== "accepted" || body.operation !== "refuse") {
         setStatus("failed"); return;

@@ -18,6 +18,23 @@ export type PathBPurpose = (typeof PATH_B_PURPOSES)[number];
 export const PATH_B_DIRECTIONS = ["self", "uploader"] as const;
 export type PathBDirection = (typeof PATH_B_DIRECTIONS)[number];
 
+/**
+ * Everything the person can turn on and off: the three result layers, and
+ * since 20 November 2026 (owner decision "G8.5: Copilot for another adult's
+ * record opens") `copilot.local` for the person who added the file. Copilot
+ * has no "for you" row (the person's own Copilot is their own permission) and
+ * is no result layer: it lets that person's own local model read the report
+ * layers shared with them, and nothing else.
+ */
+export const PATH_B_CHOICE_PURPOSES = [...PATH_B_PURPOSES, "copilot.local"] as const;
+export type PathBChoicePurpose = (typeof PATH_B_CHOICE_PURPOSES)[number];
+
+/** The approved text one choice is signed under, or null where that direction has no such choice. */
+export function pathBGrantText(direction: PathBDirection, purpose: PathBChoicePurpose): string | null {
+  if (purpose === "copilot.local") return direction === "uploader" ? "consent.share-with-adult" : null;
+  return PATH_B_GRANT_TEXT[direction][purpose];
+}
+
 /** The approved text each layer and direction is granted under, and the statements it records. */
 export const PATH_B_GRANT_TEXT: Record<PathBDirection, Record<PathBPurpose, string>> = {
   self: { "reports.monogenic": "consent.own-monogenic", "reports.polygenic": "consent.own-polygenic", ancestry: "consent.own-ancestry" },
@@ -32,7 +49,7 @@ export const PATH_B_STATEMENTS: Record<PathBDirection, readonly string[]> = {
 export const pathBPurposeBody = z.object({
   action: z.literal("grant-purpose"),
   subjectId: z.uuid(),
-  purposeKey: z.enum(PATH_B_PURPOSES),
+  purposeKey: z.enum(PATH_B_CHOICE_PURPOSES),
   artifactVersion: z.number().int().positive().safe(),
   artifactPresentationToken: z.string().min(16).max(4096),
   affirmed: z.literal(true),
@@ -54,8 +71,8 @@ export const pathBPersonChoices = z.array(z.object({
   label: z.string().min(1).max(200),
   uploaderShare: decision,
   readGate: z.object({ "reports.monogenic": gate, "reports.polygenic": gate, ancestry: gate }).strict(),
-  grants: z.array(z.object({ grantId: z.uuid(), purpose: z.enum(PATH_B_PURPOSES), direction: z.enum(PATH_B_DIRECTIONS),
-    grantedAt: z.string() }).strict()).max(12),
+  grants: z.array(z.object({ grantId: z.uuid(), purpose: z.enum(PATH_B_CHOICE_PURPOSES), direction: z.enum(PATH_B_DIRECTIONS),
+    grantedAt: z.string() }).strict()).max(14),
 }).strict()).max(100);
 export type PathBPersonChoices = z.infer<typeof pathBPersonChoices>;
 
@@ -68,9 +85,11 @@ export type PathBUploaderShares = z.infer<typeof pathBUploaderShares>;
 
 /** One row of the person's choices as the page renders it. */
 export interface PathBChoice {
-  purpose: PathBPurpose;
+  purpose: PathBChoicePurpose;
   direction: PathBDirection;
   grantId: string | null;
+  /** With a grant: the one-time nonce the page rendered for its revocation (G5.6, 23 Oct 2026). */
+  revokeNonce: string | null;
   /** Present when the layer can be turned on now: a sealed presentation for exactly this row. */
   offer: { token: string; artifactVersion: number; artifactBody: string } | null;
 }

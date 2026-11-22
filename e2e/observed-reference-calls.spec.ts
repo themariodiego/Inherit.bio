@@ -6,6 +6,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { adminClient, createConfirmedUser, signIn } from "./helpers";
 import { PERSONAL_PREVIEW_TRAITS } from "../src/copy/reports/personal-previews";
+import { accountCsrf } from "./helpers/session-csrf";
 
 test("explicit VCF reference calls match array findings without entering variant-only analyses", async ({ page }) => {
   const admin = adminClient();
@@ -44,10 +45,10 @@ test("explicit VCF reference calls match array findings without entering variant
         expect(call).toMatchObject({ source_sha256: sourceHash, extraction_version: "vcf-literal-diploid-snp-v1", usable: true });
       }
       expect((await admin.from("user_variants").select("id").eq("file_id", id)).data).toEqual([]);
-      const reprocessed = await page.evaluate(async (fileId) => {
-        const response = await fetch(`/api/files/${fileId}/process`, { method: "POST" });
+      const reprocessed = await page.evaluate(async ({ fileId, csrf }) => {
+        const response = await fetch(`/api/files/${fileId}/process`, { method: "POST", headers: { "X-Inherit-CSRF": csrf } });
         return { status: response.status, body: await response.json() };
-      }, id);
+      }, { fileId: id, csrf: await accountCsrf(page, "api.file-process") });
       expect(reprocessed.status).toBe(200);
       expect(reprocessed.body).toMatchObject({ fileId: id, analysisState: "active" });
       expect((await admin.from("report_observed_calls").select("*").eq("file_id", id).order("source_line")).data).toEqual(before.data);

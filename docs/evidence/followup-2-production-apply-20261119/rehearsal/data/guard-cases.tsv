@@ -1,0 +1,8 @@
+# LOCAL ONLY: 20261025400000's revised predecessor guard on the mirror of the follow-up's post-state (rehearsal/scripts/negatives-m04-guard.sh), 2026-11-19.
+# Each case: one rolled-back transaction (a setup, then the file as the CLI runs it, then a probe of its door); state = fingerprint SHA-256 and ledger before vs after.
+# Columns: case, the callee's md5 and the count of distinct callees matched (of 6), the error, the door afterwards, the state.
+stripped-body	callee md5 78d147935e25d657d8df631583c6faea distinct callees matched 6 		door after the file: present	state unchanged
+repository-body	callee md5 7fa7e1fe73fc4db2ecf9af8a7b26d265 distinct callees matched 6 		door after the file: present	state unchanged
+third-body	callee md5 2eac3ff2c516a464979840620ad5b08f distinct callees matched 5 	ERROR:  path a typed name prerequisite differs		state unchanged
+callee-missing	callee md5 absent distinct callees matched 5 	ERROR:  path a typed name prerequisite differs		state unchanged
+other-callee-changed	callee md5 78d147935e25d657d8df631583c6faea distinct callees matched 5 	ERROR:  path a typed name prerequisite differs		state unchanged

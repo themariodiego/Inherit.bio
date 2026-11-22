@@ -45,6 +45,7 @@ import {
   viewerMissingStep,
 } from "@/copy/family/portrait";
 import { TRAIT_KEYS } from "@/lib/family/traits";
+import { accountCsrf, signOut } from "./helpers/session-csrf";
 
 /**
  * `/family/portrait/[pairId]` (design docs/design/w9-family-surfaces.md
@@ -297,7 +298,7 @@ test("both adults add the synthetic file to their own record", async ({ page, re
   for (const account of [A, B]) {
     await signIn(page, account.email, account.password);
     sourceFileIds.push(await uploadOwnFilePrepared(page, fixture, { fileType: "vcf" }));
-    await page.request.post("/auth/sign-out");
+    await signOut(page);
   }
   const sources = await adminClient().from("genome_files").select("id,user_id,subject_id,sha256,upload_revision,normalization_source_revision,normalization_completed_at,status")
     .in("id", sourceFileIds).order("id");
@@ -313,7 +314,7 @@ test("both adults add the synthetic file to their own record", async ({ page, re
   const token = await drainMailUntil(request, () => adultInvitationToken(captured
     .find(email => (Array.isArray(email.to) ? email.to : [email.to]).includes(B.email))
     ?.html), "the invitation");
-  await page.request.post("/auth/sign-out");
+  await signOut(page);
   await acceptAdultInvitation({
     page, invitationUrl: adultInvitationUrl(token), email: B.email, password: B.password,
   });
@@ -349,7 +350,7 @@ test("both adults add the synthetic file to their own record", async ({ page, re
     .eq("id", binding.data!.account_principal_id).single();
   expect(boundSelf.error).toBeNull();
   expect(boundSelf.data).toEqual({ account_id: accountB, subject_id: selfSubjectB, principal_kind: "account_subject", status: "active" });
-  await page.request.post("/auth/sign-out");
+  await signOut(page);
   // B signs in independently and only reads the permission presentation.
   await signIn(page, B.email, B.password);
   await page.goto(`/family/s-${selfSubjectA}/permissions`);
@@ -438,9 +439,11 @@ test("A acknowledges through the real checkbox, for A's own subject only", async
   expect(await acknowledgedAt(selfSubjectA)).toBeNull();
 
   // The endpoint refuses the other person's subject from this session, and
-  // stamps nothing: the acknowledgement is one person's own, always.
+  // stamps nothing: the acknowledgement is one person's own, always. The
+  // request carries this session's own fresh X-Inherit-CSRF token (G8.5), so
+  // the refusal is the route's own.
   const foreign = await page.request.post("/api/family/acknowledge", {
-    headers: { origin: "http://localhost:3100" },
+    headers: { origin: "http://localhost:3100", "x-inherit-csrf": await accountCsrf(page, "api.family-acknowledge") },
     data: { acknowledgement: "portrait", subjectId: selfSubjectB, affirmed: true },
   });
   expect(foreign.ok()).toBe(false);
@@ -472,7 +475,7 @@ test("once B has turned Portrait on and acknowledged, the page withholds every r
   await acknowledgement.getByRole("button", { name: ACKNOWLEDGE_BUTTON }).click();
   await expect(page.getByText(GATE_CHECKBOX, { exact: true })).toBeVisible();
   expect(await acknowledgedAt(selfSubjectB)).not.toBeNull();
-  await page.request.post("/auth/sign-out");
+  await signOut(page);
   expect((await pairOf()).status).toBe("current");
 
   await signIn(page, A.email, A.password);
@@ -615,7 +618,7 @@ test("A's session and B's session render byte-equal finding text (brief line 133
   expect(fromA).toEqual([]);
   const unavailableA = await page.locator('[data-slot="portrait-empty"]').textContent();
   expect(unavailableA).toBe(NO_CLASSIFIED_POSITIONS);
-  await page.request.post("/auth/sign-out");
+  await signOut(page);
 
   await signIn(page, B.email, B.password);
   await passGate(page);
@@ -708,7 +711,7 @@ test("B deletes it: the page closes for both on the next request, and B's own gr
   expect(preserved.error).toBeNull(); expect(preserved.data).toEqual(sourceBefore);
 
   // Acceptance 19: A's very next request is the blocking screen naming B, with nothing derived.
-  await page.request.post("/auth/sign-out");
+  await signOut(page);
   await signIn(page, A.email, A.password);
   await page.goto(url());
   const blockingForA = page.locator('[data-slot="portrait-blocking"]');

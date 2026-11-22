@@ -21,6 +21,8 @@ import { subjectNormalizationReceipt } from "./subject-upload-contract";
 import { normalizationDatabaseCompletion } from "./normalization-database";
 import { IncrementalVcfError, prepareIncrementalVcf, type PositionEntry } from "./incremental-vcf-normalization";
 import { createRohAccumulator, rohRecordPayload, type RohAccumulator } from "../family/roh";
+import { isTestJurisdictionEnabled } from "../legal/jurisdictions";
+import { isReadCallsHeaderLine, readCallsProvenance } from "../genome/reads/provenance";
 
 const uuid = z.uuid().regex(/^[0-9a-f-]+$/);
 const positive = z.number().int().positive().safe();
@@ -151,8 +153,15 @@ export async function normalizeSubjectFile(
     }
     const isVcf = source.fileType === "vcf" || source.fileType === "gvcf";
     const claims = new Set<Build>();
+    // The read caller's own header lines (ADR 0038), bounded; looked at only
+    // to decide whether TEST-LOCAL records read-calling provenance.
+    const readCallLines: string[] = [];
+    let readCallLinesOverflow = false;
     for await (const line of verifiedLines(ranges(), source)) {
       if (!line.startsWith("#")) continue;
+      if (isVcf && isReadCallsHeaderLine(line)) {
+        if (readCallLines.length < 16) readCallLines.push(line); else readCallLinesOverflow = true;
+      }
       if (isVcf) { const build = buildFromHeader(line); if (build) claims.add(build); }
       else for (const match of line.matchAll(/(build\s*|GRCh|hg)(\d+)/gi)) {
         const number = match[1].toLowerCase() === "hg" && match[2] === "19" ? "37" : match[2];
@@ -171,13 +180,17 @@ export async function normalizeSubjectFile(
     // source-build calls as the verified bytes stream past (D-030), the same
     // calls the legacy processing route measures.
     const runs = createRohAccumulator();
+    // Production never records it: the gate is the deployment, not the file.
+    const readCalls = isVcf && !readCallLinesOverflow
+      ? readCallsProvenance(readCallLines, isTestJurisdictionEnabled()) : null;
     async function completePrepared(variantCount: number, observedCallCount: number,
       attempted: number, unmapped: number, chainSha256: string | null) {
       const completed = await call("complete", { sourceBuild: build, rawSha256: source.rawSha256,
         decodedSha256: source.decodedSha256, variantCount, observedCallCount,
         provenance: { version: INPUT_PROVENANCE_VERSION, sourceSha256: source.rawSha256, sourceBuild: build,
           buildBasis: counts.buildClaim ? "source-declared" : "format-assumption", targetBuild: "GRCh38",
-          chainSha256, variantRowsMapped: variantCount, variantRowsUnmapped: unmapped, attempted, counts },
+          chainSha256, variantRowsMapped: variantCount, variantRowsUnmapped: unmapped, attempted, counts,
+          ...(readCalls ? { readCalls } : {}) },
       });
       const receipt = subjectNormalizationReceipt.safeParse(completed.data);
       if (completed.error || !receipt.success || receipt.data.fileId !== fileId) refuse();

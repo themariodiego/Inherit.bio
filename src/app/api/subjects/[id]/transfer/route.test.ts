@@ -1,5 +1,9 @@
 import crypto from "node:crypto";
 import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
+// The one-time X-Inherit-CSRF gate is driven on this route by
+// src/lib/security/session-csrf-routes.test.ts; here it admits every request.
+vi.mock("@/lib/security/session-csrf", async (importOriginal) =>
+  (await import("@/lib/security/session-csrf.test-support")).admitEverySessionCsrf(await importOriginal()));
 
 vi.stubEnv("BYOK_ENCRYPTION_KEY", crypto.randomBytes(32).toString("base64"));
 
@@ -65,7 +69,7 @@ beforeEach(() => {
 });
 
 describe("POST /api/subjects/[id]/transfer", () => {
-  it("is not found while the door is closed, after one call with the code's hash", async () => {
+  it("is not found when the door refuses, after one call with the code's hash", async () => {
     const code = transferCode();
     const response = await call({ body: { nonce: code } });
     expect(response.status).toBe(404);

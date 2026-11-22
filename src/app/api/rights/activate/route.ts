@@ -4,6 +4,7 @@ import { readRightsActivationCandidate } from "@/lib/embryos/rights-activation";
 import { invitationTokenHash, newRightsSessionSecret, rightsCookie, rightsSessionHash } from "@/lib/embryos/rights-session";
 import { rightsActivateBody } from "@/lib/embryos/routes";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { withPurposeCsrf, readCandidateCsrfSession } from "@/lib/security/session-csrf";
 
 /**
  * `POST /api/rights/activate` (register api.rights-activate; contract
@@ -15,7 +16,10 @@ import { createAdminClient } from "@/lib/supabase/admin";
  * with no session and no hint of which check failed. The destination is
  * fixed by the token's purpose, never by the request.
  */
-export async function POST(request: Request) {
+// The candidate's own token, rendered with it by /withdraw/request. A success
+// replaces the candidate with a rights session, so no successor is issued.
+export const POST = withPurposeCsrf("api.rights-activate", readCandidateCsrfSession, handlePost, { rotate: false });
+async function handlePost(request: Request) {
   const parsed = rightsActivateBody.safeParse(await readJson(request));
   if (!parsed.success) return notFound();
   const form = readRightsActivationCandidate(request, parsed.data.nonce);

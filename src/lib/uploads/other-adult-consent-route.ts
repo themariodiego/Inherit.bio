@@ -35,9 +35,9 @@ export async function otherAdultUploadConsent(request: Request, payload: unknown
   if (request.headers.get("origin") !== new URL(request.url).origin
     || request.headers.get("sec-fetch-site") !== "same-origin") return ownUploadJson({ error: "forbidden" }, 403);
   const body = parsed.data;
-  if (request.headers.get("x-inherit-csrf") !== body.artifactPresentationToken) {
-    return ownUploadJson({ error: "forbidden" }, 403);
-  }
+  // The presentation token is the body's artifactPresentationToken, checked
+  // below; api.consents verifies and spends the account session's
+  // X-Inherit-CSRF before this runs (G8.5, 19 November 2026).
   const actor = await currentOwnUploadAccount();
   if (!actor) return ownUploadJson({ error: "unauthorized" }, 401);
   if (!(await otherAdultUploadAvailable(actor.accountId))) return ownUploadJson({ error: "not_found" }, 404);

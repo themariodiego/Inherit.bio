@@ -235,6 +235,12 @@ export const PATH_B_CHOICES_COPY = {
   readyShared: (label: string) => `${label} has shared reports ready to read.`,
   readResults: (layer: string) => `Read your ${layer.toLowerCase()}`,
   openShared: "Read shared reports",
+  // Copilot, for the person who added the file only (owner decision of
+  // 19 November 2026, "G8.5: Copilot for another adult's record opens").
+  // Drafts awaiting the owner's approval of the permission wording.
+  copilotLabel: "Copilot",
+  copilotConsequence: "They can ask Copilot about the reports you share with them, on a model that runs on their own computer.",
+  affirmCopilot: "I let the person who added my file ask Copilot about the reports I share with them.",
 } as const;
 
 /**
@@ -256,8 +262,13 @@ export const PATH_B_CHOICES_COPY = {
  *
  * Ancestry is not listed: a Path B ancestry choice can be recorded, but no
  * job makes an ancestry result from this file. Family pages read the
- * person's own record, never this file, and Copilot never reads it: the
- * file's descriptor closes the legacy chat scope (hasCanonicalCopilotScope).
+ * person's own record, never this file. Since 20 November 2026 (owner
+ * decision "G8.5: Copilot for another adult's record opens") the person may
+ * also turn Copilot on for the person who added the file: that person's own
+ * local model then reads the saved reports already shared with them
+ * (src/lib/copilot/subject-chat.ts). It makes nothing new from the file, so
+ * this list does not change; whether this notice should say so is the
+ * owner's question (docs/evidence/release-4-notes-20261119.md).
  */
 export const ADULT_UPLOAD_DERIVED_LIST = {
   heading: "What can be made from this file",

@@ -150,16 +150,22 @@ describe("the claim session (claim-session-api-v1)", () => {
 });
 
 describe("claim mutation credential rotation",()=>{
-  it("binds distinct CSRF to the current cookie, operation and page nonce",async()=>{
-    const {claimMutationCsrf,claimMutationCsrfMatches,newClaimSessionRotation}=await import("./claim-session");
+  // 2026-11-19 (G8.5, the migration stage): the claim page renders the claim session's one-time
+  // tokens (claimSessionCsrf), bound to the cookie's hash and the route; the digest of the claim, the
+  // operation and the page nonce (claimMutationCsrf) is gone, and the nonce stays in the body. The
+  // old lines asserted the digest's bindings; these assert the token's, for the rotation they share.
+  it("binds each route's one-time token to the current cookie, and the rotated cookie's token is another",async()=>{
+    const {claimSessionCsrf,newClaimSessionRotation}=await import("./claim-session");
+    const {verifySessionCsrf}=await import("@/lib/security/session-csrf-core");
     const current=newClaimSessionRotation();
     const successor=newClaimSessionRotation();
-    const value=claimMutationCsrf(current.sessionHash,"documents","page-nonce");
-    expect(claimMutationCsrfMatches(value,current.sessionHash,"documents","page-nonce")).toBe(true);
-    expect(claimMutationCsrfMatches(value,successor.sessionHash,"documents","page-nonce")).toBe(false);
-    expect(claimMutationCsrfMatches(value,current.sessionHash,"complete","page-nonce")).toBe(false);
-    expect(claimMutationCsrfMatches(value,current.sessionHash,"documents","other-nonce")).toBe(false);
-    expect(claimMutationCsrfMatches("page-nonce",current.sessionHash,"documents","page-nonce")).toBe(false);
+    const value=claimSessionCsrf(current.sessionHash);
+    const claim=(sessionHash:string)=>({kind:"claim-session" as const,sessionHash});
+    expect(verifySessionCsrf(value.documents,claim(current.sessionHash),"api.future-person-claim-document-session")).not.toBeNull();
+    expect(verifySessionCsrf(value.complete,claim(current.sessionHash),"api.future-person-claim-complete")).not.toBeNull();
+    expect(verifySessionCsrf(value.documents,claim(successor.sessionHash),"api.future-person-claim-document-session")).toBeNull();
+    expect(verifySessionCsrf(value.documents,claim(current.sessionHash),"api.future-person-claim-complete")).toBeNull();
+    expect(verifySessionCsrf(value.complete,claim(current.sessionHash),"api.future-person-claim-document-session")).toBeNull();
     expect(successor.setCookie(new Date(NOW+60_000),NOW)).toContain("Max-Age=60;");
     expect(successor.setCookie(new Date(NOW-1),NOW)).toContain("Max-Age=0;");
     expect(successor.setCookie(new Date(NOW+172_800_000),NOW)).toContain("Max-Age=86400;");

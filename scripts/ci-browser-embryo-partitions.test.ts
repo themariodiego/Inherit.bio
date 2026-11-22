@@ -8,6 +8,7 @@ const journeys = [
   { project: "chromium", file: "embryo-qc-second-seed-journey.spec.ts", cases: 1 },
   { project: "chromium", file: "reviews-keyless-owner-notice-journey.spec.ts", cases: 1 },
   { project: "chromium", file: "embryo-third-party-journey.spec.ts", cases: 1 },
+  { project: "chromium", file: "future-person-claimed-record-journey.spec.ts", cases: 1 },
 ];
 describe("fresh native embryo partitions", () => {
   it("requires all inventoried journeys but permits only one in each fresh job", () => {
@@ -28,6 +29,11 @@ describe("fresh native embryo partitions", () => {
     expect(() => assertEmbryoJourneyPartition([{ ...journeys[4], project: "embryo-ingest" }], false)).toThrow();
     for (const earlier of journeys.slice(0, 4))
       expect(() => assertEmbryoJourneyPartition([earlier, journeys[4]], false)).toThrow("at most one");
+    // 2026-10-22: the sixth journey, G5.4's claimed record, needs its own fresh job too.
+    expect(() => assertEmbryoJourneyPartition(journeys.slice(0, 5), true)).toThrow("at most one");
+    expect(() => assertEmbryoJourneyPartition([{ ...journeys[5], project: "embryo-ingest" }], false)).toThrow();
+    for (const earlier of journeys.slice(0, 5))
+      expect(() => assertEmbryoJourneyPartition([earlier, journeys[5]], false)).toThrow("at most one");
     expect(() => assertEmbryoJourneyPartition([{ project: "chromium", file: "ordinary.spec.ts", cases: 1 }], false)).not.toThrow();
   });
   it("refuses unsharded CI while preserving ordinary local behavior", () => {
@@ -86,6 +92,26 @@ describe("permanent genuine embryo audit preflight", () => {
       expect(() => assertEmbryoJourneyAudits(current)).toThrow("connected native producer");
     }
     const wrongOrigin = real();wrongOrigin[positive] = wrongOrigin[positive].replace('test.use({baseURL:"http://localhost:3105"})', 'test.use({baseURL:"http://localhost:3100"})');
+    expect(() => assertEmbryoJourneyAudits(wrongOrigin)).toThrow("isolated 3105 origin");
+  });
+  it("requires the claimed-record journey's connected claim, review, release mail and closed delete", () => {
+    const claimed = EMBRYO_BROWSER_JOURNEYS["future-person-claimed-record"];
+    for (const symbol of ["seedParticipantC", "withEmbryoJourney", "syntheticHistoricalTransfer", "createReviewCase",
+      "openSyntheticReviewPdf", "expectFullDocumentReceipts", "drainMailUntil", "proveClaimantDeleteClosed"]) {
+      const current = real();current[claimed] = current[claimed].replace(`await ${symbol}(`, "await unconnectedClaimedRecordFixture(");
+      expect(current[claimed]).not.toBe(real()[claimed]);
+      expect(() => assertEmbryoJourneyAudits(current)).toThrow("closed-delete calls");
+    }
+    const extra = real();extra[claimed] = extra[claimed].replace("await openSyntheticReviewPdf(reviewing,\"photo\");",
+      "await openSyntheticReviewPdf(reviewing,\"photo\");await openSyntheticReviewPdf(reviewing,\"photo\");");
+    expect(extra[claimed]).not.toBe(real()[claimed]);
+    expect(() => assertEmbryoJourneyAudits(extra)).toThrow("closed-delete calls");
+    const aliased = real();aliased[claimed] = aliased[claimed].replace("import {claimedRecordProof,proveClaimantDeleteClosed} from",
+      "import {claimedRecordProof,proveClaimantDeleteClosed as proveClaimantDeleteClosedAlias} from");
+    expect(aliased[claimed]).not.toBe(real()[claimed]);
+    expect(() => assertEmbryoJourneyAudits(aliased)).toThrow("closed-delete calls");
+    const wrongOrigin = real();wrongOrigin[claimed] = wrongOrigin[claimed].replace('test.use({baseURL:"http://localhost:3105"})', 'test.use({baseURL:"http://localhost:3100"})');
+    expect(wrongOrigin[claimed]).not.toBe(real()[claimed]);
     expect(() => assertEmbryoJourneyAudits(wrongOrigin)).toThrow("isolated 3105 origin");
   });
   it("checks source before execution and in the independent inventory and aggregation entry point", () => {

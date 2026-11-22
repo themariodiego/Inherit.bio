@@ -1,0 +1,3 @@
+# LOCAL ONLY: generate.py refusals, against a synthetic commit (no ref) whose tree is 77d04563 with one earlier migration (20261016221000_subject_transfer.sql) changed.
+refused: earlier migration changed or missing in f49bfc1e: supabase/migrations/20261016221000_subject_transfer.sql
+--head refused: head f49bfc1eb4ba3e76e7b392663523d436e9165146: supabase/migrations tree 7df3df5ccc8713d4359385bdaf9b38fa3cb5b774 is not the rehearsed 77d04563 tree 259a56ddacc2a00e5ab2ce6913e8f237c2d58315

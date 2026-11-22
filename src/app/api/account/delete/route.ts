@@ -9,6 +9,8 @@ import {
 import { ACCOUNT_OPERATION_NONCE_MAX_LENGTH, verifyAccountOperationNonce } from "@/lib/account-operation-nonce";
 import { encryptSecret, hmacSecret } from "@/lib/crypto";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { withAccountCsrf } from "@/lib/security/session-csrf";
+import { unauthenticated } from "@/lib/embryos/guards";
 
 const requestBody = z
   .object({
@@ -23,7 +25,8 @@ const requestBody = z
  * its hash once in the same transaction that creates the deletion hold. There
  * is no GET: nothing on this path issues, stores or rotates a nonce.
  */
-export async function POST(request: Request) {
+export const POST = withAccountCsrf("api.account-delete", handlePost);
+async function handlePost(request: Request) {
   if (!isSameOrigin(request)) {
     return NextResponse.json({ error: "invalid_request" }, { status: 400 });
   }
@@ -32,7 +35,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "invalid_request" }, { status: 400 });
   }
   const context = await getSensitiveAccountContext();
-  if (!context?.user.email) return new Response("Unauthorized", { status: 401 });
+  if (!context?.user.email) return unauthenticated();
 
   const nonce = verifyAccountOperationNonce(parsed.data.nonce, {
     accountId: context.user.id, sessionId: context.sessionId, operation: "account_delete",

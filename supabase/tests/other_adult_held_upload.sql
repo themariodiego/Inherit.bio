@@ -230,6 +230,28 @@ select ok((select d.adult_flow='path-b-subject-esignature' and d.confirmation_mo
 select throws_ok($$update public.adult_subject_drafts set adult_flow='path-a-own-account',confirmation_mode='path-a-account-required',
  evidence_kind='none',request_key=null where subject_id=pg_temp.sid('main')$$,'55000','immutable_adult_flow',
  'the flow never changes after the draft is reserved');
+-- G5.6 (20261023130000): the draft names the uploader only through the
+-- door that records the page's one-time nonce. The actor is cleared where
+-- production would have committed; no user JWT is present.
+savepoint attributed_draft;
+select set_config('request.jwt.claims','{"role":"service_role"}',true),set_config('inherit.legal_audit_actor','',true);
+select public.create_path_b_adult_draft_v1('0a5e0000-0000-4000-8000-000000000001','0a5e0000-0000-4000-8000-000000000011','Synthetic Attributed',date '1980-05-05',
+  decode('00112233445566778899aabbccddeeff','hex'),repeat('7',64),repeat('7',64),true);
+select is((select audit_principal_id from public.legal_audit_log where event_code='subject-draft.created' and route_id='api.subject-drafts' order by seq desc limit 1),null::uuid,
+ 'the draft writer alone, with no nonce, names no one');
+select set_config('request.jwt.claims','{"role":"service_role"}',true),set_config('inherit.legal_audit_actor','',true);
+select lives_ok($$select public.create_path_b_adult_draft_with_nonce_v1('0a5e0000-0000-4000-8000-000000000001','0a5e0000-0000-4000-8000-000000000011','Synthetic Attributed',date '1980-05-05',
+  decode('00112233445566778899aabbccddeeff','hex'),repeat('8',64),repeat('8',64),true,null,
+  encode(extensions.digest('draft-nonce-one','sha256'),'hex'),clock_timestamp()+interval '5 minutes')$$,'the door reserves a draft');
+select ok(coalesce((select audit_principal_id from public.legal_audit_log where event_code='subject-draft.created' and route_id='api.subject-drafts' order by seq desc limit 1)
+  =(select audit_principal_id from private.legal_audit_account_principals where account_id='0a5e0000-0000-4000-8000-000000000001'::uuid),false),'and its event names the uploader');
+select throws_ok($$select public.create_path_b_adult_draft_with_nonce_v1('0a5e0000-0000-4000-8000-000000000001','0a5e0000-0000-4000-8000-000000000011','Synthetic Attributed',date '1980-05-05',
+  decode('00112233445566778899aabbccddeeff','hex'),repeat('9',64),repeat('9',64),true,null,
+  encode(extensions.digest('draft-nonce-one','sha256'),'hex'),clock_timestamp()+interval '5 minutes')$$,
+ '22023','invalid_operation_nonce','a replayed nonce is refused');
+rollback to attributed_draft;
+select is((select count(*) from public.subjects where display_label='Synthetic Attributed'),0::bigint,
+ 'the attribution drafts were undone with their savepoint');
 
 -- A Path A invitation from the same uploader, for contrast throughout.
 create temporary table path_a as select * from public.create_adult_subject_invitation_v1('0a5e0000-0000-4000-8000-000000000001',
@@ -449,6 +471,9 @@ select is((select count(*) from public.purpose_grants where target_id=pg_temp.si
 -- subject transfer (20261016221000_subject_transfer.sql) detaches each
 -- confirmed revision into the person's file, and its relocation retirement
 -- marks the revision's held working row deleted once the old object is gone.
+-- The adult-acceptance executor (20261120120000_adult_acceptance_hold_and_renotice.sql,
+-- D-141) reads it only to find a confirmed revision a released hold or re-notice
+-- held back, and hands it to the enqueue above, which checks every gate again.
 select is((select string_agg(n.nspname||'.'||p.proname,', ' order by n.nspname,p.proname)
  from pg_proc p join pg_namespace n on n.oid=p.pronamespace
  where n.nspname in ('public','private') and p.prosrc like '%other_adult_held_uploads%'),
@@ -465,7 +490,8 @@ select is((select string_agg(n.nspname||'.'||p.proname,', ' order by n.nspname,p
    then '' else ', public.adult_upload_revision_retention_v1' end || case when to_regprocedure('public.bind_adult_subject_account_v1(text,text,uuid,uuid,boolean)') is null
    then '' else ', public.bind_adult_subject_account_v1' end || ', public.expire_due_other_adult_held_uploads_v1' || case when to_regprocedure('public.expire_due_path_b_confirmed_files_v1()') is null
    then '' else ', public.expire_due_path_b_confirmed_files_v1' end || case when to_regprocedure('public.finish_subject_transfer_retirement_v1(uuid,text,boolean)') is null
-   then '' else ', public.finish_subject_transfer_retirement_v1' end || ', public.read_adult_upload_revision_v1, public.respond_adult_upload_revision_v1','the held table is named only by the exact reviewed lifecycle functions');
+   then '' else ', public.finish_subject_transfer_retirement_v1' end || ', public.read_adult_upload_revision_v1, public.respond_adult_upload_revision_v1' || case when to_regprocedure('public.run_due_adult_acceptance_notices_v1()') is null
+   then '' else ', public.run_due_adult_acceptance_notices_v1' end,'the held table is named only by the exact reviewed lifecycle functions');
 -- Four reviewed complete-account helpers inspect the held source only for
 -- internal whole-source comparison/excluded census. No API may execute them.
 select ok(to_regprocedure(x.signature) is null or (select md5(p.prosrc)=x.body_md5
@@ -515,8 +541,11 @@ select ok((select md5(prosrc)='7c176e100123ecbdf9aedd8ee41b0539' from pg_proc
  'the exact held, keyless, evidence, notice and information bodies form the reviewed service door; every preserved delegate remains API-denied');
 -- 20261016190000_path_b_reviewed_document.sql extends this exact helper to the
 -- reviewed-document flow's graph; the pin follows the reviewed body.
+-- 20261122180000 (D-165) widens its grant clause in place to either Path B
+-- flow, md5-guarded from exactly this body; the pin follows that body too.
 select ok(to_regprocedure('private.assert_account_path_b_deletion_supported_v1(uuid)') is null
- or ((select md5(prosrc)='cd6a5921924d50f1857ac8d8b545b30d' from pg_proc
+ or ((select md5(prosrc)=case when position('20261122180000 (D-165)' in prosrc)>0 then '4a3a4243350f9e62321a9c8208437f8d'
+   else 'cd6a5921924d50f1857ac8d8b545b30d' end from pg_proc
     where oid=to_regprocedure('private.assert_account_path_b_deletion_supported_v1(uuid)'))
    and not exists(select 1 from unnest(array['anon','authenticated','inherit_upload_only','service_role'])r
     where has_function_privilege(r,to_regprocedure('private.assert_account_path_b_deletion_supported_v1(uuid)'),'execute'))),
@@ -528,8 +557,12 @@ select ok(to_regprocedure('private.export_account_class_inventory_v1(uuid,jsonb)
   and not exists(select 1 from unnest(array['anon','authenticated','inherit_upload_only','service_role'])r
    where has_function_privilege(r,to_regprocedure('private.export_account_class_inventory_v1(uuid,jsonb)'),'execute'))),
  'only the exact installed account class inventory may inspect held custody, behind every API denial');
+-- 20261023100000_subject_export_joint_results.sql adds the live-permission
+-- Portrait branch to this exact helper, and 20261023110000_export_completeness.sql
+-- lets the self record see the account's own cohorts (owner decision, 23 Oct
+-- 2026); the pin follows the reviewed body. The held-custody branch is unchanged.
 select ok(to_regprocedure('private.export_subject_class_inventory_v1(uuid,jsonb)') is null
- or ((select md5(prosrc)='355f419486531042756e6e47e3f573dc' and prosecdef and proconfig=array['search_path=""','lock_timeout=250ms']::text[]
+ or ((select md5(prosrc)='de5a71ac7e1f9d6634a812dda69e7784' and prosecdef and proconfig=array['search_path=""','lock_timeout=250ms']::text[]
   and proowner=(select oid from pg_roles where rolname='postgres') from pg_proc
   where oid=to_regprocedure('private.export_subject_class_inventory_v1(uuid,jsonb)'))
   and not exists(select 1 from unnest(array['anon','authenticated','inherit_upload_only','service_role'])r
@@ -909,8 +942,12 @@ update public.profiles set deletion_requested_at=null where id='0a5e0000-0000-40
 -- 16. Path A still works as it did ---------------------------------------------------------
 select is(pg_temp.open_session((select token_hash from fx where name='path-a'),'5','path-a-open-pppppppppppppppp'),1::bigint,
  'the Path A invitee opens their invitation');
-select is(public.respond_adult_subject_invitation_session_v1(repeat('5',64),'confirm','path-a-accept-pppppppppppppp',
- '0a5e0000-0000-4000-8000-000000000002',repeat('4',64)),'accepted','Path A''s account acceptance is unchanged');
+-- 20261025400000 (D-103): Path A's account acceptance includes the typed name,
+-- through the account door api.invitation-accept calls.
+select is(public.accept_adult_subject_invitation_v1(repeat('5',64),'path-a-accept-pppppppppppppp',
+ '0a5e0000-0000-4000-8000-000000000002','0a5e0000-0000-4000-8000-000000000012',
+ jsonb_build_object('1',repeat('4',64)),decode(repeat('5a',28),'hex')),pg_temp.sid('path-a'),
+ 'Path A''s account acceptance still binds the invitee, now with a typed name');
 select ok((select subject_account_id='0a5e0000-0000-4000-8000-000000000002' and owner_account_id is null
  from public.subjects where id=pg_temp.sid('path-a')),'the accepted Path A subject belongs to the invitee alone');
 select is((select count(*) from public.adult_subject_drafts where subject_id=pg_temp.sid('path-a')),0::bigint,

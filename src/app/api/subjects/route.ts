@@ -1,4 +1,5 @@
 import { accountCapability } from "@/lib/legal/jurisdictions";
+import { withAccountCsrf } from "@/lib/security/session-csrf";
 import { finalizeReviewedDocumentSubject } from "@/lib/uploads/path-b-reviewed-document-server";
 
 /**
@@ -9,9 +10,12 @@ import { finalizeReviewedDocumentSubject } from "@/lib/uploads/path-b-reviewed-d
  * confirm. An eligible and a barred contact get the same subject-created-v1
  * receipt. The acting uploader's third_party_adult_analysis capability is
  * resolved here, before any transition, and the database rechecks it. See
- * `src/lib/uploads/path-b-reviewed-document-server.ts`.
+ * `src/lib/uploads/path-b-reviewed-document-server.ts`. The shell's one-time
+ * X-Inherit-CSRF token for the account session is verified and spent before
+ * this runs (G8.5); the finalize nonce is checked as before.
  */
-export async function POST(request: Request) {
+export const POST = withAccountCsrf("api.subjects", handlePost);
+async function handlePost(request: Request) {
   return finalizeReviewedDocumentSubject(request, {
     capability: (accountId) => accountCapability(accountId, "third_party_adult_analysis"),
   });

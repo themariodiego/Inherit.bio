@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+vi.mock("@/lib/security/session-csrf",async importOriginal=>(await import("@/lib/security/session-csrf.test-support")).admitEverySessionCsrf(await importOriginal()));
 const calls=vi.hoisted(()=>({own:vi.fn(),admin:vi.fn(),account:vi.fn()}));
 vi.mock("@/lib/account-deletion",()=>({getSensitiveAccountContext:()=>calls.account()}));
 vi.mock("@/lib/supabase/server",async()=>{const {createClient}=await import("@supabase/supabase-js");return {createClient:async()=>createClient("https://synthetic.invalid","own-synthetic-jwt",{
@@ -11,7 +12,11 @@ import {GET,POST as casePOST} from "@/app/api/reviews/appeals/[id]/route";
 import {POST} from "@/app/api/legal-evidence/[id]/review/route";
 import {GET as noticeGET} from "@/app/api/appeals/session/decision/route";
 import {sealNewAppeal} from "./appeal-case-envelope";
-import {mintReviewNonce,reviewCsrf} from "./review";
+import {mintReviewNonce} from "./review";
+// The reviewer's one-time X-Inherit-CSRF token is spent by each POST's gate, which
+// src/lib/security/session-csrf-routes.test.ts drives (G8.5, the migration stage); here the gate
+// admits every request, and each request carries a stand-in where it carried the case digest.
+const REVIEWER_GATE_STAND_IN="reviewer-session-token-checked-by-the-gate";
 import {sealAppealDecisionReference} from "./public-appeal-review";
 import {mintAppealCaseReviewNonce} from "./public-appeal-case-decision";
 import {RIGHTS_COOKIE_NAME} from "@/lib/embryos/rights-session";
@@ -29,7 +34,7 @@ beforeEach(()=>{vi.clearAllMocks();vi.stubEnv("BYOK_ENCRYPTION_KEY",Buffer.alloc
 afterEach(()=>vi.unstubAllEnvs());
 const read=()=>new Request(`https://inherit.bio/api/reviews/appeals/${id(1)}`,{headers:{"sec-fetch-site":"same-origin"}});
 function decide(extra:Record<string,unknown>={},headers:Record<string,string>={}){return new Request(`https://inherit.bio/api/legal-evidence/${id(4)}/review`,{method:"POST",headers:{
- origin:"https://inherit.bio","sec-fetch-site":"same-origin","content-type":"application/json","x-inherit-csrf":reviewCsrf(id(1),id(8),id(9)),...headers},body:JSON.stringify({
+ origin:"https://inherit.bio","sec-fetch-site":"same-origin","content-type":"application/json","x-inherit-csrf":REVIEWER_GATE_STAND_IN,...headers},body:JSON.stringify({
  decision:"rejected",documentSha256:"b".repeat(64),reviewRevision:1,nonce:mintReviewNonce(id(4),id(8),id(9)),reason:"The original whole document does not establish the claimed source control.",...extra})});}
 describe("named own-JWT documentary review routes",()=>{
  it("checks the native exact row twice and serializes no wrapped key or target authority",async()=>{
@@ -61,7 +66,7 @@ describe("named own-JWT documentary review routes",()=>{
 describe("registered own-JWT final case rejection",()=>{
  function request(extra:Record<string,unknown>={},headers:Record<string,string>={}){return new Request(`https://inherit.bio/api/reviews/appeals/${id(1)}`,{
   method:"POST",headers:{origin:"https://inherit.bio","sec-fetch-site":"same-origin","content-type":"application/json",
-   "x-inherit-csrf":reviewCsrf(id(1),id(8),id(9)),...headers},body:JSON.stringify({decision:"reject",reviewRevision:1,
+   "x-inherit-csrf":REVIEWER_GATE_STAND_IN,...headers},body:JSON.stringify({decision:"reject",reviewRevision:1,
    reason:"The current available record does not establish the claimed source control.",nonce:mintAppealCaseReviewNonce({caseId:id(1),accountId:id(8),sessionId:id(9),reviewRevision:1,evidenceRevision:1}),...extra})});}
  const receipt=()=>({caseId:id(1),state:"resolved",outcome:"rejected",reviewRevision:2});
  it("serves a current incomplete case for rejection without minting document approval controls",async()=>{
@@ -88,7 +93,9 @@ describe("registered own-JWT final case rejection",()=>{
   calls.own.mockResolvedValue({data:{...caseRow(),evidenceRevision:2},error:null});
   expect((await casePOST(request(),{params:Promise.resolve({id:id(1)})})).status).toBe(404);expect(calls.own).toHaveBeenCalledTimes(1);
  });
- it.each<Record<string,string>>([{origin:"https://foreign.example.test"},{"x-inherit-csrf":"foreign"},{"sec-fetch-site":"cross-site"},{"content-type":"text/plain"}])(
+ // 2026-11-19 (G8.5, the migration stage): {"x-inherit-csrf":"foreign"} left this list; the handler no longer
+ // reads it, and the gate refuses a foreign token before the handler (session-csrf-routes.test.ts).
+ it.each<Record<string,string>>([{origin:"https://foreign.example.test"},{"sec-fetch-site":"cross-site"},{"content-type":"text/plain"}])(
   "refuses a foreign transport before any decision %j",async headers=>{
    calls.own.mockResolvedValue({data:caseRow(),error:null});expect((await casePOST(request({},headers),{params:Promise.resolve({id:id(1)})})).status).toBe(404);
    expect(calls.own.mock.calls.some(call=>call[0]==="decide_public_appeal_case_v1")).toBe(false);
@@ -123,7 +130,7 @@ describe("native current prior decision uphold", () => {
  function request(extra: Record<string, unknown> = {}) {
   return new Request(`https://inherit.bio/api/reviews/appeals/${id(1)}`, { method: "POST", headers: {
    origin: "https://inherit.bio", "sec-fetch-site": "same-origin", "content-type": "application/json",
-   "x-inherit-csrf": reviewCsrf(id(1), id(8), id(9)) }, body: JSON.stringify({ decision: "uphold", reviewRevision: 1,
+   "x-inherit-csrf": REVIEWER_GATE_STAND_IN }, body: JSON.stringify({ decision: "uphold", reviewRevision: 1,
    reason: "The full current record supports keeping the earlier documentary choice.", nonce: mintAppealCaseReviewNonce({
     caseId: id(1), accountId: id(8), sessionId: id(9), reviewRevision: 1, evidenceRevision: 1 }), ...extra }) });
  }
@@ -178,7 +185,7 @@ describe("native append-only prior correction", () => {
  function request(extra: Record<string, unknown> = {}) {
   return new Request(`https://inherit.bio/api/reviews/appeals/${id(1)}`, { method: "POST", headers: {
    origin: "https://inherit.bio", "sec-fetch-site": "same-origin", "content-type": "application/json",
-   "x-inherit-csrf": reviewCsrf(id(1), id(8), id(9)) }, body: JSON.stringify({ decision: "reverse-prior-decision", priorDecisionRevision: 3, evidenceRevision: 1, reviewRevision: 1,
+   "x-inherit-csrf": REVIEWER_GATE_STAND_IN }, body: JSON.stringify({ decision: "reverse-prior-decision", priorDecisionRevision: 3, evidenceRevision: 1, reviewRevision: 1,
    reason: "The full current record supports changing only the earlier documentary choice.", nonce: mintAppealCaseReviewNonce({
     caseId: id(1), accountId: id(8), sessionId: id(9), reviewRevision: 1, evidenceRevision: 1 }), ...extra }) });
  }
@@ -247,7 +254,7 @@ describe("nonfinal information request through own current review authority", ()
  function request(extra: Record<string, unknown> = {}) {
   return new Request(`https://inherit.bio/api/reviews/appeals/${id(1)}`, { method: "POST", headers: {
    origin: "https://inherit.bio", "sec-fetch-site": "same-origin", "content-type": "application/json",
-   "x-inherit-csrf": reviewCsrf(id(1), id(8), id(9)), }, body: JSON.stringify({ decision: "needs-more-information", reviewRevision: 1,
+   "x-inherit-csrf": REVIEWER_GATE_STAND_IN, }, body: JSON.stringify({ decision: "needs-more-information", reviewRevision: 1,
     reason: "The available files do not yet show the required original source control.", nonce: mintAppealCaseReviewNonce({ caseId: id(1),
      accountId: id(8), sessionId: id(9), reviewRevision: 1, evidenceRevision: 1 }), ...extra }) });
  }

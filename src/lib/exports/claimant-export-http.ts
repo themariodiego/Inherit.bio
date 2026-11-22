@@ -1,5 +1,5 @@
 import "server-only";
-import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
 import { z } from "zod";
 import { hmacSecret } from "@/lib/crypto";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -117,14 +117,15 @@ async function call(work: (signal: AbortSignal) => RpcResult, signal: AbortSigna
   return result.data;
 }
 
-/** The CSRF digest the operation envelope carries: session, header value and operation. */
+/** The CSRF digest the operation envelope carries: session, the session's
+ * claimant digest and operation. It is computed from the rights session on
+ * the server, never read from the request, so it is unchanged since the
+ * request's X-Inherit-CSRF became the rights session's one-time token
+ * (api.future-person-export, verified and spent before postClaimantExport
+ * runs; G8.5, 19 November 2026). Until then that header carried
+ * claimantCsrf(sessionHash) and was compared to it here. */
 export function claimantExportCsrfBinding(sessionHash: string, operation: "create" | "open-ready"): string {
   return hmacSecret(JSON.stringify([sessionHash, claimantCsrf(sessionHash), operation]), "future-person-export-csrf-binding-v1");
-}
-function csrfMatches(request: Request, sessionHash: string): boolean {
-  const presented = request.headers.get("x-inherit-csrf");
-  return !!presented && /^[0-9a-f]{64}$/u.test(presented)
-    && timingSafeEqual(Buffer.from(presented), Buffer.from(claimantCsrf(sessionHash)));
 }
 
 function context(capture: z.infer<typeof captureSchema>, csrfBinding: string): Omit<ExportOperationContext, "operation"> {
@@ -162,7 +163,7 @@ export async function presentClaimantExportCreate(request: Request, deps: Claima
   try {
     const capture = captureSchema.parse(await call(signal => deps.rpc().request("capture", sessionHash, null, null, signal), request.signal));
     const operation = mintExportOperation({ ...context(capture, claimantExportCsrfBinding(sessionHash, "create")), operation: "create" });
-    return Object.freeze({ operation: "create" as const, nonce: operation.token, csrf: claimantCsrf(sessionHash) });
+    return Object.freeze({ operation: "create" as const, nonce: operation.token });
   } catch { return null; }
 }
 
@@ -171,8 +172,7 @@ export async function postClaimantExport(request: Request, deps: ClaimantExportD
     const sessionHash = admitted(request, deps);
     const url = new URL(request.url);
     if (!sessionHash || request.headers.get("origin") !== url.origin || request.headers.get("sec-fetch-site") !== "same-origin"
-      || request.headers.get("content-type")?.split(";")[0]?.trim().toLowerCase() !== "application/json"
-      || !csrfMatches(request, sessionHash)) return claimantNotFound();
+      || request.headers.get("content-type")?.split(";")[0]?.trim().toLowerCase() !== "application/json") return claimantNotFound();
     const body = claimantExportBody.safeParse(await readBoundedJson(request, 4096));
     if (!body.success) return claimantNotFound();
     const rpc = deps.rpc();

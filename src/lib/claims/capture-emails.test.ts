@@ -1,10 +1,10 @@
-import { access, mkdir, mkdtemp, readFile, readdir, symlink } from "node:fs/promises";
+import { access, mkdir, mkdtemp, readFile, readdir, rm, symlink } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { pathToFileURL } from "node:url";
-import { beforeAll, describe, expect, it, vi } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { renderMail, mailSubject } from "../email";
 import { captureEmailClaims as sourceCaptureEmailClaims, sha256, type EmailCaptureResult } from "./capture-emails";
 import { EMAIL_RENDERERS, emailFixtures } from "./email-fixtures";
@@ -18,8 +18,8 @@ const resolvers = { registry: noCanonicalRegistry, resolveSeed: () => false, res
 describe("independent production email fixture inventory", () => {
   it("covers all actual named exports and both account-deletion entrypoints", () => {
     const discovered = readEmailInventory(projectRoot), fixtures = emailFixtures(readPublicDigestCatalog(projectRoot));
-    expect(discovered).toHaveLength(20);
-    expect(new Set(discovered.map((e) => e.path)).size).toBe(18);
+    expect(discovered).toHaveLength(21);
+    expect(new Set(discovered.map((e) => e.path)).size).toBe(19);
     expect(discovered).toContainEqual({ path: "src/emails/appeal-evidence.tsx", exportName: "AppealEvidenceEmail" });
     expect(discovered.filter((e) => e.path.endsWith("account-deletion.tsx")).map((e) => e.exportName)).toEqual([
       "AccountDeletionCancelledEmail", "AccountDeletionNoticeEmail",
@@ -51,7 +51,10 @@ describe("independent production email fixture inventory", () => {
   });
   it("expands all current conditional branches and explicitly distinguishes empty digest scope", () => {
     const fixtures = emailFixtures(readPublicDigestCatalog(projectRoot));
-    expect(fixtures).toHaveLength(39);
+    // 2026-11-19: 40 -> 41, the invitation terminal notice's new kind upload-permission-withdrawn (20261119160000).
+    // 2026-11-20: 41 -> 43, its two D-141 kinds adult-acceptance-second-notice and adult-revocation-renotice (20261120120000).
+    // 2026-11-22: 43 -> 48, a record transfer's five notice kinds (20261122100000).
+    expect(fixtures).toHaveLength(48);
     expect(fixtures.filter((fixture) => fixture.mail.id === "appeal-evidence")).toEqual([
       expect.objectContaining({ entrypoint: "src/emails/appeal-evidence.tsx", exportName: "AppealEvidenceEmail",
         mail: { id: "appeal-evidence", payload: { continueUrl: "https://example.test/fixture#synthetic-appeal" } } }),
@@ -73,8 +76,15 @@ describe("independent production email fixture inventory", () => {
 describe("actual production email HTML and envelope capture", () => {
   let outputDirectory: string, fixtureRoot: string, sourceHead: string, sourceTree: string, result: EmailCaptureResult;
   let captureEmailClaims: typeof sourceCaptureEmailClaims;
+  // Each run clones the repository into these; without removal they pile up at
+  // tens of megabytes a run.
+  const temporaryDirectories: string[] = [];
+  afterAll(async () => {
+    await Promise.all(temporaryDirectories.map((directory) => rm(directory, { recursive: true, force: true })));
+  });
   beforeAll(async () => {
     const directory = await mkdtemp(join(tmpdir(), "inherit-email-capture-test-"));
+    temporaryDirectories.push(directory);
     outputDirectory = join(directory, "capture");
     fixtureRoot = join(directory, "repo");
     const git = async (args: string[], cwd = projectRoot) => (await promisify(execFile)("git",
@@ -109,9 +119,16 @@ describe("actual production email HTML and envelope capture", () => {
   });
 
   it("retains every expected fixture before reporting actual annotation failures", () => {
-    expect(result.receipts).toHaveLength(39);
-    expect(result.observations).toHaveLength(78);
-    expect(result.requiredSurfaces).toHaveLength(78);
+    // 41 since 2026-11-20: the three consent withdrawals add two mails (the
+    // own-file confirmation and the notice to another adult), each with its
+    // body and subject surface: 82 observations and required surfaces.
+    // 43 since 2026-11-20 (D-141): the second notice and the 30-day re-notice
+    // to an adult who accepted, two surfaces each: 86.
+    // 48 since 2026-11-22: the five subject-transfer notices (the uploader's
+    // hand-over to an adult, behind the closed transfer switch), two surfaces each: 96.
+    expect(result.receipts).toHaveLength(48);
+    expect(result.observations).toHaveLength(96);
+    expect(result.requiredSurfaces).toHaveLength(96);
     expect(result.observations.every((o) => o.channel === "email" && o.contentCommitSha === result.contentCommitSha)).toBe(true);
     expect(result.audit.ok).toBe(false);
     expect(result.audit.issues.map((i) => i.code)).toEqual(expect.arrayContaining(["missing-channel", "missing-region", "empty-corpus"]));
@@ -164,14 +181,16 @@ describe("actual production email HTML and envelope capture", () => {
     expect(await readFile(join(outputDirectory, "capture.json"))).toEqual(before);
   });
   it("captures in the standalone tsx runner without host-only serialization helpers", async () => {
-    const directory = join(await mkdtemp(join(tmpdir(), "inherit-email-standalone-test-")), "capture");
+    const parent = await mkdtemp(join(tmpdir(), "inherit-email-standalone-test-"));
+    temporaryDirectories.push(parent);
+    const directory = join(parent, "capture");
     const script = `import { captureEmailClaims } from "./src/lib/claims/capture-emails";
       (async () => { const result = await captureEmailClaims({ outputDirectory: ${JSON.stringify(directory)},
         registry: { resolveCitation: () => undefined, resolveClaim: () => undefined },
         resolveSeed: () => false, resolveComputed: () => false });
         console.log(JSON.stringify({ receipts: result.receipts.length, observations: result.observations.length, ok: result.audit.ok })); })();`;
     const output = await promisify(execFile)(resolve("node_modules/.bin/tsx"), ["-e", script], { cwd: fixtureRoot, timeout: 30_000 });
-    expect(JSON.parse(output.stdout)).toEqual({ receipts: 39, observations: 78, ok: false });
+    expect(JSON.parse(output.stdout)).toEqual({ receipts: 48, observations: 96, ok: false });
     const retained: EmailCaptureResult = JSON.parse(await readFile(join(directory, "capture.json"), "utf8"));
     expect(retained.observations).toEqual(result.observations);
     expect(retained.collector.sha256).toBe(result.collector.sha256);

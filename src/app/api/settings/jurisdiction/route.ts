@@ -10,7 +10,10 @@ import {
   readDeclaredJurisdiction,
 } from "@/lib/legal/jurisdiction-declaration";
 import { declarationRestriction, isPausedCountry } from "@/lib/legal/service-restrictions";
+import { isOperationNonceRefusal, personOperationNonceArgs, personOperationNonceFrom } from "@/lib/person-operation-nonce";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { withAccountCsrf } from "@/lib/security/session-csrf";
+import { unauthenticated } from "@/lib/embryos/guards";
 
 /**
  * `PUT /api/settings/jurisdiction` (register api.jurisdiction, G5.1a): the
@@ -33,14 +36,21 @@ import { createAdminClient } from "@/lib/supabase/admin";
  * declared it. Both are refused like an unknown code; the page does not
  * offer them.
  *
+ * The request also carries, in the `X-Inherit-Operation-Nonce` header, the
+ * one-time nonce the settings page rendered for this account and session
+ * (G5.6, 23 Oct 2026). `declare_jurisdiction_with_nonce_v1` records its hash
+ * before the writer runs, in the same transaction, so the declaration's audit
+ * event names the person who declared and a replay writes nothing.
+ *
  * The response is `jurisdiction-write-v1` and nothing else: no revoked count,
  * no account id. A stale or unknown attestation is `invalid-request-v1`, like
  * any other invalid field, so a caller learns nothing about which part failed.
  */
-export async function PUT(request: Request) {
+export const PUT = withAccountCsrf("api.jurisdiction", handlePut);
+async function handlePut(request: Request) {
   if (!isSameOrigin(request)) return invalidRequest(["origin"]);
   const context = await getSensitiveAccountContext();
-  if (!context) return new Response("Unauthorized", { status: 401 });
+  if (!context) return unauthenticated();
 
   const parsed = jurisdictionWriteBody.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return invalidRequest(["body"]);
@@ -56,8 +66,11 @@ export async function PUT(request: Request) {
     : null;
   if (current === undefined) return notFound();
   if (declarationRestriction(code, current, pausesApply)) return invalidRequest(["code"]);
+  const nonce = personOperationNonceFrom(request, { accountId: context.user.id, sessionId: context.sessionId,
+    operation: "jurisdiction_declare", targetId: context.user.id });
+  if (!nonce) return invalidRequest(["nonce"]);
 
-  const { data, error } = await createAdminClient().rpc("declare_jurisdiction_v2", {
+  const { data, error } = await createAdminClient().rpc("declare_jurisdiction_with_nonce_v1", {
     p_account_id: context.user.id,
     p_session_id: context.sessionId,
     p_code: code,
@@ -65,7 +78,9 @@ export async function PUT(request: Request) {
     p_attestation_version: parsed.data.attestationVersion,
     p_attestation_sha256: parsed.data.attestationHash,
     p_test_jurisdiction: isTestJurisdictionEnabled(),
+    ...personOperationNonceArgs(nonce),
   });
+  if (isOperationNonceRefusal(error)) return invalidRequest(["nonce"]);
   if (error) return error.code === "22023" ? invalidRequest(["attestation"]) : notFound();
   const result = declarationResult.safeParse(data);
   if (!result.success || result.data.jurisdiction !== code || result.data.subdivision !== state.subdivision) {

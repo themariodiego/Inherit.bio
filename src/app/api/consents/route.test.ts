@@ -1,5 +1,10 @@
+import { readFileSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-const mocks = vi.hoisted(() => ({ actor: vi.fn(), capability: vi.fn(), getUser: vi.fn(), from: vi.fn(), rpc: vi.fn(), copilot: vi.fn(), revokeCopilot: vi.fn(), report: vi.fn(), upload: vi.fn(), embryo: vi.fn() }));
+// The one-time X-Inherit-CSRF gate is driven on this route by
+// src/lib/security/session-csrf-routes.test.ts; here it admits every request.
+vi.mock("@/lib/security/session-csrf", async (importOriginal) =>
+  (await import("@/lib/security/session-csrf.test-support")).admitEverySessionCsrf(await importOriginal()));
+const mocks = vi.hoisted(() => ({ account: vi.fn(), actor: vi.fn(), capability: vi.fn(), getUser: vi.fn(), from: vi.fn(), rpc: vi.fn(), copilot: vi.fn(), revokeCopilot: vi.fn(), report: vi.fn(), upload: vi.fn(), embryo: vi.fn() }));
 vi.mock("@/lib/supabase/server", () => ({ createClient: async () => ({ auth: { getUser: mocks.getUser }, from: mocks.from }) }));
 vi.mock("@/lib/supabase/admin", () => ({ createAdminClient: () => ({ from: mocks.from, rpc: mocks.rpc }) }));
 // Keep the actual signed-token discriminators. Only the delegated handlers are
@@ -8,7 +13,8 @@ vi.mock("@/lib/copilot/own-consent", async importOriginal => ({ ...await importO
 vi.mock("@/lib/uploads/own-report-consent-route", async importOriginal => ({ ...await importOriginal<typeof import("@/lib/uploads/own-report-consent-route")>(), ownReportConsent: mocks.report }));
 vi.mock("@/lib/uploads/own-consent-route", () => ({ ownUploadConsent: mocks.upload }));
 vi.mock("@/lib/embryos/consents", () => ({ embryoConsent: mocks.embryo }));
-vi.mock("@/lib/account-deletion", () => ({ isSameOrigin: () => true }));
+vi.mock("@/lib/account-deletion", async importOriginal => ({ isSameOrigin: () => true, getSensitiveAccountContext: mocks.account,
+  hashOperationNonce: (await importOriginal<typeof import("@/lib/account-deletion")>()).hashOperationNonce }));
 vi.mock("@/lib/uploads/own-upload-context", () => ({ currentOwnUploadAccount: mocks.actor }));
 vi.mock("@/lib/family/access", () => ({ familyCapability: mocks.capability }));
 import { POST } from "./route";
@@ -16,6 +22,7 @@ import { POST as revoke } from "./[id]/revoke/route";
 import { mintOwnCopilotConsent } from "@/lib/copilot/own-consent";
 import { mintOwnReportPresentation } from "@/lib/uploads/own-report-token";
 import { mintGrantPresentation, SHARE_WITH_ADULT_ARTIFACT, SHARE_WITH_ADULT_STATEMENT_KEYS } from "@/lib/family/grant-token";
+import { mintPersonOperationNonce } from "@/lib/person-operation-nonce";
 const accountId = "77900000-0000-4000-8000-000000000001", subjectId = "77900000-0000-4000-8000-000000000002", grantId = "77900000-0000-4000-8000-000000000003";
 const snapshot = { accountRevision: 1, authSessionRevision: 1, jurisdictionRevision: 1, subjectBindingRevision: 1, accountBindingRevision: 1, uploadConsentId: grantId, subjectLifecycleRevision: 1, originatingSessionRevision: 1, principalId: grantId, principalRevision: 1 };
 const artifact = { artifact_key: SHARE_WITH_ADULT_ARTIFACT, version: 1, body_sha256: "b".repeat(64) };
@@ -27,6 +34,7 @@ beforeEach(() => {
   mocks.actor.mockResolvedValue({ accountId, sessionId: subjectId });
   mocks.capability.mockResolvedValue({ status: "permitted" });
   mocks.getUser.mockResolvedValue({ data: { user: { id: accountId } } });
+  mocks.account.mockResolvedValue({ user: { id: accountId }, sessionId: subjectId });
   mocks.from.mockImplementation((table: string) => row(table === "consent_artifacts" ? artifact : null));
   mocks.rpc.mockResolvedValue({ data: grantId, error: null });
   mocks.copilot.mockResolvedValue(Response.json({ granted: true }, { status: 201 }));
@@ -122,6 +130,25 @@ describe("actual consent POST dispatcher", () => {
     expect("signatureClass" in payload ? mocks.upload : mocks.embryo).toHaveBeenCalledExactlyOnceWith(req, payload); expect(mocks.copilot).not.toHaveBeenCalled(); expect(mocks.rpc).not.toHaveBeenCalled();
   });
   it("authenticates before any consent dispatch", async () => { mocks.getUser.mockResolvedValue({ data: { user: null } }); expect((await POST(request({ signatureClass: "tier1-self" }))).status).toBe(401); expect(mocks.upload).not.toHaveBeenCalled(); expect(mocks.copilot).not.toHaveBeenCalled(); });
+  // Owner decision of 19 November 2026 (G8.5, "the provider-key cloud consent
+  // request is removed"): the { providerKey } body recorded a cloud permission
+  // without showing its text. It is now refused exactly as a body the route
+  // has never registered is, before any provider read or write.
+  it("refuses the removed provider-key body exactly as it refuses any unregistered body", async () => {
+    const answer = async (payload: unknown) => {
+      const response = await POST(request(payload));
+      return { status: response.status, body: await response.json() };
+    };
+    const unregistered = await answer({ notARegisteredBody: true });
+    expect(unregistered).toEqual({ status: 400, body: { error: "invalid_request" } });
+    for (const providerKey of ["anthropic", "203.0.114.10:8123"]) {
+      expect(await answer({ providerKey }), providerKey).toEqual(unregistered);
+    }
+    expect(mocks.from).not.toHaveBeenCalled();
+    expect(mocks.rpc).not.toHaveBeenCalled();
+    for (const handler of [mocks.copilot, mocks.report, mocks.upload, mocks.embryo]) expect(handler).not.toHaveBeenCalled();
+    expect(readFileSync("src/app/api/consents/route.ts", "utf8")).not.toMatch(/grant_cloud_model_consent|providerKey:/u);
+  });
 });
 describe("actual revoke POST dispatcher", () => {
   it("already sends a canonical recipient-bound purpose to its own revoker", async () => {
@@ -129,10 +156,68 @@ describe("actual revoke POST dispatcher", () => {
     const req = request({}); expect((await revoke(req, { params: Promise.resolve({ id: grantId }) })).status).toBe(200);
     expect(mocks.revokeCopilot).toHaveBeenCalledExactlyOnceWith(req, grantId, subjectId); expect(mocks.rpc).not.toHaveBeenCalled();
   });
-  it("keeps a noncanonical adult purpose on the existing revocation RPC", async () => {
+  // 20261023120000 (G5.6): a directional revocation carries the page's one-time
+  // nonce for this account, session and grant, and records it with the revocation.
+  const revokeNonce = (target = grantId) => mintPersonOperationNonce({ accountId, sessionId: subjectId, operation: "consent_revoke", targetId: target });
+  const withNonce = (nonce: string | null) => { const req = request({}); if (nonce !== null) req.headers.set("X-Inherit-Operation-Nonce", nonce); return req; };
+  it("keeps a noncanonical adult purpose on the existing revocation, behind the page's nonce", async () => {
     mocks.from.mockImplementation((table: string) => row(table === "purpose_grants" ? { grant_id: grantId, target_id: subjectId, copilot_recipient_revision: null } : null));
     mocks.rpc.mockResolvedValue({ data: "2026-09-07T10:00:00+00:00", error: null });
-    expect((await revoke(request({}), { params: Promise.resolve({ id: grantId }) })).status).toBe(200);
-    expect(mocks.revokeCopilot).not.toHaveBeenCalled(); expect(mocks.rpc).toHaveBeenCalledExactlyOnceWith("revoke_directional_purpose_v1", { p_account_id: accountId, p_grant_id: grantId });
+    expect((await revoke(withNonce(revokeNonce()), { params: Promise.resolve({ id: grantId }) })).status).toBe(200);
+    expect(mocks.revokeCopilot).not.toHaveBeenCalled(); expect(mocks.rpc).toHaveBeenCalledExactlyOnceWith("revoke_directional_purpose_with_nonce_v1",
+      { p_account_id: accountId, p_session_id: subjectId, p_grant_id: grantId, p_nonce_hash: expect.stringMatching(/^[0-9a-f]{64}$/), p_nonce_expires_at: expect.any(String) });
+  });
+  it("refuses a directional revocation without the nonce for this grant, before any write", async () => {
+    mocks.from.mockImplementation((table: string) => row(table === "purpose_grants" ? { grant_id: grantId, target_id: subjectId, copilot_recipient_revision: null } : null));
+    for (const nonce of [null, "not-a-nonce", revokeNonce(accountId)]) {
+      expect((await revoke(withNonce(nonce), { params: Promise.resolve({ id: grantId }) })).status).toBe(400);
+    }
+    mocks.rpc.mockResolvedValue({ data: null, error: { code: "22023", message: "invalid_operation_nonce" } });
+    expect((await revoke(withNonce(revokeNonce()), { params: Promise.resolve({ id: grantId }) })).status).toBe(400);
+    expect(mocks.rpc).toHaveBeenCalledTimes(1);
+  });
+  // 20261025200000 (G8.5, 24 Oct 2026): a cloud-model provider grant's revocation
+  // carries /settings/consents' nonce for this account, session and grant too.
+  const cloudGrant = () => mocks.from.mockImplementation((table: string) => row(table === "consent_grants" ? { id: grantId } : null));
+  it("revokes a cloud-model provider grant through the door that records the page's nonce", async () => {
+    cloudGrant();
+    mocks.rpc.mockResolvedValue({ data: true, error: null });
+    const code = revokeNonce();
+    const response = await revoke(withNonce(code), { params: Promise.resolve({ id: grantId }) });
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ revoked: true });
+    expect(mocks.revokeCopilot).not.toHaveBeenCalled();
+    expect(mocks.rpc).toHaveBeenCalledExactlyOnceWith("revoke_cloud_model_consent_with_nonce_v1",
+      { p_account_id: accountId, p_session_id: subjectId, p_grant_id: grantId, p_nonce_hash: expect.stringMatching(/^[0-9a-f]{64}$/), p_nonce_expires_at: expect.any(String) });
+  });
+  it("refuses a cloud-model provider revocation without the nonce for this grant, before any write", async () => {
+    cloudGrant();
+    for (const nonce of [null, "not-a-nonce", revokeNonce(accountId)]) {
+      expect((await revoke(withNonce(nonce), { params: Promise.resolve({ id: grantId }) })).status).toBe(400);
+    }
+    expect(mocks.rpc).not.toHaveBeenCalled();
+    mocks.rpc.mockResolvedValue({ data: null, error: { code: "22023", message: "invalid_operation_nonce" } });
+    expect((await revoke(withNonce(revokeNonce()), { params: Promise.resolve({ id: grantId }) })).status).toBe(400);
+    mocks.rpc.mockResolvedValue({ data: false, error: null });
+    expect((await revoke(withNonce(revokeNonce()), { params: Promise.resolve({ id: grantId }) })).status).toBe(404);
+  });
+  it("answers each revocation with a receipt the register's consent-revocation-v1 lists (G8.5, 24 October 2026)", async () => {
+    const register = JSON.parse(readFileSync("docs/route-register.json", "utf8")) as {
+      routes: { id: string; successResponseContract?: string }[]; responseContractBindings: { routes: Record<string, string[]> };
+      responseContracts: Record<string, { outcomes: { status: number; body?: Record<string, unknown> }[] }> };
+    expect(register.routes.find(route => route.id === "api.consent-revoke")?.successResponseContract).toBe("consent-revocation-v1");
+    expect(register.responseContractBindings.routes["api.consent-revoke"]).toContain("consent-revocation-v1");
+    /** A receipt's status and key set, as the register states them. */
+    const shapes = register.responseContracts["consent-revocation-v1"].outcomes.filter(outcome => outcome.body)
+      .map(outcome => `${outcome.status} ${Object.keys(outcome.body!).sort().join(",")}`);
+    const shape = async (response: Response) => `${response.status} ${Object.keys(await response.json()).sort().join(",")}`;
+    mocks.from.mockImplementation((table: string) => row(table === "purpose_grants" ? { grant_id: grantId, target_id: subjectId, copilot_recipient_revision: null } : null));
+    mocks.rpc.mockResolvedValue({ data: "2026-09-07T10:00:00+00:00", error: null });
+    const directional = await revoke(withNonce(revokeNonce()), { params: Promise.resolve({ id: grantId }) });
+    cloudGrant();
+    mocks.rpc.mockResolvedValue({ data: true, error: null });
+    const cloud = await revoke(withNonce(revokeNonce()), { params: Promise.resolve({ id: grantId }) });
+    expect([await shape(directional), await shape(cloud)]).toEqual(["200 effectiveAt,revoked", "200 revoked"]);
+    expect(shapes).toEqual(["200 effectiveAt,revoked", "200 revoked"]);
   });
 });

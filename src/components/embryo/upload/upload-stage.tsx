@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useId, useRef, useState, type FormEvent } from "react";
+import { useCsrf } from "@/components/security/csrf-provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { formatDate } from "@/components/embryo/format";
@@ -69,9 +70,10 @@ import {
 import type { CohortCard } from "@/lib/embryos/record-key-cards";
 import type { UploadStageView } from "@/lib/embryos/upload-stage";
 import { EMBRYO_INGEST_SESSION_LIMITS } from "@/lib/genome/ingest-limits";
-import { UPLOAD_CSRF_HEADER, UploadTransportError, sendEmbryoFile, type MappingAnswer, type MappingQuestion,
+import { UploadTransportError, sendEmbryoFile, type MappingAnswer, type MappingQuestion,
   type UploadFailure, type UploadProgress, type UploadSession } from "@/lib/embryos/upload-transport";
 import { readUploadReceipt } from "@/lib/embryos/upload-receipt";
+import { readUploadSessionCsrf, type UploadSessionCsrf } from "@/lib/security/opened-session-csrf";
 import { route } from "@/lib/primary-routes";
 import { INITIAL_FLOW } from "@/lib/embryos/upload-flow";
 import { COMPARE_THESE_LINK } from "@/copy/embryos/index";
@@ -190,18 +192,22 @@ function BackToEmbryos() {
 function InviteForm({ draftId, csrfTokens, onSent }: { draftId: string; csrfTokens: string[]; onSent: () => void }) {
   const [status, setStatus] = useState<"ready" | "pending" | "sent" | "failed">("ready");
   const ids = [useId(), useId()];
+  const invitationsCsrf = useCsrf("api.invitations");
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (status === "pending") return;
     const form = new FormData(event.currentTarget);
     setStatus("pending");
     try {
+      // Each invitation's one-time operation token travels in
+      // X-Inherit-Operation-Nonce; X-Inherit-CSRF carries the shell's one-time
+      // session token, the next request its successor (G8.5).
       for (const [index, token] of csrfTokens.entries()) {
-        const response = await fetch("/api/invitations", {
+        const response = await invitationsCsrf.send((sessionToken) => fetch("/api/invitations", {
           method: "POST", credentials: "same-origin", cache: "no-store",
-          headers: { "Content-Type": "application/json", [UPLOAD_CSRF_HEADER]: token },
+          headers: { "Content-Type": "application/json", "X-Inherit-CSRF": sessionToken, "X-Inherit-Operation-Nonce": token },
           body: JSON.stringify({ targetCohortDraftId: draftId, contactEmail: String(form.get(`contact-${index}`) ?? "").trim() }),
-        });
+        }));
         if (response.status !== 202) throw new Error("refused");
       }
       setStatus("sent");
@@ -227,7 +233,7 @@ function InviteForm({ draftId, csrfTokens, onSent }: { draftId: string; csrfToke
   );
 }
 
-type Finalized = { cards: CohortCard[]; session: UploadSession };
+type Finalized = { cards: CohortCard[]; session: UploadSession; csrf: UploadSessionCsrf };
 type FileState =
   | { phase: "choose"; problem: string | null }
   | { phase: "sending"; progress: UploadProgress }
@@ -253,19 +259,24 @@ function FinalizeAndSend({ view }: { view: Extract<UploadStageView, { kind: "ack
   const headingId = useId();
   const [finalized, setFinalized] = useState<Finalized | null>(null);
   const [failed, setFailed] = useState(false);
+  const csrf = useCsrf("api.embryo-cohorts");
 
   async function finalize(ids: Partial<Record<string, string>>) {
     const insurance = ids["disclosure.insurance-and-discrimination"] ?? view.signed["disclosure.insurance-and-discrimination"];
     const charter = ids["charter.future-person"] ?? view.signed["charter.future-person"];
     setFailed(false);
-    const response = await fetch(route("api.embryo-cohorts", {}), {
+    const response = await csrf.send((csrfToken) => fetch(route("api.embryo-cohorts", {}), {
       method: "POST", credentials: "same-origin", cache: "no-store",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", "X-Inherit-CSRF": csrfToken },
       body: JSON.stringify({ cohortDraftId: view.draftId, insuranceAcknowledgementId: insurance,
         futurePersonCharterAcknowledgementId: charter, nonce: view.finalizeNonce }),
-    });
+    }));
     if (response.status !== 201) { setFailed(true); return; }
-    try { setFinalized(readUploadReceipt(await response.json())); }
+    // The upload session's first one-time tokens travel in their own answer
+    // header; this answer's X-Inherit-CSRF is api.embryo-cohorts' successor (G8.5).
+    const sessionCsrf = readUploadSessionCsrf(response.headers);
+    if (!sessionCsrf) { setFailed(true); return; }
+    try { setFinalized({ ...readUploadReceipt(await response.json()), csrf: sessionCsrf }); }
     catch { setFailed(true); }
   }
 
@@ -291,7 +302,7 @@ function FileStep({ finalized }: { finalized: Finalized }) {
     if (!chosen || state.phase === "sending") return;
     setState({ phase: "sending", progress: { phase: "reading" } });
     try {
-      await sendEmbryoFile({ file: chosen, session: finalized.session,
+      await sendEmbryoFile({ file: chosen, session: finalized.session, csrf: finalized.csrf,
         onProgress: (progress) => setState({ phase: "sending", progress }),
         // A laboratory table's question, asked on this screen; the upload
         // waits for the reader's answer and then carries on.

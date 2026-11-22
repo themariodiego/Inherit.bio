@@ -2,27 +2,30 @@
 
 import {useEffect,useRef,useState} from "react";
 import {keylessVerificationResponse,type ReviewPageCase} from "@/lib/future-person/review-page-contract";
+import {useCsrf} from "@/components/security/csrf-provider";
 
 /** This control only verifies the documentary tuple and reads its candidate.
  * It offers no approval or release action and stores nothing outside memory. */
-export function KeylessDocumentVerification({claimId,reviewRevision,csrf,nonce,documentsRead,onVerified}:{
-  claimId:string;reviewRevision:number;csrf:string;nonce:string;documentsRead:boolean;
+export function KeylessDocumentVerification({claimId,reviewRevision,nonce,documentsRead,onVerified}:{
+  claimId:string;reviewRevision:number;nonce:string;documentsRead:boolean;
   onVerified:(reviewCase:ReviewPageCase,proof:string|null)=>void;
 }) {
   const [fullName,setFullName]=useState("");const [dateOfBirth,setDateOfBirth]=useState("");
   const [adult,setAdult]=useState(false);const [busy,setBusy]=useState(false);const [message,setMessage]=useState("");
   const active=useRef<AbortController|null>(null);
+  // The reviewer's one-time X-Inherit-CSRF token for this route, which the page renders (G8.5).
+  const csrf=useCsrf("api.future-person-documentary-verification");
   useEffect(()=>()=>{active.current?.abort();active.current=null;},[]);
   async function verify() {
     if(!documentsRead||busy||!adult||fullName.trim().length<2||dateOfBirth.length!==10)return;
     const controller=new AbortController();active.current=controller;setBusy(true);setMessage("");
     const timeout=setTimeout(()=>controller.abort(),20000);
     try{
-      const response=await fetch(`/api/reviews/future-person/claims/${claimId}/verify-documents`,{
+      const response=await csrf.send(token=>fetch(`/api/reviews/future-person/claims/${claimId}/verify-documents`,{
         method:"POST",credentials:"same-origin",cache:"no-store",signal:controller.signal,
-        headers:{"content-type":"application/json","x-inherit-csrf":csrf},body:JSON.stringify({reviewRevision,nonce,
+        headers:{"content-type":"application/json","x-inherit-csrf":token},body:JSON.stringify({reviewRevision,nonce,
           documentaryAttestation:{fullName,dateOfBirth,photoIdentityReviewed:true,birthRecordReviewed:true,adultAgeConfirmed:true}}),
-      });
+      }));
       const parsed=keylessVerificationResponse.safeParse(await response.json());
       if(response.status!==200||!parsed.success||parsed.data.reviewCase.claimId!==claimId
         ||parsed.data.reviewCase.reviewRevision!==reviewRevision)throw new Error("unavailable");

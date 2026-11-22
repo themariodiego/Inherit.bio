@@ -2,14 +2,15 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { claimDataKey, openDocumentBytes } from "./document-envelope";
 import { mintPublicFormToken } from "@/lib/embryos/operation-token";
 import { rightsSessionHash } from "@/lib/embryos/rights-session";
-import { ownerObjectionBody, ownerObjectionCsrf, ownerObjectionMutation, sealOwnerObjection } from "./owner-objection";
+import { ownerObjectionBody, ownerObjectionMutation, sealOwnerObjection } from "./owner-objection";
+import * as ownerObjection from "./owner-objection";
 const scope = { claimId: "61000000-0000-4000-8000-000000000001", noticeId: "61000000-0000-4000-8000-000000000002", noticeRevision: 2 };
 const secret = "a".repeat(43); const hash = rightsSessionHash(secret);
 beforeEach(() => vi.stubEnv("BYOK_ENCRYPTION_KEY", Buffer.alloc(32, 18).toString("base64")));
 afterEach(() => vi.unstubAllEnvs());
 const text = "The supplied record link needs a named person's review.";
 function request(token: string, edits: HeadersInit = {}) {
-  const headers = new Headers({ cookie: `inherit-rights=${secret}`, origin: "http://localhost", "sec-fetch-site": "same-origin", "x-inherit-csrf": ownerObjectionCsrf(hash) });
+  const headers = new Headers({ cookie: `inherit-rights=${secret}`, origin: "http://localhost", "sec-fetch-site": "same-origin" });
   new Headers(edits).forEach((value, key) => headers.set(key, value));
   return { request: new Request("http://localhost/api/future-person/claim/session/objection", { method: "POST", headers }), token };
 }
@@ -33,7 +34,12 @@ describe("owner-only objection envelope and proof", () => {
   it("accepts only the current cookie's distinct recent operation proof and same origin", () => {
     const token = mintPublicFormToken("future-person-claim-objection", Date.now(), hash);
     const current = request(token); expect(ownerObjectionMutation(current.request, current.token)).not.toBeNull();
-    const refusalHeaders: Record<string, string>[] = [{ origin: "https://example.test" }, { "sec-fetch-site": "cross-site" }, { "x-inherit-csrf": "f".repeat(64) },
+    // 2026-11-19 (owner decision "G8.5: the claim-objection address accepts either kind of session"):
+    // { "x-inherit-csrf": "f".repeat(64) } left this list, and the rights session's digest
+    // (ownerObjectionCsrf) is gone: the gate spends a one-time token of the rights session before
+    // this branch reads anything (session-csrf-routes.test.ts).
+    expect(Object.keys(ownerObjection)).not.toContain("ownerObjectionCsrf");
+    const refusalHeaders: Record<string, string>[] = [{ origin: "https://example.test" }, { "sec-fetch-site": "cross-site" },
       { cookie: `inherit-rights=${secret}; inherit-rights=${secret}` }];
     for (const edits of refusalHeaders) {
       const altered = request(token, edits); expect(ownerObjectionMutation(altered.request, altered.token)).toBeNull();

@@ -12,6 +12,7 @@ import {
   readGrantRightsPresentation,
 } from "@/lib/uploads/grant-rights-presentation";
 import { isExactKeys, otherAdultTypedNameIsValid } from "@/lib/uploads/other-adult-upload";
+import { withPurposeCsrf, readRightsCsrfSession } from "@/lib/security/session-csrf";
 
 /**
  * `POST /api/consents/grant/session` (register api.consent-grant-rights). A
@@ -38,7 +39,9 @@ import { isExactKeys, otherAdultTypedNameIsValid } from "@/lib/uploads/other-adu
  * uploader of a no-account subject only while a 730-day clock is live and
  * before the 30-day re-notice boundary (owner decision 2026-10-22,
  * 20261016204000). copilot.local is accepted by the closed body and refused
- * by the database until a Path B Copilot scope exists.
+ * by the database: the Path B Copilot scope (20261120130000) reads only a
+ * record its person holds with their own account, so a no-account person's
+ * Copilot choice would authorize nothing.
  */
 
 const body = z.object({
@@ -59,7 +62,8 @@ const RECEIPT = z.object({
 }).strict();
 const RECEIPT_KEYS = ["recordKind", "recordId", "artifactKey", "artifactVersion", "purposeKey", "signedAt"] as const;
 
-export async function POST(request: Request) {
+export const POST = withPurposeCsrf("api.consent-grant-rights", readRightsCsrfSession, handlePost);
+async function handlePost(request: Request) {
   if (!isTestJurisdictionEnabled()) return notFound();
   const parsed = body.safeParse(await readJson(request));
   if (!parsed.success) return notFound();

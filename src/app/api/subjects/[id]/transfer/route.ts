@@ -1,10 +1,11 @@
 import { z } from "zod";
 import { getSensitiveAccountContext } from "@/lib/account-deletion";
 import { invalidRequest, notFound, unavailable } from "@/lib/embryos/api";
-import { closedResponse, originDenied, readJson, unauthorized } from "@/lib/embryos/guards";
+import { closedResponse, originDenied, readJson, unauthenticated } from "@/lib/embryos/guards";
 import { SUBJECT_OPERATION_NONCE_MAX_LENGTH, verifySubjectOperationNonce } from "@/lib/subject-endpoints/operation-nonce";
 import { isCanonicalSubjectId, isJsonRequest } from "@/lib/subject-endpoints/request";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { withAccountCsrf } from "@/lib/security/session-csrf";
 
 /**
  * `POST /api/subjects/[id]/transfer` (register api.subject-transfer;
@@ -17,10 +18,13 @@ import { createAdminClient } from "@/lib/supabase/admin";
  * results stay readable under their own grants, and the uploader loses all
  * access. A record with a file still pending is not found.
  *
- * Built closed under the 2026-10-22 rule for wording nobody has approved:
- * the contract's three notices have no approved text, so the database door
- * answers not found and writes nothing until they do. This route is the
- * complete request contract in front of that door.
+ * Built closed under the 2026-10-22 rule for wording nobody has approved,
+ * and opened by migration 20261122120000 once the owner approved the
+ * contract's three notices (owner decision of 22 November 2026, "The
+ * transfer notices are approved, with one added line, and the transfer is
+ * switched on"): the database door runs the transfer and queues those
+ * notices. Path B, the only way such a record exists, is test mode only.
+ * This route is the complete request contract in front of that door.
  *
  * The body is exactly `{"nonce": "..."}`: the one-time code the
  * confirmation page renders for this route and this subject. Its hash is
@@ -41,11 +45,12 @@ const transferred = z.object({
 
 const TRANSFER_KEYS = ["status", "subjectId", "effectiveAt"] as const;
 
-export async function POST(request: Request, context: { params: Promise<{ id: string }> }) {
+export const POST = withAccountCsrf("api.subject-transfer", handlePost);
+async function handlePost(request: Request, context: { params: Promise<{ id: string }> }) {
   const { id } = await context.params;
   if (!isCanonicalSubjectId(id)) return notFound();
   const account = await getSensitiveAccountContext();
-  if (!account) return unauthorized();
+  if (!account) return unauthenticated();
   const forbidden = originDenied(request);
   if (forbidden) return forbidden;
 

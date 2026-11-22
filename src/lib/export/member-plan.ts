@@ -20,6 +20,7 @@ import plan from "../../../docs/export-member-plan.json";
 
 export const EXPORT_DISPOSITIONS = [
   "exported",
+  "complete-empty",
   "excluded-credential",
   "excluded-protected",
   "excluded-internal",

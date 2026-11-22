@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import { IntentLink } from "@/components/site/intent-link";
 import { OwnUploadEntry } from "@/components/uploads/own-upload-entry";
 import { HeldForYouRows, OtherAdultHeldRows, PathBChoicesSection } from "@/components/uploads/other-adult-upload-section";
 import { AutoRefresh } from "@/components/uploads/auto-refresh";
 import { FileRowActions } from "@/components/uploads/file-row-actions";
+import { OwnUploadWithdrawal } from "@/components/uploads/own-upload-withdrawal";
 import { RecordHead } from "@/components/records/record-head";
 import { Breadcrumbs } from "@/components/site/breadcrumbs";
 import { NAV_LABELS } from "@/copy/navigation";
@@ -12,8 +13,11 @@ import { route } from "@/lib/primary-routes";
 import { resolveSubjectForAccount } from "@/lib/subjects";
 import { createClient } from "@/lib/supabase/server";
 import { formatBytes } from "@/lib/limits";
+import { getPageAccountContext } from "@/lib/page-account-context";
+import { mintPersonOperationNonce } from "@/lib/person-operation-nonce";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { fileStatusLabel } from "@/lib/uploads/file-status";
+import { prepareOwnUploadWithdrawal } from "@/lib/uploads/own-upload-withdrawal";
 
 const FILES_TITLE = "My files";
 
@@ -34,7 +38,19 @@ export default async function UploadsPage() {
   // subject, read only for its label (round-2 M8).
   const self = user ? await resolveSubjectForAccount(user.id, "me") : null;
 
-  const { data: stats } = await createAdminClient().rpc("processing_time_stats");
+  const [{ data: stats }, ownUpload, account] = await Promise.all([
+    createAdminClient().rpc("processing_time_stats"),
+    // The withdrawal of the consent to store these files (owner decision of
+    // 19 November 2026); nothing when that consent is not live.
+    prepareOwnUploadWithdrawal(),
+    getPageAccountContext(),
+  ]);
+  // Deleting a file spends a one-time value (api.file-delete; G8.5, 20
+  // November 2026, "where the register is stricter, engineering codes to
+  // it"), rendered here for this account, session and each file, and stored
+  // nowhere. Every render brings fresh ones.
+  const deleteNonce = (fileId: string) => account ? mintPersonOperationNonce({ accountId: account.user.id,
+    sessionId: account.sessionId, operation: "file_delete", targetId: fileId }) : null;
   const tier1 = stats?.find((s: { file_tier: number }) => s.file_tier === 1);
 
   const inFlight = (files ?? []).some(
@@ -107,9 +123,9 @@ export default async function UploadsPage() {
           <p>
             Your own DNA only — files from children or relatives aren&rsquo;t
             allowed (
-            <Link href="/terms#eligibility" className="prose-link">
+            <IntentLink href="/terms#eligibility" className="prose-link">
               Terms
-            </Link>
+            </IntentLink>
             ).
           </p>
           {/* <wbr /> after each slash lets the provider token wrap on narrow
@@ -163,25 +179,26 @@ export default async function UploadsPage() {
                     {fileStatusLabel(f)}
                   </span>
                   {f.status === "annotated" ? (
-                    <Link
+                    <IntentLink
                       href="/genome/me/reports"
                       className="link-target prose-link whitespace-nowrap text-sm"
                     >
                       See your reports →
-                    </Link>
+                    </IntentLink>
                   ) : f.status === "stored" && f.tier === 1 && f.normalization_completed_at !== null ? (
-                    <Link
+                    <IntentLink
                       href="/genome/me/reports"
                       className="link-target prose-link whitespace-nowrap text-sm"
                     >
                       Choose reports →
-                    </Link>
+                    </IntentLink>
                   ) : null}
                   <FileRowActions
                     fileId={f.id}
                     status={f.status}
                     tier={f.tier}
                     preparationOnly={f.single_logical_sample_verified_at !== null}
+                    deleteNonce={deleteNonce(f.id)}
                   />
                 </div>
               </li>
@@ -191,6 +208,8 @@ export default async function UploadsPage() {
       ) : (
         timing
       )}
+
+      <OwnUploadWithdrawal view={ownUpload} />
     </div>
   );
 }

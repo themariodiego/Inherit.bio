@@ -265,7 +265,7 @@ describe("api.invitations and api.rights-activate bodies", () => {
       { targetCohortDraftId: DRAFT_ID, contactEmail: "parent@example.org", note: "hello" },
       { targetCohortDraftId: DRAFT_ID, contactEmail: "parent@example.org", participantRole: "parent_b" },
       { targetCohortDraftId: DRAFT_ID },
-      { kind: "other_adult", adultFlow: "path-a-own-account", email: "parent@example.org", adultAttestation: true, requestId: DRAFT_ID },
+      { kind: "adult", adultFlow: "path-a-own-account", contactEmail: "parent@example.org", requestId: DRAFT_ID },
     ]) {
       expect(coParentInvitationBody.safeParse(bad).success).toBe(false);
     }

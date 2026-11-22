@@ -11,6 +11,7 @@ function render(enabled: string[] = [], reconsent: Record<string, Reconsent> = {
   const view: Extract<OwnReportChoicesView, { kind: "ready" }> = { kind: "ready", subjectId: files[0].id,
     choices: OWN_REPORT_PURPOSES.map(purpose => ({ purposeKey: purpose, ...OWN_REPORT_CHOICES[purpose],
       granted: enabled.includes(purpose), grantId: enabled.includes(purpose) ? files[0].id : null,
+      revokeNonce: enabled.includes(purpose) ? `revoke-${purpose}` : null,
       token: `test-${purpose}`, statementKeys: ["make-this-result-for-me"],
       artifact: { key: OWN_REPORT_CHOICES[purpose].artifactKey, version: 2, body: `Terms for ${purpose}` },
       reconsent: reconsent[purpose] ?? null,

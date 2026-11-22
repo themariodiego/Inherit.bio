@@ -52,3 +52,20 @@ describe("auth action density without smaller targets", () => {
     expect(html).toContain(submitLabel);
   });
 });
+
+describe("auth action ink without a filled shape", () => {
+  it.each(forms)("renders the $name submit as the forest outline at the same 44px target", ({ fields, submitLabel }) => {
+    const html = renderToStaticMarkup(createElement(AuthForm, { fields, submitLabel, onSubmit: vi.fn() }));
+    const button = html.match(/<button\b[^>]*>/u)?.[0];
+    expect(button).toBeDefined();
+    expect(button).toContain('type="submit"');
+    expect(button).toContain('data-variant="outline"');
+    expect(button).toContain("border-forest");
+    expect(button).toContain("text-forest");
+    expect(button).not.toMatch(/\bbg-forest\b/u);
+    expect(button).toContain("h-11");
+    expect(button).toContain("w-fit");
+    expect(button).toContain("rounded-full");
+    expect(html).toContain(`>${submitLabel}<`);
+  });
+});

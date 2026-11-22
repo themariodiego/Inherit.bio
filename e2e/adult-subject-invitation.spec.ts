@@ -2,13 +2,20 @@ import { expect, test } from "./audited-test";
 import crypto from "node:crypto";
 import http from "node:http";
 import {
+  ADULT_SUBJECT_TYPED_NAME,
   adminClient,
   adultInvitationToken,
   createConfirmedUser,
   drainMailUntil,
+  expectAxeClean,
   findUserByEmail,
   signIn,
+  tickAdultSubjectStatements,
+  typeAdultSubjectName,
 } from "./helpers";
+import { ADULT_SUBJECT_STATEMENTS, ADULT_SUBJECT_STATEMENTS_HEADING } from "../src/copy/family/adult-subject-statements";
+import { PATH_B_REQUEST_COPY } from "../src/copy/upload/other-adult";
+import { accountCsrf, signOut } from "./helpers/session-csrf";
 
 // A fresh inviter per run: the database counts invitation attempts per acting
 // account (global-contact-refusal-bar-v1.quotaAuthority, 10 an hour and 30 a
@@ -148,7 +155,7 @@ test("/family/invite complete: invited adult accepts without granting inviter ac
   const afterScanner = await admin.from("token_hashes").select("status").eq("token_hash", tokenHash).single();
   expect(afterScanner.data?.status, "a scanner GET must not activate the token").toBe("current");
 
-  await page.request.post("/auth/sign-out");
+  await signOut(page);
   const outgoing: { url: string; method: string; body: string | null }[] = [];
   page.on("request", request => outgoing.push({ url: request.url(), method: request.method(), body: request.postData() }));
   await page.goto(link);
@@ -170,8 +177,9 @@ test("/family/invite complete: invited adult accepts without granting inviter ac
   await signIn(page, INVITER.email, INVITER.password);
   await page.goto("/withdraw/session");
   await expect(page.getByRole("button", { name: "Accept through my account" })).toHaveCount(0);
+  await expect(page.getByRole("checkbox"), "no statement is offered to an account that cannot accept").toHaveCount(0);
   await expect(page.getByRole("button", { name: "Refuse", exact: true })).toBeVisible();
-  await page.request.post("/auth/sign-out");
+  await signOut(page);
 
   await page.goto("/withdraw/session");
   await page.getByRole("link", { name: "Sign in to accept" }).click();
@@ -179,8 +187,65 @@ test("/family/invite complete: invited adult accepts without granting inviter ac
   await page.getByLabel("Password").fill(RECIPIENT.password);
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
   await expect(page).toHaveURL("http://localhost:3100/withdraw/session");
-  await page.getByRole("button", { name: "Accept through my account" }).click();
+
+  // D-103: the five signed statements, each its own checkbox named by its
+  // sentence, in the published order, and the typed name (owner decision of
+  // 23 October 2026). Accept stays disabled until all five are ticked and a
+  // name of two parts of two characters is typed. The audit runs on this
+  // screen, which only an invitation reaches.
+  const acceptControl = page.getByRole("button", { name: "Accept through my account", exact: true });
+  const statements = page.getByRole("group", { name: ADULT_SUBJECT_STATEMENTS_HEADING, exact: true }).getByRole("checkbox");
+  const nameField = page.getByRole("textbox", { name: PATH_B_REQUEST_COPY.typedNameLabel, exact: true });
+  await expectAxeClean(page);
+  await expect(statements).toHaveCount(ADULT_SUBJECT_STATEMENTS.length);
+  for (const [index, statement] of ADULT_SUBJECT_STATEMENTS.entries()) {
+    await expect(statements.nth(index)).toHaveAccessibleName(statement.text);
+    await expect(statements.nth(index)).not.toBeChecked();
+  }
+  await expect(nameField).toHaveValue("");
+  await expect(acceptControl).toBeDisabled();
+  await typeAdultSubjectName(page);
+  for (const missing of ADULT_SUBJECT_STATEMENTS) {
+    for (const statement of ADULT_SUBJECT_STATEMENTS) {
+      await page.getByRole("checkbox", { name: statement.text, exact: true }).setChecked(statement.key !== missing.key);
+    }
+    await expect(acceptControl, `Accept with "${missing.key}" unticked`).toBeDisabled();
+  }
+  for (const statement of ADULT_SUBJECT_STATEMENTS) {
+    await page.getByRole("checkbox", { name: statement.text, exact: true }).uncheck();
+  }
+  await tickAdultSubjectStatements(page);
+  for (const invalid of ["", "   ", "Synthetic", "Synthetic I"]) {
+    await nameField.fill(invalid);
+    await expect(acceptControl, `Accept with the name ${JSON.stringify(invalid)}`).toBeDisabled();
+  }
+  await typeAdultSubjectName(page);
+  await expect(acceptControl).toBeEnabled();
+  // The acceptance goes to api.invitation-accept, the route the register
+  // names for Path A; api.withdraw is no longer asked.
+  const outgoingBefore = outgoing.length;
+  const confirmResponse = page.waitForResponse(answer =>
+    new URL(answer.url()).pathname === "/api/invitations/accept" && answer.request().method() === "POST");
+  await acceptControl.click();
+  const accepted = await confirmResponse;
+  const confirmBody = accepted.request().postDataJSON() as Record<string, unknown>;
+  expect(Object.keys(confirmBody).sort()).toEqual(["nonce", "subjectArtifact"]);
+  expect(confirmBody.subjectArtifact).toEqual({
+    artifactKey: "consent.subject-adult", artifactVersion: expect.any(Number), artifactPresentationToken: expect.any(String),
+    affirmed: true, statementKeys: ADULT_SUBJECT_STATEMENTS.map(statement => statement.key), typedName: ADULT_SUBJECT_TYPED_NAME,
+  });
+  expect(accepted.status()).toBe(200);
+  const receipt = await accepted.json() as Record<string, unknown>;
+  expect(receipt).toEqual({ invitationKind: "adult_subject", status: "accepted", subjectId: invitation.target_id,
+    subjectAccountBound: true, accountOrigin: "existing_account", activationBlock: "pending_exact_purpose" });
+  expect(JSON.stringify(receipt), "the receipt never carries the typed name").not.toContain(ADULT_SUBJECT_TYPED_NAME);
+  expect(outgoing.slice(outgoingBefore).some(entry => new URL(entry.url).pathname === "/api/withdraw/session"),
+    "accepting posts nothing to api.withdraw").toBe(false);
   await expect(page.getByRole("heading", { name: "Invitation accepted" })).toBeVisible();
+  // The same request again is refused: its nonce and its rights session are spent.
+  const replay = await page.request.post("/api/invitations/accept", { headers: { origin: "http://localhost:3100",
+    "sec-fetch-site": "same-origin", "x-inherit-csrf": await accountCsrf(page, "api.invitation-accept") }, data: confirmBody });
+  expect(replay.status()).toBe(404);
 
   // Both fixture addresses are fixed, so they age: `listUsers` returns page
   // one, newest first, and after a few hundred accounts these two sit past it.
@@ -194,6 +259,19 @@ test("/family/invite complete: invited adult accepts without granting inviter ac
     .eq("id", invitation.target_id)
     .single();
   expect(subject).toEqual({ subject_account_id: recipientId, lifecycle: "active" });
+  // The signature records the five keys the person ticked, in order, and the
+  // typed name as ciphertext only, the way Path B's signature stores it.
+  const { data: signature, error: signatureError } = await admin
+    .from("consent_signatures")
+    .select("artifact_key, statement_keys, signer_account_id, signing_name_encrypted")
+    .eq("target_kind", "subject").eq("target_id", invitation.target_id)
+    .eq("purpose", "adult-subject-account-acceptance")
+    .single();
+  expect(signatureError).toBeNull();
+  expect(signature).toEqual({ artifact_key: "consent.subject-adult", signer_account_id: recipientId,
+    statement_keys: ADULT_SUBJECT_STATEMENTS.map(statement => statement.key), signing_name_encrypted: expect.stringMatching(/^\\x[0-9a-f]{32,}$/) });
+  const plaintextHex = Buffer.from(ADULT_SUBJECT_TYPED_NAME, "utf8").toString("hex");
+  expect(String(signature!.signing_name_encrypted), "the name is never stored as text").not.toContain(plaintextHex);
   const { count: inviterGrants } = await admin
     .from("directional_grants")
     .select("grant_id", { count: "exact", head: true })
@@ -235,7 +313,7 @@ test("/withdraw/[token] complete: pinned /withdraw/session refusal closes the re
 
   // No account, and prove it rather than assume it: refusing must not require
   // a stranger to register first.
-  await page.request.post("/auth/sign-out");
+  await signOut(page);
   await page.context().clearCookies();
   await page.goto(link);
   await page.getByRole("button", { name: "Continue", exact: true }).click();
@@ -243,6 +321,7 @@ test("/withdraw/[token] complete: pinned /withdraw/session refusal closes the re
   await expect(page.getByText("No genetic data has been shared")).toBeVisible();
   await expect(page.getByRole("link", { name: "Sign in to accept" }),
     "accepting needs an account; refusing does not").toBeVisible();
+  await expect(page.getByRole("checkbox"), "the statements are for the account that can accept").toHaveCount(0);
 
   await page.getByRole("button", { name: "Refuse", exact: true }).click();
 
@@ -325,7 +404,7 @@ test("signed-out current-session deletion closes only the empty reservation with
   const refusalsBefore = await refusalRows();
   expect(refusalsBefore).toEqual({ legacy: [], canonical: [] });
 
-  await page.request.post("/auth/sign-out");
+  await signOut(page);
   await page.context().clearCookies();
   await page.goto(link);
   await page.getByRole("button", { name: "Continue", exact: true }).click();
@@ -389,7 +468,7 @@ test("/withdraw/[token] processing: the signed-out session announces its pending
   const credential = await admin.from("token_hashes").select("id").eq("token_hash", tokenHash).single();
   expect(credential.error).toBeNull();
 
-  await page.request.post("/auth/sign-out");
+  await signOut(page);
   await page.context().clearCookies();
   await page.goto(link);
   await page.getByRole("button", { name: "Continue", exact: true }).click();

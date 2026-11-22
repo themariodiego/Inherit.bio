@@ -1,0 +1,57 @@
+# LOCAL ONLY pgTAP runs, local stack 127.0.0.1:54322, 2026-11-19. Each left the fingerprint and ledger unchanged (pgTAP dropped after each run).
+# The 4 suites of these migrations are HEAD's (pnpm exec supabase test db --local supabase/tests/<file>, after pnpm gate:sql-includes). The follow-up's suite is 77d04563's supabase/tests (rehearsal/scripts/suite.sh).
+== follow-up suite (77d04563) on the pre-state (mirror build 3)
+Files=235, Tests=16034, 458 wallclock secs ( 2.11 usr  0.26 sys +  2.28 cusr  1.78 csys =  6.43 CPU)
+Result: PASS
+real	7m40.422s
+== follow-up suite (77d04563) after batch 1 (mirror build 2)
+Test Summary Report
+-------------------
+export_member_plan.sql                       (Wstat: 0 Tests: 40 Failed: 3)
+  Failed tests:  2-3, 13
+legal_audit_attribution_completeness.sql     (Wstat: 0 Tests: 83 Failed: 1)
+  Failed test:  77
+Files=235, Tests=16034, 454 wallclock secs ( 2.31 usr  0.34 sys +  2.34 cusr  1.76 csys =  6.75 CPU)
+Result: FAIL
+real	7m36.421s
+# Failed test 2: "the plan names every table in public and private, and no other"
+#     Extra records:
+#         (private.session_csrf_token_uses)
+# Failed test 3: "no table is missing from the plan"
+#         have: ["private.session_csrf_token_uses"]
+#         want: []
+# Failed test 13: "the plan holds against the catalog"
+# Looks like you failed 3 tests of 40
+Failed 3/40 subtests 
+# Failed test 77: "the rights-session controller is unchanged, and the derived controller, the consumer and the bind are their reviewed bodies"
+#         have: {159a4f50563935de05351b8ef320c6f8,b1e3b29ba8d18d67e1a16aefaf929550,f6201a3830d82dcd8a95d2b8487b59ad,6869593d67ff37d93a6d4caea62f01c3}
+#         want: {159a4f50563935de05351b8ef320c6f8,b1e3b29ba8d18d67e1a16aefaf929550,f6201a3830d82dcd8a95d2b8487b59ad,933df95029c3f1f8a9a306726fccccff}
+# Looks like you failed 1 test of 83
+Failed 1/83 subtests 
+== copilot_settings_delete_nonce.sql after batch 1 (mirror build 2)
+Files=1, Tests=24,  0 wallclock secs ( 0.01 usr +  0.01 sys =  0.02 CPU)
+Result: PASS
+== session_csrf_tokens.sql after batch 1 (mirror build 2)
+Files=1, Tests=30,  0 wallclock secs ( 0.01 usr  0.01 sys +  0.01 cusr  0.00 csys =  0.03 CPU)
+Result: PASS
+== consent_revoke_provider_nonce.sql after batch 1 (mirror build 2)
+Files=1, Tests=34,  0 wallclock secs ( 0.01 usr +  0.00 sys =  0.01 CPU)
+Result: PASS
+== path_a_account_accept_typed_name.sql after batch 1 (mirror build 2)
+psql:supabase/tests/path_a_account_accept_typed_name.sql:59: ERROR:  function public.accept_adult_subject_invitation_v1(text, text, uuid, uuid, jsonb, bytea) does not exist
+  Non-zero exit status: 3
+  Parse errors: No plan found in TAP output
+Files=1, Tests=1,  0 wallclock secs ( 0.01 usr +  0.01 sys =  0.02 CPU)
+Result: FAIL
+== copilot_settings_delete_nonce.sql on a fresh build of HEAD (281 migrations, supabase db reset --local), where #4's guard holds
+Files=1, Tests=24,  0 wallclock secs ( 0.02 usr +  0.00 sys =  0.02 CPU)
+Result: PASS
+== session_csrf_tokens.sql on a fresh build of HEAD (281 migrations, supabase db reset --local), where #4's guard holds
+Files=1, Tests=30,  0 wallclock secs ( 0.01 usr +  0.01 sys =  0.02 CPU)
+Result: PASS
+== consent_revoke_provider_nonce.sql on a fresh build of HEAD (281 migrations, supabase db reset --local), where #4's guard holds
+Files=1, Tests=34,  0 wallclock secs ( 0.02 usr +  0.01 sys =  0.03 CPU)
+Result: PASS
+== path_a_account_accept_typed_name.sql on a fresh build of HEAD (281 migrations, supabase db reset --local), where #4's guard holds
+Files=1, Tests=52,  0 wallclock secs ( 0.02 usr +  0.00 sys =  0.02 CPU)
+Result: PASS

@@ -1,0 +1,275 @@
+{
+  "baseline": {
+    "passed": 992,
+    "failed": 0,
+    "failures": []
+  },
+  "plants": [
+    {
+      "id": "P1",
+      "plant": "the strict rule accepts a matching Origin alone (isSameOrigin's looser rule)",
+      "file": "src/lib/security/same-origin.ts",
+      "passed": 966,
+      "failed": 26,
+      "caughtBy": [
+        "src/proxy.test.ts > policy.sameOriginRequired at the proxy api.subject-upload-issue POST /api/uploads: refuses the right Origin with no marker before reading any session, signed in, signed out or in the deletion notice",
+        "src/proxy.test.ts > policy.sameOriginRequired at the proxy api.subject-upload-issue POST /api/uploads: refuses same-site before reading any session, signed in, signed out or in the deletion notice",
+        "src/proxy.test.ts > policy.sameOriginRequired at the proxy api.subject-upload-issue POST /api/uploads: refuses none before reading any session, signed in, signed out or in the deletion notice",
+        "src/proxy.test.ts > policy.sameOriginRequired at the proxy api.file-delete DELETE /api/files/12345678-1234-4234-8234-00000000000d: refuses the right Origin with no marker before reading any session, signed in, signed out or in the deletion notice",
+        "src/proxy.test.ts > policy.sameOriginRequired at the proxy api.file-delete DELETE /api/files/12345678-1234-4234-8234-00000000000d: refuses same-site before reading any session, signed in, signed out or in the deletion notice",
+        "src/proxy.test.ts > policy.sameOriginRequired at the proxy api.file-delete DELETE /api/files/12345678-1234-4234-8234-00000000000d: refuses none before reading any session, signed in, signed out or in the deletion notice",
+        "src/proxy.test.ts > policy.sameOriginRequired at the proxy applies to the bound routes on their registered methods only, and to no other registered route",
+        "src/lib/security/same-origin.test.ts > the strict rule (isStrictSameOrigin) the right Origin with no marker: { origin: 'https://inherit.test' }",
+        "src/lib/security/same-origin.test.ts > the strict rule (isStrictSameOrigin) same-site: { origin: 'https://inherit.test', 'sec-fetch-site': 'same-site' }",
+        "src/lib/security/same-origin.test.ts > the strict rule (isStrictSameOrigin) none (a typed address or bookmark): { origin: 'https://inherit.test', 'sec-fetch-site': 'none' }",
+        "src/lib/security/same-origin.test.ts > the strict rule (isStrictSameOrigin) the marker in another case: { origin: 'https://inherit.test', 'sec-fetch-site': 'Same-Origin' }",
+        "src/lib/security/same-origin.test.ts > the strict rule (isStrictSameOrigin) the marker sent twice: { origin: 'https://inherit.test', 'sec-fetch-site': 'same-origin, same-origin' }",
+        "src/lib/security/same-origin.test.ts > the CSRF wrapper applies the rule to the bound routes, and to no other api.subject-upload-issue",
+        "src/lib/security/same-origin.test.ts > the CSRF wrapper applies the rule to the bound routes, and to no other api.file-delete",
+        "src/lib/security/same-origin.test.ts > the bound routes' own handlers, through the real wrapper api.file-delete refuses missingMarker with the registered answer before any account, token or body is read",
+        "src/lib/security/same-origin.test.ts > the bound routes' own handlers, through the real wrapper api.file-delete refuses sameSite with the registered answer before any account, token or body is read",
+        "src/lib/security/same-origin.test.ts > the bound routes' own handlers, through the real wrapper api.file-delete refuses none with the registered answer before any account, token or body is read",
+        "src/lib/security/same-origin.test.ts > the bound routes' own handlers, through the real wrapper api.subject-upload-issue refuses missingMarker with the registered answer before any account, token or body is read",
+        "src/lib/security/same-origin.test.ts > the bound routes' own handlers, through the real wrapper api.subject-upload-issue refuses sameSite with the registered answer before any account, token or body is read",
+        "src/lib/security/same-origin.test.ts > the bound routes' own handlers, through the real wrapper api.subject-upload-issue refuses none with the registered answer before any account, token or body is read",
+        "src/lib/security/session-csrf.test.ts > withAccountCsrf refuses what the strict rule refuses before reading the session, on a bound route, and only there",
+        "src/app/api/files/[id]/route.test.ts > owner-authorized file deletion answers the right Origin with Sec-Fetch-Site null with request_forbidden, reading nothing",
+        "src/app/api/files/[id]/route.test.ts > owner-authorized file deletion answers the right Origin with Sec-Fetch-Site same-site with request_forbidden, reading nothing",
+        "src/app/api/files/[id]/route.test.ts > owner-authorized file deletion answers the right Origin with Sec-Fetch-Site cross-site with request_forbidden, reading nothing",
+        "src/app/api/files/[id]/route.test.ts > owner-authorized file deletion answers the right Origin with Sec-Fetch-Site none with request_forbidden, reading nothing",
+        "src/app/api/files/[id]/route.test.ts > owner-authorized file deletion answers the right Origin with Sec-Fetch-Site Same-Origin with request_forbidden, reading nothing"
+      ]
+    },
+    {
+      "id": "P2",
+      "plant": "the CSRF wrapper reads the account before the strict check",
+      "file": "src/lib/security/session-csrf.ts",
+      "passed": 972,
+      "failed": 20,
+      "caughtBy": [
+        "src/lib/security/same-origin.test.ts > the CSRF wrapper applies the rule to the bound routes, and to no other api.subject-upload-issue",
+        "src/lib/security/same-origin.test.ts > the CSRF wrapper applies the rule to the bound routes, and to no other api.file-delete",
+        "src/lib/security/same-origin.test.ts > the bound routes' own handlers, through the real wrapper api.file-delete refuses missingMarker with the registered answer before any account, token or body is read",
+        "src/lib/security/same-origin.test.ts > the bound routes' own handlers, through the real wrapper api.file-delete refuses neither with the registered answer before any account, token or body is read",
+        "src/lib/security/same-origin.test.ts > the bound routes' own handlers, through the real wrapper api.file-delete refuses crossSite with the registered answer before any account, token or body is read",
+        "src/lib/security/same-origin.test.ts > the bound routes' own handlers, through the real wrapper api.file-delete refuses sameSite with the registered answer before any account, token or body is read",
+        "src/lib/security/same-origin.test.ts > the bound routes' own handlers, through the real wrapper api.file-delete refuses none with the registered answer before any account, token or body is read",
+        "src/lib/security/same-origin.test.ts > the bound routes' own handlers, through the real wrapper api.file-delete refuses wrongOriginWithMarker with the registered answer before any account, token or body is read",
+        "src/lib/security/same-origin.test.ts > the bound routes' own handlers, through the real wrapper api.file-delete refuses otherSchemeWithMarker with the registered answer before any account, token or body is read",
+        "src/lib/security/same-origin.test.ts > the bound routes' own handlers, through the real wrapper api.file-delete refuses forwardedHostWithMarker with the registered answer before any account, token or body is read",
+        "src/lib/security/same-origin.test.ts > the bound routes' own handlers, through the real wrapper api.subject-upload-issue refuses missingMarker with the registered answer before any account, token or body is read",
+        "src/lib/security/same-origin.test.ts > the bound routes' own handlers, through the real wrapper api.subject-upload-issue refuses neither with the registered answer before any account, token or body is read",
+        "src/lib/security/same-origin.test.ts > the bound routes' own handlers, through the real wrapper api.subject-upload-issue refuses crossSite with the registered answer before any account, token or body is read",
+        "src/lib/security/same-origin.test.ts > the bound routes' own handlers, through the real wrapper api.subject-upload-issue refuses sameSite with the registered answer before any account, token or body is read",
+        "src/lib/security/same-origin.test.ts > the bound routes' own handlers, through the real wrapper api.subject-upload-issue refuses none with the registered answer before any account, token or body is read",
+        "src/lib/security/same-origin.test.ts > the bound routes' own handlers, through the real wrapper api.subject-upload-issue refuses wrongOriginWithMarker with the registered answer before any account, token or body is read",
+        "src/lib/security/same-origin.test.ts > the bound routes' own handlers, through the real wrapper api.subject-upload-issue refuses otherSchemeWithMarker with the registered answer before any account, token or body is read",
+        "src/lib/security/same-origin.test.ts > the bound routes' own handlers, through the real wrapper api.subject-upload-issue refuses forwardedHostWithMarker with the registered answer before any account, token or body is read",
+        "src/lib/security/session-csrf.test.ts > withAccountCsrf refuses what the strict rule refuses before reading the session, on a bound route, and only there",
+        "src/app/api/files/[id]/route.operation-nonce.test.ts > the order of api.file-delete's refusals refuses another origin before the account context is read or the session's token is spent (policy.sameOriginRequired)"
+      ]
+    },
+    {
+      "id": "P3",
+      "plant": "the proxy does not apply the rule",
+      "file": "src/proxy.ts",
+      "passed": 977,
+      "failed": 15,
+      "caughtBy": [
+        "src/proxy.test.ts > policy.sameOriginRequired at the proxy api.subject-upload-issue POST /api/uploads: refuses the right Origin with no marker before reading any session, signed in, signed out or in the deletion notice",
+        "src/proxy.test.ts > policy.sameOriginRequired at the proxy api.subject-upload-issue POST /api/uploads: refuses neither header before reading any session, signed in, signed out or in the deletion notice",
+        "src/proxy.test.ts > policy.sameOriginRequired at the proxy api.subject-upload-issue POST /api/uploads: refuses cross-site before reading any session, signed in, signed out or in the deletion notice",
+        "src/proxy.test.ts > policy.sameOriginRequired at the proxy api.subject-upload-issue POST /api/uploads: refuses same-site before reading any session, signed in, signed out or in the deletion notice",
+        "src/proxy.test.ts > policy.sameOriginRequired at the proxy api.subject-upload-issue POST /api/uploads: refuses none before reading any session, signed in, signed out or in the deletion notice",
+        "src/proxy.test.ts > policy.sameOriginRequired at the proxy api.subject-upload-issue POST /api/uploads: refuses another Origin with the marker before reading any session, signed in, signed out or in the deletion notice",
+        "src/proxy.test.ts > policy.sameOriginRequired at the proxy api.subject-upload-issue POST /api/uploads: refuses another Origin named by X-Forwarded-Host too before reading any session, signed in, signed out or in the deletion notice",
+        "src/proxy.test.ts > policy.sameOriginRequired at the proxy api.file-delete DELETE /api/files/12345678-1234-4234-8234-00000000000d: refuses the right Origin with no marker before reading any session, signed in, signed out or in the deletion notice",
+        "src/proxy.test.ts > policy.sameOriginRequired at the proxy api.file-delete DELETE /api/files/12345678-1234-4234-8234-00000000000d: refuses neither header before reading any session, signed in, signed out or in the deletion notice",
+        "src/proxy.test.ts > policy.sameOriginRequired at the proxy api.file-delete DELETE /api/files/12345678-1234-4234-8234-00000000000d: refuses cross-site before reading any session, signed in, signed out or in the deletion notice",
+        "src/proxy.test.ts > policy.sameOriginRequired at the proxy api.file-delete DELETE /api/files/12345678-1234-4234-8234-00000000000d: refuses same-site before reading any session, signed in, signed out or in the deletion notice",
+        "src/proxy.test.ts > policy.sameOriginRequired at the proxy api.file-delete DELETE /api/files/12345678-1234-4234-8234-00000000000d: refuses none before reading any session, signed in, signed out or in the deletion notice",
+        "src/proxy.test.ts > policy.sameOriginRequired at the proxy api.file-delete DELETE /api/files/12345678-1234-4234-8234-00000000000d: refuses another Origin with the marker before reading any session, signed in, signed out or in the deletion notice",
+        "src/proxy.test.ts > policy.sameOriginRequired at the proxy api.file-delete DELETE /api/files/12345678-1234-4234-8234-00000000000d: refuses another Origin named by X-Forwarded-Host too before reading any session, signed in, signed out or in the deletion notice",
+        "src/proxy.test.ts > policy.sameOriginRequired at the proxy applies to the bound routes on their registered methods only, and to no other registered route"
+      ]
+    },
+    {
+      "id": "P4",
+      "plant": "api.subject-upload-issue left out of the bound set",
+      "file": "src/lib/security/same-origin.ts",
+      "passed": 974,
+      "failed": 18,
+      "caughtBy": [
+        "src/proxy.test.ts > policy.sameOriginRequired at the proxy api.subject-upload-issue POST /api/uploads: refuses the right Origin with no marker before reading any session, signed in, signed out or in the deletion notice",
+        "src/proxy.test.ts > policy.sameOriginRequired at the proxy api.subject-upload-issue POST /api/uploads: refuses neither header before reading any session, signed in, signed out or in the deletion notice",
+        "src/proxy.test.ts > policy.sameOriginRequired at the proxy api.subject-upload-issue POST /api/uploads: refuses cross-site before reading any session, signed in, signed out or in the deletion notice",
+        "src/proxy.test.ts > policy.sameOriginRequired at the proxy api.subject-upload-issue POST /api/uploads: refuses same-site before reading any session, signed in, signed out or in the deletion notice",
+        "src/proxy.test.ts > policy.sameOriginRequired at the proxy api.subject-upload-issue POST /api/uploads: refuses none before reading any session, signed in, signed out or in the deletion notice",
+        "src/proxy.test.ts > policy.sameOriginRequired at the proxy api.subject-upload-issue POST /api/uploads: refuses another Origin with the marker before reading any session, signed in, signed out or in the deletion notice",
+        "src/proxy.test.ts > policy.sameOriginRequired at the proxy api.subject-upload-issue POST /api/uploads: refuses another Origin named by X-Forwarded-Host too before reading any session, signed in, signed out or in the deletion notice",
+        "src/proxy.test.ts > policy.sameOriginRequired at the proxy applies to the bound routes on their registered methods only, and to no other registered route",
+        "src/lib/security/same-origin.test.ts > the routes bound to policy.sameOriginRequired are exactly the register's, with its methods, and the code's matcher picks out no other registered route",
+        "src/lib/security/same-origin.test.ts > the CSRF wrapper applies the rule to the bound routes, and to no other api.subject-upload-issue",
+        "src/lib/security/same-origin.test.ts > the bound routes' own handlers, through the real wrapper api.subject-upload-issue refuses missingMarker with the registered answer before any account, token or body is read",
+        "src/lib/security/same-origin.test.ts > the bound routes' own handlers, through the real wrapper api.subject-upload-issue refuses neither with the registered answer before any account, token or body is read",
+        "src/lib/security/same-origin.test.ts > the bound routes' own handlers, through the real wrapper api.subject-upload-issue refuses crossSite with the registered answer before any account, token or body is read",
+        "src/lib/security/same-origin.test.ts > the bound routes' own handlers, through the real wrapper api.subject-upload-issue refuses sameSite with the registered answer before any account, token or body is read",
+        "src/lib/security/same-origin.test.ts > the bound routes' own handlers, through the real wrapper api.subject-upload-issue refuses none with the registered answer before any account, token or body is read",
+        "src/lib/security/same-origin.test.ts > the bound routes' own handlers, through the real wrapper api.subject-upload-issue refuses wrongOriginWithMarker with the registered answer before any account, token or body is read",
+        "src/lib/security/same-origin.test.ts > the bound routes' own handlers, through the real wrapper api.subject-upload-issue refuses otherSchemeWithMarker with the registered answer before any account, token or body is read",
+        "src/lib/security/same-origin.test.ts > the bound routes' own handlers, through the real wrapper api.subject-upload-issue refuses forwardedHostWithMarker with the registered answer before any account, token or body is read"
+      ]
+    },
+    {
+      "id": "P5",
+      "plant": "api.file-upload-session added to the bound set",
+      "file": "src/lib/security/same-origin.ts",
+      "passed": 989,
+      "failed": 3,
+      "caughtBy": [
+        "src/proxy.test.ts > policy.sameOriginRequired at the proxy applies to the bound routes on their registered methods only, and to no other registered route",
+        "src/lib/security/same-origin.test.ts > the routes bound to policy.sameOriginRequired are exactly the register's, with its methods, and the code's matcher picks out no other registered route",
+        "src/lib/security/same-origin.test.ts > the CSRF wrapper applies the rule to the bound routes, and to no other api.file-upload-session"
+      ]
+    },
+    {
+      "id": "P6",
+      "plant": "the site's own origin is taken from X-Forwarded-Host",
+      "file": "src/lib/security/same-origin.ts",
+      "passed": 986,
+      "failed": 6,
+      "caughtBy": [
+        "src/proxy.test.ts > policy.sameOriginRequired at the proxy api.subject-upload-issue POST /api/uploads: refuses another Origin named by X-Forwarded-Host too before reading any session, signed in, signed out or in the deletion notice",
+        "src/proxy.test.ts > policy.sameOriginRequired at the proxy api.file-delete DELETE /api/files/12345678-1234-4234-8234-00000000000d: refuses another Origin named by X-Forwarded-Host too before reading any session, signed in, signed out or in the deletion notice",
+        "src/lib/security/same-origin.test.ts > the strict rule (isStrictSameOrigin) another Origin named by X-Forwarded-Host too: { origin: 'https://foreign.example', 'sec-fetch-site': 'same-origin', 'x-forwarded-host': 'foreign.example' }",
+        "src/lib/security/same-origin.test.ts > the strict rule (isStrictSameOrigin) takes the site's own origin from the request's own URL, never from a forwarded header",
+        "src/lib/security/same-origin.test.ts > the bound routes' own handlers, through the real wrapper api.file-delete refuses forwardedHostWithMarker with the registered answer before any account, token or body is read",
+        "src/lib/security/same-origin.test.ts > the bound routes' own handlers, through the real wrapper api.subject-upload-issue refuses forwardedHostWithMarker with the registered answer before any account, token or body is read"
+      ]
+    },
+    {
+      "id": "P7",
+      "plant": "the marker is compared without case",
+      "file": "src/lib/security/same-origin.ts",
+      "passed": 990,
+      "failed": 2,
+      "caughtBy": [
+        "src/lib/security/same-origin.test.ts > the strict rule (isStrictSameOrigin) the marker in another case: { origin: 'https://inherit.test', 'sec-fetch-site': 'Same-Origin' }",
+        "src/app/api/files/[id]/route.test.ts > owner-authorized file deletion answers the right Origin with Sec-Fetch-Site Same-Origin with request_forbidden, reading nothing"
+      ]
+    },
+    {
+      "id": "P8",
+      "plant": "api.file-delete's own check back to isSameOrigin",
+      "file": "src/app/api/files/[id]/route.ts",
+      "passed": 987,
+      "failed": 5,
+      "caughtBy": [
+        "src/app/api/files/[id]/route.test.ts > owner-authorized file deletion answers the right Origin with Sec-Fetch-Site null with request_forbidden, reading nothing",
+        "src/app/api/files/[id]/route.test.ts > owner-authorized file deletion answers the right Origin with Sec-Fetch-Site same-site with request_forbidden, reading nothing",
+        "src/app/api/files/[id]/route.test.ts > owner-authorized file deletion answers the right Origin with Sec-Fetch-Site cross-site with request_forbidden, reading nothing",
+        "src/app/api/files/[id]/route.test.ts > owner-authorized file deletion answers the right Origin with Sec-Fetch-Site none with request_forbidden, reading nothing",
+        "src/app/api/files/[id]/route.test.ts > owner-authorized file deletion answers the right Origin with Sec-Fetch-Site Same-Origin with request_forbidden, reading nothing"
+      ]
+    },
+    {
+      "id": "P9",
+      "plant": "api.export's legacy GET answers plain-text Unauthorized again",
+      "file": "src/app/api/export/route.ts",
+      "passed": 989,
+      "failed": 3,
+      "caughtBy": [
+        "src/lib/security/unauthenticated-answers.test.ts > a request without a session or job credential gets the register's JSON 401 api.export GET answers a signed-out request with authenticated-api-v1's 401",
+        "src/lib/security/unauthenticated-answers.test.ts > a request without a session or job credential gets the register's JSON 401 api.export answers its 401 with every header of the profiles the register binds it to",
+        "src/lib/security/unauthenticated-answers.test.ts > plain-text 401s are built only by the routes listed, each for its stated reason"
+      ]
+    },
+    {
+      "id": "P10",
+      "plant": "api.file-download's 401 without the downloadOrExport headers",
+      "file": "src/app/api/files/[id]/download/route.ts",
+      "passed": 991,
+      "failed": 1,
+      "caughtBy": [
+        "src/lib/security/unauthenticated-answers.test.ts > a request without a session or job credential gets the register's JSON 401 api.file-download answers its 401 with every header of the profiles the register binds it to"
+      ]
+    },
+    {
+      "id": "P11",
+      "plant": "api.file-process answers plain-text Unauthorized again",
+      "file": "src/app/api/files/[id]/process/route.ts",
+      "passed": 989,
+      "failed": 3,
+      "caughtBy": [
+        "src/lib/security/unauthenticated-answers.test.ts > a request without a session or job credential gets the register's JSON 401 api.file-process POST answers a signed-out request with authenticated-api-v1's 401",
+        "src/lib/security/unauthenticated-answers.test.ts > a request without a session or job credential gets the register's JSON 401 api.file-process answers its 401 with every header of the profiles the register binds it to",
+        "src/lib/security/unauthenticated-answers.test.ts > plain-text 401s are built only by the routes listed, each for its stated reason"
+      ]
+    },
+    {
+      "id": "P12",
+      "plant": "api.account-delete answers plain-text Unauthorized again",
+      "file": "src/app/api/account/delete/route.ts",
+      "passed": 988,
+      "failed": 4,
+      "caughtBy": [
+        "scripts/tools/historical-account-authority.test.ts > historical fixture verifier unit proofs do not claim SDK network or native execution mechanically reconstructs the exact ordinary source and keeps the HTTP route unchanged",
+        "src/lib/security/unauthenticated-answers.test.ts > a request without a session or job credential gets the register's JSON 401 api.account-delete POST answers a signed-out request with authenticated-api-v1's 401",
+        "src/lib/security/unauthenticated-answers.test.ts > a request without a session or job credential gets the register's JSON 401 api.account-delete answers its 401 with every header of the profiles the register binds it to",
+        "src/lib/security/unauthenticated-answers.test.ts > plain-text 401s are built only by the routes listed, each for its stated reason"
+      ]
+    },
+    {
+      "id": "P13",
+      "plant": "the Files row prints the JSON 401 body as it is",
+      "file": "src/components/uploads/file-row-actions.tsx",
+      "passed": 991,
+      "failed": 1,
+      "caughtBy": [
+        "src/components/uploads/file-row-actions.test.ts > the Files page row's Process shows authenticated-api-v1's JSON 401 as the words the row showed before"
+      ]
+    },
+    {
+      "id": "P14",
+      "plant": "the (app) not-found boundary without its referrer element",
+      "file": "src/app/(app)/not-found.tsx",
+      "passed": 991,
+      "failed": 1,
+      "caughtBy": [
+        "src/proxy.test.ts > pages and the endpoints outside /api/: the register's referrer and header statements holds the amended rule: a contract bound through resourceAuthorizationBindings sets its headers on its own answer only"
+      ]
+    },
+    {
+      "id": "P15",
+      "plant": "the register's rule without the 22 November amendment",
+      "file": "docs/route-register.json",
+      "passed": 991,
+      "failed": 1,
+      "caughtBy": [
+        "src/proxy.test.ts > pages and the endpoints outside /api/: the register's referrer and header statements holds the amended rule: a contract bound through resourceAuthorizationBindings sets its headers on its own answer only"
+      ]
+    },
+    {
+      "id": "P16",
+      "plant": "the proxy gives one of the twenty pages no-referrer on every answer",
+      "file": "src/proxy.ts",
+      "passed": 989,
+      "failed": 3,
+      "caughtBy": [
+        "src/proxy.test.ts > a sign-in check that fails for a moment (D-142) rewrites /settings to the error surface after asking twice: no sign-in, no account read (Referrer-Policy same-origin)",
+        "src/proxy.test.ts > pages and the endpoints outside /api/: the register's referrer and header statements /settings: the sign-in redirect carries no-referrer, and the signed-in page and the proxy's redirects keep same-origin",
+        "src/proxy.test.ts > pages and the endpoints outside /api/: the register's referrer and header statements gives no-referrer to every answer of every route outside /api/ the register names it for, by profile or bound contract, and to no other page"
+      ]
+    },
+    {
+      "id": "P17",
+      "plant": "a nearer not-found boundary without the element under genome/[subject]",
+      "file": "src/app/(app)/genome/[subject]/not-found.tsx",
+      "passed": 991,
+      "failed": 1,
+      "caughtBy": [
+        "src/proxy.test.ts > pages and the endpoints outside /api/: the register's referrer and header statements holds the amended rule: a contract bound through resourceAuthorizationBindings sets its headers on its own answer only"
+      ]
+    }
+  ]
+}

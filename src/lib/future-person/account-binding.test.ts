@@ -2,9 +2,12 @@ import crypto from "node:crypto";
 import {afterAll,beforeEach,describe,expect,it,vi} from "vitest";
 const m=vi.hoisted(()=>({getUser:vi.fn(),getClaims:vi.fn(),rpc:vi.fn()}));
 vi.mock("@/lib/supabase/server",()=>({createClient:async()=>({auth:{getUser:m.getUser,getClaims:m.getClaims},rpc:m.rpc})}));
+// The one-time X-Inherit-CSRF gate passes through here; it is tested on this
+// route, through the same handler, in src/lib/security/session-csrf-routes.test.ts.
+vi.mock("@/lib/security/session-csrf",async(importOriginal)=>
+ (await import("@/lib/security/session-csrf.test-support")).admitEverySessionCsrf(await importOriginal()));
 vi.stubEnv("BYOK_ENCRYPTION_KEY",crypto.randomBytes(32).toString("base64"));vi.stubEnv("INHERIT_TEST_JURISDICTION","1");
 const {mintBindingNonce,readBindingNonce,bindingRequestHash,loadAccountBinding}=await import("./account-binding");
-const {claimantCsrf}=await import("./rights");
 const {RIGHTS_COOKIE_NAME}=await import("../embryos/rights-session");
 const {POST}=await import("../../app/api/future-person/claim/session/account/route");
 const secret=crypto.randomBytes(32).toString("base64url"),hash=crypto.createHash("sha256").update(secret).digest("hex");
@@ -14,7 +17,7 @@ const context={authorized:true as const,account_auth_session_revision:1,session_
 const cookie=`${RIGHTS_COOKIE_NAME}=${secret}`;
 function request(body:unknown,headers:Record<string,string>={},path="/api/future-person/claim/session/account") {
  return new Request(`https://example.test${path}`,{method:"POST",headers:{cookie,origin:"https://example.test","sec-fetch-site":"same-origin",
-  "content-type":"application/json","x-inherit-csrf":claimantCsrf(hash),...headers},body:JSON.stringify(body)});
+  "content-type":"application/json","x-inherit-csrf":"the-account-session-token-the-gate-admitted",...headers},body:JSON.stringify(body)});
 }
 beforeEach(()=>{vi.clearAllMocks();m.getUser.mockResolvedValue({data:{user:{id:id(1)}},error:null});
  m.getClaims.mockResolvedValue({data:{claims:{sub:id(1),session_id:id(2),role:"authenticated"}},error:null});
@@ -30,7 +33,9 @@ describe("claimant account binding requires both current independent credentials
   expect(readBindingNonce(token,"a".repeat(64),context)).toBeNull();expect(readBindingNonce(token,hash,context,Date.now()+601000)).toBeNull();
  });
  it("refuses bad browser transport and duplicate cookies before a service or authenticated RPC",async()=>{
-  for(const headers of ([{origin:"https://foreign.test"},{"sec-fetch-site":"cross-site"},{"x-inherit-csrf":"0".repeat(64)},
+  // 2026-11-19 (G8.5): a wrong X-Inherit-CSRF is the account-session gate's refusal before
+  // this handler runs (session-csrf-routes.test.ts); it was a claimantCsrf digest checked here.
+  for(const headers of ([{origin:"https://foreign.test"},{"sec-fetch-site":"cross-site"},
    {cookie:`${cookie}; ${cookie}`},{"content-type":"text/plain"}] as Record<string,string>[])){
    expect(bindingRequestHash(request({},headers))).toBeNull();expect((await POST(request({},headers))).status).toBe(404);
   }

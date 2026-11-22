@@ -33,15 +33,31 @@ export const LAYER_FOR_PURPOSE: Record<SharedReportPurpose, FindingLayer> = {
   'reports.polygenic': 'estimate',
 };
 
-/** One adult as this turn may name them: an opaque per-turn reference, never an id. */
-export interface FamilyScopeMember {
-  authority: FamilyMemberAuthority;
+/**
+ * What the report tools need of one person, whichever scope reads them: the
+ * subject and the report layers granted for Copilot, and how the asker names
+ * them. The Family group scope and Copilot for one other adult's record
+ * (src/lib/copilot/subject-chat.ts) both read through the functions below.
+ */
+export interface ReportScopeMember {
+  authority: { subjectId: string; layers: readonly { purpose: SharedReportPurpose }[] };
   /** `person-1`, `person-2`, … in name order; what the model uses to ask for one person. */
   ref: string;
   displayLabel: string;
-  /** The Family route segment that names this person for the asker (`s-{uuid}`). */
+  /** The route segment that names this person's record for the asker (`s-{uuid}`), as the report pages take it. */
   handleSegment: string;
   layers: FindingLayer[];
+  /**
+   * The "Shared by" source an answer cites for this person. Absent: their
+   * Family page (`/family/{handleSegment}`). Null: no such line, where the
+   * asker has no Family page for the record the thread reads.
+   */
+  personHref?: string | null;
+}
+
+/** One adult as this turn may name them: an opaque per-turn reference, never an id. */
+export interface FamilyScopeMember extends ReportScopeMember {
+  authority: FamilyMemberAuthority;
 }
 
 /** Rows read for one member under their current authority, with their layer purposes. */
@@ -50,18 +66,18 @@ export type FamilyMemberRows = ReadonlyMap<string, readonly SharedReportResult[]
 /** Whose data one turn's tools returned: subject → the layers and exact sources used. */
 export class FamilyUseLedger {
   private readonly used = new Map<string, { purposes: Set<SharedReportPurpose>; files: Map<string, SharedReportPurpose> }>();
-  record(member: FamilyScopeMember, row: SharedReportResult) {
+  record(member: ReportScopeMember, row: SharedReportResult) {
     const entry = this.used.get(member.authority.subjectId) ?? { purposes: new Set(), files: new Map() };
     entry.purposes.add(row.purpose);
     entry.files.set(`${row.fileId}|${row.purpose}`, row.purpose);
     this.used.set(member.authority.subjectId, entry);
   }
   /** Members whose data this turn used, in the order given. */
-  members(members: readonly FamilyScopeMember[]): FamilyScopeMember[] {
+  members<M extends ReportScopeMember>(members: readonly M[]): M[] {
     return members.filter(member => this.used.has(member.authority.subjectId));
   }
   /** The commit payload's `used` array: each member's exact authority, layers and sources. */
-  commitPayload(members: readonly FamilyScopeMember[]) {
+  commitPayload<M extends ReportScopeMember>(members: readonly M[]) {
     return this.members(members).map(member => {
       const entry = this.used.get(member.authority.subjectId)!;
       return { authority: member.authority, purposes: [...entry.purposes].sort(),
@@ -75,7 +91,7 @@ function corrected(row: SharedReportResult): boolean {
     || reportOutcomeScientificCorrections(row.report.slug, row.report.variants).length > 0;
 }
 
-function readable(member: FamilyScopeMember, rows: FamilyMemberRows): SharedReportResult[] {
+function readable(member: ReportScopeMember, rows: FamilyMemberRows): SharedReportResult[] {
   const layers = new Set(member.authority.layers.map(layer => layer.purpose));
   // Only a layer this member granted for Copilot this turn, never a row the
   // reader returned under any other purpose.
@@ -86,7 +102,7 @@ function readable(member: FamilyScopeMember, rows: FamilyMemberRows): SharedRepo
 const NOT_SHARED_NOTE = 'A report type a person did not share is absent here. That is not a result about them.';
 
 /** `list_reports`: each person's shared reports by title, attributed to that person. */
-export function familyReportList(members: readonly FamilyScopeMember[], rows: FamilyMemberRows,
+export function familyReportList(members: readonly ReportScopeMember[], rows: FamilyMemberRows,
   ledger: FamilyUseLedger, category?: string | null) {
   return {
     people: members.map(member => {
@@ -105,7 +121,7 @@ export function familyReportList(members: readonly FamilyScopeMember[], rows: Fa
 }
 
 /** `get_report`: one report's saved outcome for each person who shared it, or for one person. */
-export function familyReportDetail(members: readonly FamilyScopeMember[], rows: FamilyMemberRows,
+export function familyReportDetail(members: readonly ReportScopeMember[], rows: FamilyMemberRows,
   ledger: FamilyUseLedger, slug: string, personRef?: string | null) {
   const chosen = personRef ? members.filter(member => member.ref === personRef) : members;
   if (personRef && !chosen.length) return { slug, error: 'unknown_person', note: 'Ask with a person_ref from list_reports.' };
@@ -138,13 +154,15 @@ export type FamilyCitation = z.infer<typeof familyCitationSchema>;
  * its person, then each publication those reports cite. The model supplies
  * none of these links.
  */
-export function familyChatCitations(members: readonly FamilyScopeMember[], rows: FamilyMemberRows, ledger: FamilyUseLedger,
+export function familyChatCitations(members: readonly ReportScopeMember[], rows: FamilyMemberRows, ledger: FamilyUseLedger,
   toolJson: unknown): FamilyCitation[] {
   const used = ledger.members(members);
   const citations = new Map<string, FamilyCitation>();
   for (const member of used) {
+    const href = member.personHref === undefined ? `/family/${member.handleSegment}` : member.personHref;
+    if (href === null) continue;
     citations.set(`person:${member.handleSegment}`, { id: `person:${member.handleSegment}`,
-      label: sharedByLabel(member.displayLabel), href: `/family/${member.handleSegment}` });
+      label: sharedByLabel(member.displayLabel), href });
   }
   const returned = new Set<string>();
   const visit = (value: unknown) => {

@@ -81,7 +81,7 @@ describe("the complete account and Future source union", () => {
     expect(read("supabase/tests/v2_contracts.sql")).toContain("174::bigint");
   });
 
-  it("preserves protected/withheld Future classifications and the account provenance exclusions in the 267-table plan", () => {
+  it("preserves protected/withheld Future classifications and the account provenance exclusions in the 268-table plan", () => {
     const plan = JSON.parse(read("docs/export-member-plan.json")) as {
       tables: Record<string, { disposition: string; withheld?: string[]; scope?: string }>;
     };
@@ -93,8 +93,11 @@ describe("the complete account and Future source union", () => {
     // (20261016221000_subject_transfer), classified like the claimant
     // relocation rows, plus the two rights-recovery credential stores
     // (private.rights_recovery_candidates, private.rights_reissue_form_nonces;
-    // 20261016208000_rights_reissue), classified like the auth form nonces.
-    expect(Object.keys(plan.tables)).toHaveLength(267);
+    // 20261016208000_rights_reissue), classified like the auth form nonces,
+    // plus the spent X-Inherit-CSRF token hashes
+    // (private.session_csrf_token_uses; 20261024220000_session_csrf_tokens),
+    // classified like them too.
+    expect(Object.keys(plan.tables)).toHaveLength(268);
     for (const [name, disposition] of Object.entries({
       "private.subject_ownership_transfers": "excluded-internal",
       "private.subject_transfer_relocations": "excluded-credential",
@@ -113,7 +116,7 @@ describe("the complete account and Future source union", () => {
       "private.path_b_reviewed_document_requests": "excluded-internal",
       "private.path_b_reviewed_document_nonces": "excluded-credential",
     })) expect(plan.tables[name]?.disposition, name).toBe(disposition);
-    for (const name of ["private.auth_form_nonces", "private.auth_recovery_sessions"])
+    for (const name of ["private.auth_form_nonces", "private.auth_recovery_sessions", "private.session_csrf_token_uses"])
       expect(plan.tables[name]?.disposition).toBe("excluded-credential");
     expect(plan.tables["private.embryo_test_statistical_admission"]?.disposition).toBe("excluded-protected");
     for (const name of ["private.public_appeal_case_decisions", "private.public_appeal_information_requests"])

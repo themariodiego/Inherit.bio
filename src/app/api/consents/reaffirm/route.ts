@@ -1,13 +1,14 @@
 import { z } from "zod";
 import { familyCapability } from "@/lib/family/access";
 import { invalidRequest, notFound, unavailable } from "@/lib/embryos/api";
-import { closedResponse, originDenied, readJson, unauthorized } from "@/lib/embryos/guards";
+import { closedResponse, originDenied, readJson, unauthenticated } from "@/lib/embryos/guards";
 import { isTestJurisdictionEnabled } from "@/lib/legal/jurisdictions";
 import { readReaffirmPresentation, type ReaffirmOffer } from "@/lib/consents/reaffirm-presentation";
 import { isJsonRequest } from "@/lib/subject-endpoints/request";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { Json } from "@/lib/supabase/types";
 import { currentOwnUploadAccount } from "@/lib/uploads/own-upload-context";
+import { withAccountCsrf } from "@/lib/security/session-csrf";
 
 /**
  * `POST /api/consents/reaffirm` (register api.consent-reaffirm; owner
@@ -65,9 +66,10 @@ async function familyPermitted(accountId: string, offer: ReaffirmOffer): Promise
   return true;
 }
 
-export async function POST(request: Request) {
+export const POST = withAccountCsrf("api.consent-reaffirm", handlePost);
+async function handlePost(request: Request) {
   const actor = await currentOwnUploadAccount();
-  if (!actor) return unauthorized();
+  if (!actor) return unauthenticated();
   const forbidden = originDenied(request);
   if (forbidden) return forbidden;
   if (!isJsonRequest(request)) return invalidRequest(["content-type"]);

@@ -6,6 +6,7 @@ import { gzipSync } from "node:zlib";
 import { ANON_KEY, SUPABASE_URL, adminClient, completeOwnUploadConsent, createConfirmedUser, signIn } from "./helpers";
 import { INGEST_REFUSALS } from "../src/copy/upload/errors";
 import { sniffV2 } from "../src/lib/genome/parsers/sniff";
+import { accountCsrf } from "./helpers/session-csrf";
 
 // ADR0016 supersedes A10's BAM/CRAM storage and TUS success contract. Historical
 // positive evidence and its exact revisions remain in docs/test-diff-register.md.
@@ -86,12 +87,14 @@ for (const sample of cases) {
       sha256: createHash("sha256").update(sample.bytes).digest("hex") };
     // Browser-native requests retain real same-origin/session authority. Both
     // registered aliases reject unsupported declarations without issuing a row.
-    for (const pathname of ["/api/files/upload-session", "/api/uploads"]) {
-      const denied = await page.evaluate(async ({ pathname, declaration }) => {
+    // Each carries a fresh X-Inherit-CSRF token for the page's session (G8.5).
+    for (const [pathname, csrfRoute] of [["/api/files/upload-session", "api.file-upload-session"],
+      ["/api/uploads", "api.subject-upload-issue"]] as const) {
+      const denied = await page.evaluate(async ({ pathname, declaration, csrf }) => {
         const response = await fetch(pathname, { method: "POST", credentials: "same-origin", redirect: "error",
-          headers: { "content-type": "application/json" }, body: JSON.stringify(declaration) });
+          headers: { "content-type": "application/json", "X-Inherit-CSRF": csrf }, body: JSON.stringify(declaration) });
         return { status: response.status, body: await response.json() };
-      }, { pathname, declaration });
+      }, { pathname, declaration, csrf: await accountCsrf(page, csrfRoute) });
       expect(denied).toEqual({ status: 422, body: { error: "invalid_request" } });
     }
     expect(await leases()).toEqual([]);
@@ -100,9 +103,9 @@ for (const sample of cases) {
     // Deliberately bypass preflight with a supported declaration. The issuer
     // sees only size/hash/format; the real finalizer must inspect Storage bytes.
     // Keep its bearer solely in this native browser closure, never in output.
-    const staged = await page.evaluate(async ({ declaration, bytes, storageOrigin, apiKey }) => {
+    const staged = await page.evaluate(async ({ declaration, bytes, storageOrigin, apiKey, csrf }) => {
       const response = await fetch("/api/files/upload-session", { method: "POST", credentials: "same-origin", redirect: "error",
-        headers: { "content-type": "application/json" }, body: JSON.stringify(declaration) });
+        headers: { "content-type": "application/json", "X-Inherit-CSRF": csrf }, body: JSON.stringify(declaration) });
       if (response.status !== 201) throw new Error("Expected real upload issuance");
       const issued = await response.json();
       const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
@@ -116,16 +119,17 @@ for (const sample of cases) {
       await stored.arrayBuffer();
       return { status: stored.status, uploadId: issued.uploadId as string, stagingKey: issued.stagingKey as string };
     }, { declaration: { ...declaration, declaredFormat: sample.declaration }, bytes: [...sample.bytes], storageOrigin: SUPABASE_URL,
-      apiKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? ANON_KEY });
+      apiKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? ANON_KEY, csrf: await accountCsrf(page, "api.file-upload-session") });
     expect(staged.status).toBe(200);
     expect(await footprint(accountId)).toEqual({ ...empty, storage: 1 });
     const original = await admin.storage.from("genomes").download(staged.stagingKey);
     expect(original.error).toBeNull();
     expect(Buffer.from(await original.data!.arrayBuffer())).toEqual(sample.bytes);
-    const rejected = await page.evaluate(async uploadId => {
-      const response = await fetch(`/api/files/${uploadId}/finalize`, { method: "POST", credentials: "same-origin", redirect: "error" });
+    const rejected = await page.evaluate(async ({ uploadId, csrf }) => {
+      const response = await fetch(`/api/files/${uploadId}/finalize`, { method: "POST", credentials: "same-origin", redirect: "error",
+        headers: { "X-Inherit-CSRF": csrf } });
       return { status: response.status, body: await response.json() };
-    }, staged.uploadId);
+    }, { uploadId: staged.uploadId, csrf: await accountCsrf(page, "api.file-finalize") });
     expect(rejected).toEqual({ status: 415, body: { error: "unrecognised_format" } });
     const after = await leases();
     expect(after).toHaveLength(1);

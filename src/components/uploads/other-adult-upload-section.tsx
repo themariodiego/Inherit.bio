@@ -6,6 +6,9 @@ import {
 import { listPathBUploaderShares, preparePathBChoices } from "@/lib/uploads/path-b-purpose-server";
 import { PathBChoices } from "./path-b-choices";
 import Link from "next/link";
+import { IntentLink } from "@/components/site/intent-link";
+import { askCopilotAboutButton } from "@/copy/copilot/subject-scope";
+import { subjectCopilotOpens } from "@/lib/copilot/subject-chat";
 import { route } from "@/lib/primary-routes";
 import { listPathBReportMetadata } from "@/lib/uploads/path-b-report-reader";
 import {
@@ -109,19 +112,22 @@ export async function OtherAdultHeldRows() {
   // Choice metadata is separate from the current completed-result links.
   // Neither projection carries a genetic result or a server receipt to JSX.
   const shared = (shares ?? []).filter(share => share.shared.length > 0).map((share, index) => ({
-    key: `shared:${index}`, detail: null, href: null,
+    key: `shared:${index}`, detail: null, href: null, copilotHref: null,
     text: CHOICES.uploaderShared(share.label, share.shared.map(layer => CHOICES.layers[layer.purpose]).join(", ")),
   }));
   const rows = [...(targets ?? []).flatMap(target => {
     if (target.state === "pending") {
-      return [{ key: target.subjectId, text: COPY.pendingStatus(target.label), href: null,
+      return [{ key: target.subjectId, text: COPY.pendingStatus(target.label), href: null, copilotHref: null,
         detail: target.latest?.deleteBy ? COPY.pendingDeadline(day(target.latest.deleteBy)) : null }];
     }
     const line = latestFileLine(target.label, target.latest);
-    return line ? [{ key: target.subjectId, text: line, detail: null, href: null }] : [];
-  }), ...shared, ...ready.filter(row => row.direction === "uploader").map(row => ({ key: `ready:${row.subjectId}`,
+    return line ? [{ key: target.subjectId, text: line, detail: null, href: null, copilotHref: null }] : [];
+  }), ...shared, ...await Promise.all(ready.filter(row => row.direction === "uploader").map(async row => ({ key: `ready:${row.subjectId}`,
     text: CHOICES.readyShared(row.label), detail: null,
-    href: route("genome.reports", { subject: `s-${row.subjectId}` }) }))];
+    href: route("genome.reports", { subject: `s-${row.subjectId}` }),
+    // Copilot about this person (G8.5, 20 November 2026): only where its scope would open now.
+    copilotHref: await subjectCopilotOpens(row.subjectId)
+      ? { href: route("copilot.scope", { scope: `s-${row.subjectId}` }), label: askCopilotAboutButton(row.label) } : null })))];
   if (rows.length === 0) return null;
   return (
     <ul className="surface surface-pad-sm rec-ruled" data-slot="other-adult-held-rows">
@@ -130,6 +136,8 @@ export async function OtherAdultHeldRows() {
           <p role="status" className="max-w-measure text-sm">{row.text}</p>
           {row.detail ? <p className="max-w-measure text-sm text-ink-muted">{row.detail}</p> : null}
           {row.href ? <Link className="link-target quiet-link text-sm" href={row.href}>{CHOICES.openShared}</Link> : null}
+          {row.copilotHref ? <p data-slot="path-b-copilot-link"><IntentLink className="link-target quiet-link text-sm"
+            href={row.copilotHref.href}>{row.copilotHref.label}</IntentLink></p> : null}
         </li>
       ))}
     </ul>

@@ -1,7 +1,8 @@
 import crypto from "node:crypto";
 import { afterAll, describe, expect, it, vi } from "vitest";
 vi.stubEnv("BYOK_ENCRYPTION_KEY",crypto.randomBytes(32).toString("base64"));
-const {mintReceiptOpenNonce,readReceiptOpenNonce,mintReceiptAckNonce,readReceiptAckNonce,receiptCsrf,receiptCsrfMatches,chunkReceiptProof}=await import("./review-receipt");
+const receiptModule=await import("./review-receipt");
+const {mintReceiptOpenNonce,readReceiptOpenNonce,mintReceiptAckNonce,readReceiptAckNonce,chunkReceiptProof}=receiptModule;
 afterAll(()=>vi.unstubAllEnvs());
 const D="7e000000-0000-4000-8000-000000000001";
 const A="7e000000-0000-4000-8000-000000000002";
@@ -22,11 +23,11 @@ describe("complete document receipt is bound to its exact reviewer and chunk",()
     for(const binding of [[A,0,C,A,S],[D,1,C,A,S],[D,0,"b".repeat(64),A,S],[D,0,C,D,S],[D,0,C,A,D]])
       expect(readReceiptAckNonce(nonce,...binding as [string,number,string,string,string],NOW)).toBeNull();
     expect(readReceiptAckNonce(nonce,D,0,C,A,S,NOW+600001)).toBeNull();
-    const csrf=receiptCsrf(D,C,A,S);
-    expect(receiptCsrfMatches(csrf,D,C,A,S)).toBe(true);
-    expect(receiptCsrfMatches(csrf,D,"b".repeat(64),A,S)).toBe(false);
-    expect(receiptCsrfMatches(csrf,A,C,A,S)).toBe(false);
-    expect(receiptCsrfMatches(nonce,D,C,A,S)).toBe(false);
+    // 2026-11-19 (G8.5, the migration stage): the receipt digest (receiptCsrf), the same for every
+    // chunk, is gone; each acknowledgement spends the reviewer's one-time session token for its route
+    // (src/lib/security/session-csrf-routes.test.ts). These lines asserted the digest's bindings.
+    expect(Object.keys(receiptModule)).not.toContain("receiptCsrf");
+    expect(Object.keys(receiptModule)).not.toContain("receiptCsrfMatches");
   });
   it("requires the complete challenged bytes, not the published whole-file digest",()=>{
     const bytes=Buffer.from("Synthetic document bytes");

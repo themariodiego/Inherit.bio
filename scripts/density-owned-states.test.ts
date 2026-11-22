@@ -63,13 +63,31 @@ describe("real owned density state coverage", () => {
 
   it("uses existing upload and consent contracts and settles the exact original request", () => {
     const source = read("e2e/helpers/density-owned-state-fixtures.ts");
+    // 2026-11-19 (owner decision "G8.5: the provider-key cloud consent request is removed"): api.consents no longer
+    // takes { providerKey }, so the legacy grant the Consents page lists is seeded by the one function that ever
+    // wrote it, with the service role, for the provider the account just saved; it is still never a table write.
     for (const contract of ["await createConfirmedUser(email, password)", "await signIn(holder, email, password)",
       "await uploadOwnFileThroughUi(holder,", "await uploadOwnFilePrepared(holder,", "await completeOwnUploadConsent(holder)",
       "await route.continue()", "await response.finished() === null", "if (continuation) await continuation",
-      "await grantCloudConsent(holder)", "return input.observeState(row, capturedPage, sourceSha256,"])
+      "await grantCloudConsent(holder, accountId)", 'await admin.rpc("grant_cloud_model_consent", {',
+      'expect(providerKeyFor(saved.data!.provider, saved.data!.base_url), "the grant names the provider just saved").toBe(CLOUD_PROVIDER);',
+      "return input.observeState(row, capturedPage, sourceSha256,"])
       expect(source).toContain(contract);
     expect(source).not.toMatch(/\.fulfill\(|\.abort\(|\.setContent\(|\.addInitScript\(/u);
     expect(source).not.toMatch(/\.from\([^)]*\)\.(?:insert|update|upsert)\(/u);
+    expect(source).not.toContain("providerKey:");
+  });
+
+  it("requires the empty ancestry sentence once in each of the four panels, found by identity, and nowhere else", () => {
+    // The 3100 service this provider uses runs under TEST-LOCAL, where the
+    // Neanderthal card says the page's state itself.
+    const source = read("e2e/helpers/density-owned-state-fixtures.ts");
+    for (const fragment of [
+      `const ANCESTRY_PANELS = ['[data-testid="admixture"]', '[data-testid="mtdna"]', '[data-testid="ydna"]', "#neanderthal"] as const;`,
+      "for (const panel of ANCESTRY_PANELS) await expect(page.locator(panel).getByText(NOTHING_READ, { exact: true })).toHaveCount(1);",
+      "await expect(page.getByText(NOTHING_READ, { exact: true })).toHaveCount(ANCESTRY_PANELS.length);"])
+      expect(source).toContain(fragment);
+    expect(source).not.toContain("getByText(NOTHING_READ, { exact: true })).toHaveCount(3)");
   });
 
   it("requires complete actor rows, native absence and measured timing rather than labels alone", () => {

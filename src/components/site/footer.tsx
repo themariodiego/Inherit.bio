@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { IntentLink } from "@/components/site/intent-link";
 import { Attribution, Wordmark } from "./wordmark";
 import { route } from "@/lib/primary-routes";
 import { PUBLIC_RIGHTS_FOOTER, PUBLIC_RIGHTS_FOOTER_HEADING } from "@/copy/navigation";
@@ -89,9 +89,9 @@ export function SiteFooter() {
                         {l.label}
                       </a>
                     ) : (
-                      <Link href={l.href} className="site-footer-link">
+                      <IntentLink href={l.href} className="site-footer-link">
                         {l.label}
-                      </Link>
+                      </IntentLink>
                     )}
                   </li>
                 ))}

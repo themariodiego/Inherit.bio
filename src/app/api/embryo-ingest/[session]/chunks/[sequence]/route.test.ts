@@ -170,9 +170,15 @@ describe("authority before a byte is read", () => {
   it("refuses with no account, cross-site, or outside TEST-LOCAL, and touches nothing", async () => {
     const bytes = await browserChunk();
     mocks.account = null;
-    expect((await call(put(bytes))).status).toBe(401);
+    const signedOut = await call(put(bytes));
+    expect(signedOut.status).toBe(401);
+    expect(await signedOut.json()).toEqual({ error: "unauthenticated" });
     mocks.account = { user: { id: ACCOUNT }, sessionId: AUTH_SESSION };
-    expect((await call(put(bytes, { "sec-fetch-site": "cross-site" }))).status).toBe(403);
+    for (const headers of [{ "sec-fetch-site": "cross-site" }, { origin: "https://elsewhere.example" }] as Record<string, string>[]) {
+      const foreign = await call(put(bytes, headers));
+      expect(foreign.status).toBe(404);
+      expect(await foreign.json()).toEqual({ error: "not_found" });
+    }
     vi.stubEnv("INHERIT_TEST_JURISDICTION", "");
     expect((await call(put(bytes))).status).toBe(403);
     expect(mocks.calls).toEqual([]);

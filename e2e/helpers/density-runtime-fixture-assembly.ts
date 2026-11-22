@@ -6,6 +6,7 @@ import { realPublicAndAuthDensityFixtures } from "./density-real-state-fixtures"
 import { realAccountAndOwnDensityFixtures } from "./density-owned-state-fixtures";
 import { realPairedFamilyDensityFixtures } from "./density-family-state-fixtures";
 import { realOwnReportDensityFixtures } from "./density-report-state-fixtures";
+import { realOwnCarrierDensityFixtures } from "./density-carrier-state-fixtures";
 import { realCohortEntryDensityFixtures } from "./density-cohort-entry-state-fixtures";
 import { realFileTransferDensityFixtures } from "./density-file-transfer-state-fixtures";
 import { realPublishedCohortDensityFixtures } from "./density-cohort-publication-state-fixtures";
@@ -30,6 +31,7 @@ export interface DensityRuntimeFixtureAssemblyInput {
   accountAndOwn: Parameters<typeof realAccountAndOwnDensityFixtures>[0];
   pairedFamily: Parameters<typeof realPairedFamilyDensityFixtures>[0];
   ownReport: Parameters<typeof realOwnReportDensityFixtures>[0];
+  ownCarrier: Parameters<typeof realOwnCarrierDensityFixtures>[0];
   cohortEntry: Parameters<typeof realCohortEntryDensityFixtures>[0];
   fileTransfer: Parameters<typeof realFileTransferDensityFixtures>[0];
   publishedCohort: Parameters<typeof realPublishedCohortDensityFixtures>[0];
@@ -60,6 +62,7 @@ export function assembleRealDensityFixtures(input: DensityRuntimeFixtureAssembly
     input.accountAndOwn,
     input.pairedFamily,
     input.ownReport,
+    input.ownCarrier,
     input.cohortEntry,
     input.fileTransfer,
     input.publishedCohort,
@@ -93,6 +96,7 @@ export function assembleRealDensityFixtures(input: DensityRuntimeFixtureAssembly
     ...bindService(realAccountAndOwnDensityFixtures(input.accountAndOwn), input.accountAndOwn.origin),
     ...bindService(realPairedFamilyDensityFixtures(input.pairedFamily), input.pairedFamily.origin),
     ...bindService(realOwnReportDensityFixtures(input.ownReport), input.ownReport.origin),
+    ...bindService(realOwnCarrierDensityFixtures(input.ownCarrier), input.ownCarrier.origin),
     ...bindService(realCohortEntryDensityFixtures(input.cohortEntry), input.cohortEntry.origin),
     ...bindService(realFileTransferDensityFixtures(input.fileTransfer), input.fileTransfer.origin),
     ...bindService(realPublishedCohortDensityFixtures(input.publishedCohort), input.publishedCohort.origin),

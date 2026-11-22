@@ -11,7 +11,6 @@ import {
 } from "@/lib/family/grant-token";
 import { embryoConsent } from "@/lib/embryos/consents";
 import { isEmbryoConsentPayload } from "@/lib/embryos/routes";
-import { LLM_DATA_CLASSES, providerKeyFor } from "@/lib/llm";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { isOwnConsentPayload } from "@/lib/uploads/own-consent";
@@ -21,12 +20,13 @@ import { ownUploadConsent } from "@/lib/uploads/own-consent-route";
 import { isOwnReportConsentPayload, ownReportConsent } from "@/lib/uploads/own-report-consent-route";
 import { isPathBPurposeConsentPayload, pathBPurposeConsent } from "@/lib/uploads/path-b-purpose-server";
 import { isOwnCopilotConsentPayload, ownCopilotConsent } from "@/lib/copilot/own-consent";
+import { requireAccountCsrf } from "@/lib/security/session-csrf";
+import { unauthenticated } from "@/lib/embryos/guards";
 
 /**
  * `POST /api/consents` (register api.consents).
  *
- * Five closed bodies:
- *   - the cloud-model provider consent this route has always served;
+ * Four closed bodies:
  *   - `grant-purpose`, one directional purpose grant between two adults
  *     (policyContracts.directional-purpose-grant-v1);
  *   - `sign-artifact` with `subjectDraftId`, the uploader's Tier-2
@@ -37,6 +37,12 @@ import { isOwnCopilotConsentPayload, ownCopilotConsent } from "@/lib/copilot/own
  *     `cohortId`, the embryo bodies of E0 (`src/lib/embryos/consents.ts`).
  *     They are told apart by their target key before any adult body is
  *     tried, so every adult body keeps exactly the behaviour below.
+ *
+ * The cloud-model provider body, `{ providerKey }`, is gone (owner decision
+ * of 19 November 2026, G8.5): it recorded a cloud permission without showing
+ * its text, and no screen sent it. It is refused like any other body this
+ * route does not register. A grant made through it is still withdrawn by
+ * `api.consent-revoke`.
  *
  * The grant body carries the opaque presentation token the permissions
  * column minted and nothing else that could retarget it: the signer, data
@@ -51,8 +57,6 @@ import { isOwnCopilotConsentPayload, ownCopilotConsent } from "@/lib/copilot/own
 const PURPOSE_VALUES = DIRECTIONAL_PURPOSES.filter(
   (purpose) => purpose !== "raw.export",
 ) as unknown as [string, ...string[]];
-
-const cloudModelBody = z.object({ providerKey: z.string().trim().min(1).max(255) }).strict();
 
 const grantPurposeBody = z
   .object({
@@ -75,7 +79,19 @@ export async function POST(request: Request) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return new Response("Unauthorized", { status: 401 });
+  if (!user) return unauthenticated();
+  // Every body carries the page's one-time X-Inherit-CSRF token for the
+  // account session, spent before the body is read (G8.5). Since 19 November
+  // 2026 that includes the bodies answered by their own modules below: each
+  // keeps checking its own one-time value where it travels, the presentation
+  // token in the body's artifactPresentationToken (it was also sent in
+  // X-Inherit-CSRF), and the embryo operation token in X-Inherit-Operation-Nonce.
+  const csrf = await requireAccountCsrf(request, "api.consents");
+  if (csrf instanceof Response) return csrf;
+  return csrf.rotate(await consentBody(request, user.id));
+}
+
+async function consentBody(request: Request, accountId: string): Promise<Response> {
   const payload: unknown = await request.json().catch(() => null);
 
   if (isOwnConsentPayload(payload)) return ownUploadConsent(request, payload);
@@ -87,45 +103,19 @@ export async function POST(request: Request) {
   if (isOwnReportConsentPayload(payload)) return ownReportConsent(request, payload);
   if (isOwnCopilotConsentPayload(payload)) return ownCopilotConsent(request, payload);
   if (isEmbryoConsentPayload(payload)) return embryoConsent(request, payload);
+  return accountConsent(request, payload, accountId);
+}
 
+async function accountConsent(request: Request, payload: unknown, accountId: string): Promise<Response> {
   const grant = grantPurposeBody.safeParse(payload);
   if (grant.success) {
     if (!isSameOrigin(request)) {
       return NextResponse.json({ error: "invalid_request" }, { status: 400 });
     }
-    return grantPurpose(user.id, grant.data);
+    return grantPurpose(accountId, grant.data);
   }
 
-  const cloud = cloudModelBody.safeParse(payload);
-  if (!cloud.success) {
-    return NextResponse.json({ error: "invalid_request" }, { status: 400 });
-  }
-
-  const { data: settings } = await supabase
-    .from("llm_settings")
-    .select("provider, base_url")
-    .maybeSingle();
-  if (!settings) return NextResponse.json({ error: "provider_unavailable" }, { status: 409 });
-  const currentKey = providerKeyFor(
-    settings.provider as "anthropic" | "openai_compatible",
-    settings.base_url,
-  );
-  if (cloud.data.providerKey !== currentKey) {
-    return NextResponse.json({ error: "provider_changed" }, { status: 409 });
-  }
-
-  const { data: grantId, error } = await createAdminClient().rpc(
-    "grant_cloud_model_consent",
-    {
-      p_account_id: user.id,
-      p_provider_key: currentKey,
-      p_data_classes: [...LLM_DATA_CLASSES],
-    },
-  );
-  if (error || !grantId) {
-    return NextResponse.json({ error: "consent_unavailable" }, { status: 503 });
-  }
-  return NextResponse.json({ grantId });
+  return NextResponse.json({ error: "invalid_request" }, { status: 400 });
 }
 
 async function grantPurpose(

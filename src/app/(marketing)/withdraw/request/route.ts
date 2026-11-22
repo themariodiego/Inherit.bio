@@ -2,6 +2,7 @@ import crypto from "node:crypto";
 import { SENSITIVE_HEADERS } from "@/lib/embryos/api";
 import { mintRightsActivationCandidate } from "@/lib/embryos/rights-activation";
 import { rightsInterstitialScript } from "@/lib/embryos/rights-interstitial";
+import { sessionCsrfToken } from "@/lib/security/session-csrf";
 
 export const dynamic = "force-dynamic";
 
@@ -9,7 +10,10 @@ export const dynamic = "force-dynamic";
 export function GET() {
   const candidate = mintRightsActivationCandidate();
   const scriptNonce = crypto.randomBytes(24).toString("base64url");
-  const script = rightsInterstitialScript(candidate.formToken);
+  // The candidate's one-time X-Inherit-CSRF token (token-candidate-api-v1),
+  // bound to the same cookie as the form token and stored nowhere.
+  const csrf = sessionCsrfToken({ kind: "token-candidate", sessionHash: candidate.candidateHash }, "api.rights-activate");
+  const script = rightsInterstitialScript(candidate.formToken, csrf);
   const html = `<!doctype html><html lang="en"><head><meta charset="utf-8">
 <script nonce="${scriptNonce}">${script}</script>
 <meta name="viewport" content="width=device-width, initial-scale=1">

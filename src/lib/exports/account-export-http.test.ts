@@ -38,7 +38,7 @@ function fixture(){
 type Presentation=NonNullable<Awaited<ReturnType<typeof presentAccountExportCreate>>>;
 function post(proof:Presentation,headers:Record<string,string>={},body:unknown={operation:proof.operation,nonce:proof.nonce},url="https://test.e2e.local/api/export"){
  return new Request(url,{method:"POST",headers:{origin:"https://test.e2e.local","sec-fetch-site":"same-origin","sec-fetch-mode":"cors",
-  "content-type":"application/json","x-inherit-csrf":proof.csrf,...headers},body:JSON.stringify(body)});
+  "content-type":"application/json","x-inherit-operation-proof":proof.csrf,...headers},body:JSON.stringify(body)});
 }
 async function presentation(f:ReturnType<typeof fixture>){return (await presentAccountExportCreate(f.deps,new AbortController().signal))!;}
 async function queued(f:ReturnType<typeof fixture>){const proof=await presentation(f),result=await postAccountExport(post(proof),f.deps);
@@ -87,12 +87,15 @@ describe("consumed account export HTTP source",()=>{
    fault==="query"?"https://test.e2e.local/api/export?target=foreign":"https://test.e2e.local/api/export"),f.deps);
   expect(response.status).toBe(422);expect(f.rpc).not.toHaveBeenCalled();
  });
- it.each(["operation-as-csrf","missing-csrf","changed-receipt","foreign-session","expired-pair"])("refuses %s with zero job/cookie",async fault=>{
+ it.each(["operation-as-csrf","missing-csrf","csrf-in-old-header","changed-receipt","foreign-session","expired-pair"])("refuses %s with zero job/cookie",async fault=>{
   const f=fixture(),proof=await presentation(f);f.rpc.mockClear();
   if(fault==="changed-receipt")f.capture.authorityReceipt="d".repeat(64);
   if(fault==="foreign-session")f.actor.sessionId=randomUUID();
   if(fault==="expired-pair"){vi.useFakeTimers({toFake:["Date"]});vi.setSystemTime(Date.now()+300000);}
-  const result=await postAccountExport(post(proof,{"x-inherit-csrf":fault==="operation-as-csrf"?proof.nonce:fault==="missing-csrf"?"":proof.csrf}),f.deps);
+  // 2026-11-19 (G8.5): the sealed proof travels in X-Inherit-Operation-Proof (it was X-Inherit-CSRF,
+  // which is now the account session's one-time token, tested at the route); in the old header alone it is refused.
+  const result=await postAccountExport(post(proof,fault==="csrf-in-old-header"?{"x-inherit-operation-proof":"","x-inherit-csrf":proof.csrf}
+   :{"x-inherit-operation-proof":fault==="operation-as-csrf"?proof.nonce:fault==="missing-csrf"?"":proof.csrf}),f.deps);
   expect(result.status).toBe(403);expect(result.headers.has("set-cookie")).toBe(false);
   expect(f.rpc.mock.calls.every(([,a])=>a.p_operation==="capture")).toBe(true);
  });
@@ -107,7 +110,7 @@ describe("consumed account export HTTP source",()=>{
  });
  it("does not interchange two genuine independently issued CSRF/action pairs",async()=>{
   const f=fixture(),first=await presentation(f),second=await presentation(f);expect(first.csrf).not.toBe(second.csrf);expect(first.nonce).not.toBe(second.nonce);
-  const result=await postAccountExport(post(first,{"x-inherit-csrf":second.csrf}),f.deps);
+  const result=await postAccountExport(post(first,{"x-inherit-operation-proof":second.csrf}),f.deps);
   expect(result.status).toBe(404);expect(result.headers.has("set-cookie")).toBe(false);expect(f.rpc.mock.calls.some(([,a])=>a.p_operation==="create")).toBe(false);
  });
  it("keeps an opaque current-owner refusal after the presentation/capture race before enqueue",async()=>{

@@ -16,7 +16,6 @@ import { claimDataKey, sealDocumentBytes } from "./document-envelope";
  * module shapes what the routes send and accept around those decisions.
  */
 
-export const REVIEW_CSRF_HEADER = "x-inherit-csrf";
 export const REVIEW_NONCE_HEADER = "x-inherit-review-nonce";
 const PRODUCTION = process.env.NODE_ENV === "production";
 export const DOWNLOAD_COOKIE = PRODUCTION ? "__Host-inherit-download" : "inherit-download";
@@ -32,15 +31,13 @@ function binding(reviewId: string, accountId: string, sessionId: string): string
   return `${reviewId}|${accountId}|${sessionId}`;
 }
 
-/** X-Inherit-CSRF for one reviewer, session and case. */
-export function reviewCsrf(reviewId: string, accountId: string, sessionId: string): string {
-  return hmacSecret(binding(reviewId, accountId, sessionId), "claim-review-csrf-v1");
-}
-
-export function reviewCsrfMatches(presented: string | null, reviewId: string, accountId: string, sessionId: string): boolean {
-  if (!presented || !/^[0-9a-f]{64}$/u.test(presented)) return false;
-  return crypto.timingSafeEqual(Buffer.from(presented), Buffer.from(reviewCsrf(reviewId, accountId, sessionId)));
-}
+/*
+ * X-Inherit-CSRF on the reviewer routes is the reviewer's one-time session
+ * token (G8.5, the migration stage; `src/lib/security/session-csrf.ts`),
+ * which the review page renders and each route spends before its handler
+ * runs. It was a digest of the case, the reviewer and the auth session
+ * (`reviewCsrf`), returned by the case GET.
+ */
 
 /** A recent one-time decision nonce for this reviewer, session and case (ten minutes). */
 export function mintReviewNonce(reviewId: string, accountId: string, sessionId: string, now = Date.now()): string {

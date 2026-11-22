@@ -6,12 +6,22 @@ import { useEffect, useRef, useState } from "react";
 import { z } from "zod";
 import { REFUSAL_IDS, refusalFor, type RefusalId } from "@/copy/copilot/refusals";
 import { NOT_DIAGNOSTIC } from "@/copy/reports/strings";
+import { useCsrf } from "@/components/security/csrf-provider";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { providerDisplayName } from "@/lib/llm";
-import type { ChatProviderInfo } from "./chat-panel";
 import { route } from "@/lib/primary-routes";
 import { OWN_CHAT_CORRECTION_NOTICE, ownChatCorrectionSchema } from "@/lib/copilot/own-chat-correction";
+
+/** What the page may say about the saved provider: its class and recipient, never a credential. */
+export interface ChatProviderInfo {
+  configured: boolean;
+  provider?: "anthropic" | "openai_compatible";
+  providerKey?: string;
+  model?: string;
+  local?: boolean;
+  hasConsent?: boolean;
+}
 
 const citation = z.object({ id: z.string().min(1).max(2000), label: z.string().min(1).max(100_000),
   href: z.string().max(4000).refine(value => {
@@ -24,7 +34,7 @@ const content = z.object({ role: z.literal("assistant"), content: z.string().max
   citations: z.array(citation).max(100), embryoFindings: z.array(z.never()).max(0),
 }).strict();
 const completion = z.object({ chatId: z.uuid(), message: content }).strict();
-const history = z.object({ chatId: z.uuid(), correction: ownChatCorrectionSchema.optional(), scope: z.object({ kind: z.enum(["self", "family", "cohort"]),
+const history = z.object({ chatId: z.uuid(), correction: ownChatCorrectionSchema.optional(), scope: z.object({ kind: z.enum(["self", "family", "cohort", "subject"]),
   displayLabel: z.string().max(200) }).strict(), messages: z.array(z.object({
   id: z.uuid(), role: z.enum(["user", "assistant"]), content: z.string().max(100_000),
   citations: z.array(citation).max(100), embryoFindings: z.array(z.never()).max(0),
@@ -38,15 +48,17 @@ const OWN_THREAD_HINT = "Ask about your own file or a report you chose. Answers 
 /**
  * Only the newest plain-text question crosses this boundary. The server owns
  * history. The Family group scope reuses this panel with its own hint and
- * placeholder; its history must come back as a `family` scope.
+ * placeholder; its history must come back as a `family` scope. So does
+ * Copilot for one other adult's record, as a `subject` scope named for them.
  */
 export function OwnChatPanel({ contextToken, info, chats, displayLabel, scopeKind = "self", threadHint = OWN_THREAD_HINT,
   placeholder = "Ask about your genome…" }: {
   contextToken: string; info: ChatProviderInfo; displayLabel: string;
   chats: { id: string; createdAt: string }[];
-  scopeKind?: "self" | "family" | "cohort"; threadHint?: string; placeholder?: string;
+  scopeKind?: "self" | "family" | "cohort" | "subject"; threadHint?: string; placeholder?: string;
 }) {
   const router = useRouter();
+  const csrf = useCsrf("api.chat");
   const [input, setInput] = useState("");
   const [chatId, setChatId] = useState<string | null>(null);
   const [usedToken, setUsedToken] = useState<string | null>(null);
@@ -66,11 +78,11 @@ export function OwnChatPanel({ contextToken, info, chats, displayLabel, scopeKin
     setBusy(true); setError(null);
     if (!chatId) setUsedToken(contextToken);
     try {
-      const response = await fetch("/api/chat", {
+      const response = await csrf.send((csrfToken) => fetch("/api/chat", {
         method: "POST", credentials: "same-origin", cache: "no-store", redirect: "error",
-        headers: { "content-type": "application/json" }, signal: controller.signal,
+        headers: { "content-type": "application/json", "X-Inherit-CSRF": csrfToken }, signal: controller.signal,
         body: JSON.stringify(chatId ? { chatId, message } : { contextToken, message }),
-      });
+      }));
       if (!response.ok) {
         if (response.status === 409) {
           const blocked = ownChatCorrectionSchema.safeParse(await response.clone().json().catch(() => null));

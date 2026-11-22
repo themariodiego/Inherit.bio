@@ -3,7 +3,7 @@ import React from "react";
 const mocks = vi.hoisted(() => ({ open: vi.fn(), account: vi.fn(), rpc: vi.fn(), retry: vi.fn() }));
 vi.mock("next/navigation", () => ({ notFound: () => { throw new Error("opaque404"); } }));
 vi.mock("@/lib/future-person/appeals-open", () => ({ testAppealIntakeOpen: mocks.open }));
-vi.mock("@/lib/account-deletion", () => ({ getSensitiveAccountContext: mocks.account }));
+vi.mock("@/lib/page-account-context", () => ({ getPageAccountContext: mocks.account }));
 vi.mock("@/lib/supabase/server", () => ({ createClient: async () => ({ rpc: mocks.rpc }) }));
 vi.mock("@/components/future-person/public-appeal-review", () => ({ PublicAppealReview: () => null }));
 import Page from "./page";

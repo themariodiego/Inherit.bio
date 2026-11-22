@@ -10,6 +10,7 @@ import {
   type CarrierRefVariant,
   type CarrierVariantReading,
 } from "./carrier-pair";
+import { readHeldSharedSubjects, type HeldSharedSubjectsRpc } from "./graph";
 
 /**
  * The Portrait pair: who it is about, whether this viewer may open it, and
@@ -267,16 +268,26 @@ export async function readPortraitPairRows(
   const accountByPrincipal = new Map(
     (principals ?? []).map((row) => [row.id, row.account_id] as const),
   );
-  const grants: PortraitGrantRow[] = [];
+  const live: PortraitGrantRow[] = [];
   for (const base of baseRows) {
     const direction = directionByGrant.get(base.grant_id);
     if (!direction || direction.grant_revision !== base.grant_revision) continue;
-    grants.push({
+    live.push({
       grantId: base.grant_id,
       granterAccountId: accountByPrincipal.get(base.data_subject_principal_id) ?? null,
       recipientAccountId: direction.recipient_account_id,
     });
   }
+  // D-156 (owner decision of 22 November 2026): the other person's grant to a
+  // viewer who invited them reads as not given while their acceptance hold or
+  // a due reminder stands, the same database question the Family graph asks.
+  const other = a.subject_account_id === viewerAccountId ? b : a;
+  const fromOther = (grant: PortraitGrantRow) =>
+    grant.recipientAccountId === viewerAccountId && grant.granterAccountId === other.subject_account_id;
+  const held = live.some(fromOther)
+    ? await readHeldSharedSubjects(admin.rpc.bind(admin) as unknown as HeldSharedSubjectsRpc, viewerAccountId, [other.id])
+    : [];
+  const grants = held.includes(other.id) ? live.filter((grant) => !fromOther(grant)) : live;
 
   const accounts = [a.subject_account_id, b.subject_account_id].filter(
     (id): id is string => id !== null,
