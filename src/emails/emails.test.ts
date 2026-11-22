@@ -7,6 +7,7 @@ import { ADULT_UPLOAD_DERIVED_LIST as DERIVED, ADULT_UPLOAD_REVISION_COPY as REV
 import { OWN_UPLOAD_WITHDRAWAL_EMAIL_COPY as WITHDRAWN } from "@/copy/upload/withdrawal";
 import { UPLOAD_PERMISSION_WITHDRAWN_NOTICE_COPY as UPLOAD_WITHDRAWN } from "@/copy/upload/other-adult-withdrawal";
 import { ADULT_ACCEPTANCE_SECOND_NOTICE_COPY as SECOND_NOTICE, ADULT_REVOCATION_RENOTICE_COPY as RENOTICE } from "@/copy/upload/other-adult-acceptance-notices";
+import { SUBJECT_TRANSFER_NOTICES } from "@/copy/upload/subject-transfer-notices";
 import { ReportReadyEmail } from "./report-ready";
 import { ResearchDigestEmail } from "./research-digest";
 import { AdultSubjectInvitationEmail } from "./adult-subject-invitation";
@@ -414,6 +415,32 @@ describe("the notices to an adult who accepted through their own account", () =>
     for (const kind of ["invitation-refused", "draft-cancelled", "donor-attribution-ended", "upload-permission-withdrawn"] as const) {
       expect(mailSubject({ id: "invitation-terminal-notice", payload: { kind } })).toBe("An invitation on Inherit has ended");
     }
+  });
+});
+
+// 20261122100000: a record transfer's three notices (register
+// subject-ownership-transfer-v1), for the person's own act and for the
+// uploader's withdrawal, through the same queue. Their words are drafts for
+// the owner (src/copy/upload/subject-transfer-notices.ts) and nothing queues
+// them while the transfer is closed; this pins that they are the ones sent,
+// each under its own subject, with no name, link or address.
+describe("the record transfer's notices", () => {
+  it.each(Object.entries(SUBJECT_TRANSFER_NOTICES))("%s says what moved and what ended, with no name, file, link or address",
+    async (kind, copy) => {
+      const mail = { id: "invitation-terminal-notice", payload: { kind } } as MailTemplate;
+      expect(mailSubject(mail)).toBe(copy.subject);
+      const html = stripMarkers(await renderMail(mail));
+      expect(html).toContain(copy.heading);
+      expect(html).toContain(copy.body.replaceAll("'", "&#x27;"));
+      expect(html).not.toContain("href=");
+      expectSafeBody(html);
+    });
+
+  it("has one kind per act and recipient, and no two kinds share a body", () => {
+    expect(Object.keys(SUBJECT_TRANSFER_NOTICES).sort()).toEqual(["subject-transfer-access-revoked",
+      "subject-transfer-former-owner", "subject-transfer-new-owner", "withdrawal-transfer-former-owner",
+      "withdrawal-transfer-new-owner"]);
+    expect(new Set(Object.values(SUBJECT_TRANSFER_NOTICES).map(copy => copy.body)).size).toBe(5);
   });
 });
 

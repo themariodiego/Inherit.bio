@@ -54,6 +54,42 @@ export const OTHER_ADULT_WITHDRAWAL_COPY = {
 } as const;
 
 /**
+ * The same control where the other adult holds the record with their own
+ * account (owner decision of 22 November 2026, "An uploader's withdrawal
+ * hands a record its adult holds to that adult"): the withdrawal hands the
+ * record and the files they confirmed to them through the transfer, deletes
+ * the files they have not confirmed, and leaves the uploader with nothing.
+ * Shown only while the transfer is open (the database's read answers
+ * `hand-over`); while it is closed the card keeps `accountHeldStatus` above.
+ * The heading, the confirmation's heading, the last line, "Keep my
+ * permission", the receipt's heading and the refusal are the strings above.
+ *
+ * NOT APPROVED. Drafts for the owner, with the transfer's three notices
+ * (src/copy/upload/subject-transfer-notices.ts); the transfer stays closed
+ * until the owner approves them.
+ */
+export const OTHER_ADULT_HAND_OVER_COPY = {
+  /** What withdrawing does, before any click. */
+  summary: (name: string) =>
+    `You can withdraw your permission for ${name}'s DNA file at any time. ${name} holds the record in their own account, so it then becomes theirs.`,
+  /** The confirmation's list: what happens to the record. */
+  moves: (name: string) => [
+    `The record and every file ${name} confirmed become theirs alone.`,
+    `Any file ${name} has not confirmed yet is deleted.`,
+    "You can no longer see the record, its results or your conversations about it.",
+    `Every permission ${name} gave you for it ends.`,
+  ],
+  notice: (name: string) => `We will email ${name} and you to say this has happened.`,
+  /** The destructive button; it sends the request. */
+  confirmButton: "Withdraw my permission",
+  /** The receipt's text, under the shared receipt heading. */
+  receiptBody: (name: string) =>
+    `The record and the files ${name} confirmed are now theirs. We are deleting any file they had not confirmed.`,
+  /** A 5xx answer, another status, or no answer. */
+  uncertainStatus: "We do not know if this finished. Open this page again to see if it did.",
+} as const;
+
+/**
  * The short notice to the other adult (template `invitation-terminal-notice`,
  * kind `upload-permission-withdrawn`). It names nobody and no file: the
  * person who added the file is the one who asked them, so they know who.

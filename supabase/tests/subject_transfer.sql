@@ -174,6 +174,11 @@ select ok(pg_temp.untouched() and (select owner_account_id from public.subjects 
 -- 3. The transfer -----------------------------------------------------------------------------
 create temporary table before_transfer as select s.lifecycle_revision,s.subject_binding_revision,
  (select count(*) from public.subject_consents where subject_id=s.id and revoked_at is null) consents,
+ (select count(*) from public.subject_consents where subject_id=s.id) consent_rows,
+ (select array_agg(c.id order by c.id) from public.subject_consents c where c.subject_id=s.id and c.revoked_at is null
+  and not (c.consent_type='upload_class' and c.account_id=s.owner_account_id)) other_live,
+ (select c.id from public.subject_consents c where c.subject_id=s.id and c.consent_type='upload_class'
+  and c.account_id=s.owner_account_id and c.revoked_at is null) uploader_consent,
  (select count(*) from public.consent_signatures where target_kind='subject' and target_id=s.id) signatures,
  (select count(*) from public.legal_audit_log) audit
  from public.subjects s where s.id=pg_temp.sid('main');
@@ -220,9 +225,17 @@ select ok((select g.revoked_at is null and d.status='current' from public.purpos
 select is((select count(*) from public.subject_relationships where subject_id=pg_temp.sid('main')
  and status in ('pending','current') and recipient_account_id is distinct from pg_temp.a('2')),0::bigint,
  'every relationship naming another recipient ends');
-select ok((select (select count(*) from public.subject_consents where subject_id=pg_temp.sid('main') and revoked_at is null)=b.consents
+-- 20261122100000 (D-147): the uploader's upload consent no longer stays live
+-- after the record leaves it; every row is still kept.
+select ok((select (select count(*) from public.subject_consents where subject_id=pg_temp.sid('main'))=b.consent_rows
+ and (select array_agg(c.id order by c.id) from public.subject_consents c where c.subject_id=pg_temp.sid('main') and c.revoked_at is null)
+  is not distinct from b.other_live
+ and coalesce(cardinality(b.other_live),0)=b.consents-1
  and (select count(*) from public.consent_signatures where target_kind='subject' and target_id=pg_temp.sid('main'))=b.signatures
- from before_transfer b),'original consents and signatures are kept as they were');
+ from before_transfer b),'original consents and signatures are kept: every row stays, and every consent but the uploader''s stays live');
+select ok((select revoked_at is not null and revocation_reason='superseded' from public.subject_consents
+ where id=(select uploader_consent from before_transfer)),
+ 'D-147: the uploader''s upload consent ends as superseded by the person''s ownership, and is kept');
 select ok(exists(select 1 from public.legal_audit_log where event_code='subject.ownership_transferred')
  and (select count(*) from public.legal_audit_log)>(select audit from before_transfer),
  'one subject.ownership_transferred event is appended to the kept audit chain');

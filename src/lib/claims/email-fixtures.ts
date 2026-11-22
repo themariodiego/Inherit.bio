@@ -83,7 +83,9 @@ export function emailFixtures(catalog: readonly PublicDigestTemplate[]): EmailFi
   add("expired", { id: "embryo-draft-expired", payload: {} });
   add("abandoned", { id: "embryo-ingest-abandoned", payload: {} });
   for (const kind of ["invitation-refused", "draft-cancelled", "donor-attribution-ended", "upload-permission-withdrawn",
-    "adult-acceptance-second-notice", "adult-revocation-renotice"] as const) {
+    "adult-acceptance-second-notice", "adult-revocation-renotice", "subject-transfer-new-owner",
+    "subject-transfer-former-owner", "subject-transfer-access-revoked", "withdrawal-transfer-new-owner",
+    "withdrawal-transfer-former-owner"] as const) {
     add(kind, { id: "invitation-terminal-notice", payload: { kind } });
   }
   add("withdrawn", { id: "upload-consent-withdrawn", payload: { withdrawnAt: "2026-11-19T12:00:00.123456+00:00" } });

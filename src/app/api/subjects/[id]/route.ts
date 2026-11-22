@@ -38,9 +38,14 @@ import { withAccountCsrf } from "@/lib/security/session-csrf";
  *     owning uploader's request is the withdrawal of its consent for that
  *     adult's file: it goes only to `withdraw_other_adult_upload_v1`, which
  *     runs `delete_subject_v1` unchanged and queues a short notice to the
- *     adult in the same transaction (unless their contact is barred), and
- *     refuses, with the same 404, a record the adult holds with their own
- *     account. The adult's own delete still goes to `delete_subject_v1`.
+ *     adult in the same transaction (unless their contact is barred). A
+ *     record the adult holds with their own account is handed to them
+ *     through the record transfer instead (owner decision of 22 November
+ *     2026, "An uploader's withdrawal hands a record its adult holds to that
+ *     adult"), only once the transfer is open; while it is closed the door
+ *     refuses that record with the same 404, as before. Either way the door
+ *     answers the adult case. The adult's own delete still goes to
+ *     `delete_subject_v1`.
  *   - embryo: a current parent's authority is locked and rechecked first. A
  *     transferred, unclaimed record is purged alone; any other record
  *     restricts its whole cohort, as `api.cohort-restrict` does. A claimed

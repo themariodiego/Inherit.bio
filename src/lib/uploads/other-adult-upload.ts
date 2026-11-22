@@ -267,10 +267,13 @@ export interface OtherAdultConsentView {
  * now (owner decision of 19 November 2026, "An uploader's withdrawal for
  * another adult's file deletes it, unless that adult holds the record
  * themselves"), from `other_adult_withdrawal_readiness_v1`. `account-held`:
- * the person holds the record with their own account, a branch not built
- * while who holds it afterwards is undecided. `unavailable`: the read failed.
+ * the person holds the record with their own account and the transfer is
+ * closed, so nothing can run. `hand-over` (owner decision of 22 November
+ * 2026, "An uploader's withdrawal hands a record its adult holds to that
+ * adult"): the same record once the transfer is open; the withdrawal then
+ * hands it to them. `unavailable`: the read failed.
  */
-export type OtherAdultWithdrawalReadiness = "ready" | "account-held" | "unsupported" | "unavailable";
+export type OtherAdultWithdrawalReadiness = "ready" | "hand-over" | "account-held" | "unsupported" | "unavailable";
 export interface OtherAdultWithdrawalView {
   readiness: OtherAdultWithdrawalReadiness;
   /** The one-time api.subject-delete code for this record; only when the request can run. */

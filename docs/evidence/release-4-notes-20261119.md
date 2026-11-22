@@ -711,3 +711,79 @@ Only on a self-hosted install with a local model and the test jurisdiction. A pe
 ## Browser runs (local, this container)
 
 `e2e/copilot-subject.spec.ts` (6 tests) against one production build, on the `copilot-local` project (port 3103) and, for its hosted check, the main variant (port 3100): 6 of 6 passed. The canonical fixture daemon runs only in the isolated CI container (its TLS face listens on a container-only address); here a host-loopback stand-in started the same reviewed provider (`e2e/fixtures/canonical-copilot-provider.ts`, unchanged) on plain `127.0.0.1:8127` and answered the daemon's control protocol on `127.0.0.1:8130`. No CI flag was set and no network configuration changed. With it, on the same build: `copilot-family`, `copilot-cohort`, `copilot-redteam`, `copilot-group-scopes`, `copilot-scope-states`, `copilot-group-scopes.nojurisdiction`, `genome-family.nojurisdiction` and `family`, 100 of 100 in all; and the three Path B journeys of `other-adult-upload.spec.ts` that reach the person's choices, 3 of 3. No browser test ran the uploader case: its fixtures live inside `e2e/other-adult-upload.spec.ts` and drive the global Path B workers; `supabase/tests/subject_copilot_path_b.sql` drives it through the same database doors.
+
+# Release notes: `20261122100000_uploader_withdrawal_hands_record_to_adult.sql`
+
+Local work only. Nothing here was run against production or any hosted database. Owner decision of 22 November 2026, "An uploader's withdrawal hands a record its adult holds to that adult" (`docs/protocol/decisions.md`): when an uploader withdraws its permission for another adult's file and that adult holds the record with their own account, the withdrawal moves the record and the files the adult confirmed to the adult through the existing transfer (`lifecycleDispositionContracts.subject-ownership-transfer-v1`), on the uploader's act; the uploader's consent ends, unconfirmed files are deleted and the uploader keeps no access. **Built closed.** The transfer's one switch, `private.subject_transfer_open_v1()`, still answers false and this migration does not change it, so nothing changes for anyone until the owner approves the transfer's three notices. Path B, the only way such a record exists, is TEST-LOCAL only; nothing here is reachable in production in any order of apply and deploy.
+
+## What it changes
+
+- `invitation_terminal_notices_notice_kind_check` gains five kinds, the transfer's three notices for each of its two acts: `subject-transfer-new-owner`, `subject-transfer-former-owner` (the person's own act), `withdrawal-transfer-new-owner`, `withdrawal-transfer-former-owner` (the uploader's withdrawal) and `subject-transfer-access-revoked` (any other account whose access ended, either act). Existing rows hold only the six earlier kinds.
+- One new function, `private.queue_subject_transfer_notices_v1(uuid,boolean,uuid[],uuid[])`, `security definer`, `search_path=''`, `{postgres=X/postgres}` (no API role may call it): called only by the transfer, in its own transaction, it queues one account notice per transfer, kind and account through the terminal-notice queue and its existing worker, bound to the request the person accepted, for seven days. A transfer whose new or former owner cannot be addressed is refused whole (55000 `subject_transfer_notice_unavailable`).
+- Three bodies patched in place, md5-guarded, one anchor per patch, successor md5 and unchanged ACL asserted:
+  - `private.transfer_subject_v1`, eight patches (`3707a210e8fab9361b15a1ab6adbe8e0` → `e481de5f5eab53b6c596da66bc7b30fa`, `{postgres=X/postgres}`): the second actor case (the owning uploader, only when the withdrawal door names the record in the transaction-local marker `inherit.subject_transfer_withdrawal`; its account need not be current for analysis; it spends its `subject_delete` code; every file the person has not confirmed ends `withdrawn` through the unchanged `private.end_other_adult_held_upload_v1`; then the transfer's unchanged steps run for the person); D-147 (the uploader's `upload_class` consent ends, `withdrawn` on its withdrawal and `superseded` on the person's own act, and is kept); D-151 (each export attempt still holding or writing objects is stopped through `public.export_archive_cleanup_v1('stop')` before the record's exports are revoked, as `20261120100000` does); any one-record Copilot context of another account that still names the record is deleted (a defensive step: the shared purge the transfer already runs deletes those of every account whose turn read the record, so in every flow tested it finds none; the statement's own comment says "unredeemed", which is narrower than what it deletes); the notices are queued; the audit event names the act (the withdrawal's is on `api.subject-delete`, outcome `withdrawn`, attributed to the uploader as the transfer's event is).
+  - `public.withdraw_other_adult_upload_v1` (`caa3a80ce5b8c21aaafa83138575de39` → `c00c31ee8ba5848c95ea4b2384d07e61`, `{postgres=X/postgres,service_role=X/postgres}`): the account-held branch is refused as before (`42501 other_adult_withdrawal_account_held`) while the switch is closed; once open it runs the transfer under the marker and answers `{"case":"adult"}`. Nothing else of the door changes.
+  - `public.other_adult_withdrawal_readiness_v1` (`de43608630ccda660633c0f36626254c` → `29f041df82ed5defc7d4cc48fcb12e0f`, stable): the account-held branch reads `account-held` while the switch is closed (as before) and `hand-over` once it is open.
+- Pinned, not changed: `private.subject_transfer_open_v1()` (`c4b160e966711cf513e267673c4b5e2f`; it must answer false before and after), `public.transfer_subject_v1` (`0fb41099ef95025c011084190ed1555f`), `public.export_archive_cleanup_v1` (`25fa3ce71b73fb0c371d1bb9af836bd7`), `private.end_other_adult_held_upload_v1` (`0d5e9e5784297e1a1cb77aacfbe54a43`), `private.legal_audit_actor_principal_v1` (`7d74f4fc739c03a14c928b5c529ca83a`), the queue's insert trigger function (`689008df933e852391c20f6e8b3afd4a`) and its recipient check (`e0728613189f2cbdfa05029c962767a5`).
+- No table, column, index, trigger, policy or grant on an existing object changes. Fingerprint effect: 1 more row in `functions`, 3 `def_md5` change, 1 check constraint's definition changes.
+
+## Which releases must come first
+
+1. Release 2 for the transfer and its switch (`20261016221000`) and the subject delete (`20261016181000`); release 1 for the terminal-notice queue (`20260906053451`) and the export cleanup door (`20260923123240`).
+2. In this release, `20261119160000` (the door and the read it patches), `20261120100000` (whose pattern it follows; it touches none of its bodies) and `20261120120000` (the notice kinds it widens), in file order. Locally it was applied forward to the shared database after `20261120130000`, with `supabase migration up --local`, and recorded.
+
+## Read-only pre-checks (one SELECT; the release session and its `search_path`)
+
+Stop unless every `must_be_*` holds.
+
+```sql
+select
+ (select count(distinct x.signature) from pg_proc p join (values
+   ('private.transfer_subject_v1(uuid,uuid,uuid,text,timestamptz)','3707a210e8fab9361b15a1ab6adbe8e0','{postgres=X/postgres}'),
+   ('public.withdraw_other_adult_upload_v1(uuid,uuid,uuid,text,timestamptz)','caa3a80ce5b8c21aaafa83138575de39','{postgres=X/postgres,service_role=X/postgres}'),
+   ('public.other_adult_withdrawal_readiness_v1(uuid,uuid)','de43608630ccda660633c0f36626254c','{postgres=X/postgres,service_role=X/postgres}'),
+   ('private.subject_transfer_open_v1()','c4b160e966711cf513e267673c4b5e2f','{postgres=X/postgres}'),
+   ('public.transfer_subject_v1(uuid,uuid,uuid,text,timestamptz)','0fb41099ef95025c011084190ed1555f','{postgres=X/postgres,service_role=X/postgres}'),
+   ('public.export_archive_cleanup_v1(text,uuid,uuid,jsonb)','25fa3ce71b73fb0c371d1bb9af836bd7','{postgres=X/postgres,service_role=X/postgres}'),
+   ('private.end_other_adult_held_upload_v1(uuid,text)','0d5e9e5784297e1a1cb77aacfbe54a43','{postgres=X/postgres}'),
+   ('private.legal_audit_actor_principal_v1(text,text)','7d74f4fc739c03a14c928b5c529ca83a','{postgres=X/postgres}'),
+   ('private.enqueue_invitation_terminal_notice_v1()','689008df933e852391c20f6e8b3afd4a','{postgres=X/postgres}'),
+   ('private.invitation_notice_recipient_current_v1(uuid)','e0728613189f2cbdfa05029c962767a5','{postgres=X/postgres}')
+  ) as x(signature,body,acl) on p.oid=to_regprocedure(x.signature) and md5(pg_get_functiondef(p.oid))=x.body
+   and p.proacl::text=x.acl) as must_be_10_bodies_as_reviewed,
+ (select private.subject_transfer_open_v1()) as must_be_false_transfer_switch,
+ (select md5(pg_get_constraintdef(c.oid)) from pg_constraint c where c.conrelid='private.invitation_terminal_notices'::regclass
+   and c.conname='invitation_terminal_notices_notice_kind_check' and c.contype='c' and c.convalidated)
+   ='1d03e86f7fe7caed9c52b9df695bb46d' as must_be_true_notice_kinds_as_reviewed,
+ (select count(*) from pg_proc where proname='queue_subject_transfer_notices_v1') as must_be_zero_new_function_present,
+ (select count(*) from public.subjects where subject_class='other_adult' and upload_class='adult' and lifecycle='active'
+   and subject_account_id is not null and owner_account_id is distinct from subject_account_id) as context_records_held_by_their_person,
+ (select count(*) from public.subjects where ownership_transferred_at is not null) as context_transferred_records,
+ (select count(*) from private.invitation_terminal_notices) as context_terminal_notices,
+ current_user as context_current_user,
+ current_setting('search_path') as context_search_path;
+```
+
+Locally, before the migration was applied forward, every `must_be_*` held (10, false, true, 0); the three patched bodies' predecessor and successor md5s, and the switch's, the person's door's, the cleanup door's and the held-upload ending's, are also recomputed from source by `scripts/uploader-withdrawal-hand-over-migration.test.ts`. No pinned header prints a `public` or `private` type, so the md5s do not depend on `search_path`. `context_records_held_by_their_person` and `context_transferred_records` are expected to be 0 in production (Path B is TEST-LOCAL); locally they were 10 and 0, left by browser runs.
+
+## Locks and duration
+
+`alter table private.invitation_terminal_notices drop constraint … add constraint …` takes ACCESS EXCLUSIVE on that table to commit and scans it once to validate; everything else is catalog work and three function bodies replaced. The terminal mail worker waits on that lock while it is held. Measured locally inside a rolled-back transaction: about 37 ms, the predecessor checks and postflight included.
+
+## Deployed code between apply and deploy
+
+- **Migration applied, code not yet deployed (the expected order).** The switch is closed, so the door refuses the account-held branch with the same error as before and the read answers `account-held` as before; the deployed card shows the same sentence and no request. The person's own transfer door is closed as before. Nothing queues the new notice kinds, and the deployed mail worker, which does not know them, never meets one. Nothing changes.
+- **Code deployed, migration not yet applied.** The new card knows a `hand-over` answer, which the old read never gives; the new mail worker and template know five more kinds that nothing queues. The route's code is unchanged. Nothing changes.
+- **Both, with the switch closed (this release).** As the first window. In production Path B is not open, so none of this is reachable in any window.
+
+## What a person sees
+
+Nothing changes while the switch is closed: on a record the person holds with their own account the uploader's card still says "You cannot withdraw your permission for {name} here yet. Nothing has changed." and offers no request. Once the owner approves the wording and the switch is opened (below), and only under the test jurisdiction: the card says the record becomes the person's, the confirmation lists what moves, what is deleted and what the uploader loses, the receipt says the record is now theirs, and the emails go out (to the person, to the uploader, and to any other account whose access ended). Every one of those strings is a draft for the owner; none is approved.
+
+## What opening the switch requires
+
+The owner's approval of the five notices' wording and of the card's hand-over wording (`src/copy/upload/subject-transfer-notices.ts`; `OTHER_ADULT_HAND_OVER_COPY` in `src/copy/upload/other-adult-withdrawal.ts`), recorded in `docs/protocol/decisions.md`; then one later guarded migration that replaces `private.subject_transfer_open_v1()` with a body answering true (from exactly `c4b160e966711cf513e267673c4b5e2f`, ACL `{postgres=X/postgres}` and `immutable` kept, its predecessor block pinning this migration's three successor md5s and the new function), with the register amended to say the transfer and its second actor case are open and their notices approved. That one change opens both acts at once: the person's own `api.subject-transfer` and the uploader's hand-over through `api.subject-delete`. Before it ships: a browser spec for the open branch (the hand-over through the screens, the emails through the mail drain, the relocation worker), the relocation worker's schedule where the transfer can run (its doors refuse outside TEST-LOCAL), and the owner's answers to the questions in the wording draft. Until Path B opens to a real jurisdiction, opening the switch reaches nobody in production.
+
+## Browser runs (local, this container)
+
+`e2e/other-adult-upload-withdrawal.spec.ts` (2 tests) against one production build of this change, with this migration applied forward to the shared local database (the switch closed): 2 of 2 passed ("E2E contract passed: 2 result(s), no skips, no retries"; 3 browser uploads crossed the provider proxy). The second test is the closed branch: on a record its person holds with their own account the card shows the same sentence and offers no request, and nothing changes. No browser test runs the opened branch: the switch opens only by a migration; `supabase/tests/uploader_withdrawal_hand_over.sql` opens it inside its own rolled-back transaction.

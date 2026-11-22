@@ -64,6 +64,7 @@ import { AccountDeletionAffectedEmail, AccountDeletionAffectedCancelledEmail,
 import { UploadConsentWithdrawnEmail, type UploadConsentWithdrawnProps } from "@/emails/upload-consent-withdrawn";
 import { OWN_UPLOAD_WITHDRAWAL_EMAIL_COPY } from "@/copy/upload/withdrawal";
 import { ADULT_ACCEPTANCE_SECOND_NOTICE_COPY, ADULT_REVOCATION_RENOTICE_COPY } from "@/copy/upload/other-adult-acceptance-notices";
+import { SUBJECT_TRANSFER_NOTICES } from "@/copy/upload/subject-transfer-notices";
 
 /** Every template id, paired with the props its component renders. */
 interface MailPayloads {
@@ -177,6 +178,12 @@ export function mailSubject(mail: MailTemplate): string {
   }
   if (mail.id === "invitation-terminal-notice" && mail.payload.kind === "adult-revocation-renotice") {
     return ADULT_REVOCATION_RENOTICE_COPY.subject;
+  }
+  // 20261122100000: a record transfer's notices say what moved, not that an
+  // invitation ended, so each carries its own subject line.
+  if (mail.id === "invitation-terminal-notice") {
+    const transfer = (SUBJECT_TRANSFER_NOTICES as Partial<Record<string, { subject: string }>>)[mail.payload.kind];
+    if (transfer) return transfer.subject;
   }
   // The register's Path B request (TEST-LOCAL only) asks for a signature, not an account.
   if (mail.id === "adult-subject-invitation" && mail.payload.request === "esignature") {

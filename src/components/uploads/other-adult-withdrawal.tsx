@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useReducer, useRef, type RefObject } from "react";
 import { useCsrf } from "@/components/security/csrf-provider";
 import { Button } from "@/components/ui/button";
-import { OTHER_ADULT_WITHDRAWAL_COPY as COPY } from "@/copy/upload/other-adult-withdrawal";
+import { OTHER_ADULT_HAND_OVER_COPY as HAND_OVER, OTHER_ADULT_WITHDRAWAL_COPY as COPY } from "@/copy/upload/other-adult-withdrawal";
 import type { OtherAdultWithdrawalView } from "@/lib/uploads/other-adult-upload";
 import {
   WITHDRAWAL_START,
@@ -24,9 +24,13 @@ import {
  * the uploader holds a live permission on a confirmed record, and the request
  * only when the database says this record's withdrawal can run now, which is
  * the server's answer for THIS record: a person who holds it with their own
- * account reads `account-held`, and the control then says it cannot run here
- * and offers nothing. Otherwise the confirmation names what is deleted and
- * that the person is told, and only its button sends.
+ * account reads `account-held` while the transfer is closed, and the control
+ * then says it cannot run here and offers nothing. Once the transfer is open
+ * the same record reads `hand-over` (owner decision of 22 November 2026, "An
+ * uploader's withdrawal hands a record its adult holds to that adult"): the
+ * confirmation then says the record and the files they confirmed become
+ * theirs and the rest is deleted. Otherwise the confirmation names what is
+ * deleted and that the person is told, and only its button sends.
  *
  * The request is api.subject-delete for that record (`DELETE
  * /api/subjects/[id]` with the page's one-time code and the route's session
@@ -56,7 +60,8 @@ export function OtherAdultWithdrawal({ subjectId, name, view, onWithdrawn }: {
 
   async function confirm() {
     // A request is sent only from the open confirmation, with a code the page rendered.
-    if (state.phase !== "confirming" || view?.readiness !== "ready" || !view.nonce) return;
+    if (state.phase !== "confirming" || !view || (view.readiness !== "ready" && view.readiness !== "hand-over")
+      || !view.nonce) return;
     dispatch({ type: "send" });
     const outcome = await requestOwnUploadWithdrawal(csrf, subjectId, view.nonce);
     dispatch({ type: "answered", outcome });
@@ -90,7 +95,9 @@ export function OtherAdultWithdrawalPanel({ subjectId, name, view, state, dialog
   // Nothing is shown without a live permission, except the answer to a
   // request this control already sent.
   if (!view && state.phase !== "done" && !state.failure) return null;
-  const sendable = view?.readiness === "ready" && Boolean(view.nonce);
+  // 20261122100000: a record its person holds is handed to them, once the transfer is open.
+  const handOver = view?.readiness === "hand-over";
+  const sendable = (view?.readiness === "ready" || handOver) && Boolean(view?.nonce);
   const sending = state.phase === "sending";
   const ids = `other-adult-withdrawal-${subjectId}`;
   return (
@@ -99,19 +106,23 @@ export function OtherAdultWithdrawalPanel({ subjectId, name, view, state, dialog
       {state.phase === "done" ? (
         <div role="status" data-slot="other-adult-withdrawal-receipt" className="rec-stack-sm">
           <p ref={receiptHeading} tabIndex={-1} className="text-base font-medium text-ink">{COPY.receiptHeading}</p>
-          <p className="max-w-measure text-sm leading-relaxed text-ink">{COPY.receiptBody(name)}</p>
+          <p className="max-w-measure text-sm leading-relaxed text-ink">
+            {handOver ? HAND_OVER.receiptBody(name) : COPY.receiptBody(name)}
+          </p>
         </div>
       ) : (
         <>
           {view && view.readiness !== "account-held" ? (
-            <p className="max-w-measure text-sm leading-relaxed text-ink">{COPY.summary(name)}</p>
+            <p className="max-w-measure text-sm leading-relaxed text-ink">
+              {handOver ? HAND_OVER.summary(name) : COPY.summary(name)}
+            </p>
           ) : null}
           {state.failure ? (
             <p role="alert" data-slot="other-adult-withdrawal-failure" className="text-sm text-danger">
-              {state.failure === "refused" ? COPY.refusedStatus : COPY.uncertainStatus}
+              {state.failure === "refused" ? COPY.refusedStatus : handOver ? HAND_OVER.uncertainStatus : COPY.uncertainStatus}
             </p>
           ) : null}
-          {view && view.readiness !== "ready" ? (
+          {view && view.readiness !== "ready" && !handOver ? (
             // Read when the page renders, so plain text, not a live region:
             // the card's own status line stays the card's one status.
             <p data-slot="other-adult-withdrawal-reason" className="max-w-measure text-sm text-ink-muted">
@@ -134,14 +145,14 @@ export function OtherAdultWithdrawalPanel({ subjectId, name, view, state, dialog
                 {COPY.confirmHeading(name)}
               </h5>
               <ul className="list-disc space-y-1 pl-5 text-sm leading-relaxed text-ink">
-                {COPY.deletes(name).map((item) => <li key={item}>{item}</li>)}
+                {(handOver ? HAND_OVER.moves(name) : COPY.deletes(name)).map((item) => <li key={item}>{item}</li>)}
               </ul>
-              <p className="text-sm leading-relaxed text-ink-muted">{COPY.notice(name)}</p>
+              <p className="text-sm leading-relaxed text-ink-muted">{handOver ? HAND_OVER.notice(name) : COPY.notice(name)}</p>
               <p id={`${ids}-confirm-irreversible`} className="text-sm font-medium text-ink">{COPY.irreversible}</p>
               <div className="flex flex-wrap gap-3">
                 <Button type="button" variant="destructive" data-testid="other-adult-withdrawal-confirm"
                   disabled={sending} onClick={onConfirm}>
-                  {sending ? COPY.working : COPY.confirmButton}
+                  {sending ? COPY.working : handOver ? HAND_OVER.confirmButton : COPY.confirmButton}
                 </Button>
                 <Button type="button" variant="outline" disabled={sending} onClick={onCancel}>
                   {COPY.cancelButton}

@@ -76,7 +76,21 @@ describe("the release it belongs to", () => {
       expect(files.some(file => file.startsWith(`${earlier}_`)), earlier).toBe(true);
       expect(NAME > earlier, earlier).toBe(true);
     }
-    expect(files.at(-1)).toBe(NAME);
+    // 2026-11-22: 20261122100000 now follows it in release 4. What being the
+    // newest guaranteed is that nothing later undoes it: the file is present,
+    // and no later migration restates or patches a function it creates or
+    // names its trigger (its pins and its patch are held by the "last word"
+    // test below).
+    expect(files).toContain(NAME);
+    for (const file of files.filter(file => file > NAME)) {
+      const sql = read(`supabase/migrations/${file}`);
+      for (const created of ["subject_copilot_uploader_grant_v1", "subject_copilot_authority_v1", "subject_copilot_scope_v1",
+        "subject_copilot_prune_v1", "subject_copilot_chat_v1", "purge_subject_copilot_chats_v1"]) {
+        expect(new RegExp(`create\\s+(?:or\\s+replace\\s+)?function\\s+(?:\\w+\\.)?${created}\\s*\\(`, "iu").test(sql)
+          || (sql.includes(`.${created}(`) && sql.includes("replace(definition")), `${file}: ${created}`).toBe(false);
+      }
+      expect(sql.includes("purge_subject_copilot_chats"), file).toBe(false);
+    }
     expect(read("docs/evidence/release-4-notes-20261119.md")).toContain(NAME);
   });
 

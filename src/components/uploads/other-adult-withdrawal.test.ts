@@ -5,7 +5,7 @@ import { describe, expect, it, vi } from "vitest";
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: () => {} }) }));
 
-import { OTHER_ADULT_WITHDRAWAL_COPY as COPY } from "@/copy/upload/other-adult-withdrawal";
+import { OTHER_ADULT_HAND_OVER_COPY as HAND_OVER, OTHER_ADULT_WITHDRAWAL_COPY as COPY } from "@/copy/upload/other-adult-withdrawal";
 import type { OtherAdultTarget, OtherAdultWithdrawalView } from "@/lib/uploads/other-adult-upload";
 import { WITHDRAWAL_START, type WithdrawalState } from "@/lib/uploads/own-upload-withdrawal-client";
 import { OtherAdultWithdrawal, OtherAdultWithdrawalPanel } from "./other-adult-withdrawal";
@@ -25,7 +25,7 @@ const SUBJECT = "cccccccc-cccc-4ccc-8ccc-cccccccccccc";
 const NAME = "Synthetic Relative";
 const NONCE = `${Date.now() + 60_000}.${"n".repeat(43)}.${"0".repeat(64)}`;
 const view = (readiness: OtherAdultWithdrawalView["readiness"]): OtherAdultWithdrawalView =>
-  ({ readiness, nonce: readiness === "ready" ? NONCE : null });
+  ({ readiness, nonce: readiness === "ready" || readiness === "hand-over" ? NONCE : null });
 const noop = () => {};
 const render = (v: OtherAdultWithdrawalView | undefined, state: WithdrawalState = WITHDRAWAL_START) =>
   renderToStaticMarkup(createElement(OtherAdultWithdrawalPanel, { subjectId: SUBJECT, name: NAME, view: v, state,
@@ -100,6 +100,34 @@ describe("the other-adult withdrawal control", () => {
     // Plain text read at render: the card's own status line stays its one status.
     expect(html).not.toContain('role="status"');
     expect(render(view("account-held"), { phase: "confirming", failure: null })).not.toContain("<button");
+  });
+
+  // 20261122100000 (owner decision of 22 November 2026): once the transfer is
+  // open, the same record reads hand-over, and the withdrawal hands it over.
+  it("offers the hand-over for a record its person holds, once the transfer is open, in its own words", () => {
+    const idle = render(view("hand-over"));
+    expect(text(idle)).toContain(HAND_OVER.summary(NAME));
+    expect(text(idle)).not.toContain(COPY.summary(NAME));
+    expect(text(idle)).not.toContain(COPY.accountHeldStatus(NAME));
+    expect(idle).not.toContain('data-slot="other-adult-withdrawal-reason"');
+    expect(idle).toMatch(new RegExp(`<button[^>]*data-testid="other-adult-withdrawal"[^>]*>${COPY.withdrawButton}</button>`, "u"));
+    const open = render(view("hand-over"), { phase: "confirming", failure: null });
+    for (const line of [COPY.confirmHeading(NAME), ...HAND_OVER.moves(NAME), HAND_OVER.notice(NAME), COPY.irreversible,
+      HAND_OVER.confirmButton, COPY.cancelButton]) {
+      expect(text(open)).toContain(line);
+    }
+    for (const line of [...COPY.deletes(NAME), COPY.notice(NAME), COPY.confirmButton]) expect(text(open)).not.toContain(line);
+    const wired = wiring(view("hand-over"), { phase: "confirming", failure: null });
+    const [confirm] = wired.byTestId("other-adult-withdrawal-confirm");
+    expect(confirm?.props.variant).toBe("destructive");
+    (confirm!.props.onClick as () => void)();
+    expect(wired.calls).toEqual(["confirm"]);
+    const done = render(view("hand-over"), { phase: "done", failure: null });
+    expect(text(done)).toContain(COPY.receiptHeading);
+    expect(text(done)).toContain(HAND_OVER.receiptBody(NAME));
+    expect(text(done)).not.toContain(COPY.receiptBody(NAME));
+    expect(text(render(view("hand-over"), { phase: "idle", failure: "uncertain" }))).toContain(HAND_OVER.uncertainStatus);
+    expect(text(render(view("hand-over"), { phase: "idle", failure: "refused" }))).toContain(COPY.refusedStatus);
   });
 
   it("says why it cannot run, and offers no request, while the database would refuse it", () => {

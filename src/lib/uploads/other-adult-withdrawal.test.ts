@@ -48,6 +48,14 @@ describe("prepareOtherAdultWithdrawal", () => {
     }
   });
 
+  it("mints the same code for a record its person holds, once the transfer is open and the read says hand-over", async () => {
+    mocks.rpc.mockReturnValue({ data: "hand-over", error: null });
+    const view = await prepare(target("ready"));
+    expect(view?.readiness).toBe("hand-over");
+    expect(verifySubjectOperationNonce(view!.nonce, { ...ACTOR, operation: "subject_delete", subjectId: SUBJECT })).not.toBeNull();
+    expect(verifySubjectOperationNonce(view!.nonce, { ...ACTOR, operation: "subject_transfer", subjectId: SUBJECT })).toBeNull();
+  });
+
   it("offers nothing for a request not yet confirmed, or without the uploader's live permission", async () => {
     for (const t of [target("awaiting-request"), target("awaiting-signature"), target("ready", false), target("pending", false)]) {
       expect(await prepare(t), JSON.stringify(t)).toBeUndefined();

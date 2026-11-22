@@ -130,6 +130,30 @@ describe("the uploader's withdrawal notice", () => {
   });
 });
 
+// 20261122100000: a record transfer's notices are five more closed kinds of the
+// same queue, always addressed to an account; the address is read from that
+// account only here, between the two authorizations, and never decrypted.
+describe("the record transfer's notices", () => {
+  it.each(["subject-transfer-new-owner", "subject-transfer-former-owner", "subject-transfer-access-revoked",
+    "withdrawal-transfer-new-owner", "withdrawal-transfer-former-owner"])(
+    "sends %s to the account's verified address, rechecked after the lookup", async kind => {
+      const { admin, rpc, getUserById } = fixture({ notice_kind: kind, contact_ciphertext: null, recipient_account_id: "person" });
+      await expect(drainInvitationTerminalMail(admin)).resolves.toEqual({ processed: 1, failed: 0 });
+      expect(getUserById).toHaveBeenCalledExactlyOnceWith("person");
+      expect(mocks.decrypt).not.toHaveBeenCalled();
+      expect(mocks.submit).toHaveBeenCalledWith("owner@example.test",
+        { id: "invitation-terminal-notice", payload: { kind } }, "original-key");
+      expect(rpc.mock.calls.filter(([name]) => name === "authorize_invitation_terminal_mail_v1")).toHaveLength(2);
+    });
+
+  it("sends nothing when the account is no longer current after the lookup", async () => {
+    const { admin } = fixture({ notice_kind: "withdrawal-transfer-new-owner", contact_ciphertext: null,
+      recipient_account_id: "person" }, [true, false]);
+    await expect(drainInvitationTerminalMail(admin)).resolves.toEqual({ processed: 0, failed: 1 });
+    expect(mocks.submit).not.toHaveBeenCalled();
+  });
+});
+
 // D-141 (20261120120000): the second notice and the re-notice to an adult who
 // accepted through their own account are two more closed kinds of the same
 // queue, always addressed to that account. The address is read from the

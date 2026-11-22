@@ -240,7 +240,7 @@ export async function prepareOtherAdultUploads(): Promise<OtherAdultUploads | nu
   return { draftToken: mintPathBDraftNonce(actor.accountId, actor.sessionId), targets: result };
 }
 
-const WITHDRAWAL_READINESS = new Set<OtherAdultWithdrawalReadiness>(["ready", "account-held", "unsupported"]);
+const WITHDRAWAL_READINESS = new Set<OtherAdultWithdrawalReadiness>(["ready", "hand-over", "account-held", "unsupported"]);
 
 /**
  * The withdrawal of the uploader's permission for this person, as the card
@@ -248,8 +248,9 @@ const WITHDRAWAL_READINESS = new Set<OtherAdultWithdrawalReadiness>(["ready", "a
  * for another adult's file deletes it, unless that adult holds the record
  * themselves"). Only for a confirmed record the uploader still holds a live
  * permission on; the database's read (`other_adult_withdrawal_readiness_v1`)
- * says whether the request can run, and only then is the one-time
- * api.subject-delete code minted. Brief X1.5: this runs while the page
+ * says whether the request can run (`ready`, or `hand-over` once the
+ * transfer is open: owner decision of 22 November 2026), and only then is
+ * the one-time api.subject-delete code minted. Brief X1.5: this runs while the page
  * renders, so it writes nothing. A record the read does not find gets no
  * control; any other failure, as before the migration is hosted, says it is
  * not available and offers no request.
@@ -263,7 +264,8 @@ export async function prepareOtherAdultWithdrawal(admin: Admin, actor: { account
   if (error?.code === "42501") return undefined;
   const readiness: OtherAdultWithdrawalReadiness = !error && typeof data === "string"
     && WITHDRAWAL_READINESS.has(data as OtherAdultWithdrawalReadiness) ? data as OtherAdultWithdrawalReadiness : "unavailable";
-  return { readiness, nonce: readiness === "ready" ? mintSubjectOperationNonce({ accountId: actor.accountId,
+  const sendable = readiness === "ready" || readiness === "hand-over";
+  return { readiness, nonce: sendable ? mintSubjectOperationNonce({ accountId: actor.accountId,
     sessionId: actor.sessionId, operation: "subject_delete", subjectId: target.subjectId }, now) : null };
 }
 

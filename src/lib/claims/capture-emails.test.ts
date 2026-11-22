@@ -53,7 +53,8 @@ describe("independent production email fixture inventory", () => {
     const fixtures = emailFixtures(readPublicDigestCatalog(projectRoot));
     // 2026-11-19: 40 -> 41, the invitation terminal notice's new kind upload-permission-withdrawn (20261119160000).
     // 2026-11-20: 41 -> 43, its two D-141 kinds adult-acceptance-second-notice and adult-revocation-renotice (20261120120000).
-    expect(fixtures).toHaveLength(43);
+    // 2026-11-22: 43 -> 48, a record transfer's five notice kinds (20261122100000).
+    expect(fixtures).toHaveLength(48);
     expect(fixtures.filter((fixture) => fixture.mail.id === "appeal-evidence")).toEqual([
       expect.objectContaining({ entrypoint: "src/emails/appeal-evidence.tsx", exportName: "AppealEvidenceEmail",
         mail: { id: "appeal-evidence", payload: { continueUrl: "https://example.test/fixture#synthetic-appeal" } } }),
@@ -123,9 +124,11 @@ describe("actual production email HTML and envelope capture", () => {
     // body and subject surface: 82 observations and required surfaces.
     // 43 since 2026-11-20 (D-141): the second notice and the 30-day re-notice
     // to an adult who accepted, two surfaces each: 86.
-    expect(result.receipts).toHaveLength(43);
-    expect(result.observations).toHaveLength(86);
-    expect(result.requiredSurfaces).toHaveLength(86);
+    // 48 since 2026-11-22: the five subject-transfer notices (the uploader's
+    // hand-over to an adult, behind the closed transfer switch), two surfaces each: 96.
+    expect(result.receipts).toHaveLength(48);
+    expect(result.observations).toHaveLength(96);
+    expect(result.requiredSurfaces).toHaveLength(96);
     expect(result.observations.every((o) => o.channel === "email" && o.contentCommitSha === result.contentCommitSha)).toBe(true);
     expect(result.audit.ok).toBe(false);
     expect(result.audit.issues.map((i) => i.code)).toEqual(expect.arrayContaining(["missing-channel", "missing-region", "empty-corpus"]));
@@ -187,7 +190,7 @@ describe("actual production email HTML and envelope capture", () => {
         resolveSeed: () => false, resolveComputed: () => false });
         console.log(JSON.stringify({ receipts: result.receipts.length, observations: result.observations.length, ok: result.audit.ok })); })();`;
     const output = await promisify(execFile)(resolve("node_modules/.bin/tsx"), ["-e", script], { cwd: fixtureRoot, timeout: 30_000 });
-    expect(JSON.parse(output.stdout)).toEqual({ receipts: 43, observations: 86, ok: false });
+    expect(JSON.parse(output.stdout)).toEqual({ receipts: 48, observations: 96, ok: false });
     const retained: EmailCaptureResult = JSON.parse(await readFile(join(directory, "capture.json"), "utf8"));
     expect(retained.observations).toEqual(result.observations);
     expect(retained.collector.sha256).toBe(result.collector.sha256);
