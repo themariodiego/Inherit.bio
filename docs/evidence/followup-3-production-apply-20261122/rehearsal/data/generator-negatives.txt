@@ -1,0 +1,7 @@
+# LOCAL ONLY: generate.py refusals and acceptances (rehearsal/scripts/generator-negatives.sh), 2026-11-22, in a scratch clone (git clone --shared): the synthetic commits (no ref, parent fe8c69d1) exist only there.
+control (--head a commit carrying REV_TREE d43b12a8 with a document change): head 56b757125e75d33bf504fe516fa8e640765029e7: supabase/migrations tree d43b12a8750ba2a840761d07ed2538e7ba842ab1 == the rehearsed tree
+control (--head REV_TREE itself): LOCAL ONLY: --head names the tree d43b12a8, not a commit; production names the commit to be merged
+A (REV_TREE a tree that changes one of release 3's migrations): earlier migration changed or missing in 4b9417dd: supabase/migrations/20261025400000_path_a_account_accept_typed_name.sql
+B (--head a commit whose tree changes 20261122120000): head 2f2b334bda70e4c5ee02b6ea4891b8723e134194: supabase/migrations tree de9284c847b8cbe1ea746a657f399eef85770a37 is not the rehearsed tree d43b12a8750ba2a840761d07ed2538e7ba842ab1
+C (--head 6252566a, release 3's head): head 6252566acf7d94064b6e899ac76a72796036b8d8: supabase/migrations tree be49d283ec9a435c635ca54f28986d4676886910 is not the rehearsed tree d43b12a8750ba2a840761d07ed2538e7ba842ab1
+D (BATCHES that skip #8): BATCHES must cover 1..n consecutively

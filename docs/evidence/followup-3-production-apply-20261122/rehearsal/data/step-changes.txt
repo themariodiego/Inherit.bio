@@ -1,0 +1,126 @@
+# LOCAL ONLY step analysis (rehearsal/scripts/steps.py, stepdiff.py), isolated stack relk4 127.0.0.1:58322, 2026-11-22, on the mirror of release 3's post-state (mirror build 2): the 21 migrations read from tree d43b12a8, applied one by one in filename order with psql -1 -f. Applied: 21 of 21. Changes to objects that exist before this release:
+#01 20261119110000_dropped_bucket_literals_and_guard.sql: +0 functions, +0 tables, 6 changes to existing objects
+     function private.create_adult_subject_invitation_core_v1(p_account_id uuid, p_contact_ciphertext bytea, p_contact_hmac text, p_idempotency_key text, p_test_jurisdiction boolean) :: def_md5
+     function private.create_embryo_cohort_draft_core_v1(p_account_id uuid, p_session_id uuid, p_upload_situation text, p_basis_case text, p_embryo_count integer, p_owner_contact_ciphertext bytea, p_owner_contact_hmac text, p_contact_ciphertexts text[], p_contact_hmacs text[], p_token_nonce text, p_test_jurisdiction boolean) :: def_md5
+     function private.create_embryo_draft_invitation_core_v1(p_account_id uuid, p_session_id uuid, p_draft_id uuid, p_contact_hmac text, p_idempotency_key text, p_token_nonce text, p_test_jurisdiction boolean) :: def_md5
+     table public.account_deletion_storage_entries :: constraints: ~account_deletion_storage_entries_bucket_id_check
+     table public.embryo_ingest_delete_objects :: constraints: ~embryo_ingest_delete_objects_bucket_id_check
+     table public.genome_storage_objects :: constraints: ~genome_storage_objects_bucket_id_check
+#02 20261119120000_session_csrf_purpose_kinds.sql: +1 functions, +0 tables, 0 changes to existing objects
+     new function public.consume_session_csrf_v2(p_route_id text, p_session_kind text, p_token_hash text, p_expires_at timestamp with time zone, p_account_id uuid, p_session_id uuid, p_cookie_hash text, p_purpose_session_id uuid) {postgres=X/postgres,service_role=X/postgres}
+#03 20261119134500_path_a_sealed_invitation_note.sql: +4 functions, +0 tables, 8 changes to existing objects
+     new function private.clear_adult_invitation_note_envelope_v1() {postgres=X/postgres}
+     new function private.create_adult_subject_invitation_keyed_v1(p_account_id uuid, p_contact_ciphertext bytea, p_contact_hmac text, p_idempotency_key text, p_test_jurisdiction boolean, p_contact_hmac_set jsonb, p_quota_keys jsonb, p_note_envelope jsonb) {postgres=X/postgres,service_role=X/postgres}
+     new function public.create_adult_subject_invitation_v1(p_account_id uuid, p_contact_ciphertext bytea, p_contact_hmac text, p_idempotency_key text, p_test_jurisdiction boolean, p_contact_hmac_set jsonb, p_quota_keys jsonb, p_note_envelope jsonb) {postgres=X/postgres,service_role=X/postgres}
+     new function public.create_adult_subject_invitation_with_nonce_v1(p_account_id uuid, p_session_id uuid, p_contact_ciphertext bytea, p_contact_hmac text, p_idempotency_key text, p_test_jurisdiction boolean, p_contact_hmac_set jsonb, p_quota_keys jsonb, p_nonce_hash text, p_nonce_expires_at timestamp with time zone, p_note_envelope jsonb) {postgres=X/postgres,service_role=X/postgres}
+     function private.create_adult_subject_invitation_keyed_v1(p_account_id uuid, p_contact_ciphertext bytea, p_contact_hmac text, p_idempotency_key text, p_test_jurisdiction boolean, p_contact_hmac_set jsonb, p_quota_keys jsonb) :: REMOVED
+     function public.create_adult_subject_invitation_v1(p_account_id uuid, p_contact_ciphertext bytea, p_contact_hmac text, p_idempotency_key text, p_test_jurisdiction boolean, p_contact_hmac_set jsonb, p_quota_keys jsonb) :: REMOVED
+     function public.create_adult_subject_invitation_with_nonce_v1(p_account_id uuid, p_session_id uuid, p_contact_ciphertext bytea, p_contact_hmac text, p_idempotency_key text, p_test_jurisdiction boolean, p_contact_hmac_set jsonb, p_quota_keys jsonb, p_nonce_hash text, p_nonce_expires_at timestamp with time zone) :: REMOVED
+     function private.create_adult_subject_invitation_keyed_v1(p_account_id uuid, p_contact_ciphertext bytea, p_contact_hmac text, p_idempotency_key text, p_test_jurisdiction boolean, p_contact_hmac_set jsonb, p_quota_keys jsonb, p_note_envelope jsonb) :: NEW OVERLOAD of an existing name
+     function public.create_adult_subject_invitation_v1(p_account_id uuid, p_contact_ciphertext bytea, p_contact_hmac text, p_idempotency_key text, p_test_jurisdiction boolean, p_contact_hmac_set jsonb, p_quota_keys jsonb, p_note_envelope jsonb) :: NEW OVERLOAD of an existing name
+     function public.create_adult_subject_invitation_with_nonce_v1(p_account_id uuid, p_session_id uuid, p_contact_ciphertext bytea, p_contact_hmac text, p_idempotency_key text, p_test_jurisdiction boolean, p_contact_hmac_set jsonb, p_quota_keys jsonb, p_nonce_hash text, p_nonce_expires_at timestamp with time zone, p_note_envelope jsonb) :: NEW OVERLOAD of an existing name
+     table public.mail_outbox :: constraints: +mail_outbox_adult_invitation_note_sealed
+     table public.mail_outbox :: triggers: +clear_adult_invitation_note_envelope
+#04 20261119150000_own_upload_consent_withdrawal.sql: +3 functions, +0 tables, 0 changes to existing objects
+     new function private.enqueue_self_withdrawal_notice_v1(p_account_id uuid, p_subject_id uuid, p_notice jsonb, p_nonce_hash text) {postgres=X/postgres}
+     new function public.empty_self_subject_with_notice_v1(p_account_id uuid, p_session_id uuid, p_subject_id uuid, p_nonce_hash text, p_nonce_expires_at timestamp with time zone, p_notice jsonb) {postgres=X/postgres,service_role=X/postgres}
+     new function public.self_subject_withdrawal_readiness_v1(p_account_id uuid, p_subject_id uuid) {postgres=X/postgres,service_role=X/postgres}
+#05 20261119160000_other_adult_upload_consent_withdrawal.sql: +2 functions, +0 tables, 3 changes to existing objects
+     new function public.other_adult_withdrawal_readiness_v1(p_account_id uuid, p_subject_id uuid) {postgres=X/postgres,service_role=X/postgres}
+     new function public.withdraw_other_adult_upload_v1(p_account_id uuid, p_session_id uuid, p_subject_id uuid, p_nonce_hash text, p_nonce_expires_at timestamp with time zone) {postgres=X/postgres,service_role=X/postgres}
+     function private.invitation_notice_recipient_current_v1(p_notice_id uuid) :: def_md5
+     function public.delete_subject_v1(p_account_id uuid, p_session_id uuid, p_subject_id uuid, p_nonce_hash text, p_nonce_expires_at timestamp with time zone) :: def_md5
+     table private.invitation_terminal_notices :: constraints: ~invitation_terminal_notices_notice_kind_check
+#06 20261119170000_embryo_uploader_consent_withdrawal.sql: +3 functions, +0 tables, 2 changes to existing objects
+     new function private.embryo_uploader_basis_loss_v1(p_cohort_id uuid, p_principal_id uuid) {postgres=X/postgres}
+     new function public.embryo_uploader_withdrawal_readiness_v1(p_account_id uuid, p_signature_id uuid) {postgres=X/postgres,service_role=X/postgres}
+     new function public.withdraw_embryo_uploader_consent_v1(p_account_id uuid, p_session_id uuid, p_signature_id uuid, p_nonce_hash text, p_nonce_expires_at timestamp with time zone) {postgres=X/postgres,service_role=X/postgres}
+     function private.legal_audit_person_event_v1(p_event_code text, p_route_id text) :: def_md5
+     function private.restrict_embryo_cohort_core_v1(p_cohort_id uuid, p_actor_principal uuid, p_route_id text) :: def_md5
+#07 20261120100000_self_withdrawal_deletes_exports.sql: +0 functions, +0 tables, 2 changes to existing objects
+     function private.empty_self_subject_v1(p_account_id uuid, p_subject_id uuid) :: def_md5
+     function private.prepare_genome_file_deletion_body_v1(p_account_id uuid, p_file_id uuid) :: def_md5
+#08 20261120110000_file_delete_operation_nonce.sql: +2 functions, +0 tables, 1 changes to existing objects
+     new function private.record_file_delete_nonce_v1(p_account_id uuid, p_session_id uuid, p_nonce_hash text, p_expires_at timestamp with time zone) {postgres=X/postgres}
+     new function public.prepare_own_prepared_file_cleanup_with_nonce_v1(p_account_id uuid, p_session_id uuid, p_file_id uuid, p_nonce_hash text, p_nonce_expires_at timestamp with time zone) {postgres=X/postgres,service_role=X/postgres}
+     table public.account_operation_nonces :: constraints: ~account_operation_nonces_operation_check
+#09 20261120120000_adult_acceptance_hold_and_renotice.sql: +6 functions, +0 tables, 8 changes to existing objects
+     new function private.adult_acceptance_clock_state_v1(p_invitation_id uuid) {postgres=X/postgres}
+     new function private.adult_acceptance_notice_current_v1(p_notice_id uuid) {postgres=X/postgres}
+     new function private.settle_adult_acceptance_notice_v1() {postgres=X/postgres}
+     new function private.start_adult_acceptance_clocks_v1(p_invitation_id uuid) {postgres=X/postgres}
+     new function public.adult_subject_acceptance_origin_v1(p_account_id uuid, p_subject_id uuid) {postgres=X/postgres,service_role=X/postgres}
+     new function public.run_due_adult_acceptance_notices_v1() {postgres=X/postgres,service_role=X/postgres}
+     function private.adult_subject_invitation_response_v1(p_token_hash_id uuid, p_session_id uuid, p_action text, p_account_id uuid, p_account_email_hmac text) :: def_md5
+     function private.confirm_path_b_subject_account_core_v1(p_session_hash text, p_nonce text, p_artifact_version integer, p_artifact_body_sha256 text, p_statement_keys text[], p_signing_name_ciphertext bytea, p_account_id uuid, p_auth_session_id uuid, p_account_email_hmac text, p_test_jurisdiction boolean) :: def_md5
+     function private.other_adult_mitigation_before_public_appeal_v1(p_subject_id uuid, p_account_id uuid, p_checkpoint text) :: def_md5
+     function private.path_b_normalization_authority_v1(p_revision_id uuid, p_checkpoint text) :: def_md5
+     function public.authorize_invitation_terminal_mail_v1(p_outbox_id uuid, p_attempt_ordinal smallint) :: def_md5
+     function public.claim_invitation_terminal_mail_v1() :: def_md5
+     table private.invitation_terminal_notices :: constraints: ~invitation_terminal_notices_notice_kind_check
+     table private.invitation_terminal_notices :: triggers: +settle_adult_acceptance_notice
+#10 20261120130000_subject_copilot_scope.sql: +6 functions, +0 tables, 2 changes to existing objects
+     new function private.purge_subject_copilot_chats_v1() {postgres=X/postgres}
+     new function private.subject_copilot_authority_v1(p_account uuid, p_session uuid, p_subject uuid) {postgres=X/postgres}
+     new function private.subject_copilot_prune_v1(p_account uuid, p_chat uuid) {postgres=X/postgres}
+     new function private.subject_copilot_uploader_grant_v1(p_subject uuid, p_purpose text, p_principal uuid, p_person_account uuid, p_binding_revision bigint, p_jurisdiction_revision bigint, p_recipient_account uuid, p_recipient_principal uuid, p_relationship uuid, p_relationship_revision bigint) {postgres=X/postgres}
+     new function public.subject_copilot_chat_v1(p_operation text, p_account_id uuid, p_session_id uuid, p_subject_id uuid, p_chat_id uuid, p_payload jsonb) {postgres=X/postgres,service_role=X/postgres}
+     new function public.subject_copilot_scope_v1(p_account_id uuid, p_session_id uuid, p_subject_id uuid) {postgres=X/postgres,service_role=X/postgres}
+     function private.grant_path_b_purpose_v1(p_account_id uuid, p_session_id uuid, p_subject_id uuid, p_purpose text, p_direction text, p_artifact_version integer, p_artifact_body_sha256 text, p_nonce_hash text, p_expires_at timestamp with time zone, p_test_jurisdiction boolean) :: def_md5
+     table public.subjects :: triggers: +purge_subject_copilot_chats
+#11 20261122100000_uploader_withdrawal_hands_record_to_adult.sql: +1 functions, +0 tables, 2 changes to existing objects
+     new function private.queue_subject_transfer_notices_v1(p_transfer_id uuid, p_withdrawal boolean, p_grants uuid[], p_relationships uuid[]) {postgres=X/postgres}
+     function private.transfer_subject_v1(p_account_id uuid, p_session_id uuid, p_subject_id uuid, p_nonce_hash text, p_nonce_expires_at timestamp with time zone) :: def_md5
+     table private.invitation_terminal_notices :: constraints: ~invitation_terminal_notices_notice_kind_check
+#12 20261122110000_adult_acceptance_inviter_reads.sql: +2 functions, +0 tables, 5 changes to existing objects
+     new function private.adult_acceptance_inviter_held_v1(p_reader_account_id uuid, p_subject_id uuid) {postgres=X/postgres}
+     new function public.adult_acceptance_inviter_held_subjects_v1(p_account_id uuid, p_subject_ids uuid[]) {postgres=X/postgres,service_role=X/postgres}
+     function private.family_ancestry_recipient_v1(p_account uuid, p_session uuid, p_subject uuid, p_purpose text) :: def_md5
+     function private.family_copilot_turn_state_v1(p_account uuid, p_chat uuid, p_turn uuid) :: def_md5
+     function private.family_portrait_authority_v1(p_account_id uuid, p_session_id uuid, p_pair_id uuid, p_counterpart_account_id uuid) :: def_md5
+     function private.family_report_recipient_v1(p_account uuid, p_session uuid, p_subject uuid, p_purpose text) :: def_md5
+     function private.health_picture_direction_v1(p_viewer uuid, p_session uuid, p_account uuid, p_subject uuid, p_purpose text) :: def_md5
+#13 20261122120000_subject_transfer_open.sql: +0 functions, +0 tables, 1 changes to existing objects
+     function private.subject_transfer_open_v1() :: def_md5
+#14 20261122130000_file_delete_live_exports_only.sql: +0 functions, +0 tables, 2 changes to existing objects
+     function private.empty_self_subject_v1(p_account_id uuid, p_subject_id uuid) :: def_md5
+     function private.prepare_genome_file_deletion_body_v1(p_account_id uuid, p_file_id uuid) :: def_md5
+#15 20261122140000_adult_acceptance_inviter_archive_reads.sql: +0 functions, +0 tables, 4 changes to existing objects
+     function private.account_archive_complete_subject_authority_v1(p_origin jsonb, p_subject uuid, p_legacy jsonb) :: def_md5
+     function private.account_archive_complete_subjects_v1(p_origin jsonb) :: def_md5
+     function private.account_archive_export_recipient_v1(p_origin jsonb, p_subject uuid) :: def_md5
+     function private.account_archive_raw_authority_v1(p_origin jsonb, p_subject uuid) :: def_md5
+#16 20261122150000_file_delete_live_account_copies.sql: +0 functions, +0 tables, 1 changes to existing objects
+     function private.prepare_genome_file_deletion_body_v1(p_account_id uuid, p_file_id uuid) :: def_md5
+#17 20261122160000_transferred_record_exports.sql: +2 functions, +0 tables, 5 changes to existing objects
+     new function private.transferred_export_confirmation_v1(p_subject_id uuid) {postgres=X/postgres}
+     new function private.transferred_export_person_v1(p_account_id uuid, p_session_id uuid, p_subject_id uuid) {postgres=X/postgres}
+     function private.export_account_ordinary_readable_authority_v1(p_origin jsonb, p_target_kind text, p_target_id uuid) :: def_md5
+     function private.export_account_path_b_snapshot_v1(p_origin jsonb, p_subject uuid) :: def_md5
+     function private.legal_audit_person_event_v1(p_event_code text, p_route_id text) :: def_md5
+     function private.own_export_source_v1(p_account_id uuid, p_session_id uuid, p_file_id uuid) :: def_md5
+     function private.transfer_subject_v1(p_account_id uuid, p_session_id uuid, p_subject_id uuid, p_nonce_hash text, p_nonce_expires_at timestamp with time zone) :: def_md5
+#18 20261122170000_inviter_grants_and_reviewed_document_decision.sql: +0 functions, +0 tables, 2 changes to existing objects
+     function private.export_account_class_projection_v1(p_account uuid, p_subjects uuid[], p_kind text) :: def_md5
+     function private.other_adult_mitigation_before_public_appeal_v1(p_subject_id uuid, p_account_id uuid, p_checkpoint text) :: def_md5
+#19 20261122180000_path_b_reviewed_document_readers.sql: +0 functions, +0 tables, 12 changes to existing objects
+     function private.assert_account_path_b_deletion_supported_v1(p_account_id uuid) :: def_md5
+     function private.end_purged_path_b_grants_v1() :: def_md5
+     function private.export_account_ordinary_readable_authority_v1(p_origin jsonb, p_target_kind text, p_target_id uuid) :: def_md5
+     function private.export_account_path_b_file_v1(p_file uuid) :: def_md5
+     function private.export_account_path_b_snapshot_v1(p_origin jsonb, p_subject uuid) :: def_md5
+     function private.path_b_person_choices_v1(p_account_id uuid, p_session_id uuid, p_test_jurisdiction boolean) :: def_md5
+     function private.path_b_person_v1(p_account_id uuid, p_session_id uuid, p_subject_id uuid) :: def_md5
+     function private.path_b_report_metadata_v1(p_account_id uuid, p_session_id uuid, p_subject_id uuid, p_test_jurisdiction boolean) :: def_md5
+     function private.path_b_uploader_shares_v1(p_account_id uuid, p_session_id uuid, p_test_jurisdiction boolean) :: def_md5
+     function private.public_appeal_provisional_binding_v1(p_case uuid) :: def_md5
+     function private.subject_held_files_v1(p_account_id uuid, p_session_id uuid, p_test_jurisdiction boolean) :: def_md5
+     function public.expire_due_other_adult_held_uploads_v1() :: def_md5
+#20 20261122190000_reviewed_document_person_access.sql: +1 functions, +0 tables, 4 changes to existing objects
+     new function private.path_b_confirmation_v1(p_account_id uuid, p_subject_id uuid) {postgres=X/postgres}
+     function private.export_account_ordinary_readable_authority_v1(p_origin jsonb, p_target_kind text, p_target_id uuid) :: def_md5
+     function private.path_b_normalization_authority_v1(p_revision_id uuid, p_checkpoint text) :: def_md5
+     function private.path_b_report_authority_v1(p_file_id uuid, p_grant_id uuid, p_checkpoint text) :: def_md5
+     function private.path_b_result_read_v1(p_account_id uuid, p_subject_id uuid, p_purpose text) :: def_md5
+#21 20261122200000_reviewed_document_person_appeal.sql: +0 functions, +0 tables, 1 changes to existing objects
+     function private.public_appeal_provisional_binding_v1(p_case uuid) :: def_md5

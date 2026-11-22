@@ -1,0 +1,202 @@
+# Running guarded release 4 over HTTPS
+
+The batch files, their order, their checks and their stop rules are in
+`../guarded/README.md`. The transport is the one the PR 323 release used on
+22 October 2026 and every later kit prescribes
+(`../../followup-2-production-apply-20261119/api/RUNBOOK.md`): the Supabase Management
+API SQL endpoint for the production project, with a personal access token held as the
+environment secret `SUPABASE_ACCESS_TOKEN`. Cloud sessions reach the internet only
+through an HTTPS proxy, so `psql` cannot connect to Postgres. `api-run.py` is
+byte-identical to the runner used on 22 October and in the three earlier kits (SHA-256
+`caf4168b…0a45`).
+
+**This release runs only after releases 1, 2 and 3 are applied, merged and deployed.**
+Release 1 is PR 324's kit (`../../pr324-production-apply-20261022/`), release 2 the
+follow-up's (`../../followup-production-apply-20261023/`), release 3 follow-up 2's
+(`../../followup-2-production-apply-20261119/`). This release's pre-state is release
+3's rehearsed batch-2 post-state, and its ledger check expects 284 rows, max
+`20261025400000`. Every batch refuses on the ledger, writing nothing, while any earlier
+release is missing (rehearsed with release 3 missing: `../rehearsal/data/negatives.tsv`).
+On 20 November 2026 production's ledger stopped at `20261011010251`
+(`docs/protocol/decisions.md`, "PR 324's release: the Supabase connector reads
+production, and what it cannot carry"): none of releases 1-3 had run.
+
+Facts carried over (from the 22 October release, through this endpoint):
+
+- The endpoint runs as `postgres` with `statement_timeout` `2min`, and reports an error
+  as `ERROR:  P0001: <message>`, which `is_sentinel` accepts. A 2.9 MB request was
+  accepted; this release's largest request is 443,499 bytes (`all-batches-dry-run.sql`;
+  batch 4 alone 302,511).
+- The API transport stores function bodies exactly as sent, comments included (PR 324
+  kit, "Function bodies"). Release 4 pins 87 function bodies and 5 constraint
+  definitions that exist before it (`../guarded/README.md`, "The md5 guards"): 56 are
+  production's own bodies as read back on 22 October, 26 release 1's, 2 release 2's and 3
+  release 3's. None of them is among the 8 bodies production holds comment-stripped, so
+  the D-136 case (a pin of the repository's commented text where production holds the
+  stripped one) does not arise here; the mirror carries that drift and every guard held.
+- The session's `search_path` has not been read through this endpoint yet. Release 3's
+  runbook reads it at its step 3; read it again at step 3 here. One pin of this release
+  measures `md5(prosrc)` precisely because that function's definition text depends on
+  the path; every `md5(pg_get_functiondef)` pin was measured under the `postgres` role's
+  own `"$user", public, extensions`.
+
+Every request and response stays in the session. Never print, log or commit the token.
+
+## 0. Preconditions (stop if any fails)
+
+1. **Releases 1, 2 and 3 are complete:** release 3's `results/run-<date>/` shows its
+   batch 2 applied, the batch-2 post read-back EQUAL, and the ledger 284 /
+   `20261025400000`.
+2. **Release 3's code is merged and deployed, and production still reads back EQUAL**
+   to release 3's batch-2 post-state after that deployment (release 3 RUNBOOK, step
+   7.4). The merged commit carries exactly release 3's migration tree
+   (`git rev-parse <merged commit>:supabase/migrations` is
+   `be49d283ec9a435c635ca54f28986d4676886910`). **Open point for the owner, not decided
+   here** (`../guarded/README.md`, "Open points"): the branch head this kit was built on
+   (`fe8c69d1`) carries this release's 21 files, so release 3's own precondition refuses
+   it; the last commit on the branch carrying release 3's tree is `6252566a`.
+3. The head to be merged after this release has every required check green on one
+   attempt, including the aggregate `checks` and the prepared-worker `build`.
+4. Its migration tree is the rehearsed one (later commits that change only tests or
+   documents are fine): `git rev-parse <head>:supabase/migrations` is
+   `d43b12a8750ba2a840761d07ed2538e7ba842ab1`, the tree of `fe8c69d1`. Step 1 checks the
+   same thing again through `generate.py --head`.
+5. `SUPABASE_ACCESS_TOKEN` is set, and it is a new token: the one used for release 3 is
+   to be revoked. Check with `test -n "$SUPABASE_ACCESS_TOKEN"`; never echo it.
+6. The owner says go in this session, by one clickable question asked after step 4's
+   results are shown and before step 5. The dry runs take the same locks as the
+   applies (`../guarded/README.md`, "Locks").
+
+## 1. Rebuild the batch files and check them
+
+```sh
+git fetch origin <branch to merge>
+git cat-file -e a2a4d8e9263cc6580bf46fda360a4187a78b0817
+HEAD_M=$(git rev-parse origin/<branch to merge>)
+cd docs/evidence/followup-3-production-apply-20261122/guarded
+python3 -I generate.py --head "$HEAD_M" final >/dev/null   # refuses unless HEAD_M is a commit whose migration tree is d43b12a8...
+sha256sum -c SHA256SUMS            # every line OK (20 lines, ../api/api-run.py included)
+git status --short .               # nothing: the regenerated .sql files are ignored
+cd ../api && sha256sum -c SHA256SUMS
+```
+
+`generate.py` reads the migrations with `git show` from the repository it lives in, so
+it works from any checkout or worktree of the repository. It also refuses if release 3's
+kit (`../../followup-2-production-apply-20261119/guarded/expected-summaries.json`) no
+longer gives the pre-state summary and the 284-row ledger it pins.
+
+## 2. Environment
+
+```sh
+export INHERIT_PROD_PROJECT_REF=<the production project ref, as release 3's RUNBOOK step 2 sets it>
+cd docs/evidence/followup-3-production-apply-20261122/guarded
+mkdir -p ../results/run && R=../results/run
+run() { python3 -I ../api/api-run.py "$@"; rc=$?; echo "$(date -u +%FT%TZ) $* rc=$rc" | tee -a $R/rc.log; return $rc; }
+```
+
+## 3. Probes (no production change)
+
+```sh
+printf "select current_user as u, current_setting('statement_timeout') as t, current_setting('search_path') as p" > $R/p-session.sql
+run $R/p-session.sql $R/p-session          # rc=0; u postgres, t 2min (anything from 1 ms to 180 s passes the guard); p must name public
+printf "do \$\$ begin raise exception using message = 'PROBE_ERROR_FORMAT_ONLY'; end \$\$;" > $R/p-error.sql
+run $R/p-error.sql $R/p-error              # rc=3; ERROR:  P0001: PROBE_ERROR_FORMAT_ONLY
+```
+
+If `p` does not name `public`, stop: the pins were measured under a `search_path` that
+does, and step 4 would show which ones differ.
+
+If the error format is not `ERROR:  PROBE_ERROR_FORMAT_ONLY` with or without
+`P0001: `, change only `is_sentinel` in `api-run.py`, recompute `../api/SHA256SUMS` and
+the `../api/api-run.py` line of `SHA256SUMS`, and test it against the probe's message
+before going on. No size probe is needed.
+
+## 4. Read-only pre-checks and the pre-state
+
+```sh
+run production-readonly-prechecks.sql $R/prechecks --json-column prechecks
+run fingerprint.sql $R/fp-pre --json-column fp
+python3 -I check-readback.py $R/fp-pre.json 1 pre      # EQUAL (release 3's batch-2 post-state)
+```
+
+Apply the pre-check stop rules in `../guarded/README.md` to `$R/prechecks.json`
+("Pre-check stop rules"): among them the ledger 284 / `20261025400000` with all 4 of
+release 3's versions and none of this release's, all 87 `guards` and all 5
+`constraint_guards` `ok`, and every `must_be_zero` value 0. Show the owner the `context`
+counts: each is expected to be 0 (or `false`) in production except where the README
+says otherwise, and a count that is not is the owner's to read before go. Show the owner
+the results, then ask for go.
+
+## 5. Whole-release dry run
+
+```sh
+run all-batches-dry-run.sql $R/dry-all       # rc=3 and "exact dry-run sentinel as the error: True"
+run fingerprint.sql $R/fp-after-dry-all --json-column fp
+python3 -I check-readback.py $R/fp-after-dry-all.json 1 pre   # EQUAL
+```
+
+## 6. The batches, in order
+
+Four batches: #1-#2, #3-#7, #8, #9-#21. No batch changes what release 3's deployed code
+can reach in production (`../compat-analysis.md`), so a stop after any batch leaves
+production serving correctly; resume later from the next batch's dry run. Each batch
+holds a strong lock on one table the app writes on a live path, until it commits:
+batch 1 `genome_storage_objects` (ACCESS EXCLUSIVE, with the two storage manifest tables),
+batch 2 `mail_outbox` (ACCESS EXCLUSIVE), batch 3 `account_operation_nonces` (ACCESS
+EXCLUSIVE), batch 4 `subjects` (SHARE ROW EXCLUSIVE: writes wait, reads do not). Choose a
+quiet minute for each.
+
+For each k in 1 2 3 4:
+
+```sh
+run batch-$k-dry-run.sql $R/dry-$k           # rc=3, sentinel True
+run fingerprint.sql $R/fp-$k-after-dry --json-column fp
+python3 -I check-readback.py $R/fp-$k-after-dry.json $k pre   # EQUAL
+run batch-$k-apply.sql $R/apply-$k           # rc=0
+run fingerprint.sql $R/fp-$k-post --json-column fp
+python3 -I check-readback.py $R/fp-$k-post.json $k post       # EQUAL
+printf "select count(*) as c, max(version) as m from supabase_migrations.schema_migrations" > $R/ledger.sql
+run $R/ledger.sql $R/ledger-$k
+```
+
+The expected ledger after batch 1 is 286 / `20261119120000`, after batch 2 291 /
+`20261120100000`, after batch 3 292 / `20261120110000`, after batch 4 305 /
+`20261122200000`.
+
+Exit codes map onto the README's stop rules:
+
+| rc | Meaning |
+|---|---|
+| 0 | psql rc 0 |
+| 3 | psql rc 3. For a dry run, it is a pass only when the sentinel line says True. For an apply, the statement rolled back as a whole: read back. The state must equal the batch's pre-state. Retry only `canceling statement due to lock timeout` or `deadlock detected`, from that batch's dry run. |
+| 124 | psql rc 124, outcome unknown. Wait two minutes for the server's statement timeout, then read back. The state must be exactly the pre-state or exactly the post-state, with a matching ledger. Anything else: stop. |
+
+Any read-back that is not EQUAL: stop. Do not run the next batch, and do not merge.
+
+## 7. Merge and deploy
+
+After batch 4 reads back EQUAL, and while the fingerprint still equals batch 4's
+post-state. **Never merge before batch 4:** the new code's own-file withdrawal,
+other-adult and embryo withdrawals, adult acceptance origin read, record transfer
+notices and one-record Copilot read functions that only this release creates; where the
+code falls back (the session-CSRF v2 door, the file-delete nonce door) it falls back
+safely, but the rest fail closed (`../compat-analysis.md`, "New code on the old schema").
+Nothing requires the merge to follow at once: the deployed code of release 3 is
+compatible with every batch boundary.
+
+1. Mark the PR ready for review, and merge it with a merge commit.
+2. Watch the Vercel production deployment of the merge commit until it is READY and
+   `inherit.bio` points at it.
+3. Watch `main`'s CI run, and the Deploy Cloudflare run, on the merge commit.
+4. Read the fingerprint again. It must still be EQUAL to batch 4's post-state.
+5. Read the Vercel production environment variable names. Never read values.
+
+## 8. Evidence, then the credential
+
+1. Commit `$R` under `../results/run-<UTC date>/` on a branch for the evidence: status
+   files, bodies, read-backs, `rc.log` and a short README of what was run and seen.
+   Leave out the token and the regenerated `.sql` files. Run `git pull --no-rebase`
+   before pushing.
+2. Comment on the PR with the results.
+3. Tell the owner to revoke the token in the Supabase dashboard and to delete
+   `SUPABASE_ACCESS_TOKEN` from the environment.

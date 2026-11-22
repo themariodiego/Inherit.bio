@@ -2,7 +2,7 @@
 
 Local work only. Nothing here was run against production or any hosted database.
 
-Release 4 holds two migrations, in this order: `20261119110000_dropped_bucket_literals_and_guard.sql` (this section and the four after it) and `20261119134500_path_a_sealed_invitation_note.sql` (D-139, the last section).
+Release 4 holds two migrations, in this order: `20261119110000_dropped_bucket_literals_and_guard.sql` (this section and the four after it) and `20261119134500_path_a_sealed_invitation_note.sql` (D-139, the last section). (Written when release 4 held those two. It now holds 21 migrations, from `20261119110000` to `20261122200000`, in the sections below; the release kit, `docs/evidence/followup-3-production-apply-20261122/`, lists them and their batches.)
 
 ## What it changes
 
@@ -224,6 +224,21 @@ select
    where p.oid=to_regprocedure('public.delete_subject_v1(uuid,uuid,uuid,text,timestamptz)')) as context_door_md5,
  (select count(*) from public.subject_consents where consent_type='upload_class' and revoked_at is null
    and subject_id in (select id from public.subjects where subject_class='self')) as context_live_self_upload_consents,
+ current_user as context_current_user,
+ current_setting('search_path') as context_search_path;
+```
+
+Locally (after the migration, so `must_be_zero_new_functions_present` read 3 there) the four `must_be_1_*` read 1 and `context_door_md5` read `2f2c32f48e4a223617ba6d31f493a92c`. The two pinned md5s were computed under `"$user", public, extensions` and under `pg_catalog` alone with the same result: neither header prints a `public` type. Production holds neither function yet, so the md5s must be compared with release 1's read-back before this release's kit is built; if release 1 leaves either body comment-stripped (as production holds 8 others, D-136), the pin must be reviewed against that body, not loosened.
+
+## Locks and duration
+
+Three `create function` statements, their grants, and two catalog-only `do` blocks. No table lock beyond ACCESS SHARE on the catalogs. Measured locally inside one rolled-back transaction: 7.5 ms, and the session held no relation lock other than ACCESS SHARE.
+
+## Deployed code between apply and deploy
+
+- **Migration applied, code not yet deployed.** Nothing deployed calls the three functions. No page sends `DELETE /api/subjects/[id]` today, so the self emptying stays reachable only as it was, through `delete_subject_v1`, without the email.
+- **Code deployed, migration not yet applied.** The pages call `self_subject_withdrawal_readiness_v1`; PostgREST answers that the function does not exist, and the control then shows "You cannot withdraw here right now. Please try again." with no button, so no request is offered. A page rendered before the deploy has no control at all. If a request is sent anyway (a hand-made one), the route sends a self record only to `empty_self_subject_with_notice_v1`, which does not exist: the RPC error is not one of the route's refusal codes, so the route answers 503 `unavailable` and nothing is deleted; the control reads a 503 as "We do not know if this finished. Open this page again to see if your files were deleted." The route never falls back to `delete_subject_v1` for a self record, so the emptying never runs without its email.
+- **Before release 1.** The same as above: the read is missing, so the control offers nothing.
 
 # Release notes: `20261119120000_session_csrf_purpose_kinds.sql` (joins release 4)
 
@@ -298,7 +313,6 @@ So the migration and this code can go in either order once follow-up 2's batch 1
 ## Rollback
 
 Dropping `public.consume_session_csrf_v2(text,text,text,timestamptz,uuid,uuid,text,uuid)` returns the database to `20261119110000`'s state; the code of this stage then falls back to v1 as above. The spent hashes it recorded stay in `private.session_csrf_token_uses` and expire on their own.
-
 # Release notes: `20261119160000_other_adult_upload_consent_withdrawal.sql`
 
 Local work only. Nothing here was run against production or any hosted database. Owner decision of 19 November 2026, "An uploader's withdrawal for another adult's file deletes it, unless that adult holds the record themselves" (`docs/protocol/decisions.md`); design section 2 of `docs/evidence/consent-withdrawal-design-20261119/design.md`. Path B is TEST-LOCAL: no hosted database holds a Path B record the control could act on.
@@ -1717,3 +1731,13 @@ Only under the test jurisdiction, and only 730 days after a reviewed-document re
     - `transferred_record_exports` 57/57 and `adult_acceptance_hold_and_renotice` 112/112;
     - `subject_copilot_path_b` 52/52, `subject_transfer` 118/118 and `uploader_withdrawal_hand_over` 85/85.
   - 22 suites fail with and without the migration from the shared local database's state, including the two appeal suites `new_public_appeal_intake` and `public_appeal_evidence_session`, which fail identically except for the line above.
+
+---
+
+# Release 4's guarded kit (22 November 2026)
+
+Local work only. Nothing here was run against production or any hosted database. The kit for this release is `docs/evidence/followup-3-production-apply-20261122/` (`guarded/README.md`, `api/RUNBOOK.md`, `compat-analysis.md`). It supersedes every figure above that counts release 4 as one or two migrations: the release holds the 21 migrations of the sections above, `20261119110000` to `20261122200000`, in four batches (#1-#2, #3-#7, #8, #9-#21), and the ledger after it has 305 rows, max `20261122200000`. It pins the migrations tree `d43b12a8` (the tree of `fe8c69d1`) and runs only after releases 1-3 are applied, merged and deployed, starting from release 3's recorded post-state.
+
+It was rehearsed on an isolated local stack against a mirror that reproduces release 3's recorded post-state byte for byte, production's drift included. Each section's read-only pre-check SELECT above was run there at the state it was written for, and held; then all 21 migrations applied in order, each batch read back EQUAL, and the negative cases refused with nothing written (`rehearsal/data/`). The kit's own pre-checks (`guarded/production-readonly-prechecks.sql`) keep what these sections check that can be read at the release's start, and every md5 pin of the 21 files on a body that exists before it.
+
+Two notes on this file, left as they are: the pre-check SQL block of `20261119150000` has no closing fence (the kit's `rehearsal/scripts/notes.py` closes it for the rehearsal), and two paragraphs inside the `20261119120000` section describe `20261119150000`.

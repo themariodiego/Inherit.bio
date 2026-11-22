@@ -1,0 +1,11 @@
+# LOCAL ONLY: isolated stack relk4 127.0.0.1:58322, 2026-11-22.
+the kit as it stands, on a rebuilt mirror (mirror build 4, after negatives.sh tamper), 2026-11-22
+pre-state read-back: EQUAL batch 1 pre-state summary
+all-batches-dry-run.sql (statement_timeout 2min): rc=3, 1 ERROR line: ERROR:  DRY_RUN_COMPLETE_ALL_CHECKS_PASSED
+k4: generate.py --head fe8c69d1 final; SHA256SUMS 21 lines OK, 0 not OK
+k4 b1	dry rc=3 sentinel, read-back EQUAL 1 pre	apply rc=0 0.426s	EQUAL batch 1 post-state summary	ledger 286 20261119120000
+k4 b2	dry rc=3 sentinel, read-back EQUAL 2 pre	apply rc=0 0.385s	EQUAL batch 2 post-state summary	ledger 291 20261120100000
+k4 b3	dry rc=3 sentinel, read-back EQUAL 3 pre	apply rc=0 0.411s	EQUAL batch 3 post-state summary	ledger 292 20261120110000
+k4 b4	dry rc=3 sentinel, read-back EQUAL 4 pre	apply rc=0 0.579s	EQUAL batch 4 post-state summary	ledger 305 20261122200000
+k4 final fingerprint 58406ca3e57db5cb4f51a6377013bbe4f2575ee04b46eebd55719081e3bbbefb
+final fingerprint 58406ca3e57db5cb4f51a6377013bbe4f2575ee04b46eebd55719081e3bbbefb (== the rehearsal final mirror and the step analysis)

@@ -1,0 +1,59 @@
+# LOCAL ONLY pgTAP runs, isolated stack relk4 127.0.0.1:58322, 2026-11-22. Every run left the fingerprint and ledger unchanged (pgTAP dropped after each). The 33 suites are the supabase/tests files the branch added or changed since release 3's tree (git diff a2a4d8e9 fe8c69d1), run from the pinned head on the final state; release 3's suite is 6252566a's whole supabase/tests.
+release 3's whole suite (6252566a) on the pre-state (mirror build 3, before batch 1): Files=239, Tests=16179, 477 wallclock secs Result: PASS
+pgtap	account_archive_member_frame.sql on the final state	rc=0	Files=1, Tests=76,  1 wallclock secs  Result: PASS 		unchanged
+pgtap	account_path_b_request_refusal.sql on the final state	rc=0	Files=1, Tests=48,  1 wallclock secs  Result: PASS 		unchanged
+pgtap	adult_acceptance_hold_and_renotice.sql on the final state	rc=0	Files=1, Tests=112,  1 wallclock secs  Result: PASS 		unchanged
+pgtap	adult_acceptance_inviter_archive_reads.sql on the final state	rc=0	Files=1, Tests=36,  3 wallclock secs  Result: PASS 		unchanged
+pgtap	adult_acceptance_inviter_reads.sql on the final state	rc=0	Files=1, Tests=77,  1 wallclock secs  Result: PASS 		unchanged
+pgtap	drop_generated_artifacts_bucket.sql on the final state	rc=0	Files=1, Tests=22,  0 wallclock secs  Result: PASS 		unchanged
+pgtap	dropped_bucket_literals_and_guard.sql on the final state	rc=0	Files=1, Tests=72,  1 wallclock secs  Result: PASS 		unchanged
+pgtap	embryo_uploader_consent_withdrawal.sql on the final state	rc=0	Files=1, Tests=48,  0 wallclock secs  Result: PASS 		unchanged
+pgtap	file_delete_live_account_copies.sql on the final state	rc=0	Files=1, Tests=57,  6 wallclock secs  Result: PASS 		unchanged
+pgtap	file_delete_live_exports_only.sql on the final state	rc=0	Files=1, Tests=73,  4 wallclock secs  Result: PASS 		unchanged
+pgtap	file_delete_operation_nonce.sql on the final state	rc=0	Files=1, Tests=45,  0 wallclock secs  Result: PASS 		unchanged
+pgtap	inviter_grants_received.sql on the final state	rc=0	Files=1, Tests=25,  2 wallclock secs  Result: PASS 		unchanged
+pgtap	legal_audit_attribution_completeness.sql on the final state	rc=0	Files=1, Tests=83,  0 wallclock secs  Result: PASS 		unchanged
+pgtap	other_adult_held_upload.sql on the final state	rc=0	Files=1, Tests=179,  1 wallclock secs  Result: PASS 		unchanged
+pgtap	other_adult_upload_consent_withdrawal.sql on the final state	rc=0	Files=1, Tests=51,  0 wallclock secs  Result: PASS 		unchanged
+pgtap	own_upload_consent_withdrawal.sql on the final state	rc=0	Files=1, Tests=61,  1 wallclock secs  Result: PASS 		unchanged
+pgtap	path_a_account_accept_typed_name.sql on the final state	rc=0	Files=1, Tests=52,  0 wallclock secs  Result: PASS 		unchanged
+pgtap	path_a_sealed_invitation_note.sql on the final state	rc=0	Files=1, Tests=99,  1 wallclock secs  Result: PASS 		unchanged
+pgtap	path_b_no_account_uploader_gate.sql on the final state	rc=0	Files=1, Tests=37,  0 wallclock secs  Result: PASS 		unchanged
+pgtap	path_b_reading_layer.sql on the final state	rc=0	Files=1, Tests=52,  1 wallclock secs  Result: PASS 		unchanged
+pgtap	path_b_reviewed_document_readers.sql on the final state	rc=0	Files=1, Tests=93,  5 wallclock secs  Result: PASS 		unchanged
+pgtap	reviewed_document_decision.sql on the final state	rc=0	Files=1, Tests=51,  1 wallclock secs  Result: PASS 		unchanged
+pgtap	reviewed_document_person_access.sql on the final state	rc=0	Files=1, Tests=89,  8 wallclock secs  Result: PASS 		unchanged
+pgtap	reviewed_document_person_appeal.sql on the final state	rc=0	Files=1, Tests=27,  1 wallclock secs  Result: PASS 		unchanged
+pgtap	self_withdrawal_deletes_exports.sql on the final state	rc=0	Files=1, Tests=76,  1 wallclock secs  Result: PASS 		unchanged
+pgtap	self_withdrawal_ends_finished_copies.sql on the final state	rc=0	Files=1, Tests=48,  4 wallclock secs  Result: PASS 		unchanged
+pgtap	session_csrf_purpose_kinds.sql on the final state	rc=0	Files=1, Tests=58,  0 wallclock secs  Result: PASS 		unchanged
+pgtap	subject_copilot_path_b.sql on the final state	rc=0	Files=1, Tests=52,  1 wallclock secs  Result: PASS 		unchanged
+pgtap	subject_copilot_scope.sql on the final state	rc=0	Files=1, Tests=65,  1 wallclock secs  Result: PASS 		unchanged
+pgtap	subject_transfer.sql on the final state	rc=0	Files=1, Tests=118,  1 wallclock secs  Result: PASS 		unchanged
+pgtap	subject_transfer_open.sql on the final state	rc=0	Files=1, Tests=73,  1 wallclock secs  Result: PASS 		unchanged
+pgtap	transferred_record_exports.sql on the final state	rc=0	Files=1, Tests=57,  3 wallclock secs  Result: PASS 		unchanged
+pgtap	uploader_withdrawal_hand_over.sql on the final state	rc=0	Files=1, Tests=85,  1 wallclock secs  Result: PASS 		unchanged
+final	release 3's pgTAP suite (6252566a) on the final state	Files=239, Tests=16003, 478 wallclock secs  Result: FAIL 	drop_generated_artifacts_bucket.sql:1 other_adult_held_upload.sql:2 path_a_account_accept_typed_name.sql:1 path_b_no_account_uploader_gate.sql:2 	unchanged
+release 3's whole suite on the final state, Test Summary Report:
+account_archive_member_frame.sql             (Wstat: 768 (exited 3) Tests: 36 Failed: 0)
+  Non-zero exit status: 3
+  Parse errors: No plan found in TAP output
+account_path_b_request_refusal.sql           (Wstat: 768 (exited 3) Tests: 29 Failed: 1)
+  Failed test:  29
+  Non-zero exit status: 3
+  Parse errors: No plan found in TAP output
+drop_generated_artifacts_bucket.sql          (Wstat: 0 Tests: 22 Failed: 1)
+  Failed test:  17
+legal_audit_attribution_completeness.sql     (Wstat: 768 (exited 3) Tests: 53 Failed: 0)
+  Non-zero exit status: 3
+  Parse errors: No plan found in TAP output
+other_adult_held_upload.sql                  (Wstat: 0 Tests: 179 Failed: 2)
+  Failed tests:  68, 74
+path_a_account_accept_typed_name.sql         (Wstat: 0 Tests: 52 Failed: 1)
+  Failed test:  2
+path_b_no_account_uploader_gate.sql          (Wstat: 0 Tests: 37 Failed: 2)
+  Failed tests:  1, 35
+subject_transfer.sql                         (Wstat: 768 (exited 3) Tests: 25 Failed: 5)
+  Failed tests:  14-16, 24-25
+  Non-zero exit status: 3
+  Parse errors: No plan found in TAP output

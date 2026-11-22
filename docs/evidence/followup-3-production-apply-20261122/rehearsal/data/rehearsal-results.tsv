@@ -1,0 +1,73 @@
+# LOCAL ONLY rehearsal (rehearsal/scripts/rehearse.sh, SUITES=1 OLDSUITE=1), isolated stack relk4 127.0.0.1:58322, 2026-11-22, on the mirror of release 3's post-state (mirror build 3). Files from generate.py final at head fe8c69d1 (tree d43b12a8); read-backs with check-readback.py; 'unchanged' = fingerprint and ledger byte-identical before and after.
+pre	read-back of the mirror	EQUAL batch 1 pre-state summary 	ledger 284 20261025400000
+pre	prechecks	rc=0	must_be_zero nonzero: none | guards ok 87 / 87 | constraint guards ok 5 / 5
+all	dry run (statement_timeout 2min)	rc=3	1 ERROR line(s): ERROR:  DRY_RUN_COMPLETE_ALL_CHECKS_PASSED|	1.089s	unchanged	EQUAL batch 1 pre-state summary 
+neg	batch-1 dry run without a session statement_timeout	rc=3	ERROR:  session: set statement_timeout to at most 180s for the session before this statement (a SET inside the block does not bound it)
+neg	batch-1 dry run with statement_timeout 190s	rc=3	ERROR:  session: set statement_timeout to at most 180s for the session before this statement (a SET inside the block does not bound it)	unchanged
+neg	batch-2 dry run before batch 1 (out of order)	rc=3	ERROR:  predecessor: ledger has 284 rows, max 20261025400000; expected 286 rows, max 20261119120000	unchanged
+neg	batch-2 apply before batch 1 (out of order)	rc=3	ERROR:  predecessor: ledger has 284 rows, max 20261025400000; expected 286 rows, max 20261119120000	unchanged
+neg	batch-4 apply before batch 1 (out of order)	rc=3	ERROR:  predecessor: ledger has 284 rows, max 20261025400000; expected 292 rows, max 20261120110000	unchanged
+neg	batch-1 apply with one byte of the embedded 20261119110000 changed	rc=3	ERROR:  integrity: embedded 20261119110000_dropped_bucket_literals_and_guard.sql is not the reviewed file	unchanged
+neg	batch-1 apply with the embedded fingerprint query changed	rc=3	ERROR:  integrity: the embedded fingerprint query is not fingerprint.sql	unchanged
+neg	state after the negative checks	unchanged
+b1	lock probe	rc=3	1 PROBE_LOCKS line	unchanged
+b1	dry run	rc=3	1 ERROR line(s): ERROR:  DRY_RUN_COMPLETE_ALL_CHECKS_PASSED|	0.379s	unchanged	EQUAL batch 1 pre-state summary 
+b1	apply	rc=0	SET DO 	0.365s	EQUAL batch 1 post-state summary 
+b1	ledger	286 rows, max 20261119120000
+b1	re-apply	rc=3	ERROR:  predecessor: ledger has 286 rows, max 20261119120000; expected 284 rows, max 20261025400000	unchanged
+b2	lock probe	rc=3	1 PROBE_LOCKS line	unchanged
+b2	dry run	rc=3	1 ERROR line(s): ERROR:  DRY_RUN_COMPLETE_ALL_CHECKS_PASSED|	0.391s	unchanged	EQUAL batch 2 pre-state summary 
+b2	apply	rc=0	SET DO 	0.326s	EQUAL batch 2 post-state summary 
+b2	ledger	291 rows, max 20261120100000
+b2	re-apply	rc=3	ERROR:  predecessor: ledger has 291 rows, max 20261120100000; expected 286 rows, max 20261119120000	unchanged
+neg	batch-4 apply after batch 2, before batch 3 (out of order)	rc=3	ERROR:  predecessor: ledger has 291 rows, max 20261120100000; expected 292 rows, max 20261120110000	unchanged
+neg	batch-1 apply after batch 2 (re-run of an applied batch)	rc=3	ERROR:  predecessor: ledger has 291 rows, max 20261120100000; expected 284 rows, max 20261025400000	unchanged
+b3	lock probe	rc=3	1 PROBE_LOCKS line	unchanged
+b3	dry run	rc=3	1 ERROR line(s): ERROR:  DRY_RUN_COMPLETE_ALL_CHECKS_PASSED|	0.363s	unchanged	EQUAL batch 3 pre-state summary 
+b3	apply	rc=0	SET DO 	0.412s	EQUAL batch 3 post-state summary 
+b3	ledger	292 rows, max 20261120110000
+b3	re-apply	rc=3	ERROR:  predecessor: ledger has 292 rows, max 20261120110000; expected 291 rows, max 20261120100000	unchanged
+neg	batch-4 apply with one byte of the embedded 20261122120000 changed	rc=3	ERROR:  integrity: embedded 20261122120000_subject_transfer_open.sql is not the reviewed file	unchanged
+b4	lock probe	rc=3	1 PROBE_LOCKS line	unchanged
+b4	dry run	rc=3	1 ERROR line(s): ERROR:  DRY_RUN_COMPLETE_ALL_CHECKS_PASSED|	0.543s	unchanged	EQUAL batch 4 pre-state summary 
+b4	apply	rc=0	SET DO 	0.551s	EQUAL batch 4 post-state summary 
+b4	ledger	305 rows, max 20261122200000
+b4	re-apply	rc=3	ERROR:  predecessor: ledger has 305 rows, max 20261122200000; expected 292 rows, max 20261120110000	unchanged
+neg	batch-1 apply after batch 4 (re-run of an applied batch)	rc=3	ERROR:  predecessor: ledger has 305 rows, max 20261122200000; expected 284 rows, max 20261025400000	unchanged
+neg	whole-release dry run after batch 4 (re-run)	rc=3	ERROR:  predecessor: ledger has 305 rows, max 20261122200000; expected 284 rows, max 20261025400000	unchanged
+final	prechecks on the final state	rc=0	ledger 305 20261122200000 | must_be_zero nonzero: ['guarded_bodies_not_as_rehearsed', 'guarded_constraints_not_as_rehearsed', 'm01_bucket_checks_not_as_reviewed', 'm08_check_not_before_widening', 'm09_notice_queue_triggers_not_one', 'm11_m13_transfer_switch_open', 'm20_uploader_read_callers_not_the_five', 'release_functions_present', 'release_objects_present'] | guards ok 41 / 87
+final	fingerprint	58406ca3e57db5cb4f51a6377013bbe4f2575ee04b46eebd55719081e3bbbefb
+pgtap	account_archive_member_frame.sql on the final state	rc=0	Files=1, Tests=76,  1 wallclock secs  Result: PASS 		unchanged
+pgtap	account_path_b_request_refusal.sql on the final state	rc=0	Files=1, Tests=48,  1 wallclock secs  Result: PASS 		unchanged
+pgtap	adult_acceptance_hold_and_renotice.sql on the final state	rc=0	Files=1, Tests=112,  1 wallclock secs  Result: PASS 		unchanged
+pgtap	adult_acceptance_inviter_archive_reads.sql on the final state	rc=0	Files=1, Tests=36,  3 wallclock secs  Result: PASS 		unchanged
+pgtap	adult_acceptance_inviter_reads.sql on the final state	rc=0	Files=1, Tests=77,  1 wallclock secs  Result: PASS 		unchanged
+pgtap	drop_generated_artifacts_bucket.sql on the final state	rc=0	Files=1, Tests=22,  0 wallclock secs  Result: PASS 		unchanged
+pgtap	dropped_bucket_literals_and_guard.sql on the final state	rc=0	Files=1, Tests=72,  1 wallclock secs  Result: PASS 		unchanged
+pgtap	embryo_uploader_consent_withdrawal.sql on the final state	rc=0	Files=1, Tests=48,  0 wallclock secs  Result: PASS 		unchanged
+pgtap	file_delete_live_account_copies.sql on the final state	rc=0	Files=1, Tests=57,  6 wallclock secs  Result: PASS 		unchanged
+pgtap	file_delete_live_exports_only.sql on the final state	rc=0	Files=1, Tests=73,  4 wallclock secs  Result: PASS 		unchanged
+pgtap	file_delete_operation_nonce.sql on the final state	rc=0	Files=1, Tests=45,  0 wallclock secs  Result: PASS 		unchanged
+pgtap	inviter_grants_received.sql on the final state	rc=0	Files=1, Tests=25,  2 wallclock secs  Result: PASS 		unchanged
+pgtap	legal_audit_attribution_completeness.sql on the final state	rc=0	Files=1, Tests=83,  0 wallclock secs  Result: PASS 		unchanged
+pgtap	other_adult_held_upload.sql on the final state	rc=0	Files=1, Tests=179,  1 wallclock secs  Result: PASS 		unchanged
+pgtap	other_adult_upload_consent_withdrawal.sql on the final state	rc=0	Files=1, Tests=51,  0 wallclock secs  Result: PASS 		unchanged
+pgtap	own_upload_consent_withdrawal.sql on the final state	rc=0	Files=1, Tests=61,  1 wallclock secs  Result: PASS 		unchanged
+pgtap	path_a_account_accept_typed_name.sql on the final state	rc=0	Files=1, Tests=52,  0 wallclock secs  Result: PASS 		unchanged
+pgtap	path_a_sealed_invitation_note.sql on the final state	rc=0	Files=1, Tests=99,  1 wallclock secs  Result: PASS 		unchanged
+pgtap	path_b_no_account_uploader_gate.sql on the final state	rc=0	Files=1, Tests=37,  0 wallclock secs  Result: PASS 		unchanged
+pgtap	path_b_reading_layer.sql on the final state	rc=0	Files=1, Tests=52,  1 wallclock secs  Result: PASS 		unchanged
+pgtap	path_b_reviewed_document_readers.sql on the final state	rc=0	Files=1, Tests=93,  5 wallclock secs  Result: PASS 		unchanged
+pgtap	reviewed_document_decision.sql on the final state	rc=0	Files=1, Tests=51,  1 wallclock secs  Result: PASS 		unchanged
+pgtap	reviewed_document_person_access.sql on the final state	rc=0	Files=1, Tests=89,  8 wallclock secs  Result: PASS 		unchanged
+pgtap	reviewed_document_person_appeal.sql on the final state	rc=0	Files=1, Tests=27,  1 wallclock secs  Result: PASS 		unchanged
+pgtap	self_withdrawal_deletes_exports.sql on the final state	rc=0	Files=1, Tests=76,  1 wallclock secs  Result: PASS 		unchanged
+pgtap	self_withdrawal_ends_finished_copies.sql on the final state	rc=0	Files=1, Tests=48,  4 wallclock secs  Result: PASS 		unchanged
+pgtap	session_csrf_purpose_kinds.sql on the final state	rc=0	Files=1, Tests=58,  0 wallclock secs  Result: PASS 		unchanged
+pgtap	subject_copilot_path_b.sql on the final state	rc=0	Files=1, Tests=52,  1 wallclock secs  Result: PASS 		unchanged
+pgtap	subject_copilot_scope.sql on the final state	rc=0	Files=1, Tests=65,  1 wallclock secs  Result: PASS 		unchanged
+pgtap	subject_transfer.sql on the final state	rc=0	Files=1, Tests=118,  1 wallclock secs  Result: PASS 		unchanged
+pgtap	subject_transfer_open.sql on the final state	rc=0	Files=1, Tests=73,  1 wallclock secs  Result: PASS 		unchanged
+pgtap	transferred_record_exports.sql on the final state	rc=0	Files=1, Tests=57,  3 wallclock secs  Result: PASS 		unchanged
+pgtap	uploader_withdrawal_hand_over.sql on the final state	rc=0	Files=1, Tests=85,  1 wallclock secs  Result: PASS 		unchanged
+final	release 3's pgTAP suite (6252566a) on the final state	Files=239, Tests=16003, 478 wallclock secs  Result: FAIL 	drop_generated_artifacts_bucket.sql:1 other_adult_held_upload.sql:2 path_a_account_accept_typed_name.sql:1 path_b_no_account_uploader_gate.sql:2 	unchanged
