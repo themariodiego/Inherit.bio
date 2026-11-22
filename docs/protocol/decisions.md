@@ -6207,3 +6207,57 @@ that is still being made or can still be downloaded keeps blocking. The
 register's `file-delete-v1` refusal is amended to say so. This closes the
 first half of D-152 when built; whether a ready whole-account export should
 end with the own-file withdrawal stays open.
+
+## 2026-11-22 — Change requests are refused without the browser's same-origin marker, before the account is read
+
+Owner decision (clickable chat answer, "Strict, as the register says").
+Asked: the register's `policy.sameOriginRequired` says a change request must
+carry `Sec-Fetch-Site: same-origin` and be refused before the account context
+is read, while the code accepts a matching `Origin` alone and reads the
+account first; fixing the order is engineering; browsers older than about
+2023 do not send the marker; which rule? Offered: "Strict, as the register
+says", "Either header is enough". Chosen: "Strict, as the register says".
+
+Every route bound to `sameOriginRequired` refuses a request whose
+`Sec-Fetch-Site` is not `same-origin`, and one whose `Origin`, when sent, is
+not the site's own origin, before reading the account. The register is not
+amended.
+
+## 2026-11-22 — Twenty signed-in pages keep `same-origin`; the not-found contract's header binds its own answer
+
+Owner decision (clickable chat answer, "Keep same-origin; amend register").
+Asked: twenty signed-in pages are bound to `resource-not-found-page-v1`,
+which names `no-referrer`, through `resourceAuthorizationBindings`; read as
+the whole-route rule, every answer of those pages would send `no-referrer`;
+apply it to all twenty? Offered: "Keep same-origin; amend register", "Apply
+no-referrer to all 20". Chosen: "Keep same-origin; amend register".
+
+The pages' documents keep `Referrer-Policy: same-origin`. The register's
+whole-route referrer rule outside `/api/` is amended so that a contract bound
+through `resourceAuthorizationBindings` sets its headers on the answer it
+describes (the not-found page) only, not on every answer of the page.
+
+## 2026-11-22 — A hand-over refused for now says to try later (D-158)
+
+Owner decision (clickable chat answer, "New refusal line"). Asked: when an
+uploader's withdrawal would hand the record to the adult but the transfer
+refuses at that moment (a file still being checked, an unexpected file
+shape, the account gone), the card says "This did not work. Nothing was
+deleted. Please try again.", inviting a retry that fails again; which fix?
+Offered: "New refusal line", "Hide the button while it would fail". Chosen:
+"New refusal line".
+
+For these refusals the card says: "This cannot be done right now. Nothing was
+deleted. Try again later." This string is approved.
+
+## 2026-11-22 — Withdrawing consent for one's own file ends a finished download copy too (D-152)
+
+Owner decision (clickable chat answer, "Yes, end it too"). Asked: the
+own-file withdrawal stops download copies being prepared, but a finished
+whole-account copy that includes the file keeps working until it expires;
+should withdrawal end a finished copy too? Offered: "Yes, end it too", "No,
+let it run out". Chosen: "Yes, end it too".
+
+A finished copy that includes the withdrawn file stops working at once; the
+person can make a new one. This makes the confirmation's existing line true
+as written and closes the second half of D-152 when built.
