@@ -386,9 +386,11 @@ rollback to queued_case;
 select is((select md5(pg_get_functiondef('private.empty_self_subject_v1(uuid,uuid)'::regprocedure))),'768b5433d639f9c8578fbd59a5a0d703',
  'the self emptying is the reviewed successor of 20261122130000 (D-152)');
 -- 2026-11-22 (D-152): 20261122130000 patches this migration's successor of
--- the per-file guard (c78d66691786e656a063b2dfe7b78a28) in its export clause.
-select is((select md5(pg_get_functiondef('private.prepare_genome_file_deletion_body_v1(uuid,uuid)'::regprocedure))),'9753a5d9d38d09f6b17664826247f070',
- 'the per-file guard is the reviewed successor of 20261122130000 (D-152)');
+-- the per-file guard (c78d66691786e656a063b2dfe7b78a28) in its export clause,
+-- and 20261122150000 patches that one (9753a5d9d38d09f6b17664826247f070) to
+-- add the whole-account copies that include the record.
+select is((select md5(pg_get_functiondef('private.prepare_genome_file_deletion_body_v1(uuid,uuid)'::regprocedure))),'da3c101a8a28000656359a91254a6643',
+ 'the per-file guard is the reviewed successor of 20261122150000 (D-152)');
 select is((select md5(pg_get_functiondef('public.self_subject_withdrawal_readiness_v1(uuid,uuid)'::regprocedure))),'963586dade86d48a3f61d03b2403d41a',
  'the page''s read is the reviewed successor');
 select is((select md5(pg_get_functiondef('public.export_archive_cleanup_v1(text,uuid,uuid,jsonb)'::regprocedure))),'25fa3ce71b73fb0c371d1bb9af836bd7',

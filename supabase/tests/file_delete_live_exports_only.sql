@@ -342,30 +342,28 @@ select throws_ok($$select private.export_archive_current_v1('7d152000-0000-4000-
 select lives_ok($$select pg_temp.delete_file()$$,'a queued legacy row with no job does not block it');
 rollback to legacy;
 
--- A whole-account copy was never read by the guard, and still is not. What
--- deleting the file does to it is unchanged (reported with D-152): its
--- currentness check then refuses, so its download stops.
+-- 2026-11-22 (D-152 follow-up, 20261122150000): a whole-account copy whose
+-- parts include the record is a live download copy of the record and blocks
+-- deleting the file like the record's own, so nothing in its download goes
+-- missing (before, the deletion went through and the copy stopped working).
+-- supabase/tests/file_delete_live_account_copies.sql covers every state.
 savepoint account_copy;
 select pg_temp.make_export('account-queued','queued');
 select ok(pg_temp.status('account-queued')='queued' and pg_temp.current('account-queued'),'fixture: a whole-account copy is queued');
-select lives_ok($$select pg_temp.delete_file()$$,'a queued whole-account copy does not block deleting the file, as before');
-select throws_ok($$select pg_temp.poll('account-queued')$$,'55000','export_source_unavailable',
- 'unchanged: once the file is prepared, the whole-account copy fails its currentness check');
-select set_config('storage.allow_delete_query','true',true);
-delete from storage.objects where bucket_id='genomes' and name='77900000-0000-4000-8000-000000000030';
-select set_config('storage.allow_delete_query','false',true);
-select lives_ok($$select public.finish_genome_file_deletion_v1((select alpha from fx),(select alpha_session from fx),(select file from fx),
-  (select token from private.genome_file_deletions where file_id=(select file from fx)))$$,'the finish goes through as well');
-select throws_ok($$select pg_temp.poll('account-queued')$$,'42501','not_found','and the whole-account copy is not found afterwards');
+select throws_ok($$select pg_temp.delete_file()$$,'55000','file_delete_shared_graph',
+ 'a queued whole-account copy that includes the record blocks deleting the file (D-152)');
+select ok(pg_temp.current('account-queued') and (select count(*) from private.genome_file_deletions where file_id=(select file from fx))=0,
+ 'and nothing is prepared: the copy stays current');
 rollback to account_copy;
 savepoint account_copy;
 select pg_temp.make_export('account-ready','ready');
 update ex set download=(pg_temp.open('account-ready')->>'downloadSessionId')::uuid where label='account-ready';
 select ok(pg_temp.status('account-ready')='ready' and pg_temp.current('account-ready'),'fixture: a whole-account copy is READY and opened');
-select lives_ok($$select pg_temp.delete_file()$$,'a READY whole-account copy does not block deleting the file, as before');
-select throws_ok($$select private.account_archive_test_delivery_context_v1((select download from ex where label='account-ready'),repeat('7',64),
-  pg_temp.origin('account-ready'))$$,'55000','export_source_unavailable',
- 'unchanged: once the file is prepared, the READY whole-account copy''s download serves nothing more');
+select throws_ok($$select pg_temp.delete_file()$$,'55000','file_delete_shared_graph',
+ 'a READY whole-account copy that includes the record blocks it (D-152)');
+select ok((private.account_archive_test_delivery_context_v1((select download from ex where label='account-ready'),repeat('7',64),
+  pg_temp.origin('account-ready'))->'ready')=(select ready from ex where label='account-ready'),
+ 'and its open download still serves');
 rollback to account_copy;
 
 -- Another record's live copy does not block it -----------------------------------------
@@ -425,8 +423,11 @@ select is((select count(*) from public.genome_files where id=(select file from f
 rollback to race;
 
 -- The body is the reviewed successor ------------------------------------------------
+-- 2026-11-22 (D-152 follow-up): 20261122150000 patches this suite's
+-- successor of the guard (9753a5d9d38d09f6b17664826247f070) to add the
+-- whole-account copies that include the record.
 select is((select md5(pg_get_functiondef('private.prepare_genome_file_deletion_body_v1(uuid,uuid)'::regprocedure))),
- '9753a5d9d38d09f6b17664826247f070','the per-file guard is the reviewed successor');
+ 'da3c101a8a28000656359a91254a6643','the per-file guard is the reviewed successor of 20261122150000');
 select is((select proacl::text from pg_proc where oid='private.prepare_genome_file_deletion_body_v1(uuid,uuid)'::regprocedure),
  '{postgres=X/postgres}','and its grants are unchanged');
 

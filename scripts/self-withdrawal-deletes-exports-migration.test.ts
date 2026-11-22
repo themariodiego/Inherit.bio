@@ -136,9 +136,21 @@ describe("the release it belongs to", () => {
     // export clause) and the self emptying again (the account's whole-account
     // copies), each from exactly this migration's successor. It is the one
     // later migration allowed to, and only for those two bodies.
-    for (const qualified of ["private.prepare_genome_file_deletion_body_v1", "private.empty_self_subject_v1"]) {
-      expect(files.filter(file => file > NAME && rewrites(file, qualified)), qualified).toEqual([D152]);
-    }
+    // 2026-11-22 (D-152 follow-up): 20261122150000 patches the guard once more,
+    // only from 20261122130000's successor (held by that migration's test).
+    expect(files.filter(file => file > NAME && rewrites(file, "private.empty_self_subject_v1")))
+      .toEqual([D152, "20261122150000_file_delete_live_account_copies.sql"]);
+    // It names the self emptying only to pin it at 20261122130000's
+    // successor (the file convention flags a pin in a file that uses
+    // replace(definition)); it has no patch tuple for it.
+    const followUpSql = read("supabase/migrations/20261122150000_file_delete_live_account_copies.sql");
+    expect(followUpSql).not.toMatch(/\(\d+,'private\.empty_self_subject_v1\(/u);
+    expect(followUpSql).toContain("to_regprocedure('private.empty_self_subject_v1(uuid,uuid)')\n"
+      + "   and md5(pg_get_functiondef(p.oid))='768b5433d639f9c8578fbd59a5a0d703'");
+    expect(files.filter(file => file > NAME && rewrites(file, "private.prepare_genome_file_deletion_body_v1")))
+      .toEqual([D152, "20261122150000_file_delete_live_account_copies.sql"]);
+    expect([...read("supabase/migrations/20261122150000_file_delete_live_account_copies.sql").matchAll(/\((\d+),'([^']+)','([0-9a-f]{32})',/gu)]
+      .map(match => [match[2], match[3]])).toEqual([[GUARD_TARGET, "9753a5d9d38d09f6b17664826247f070"]]);
     const d152 = read(`supabase/migrations/${D152}`);
     const last = (target: string) => patches.filter(patch => patch.target === target).at(-1)!;
     expect([...d152.matchAll(/\((\d+),'([^']+)','([0-9a-f]{32})',/gu)].map(match => [match[2], match[3]]))
@@ -314,8 +326,15 @@ describe("its tests and its notes", () => {
     const d152After = Object.fromEntries([...read(`supabase/migrations/${D152}`)
       .matchAll(/\((\d+),'([^']+)','[0-9a-f]{32}',\s*'([0-9a-f]{32})',/gu)].map(match => [match[2], match[3]]));
     expect(Object.keys(d152After)).toEqual([GUARD_TARGET, EMPTY_TARGET]);
+    expect(pgtap).toContain(`'${EMPTY_TARGET}'::regprocedure))),'${d152After[EMPTY_TARGET]}'`);
+    // 2026-11-22 (D-152 follow-up): the guard is pinned at 20261122150000's
+    // successor, which patches exactly 20261122130000's (named in a comment).
+    const followUpAfter = [...read("supabase/migrations/20261122150000_file_delete_live_account_copies.sql")
+      .matchAll(/\(1,'[^']+','([0-9a-f]{32})',\s*'([0-9a-f]{32})',/gu)].map(match => [match[1], match[2]]);
+    expect(followUpAfter).toEqual([[d152After[GUARD_TARGET], expect.stringMatching(/^[0-9a-f]{32}$/u)]]);
+    expect(pgtap).toContain(`'${GUARD_TARGET}'::regprocedure))),'${followUpAfter[0]![1]}'`);
+    expect(pgtap).toContain(d152After[GUARD_TARGET]!);
     for (const target of [GUARD_TARGET, EMPTY_TARGET]) {
-      expect(pgtap, target).toContain(`'${target}'::regprocedure))),'${d152After[target]}'`);
       expect(pgtap, target).toContain(patches.filter(patch => patch.target === target).at(-1)!.after);
     }
     expect(pgtap.startsWith("begin;\n")).toBe(true);

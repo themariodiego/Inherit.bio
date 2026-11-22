@@ -1024,3 +1024,66 @@ Only in test mode, with the TEST archive on. No new wording.
 ## Pinned tests (local, this container)
 
 `supabase/tests/adult_acceptance_inviter_archive_reads.sql` (36 tests) builds a Path A account acceptance with the adult's own upload and grants of `export.share-link` and `raw.export` to the inviter and to a third account, and drives the archive through the hold, a family pair, the preserved export, the release at 72 hours and the second notice, a real archive requested a minute before 30 days and built, the 30-day boundary (the same archive can no longer be built or delivered), and the reminder (the capture is equal byte for byte and the archive is current again with no job run). `scripts/adult-acceptance-inviter-archive-reads-migration.test.ts` (8) rebuilds the four predecessors and the question from their migrations, recomputes the five pinned md5s and replays each patch to its successor. Every suite that reads the archive or the export doors (102 others) gives the same result with and without this migration. No browser journey drives an archive download during a hold: a held acceptance needs an account created after the invitation and its clocks aged, which the suite does through the same database doors.
+
+# Release notes: `20261122150000_file_delete_live_account_copies.sql` (D-152, follow-up)
+
+Local work only. Nothing here was run against production or any hosted database. Owner decision of 22 November 2026, "Only a live download copy blocks deleting a single file" (`docs/protocol/decisions.md`), as offered and chosen: "A copy that is still being made or can still be downloaded keeps blocking, so nothing in a live download goes missing". `20261122130000` made the guard read only the record's own copies; a whole-account copy whose parts include the record is a download copy of that record too, and deleting one file then made such a live copy unusable (its capture no longer matched), which the decision forbids.
+
+## What it changes
+
+- `private.prepare_genome_file_deletion_body_v1`, the per-file guard (`9753a5d9d38d09f6b17664826247f070` → `da3c101a8a28000656359a91254a6643`, `{postgres=X/postgres}`), one patch in place, md5-guarded, one anchor, successor md5 and unchanged ACL asserted. The record's own clause stays word for word; a second clause follows it: a whole-account copy (`target_kind='account'`, `target_id` the account deleting the file) whose `subject_partitions` include the record blocks the file shortcut while live by the same rule (with its job, before the job's deadline, `queued` or `building`, or `ready` before `expires_at`), with the existing refusal (`file_delete_shared_graph`, the route's 409 `file_delete_subject_unavailable`). A whole-account copy whose parts do not include the record, one of another account, and an expired, failed, revoked or purged one do not block.
+- The own-file withdrawal is not blocked: the self emptying (`private.empty_self_subject_v1`, pinned at `768b5433d639f9c8578fbd59a5a0d703`) ends every whole-account copy that includes the record before it prepares the files through this guard.
+- The race is unchanged and covers these copies: a whole-account capture, its worker steps, polls, opens and chunk reads reach `private.own_export_source_v1`, which locks the account's profile row FOR UPDATE, the row the guard locks first; once a deletion is prepared every capture of the account refuses (55000 `export_source_unavailable`), and the finish runs the guard again. The pgTAP suite reads, on the live database, the FOR UPDATE row lock a whole-account capture holds on the profile row.
+- Pinned, not changed: the emptying; `private.export_archive_current_v1` (`707ebdae8b497640dafeb37e666d01f6`); `public.export_archive_request_v1` (`f22a82e34511040aab5f8b8f68f671d0`); `private.account_archive_r2_completed_context_v1` (body `34ecde85fc7566b3f775ce953834a092`; its header prints a table type); `private.own_export_source_v1` (`27abc582be0eb4a227a7cdeb57c29d6f`). It pins nothing `20261122120000` or `20261122140000` changes.
+- The register's `file-delete-v1.subjectUnavailable.when` names the account's copies inside its existing `registered-2026-11-22-D-152` mark. No table, column, constraint, trigger, grant, function, audit event, route or wording changes. Fingerprint effect: 1 `def_md5` changes.
+
+## Which releases must come first
+
+`20261122130000` (D-152), whose successor of the guard is this patch's predecessor; applied before it, this migration refuses (55000 `file delete live account copies prerequisite differs`) and changes nothing. Any order against `20261122120000` and `20261122140000`. Locally it was applied forward to the shared database after `20261122140000`, in one transaction, and recorded with the file's text as its one statement.
+
+## Read-only pre-checks (one SELECT; the release session and its `search_path`)
+
+Stop unless every `must_be_*` holds.
+
+```sql
+select
+ (select count(distinct x.signature) from pg_proc p join (values
+   ('private.prepare_genome_file_deletion_body_v1(uuid,uuid)','def','9753a5d9d38d09f6b17664826247f070','{postgres=X/postgres}'),
+   ('private.empty_self_subject_v1(uuid,uuid)','def','768b5433d639f9c8578fbd59a5a0d703','{postgres=X/postgres}'),
+   ('private.export_archive_current_v1(uuid,text)','def','707ebdae8b497640dafeb37e666d01f6','{postgres=X/postgres}'),
+   ('public.export_archive_request_v1(text,jsonb,text,uuid,jsonb,text)','def','f22a82e34511040aab5f8b8f68f671d0','{postgres=X/postgres,service_role=X/postgres}'),
+   ('private.account_archive_r2_completed_context_v1(uuid,text,boolean)','src','34ecde85fc7566b3f775ce953834a092','{postgres=X/postgres}'),
+   ('private.own_export_source_v1(uuid,uuid,uuid)','def','27abc582be0eb4a227a7cdeb57c29d6f','{postgres=X/postgres,service_role=X/postgres}')
+  ) as x(signature,kind,body,acl) on p.oid=to_regprocedure(x.signature)
+   and (case x.kind when 'def' then md5(pg_get_functiondef(p.oid)) else md5(p.prosrc) end)=x.body
+   and p.proacl::text=x.acl) as must_be_6_bodies_as_reviewed,
+ (select count(*) from pg_class where oid=to_regclass('private.export_archive_jobs')) as must_be_1_job_table,
+ (select count(*) from public.generated_exports e join private.export_archive_jobs j on j.export_id=e.id
+   join public.subjects s on s.subject_account_id=e.target_id and s.subject_class='self' and e.subject_partitions @> jsonb_build_array(s.id)
+   where e.target_kind='account' and j.deadline>clock_timestamp()
+    and (e.status in ('queued','building') or (e.status='ready' and e.expires_at>clock_timestamp()))) as context_live_account_copies_with_a_self_record,
+ (select count(*) from private.genome_file_deletions) as context_pending_file_deletions,
+ current_user as context_current_user,
+ current_setting('search_path') as context_search_path;
+```
+
+Locally, before the migration was applied forward: `must_be_6_bodies_as_reviewed` 6, `must_be_1_job_table` 1 and both `context_*` counts 0, under the default search path and under `search_path=''` alike; the md5s are also recomputed from source by `scripts/file-delete-live-account-copies-migration.test.ts`. `context_live_account_copies_with_a_self_record` is how many accounts would now be refused a single-file deletion; `api.export` answers 503 before it creates anything unless a generation capability is configured, and only the TEST one exists, so it is expected to be 0 in production.
+
+## Locks and duration
+
+Catalog work only: one `create or replace function` from the patch block, and catalog reads; the session held only `AccessShareLock` on `pg_proc` and its indexes and `RowExclusiveLock` on `pg_proc`'s TOAST relation and index. Measured locally inside a rolled-back transaction: about 5 ms, the predecessor checks and postflight included. At run time the guard reads the account's whole-account copies and their jobs under the locks it already holds; it takes no new lock.
+
+## Deployed code between apply and deploy
+
+No application code, route, page or string changes, so either order gives the same two windows:
+
+- **Migration not yet applied.** A live whole-account copy does not block deleting one file; the deletion then makes that copy unusable.
+- **Migration applied.** A live whole-account copy that includes the record blocks deleting one file of it (409 `file_delete_subject_unavailable`), as the record's own live copy does; the copy keeps working. The withdrawal is unchanged.
+
+## What a person sees
+
+Nothing in production, where no whole-account copy exists. Under the test jurisdiction: while a whole-account copy of a person's account is being made or can still be downloaded, Delete on one of their files answers "This file cannot be deleted here. It was not deleted.", as it does for the record's own copy; once the copy has expired, failed or ended, the file can be deleted. No wording changed.
+
+## Browser runs
+
+None applies: no browser spec deletes a single file while a whole-account copy exists (the browser suite has no generation capability). `supabase/tests/file_delete_live_account_copies.sql` drives every state through the database's doors.

@@ -154,7 +154,16 @@ describe("the release it belongs to", () => {
       return new RegExp(`create\\s+(?:or\\s+replace\\s+)?function\\s+(?:\\w+\\.)?${local}\\s*\\(`, "iu").test(sql)
         || new RegExp(`\\(\\d+,'${qualified.replace(".", "\\.")}\\(`, "u").test(sql);
     };
-    expect(files.filter(file => file > D144 && rewrites(file, "private.prepare_genome_file_deletion_body_v1")), "guard").toEqual([NAME]);
+    // 2026-11-22 (D-152 follow-up): 20261122150000 patches the guard once
+    // more, from exactly this migration's successor, keeping this clause word
+    // for word and adding the whole-account copies after it. It is the one
+    // later migration allowed to, and only for the guard.
+    const D152B = "20261122150000_file_delete_live_account_copies.sql";
+    expect(files.filter(file => file > D144 && rewrites(file, "private.prepare_genome_file_deletion_body_v1")), "guard").toEqual([NAME, D152B]);
+    const followUp = parse(read(`supabase/migrations/${D152B}`));
+    expect(followUp.map(patch => [patch.target, patch.before])).toEqual([[GUARD_TARGET, md5(GUARD)]]);
+    expect(followUp[0]!.old).toBe(CLAUSE.slice(CLAUSE.indexOf("    or exists (")));
+    expect(followUp[0]!.next.startsWith(followUp[0]!.old)).toBe(true);
     expect(files.filter(file => file > D144 && rewrites(file, "private.empty_self_subject_v1")), "emptying").toEqual([NAME]);
     const lastDefinitions: Record<string, string> = {
       "public.export_archive_cleanup_v1": "20260923123240_export_archive_persistence.sql",
@@ -354,11 +363,20 @@ describe("its tests and its notes", () => {
       "public.export_archive_cleanup_v1('stop',pg_temp.export_id('failed')", "set status='revoked' where id=pg_temp.export_id('revoked')",
       "pg_temp.make_export('retired','ready')", "set status='expired'", "set status='purged'", "'independent-rights'",
       "'export_publication_not_integrated'", "pg_temp.make_export('account-ready','ready')", "pg_temp.make_export('beta','ready')",
-      "'export_source_unavailable'", "public.finish_genome_file_deletion_v1(", "'file_delete_shared_graph'", `'${md5(GUARD)}'`]) {
+      "'export_source_unavailable'", "public.finish_genome_file_deletion_v1(", "'file_delete_shared_graph'", md5(GUARD)]) {
       expect(pgtap, fragment).toContain(fragment);
     }
-    // The four live states of the record's own copy and the claimant's two.
-    expect(count(pgtap, "select throws_ok($$select pg_temp.delete_file()$$,'55000','file_delete_shared_graph'")).toBe(6);
+    // The four live states of the record's own copy and the claimant's two,
+    // and (2026-11-22, D-152 follow-up) a queued and a READY whole-account copy.
+    expect(count(pgtap, "select throws_ok($$select pg_temp.delete_file()$$,'55000','file_delete_shared_graph'")).toBe(8);
+    // 2026-11-22 (D-152 follow-up): the suites pin the guard at
+    // 20261122150000's successor, which patches exactly this one (held by
+    // the "last word" test), and name this one in a comment.
+    const followUpAfter = [...read("supabase/migrations/20261122150000_file_delete_live_account_copies.sql")
+      .matchAll(/\(1,'private\.prepare_genome_file_deletion_body_v1\(uuid,uuid\)','9753a5d9d38d09f6b17664826247f070',\s*'([0-9a-f]{32})',/gu)]
+      .map(match => match[1]);
+    expect(followUpAfter).toHaveLength(1);
+    expect(pgtap).toContain(`'${followUpAfter[0]}'`);
     expect(pgtap.startsWith("begin;\n")).toBe(true);
     expect(pgtap.trimEnd().endsWith("rollback;")).toBe(true);
     const withdrawal = read("supabase/tests/self_withdrawal_ends_finished_copies.sql");
@@ -378,8 +396,9 @@ describe("its tests and its notes", () => {
     for (const suite of ["self_withdrawal_deletes_exports.sql", "own_upload_consent_withdrawal.sql"]) {
       expect(read(`supabase/tests/${suite}`), suite).toContain(`'${md5(EMPTY)}'`);
     }
-    // The D-144 suite pins this successor too.
-    expect(read("supabase/tests/self_withdrawal_deletes_exports.sql")).toContain(`'${md5(GUARD)}'`);
+    // The D-144 suite pins the guard's later successor and names this one.
+    expect(read("supabase/tests/self_withdrawal_deletes_exports.sql")).toContain(`'${followUpAfter[0]}'`);
+    expect(read("supabase/tests/self_withdrawal_deletes_exports.sql")).toContain(md5(GUARD));
   });
 
   it("is in the release notes of the guarded release it joins", () => {
