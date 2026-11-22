@@ -11,6 +11,8 @@
 --     a record listed through a family pair is excluded with the reason a
 --     missing export permission gives and no raw authority, and the
 --     recipient, raw and source authorities refuse as they do with no grant;
+--     A's own class of grants received lists none of B's grants, so A's
+--     class census is the one with no grant from B (20261122170000);
 --   * a third account the adult shares with is unaffected, and the adult's
 --     own archive is unaffected;
 --   * once the second notice is accepted the archive includes the adult's
@@ -205,10 +207,9 @@ select is(pg_temp.covers('1'),'A:ordinary:permitted',
 select is(pg_temp.authorities('1'),'recipient:not_found raw:not_found source:not_found',
  '(hold) the recipient, raw and source authorities refuse A as they do with no grant');
 -- The same archive as if B had granted A nothing: B's two grants removed in a
--- rolled-back savepoint. The records, their dispositions, the files and every
--- member and history receipt are the same. A's own class of grants received
--- still counts B's two grants (ids, revisions, status and times; no purpose,
--- no record), as it counts every grant A holds; it is not B's data.
+-- rolled-back savepoint. The records, their dispositions, the files, every
+-- member and history receipt and, since 20261122170000, A's own class of
+-- grants received are the same.
 create function pg_temp.what_is_read(p text) returns jsonb language sql as $$
  select c->'permissions'||jsonb_build_array(c->'scopePartitions',c->'files',c->'memberCensus',c->'history')
  from (select private.account_archive_complete_capture_v1(pg_temp.origin(p)) c) x $$;
@@ -223,16 +224,13 @@ delete from public.directional_grants where grant_id in(select grant_id from b_t
 delete from public.purpose_grants where grant_id in(select grant_id from b_to_a);
 select is(pg_temp.what_is_read('1'),(select value from held_read),
  '(hold) what A''s archive reads is exactly what it reads when B has granted A nothing');
-select is((select string_agg(h->>'kind'||' '||(h->>'rows')||'/'||(n->>'rows'),',') from jsonb_array_elements((select classes from held_read)) h
+select is((select coalesce(string_agg(h->>'kind'||' '||(h->>'rows')||'/'||(n->>'rows'),','),'none') from jsonb_array_elements((select classes from held_read)) h
   join jsonb_array_elements(private.account_archive_complete_capture_v1(pg_temp.origin('1'))#>'{classCensus,classes}') n
-   on n->>'kind'=h->>'kind' where h is distinct from n),'directional_grants 2/0',
- '(hold) the one difference is A''s own class of grants received, which still counts B''s two grants');
+   on n->>'kind'=h->>'kind' where h is distinct from n),'none',
+ '(hold) and A''s class census is the same too: A''s own class of grants received does not count B''s grants');
 rollback to no_grant;
-select is((select string_agg(distinct key,',' order by key)||' '||count(distinct r.projected_id)||' '||coalesce(max(r.projected_subject::text),'none')
-  from private.export_account_class_projection_v1(pg_temp.acct('1'),array[pg_temp.self(pg_temp.acct('1'))],'directional_grants') r,
-  jsonb_object_keys(r.projected_row) key),
- 'created_at,direction,ended_at,grant_id,grant_revision,relationship_or_pair_revision,status 2 none',
- '(hold) those two rows carry no purpose and name no record');
+select is((select count(*) from private.export_account_class_projection_v1(pg_temp.acct('1'),array[pg_temp.self(pg_temp.acct('1'))],
+  'directional_grants') r),0::bigint,'(hold) A''s class of grants received lists none of B''s grants');
 select is(pg_temp.try(format('select (private.account_archive_complete_subject_authority_v1(%L,%L,'
   ||'private.account_archive_legacy_capture_v1(%L))-''authority'')::text',pg_temp.origin('1'),pg_temp.self(pg_temp.acct('2')),pg_temp.origin('1'))),
  jsonb_build_object('subjectId',pg_temp.self(pg_temp.acct('2')),'class','consent-covered','status','excluded',

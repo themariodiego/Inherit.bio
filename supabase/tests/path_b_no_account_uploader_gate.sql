@@ -45,11 +45,16 @@ $$;
 -- 0. The patched body ----------------------------------------------------------
 -- 20261120120000 (D-141) patches the account branch, the Path A lookup and
 -- the person's own hold into the same body; with it applied the pin is its
--- successor. The no-account branch it carries is unchanged.
+-- successor. 20261122170000 (D-154) then widens the Path B lookup to both
+-- flows; with it applied the pin is its successor. The no-account branch
+-- each carries is unchanged.
 select is((select md5(prosrc) from pg_proc
  where oid='private.other_adult_mitigation_before_public_appeal_v1(uuid,uuid,text)'::regprocedure),
  case when to_regprocedure('private.adult_acceptance_clock_state_v1(uuid)') is null
-  then '29c74c79cb3eeedbbdac44273a6f4de3' else 'b7c33a43753656597ebb23e5acb560f5' end,
+  then '29c74c79cb3eeedbbdac44273a6f4de3'
+  when position('path-b-reviewed-document' in (select prosrc from pg_proc
+   where oid='private.other_adult_mitigation_before_public_appeal_v1(uuid,uuid,text)'::regprocedure))>0
+  then '5eea32fc3a2beee156568aa143fe19c2' else 'b7c33a43753656597ebb23e5acb560f5' end,
  'the no-account branch carries the pinned successor body');
 select ok((select provolatile='s' and prosecdef and proconfig=array['search_path=pg_catalog'] from pg_proc
  where oid='private.other_adult_mitigation_before_public_appeal_v1(uuid,uuid,text)'::regprocedure),

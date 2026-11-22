@@ -136,22 +136,35 @@ describe("the release it belongs to", () => {
     // 2026-11-22: 20261122140000 (D-156, the inviter's account archive) names the
     // question in its predecessor block, pinned at the md5 this migration
     // creates, and patches four archive bodies with replace(definition), so the
-    // two-substring heuristic flags it for the question alone. For that one
-    // file and that one name the case checks instead that the name occurs only
-    // in its predecessor block and that nothing there creates the question.
-    const ARCHIVE = "20261122140000_adult_acceptance_inviter_archive_reads.sql";
+    // two-substring heuristic flags it for the question alone. 20261122170000
+    // (D-156 grants received, D-154) pins the question and the clock reader the
+    // same way while it patches two other bodies. For those files and those
+    // names the case checks instead that each name occurs only in that file's
+    // predecessor block, pinned at this migration's md5, and that nothing there
+    // creates it.
+    const PINNED_ONLY: Record<string, Record<string, string>> = {
+      "20261122140000_adult_acceptance_inviter_archive_reads.sql": {
+        "private.adult_acceptance_inviter_held_v1": "(uuid,uuid) bd8cde3a947a35f7ae07d24175418515" },
+      "20261122170000_inviter_grants_and_reviewed_document_decision.sql": {
+        "private.adult_acceptance_inviter_held_v1": "(uuid,uuid) bd8cde3a947a35f7ae07d24175418515",
+        "private.adult_acceptance_clock_state_v1": "(uuid) 6f566115c807f64e1c2a9413f2669fe1" },
+    };
     for (const qualified of [...TARGETS.map(target => target.slice(0, target.indexOf("("))),
       "private.adult_acceptance_inviter_held_v1", "public.adult_acceptance_inviter_held_subjects_v1",
       "private.adult_acceptance_clock_state_v1"]) {
-      expect(files.filter(file => file > NAME && rewrites(file, qualified)
-        && !(file === ARCHIVE && qualified === "private.adult_acceptance_inviter_held_v1")), qualified).toEqual([]);
+      expect(files.filter(file => file > NAME && rewrites(file, qualified) && !PINNED_ONLY[file]?.[qualified]), qualified).toEqual([]);
     }
-    const archive = read(`supabase/migrations/${ARCHIVE}`);
-    const archivePreflight = between(archive, "do $predecessor$", "$predecessor$;");
-    expect(archive.replace(archivePreflight, "").includes("'private.adult_acceptance_inviter_held_v1(")).toBe(false);
-    expect(archivePreflight).toContain("to_regprocedure('private.adult_acceptance_inviter_held_v1(uuid,uuid)')\n"
-      + "   and md5(pg_get_functiondef(p.oid))='bd8cde3a947a35f7ae07d24175418515'");
-    expect(archive).not.toMatch(/create\s+(?:or\s+replace\s+)?function\s+(?:\w+\.)?adult_acceptance_inviter_held_v1\s*\(/iu);
+    for (const [file, pins] of Object.entries(PINNED_ONLY)) {
+      const sql = read(`supabase/migrations/${file}`);
+      const pinnedBlock = between(sql, "do $predecessor$", "$predecessor$;");
+      for (const [qualified, pin] of Object.entries(pins)) {
+        const [args, hash] = pin.split(" ");
+        const local = qualified.slice(qualified.indexOf(".") + 1);
+        expect(sql.replace(pinnedBlock, "").includes(`'${qualified}(`), `${file} ${qualified}`).toBe(false);
+        expect(pinnedBlock).toContain(`to_regprocedure('${qualified}${args}')\n   and md5(pg_get_functiondef(p.oid))='${hash}'`);
+        expect(sql).not.toMatch(new RegExp(`create\\s+(?:or\\s+replace\\s+)?function\\s+(?:\\w+\\.)?${local}\\s*\\(`, "iu"));
+      }
+    }
   });
 });
 

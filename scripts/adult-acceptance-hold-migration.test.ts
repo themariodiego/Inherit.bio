@@ -147,12 +147,32 @@ describe("the release it belongs to", () => {
       return new RegExp(`create\\s+(?:or\\s+replace\\s+)?function\\s+(?:\\w+\\.)?${local}\\s*\\(`, "iu").test(sql)
         || (sql.includes(`'${qualified}(`) && sql.includes("replace(definition"));
     };
+    // 2026-11-22: 20261122170000 (D-154) patches the decision's Path B lookup in
+    // place, md5-guarded from exactly this migration's successor, and pins Path
+    // B's account core at this migration's successor in its predecessor block
+    // (it relies on that core starting both clocks for both flows). For that one
+    // file the case checks instead that the decision is patched only through
+    // the one-anchor md5 guard from this successor, and that the core occurs
+    // only in its predecessor block, pinned at this successor.
+    const D154 = "20261122170000_inviter_grants_and_reviewed_document_decision.sql";
+    const exempt = (file: string, qualified: string) => file === D154 && (qualified === "private.other_adult_mitigation_before_public_appeal_v1"
+      || qualified === "private.confirm_path_b_subject_account_core_v1");
     for (const qualified of ["private.adult_subject_invitation_response_v1", "private.confirm_path_b_subject_account_core_v1",
       "private.other_adult_mitigation_before_public_appeal_v1", "private.path_b_normalization_authority_v1",
       "public.claim_invitation_terminal_mail_v1", "public.authorize_invitation_terminal_mail_v1",
       "private.enqueue_path_b_normalization_v1"]) {
-      expect(files.filter(file => file > NAME && rewrites(file, qualified)), qualified).toEqual([]);
+      expect(files.filter(file => file > NAME && rewrites(file, qualified) && !exempt(file, qualified)), qualified).toEqual([]);
     }
+    const d154 = read(`supabase/migrations/${D154}`);
+    const d154Preflight = between(d154, "do $predecessor$", "$predecessor$;");
+    expect(d154).not.toMatch(/create\s+(?:or\s+replace\s+)?function\s+(?:\w+\.)?(other_adult_mitigation_before_public_appeal_v1|confirm_path_b_subject_account_core_v1)\s*\(/iu);
+    expect(d154Preflight).toContain("to_regprocedure('private.other_adult_mitigation_before_public_appeal_v1(uuid,uuid,text)')\n"
+      + "   and md5(pg_get_functiondef(p.oid))='91dfb6e4abf766e3da6e5827d4381daf' and p.proacl::text='{postgres=X/postgres}')");
+    expect(d154).toContain("(2,'private.other_adult_mitigation_before_public_appeal_v1(uuid,uuid,text)','91dfb6e4abf766e3da6e5827d4381daf',");
+    expect(d154).toContain("if (length(definition)-length(replace(definition,item.old_fragment,'')))/length(item.old_fragment)<>1 then");
+    expect(d154.replace(d154Preflight, "").includes("'private.confirm_path_b_subject_account_core_v1(")).toBe(false);
+    expect(d154Preflight).toContain("to_regprocedure('private.confirm_path_b_subject_account_core_v1(text,text,integer,text,text[],bytea,uuid,uuid,text,boolean)')\n"
+      + "   and md5(pg_get_functiondef(p.oid))='63c6c510a724cbe747af5db354cb344b' and p.proacl::text='{postgres=X/postgres}')");
   });
 });
 

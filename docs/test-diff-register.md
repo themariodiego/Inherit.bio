@@ -1,3 +1,97 @@
+## 2026-11-22 — D-156 (grants received) and D-154: the inviter's class of grants received, and the reviewed-document decision
+
+Two changes, in one guarded migration, `20261122170000_inviter_grants_and_reviewed_document_decision.sql` (not hosted; it creates nothing). Test mode only: Path A's own-account acceptance and both Path B flows need the test jurisdiction.
+
+1. **D-156** (owner decision of 22 November 2026, "The 72-hour hold covers an inviter's reads of the invited adult's own record"): during either window the inviter sees nothing the adult shares with them. After `20261122140000` the inviter's own class of grants received (`directional_grants`) still listed the held adult's grants (id, revision, status, times), while the Family permissions page shows them as Off.
+2. **D-154**: the mitigation decision found a Path B acceptance only through a confirmed `path-b-subject-esignature` draft. So a `path-b-reviewed-document` record answered `not-found` to its uploader and to its person at every checkpoint.
+
+**What changed.** Two bodies are patched in place, md5-guarded with their reviewed ACL, one anchor each, successor md5, ACL, volatility and owner asserted:
+- `private.export_account_class_projection_v1` (`d729235a…` → `f90fe19e…`). Its `directional_grants` branch leaves out a grant on a record that the reading account is held from, asking the unchanged `private.adult_acceptance_inviter_held_v1`. Every other class, and that class for every account not held, is unchanged. Every caller inherits it.
+- `private.other_adult_mitigation_before_public_appeal_v1` (`91dfb6e4…` → `85be4781…`). Its Path B lookup joins a confirmed draft of either Path B flow.
+
+Pinned, unchanged: the question, the clock reader, Path B's account core (which starts both clocks for either flow) and the draft table's flow check.
+
+**New tests.**
+- `supabase/tests/inviter_grants_received.sql` (pgTAP, 25, rolled back). Setup goes through the real doors: two Path A acceptances, A–B (B's account created after the invitation; held) and D–E (E's account predates it). Grants B→A and B→C (`export.share-link`, `raw.export`) and E→D go through the grant door, and the native archive is switched on in the transaction.
+  - Each caller of the class projection is read for every account in the database, over a scope fixed at setup: every metadata class of the projection itself; the directional_grants class through the scoped account projection, the subject and scoped subject projections (each record the account owns or was granted on), the complete archive's source rows (with and without legacy records) and class rows; and the preserved export capture (the class inventory), the legacy capture (the legacy classes) and the complete capture (class census and class rows). Errors are recorded too.
+  - Each read is made with the patched body, and again with the predecessor rebuilt in place by reversing this migration's anchor and swapped in (md5 `d729235a…` checked), then swapped back (md5 `f90fe19e…` checked).
+  - During the hold only A's reads differ, and only these: complete capture, complete source rows (both), legacy capture, projection directional_grants, scoped account, and the subject and scoped subject reads of B's record. B, C, D, E and every other account are byte-identical.
+  - A's class lists none of B's grants. Every caller except the preserved export answers for A exactly what it answers with B's two grants deleted (in a savepoint), and the predecessor does not.
+  - The preserved export refuses A with either body (0A000), as before.
+  - Once the second notice is accepted, nobody's reads differ and A's class lists B's grants again. At 30 days they are left out again; C still holds its two. After the reminder they are listed again.
+- `supabase/tests/reviewed_document_decision.sql` (pgTAP, 51, rolled back). Six acceptances: e-signature and reviewed-document records, each in three cases (an account created after the request, an existing account, no account). Each goes through the real doors: the reviewed document's session, chunk, completion and clean scan; a named reviewer in an MFA session who reads every chunk and approves; finalize; the request mail claimed and opened; the account or token confirmation.
+  - Each record is confirmed through its own flow.
+  - The clocks each recorded: `scheduled:pending scheduled:pending` for both created-after acceptances, `scheduled:pending none` for both existing ones, none with no account, and the origin read for both reviewed-document acceptances.
+  - With the predecessor swapped in (md5 `91dfb6e4…`), every reviewed-document record answers `deny:not-found` to its uploader and to its person at every checkpoint, while the e-signature records answer the hold and the release (D-154). It is swapped back (`85be4781…`).
+  - Then, at each step, every checkpoint in order for the uploader and the person equals the e-signature record's in the same state:
+    - the hold, with the person's own analysis held and their rights not;
+    - anyone else not found;
+    - the existing account allowed;
+    - the result read and the export gate (refused during the hold; `path-b` for the existing account);
+    - with no account, no clock without a confirmed file and allowed once the person says yes;
+    - at 72 hours, queued but not sent, still held; the second notices sent to each person's account (`es-new rd-new`); released, with the uploader's read stopping only at the person's grant;
+    - at 30 days, every reviewed-document uploader denied `adult.re-notice-30d`, as the e-signature ones;
+    - the reminders sent (`es-new es-old rd-new rd-old`), with both account records allowed again and the no-account records denied for good.
+- `scripts/inviter-grants-and-reviewed-document-migration.test.ts` (8):
+  - the guarded header and its order after `20261001029000`, `20261016190000`, `20261120120000`, `20261122110000` and `20261122140000`, and that the release notes name it;
+  - no function, table, trigger, policy, constraint, grant or row write, and exactly two patches;
+  - none of the callers, readers or other changes' doors touched, and the question, clock reader and core only pinned;
+  - no later migration rewrites the two bodies;
+  - the five pinned bodies rebuilt from the migrations that defined and patched them (the decision through `20260930220000`, `20261016204000` and `20261120120000`; the core through `20261016190000` and `20261120120000`), their md5s recomputed, and the flow check's md5 recomputed from `20261016190000`'s text;
+  - each patch replayed to its successor;
+  - each pgTAP suite reverses exactly this migration's anchor;
+  - the class patch touches only the directional_grants branch, and the decision patch only the lookup;
+  - the suites' coverage.
+
+**Changed assertions (old, new, why).**
+- `supabase/tests/adult_acceptance_inviter_archive_reads.sql` › "(hold) the one difference is A's own class of grants received, which still counts B's two grants".
+  - Old: the held capture's class census differs from the no-grant census in exactly `directional_grants 2/0`.
+  - New: "(hold) and A's class census is the same too: A's own class of grants received does not count B's grants": the differences are `none`.
+  - Why: that one difference is what `20261122170000` removes under the owner's decision. The case now proves the census is the no-grant census.
+- The same suite › "(hold) those two rows carry no purpose and name no record".
+  - Old: A's directional_grants rows have the keys `created_at,…,status`, number 2, and name no record.
+  - New: "(hold) A's class of grants received lists none of B's grants": 0 rows.
+  - Why: the same. The comment above the savepoint and the suite's header bullet are updated to match.
+- `supabase/tests/adult_acceptance_hold_and_renotice.sql` › "the six patched bodies carry their pinned successors and unchanged privileges".
+  - Old: `c 91dfb6e4abf766e3da6e5827d4381daf`.
+  - New: `c 85be478145319e0c69dad7575e262941` when the decision's body names `path-b-reviewed-document`, else `c 91dfb6e4…` as before.
+  - Why: `20261122170000` patches the decision in place from exactly this suite's successor. The other 111 assertions run unchanged on the patched body and pass, with and without it.
+- `supabase/tests/path_b_no_account_uploader_gate.sql` › "the no-account branch carries the pinned successor body".
+  - Old: `md5(prosrc)` is `29c74c79…` before D-141, else `b7c33a43…`.
+  - New: the same, plus `5eea32fc3a2beee156568aa143fe19c2` when the body names `path-b-reviewed-document`.
+  - Why: the same patch. The no-account branch is unchanged, and the suite's other 36 assertions pass with and without it.
+- `scripts/adult-acceptance-hold-migration.test.ts` › "is the last word on nothing it pins: no later migration restates or patches those bodies".
+  - Old: no later file may `rewrites()` any of seven bodies.
+  - New: the same, except that `20261122170000` is not flagged for the decision or for Path B's account core. For that file the case asserts instead that:
+    - it creates neither;
+    - it pins the decision at `91dfb6e4…` and patches it as ordinal 2 from exactly that md5, through the one-anchor guard;
+    - the core occurs only in its predecessor block, pinned at `63c6c510…`.
+  - Why: the D-154 fix is an md5-guarded patch of this migration's successor, and the core pin is what the fix relies on. The two-substring heuristic cannot tell a guarded patch or a pin from a rewrite.
+- `scripts/adult-acceptance-inviter-reads-migration.test.ts` › "is the last word on what it patches and adds".
+  - Old (as integrated in 9e4ab372): one exemption, (`20261122140000`, the question), with its pin checked.
+  - New: a table of pinned-only exemptions: (`20261122140000`, the question) and (`20261122170000`, the question and the clock reader). For each, the name occurs only in that file's predecessor block, is pinned there at this migration's md5, and is never created.
+  - Why: the new migration pins both in its pre-check and patches two other bodies with `replace(definition…)`.
+
+**Planted defects** (database plants inside the suite's own rolled-back transaction, with the live bodies' md5s and the source files' sha256 read back unchanged after each; source plants restored byte-identical by sha256).
+
+| Plant | Caught by |
+|---|---|
+| The class does not ask (its condition removed) | grants suite: the md5 pin; "(hold) every read is made with the patched body and again with its exact predecessor"; "(hold) only A's reads differ …"; "(hold) for A, exactly the reads of the class of grants received differ …"; "(hold) the class of grants received read for A lists none of B's grants"; "(hold) every caller answers for A exactly what it answers when B has granted A nothing …"; "(30 d) from 30 days B's grants are left out again" (9 in all). Archive suite: "(hold) and A's class census is the same too …", "(hold) A's class of grants received lists none of B's grants" |
+| The class too broad (every account's subject grants left out) | grants suite: "(hold) only A's reads differ …"; "(hold) where the predecessor listed B's grants to A"; "(released) the class of grants received read for A lists B's two grants again …"; "(30 d) C still holds B's two grants to C"; "(reminded) and A's class lists them again"; the md5 pin (10 in all) |
+| The decision finds e-signature drafts only again | decision suite: "(rd-new) during the hold the uploader is denied at all eleven checkpoints"; "(rd-new) at each checkpoint, as for the e-signature record"; the person's hold and parity; "(rd-old) an existing account's uploader is allowed …"; "(rd-old) uploader and person …"; both result-read lines; the md5 pin and swap lines (11 in all), then the suite stops at the export gate |
+| The decision finds reviewed-document records but ignores their recorded clocks | decision suite: the person's hold lines; "(rd-new) released …" (3 lines); "(30 d) from 30 days every reviewed-document uploader is denied …"; "(30 d) at each checkpoint …"; "(reminded) …" (2 lines); the md5 pin and swap lines (12 in all) |
+| Source: the class patch inverted (lists only held grants) | migration test "replays each patch …", "only narrows the class …" |
+| Source: the decision lookup widened past the two Path B flows | migration test "replays each patch …", "only narrows the class … and only widens the decision's lookup …" |
+| Source: the migration names the question outside its pre-check | migration test "touches none of …"; the adjusted "is the last word on what it patches and adds" |
+| Source: the decision patched from another predecessor (D-141's) | migration test "replays each patch …"; the adjusted "is the last word on nothing it pins" in `adult-acceptance-hold-migration.test.ts` |
+
+**Other suites.** Before the forward apply, 120 suites were each run once without the migration and once with it applied inside the suite's own transaction. They are every suite that reads the archive, the exports, the class projection, Path B, the decision or the acceptance clocks: those naming `other_adult_mitigation`, `path_b`, `export`, `archive`, `class_projection`, `adult_acceptance`, `reviewed`, `subject_copilot` or a directional grant, or including `path_b_source_setup.inc`.
+- 117 gave identical results both ways.
+- The other three pass only with the migration: `inviter_grants_received` (16/25 without), `reviewed_document_decision` (stops without), and `adult_acceptance_inviter_archive_reads` (34/36 without: its two changed assertions).
+- 20 suites fail identically with and without, from the shared local database's state, not this change: `account_archive_member_frame`, `account_archive_readable_graph`, `account_deletion_own_grant_nonces`, `embryo_ingest_sessions`, `family_sharing`, `file_delete_live_exports_only`, `future_person_native_keyless_release`, `legal_audit_attribution_completeness`, `other_adult_upload_consent_withdrawal`, `own_upload_consent_withdrawal`, `path_b_confirmed_array_normalization`, `path_b_queued_reports`, `public_appeal_evidence_session`, `self_withdrawal_deletes_exports`, `subject_copilot_path_b`, `subject_delete`, `subject_delete_adult`, `subject_delete_reviewed_document`, `subject_transfer`, `uploader_withdrawal_hand_over`.
+
+After the forward apply (recorded md5 `e6f3e39a2a6545d204cc507ffc102015`, equal to the file): `inviter_grants_received` 25/25, `reviewed_document_decision` 51/51, `adult_acceptance_inviter_archive_reads` 36/36, `adult_acceptance_hold_and_renotice` 112/112, `path_b_no_account_uploader_gate` 37/37, `adult_acceptance_inviter_reads` 77/77, `path_b_reviewed_document` 85/85.
+
 ## 2026-11-22 — D-152 follow-up: a live whole-account copy that includes the record blocks deleting one file
 
 The owner's decision of 22 November ("Only a live download copy blocks deleting a single file") was offered and chosen as "A copy that is still being made or can still be downloaded keeps blocking, so nothing in a live download goes missing". `20261122130000` (entry above) made the per-file guard read only the record's own copies; a whole-account copy whose parts include the record is a download copy of that record too, and deleting one file made such a live copy unusable (its capture no longer matched, so an open download broke mid-way). This entry builds the rest.

@@ -1087,3 +1087,102 @@ Nothing in production, where no whole-account copy exists. Under the test jurisd
 ## Browser runs
 
 None applies: no browser spec deletes a single file while a whole-account copy exists (the browser suite has no generation capability). `supabase/tests/file_delete_live_account_copies.sql` drives every state through the database's doors.
+
+# Release notes: `20261122170000_inviter_grants_and_reviewed_document_decision.sql`
+
+Local work only. Nothing here was run against production or any hosted database. Two changes of 22 November 2026, each patched in place under the md5-guarded convention. Neither is reachable in production: Path A's own-account acceptance and both Path B flows need the test jurisdiction (every real jurisdiction is unreviewed for the capabilities that create an adult-subject invitation), so in production no acceptance clock exists, no inviter is held and no Path B record reaches the decision.
+
+1. **D-156, the inviter's class of grants received.** Owner decision of 22 November 2026, "The 72-hour hold covers an inviter's reads of the invited adult's own record" (`docs/protocol/decisions.md`): during either window the inviter sees nothing the adult shares with them. After `20261122140000` the inviter's own account archive still listed the adult's grants in its class of grants received (`directional_grants`): their ids, revisions, status and times, while the Family permissions page shows them as Off. That class now leaves them out.
+2. **D-154** (`docs/protocol/defects.md`). The mitigation decision found a Path B acceptance only through a confirmed `path-b-subject-esignature` draft, so a record made from a reviewed permission document (`path-b-reviewed-document`, `20261016190000`) answered `not-found` to its uploader and to its own person at every checkpoint, although the original download authority and the account export gate treat it as Path B. The decision now finds a confirmed draft of either Path B flow.
+
+## What it changes
+
+- No new function. Two bodies patched in place, each with the exact predecessor md5 and ACL `{postgres=X/postgres}`, one anchor, the successor md5 and unchanged ACL, volatility and owner asserted (55000 otherwise):
+  - `private.export_account_class_projection_v1(uuid,uuid[],text)` (`d729235af961ceaf364b7127a00a89cb` → `f90fe19ebd711a84f020556cbb46373b`). Its `directional_grants` branch gains one condition: a grant on a record that the reading account is held from, as answered by `private.adult_acceptance_inviter_held_v1(account, record)` (unchanged), is not listed. Every other class, and this class for every account the question does not hold, is unchanged. Every caller inherits it without change: the class inventory (and through it the preserved export's capture), the legacy classes (the legacy capture), the complete archive's class census, source rows and class rows, and the subject and scoped class projections (the one-record export). For the held inviter the native complete archive's capture, and the legacy capture inside it, are now exactly the captures with no grant from the adult. Once the second notice or the reminder is accepted the grants are listed again, with no job run.
+  - `private.other_adult_mitigation_before_public_appeal_v1(uuid,uuid,text)` (`91dfb6e4abf766e3da6e5827d4381daf` → `85be478145319e0c69dad7575e262941`, still STABLE SECURITY DEFINER with `search_path=pg_catalog`). The Path B lookup joins a confirmed draft whose `adult_flow` is `path-b-subject-esignature` or `path-b-reviewed-document`. A reviewed-document record now gets the e-signature record's answers at every checkpoint:
+    - the 72-hour hold, which releases once the second notice is accepted by the provider;
+    - the 30-day re-notice, which releases once the reminder is accepted;
+    - for a confirmation with no account, the live 730-day clock and the 30-day boundary;
+    - the person's own rights, which never wait, and their own analysis, which waits out the hold;
+    - `not-found` for anyone else.
+
+    D-141's clocks already covered these acceptances. The account branch (`private.confirm_path_b_subject_account_core_v1`, pinned) records the origin and starts both clocks for either flow, and both notices go to the person's account. The pgTAP suite proves this through the real doors.
+- Pinned, not changed: `private.adult_acceptance_inviter_held_v1` (`bd8cde3a947a35f7ae07d24175418515`), `private.adult_acceptance_clock_state_v1` (`6f566115c807f64e1c2a9413f2669fe1`), `private.confirm_path_b_subject_account_core_v1` (`63c6c510a724cbe747af5db354cb344b`), and the draft table's flow check (constraint md5 `5c8b24f18ac62ac45cd1c1647bdd2466`).
+- **Unchanged, and noted for the owner.**
+  - The preserved account export (the native archive off) reads nothing another account shares. It refuses any account holding a live recipient grant (0A000 `export_partition_projection_unavailable`, `private.export_account_ordinary_readable_authority_v1`), and it refuses the held inviter as before. With no grant from the adult it would not refuse. That refusal is the one remaining difference from "no grant", and only with the native archive off.
+  - The decision is one reader of a Path B record. Several other readers still join only `path-b-subject-esignature`, so a reviewed-document record still does not reach them:
+    - the person's choices page and person read (`private.path_b_person_choices_v1`, `private.path_b_person_v1`). Without them the person has no page to share with the uploader, and the uploader's reads stop at the person's own grant;
+    - the uploader's shares and report metadata (`private.path_b_uploader_shares_v1`, `private.path_b_report_metadata_v1`);
+    - the held files (`private.subject_held_files_v1`);
+    - the uploader's one-record Copilot (`private.subject_copilot_authority_v1`);
+    - the account export of Path B files (`private.export_account_path_b_file_v1`, `private.export_account_path_b_snapshot_v1`);
+    - the held-upload expiry and purged-grant cleanup (`public.expire_due_other_adult_held_uploads_v1`, `private.end_purged_path_b_grants_v1`).
+- No table, column, constraint, trigger, grant, queue, job or wording changes. Fingerprint effect: 2 `def_md5` values change; the `functions` and `tables` counts are unchanged.
+
+## Which releases must come first
+
+1. `20261001029000_account_archive_class_inventory.sql`, carried by the PR 323 guarded apply (`docs/evidence/pr323-production-apply-20261016/`). The production fingerprint recorded after that apply (`results/run-2026-10-22/fp-after-merge.json`) carries the class projection at `d729235af961ceaf364b7127a00a89cb`, and no later migration patches it.
+2. Release 1 (PR 324) for the reviewed-document flow (`20261016190000`). Release 4 for the decision and the clocks as `20261120120000` left them, and for the question (`20261122110000`). `20261122140000` (above) is not needed by the pre-check, but the releases run in order. Without them the predecessor block refuses (55000, `inviter grants and reviewed document decision prerequisite differs`).
+3. This migration. It does not touch the objects of `20261122120000`, `20261122130000` or `20261122150000` (other changes of the same day). Locally it was applied forward after them, which other sessions had already applied, and recorded.
+
+## Read-only pre-checks (one SELECT; the release session and its `search_path`)
+
+Stop unless every `must_be_*` holds.
+
+```sql
+select
+ (select count(distinct x.signature) from pg_proc p join (values
+   ('private.export_account_class_projection_v1(uuid,uuid[],text)','d729235af961ceaf364b7127a00a89cb'),
+   ('private.other_adult_mitigation_before_public_appeal_v1(uuid,uuid,text)','91dfb6e4abf766e3da6e5827d4381daf'),
+   ('private.adult_acceptance_inviter_held_v1(uuid,uuid)','bd8cde3a947a35f7ae07d24175418515'),
+   ('private.adult_acceptance_clock_state_v1(uuid)','6f566115c807f64e1c2a9413f2669fe1'),
+   ('private.confirm_path_b_subject_account_core_v1(text,text,integer,text,text[],bytea,uuid,uuid,text,boolean)','63c6c510a724cbe747af5db354cb344b')
+  ) as x(signature,body) on p.oid=to_regprocedure(x.signature) and md5(pg_get_functiondef(p.oid))=x.body
+   and p.proacl::text='{postgres=X/postgres}') as must_be_5_bodies_as_reviewed,
+ (select md5(pg_get_constraintdef(c.oid)) from pg_constraint c where c.conrelid='public.adult_subject_drafts'::regclass
+   and c.conname='adult_subject_drafts_adult_flow_check' and c.contype='c' and c.convalidated)='5c8b24f18ac62ac45cd1c1647bdd2466'
+   as must_be_true_draft_flows_as_reviewed,
+ (select count(*) from public.directional_grants d join public.purpose_grants g using(grant_id)
+   where g.target_kind='subject' and d.status='current' and d.recipient_account_id is not null
+    and private.adult_acceptance_inviter_held_v1(d.recipient_account_id,g.target_id)) as context_current_grants_to_held_inviters,
+ (select count(*) from public.adult_subject_drafts where adult_flow='path-b-reviewed-document' and state='confirmed')
+   as context_confirmed_reviewed_document_records,
+ (select count(*) from public.subject_invitations i join public.adult_subject_drafts d on d.subject_id=i.target_id
+   and d.adult_flow='path-b-reviewed-document' and d.state='confirmed'
+  where i.invitation_kind='adult_subject' and i.status='accepted') as context_accepted_reviewed_document_invitations,
+ current_user as context_current_user,
+ current_setting('search_path') as context_search_path;
+```
+
+Locally, before the forward apply, `must_be_5_bodies_as_reviewed` was 5 and `must_be_true_draft_flows_as_reviewed` true; after the migration, inside a rolled-back transaction, the count was 3 (the question, the clocks and the account core still match). Every `context_*` count was 0.The seven md5s are also recomputed from source by `scripts/inviter-grants-and-reviewed-document-migration.test.ts`. No pinned header prints a `public` or `private` type, so the md5s do not depend on `search_path`. Every `context_*` count is expected to be 0 in production. A non-zero `context_confirmed_reviewed_document_records` means reviewed-document records whose uploader and person this migration moves from `not-found` to the e-signature answers.
+
+## Locks and duration
+
+Catalog work only: two `create or replace function` through `execute`, each taking a lock on its own `pg_proc` row; no table is locked or scanned. Measured locally inside a rolled-back transaction: about 30 ms, the pre-checks included.
+
+## Deployed code between apply and deploy
+
+No application code changes. Every effect is in the two database bodies, so the deployed code reads them as soon as the migration is applied. Nothing changes in production, where no acceptance clock and no Path B record exist.
+
+## What a person sees
+
+Only in test mode. No new wording.
+
+- **The inviter, during either window.** The account export's and archive's list of grants received no longer includes the adult's grants. With the TEST archive on, the whole archive is the one with no grant from the adult. No page shows this list. When a clock clears the grants are listed again.
+- **The uploader of a reviewed-document record.** Until now every reader treated the record as not found, whatever its clocks. Now it gets an e-signature record's answers:
+  - during the hold, the result pages stop at the hold and the account export leaves the record out;
+  - once released, the reads stop only at the person's own grant, and the account export includes the record;
+  - from 30 days until the reminder is accepted, the record is held again;
+  - with no account, the record opens only while a confirmed file's 730-day clock is live, and never again from 30 days.
+
+  Because the person's choices page still lists only e-signature records (above), a reviewed-document person cannot yet share with the uploader from that page, so the uploader's reads stay at the person's own grant until the person shares through another door.
+- **The person on a reviewed-document record.** Their own rights now answer as the person's own rights do on an e-signature record (`subject-own-right-only`, never waiting). Their own analysis waits out the hold.
+
+## Pinned tests (local, this container)
+
+- `supabase/tests/inviter_grants_received.sql` (25 tests). It reads every caller of the class projection for every account in the database (the suite's five and every account other suites and browser runs left behind). It makes each read once with the patched body, and once with the predecessor rebuilt in place and swapped in. During the hold only the held inviter's reads differ, only in the reads of the class of grants received, and they equal the reads with the adult's grants deleted. Once released, nobody's reads differ. From 30 days until the reminder, the class again leaves the grants out.
+- `supabase/tests/reviewed_document_decision.sql` (51 tests). It drives one record of each Path B flow through the real doors (the reviewed document uploaded, scanned, read and approved by a named reviewer, then finalized; each request mailed, opened and confirmed) in three cases: an account created after the request, an existing account, and no account. It checks the clocks each acceptance recorded. It shows D-154 with the predecessor swapped in. It then compares the two flows at every checkpoint, for the uploader and the person, through the hold, both notices, the 30-day boundary and the reminder.
+- `scripts/inviter-grants-and-reviewed-document-migration.test.ts` (8). It rebuilds both predecessors and the three pinned bodies from the migrations that defined and patched them, recomputes every md5, and replays each patch to its successor. It also checks that the pgTAP suites reverse exactly this migration's anchors.
+- `supabase/tests/adult_acceptance_inviter_archive_reads.sql` now asserts that the held inviter's class census is the one with no grant. Its old assertion said the class still counted the adult's two grants.
+
+Before the forward apply, every suite that reads the archive, the exports, the class projection, Path B, the decision or the acceptance clocks (120 suites) was run without this migration and with it applied inside the suite's own transaction. 117 gave identical results both ways; the other three are this change's own suites and the archive suite whose assertion changed, which pass only with it. Twenty suites fail identically with and without it, from the shared local database's state, not from this change. After the forward apply: `inviter_grants_received` 25/25, `reviewed_document_decision` 51/51, `adult_acceptance_inviter_archive_reads` 36/36, `adult_acceptance_hold_and_renotice` 112/112, `path_b_no_account_uploader_gate` 37/37, `adult_acceptance_inviter_reads` 77/77 and `path_b_reviewed_document` 85/85.

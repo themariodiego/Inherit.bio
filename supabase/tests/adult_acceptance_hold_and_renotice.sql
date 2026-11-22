@@ -104,6 +104,10 @@ create function pg_temp.all_checkpoints(p_name text,p_account text) returns text
 $$;
 
 -- 0. The migration ---------------------------------------------------------------
+-- 20261122170000 (D-154) widens the decision's Path B lookup to both Path B
+-- flows, patched in place from exactly this suite's successor; with it
+-- applied the pin follows its successor. Every other line of the body is this
+-- migration's, and the rest of this suite runs on it unchanged.
 select is((select string_agg(x.label||' '||md5(pg_get_functiondef(p.oid))||' '||p.proacl::text,' | ' order by x.label)
  from (values
   ('a','private.adult_subject_invitation_response_v1(uuid,uuid,text,uuid,text)'),
@@ -114,7 +118,10 @@ select is((select string_agg(x.label||' '||md5(pg_get_functiondef(p.oid))||' '||
   ('f','public.authorize_invitation_terminal_mail_v1(uuid,smallint)')) x(label,signature)
  join pg_proc p on p.oid=x.signature::regprocedure),
  'a bb4234666d681aeb85f3d41ed9e5121a {postgres=X/postgres} | b 63c6c510a724cbe747af5db354cb344b {postgres=X/postgres} | '
- ||'c 91dfb6e4abf766e3da6e5827d4381daf {postgres=X/postgres} | d 591fc9f913fb7177ed86144a7ce654f4 {postgres=X/postgres} | '
+ ||'c '||case when position('path-b-reviewed-document' in (select prosrc from pg_proc
+  where oid='private.other_adult_mitigation_before_public_appeal_v1(uuid,uuid,text)'::regprocedure))>0
+  then '85be478145319e0c69dad7575e262941' else '91dfb6e4abf766e3da6e5827d4381daf' end
+ ||' {postgres=X/postgres} | d 591fc9f913fb7177ed86144a7ce654f4 {postgres=X/postgres} | '
  ||'e 3524eba4d0dd916bef2c4dac1e5c25cb {postgres=X/postgres,service_role=X/postgres} | '
  ||'f 5ba9fd2ef4bfa2c36ec0e2be4b97aeb5 {postgres=X/postgres,service_role=X/postgres}',
  'the six patched bodies carry their pinned successors and unchanged privileges');
