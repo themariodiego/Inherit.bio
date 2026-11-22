@@ -420,10 +420,11 @@ describe("the notices to an adult who accepted through their own account", () =>
 
 // 20261122100000: a record transfer's three notices (register
 // subject-ownership-transfer-v1), for the person's own act and for the
-// uploader's withdrawal, through the same queue. Their words are drafts for
-// the owner (src/copy/upload/subject-transfer-notices.ts) and nothing queues
-// them while the transfer is closed; this pins that they are the ones sent,
-// each under its own subject, with no name, link or address.
+// uploader's withdrawal, through the same queue. Their words were approved
+// on 22 November 2026, with one added line in the two emails to the person
+// who now holds the record (src/copy/upload/subject-transfer-notices.ts), and
+// the transfer opened with 20261122120000; this pins that they are the ones
+// sent, each under its own subject, with no name, link or address.
 describe("the record transfer's notices", () => {
   it.each(Object.entries(SUBJECT_TRANSFER_NOTICES))("%s says what moved and what ended, with no name, file, link or address",
     async (kind, copy) => {
@@ -441,6 +442,14 @@ describe("the record transfer's notices", () => {
       "subject-transfer-former-owner", "subject-transfer-new-owner", "withdrawal-transfer-former-owner",
       "withdrawal-transfer-new-owner"]);
     expect(new Set(Object.values(SUBJECT_TRANSFER_NOTICES).map(copy => copy.body)).size).toBe(5);
+  });
+
+  it("tells only the person who now holds the record that every download copy has stopped", async () => {
+    const line = "Any download copy of this record has stopped working. You can make a new one.";
+    for (const kind of Object.keys(SUBJECT_TRANSFER_NOTICES)) {
+      const html = stripMarkers(await renderMail({ id: "invitation-terminal-notice", payload: { kind } } as MailTemplate));
+      expect(html.includes(line), kind).toBe(kind.endsWith("-new-owner"));
+    }
   });
 });
 

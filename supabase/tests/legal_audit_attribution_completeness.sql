@@ -229,8 +229,10 @@ select is((select array_agg(md5(pg_get_functiondef(p.oid)) order by p.oid::regpr
  'private.legal_audit_person_event_v1(text,text)'::regprocedure)),
  -- 20261119170000 patched the event list once more, from exactly this
  -- migration's successor 56990e96581e5dc415222f44f09b5ac0 (its predecessor
- -- block pins that md5), adding one pair; this is that patch's successor.
- (select array_agg(m order by s) from (values ('private.legal_audit_person_event_v1(text,text)','73bd0200b7e272bec503eab70499e877'),
+ -- block pins that md5), adding one pair; and 20261122160000 (D-159) once
+ -- more, from exactly 20261119170000's successor 73bd0200b7e272bec503eab70499e877,
+ -- adding the hand-over's pair; this is that last patch's successor.
+ (select array_agg(m order by s) from (values ('private.legal_audit_person_event_v1(text,text)','f06ad94838f724581b457e800162a6bb'),
   ('private.record_subject_operation_nonce_v1(uuid,uuid,text,uuid,text,timestamptz)','71a7ae8e88edc449ddf24e28973c1a14'))x(s,m)),
  'each patched function is exactly its reviewed successor');
 select is((select pg_get_triggerdef(oid) from pg_trigger where tgname='legal_audit_actor_on_consumed_insert'),

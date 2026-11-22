@@ -18,10 +18,13 @@ import { withAccountCsrf } from "@/lib/security/session-csrf";
  * results stay readable under their own grants, and the uploader loses all
  * access. A record with a file still pending is not found.
  *
- * Built closed under the 2026-10-22 rule for wording nobody has approved:
- * the contract's three notices have no approved text, so the database door
- * answers not found and writes nothing until they do. This route is the
- * complete request contract in front of that door.
+ * Built closed under the 2026-10-22 rule for wording nobody has approved,
+ * and opened by migration 20261122120000 once the owner approved the
+ * contract's three notices (owner decision of 22 November 2026, "The
+ * transfer notices are approved, with one added line, and the transfer is
+ * switched on"): the database door runs the transfer and queues those
+ * notices. Path B, the only way such a record exists, is test mode only.
+ * This route is the complete request contract in front of that door.
  *
  * The body is exactly `{"nonce": "..."}`: the one-time code the
  * confirmation page renders for this route and this subject. Its hash is

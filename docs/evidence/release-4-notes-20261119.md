@@ -868,6 +868,92 @@ Those sentences say the adult has not shared, which is not so during the hold; t
 
 One production build of this change (test jurisdiction on), served by the standard runner (`scripts/run-upload-browser.mts --full`, the real Storage provider proxy) on the shared local database with this migration applied. `e2e/family.spec.ts`, whose Path A journey's invited adult has an account created before the invitation (no hold, and well inside 30 days), 13 of 13; `e2e/family-health-picture.spec.ts` 15 of 15; `e2e/portrait-no-file.spec.ts` (the Portrait pair read) 3 of 3; each "E2E contract passed … no skips, no retries". A first run of all three specs in one invocation passed `portrait-no-file` and the first four `family` tests, then stopped `family` and `family-health-picture` at the same early step: the invited adult's mailed review link answered "This link is unavailable. It may have expired or already been used." on `/withdraw/request`, before the acceptance and before anything this change reads. Both passed whole when run again, each on its own; the cause of that first refusal was not found. No browser journey drives the hold itself: a held acceptance needs an account created after the invitation and its clocks aged by 72 hours or 30 days, which `supabase/tests/adult_acceptance_inviter_reads.sql` does through the same database doors and `src/lib/family/graph-read.test.ts` checks on the application side.
 
+# Release notes: `20261122120000_subject_transfer_open.sql`
+
+Local work only. Nothing here was run against production or any hosted database. Owner decision of 22 November 2026, "The transfer notices are approved, with one added line, and the transfer is switched on" (`docs/protocol/decisions.md`): the strings of `docs/evidence/uploader-hand-over-20261122/transfer-wording.md` are approved, the two emails to the person who now holds the record gain "Any download copy of this record has stopped working. You can make a new one." (an app string; the queue carries only each notice's kind), and one guarded migration switches the transfer on. **This opens both acts at once**: the person's own "move this record into my account" (`api.subject-transfer`, `public.transfer_subject_v1`) and the uploader's withdrawal for a record the person holds with their own account (`api.subject-delete`, `public.withdraw_other_adult_upload_v1`), which hands the record to the person; the page's read (`public.other_adult_withdrawal_readiness_v1`) answers `hand-over`. Path B, the only way such a record exists, is TEST-LOCAL only; nothing here is reachable in production in any order of apply and deploy (below).
+
+## What it changes
+
+- One body replaced, `private.subject_transfer_open_v1()` (`c4b160e966711cf513e267673c4b5e2f` → `8d2e22d1e0c41c8bce0e43b9e45378d3`): `select false` → `select true`. Same signature, `immutable`, `search_path=''`, not `security definer`; `create or replace` keeps its ACL `{postgres=X/postgres}` (no API role may call it). Its three readers are unchanged: the person's door, the withdrawal door and the page's read.
+- Pinned before (and the transfer, its two doors, the read and the notice queue again after), not changed: `public.transfer_subject_v1` (`0fb41099ef95025c011084190ed1555f`), `public.withdraw_other_adult_upload_v1` (`c00c31ee8ba5848c95ea4b2384d07e61`), `public.other_adult_withdrawal_readiness_v1` (`29f041df82ed5defc7d4cc48fcb12e0f`), `private.transfer_subject_v1` (`e481de5f5eab53b6c596da66bc7b30fa`), `private.queue_subject_transfer_notices_v1` (`341a5dcd5f5d4dd8592efe4d4cc487eb`), the notice-kind check as `20261122100000` widened it (`13f8b2c8222dfff225325f6b0bb152c5`), the queue's insert trigger function (`689008df933e852391c20f6e8b3afd4a`) and recipient check (`e0728613189f2cbdfa05029c962767a5`), the terminal mail worker's claim (`3524eba4d0dd916bef2c4dac1e5c25cb`) and authorize (`5ba9fd2ef4bfa2c36ec0e2be4b97aeb5`) doors, `public.export_archive_cleanup_v1` (`25fa3ce71b73fb0c371d1bb9af836bd7`), `private.end_other_adult_held_upload_v1` (`0d5e9e5784297e1a1cb77aacfbe54a43`), `private.legal_audit_actor_principal_v1` (`7d74f4fc739c03a14c928b5c529ca83a`), `private.delete_pair_derived_rows_v1` (`8a094ce1d0a7ff92e00260204008dc07`) and the relocation worker's six service doors (`subject_transfer_relocation_work_v1` `b41281a0b8093cb6b08088d43b024404`, `claim_subject_transfer_relocation_v1` `b372f540becd7d760fefcc31b36338d6`, `swap_subject_transfer_relocation_v1` `bc2a13cbc7522274795eba64ac24c87d`, `fence_subject_transfer_relocation_v1` `df65b2547b006b73029821bed37eaf63`, `claim_subject_transfer_retirement_v1` `cfc2104768e444abd345e714a148d3d3`, `finish_subject_transfer_retirement_v1` `dba5d0a0e592ff7d34d38dc2ff11c566`). Any difference, or a switch that already answers true, refuses the whole migration (55000 `subject transfer open prerequisite differs`) before anything changes; the postflight asserts the new body, its ACL and that it answers true (55000 `subject transfer open successor differs`).
+- No table, column, index, trigger, check, policy or grant changes. Fingerprint effect: 1 `def_md5` changes.
+
+## Which releases must come first
+
+1. Release 2 for the transfer and its switch (`20261016221000`); release 1 for the terminal-notice queue (`20260906053451`) and the export cleanup door (`20260923123240`).
+2. In this release, `20261119160000`, `20261120120000`, `20261120130000` and `20261122100000` (every body it pins), in file order. Locally it was applied forward to the shared database after `20261122110000` (above) and recorded in `supabase_migrations.schema_migrations` as one statement whose text is the file's (md5 `79167f038f8caec65ece98340bd0c05f`, equal to the file's).
+
+## Read-only pre-checks (one SELECT; the release session and its `search_path`)
+
+Stop unless every `must_be_*` holds.
+
+```sql
+select
+ (select count(distinct x.signature) from pg_proc p join (values
+   ('private.subject_transfer_open_v1()','c4b160e966711cf513e267673c4b5e2f','{postgres=X/postgres}'),
+   ('public.transfer_subject_v1(uuid,uuid,uuid,text,timestamptz)','0fb41099ef95025c011084190ed1555f','{postgres=X/postgres,service_role=X/postgres}'),
+   ('public.withdraw_other_adult_upload_v1(uuid,uuid,uuid,text,timestamptz)','c00c31ee8ba5848c95ea4b2384d07e61','{postgres=X/postgres,service_role=X/postgres}'),
+   ('public.other_adult_withdrawal_readiness_v1(uuid,uuid)','29f041df82ed5defc7d4cc48fcb12e0f','{postgres=X/postgres,service_role=X/postgres}'),
+   ('private.transfer_subject_v1(uuid,uuid,uuid,text,timestamptz)','e481de5f5eab53b6c596da66bc7b30fa','{postgres=X/postgres}'),
+   ('private.queue_subject_transfer_notices_v1(uuid,boolean,uuid[],uuid[])','341a5dcd5f5d4dd8592efe4d4cc487eb','{postgres=X/postgres}'),
+   ('private.enqueue_invitation_terminal_notice_v1()','689008df933e852391c20f6e8b3afd4a','{postgres=X/postgres}'),
+   ('private.invitation_notice_recipient_current_v1(uuid)','e0728613189f2cbdfa05029c962767a5','{postgres=X/postgres}'),
+   ('public.claim_invitation_terminal_mail_v1()','3524eba4d0dd916bef2c4dac1e5c25cb','{postgres=X/postgres,service_role=X/postgres}'),
+   ('public.authorize_invitation_terminal_mail_v1(uuid,smallint)','5ba9fd2ef4bfa2c36ec0e2be4b97aeb5','{postgres=X/postgres,service_role=X/postgres}'),
+   ('public.export_archive_cleanup_v1(text,uuid,uuid,jsonb)','25fa3ce71b73fb0c371d1bb9af836bd7','{postgres=X/postgres,service_role=X/postgres}'),
+   ('private.end_other_adult_held_upload_v1(uuid,text)','0d5e9e5784297e1a1cb77aacfbe54a43','{postgres=X/postgres}'),
+   ('private.legal_audit_actor_principal_v1(text,text)','7d74f4fc739c03a14c928b5c529ca83a','{postgres=X/postgres}'),
+   ('private.delete_pair_derived_rows_v1(uuid[],uuid,uuid[],text)','8a094ce1d0a7ff92e00260204008dc07','{postgres=X/postgres,service_role=X/postgres}'),
+   ('public.subject_transfer_relocation_work_v1(boolean)','b41281a0b8093cb6b08088d43b024404','{postgres=X/postgres,service_role=X/postgres}'),
+   ('public.claim_subject_transfer_relocation_v1(uuid,text,boolean)','b372f540becd7d760fefcc31b36338d6','{postgres=X/postgres,service_role=X/postgres}'),
+   ('public.swap_subject_transfer_relocation_v1(uuid,text,uuid,bigint,text,boolean)','bc2a13cbc7522274795eba64ac24c87d','{postgres=X/postgres,service_role=X/postgres}'),
+   ('public.fence_subject_transfer_relocation_v1(uuid,text,boolean)','df65b2547b006b73029821bed37eaf63','{postgres=X/postgres,service_role=X/postgres}'),
+   ('public.claim_subject_transfer_retirement_v1(uuid,text,boolean)','cfc2104768e444abd345e714a148d3d3','{postgres=X/postgres,service_role=X/postgres}'),
+   ('public.finish_subject_transfer_retirement_v1(uuid,text,boolean)','dba5d0a0e592ff7d34d38dc2ff11c566','{postgres=X/postgres,service_role=X/postgres}')
+  ) as x(signature,body,acl) on p.oid=to_regprocedure(x.signature) and md5(pg_get_functiondef(p.oid))=x.body
+   and p.proacl::text=x.acl) as must_be_20_bodies_as_reviewed,
+ (select private.subject_transfer_open_v1()) as must_be_false_transfer_switch,
+ (select md5(pg_get_constraintdef(c.oid)) from pg_constraint c where c.conrelid='private.invitation_terminal_notices'::regclass
+   and c.conname='invitation_terminal_notices_notice_kind_check' and c.contype='c' and c.convalidated)
+   ='13f8b2c8222dfff225325f6b0bb152c5' as must_be_true_notice_kinds_as_reviewed,
+ (select count(*) from public.subjects where subject_class='other_adult' and upload_class='adult' and lifecycle='active'
+   and subject_account_id is not null and owner_account_id is distinct from subject_account_id) as context_records_a_transfer_could_reach,
+ (select count(*) from public.subjects where ownership_transferred_at is not null) as context_transferred_records,
+ (select count(*) from private.invitation_terminal_notices where notice_kind like 'subject-transfer-%' or notice_kind like 'withdrawal-transfer-%')
+   as context_transfer_notices,
+ current_user as context_current_user,
+ current_setting('search_path') as context_search_path;
+```
+
+Locally, with the switch put back to its closed body inside a rolled-back transaction (the shared database already holds this migration), every `must_be_*` held (20, false, true); after the apply the same query reads 19 (the switch is the body that changed), true, true. The pinned md5s are recomputed from source by `scripts/subject-transfer-open-migration.test.ts` (those `20261122100000` patched by replaying its patches; those several migrations wrote, traced to the md5 the last of them asserts). No pinned header prints a `public` or `private` type, so the md5s do not depend on `search_path`. `context_records_a_transfer_could_reach` read 14 locally (left by browser runs) and is expected to be 0 in production; the other two context counts read 0.
+
+## Locks and duration
+
+`create or replace function` on one SQL function: catalog work only, no table lock; the predecessor and postflight read the catalog and call the switch once each. Measured locally inside a rolled-back transaction, with the switch first put back to its closed body: 8 to 12 ms, both checks included. Every call that starts after the commit reads the new body (the pgTAP suites replace the switch inside their own transactions and see the new answer at once).
+
+## Deployed code between apply and deploy
+
+- **Migration applied, code not yet deployed (the expected order).** The switch is open, so the person's door transfers, the uploader's card (already deployed with `20261122100000`'s code) reads `hand-over` and shows the approved hand-over strings, and the withdrawal hands the record over. The notices are queued and the deployed mail worker sends them with the words deployed before this change: the two emails to the person who now holds the record lack the added line and say nothing about download copies; every other string is as approved. (The code of `20261122100000`, which knows the five kinds, ships before this migration is applied.)
+- **Code deployed, migration not yet applied.** The emails carry the added line, but nothing queues them: the switch is closed, the doors refuse as before, and the card reads `account-held` and offers nothing. Nothing changes.
+- **Both.** As approved. In production Path B is not open, so none of this is reachable in any window.
+
+## Production reachability
+
+Nothing opens in production, for three independent reasons. (1) Production's database does not hold the transfer at all: on 20 November its migration ledger, read through the Supabase connector, stopped at `20261011010251` (`docs/protocol/decisions.md`, "PR 324's release: the Supabase connector reads production, and what it cannot carry"), before `20261016221000` and every later release; this migration reaches it only through the guarded release, after releases 1 and 2 and this release's earlier migrations. (2) A record either act can reach must be a confirmed Path B record (`adult_subject_drafts.adult_flow` one of the two Path B flows, state `confirmed`, checked by `private.transfer_subject_v1`), and Path B is created only under the test jurisdiction: `otherAdultUploadAvailable` requires `INHERIT_TEST_JURISDICTION=1` and the `third_party_adult_analysis` capability, which no real jurisdiction permits, and `next.config.ts` refuses to build a production deployment with `INHERIT_TEST_JURISDICTION=1`. (3) The relocation worker's doors refuse outside TEST-LOCAL (`p_test_jurisdiction`). The pre-check's `context_records_a_transfer_could_reach` is the receipt for (2) on the day of the release.
+
+## What a person sees
+
+Only under the test jurisdiction. The uploader's card for a person who holds the record with their own account says the record becomes theirs; the confirmation lists what moves, what is deleted and what the uploader loses; the receipt says the record is now theirs. The emails go to the person who now holds the record, to the uploader, and to any other account whose permission or link on the record ended (none in practice: no door lets a Path B person share with a third account). The person's own move has a route (`api.subject-transfer`) and no page yet: no page renders its one-time code.
+
+## Checked before the line was added
+
+- Every download copy that holds the record stops, the person's own included (`supabase/tests/subject_transfer_open.sql`): the export of the record is stopped through the cleanup door and revoked, and every whole-account export the record is part of (the person's, the uploader's, and another account's that holds its link to the record) fails `private.export_archive_current_v1`, which every open and every chunk of a copy runs, because the record's row changed; live download sessions of the record, its files or its exports are revoked.
+- **Not true with this migration alone: "You can make a new one."** After either act, the export authority refuses the person a new export of the record and of their whole account (42501 from `private.path_b_person_v1`, reached through `private.export_account_path_b_file_v1`, which still reads the record's files as Path B files once the person owns them), before and after the relocation worker swaps the file; "Download your data" (`GET /api/export`) lists none of the record's files either (D-162). `20261122160000` (below) makes the sentence true; the two land in this release together. The approved wording is unchanged.
+
+## Browser runs (local, this container)
+
+See the test-diff register entry drafted with this change for the runs against one production build of this change, with this migration applied forward to the shared local database.
+
 # Release notes: `20261122130000_file_delete_live_exports_only.sql` (D-152, both halves)
 
 Local work only. Nothing here was run against production or any hosted database. Two owner decisions of 22 November 2026 (`docs/protocol/decisions.md`) close D-152 (`docs/protocol/defects.md`):
@@ -1087,6 +1173,99 @@ Nothing in production, where no whole-account copy exists. Under the test jurisd
 ## Browser runs
 
 None applies: no browser spec deletes a single file while a whole-account copy exists (the browser suite has no generation capability). `supabase/tests/file_delete_live_account_copies.sql` drives every state through the database's doors.
+
+# Release notes: `20261122160000_transferred_record_exports.sql`
+
+Local work only. Nothing here was run against production or any hosted database. Three defect rows and owner decisions of 22 November 2026 (`docs/protocol/defects.md`, `docs/protocol/decisions.md`), all about the transfer that `20261122120000` (above) opens:
+
+- **D-162.** After a transfer (the person's own move, or the uploader's hand-over) the person could make no new export of the record, nor of their whole account, and "Download your data" listed none of its files. The approved new-owner emails say "You can make a new one." This migration makes that true for the e-signature flow (below).
+- **D-158**, owner decision "A hand-over refused for now says to try later (D-158)": when the uploader's hand-over is refused at that moment (a file still being validated, a file of an unexpected shape, the person's account gone), the card now says "This cannot be done right now. Nothing was deleted. Try again later." Every other refusal keeps its words.
+- **D-159.** The hand-over records `subject.ownership_transferred` on `api.subject-delete`; that pair joins the closed list of person-caused events.
+
+Path B, the only way a transferred record exists, is TEST-LOCAL only; nothing here is reachable in production in any order of apply and deploy (below).
+
+## What it changes
+
+- **Two new read helpers**, `security definer`, `search_path=''`, ACL `{postgres=X/postgres}` (revoked from `public`, `anon`, `authenticated`, `inherit_upload_only` and `service_role`): `private.transferred_export_person_v1(uuid,uuid,uuid)` and `private.transferred_export_confirmation_v1(uuid)`. For a record transferred to the caller they answer what `private.path_b_person_v1` and `private.path_b_subject_v1` answer before a transfer, in the same shape: the person's live session and current account, the record theirs by its one transfer row, the confirmed e-signature request as the uploader's account made it, the person's own active principal, its current contact and its confirmation signature. No uploader identity (`uploaderAccountId` and `uploaderPrincipalId` are null).
+- **Five bodies patched in place** under the md5-guarded convention (the exact predecessor md5 and ACL, one anchor per patch, the successor md5 and unchanged ACL asserted, 55000 otherwise):
+  - `private.export_account_ordinary_readable_authority_v1(jsonb,text,uuid)` (`611957debd6025a4f5c4710a596d67cf` → `583e9efa4a60f086e3875fc40e03f491`, two patches): the per-record and whole-account capture of a Path B record asks the two new helpers when the record is transferred, and finds the request under the account that made it. Every other record reads exactly as before.
+  - `private.export_account_path_b_snapshot_v1(jsonb,uuid)` (`4cc6a1afc5be8b0d8163f3c14a6f23e8` → `b9ae87c681a443f9ac3fb1846a69520b`, three patches): for a transferred record, the person's own check, and their saved results read through the transferred reader's own currency check (`private.transferred_report_binding_current_v1`, as `private.path_b_report_results_v1` reads them after a transfer) instead of the uploader-bound report authority; a file without a saved result of the person's is no longer a refusal there (the transfer deleted every other result).
+  - `private.own_export_source_v1(uuid,uuid,uuid)` (`27abc582be0eb4a227a7cdeb57c29d6f` → `a8000a6cccd2fce9c2b285ab268ed642`, five patches): a file transferred to the caller is their own source. The person's own principal and the transfer row stand in for the ordinary binding row a Path B record never has. Before the relocation worker's swap the file is read through the exact object the transfer recorded (its relocation row, still queued or copying, the same key, size and hash); after the swap, through its own storage object as before. Its Path B normalization counts. This serves "Download your data" (`own_subject_export_content_v1`) and every other own-source reader.
+  - `private.transfer_subject_v1(uuid,uuid,uuid,text,timestamptz)` (`e481de5f5eab53b6c596da66bc7b30fa` → `0bb151e8b9849da4f6671237efc3d4c4`, three patches): on the uploader's withdrawal only, the three refusals above raise 55000 `hand_over_not_now` instead of 42501 `not_found`. Nothing is written, as before. The person's own act and every other refusal are unchanged.
+  - `private.legal_audit_person_event_v1(text,text)` (`73bd0200b7e272bec503eab70499e877` → `f06ad94838f724581b457e800162a6bb`, one patch): adds `('api.subject-delete','subject.ownership_transferred')`.
+- Pinned and not changed: `private.export_account_path_b_file_v1` (`71e1c10e7b5410f4cb4b77c7ccc10577`), `private.path_b_person_v1` (`9f0434499b394a5c8ece4151838918e3`), `private.path_b_subject_v1` (`d174a83682e35479797ac7e738a65d79`), `private.transferred_report_binding_current_v1` (`07229b62253f40cc419a32c4b34b1099`) and `private.path_b_account_current_v1` (`6372a00f8c0f10e512a31dcf7455333b`). The predecessor block also refuses if either helper already exists (55000 `transferred record exports prerequisite differs`). The postflight asserts the five successors with their ACLs, and both helpers as `security definer`, `search_path=""` and `{postgres=X/postgres}` (55000 `transferred record exports successor differs`).
+- No table, column, constraint, trigger, grant, queue or job changes. Fingerprint effect: 5 `def_md5` values change and the `functions` count rises by 2.
+- **App, with this migration.** `api.subject-delete` answers 55000 `hand_over_not_now` with 409 `{"error":"try_later"}` (`hand-over-not-now-v1`, registered); every other refusal is still the opaque 404. The withdrawal client reads that 409 as "not now" only for a hand-over, and the card shows the approved line.
+
+## What it does not cover: a record made from a reviewed permission document
+
+The transfer accepts both Path B flows. A record made from a reviewed permission document (`path-b-reviewed-document`) and confirmed by its person with their own account could not be exported by that person before a transfer, and still cannot after one: the Path B export reads only the e-signature flow (`private.export_account_path_b_file_v1`), and the native archive's gate meets D-154's lookup. Probed locally inside a rolled-back transaction, with the suite's record relabelled as that flow: the per-record and whole-account captures refuse (42501) before and after the person's move, with the complete archive off and on; after the move "Download your data" lists the file. For that flow "You can make a new one." is not true. Drafted as a new defect for the orchestrator; it is not changed here.
+
+## Which releases must come first
+
+1. `20261001039000` (the two export bodies, carried by the PR 323 guarded apply), release 2's `20261016221000` (the transfer and its post-transfer readers) and `20260909001117` (the own-source body as later pinned).
+2. In this release, in file order: `20261119170000` (the person-caused event list at `73bd0200…`), `20261122100000` (the transfer at `e481de5f…`), `20261122120000` (the switch), and `20261122130000` and `20261122150000` (above), each of which pins the own-source body at `27abc582…` and does not change it. Apply this migration in the same release as `20261122120000`: without it, the switch is open and the new-owner emails promise a new copy the person cannot make. Locally it was applied forward to the shared database after `20261122140000` and recorded in `supabase_migrations.schema_migrations` as one statement whose text is the file's (md5 `93297ca23d405a7ff4903d4bcf25b30f`, equal to the file's). `20261122150000` was applied to the shared database before this migration; `20261122170000` (below) patches neither a body this migration patches nor one it pins.
+
+## Read-only pre-checks (one SELECT; the release session and its `search_path`)
+
+Stop unless every `must_be_*` holds.
+
+```sql
+select
+ (select count(distinct x.signature) from pg_proc p join (values
+   ('private.export_account_ordinary_readable_authority_v1(jsonb,text,uuid)','611957debd6025a4f5c4710a596d67cf','{postgres=X/postgres}'),
+   ('private.export_account_path_b_snapshot_v1(jsonb,uuid)','4cc6a1afc5be8b0d8163f3c14a6f23e8','{postgres=X/postgres}'),
+   ('private.own_export_source_v1(uuid,uuid,uuid)','27abc582be0eb4a227a7cdeb57c29d6f','{postgres=X/postgres,service_role=X/postgres}'),
+   ('private.transfer_subject_v1(uuid,uuid,uuid,text,timestamptz)','e481de5f5eab53b6c596da66bc7b30fa','{postgres=X/postgres}'),
+   ('private.legal_audit_person_event_v1(text,text)','73bd0200b7e272bec503eab70499e877','{postgres=X/postgres}'),
+   ('private.export_account_path_b_file_v1(uuid)','71e1c10e7b5410f4cb4b77c7ccc10577','{postgres=X/postgres}'),
+   ('private.path_b_person_v1(uuid,uuid,uuid)','9f0434499b394a5c8ece4151838918e3','{postgres=X/postgres}'),
+   ('private.path_b_subject_v1(uuid,uuid)','d174a83682e35479797ac7e738a65d79','{postgres=X/postgres,service_role=X/postgres}'),
+   ('private.transferred_report_binding_current_v1(uuid,uuid)','07229b62253f40cc419a32c4b34b1099','{postgres=X/postgres}'),
+   ('private.path_b_account_current_v1(uuid)','6372a00f8c0f10e512a31dcf7455333b','{postgres=X/postgres}')
+  ) as x(signature,body,acl) on p.oid=to_regprocedure(x.signature) and md5(pg_get_functiondef(p.oid))=x.body
+   and p.proacl::text=x.acl) as must_be_10_bodies_as_reviewed,
+ (select count(*) from (values (to_regprocedure('private.transferred_export_person_v1(uuid,uuid,uuid)')),
+   (to_regprocedure('private.transferred_export_confirmation_v1(uuid)'))) h(oid) where h.oid is not null) as must_be_0_new_helpers,
+ (select count(*) from public.subjects where ownership_transferred_at is not null) as context_transferred_records,
+ (select count(*) from private.subject_transfer_relocations where state in ('queued','copying')) as context_relocations_not_swapped,
+ (select count(*) from public.generated_exports e join public.subjects s on s.id=e.target_id
+   where e.target_kind='subject' and s.ownership_transferred_at is not null) as context_exports_of_transferred_records,
+ current_user as context_current_user,
+ current_setting('search_path') as context_search_path;
+```
+
+Locally, in the predecessor state rebuilt inside a rolled-back transaction (the fourteen patches undone in reverse, each body back at its predecessor md5, the two helpers dropped), every `must_be_*` held (10, 0), under the default search path and under `search_path=''` alike; the same query after the forward apply reads 5 (the five patched bodies no longer match) and 2. The context was 1, 1 and 0: one transfer committed by a browser run of `e2e/other-adult-upload-withdrawal.spec.ts`, its relocation not yet swapped (no relocation worker runs locally). The four predecessor bodies this migration patches and has a single source for, and the two pinned helpers with one source, are recomputed from source by `scripts/transferred-record-exports-migration.test.ts` (the transfer by replaying `20261122100000`'s patches); the others are traced to the md5 the last migration that wrote them asserts. No pinned header prints a `public` or `private` type, so the md5s do not depend on `search_path`. All three context counts are expected to be 0 in production.
+
+## Locks and duration
+
+Catalog work only: two `create function`, five `create or replace function` through `execute` (each locks its own `pg_proc` row), two `revoke`; no table is locked or scanned. Measured locally inside a rolled-back transaction, from the rebuilt predecessor state: about 34 ms, the predecessor and postflight blocks included. Every call that starts after the commit reads the new bodies.
+
+## Deployed code between apply and deploy
+
+- **Migration applied, code not yet deployed (the expected order).** Exports and "Download your data" work for a transferred record at once (database only). The three hand-over refusals answer 55000 `hand_over_not_now`; the deployed route counts 55000 among its refusals and answers the opaque 404, so the deployed card shows "This did not work. Nothing was deleted. Please try again.", as before. The legal audit counts the hand-over's event as the person's. Nothing else changes.
+- **Code deployed, migration not yet applied.** The route never meets `hand_over_not_now`, so the card shows the same words as before. If `20261122120000` is applied and this one is not, the person cannot yet make the new copy the emails promise (the reason this migration is in the same release).
+- **Both.** As described above. In production Path B is not open, so none of this is reachable in any window.
+
+## Production reachability
+
+Nothing here is reachable in production, for the reasons given for `20261122120000` (above): production's database does not hold the transfer (its ledger stopped at `20261011010251` on 20 November), a transferred record must be a confirmed Path B record, and Path B is created only under the test jurisdiction (`next.config.ts` refuses a production build with `INHERIT_TEST_JURISDICTION=1`). The pre-check's `context_transferred_records` is the receipt on the day of the release.
+
+## What a person sees
+
+Only under the test jurisdiction.
+
+- **The person who now holds the record.** At once after either act they can make a new copy of the record and of their whole account, each with the record in it, and open and read it; "Download your data" lists the record's confirmed file. This holds before and after the relocation worker moves the file. One limit, observed locally and not asserted: a whole-account copy made before the worker's move stops at the move (the account's own file rows change), while a per-record copy made then still works; a new one made after the move works. No code runs the relocation worker today (only its tests call it), so locally a transfer's file is never moved and that window never closes. (A record made from a reviewed permission document is not covered, above.)
+- **The uploader who hands the record over, when it cannot be done at that moment.** The card says "This cannot be done right now. Nothing was deleted. Try again later." instead of "This did not work. Nothing was deleted. Please try again." Nothing changed, so they can try again.
+- **The former uploader.** Still exports nothing of the record.
+
+## Pinned tests (local, this container)
+
+`supabase/tests/transferred_record_exports.sql` (57 tests) builds a confirmed e-signature record through the real doors and drives the person's own move and the uploader's hand-over. After each act it checks, before and after the relocation worker's swap: both captures, with the TEST complete account archive off and (inside a probe) on, each with the record in it; a new READY copy of each that opens and reads; "Download your data" listing the file through the exact object the transfer recorded, then its new object, with its variants and its check round trip; the former uploader and an outsider refused. It also checks the three D-158 refusals (nothing written) and that the person's own move and every other refusal stay opaque, and the D-159 list. `scripts/transferred-record-exports-migration.test.ts` (10) rebuilds every body it can from source, recomputes the pinned md5s and replays each of the fourteen patches to its asserted successor. Seven database plants (one patch undone each, or the D-158 refusal widened to the person's own act) and nine file plants were each caught and restored. Every other suite that reads the export doors, the own-source reads, the transfer or the audit passes with this migration (the register entry lists them, and the four whose assertions changed with it); each suite that fails on the shared local database fails identically with this migration undone inside its transaction.
+
+## Browser runs (local, this container)
+
+See the test-diff register entry drafted with this change.
 
 # Release notes: `20261122170000_inviter_grants_and_reviewed_document_decision.sql`
 

@@ -242,7 +242,9 @@ describe("the scope and its conversations", () => {
       "the page context is single use", "an authority for B cannot be checked against another person's record".replace("'", "''")]],
     [uploader, ["the uploader cannot sign the person''s Copilot choice for themselves", "from 30 days the mitigation decision holds the record",
       "the person turning Copilot off closes the scope", "every conversation about the purged record is deleted",
-      "the uploader''s withdrawal is refused for a record the person holds", "a turn never commits under a cloud provider"]]] as const) {
+      // 2026-11-22 (20261122120000): the transfer is open, so the withdrawal hands the record over.
+      "the uploader''s withdrawal hands a record the person holds with their own account to the person",
+      "and every turn of the uploader''s that read the record is deleted", "a turn never commits under a cloud provider"]]] as const) {
       for (const fragment of fragments) expect(suite, fragment).toContain(fragment);
       expect(suite.trimEnd().endsWith("rollback;")).toBe(true);
     }

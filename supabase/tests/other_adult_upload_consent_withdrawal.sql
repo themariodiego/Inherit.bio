@@ -3,9 +3,12 @@
 -- November 2026, "An uploader's withdrawal for another adult's file deletes
 -- it, unless that adult holds the record themselves"). With no account of
 -- the person's own on the record, the uploader's whole-record delete runs
--- unchanged and the person gets a notice, unless barred; on a record the
--- person holds with their own account nothing changes. Synthetic accounts,
--- HMACs and files only. Everything rolls back.
+-- unchanged and the person gets a notice, unless barred. On a record the
+-- person holds with their own account the withdrawal hands the record to the
+-- person through the transfer, open since 20261122120000 (owner decisions of
+-- 22 November 2026; supabase/tests/uploader_withdrawal_hand_over.sql and
+-- subject_transfer_open.sql drive it in full); here it is probed and undone.
+-- Synthetic accounts, HMACs and files only. Everything rolls back.
 begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path=public,extensions;
@@ -52,10 +55,17 @@ create function pg_temp.del(p_account text, p_subject uuid, p_code text) returns
    clock_timestamp() + interval '5 minutes') $$;
 create function pg_temp.ready(p_account text, p_subject uuid) returns text language sql stable as
  $$ select public.other_adult_withdrawal_readiness_v1(pg_temp.a(p_account), p_subject) $$;
+-- D-161: each count reads only this suite's own rows (its records' requests,
+-- its synthetic accounts' codes), so rows earlier local runs committed to a
+-- shared database are not counted; on a fresh database nothing changes.
+create function pg_temp.mine(p_invitation uuid) returns boolean language sql as
+ $$ select p_invitation in (select pg_temp.invitation_of(subject_id) from fx) $$;
 create function pg_temp.notices() returns bigint language sql as
- $$ select count(*) from private.invitation_terminal_notices where notice_kind='upload-permission-withdrawn' $$;
+ $$ select count(*) from private.invitation_terminal_notices where notice_kind='upload-permission-withdrawn'
+   and pg_temp.mine(invitation_id) $$;
 create function pg_temp.codes() returns bigint language sql as
- $$ select count(*) from public.account_operation_nonces where operation='subject_delete' $$;
+ $$ select count(*) from public.account_operation_nonces where operation='subject_delete'
+   and account_id in (select pg_temp.a(x) from unnest(array['1','2','3','4','9']) x) $$;
 -- Runs a setup and a call, reads one observation, then undoes all three.
 create function pg_temp.probe(p_setup text,p_call text,p_observe text default 'select null::text')
 returns text language plpgsql as $$
@@ -97,7 +107,8 @@ select ok(not has_function_privilege('authenticated','public.withdraw_other_adul
 
 -- The page's read ---------------------------------------------------------------
 select is(pg_temp.ready('1',pg_temp.sid('nb')),'ready','the uploader may withdraw for a person with no account of their own');
-select is(pg_temp.ready('1',pg_temp.sid('acct')),'account-held','the read names the own-account branch');
+select is(pg_temp.ready('1',pg_temp.sid('acct')),'hand-over',
+ 'the read names the own-account branch: with the transfer open (20261122120000), a hand-over');
 select throws_ok($$select pg_temp.ready('9',pg_temp.sid('nb'))$$,'42501','not_found','an outsider reads nothing');
 select throws_ok($$select pg_temp.ready('2',pg_temp.sid('acct'))$$,'42501','not_found',
  'the person holding the record is not its uploader');
@@ -111,8 +122,10 @@ select throws_ok($$select public.withdraw_other_adult_upload_v1(null,pg_temp.s('
 select throws_ok($$select pg_temp.wd('9',pg_temp.sid('nb'),'outsider')$$,'42501','not_found','an outsider cannot withdraw');
 select throws_ok($$select pg_temp.wd('2',pg_temp.sid('acct'),'person')$$,'42501','not_found',
  'the person cannot use the uploader''s withdrawal on their own record');
-select throws_ok($$select pg_temp.wd('1',pg_temp.sid('acct'),'account-held')$$,'42501','other_adult_withdrawal_account_held',
- 'the own-account branch is refused');
+select is(pg_temp.probe('select 1',$$select pg_temp.wd('1',pg_temp.sid('acct'),'account-held')::text$$,
+  $$select owner_account_id::text from public.subjects where id=pg_temp.sid('acct')$$),
+ '{"case": "adult"} / '||pg_temp.a('2')::text,
+ 'the own-account branch hands the record to the person through the transfer (probed, then undone)');
 select throws_ok($$select pg_temp.del('1',pg_temp.sid('acct'),'direct')$$,'42501','not_found',
  'and the uploader can no longer delete that record through the delete door either');
 select is(pg_temp.probe($$delete from public.invitation_candidates where invitation_id=(select invitation from before_state);
@@ -167,30 +180,32 @@ select ok((select n.invitation_id=(select invitation from before_state) and n.re
   and n.expires_at=n.created_at+interval '7 days'
   and n.idempotency_key=encode(extensions.digest(convert_to('upload-permission-withdrawn-v1|'||pg_temp.sid('nb')::text||'|'
    ||pg_temp.h('withdraw'),'UTF8'),'sha256'),'hex')
-  from private.invitation_terminal_notices n where n.notice_kind='upload-permission-withdrawn'),
+  from private.invitation_terminal_notices n where n.notice_kind='upload-permission-withdrawn' and pg_temp.mine(n.invitation_id)),
  'to the person''s own sealed contact, bound to the request they accepted, for seven days, keyed by the spent code');
 select ok((select m.template_id='invitation-terminal-notice' and m.purpose='invitation-terminal-notice'
   and m.template_payload='{"kind":"upload-permission-withdrawn"}'::jsonb and m.target_kind='subject_invitation'
   and m.target_id=(select invitation from before_state) and m.state='queued' and m.token_purpose is null
   and m.recipient_principal_id is null and m.contact_reference_id is null
   from public.mail_outbox m join private.invitation_terminal_notices n on n.id=m.invitation_terminal_notice_id
-  where n.notice_kind='upload-permission-withdrawn'),
+  where n.notice_kind='upload-permission-withdrawn' and pg_temp.mine(n.invitation_id)),
  'its one mail row carries only the kind: no token, principal, contact reference, name or file');
 select is(pg_temp.probe('select 1',
   $$select (select notice_kind||' '||(contact_ciphertext=(select ciphertext from before_state))::text
     from public.claim_invitation_terminal_mail_v1())$$,
   $$select public.authorize_invitation_terminal_mail_v1(m.id,m.attempt_count)::text from public.mail_outbox m
-    join private.invitation_terminal_notices n on n.id=m.invitation_terminal_notice_id where n.notice_kind='upload-permission-withdrawn'$$),
+    join private.invitation_terminal_notices n on n.id=m.invitation_terminal_notice_id where n.notice_kind='upload-permission-withdrawn'
+    and pg_temp.mine(n.invitation_id)$$),
  'upload-permission-withdrawn true / true','the terminal mail worker claims it with the sealed contact and may send it');
 select is(pg_temp.probe($$insert into public.contact_refusal_bars(contact_hmac,target_kind,target_id,refusal_revision,expires_at)
   values(repeat('a',64),'subject',gen_random_uuid(),1,clock_timestamp()+interval '1 day')$$,
   $$select count(*)::text from public.claim_invitation_terminal_mail_v1()$$,
   $$select (select n.state||' '||(n.contact_ciphertext is null)::text||' '||m.state from private.invitation_terminal_notices n
-    join public.mail_outbox m on m.invitation_terminal_notice_id=n.id where n.notice_kind='upload-permission-withdrawn')$$),
+    join public.mail_outbox m on m.invitation_terminal_notice_id=n.id where n.notice_kind='upload-permission-withdrawn'
+    and pg_temp.mine(n.invitation_id))$$),
  '0 / expired true invalidated','a contact barred after the withdrawal is never written to, and its copy is cleared');
 select is(pg_temp.probe('select 1',$$select (select count(*) from public.claim_invitation_terminal_mail_v1())::text$$,
   $$select private.invitation_notice_recipient_current_v1(id)::text from private.invitation_terminal_notices
-    where notice_kind='invitation-refused' limit 1$$),'1','the other notice kinds read as before');
+    where notice_kind='invitation-refused' and pg_temp.mine(invitation_id) limit 1$$),'1','the other notice kinds read as before');
 
 -- A replay ------------------------------------------------------------------------
 select throws_ok($$select pg_temp.wd('1',pg_temp.sid('nb'),'withdraw')$$,'42501','not_found','a replay finds no record');

@@ -229,7 +229,12 @@ describe("the door, the notice and the page's read", () => {
   });
 
   it("is driven by its pgTAP suite through the refusals, the bar, the withdrawal, the notice and the untouched record", () => {
-    for (const fragment of ["'other_adult_withdrawal_account_held'", "55000 withdrawal_notice_unavailable", "contact_refusal_bars",
+    // 2026-11-22 (20261122120000): the transfer is open, so the suite now
+    // probes the own-account branch handing the record over instead of its
+    // refusal; uploader_withdrawal_hand_over.sql keeps the refusal, with the
+    // switch closed inside a savepoint.
+    for (const fragment of ["'hand-over'", "the own-account branch hands the record to the person through the transfer",
+      "55000 withdrawal_notice_unavailable", "contact_refusal_bars",
       "public.claim_invitation_terminal_mail_v1()", "public.authorize_invitation_terminal_mail_v1(",
       "'f30283fb54afaf87da2462c9a469c85f'", "'e994afb4410ad008aa959efc65726895'"]) {
       expect(pgtap, fragment).toContain(fragment);

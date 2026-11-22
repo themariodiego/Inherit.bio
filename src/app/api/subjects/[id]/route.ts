@@ -73,6 +73,16 @@ const outcome = z.discriminatedUnion("case", [
 /** A refusal the caller can cause is the opaque 404; anything else is the server's fault. */
 const REFUSALS = new Set(["42501", "55000", "22023", "23505", "P0002"]);
 
+/**
+ * The one refusal that is not opaque (owner decision of 22 November 2026, "A
+ * hand-over refused for now says to try later (D-158)"): the uploader's
+ * hand-over of a record its person holds, refused at that moment because a
+ * file is still being checked, a file has a shape the transfer does not
+ * expect, or the person's account is gone (migration 20261122160000). It
+ * committed nothing; the card says to try again later (hand-over-not-now-v1).
+ */
+const HAND_OVER_NOT_NOW = "hand_over_not_now";
+
 export const DELETE = withAccountCsrf("api.subject-delete", handleDelete);
 async function handleDelete(request: Request, context: { params: Promise<{ id: string }> }) {
   const { id } = await context.params;
@@ -128,6 +138,9 @@ async function handleDelete(request: Request, context: { params: Promise<{ id: s
     answer = await admin.rpc("delete_subject_v1", args);
   }
   const { data, error } = answer;
+  if (error?.code === "55000" && error.message === HAND_OVER_NOT_NOW) {
+    return closedResponse("api.subject-delete", ["error"], { error: "try_later" }, 409);
+  }
   if (error) return REFUSALS.has(error.code ?? "") ? notFound() : unavailable();
   const result = outcome.safeParse(data);
   // The transaction has committed; an unreadable answer is still accepted

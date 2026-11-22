@@ -11,8 +11,10 @@ import { signOut as signOutWithToken } from "./helpers/session-csrf";
 import { JURISDICTION_AFFIRM, JURISDICTION_SELECT_LABEL } from "../src/copy/settings/jurisdiction";
 import { ADULT_UPLOAD_REVISION_COPY as REVISION, OTHER_ADULT_UPLOAD_COPY as UPLOAD,
   PATH_B_REQUEST_COPY as REQUEST } from "../src/copy/upload/other-adult";
-import { OTHER_ADULT_WITHDRAWAL_COPY as COPY, UPLOAD_PERMISSION_WITHDRAWN_NOTICE_COPY as NOTICE }
-  from "../src/copy/upload/other-adult-withdrawal";
+import { OTHER_ADULT_HAND_OVER_COPY as HAND_OVER, OTHER_ADULT_WITHDRAWAL_COPY as COPY,
+  UPLOAD_PERMISSION_WITHDRAWN_NOTICE_COPY as NOTICE } from "../src/copy/upload/other-adult-withdrawal";
+import { WITHDRAWAL_TRANSFER_FORMER_OWNER_NOTICE_COPY as FORMER_OWNER, WITHDRAWAL_TRANSFER_NEW_OWNER_NOTICE_COPY as NEW_OWNER }
+  from "../src/copy/upload/subject-transfer-notices";
 import { parseArtifactFile } from "../src/lib/legal/artifact-file";
 import { artifactStatements } from "../src/lib/uploads/other-adult-upload";
 
@@ -26,9 +28,14 @@ import { artifactStatements } from "../src/lib/uploads/other-adult-upload";
  * Through the real screens, Storage, mail and database: a person with no
  * account confirms a request and one file and leaves a second unconfirmed;
  * the uploader withdraws from that person's card, every file it added is
- * deleted, confirmed or not, and the person is sent the short notice. A
- * person who holds the record with their own account is shown no request
- * and nothing changes. The setup steps are those of e2e/other-adult-upload.spec.ts.
+ * deleted, confirmed or not, and the person is sent the short notice. For a
+ * person who holds the record with their own account the same control hands
+ * the record to them (owner decisions of 22 November 2026, "An uploader's
+ * withdrawal hands a record its adult holds to that adult" and "The transfer
+ * notices are approved, with one added line, and the transfer is switched
+ * on"; migration 20261122120000): the file they confirmed becomes theirs, the
+ * one they had not confirmed is deleted, and both are emailed. The setup
+ * steps are those of e2e/other-adult-upload.spec.ts.
  *
  * Every selector and sentence of the control is pinned by
  * src/components/uploads/other-adult-withdrawal.test.ts against its markup.
@@ -254,20 +261,86 @@ test("the uploader withdraws for a person with no account: every file it added g
   await expect(again.getByText(NO_ACCOUNT.name)).toHaveCount(0);
 });
 
-test("a person who holds the record with their own account: no request is offered, and nothing changes", async ({ page, request }) => {
+test("a person who holds the record with their own account: the withdrawal hands it to them, and both are emailed", async ({ page, request }) => {
   const record = await confirmedPerson(page, request, ACCOUNT_PERSON);
-  const personId = (await findUserByEmail(adminClient(), ACCOUNT_PERSON.email))!.id;
+  const admin = adminClient();
+  const personId = (await findUserByEmail(admin, ACCOUNT_PERSON.email))!.id;
   expect(record.held).toBe(personId);
+  // One file the person confirms with their own account, and one they have not confirmed yet.
   await signIn(page, UPLOADER.email, UPLOADER.password);
   await addFile(page, ACCOUNT_PERSON);
+  await signOut(page);
+  await confirmFile(page, request, ACCOUNT_PERSON);
+  await signIn(page, UPLOADER.email, UPLOADER.password);
+  await addFile(page, ACCOUNT_PERSON);
+  const before = await admin.from("other_adult_held_uploads").select("id,state").eq("subject_id", record.subjectId).order("held_at");
+  expect(before.data!.map(row => row.state)).toEqual(["confirmed", "pending"]);
+  const consent = await admin.from("subject_consents").select("id").eq("subject_id", record.subjectId)
+    .eq("account_id", record.uploaderId).eq("consent_type", "upload_class").is("revoked_at", null).single();
+  expect(consent.error).toBeNull();
+
   const section = await openPathB(page);
-  const control = section.locator('[data-slot="other-adult-held"]').filter({ hasText: ACCOUNT_PERSON.name })
-    .locator('[data-slot="other-adult-withdrawal"]');
-  await expect(control.locator('[data-slot="other-adult-withdrawal-reason"]')).toHaveText(COPY.accountHeldStatus(ACCOUNT_PERSON.name));
-  await expect(control.getByRole("button")).toHaveCount(0);
-  const admin = adminClient();
-  const subject = await admin.from("subjects").select("lifecycle,owner_account_id,subject_account_id").eq("id", record.subjectId).single();
-  expect(subject.data).toEqual({ lifecycle: "active", owner_account_id: record.uploaderId, subject_account_id: personId });
-  const held = await admin.from("other_adult_held_uploads").select("state").eq("subject_id", record.subjectId);
-  expect(held.data!.map(row => row.state)).toEqual(["pending"]);
+  const card = section.locator('[data-slot="other-adult-held"]').filter({ hasText: ACCOUNT_PERSON.name });
+  const control = card.locator('[data-slot="other-adult-withdrawal"]');
+  await expect(control.getByRole("heading", { name: COPY.heading, exact: true })).toBeVisible();
+  await expect(control).toContainText(HAND_OVER.summary(ACCOUNT_PERSON.name));
+  await expect(control.locator('[data-slot="other-adult-withdrawal-reason"]')).toHaveCount(0);
+  let sent = 0;
+  page.on("request", sent_ => {
+    if (sent_.method() === "DELETE" && new URL(sent_.url()).pathname === `/api/subjects/${record.subjectId}`) sent++;
+  });
+  await control.getByTestId("other-adult-withdrawal").click();
+  const dialog = control.getByRole("alertdialog", { name: COPY.confirmHeading(ACCOUNT_PERSON.name) });
+  await expect(dialog).toBeVisible();
+  for (const line of [...HAND_OVER.moves(ACCOUNT_PERSON.name), HAND_OVER.notice(ACCOUNT_PERSON.name), COPY.irreversible]) {
+    await expect(dialog).toContainText(line);
+  }
+  expect(sent).toBe(0);
+  const observer = await observeNativeResponses(page, { withdrawal: `^/api/subjects/${record.subjectId}$` }, "DELETE");
+  const answered = page.waitForResponse(response => response.request().method() === "DELETE"
+    && new URL(response.url()).pathname === `/api/subjects/${record.subjectId}`);
+  await control.getByTestId("other-adult-withdrawal-confirm").click();
+  const response = await answered;
+  expect(response.status()).toBe(202);
+  const native = await observer.read("withdrawal");
+  await observer.dispose();
+  expect(native.status).toBe(response.status());
+  expect(JSON.parse(native.text)).toEqual({ status: "accepted" });
+  expect(response.request().headers()["x-inherit-operation-nonce"]).toMatch(CODE);
+  expect(response.request().headers()["x-inherit-csrf"]).toMatch(CODE);
+  expect(response.request().postData()).toBeNull();
+  expect(sent).toBe(1);
+  const receipt = section.locator('[data-slot="other-adult-withdrawn"]').filter({ hasText: ACCOUNT_PERSON.name })
+    .locator('[data-slot="other-adult-withdrawal-receipt"]');
+  await expect(receipt).toContainText(COPY.receiptHeading);
+  await expect(receipt).toContainText(HAND_OVER.receiptBody(ACCOUNT_PERSON.name));
+
+  // The record and the file the person confirmed are theirs; the other file is gone; the uploader's permission ended.
+  const subject = await admin.from("subjects").select("lifecycle,owner_account_id,subject_account_id,ownership_transferred_at")
+    .eq("id", record.subjectId).single();
+  expect(subject.data).toMatchObject({ lifecycle: "active", owner_account_id: personId, subject_account_id: personId });
+  expect(subject.data!.ownership_transferred_at).not.toBeNull();
+  const after = await admin.from("other_adult_held_uploads").select("state").eq("subject_id", record.subjectId).order("held_at");
+  expect(after.data!.map(row => row.state)).toEqual(["transferred", "withdrawn"]);
+  const ended = await admin.from("subject_consents").select("revoked_at,revocation_reason").eq("id", consent.data!.id).single();
+  expect(ended.data!.revocation_reason).toBe("withdrawn");
+
+  // The two emails, through the terminal-notice queue the mail job drains, in the approved words.
+  const personMail = await drainMailUntil(request, mailTo(ACCOUNT_PERSON.email, NEW_OWNER.subject),
+    `the new owner's notice to ${ACCOUNT_PERSON.email}`);
+  expect(personMail.html).toContain(NEW_OWNER.heading);
+  expect(personMail.html?.replaceAll("&#x27;", "'")).toContain(NEW_OWNER.body);
+  expect(personMail.html).toContain("Any download copy of this record has stopped working. You can make a new one.");
+  expect(personMail.html).not.toContain("href=\"http");
+  const uploaderMail = await drainMailUntil(request, mailTo(UPLOADER.email, FORMER_OWNER.subject),
+    `the former owner's notice to ${UPLOADER.email}`);
+  expect(uploaderMail.html).toContain(FORMER_OWNER.heading);
+  expect(uploaderMail.html?.replaceAll("&#x27;", "'")).toContain(FORMER_OWNER.body);
+  expect(uploaderMail.html).not.toContain("download copy");
+  expect(uploaderMail.html).not.toContain("href=\"http");
+
+  // The card is gone once the page renders again: the uploader has nothing left of the record.
+  const again = await openPathB(page);
+  await expect(again.locator('[data-slot="other-adult-withdrawal"]')).toHaveCount(0);
+  await expect(again.getByText(ACCOUNT_PERSON.name)).toHaveCount(0);
 });

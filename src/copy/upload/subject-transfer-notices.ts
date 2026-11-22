@@ -23,17 +23,24 @@
  * The notice names nobody, no file and no record, and carries no link, as
  * every terminal notice: the template accepts only its kind.
  *
- * NOT APPROVED. The transfer is built closed under the 2026-10-22 rule for
- * wording nobody has approved: nothing queues these notices while
- * private.subject_transfer_open_v1() answers false. Every string here is a
- * draft for the owner, listed verbatim with where it appears and who
- * receives it; none changes a signed text.
+ * APPROVED by the owner on 22 November 2026 ("The transfer notices are
+ * approved, with one added line, and the transfer is switched on",
+ * docs/protocol/decisions.md): every string as listed in
+ * docs/evidence/uploader-hand-over-20261122/transfer-wording.md, and the two
+ * emails to the person who now holds the record (`subject-transfer-new-owner`
+ * and `withdrawal-transfer-new-owner`) gain one line before their closing
+ * sentence: "Any download copy of this record has stopped working. You can
+ * make a new one." The transfer opened with migration 20261122120000, so the
+ * database queues these notices inside every transfer; migration
+ * 20261122160000, in the same release, lets the person make that new copy of
+ * the record and of their whole account at once (D-162). None changes a
+ * signed text.
  */
 
 export const SUBJECT_TRANSFER_NEW_OWNER_NOTICE_COPY = {
   subject: "A DNA record is now in your Inherit account",
   heading: "This record is now yours",
-  body: "You moved a DNA record that someone else added for you into your own Inherit account. The files you confirmed are now yours, and so are the results you kept. The person who added them can no longer see anything about it. If you did not do this, change your password now.",
+  body: "You moved a DNA record that someone else added for you into your own Inherit account. The files you confirmed are now yours, and so are the results you kept. The person who added them can no longer see anything about it. Any download copy of this record has stopped working. You can make a new one. If you did not do this, change your password now.",
 } as const;
 
 export const SUBJECT_TRANSFER_FORMER_OWNER_NOTICE_COPY = {
@@ -45,7 +52,7 @@ export const SUBJECT_TRANSFER_FORMER_OWNER_NOTICE_COPY = {
 export const WITHDRAWAL_TRANSFER_NEW_OWNER_NOTICE_COPY = {
   subject: "A DNA record is now in your Inherit account",
   heading: "This record is now yours",
-  body: "The person who added your DNA file to Inherit has withdrawn their permission. The record and the files you confirmed are now in your own account. Files you had not confirmed have been deleted. They can no longer see anything about it. You do not need to do anything.",
+  body: "The person who added your DNA file to Inherit has withdrawn their permission. The record and the files you confirmed are now in your own account. Files you had not confirmed have been deleted. They can no longer see anything about it. Any download copy of this record has stopped working. You can make a new one. You do not need to do anything.",
 } as const;
 
 export const WITHDRAWAL_TRANSFER_FORMER_OWNER_NOTICE_COPY = {

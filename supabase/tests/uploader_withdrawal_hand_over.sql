@@ -7,10 +7,12 @@
 -- 01, who asks it about the record. 09 is an outsider, and in one fixture the
 -- holder of a family link to the record.
 --
--- The transfer's switch, private.subject_transfer_open_v1(), answers false:
--- first it is shown that the branch is refused and nothing changes. Then the
--- switch is opened INSIDE THIS TRANSACTION ONLY (it is replaced by a body
--- answering true, which the final rollback undoes) and the branch is run:
+-- The transfer's switch, private.subject_transfer_open_v1(), answers true
+-- since 20261122120000 (owner decision of 22 November 2026, "The transfer
+-- notices are approved, with one added line, and the transfer is switched
+-- on"). First, with the switch closed INSIDE A SAVEPOINT ONLY (as it was
+-- before that migration), it is shown that the branch is refused and nothing
+-- changes. Then, with the switch as the migration left it, the branch is run:
 -- the person owns the record and the confirmed file, the unconfirmed file is
 -- gone, the uploader's consent is withdrawn and kept, the uploader reads
 -- nothing, the notices are queued once each, a ready export does not make it
@@ -33,6 +35,10 @@ select no_plan();
 -- addresses are confirmed, as the terminal-notice worker requires of an
 -- account recipient.
 update auth.users set created_at=now()-interval '1 day',email_confirmed_at=now() where id::text like '0b5e0000-%';
+-- D-163: relocations earlier local runs committed are set aside inside this
+-- transaction, so the relocation worker's next item is this suite's own.
+update private.subject_transfer_relocations set state='cancelled',cancelled_at=clock_timestamp(),current_attempt_id=null
+ where state in ('queued','copying');
 update private.invitation_terminal_notices set state='expired',contact_ciphertext=null,recipient_account_id=null
  where state='pending';
 update public.mail_outbox set state='invalidated' where invitation_terminal_notice_id is not null and state in ('queued','claimed');
@@ -237,9 +243,14 @@ $$;
 create temporary table before_state as select pg_temp.state() value;
 grant select on before_state to service_role;
 
--- 1. The switch is closed: the branch is refused and nothing changes -----------------
+-- 1. With the switch closed the branch is refused and nothing changes ---------------
+-- Since 20261122120000 the switch is open. Its closed branch is kept, and is
+-- shown here with the switch closed inside this savepoint only.
+savepoint switch_closed;
+create or replace function private.subject_transfer_open_v1() returns boolean language sql immutable set search_path='' as
+ $$ select false $$;
 select is(private.subject_transfer_open_v1(),false,
- 'the transfer''s switch is closed: its three notices have no approved wording');
+ 'inside this savepoint the transfer''s switch is closed, as it was before 20261122120000');
 select is(pg_temp.ready('1'),'account-held','the page''s read still names the own-account branch, as before');
 set local role service_role;
 select throws_ok($$select pg_temp.wd('1','closed')$$,'42501','other_adult_withdrawal_account_held',
@@ -252,13 +263,13 @@ reset role;
 select is(pg_temp.state(),(select value from before_state),
  'nothing changes: no code, transfer, notice, file, consent, result, grant, chat, export or download');
 select is(pg_temp.read_record(),2::bigint,'the uploader''s conversation stands');
+rollback to switch_closed;
 
--- 2. The switch, opened inside this transaction only -------------------------------------
-create or replace function private.subject_transfer_open_v1() returns boolean language sql immutable set search_path='' as
- $$ select true $$;
+-- 2. The switch, open as 20261122120000 left it ------------------------------------------
 select ok(private.subject_transfer_open_v1()
- and (select proacl::text from pg_proc where oid='private.subject_transfer_open_v1()'::regprocedure)='{postgres=X/postgres}',
- 'inside this transaction the switch is open (the final rollback closes it again)');
+ and (select md5(pg_get_functiondef(p.oid))='8d2e22d1e0c41c8bce0e43b9e45378d3' and p.proacl::text='{postgres=X/postgres}'
+  from pg_proc p where p.oid='private.subject_transfer_open_v1()'::regprocedure),
+ 'the switch is open, as 20261122120000 left it, its ACL unchanged');
 select is(pg_temp.ready('1'),'hand-over','the read now says the record is handed to its person');
 select throws_ok($$select pg_temp.ready('9')$$,'42501','not_found','an outsider reads nothing');
 select throws_ok($$select pg_temp.ready('2')$$,'42501','not_found','nor does the person, who is not the uploader');
@@ -300,7 +311,8 @@ begin
 end $$;
 select is(pg_temp.probe($$update public.upload_sessions set status='validating' where id=pg_temp.fxv('main-2','upload')::uuid$$,
   $$select pg_temp.wd('1','validating')::text$$,$$select pg_temp.state()=(select value from before_state)$$),
- '42501 not_found / true','a file still being validated refuses the whole withdrawal, as it refuses a transfer, and writes nothing');
+ '55000 hand_over_not_now / true',
+ 'a file still being validated refuses the whole withdrawal for now (D-158, 20261122160000), and writes nothing');
 select is(pg_temp.probe($$update public.profiles set jurisdiction_code=null,jurisdiction_declared_at=null,jurisdiction_attestation_version=null,
    jurisdiction_attestation_sha256=null where id=pg_temp.a('1')$$,
   $$select pg_temp.wd('1','undeclared')::text$$,$$select (select owner_account_id from public.subjects where id=pg_temp.sid('main'))::text$$),
@@ -383,7 +395,8 @@ select ok((select count(*) from public.subject_consents where subject_id=pg_temp
  '... and kept, with its signature; every other consent on the record is as it was');
 select is((select count(*) from public.account_operation_nonces where operation='subject_delete' and account_id=pg_temp.a('1')
  and nonce_hash=pg_temp.h('withdraw')),1::bigint,'the withdrawal spends its api.subject-delete code once');
-select is((select count(*) from public.account_operation_nonces where operation='subject_transfer'),0::bigint,
+select is((select count(*) from public.account_operation_nonces where operation='subject_transfer'
+ and account_id in (select pg_temp.a(x) from unnest(array['1','2','3','4','9']) x)),0::bigint,
  '... and no api.subject-transfer code');
 
 -- The uploader reads nothing.
@@ -438,7 +451,7 @@ select ok((select bool_and(n.recipient_kind='account' and n.contact_ciphertext i
  from private.invitation_terminal_notices n where n.invitation_id=pg_temp.invitation_of(pg_temp.sid('main')) and n.state='pending'),
  'each goes to an account, never to a contact, for seven days');
 select is((select recipient_authority_revision from private.invitation_terminal_notices
- where notice_kind='withdrawal-transfer-new-owner'),(select principal_revision from public.subject_principals
+ where notice_kind='withdrawal-transfer-new-owner' and invitation_id=pg_temp.invitation_of(pg_temp.sid('main'))),(select principal_revision from public.subject_principals
  where subject_id=pg_temp.sid('main') and account_id=pg_temp.a('2') and status='active'),
  'the person''s notice names their current principal on the record');
 select is((select count(*) from public.mail_outbox m join private.invitation_terminal_notices n on n.id=m.invitation_terminal_notice_id
@@ -458,13 +471,14 @@ select is((select count(*) from public.claim_invitation_terminal_mail_v1()),0::b
 -- The audit event.
 select is((select route_id||' '||outcome_code||' '||(coded_context->>'act')||' '||(coded_context->>'unconfirmed_withdrawn')
   ||' '||(coded_context->>'notices')||' '||(coded_context->>'files') from public.legal_audit_log
- where event_code='subject.ownership_transferred'),'api.subject-delete withdrawn uploader-withdrawal 1 3 1',
+ where event_code='subject.ownership_transferred' and occurred_at>=now()),'api.subject-delete withdrawn uploader-withdrawal 1 3 1',
  'one transfer event, on the route the uploader used, naming the act');
-select is((select audit_principal_id from public.legal_audit_log where event_code='subject.ownership_transferred'),
+select is((select audit_principal_id from public.legal_audit_log where event_code='subject.ownership_transferred'
+ and occurred_at>=now()),
  (select audit_principal_id from private.legal_audit_account_principals where account_id=pg_temp.a('1')),
  '... attributed to the uploader, who spent the code');
 select ok((select not (coded_context::text ~ '@|[0-9a-f]{64}') from public.legal_audit_log
- where event_code='subject.ownership_transferred'),'... with no contact or token');
+ where event_code='subject.ownership_transferred' and occurred_at>=now()),'... with no contact or token');
 
 -- 5. The person's own later acts still work ---------------------------------------------
 select is(jsonb_array_length(public.path_b_report_results_v1(pg_temp.a('2'),pg_temp.s('2'),pg_temp.sid('main'),'reports.monogenic',true)),1,

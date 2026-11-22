@@ -241,11 +241,11 @@ select is((select count(*) from public.copilot_context_tokens where target_id=pg
 rollback to person_deletes;
 
 savepoint uploader_withdraws;
-select throws_ok($$select public.withdraw_other_adult_upload_v1(pg_temp.a('1'),pg_temp.s('1'),pg_temp.sid('main'),
- encode(extensions.digest('subject-copilot-path-b-withdraw','sha256'),'hex'),clock_timestamp()+interval '5 minutes')$$,
- '42501','other_adult_withdrawal_account_held',
- 'the uploader''s withdrawal is refused for a record the person holds with their own account (20261119160000)');
-select is(pg_temp.read_record(),2::bigint,'so nothing about the record changes, its conversation included');
+select is(public.withdraw_other_adult_upload_v1(pg_temp.a('1'),pg_temp.s('1'),pg_temp.sid('main'),
+ encode(extensions.digest('subject-copilot-path-b-withdraw','sha256'),'hex'),clock_timestamp()+interval '5 minutes'),
+ '{"case":"adult"}'::jsonb,
+ 'the uploader''s withdrawal hands a record the person holds with their own account to the person (20261122120000)');
+select is(pg_temp.read_record(),0::bigint,'and every turn of the uploader''s that read the record is deleted, never reassigned');
 rollback to uploader_withdraws;
 
 savepoint no_person_account;

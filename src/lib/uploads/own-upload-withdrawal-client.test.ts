@@ -67,6 +67,23 @@ describe("the withdrawal request", () => {
   });
 });
 
+describe("the hand-over's refusal for now (owner decision of 22 November 2026, D-158)", () => {
+  it("reads 409 as refused for now only for a hand-over; for every other withdrawal it stays a refusal", () => {
+    expect(withdrawalOutcome(409, true)).toBe("not-now");
+    expect(withdrawalOutcome(409)).toBe("refused");
+    expect(withdrawalOutcome(409, false)).toBe("refused");
+    for (const status of [400, 401, 403, 404, 422]) expect(withdrawalOutcome(status, true), String(status)).toBe("refused");
+    expect(withdrawalOutcome(202, true)).toBe("withdrawn");
+    expect(withdrawalOutcome(503, true)).toBe("uncertain");
+    expect(withdrawalOutcome(null, true)).toBe("uncertain");
+  });
+
+  it("returns the hand-over's refusal for now to the trigger with its reason", () => {
+    const sending = withdrawalStep(withdrawalStep(withdrawalStep(WITHDRAWAL_START, { type: "open" }), { type: "open" }), { type: "send" });
+    expect(withdrawalStep(sending, { type: "answered", outcome: "not-now" })).toEqual({ phase: "idle", failure: "not-now" });
+  });
+});
+
 describe("the control's steps", () => {
   const run = (...events: WithdrawalEvent[]) => events.reduce<WithdrawalState>(withdrawalStep, WITHDRAWAL_START);
 

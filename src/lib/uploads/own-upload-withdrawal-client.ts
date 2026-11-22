@@ -29,12 +29,16 @@ export type OwnUploadWithdrawalView =
  * What an answer means. Only 202 is a withdrawal: the route answers it after
  * the database committed. A 4xx is a refusal (the route's opaque 404, the
  * token's 403, sign-in's 401), and a refusal committed nothing. Anything
- * else, or no answer, cannot say whether the withdrawal committed.
+ * else, or no answer, cannot say whether the withdrawal committed. For the
+ * uploader's hand-over only, 409 is the refusal for now (owner decision of
+ * 22 November 2026, "A hand-over refused for now says to try later (D-158)";
+ * hand-over-not-now-v1): it too committed nothing.
  */
-export type WithdrawalOutcome = "withdrawn" | "refused" | "uncertain";
+export type WithdrawalOutcome = "withdrawn" | "refused" | "not-now" | "uncertain";
 
-export function withdrawalOutcome(status: number | null): WithdrawalOutcome {
+export function withdrawalOutcome(status: number | null, handOver = false): WithdrawalOutcome {
   if (status === 202) return "withdrawn";
+  if (handOver && status === 409) return "not-now";
   if (status !== null && status >= 400 && status < 500) return "refused";
   return "uncertain";
 }
@@ -45,13 +49,14 @@ export function withdrawalOutcome(status: number | null): WithdrawalOutcome {
  * `X-Inherit-Operation-Nonce`, and the route's one-time session token in
  * `X-Inherit-CSRF` through the token chain.
  */
-export async function requestOwnUploadWithdrawal(csrf: CsrfHandle, subjectId: string, nonce: string): Promise<WithdrawalOutcome> {
+export async function requestOwnUploadWithdrawal(csrf: CsrfHandle, subjectId: string, nonce: string, handOver = false):
+  Promise<WithdrawalOutcome> {
   try {
     const response = await csrf.send((csrfToken) => fetch(`/api/subjects/${subjectId}`, {
       method: "DELETE",
       headers: { "X-Inherit-CSRF": csrfToken, "X-Inherit-Operation-Nonce": nonce },
     }));
-    return withdrawalOutcome(response.status);
+    return withdrawalOutcome(response.status, handOver);
   } catch {
     return withdrawalOutcome(null);
   }

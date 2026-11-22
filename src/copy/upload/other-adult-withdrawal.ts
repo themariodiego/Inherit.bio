@@ -64,9 +64,11 @@ export const OTHER_ADULT_WITHDRAWAL_COPY = {
  * The heading, the confirmation's heading, the last line, "Keep my
  * permission", the receipt's heading and the refusal are the strings above.
  *
- * NOT APPROVED. Drafts for the owner, with the transfer's three notices
- * (src/copy/upload/subject-transfer-notices.ts); the transfer stays closed
- * until the owner approves them.
+ * APPROVED by the owner on 22 November 2026 ("The transfer notices are
+ * approved, with one added line, and the transfer is switched on"), as listed
+ * in docs/evidence/uploader-hand-over-20261122/transfer-wording.md, with the
+ * transfer's three notices (src/copy/upload/subject-transfer-notices.ts). The
+ * transfer opened with migration 20261122120000.
  */
 export const OTHER_ADULT_HAND_OVER_COPY = {
   /** What withdrawing does, before any click. */
@@ -87,6 +89,14 @@ export const OTHER_ADULT_HAND_OVER_COPY = {
     `The record and the files ${name} confirmed are now theirs. We are deleting any file they had not confirmed.`,
   /** A 5xx answer, another status, or no answer. */
   uncertainStatus: "We do not know if this finished. Open this page again to see if it did.",
+  /**
+   * The hand-over refused for now (a file still being checked, a file of an
+   * unexpected shape, the person's account gone; route answer 409,
+   * hand-over-not-now-v1). Approved by the owner on 22 November 2026, "A
+   * hand-over refused for now says to try later (D-158)". Every other refusal
+   * keeps `refusedStatus`.
+   */
+  notNowStatus: "This cannot be done right now. Nothing was deleted. Try again later.",
 } as const;
 
 /**

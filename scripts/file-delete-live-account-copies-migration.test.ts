@@ -124,9 +124,19 @@ describe("the release it belongs to", () => {
 
   it("is the last word on the guard and restates or patches no door it pins", () => {
     expect(files.filter(file => file > NAME && rewrites(file, "private.prepare_genome_file_deletion_body_v1"))).toEqual([]);
+    // 2026-11-22 (D-162): 20261122160000, after this migration, patches
+    // private.own_export_source_v1 in place for a file transferred to its
+    // person, starting from exactly the body pinned here; it is the only later
+    // migration that may, and this migration's pre- and postflight still read
+    // that predecessor because it runs first.
+    const TRANSFERRED = "20261122160000_transferred_record_exports.sql";
+    const laterAllowed: Record<string, string[]> = { "private.own_export_source_v1": [TRANSFERRED] };
+    expect(TRANSFERRED > NAME).toBe(true);
+    expect(read(`supabase/migrations/${TRANSFERRED}`))
+      .toContain("(6,'private.own_export_source_v1(uuid,uuid,uuid)','27abc582be0eb4a227a7cdeb57c29d6f',");
     for (const pinned of PINNED) {
       const qualified = pinned.signature.slice(0, pinned.signature.indexOf("("));
-      expect(files.filter(file => file > D152 && rewrites(file, qualified)), qualified).toEqual([]);
+      expect(files.filter(file => file > D152 && rewrites(file, qualified)), qualified).toEqual(laterAllowed[qualified] ?? []);
     }
   });
 });

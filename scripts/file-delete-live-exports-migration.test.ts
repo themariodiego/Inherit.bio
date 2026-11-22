@@ -174,9 +174,17 @@ describe("the release it belongs to", () => {
       "private.download_target_authorized_v1": "20260831224124_exports_and_generated_artifacts.sql",
       "private.own_export_source_v1": "20260909001117_own_prepared_original_retirement.sql",
     };
+    // 2026-11-22 (D-162): 20261122160000 patches private.own_export_source_v1
+    // in place, for a file transferred to its person, starting from exactly the
+    // body this migration pins; it is the only later migration that may.
+    const TRANSFERRED = "20261122160000_transferred_record_exports.sql";
+    const laterAllowed: Record<string, string[]> = { "private.own_export_source_v1": [TRANSFERRED] };
+    expect(read(`supabase/migrations/${TRANSFERRED}`))
+      .toContain("(6,'private.own_export_source_v1(uuid,uuid,uuid)','27abc582be0eb4a227a7cdeb57c29d6f',");
     // This migration names each of them only in its pins; its patches are the two bodies' (held above).
     for (const [qualified, last] of Object.entries(lastDefinitions)) {
-      expect(files.filter(file => file > last && file !== NAME && rewrites(file, qualified)), qualified).toEqual([]);
+      expect(files.filter(file => file > last && file !== NAME && rewrites(file, qualified)), qualified)
+        .toEqual(laterAllowed[qualified] ?? []);
       expect(patches.some(patch => patch.target.startsWith(`${qualified}(`)), qualified).toBe(false);
     }
   });

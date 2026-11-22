@@ -127,8 +127,13 @@ describe("the predecessor block and the patches", () => {
     expect(between(migration, "do $postflight$", "$postflight$;")).toContain("md5(pg_get_functiondef(p.oid))='006bfca91b8c66060681371e61333494'");
     expect(patches[3]!.before).toBe("56990e96581e5dc415222f44f09b5ac0");
     expect(patches[3]!.after).toBe("73bd0200b7e272bec503eab70499e877");
-    // The earlier suite that pinned the list now pins this successor.
-    expect(read("supabase/tests/legal_audit_attribution_completeness.sql")).toContain("'73bd0200b7e272bec503eab70499e877'");
+    // The earlier suite that pinned the list pinned this successor until
+    // 2026-11-22 (D-159): 20261122160000 patches the list once more from it,
+    // so the suite now pins that patch's successor and names this one as its
+    // predecessor.
+    const attributionSuite = read("supabase/tests/legal_audit_attribution_completeness.sql");
+    expect(attributionSuite).toContain("from exactly 20261119170000's successor 73bd0200b7e272bec503eab70499e877");
+    expect(attributionSuite).toContain("'f06ad94838f724581b457e800162a6bb'");
   });
 
   it("binds api.consent-revoke to the uploader's actor case alone and leaves every other route needing a disposition authority", () => {
@@ -171,10 +176,23 @@ describe("the predecessor block and the patches", () => {
       return new RegExp(`create\\s+(?:or\\s+replace\\s+)?function\\s+(?:\\w+\\.)?${local}\\s*\\(`, "iu").test(sql)
         || (sql.includes(`'${qualified}(`) && sql.includes("replace(definition"));
     };
-    for (const qualified of ["private.restrict_embryo_cohort_core_v1", "private.legal_audit_person_event_v1",
+    for (const qualified of ["private.restrict_embryo_cohort_core_v1",
       "private.queue_refused_invitation_draft_v1", "private.consume_account_operation_nonce_v1"]) {
       expect(files.filter(file => file > NAME && rewrites(file, qualified)), qualified).toEqual([]);
     }
+    // 2026-11-22 (D-159), changed on purpose: the person-caused event list gains
+    // exactly one pair, the uploader's hand-over recorded on api.subject-delete,
+    // in 20261122160000, patched in place from exactly this migration's
+    // successor. No other later migration restates or patches the list.
+    const D159 = "20261122160000_transferred_record_exports.sql";
+    expect(files.filter(file => file > NAME && rewrites(file, "private.legal_audit_person_event_v1"))).toEqual([D159]);
+    const d159 = read(`supabase/migrations/${D159}`);
+    expect(d159).toContain("(14,'private.legal_audit_person_event_v1(text,text)','73bd0200b7e272bec503eab70499e877',");
+    const listPatch = d159.slice(d159.indexOf("(14,'private.legal_audit_person_event_v1(text,text)'"));
+    expect(listPatch).toContain("$old$      ('api.consent-revoke','embryo.upload-consent.withdrawn')),false);$old$");
+    expect(listPatch).toContain("$new$      ('api.consent-revoke','embryo.upload-consent.withdrawn'),\n"
+      + "      -- 20261122160000 (D-159): the uploader's hand-over, recorded on the route it used.\n"
+      + "      ('api.subject-delete','subject.ownership_transferred')),false);$new$");
   });
 });
 

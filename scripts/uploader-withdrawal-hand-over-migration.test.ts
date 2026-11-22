@@ -311,7 +311,8 @@ describe("the notices", () => {
       expect(read("src/lib/embryos/invitation-terminal-mail.ts"), kind).toContain(`"${kind}"`);
       expect(read("src/lib/claims/email-fixtures.ts"), kind).toContain(`"${kind}"`);
     }
-    expect(copy).toContain("NOT APPROVED.");
+    // 2026-11-22: approved by the owner, and opened by 20261122120000.
+    expect(copy).toContain("APPROVED by the owner on 22 November 2026");
     expect(read("src/emails/invitation-terminal-notice.tsx")).toContain("...SUBJECT_TRANSFER_NOTICES,");
   });
 });
@@ -329,14 +330,21 @@ describe("the app around it", () => {
 });
 
 describe("its tests and its notes", () => {
-  it("is driven by its pgTAP suite with the switch closed and then opened inside the rolled-back transaction", () => {
+  // 2026-11-22 (20261122120000): the switch is open in the database, so the
+  // suite closes it inside a savepoint for the closed branch and then runs the
+  // open branch with the switch as that migration left it.
+  it("is driven by its pgTAP suite with the switch closed inside a savepoint, then open as 20261122120000 left it", () => {
     expect(pgtap.startsWith("-- The uploader's withdrawal hands a record its adult holds")).toBe(true);
     expect(pgtap).toMatch(/\nbegin;\n/u);
     expect(pgtap.trimEnd().endsWith("select * from finish();\nrollback;")).toBe(true);
+    const closing = pgtap.indexOf("savepoint switch_closed;\ncreate or replace function private.subject_transfer_open_v1() returns boolean language sql immutable set search_path='' as\n $$ select false $$;");
     const closed = pgtap.indexOf("select is(private.subject_transfer_open_v1(),false,");
-    const opened = pgtap.indexOf("create or replace function private.subject_transfer_open_v1() returns boolean language sql immutable set search_path='' as\n $$ select true $$;");
-    expect(closed).toBeGreaterThan(0);
+    const opened = pgtap.indexOf("rollback to switch_closed;");
+    expect(closing).toBeGreaterThan(0);
+    expect(closed).toBeGreaterThan(closing);
     expect(opened).toBeGreaterThan(closed);
+    expect(pgtap.slice(opened)).toContain("select ok(private.subject_transfer_open_v1()\n and (select md5(pg_get_functiondef(p.oid))='8d2e22d1e0c41c8bce0e43b9e45378d3'");
+    expect(pgtap).not.toContain("$$ select true $$");
     expect(pgtap.slice(closed, opened)).toContain("'42501','other_adult_withdrawal_account_held'");
     expect(pgtap.slice(closed, opened)).toContain("select is(pg_temp.state(),(select value from before_state),");
     for (const fragment of ["'hand-over'", "'withdrawal-transfer-new-owner 02'", "'withdrawal-transfer-former-owner 01'",

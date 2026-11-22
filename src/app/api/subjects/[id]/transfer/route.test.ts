@@ -69,7 +69,7 @@ beforeEach(() => {
 });
 
 describe("POST /api/subjects/[id]/transfer", () => {
-  it("is not found while the door is closed, after one call with the code's hash", async () => {
+  it("is not found when the door refuses, after one call with the code's hash", async () => {
     const code = transferCode();
     const response = await call({ body: { nonce: code } });
     expect(response.status).toBe(404);

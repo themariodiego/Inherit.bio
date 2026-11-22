@@ -63,7 +63,7 @@ export function OtherAdultWithdrawal({ subjectId, name, view, onWithdrawn }: {
     if (state.phase !== "confirming" || !view || (view.readiness !== "ready" && view.readiness !== "hand-over")
       || !view.nonce) return;
     dispatch({ type: "send" });
-    const outcome = await requestOwnUploadWithdrawal(csrf, subjectId, view.nonce);
+    const outcome = await requestOwnUploadWithdrawal(csrf, subjectId, view.nonce, view.readiness === "hand-over");
     dispatch({ type: "answered", outcome });
     // The record is gone once the withdrawal is accepted, and the card with
     // it on the next render, so the receipt stays until the person leaves;
@@ -119,7 +119,8 @@ export function OtherAdultWithdrawalPanel({ subjectId, name, view, state, dialog
           ) : null}
           {state.failure ? (
             <p role="alert" data-slot="other-adult-withdrawal-failure" className="text-sm text-danger">
-              {state.failure === "refused" ? COPY.refusedStatus : handOver ? HAND_OVER.uncertainStatus : COPY.uncertainStatus}
+              {state.failure === "not-now" ? HAND_OVER.notNowStatus : state.failure === "refused" ? COPY.refusedStatus
+                : handOver ? HAND_OVER.uncertainStatus : COPY.uncertainStatus}
             </p>
           ) : null}
           {view && view.readiness !== "ready" && !handOver ? (

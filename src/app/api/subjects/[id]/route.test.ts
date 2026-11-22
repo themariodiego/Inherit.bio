@@ -293,6 +293,26 @@ describe("DELETE /api/subjects/[id] for another adult's record the uploader owns
     }
   });
 
+  // Owner decision of 22 November 2026, "A hand-over refused for now says to
+  // try later (D-158)": the one refusal that is not opaque (hand-over-not-now-v1).
+  it("answers the hand-over refused for now with 409 try_later, and every other 55000 still with the opaque 404", async () => {
+    mocks.subject.mockResolvedValue({ data: { subject_class: "other_adult", owner_account_id: ACCOUNT, subject_account_id: PERSON },
+      error: null });
+    mocks.rpc.mockResolvedValue({ data: null, error: { code: "55000", message: "hand_over_not_now" } });
+    const response = await call();
+    expect(response.status).toBe(409);
+    expect(response.headers.get("cache-control")).toBe("private, no-store");
+    expect(await response.json()).toEqual({ error: "try_later" });
+    expect(mocks.rpc.mock.calls.map(([name]) => name)).toEqual(["withdraw_other_adult_upload_v1"]);
+    expect(mocks.drain).not.toHaveBeenCalled();
+    for (const [code, message] of [["42501", "hand_over_not_now"], ["55000", "hand_over_not_now_"], ["55000", "subject_transfer_notice_unavailable"]] as const) {
+      mocks.rpc.mockResolvedValue({ data: null, error: { code, message } });
+      const refused = await call();
+      expect(refused.status, `${code} ${message}`).toBe(404);
+      expect(await refused.json()).toEqual({ error: "not_found" });
+    }
+  });
+
   it("answers 503 when the door is missing, before its migration, and never falls back to delete_subject_v1", async () => {
     mocks.rpc.mockResolvedValue({ data: null, error: { code: "PGRST202", message: "Could not find the function" } });
     const response = await call();

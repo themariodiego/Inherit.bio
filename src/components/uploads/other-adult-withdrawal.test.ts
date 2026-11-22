@@ -130,6 +130,21 @@ describe("the other-adult withdrawal control", () => {
     expect(text(render(view("hand-over"), { phase: "idle", failure: "refused" }))).toContain(COPY.refusedStatus);
   });
 
+  // Owner decision of 22 November 2026, "A hand-over refused for now says to
+  // try later (D-158)": the route's 409 for a hand-over refused at that moment
+  // shows the approved line, and only that one; every other refusal keeps its words.
+  it("says to try again later when the hand-over is refused for now, and only then", () => {
+    expect(HAND_OVER.notNowStatus).toBe("This cannot be done right now. Nothing was deleted. Try again later.");
+    const notNow = render(view("hand-over"), { phase: "idle", failure: "not-now" });
+    expect(text(notNow)).toContain(HAND_OVER.notNowStatus);
+    expect(notNow).toMatch(/<p role="alert" data-slot="other-adult-withdrawal-failure"[^>]*>This cannot be done right now\. Nothing was deleted\. Try again later\.<\/p>/u);
+    for (const line of [COPY.refusedStatus, HAND_OVER.uncertainStatus, COPY.uncertainStatus]) expect(text(notNow)).not.toContain(line);
+    for (const failure of ["refused", "uncertain"] as const) {
+      expect(text(render(view("hand-over"), { phase: "idle", failure })), failure).not.toContain(HAND_OVER.notNowStatus);
+      expect(text(render(view("ready"), { phase: "idle", failure })), failure).not.toContain(HAND_OVER.notNowStatus);
+    }
+  });
+
   it("says why it cannot run, and offers no request, while the database would refuse it", () => {
     for (const [readiness, line] of [["unsupported", COPY.unsupportedStatus], ["unavailable", COPY.unavailableStatus]] as const) {
       const html = render(view(readiness));
