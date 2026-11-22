@@ -538,17 +538,25 @@ select is((select string_agg(md5(pg_get_functiondef(x::regprocedure)),' ' order 
   'private.complete_own_upload_finalization_v1(uuid,uuid,uuid,uuid,uuid,text,text)','private.public_appeal_provisional_binding_v1(uuid)'])
   with ordinality as t(x,o)),
  'd174a83682e35479797ac7e738a65d79 a8e15740ad618a999aa73a1c9f909817 39de6ef674864bbcd2283003f72c0625 '
- ||'b8e13301350522ce9933d646c273d421 50b661f2167a28ba458a5153bb71ace3 7d7b1f82a7703c625b5695ba2aad57b4',
- 'unchanged: the uploader''s confirmation read, what its retention clause asks, the uploader''s upload doors and the public appeal');
+ ||'b8e13301350522ce9933d646c273d421 50b661f2167a28ba458a5153bb71ace3 '
+ -- 20261122200000 (D-166, the public appeal) has the appeal's resolution ask the record's
+ -- confirmation, md5-guarded from exactly this body; with it applied the pin follows it.
+ ||case when position('20261122200000 (D-166)' in pg_get_functiondef('private.public_appeal_provisional_binding_v1(uuid)'::regprocedure))>0
+  then '48f544b2fbec8084fc24913ef173dd01' else '7d7b1f82a7703c625b5695ba2aad57b4' end,
+ 'unchanged: the uploader''s confirmation read, what its retention clause asks, the uploader''s upload doors and the public appeal (as 20261122200000 then patched it)');
 select is((select string_agg(p.oid::regprocedure::text,', ' order by p.oid::regprocedure::text) from pg_proc p
   where p.prosrc ~ '[^a-z_]path_b_subject_v1\s*\(' and p.oid<>'private.path_b_subject_v1(uuid,uuid)'::regprocedure),
  'private.complete_own_upload_finalization_v1(uuid,uuid,uuid,uuid,uuid,text,text), private.other_adult_upload_store_authority_v1(uuid,uuid,uuid), '
- ||'private.path_b_report_authority_v1(uuid,uuid,text), private.path_b_result_read_v1(uuid,uuid,text), private.public_appeal_provisional_binding_v1(uuid)',
- 'only the uploader''s doors, the uploader''s two gates and the public appeal still ask the uploader''s confirmation read');
+ ||'private.path_b_report_authority_v1(uuid,uuid,text), private.path_b_result_read_v1(uuid,uuid,text)'
+ -- 20261122200000 (D-166, the public appeal): the resolution asks the record's confirmation instead.
+ ||case when position('20261122200000 (D-166)' in pg_get_functiondef('private.public_appeal_provisional_binding_v1(uuid)'::regprocedure))>0 then '' else ', private.public_appeal_provisional_binding_v1(uuid)' end,
+ 'only the uploader''s doors, the uploader''s two gates and (until 20261122200000) the public appeal still ask the uploader''s confirmation read');
 select is((select string_agg(p.oid::regprocedure::text,', ' order by p.oid::regprocedure::text) from pg_proc p
   where p.prosrc ~ '[^a-z_]path_b_confirmation_v1\s*\(' and p.oid<>'private.path_b_confirmation_v1(uuid,uuid)'::regprocedure),
- 'private.export_account_ordinary_readable_authority_v1(jsonb,text,uuid), private.path_b_normalization_authority_v1(uuid,text)',
- 'the person''s capture and the source authority ask the record''s confirmation');
+ 'private.export_account_ordinary_readable_authority_v1(jsonb,text,uuid), private.path_b_normalization_authority_v1(uuid,text)'
+ -- 20261122200000 (D-166, the public appeal): and the appeal's resolution.
+ ||case when position('20261122200000 (D-166)' in pg_get_functiondef('private.public_appeal_provisional_binding_v1(uuid)'::regprocedure))>0 then ', private.public_appeal_provisional_binding_v1(uuid)' else '' end,
+ 'the person''s capture and the source authority (and, from 20261122200000, the public appeal) ask the record''s confirmation');
 
 -- 1. The records, each through its own flow's real doors (the D-165 fixture) ----------------
 select pg_temp.requested('es','a',repeat('a',64));

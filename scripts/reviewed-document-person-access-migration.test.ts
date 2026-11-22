@@ -210,9 +210,24 @@ describe("the release it belongs to", () => {
   });
 
   it("is the last word on what it patches and creates: no later migration restates or patches those bodies", () => {
+    // 2026-11-22: 20261122200000 (D-166, the public appeal) has the appeal's resolution ask
+    // the helper. It is the only later migration allowed to name the helper beside a patch,
+    // and only the helper: it pins it at this migration's md5 (and excludes it from its own
+    // list of the helper's askers) and calls it in its one patch row, and never restates
+    // or patches it.
+    const D166_APPEAL = "20261122200000_reviewed_document_person_appeal.sql";
+    const allowed: Record<string, string[]> = { "private.path_b_confirmation_v1": [D166_APPEAL] };
     for (const qualified of [...patches.map(patch => patch.target), HELPER].map(target => target.slice(0, target.indexOf("(")))) {
-      expect(files.filter(file => file > NAME && rewrites(file, qualified)), qualified).toEqual([]);
+      expect(files.filter(file => file > NAME && rewrites(file, qualified)), qualified).toEqual(allowed[qualified] ?? []);
     }
+    const appeal = read(`supabase/migrations/${D166_APPEAL}`);
+    expect(appeal).not.toMatch(/create\s+(?:or\s+replace\s+)?function\s+(?:\w+\.)?path_b_confirmation_v1\s*\(/iu);
+    expect(count(appeal, "'private.path_b_confirmation_v1(")).toBe(3);
+    for (const block of [between(appeal, "do $predecessor$", "$predecessor$;"), between(appeal, "do $postflight$", "$postflight$;")]) {
+      expect(block).toMatch(pinOf(HELPER, md5(helper), "{postgres=X/postgres}"));
+    }
+    expect(parse(between(appeal, "do $patch_appeal$", "$patch_appeal$;")).map(row => row.target))
+      .toEqual(["private.public_appeal_provisional_binding_v1(uuid)"]);
   });
 });
 
@@ -361,7 +376,12 @@ describe("D-166: only the uploader's access needs the retained document", () => 
     const rule = between(register, "\"path-b-reviewed-document\": \"the-subject-row-retains-immutable-adult_flow-path-b-reviewed-document", "\",\n");
     expect(rule).toContain("the-exact-adult-signed-permission-document-plus-current-named-human-approved-review-revisions-remain-current");
     expect(rule).toContain("registered-2026-11-22-D-166");
-    expect(count(register, "registered-2026-11-22-D-166")).toBe(1);
+    // 2026-11-22: 20261122200000 (D-166, the public appeal) marks one more statement, the
+    // appeal's subject-objection resolver, with the same decision; nothing else carries it.
+    expect(count(register, "registered-2026-11-22-D-166")).toBe(2);
+    expect(count(rule, "registered-2026-11-22-D-166")).toBe(1);
+    expect(count(between(register, "\"subject-objection\": \"constant-time-match-only-the-activated-random-case-principals", "\",\n"),
+      "registered-2026-11-22-D-166")).toBe(1);
   });
 });
 

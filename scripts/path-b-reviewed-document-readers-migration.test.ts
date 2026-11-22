@@ -224,10 +224,15 @@ describe("the release it belongs to", () => {
     // name either, and only those two; for it the case checks instead that it never
     // restates either body, patches the capture once, through the one-anchor md5
     // guard, from this successor, and only pins the appeal's at this successor.
+    // 2026-11-22: 20261122200000 (D-166, the public appeal) then patches the appeal's
+    // resolution in place, md5-guarded from exactly this migration's successor and at a
+    // line no anchor here touches, so that its recheck asks the record's confirmation.
+    // It is allowed for that one body only; the case checks the same of it below.
     const D166 = "20261122190000_reviewed_document_person_access.sql";
+    const D166_APPEAL = "20261122200000_reviewed_document_person_appeal.sql";
     const APPEAL_TARGET = "private.public_appeal_provisional_binding_v1(uuid)";
     const allowed: Record<string, string[]> = { "private.export_account_ordinary_readable_authority_v1": [D166],
-      "private.public_appeal_provisional_binding_v1": [D166] };
+      "private.public_appeal_provisional_binding_v1": [D166, D166_APPEAL] };
     for (const qualified of TARGETS.map(target => target.slice(0, target.indexOf("(")))) {
       expect(files.filter(file => file > NAME && rewrites(file, qualified)), qualified).toEqual(allowed[qualified] ?? []);
     }
@@ -252,6 +257,19 @@ describe("the release it belongs to", () => {
       expect(block).toContain(`    '${APPEAL_TARGET}']) x order by 1)`);
     }
     expect(between(d166, "do $patch_access$", "$patch_access$;")).not.toContain("public_appeal_provisional_binding_v1");
+    // The appeal's own migration: it never restates the body; its pin, its one patch row and
+    // its postflight; patched once, through the one-anchor md5 guard, from this successor,
+    // at an anchor none of this migration's anchors contains.
+    const appealMigration = read(`supabase/migrations/${D166_APPEAL}`);
+    expect(appealMigration).not.toMatch(/create\s+(?:or\s+replace\s+)?function\s+(?:\w+\.)?public_appeal_provisional_binding_v1\s*\(/iu);
+    expect(count(appealMigration, "'private.public_appeal_provisional_binding_v1(")).toBe(3);
+    expect(between(appealMigration, "do $predecessor$", "$predecessor$;")).toContain(`   ('${APPEAL_TARGET}','${appeal}','{postgres=X/postgres}'),`);
+    expect(appealMigration).toContain(`  (1,'${APPEAL_TARGET}','${appeal}',`);
+    expect(appealMigration).toContain("if (length(definition)-length(replace(definition,item.old_fragment,'')))/length(item.old_fragment)<>1 then");
+    const appealAnchor = between(appealMigration, `  (1,'${APPEAL_TARGET}'`, "$old$,");
+    for (const patch of patches.filter(patch => patch.target === APPEAL_TARGET)) {
+      expect(appealAnchor.includes(patch.next.trim()), patch.label).toBe(false);
+    }
   });
 });
 

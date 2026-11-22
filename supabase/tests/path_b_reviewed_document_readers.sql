@@ -579,11 +579,18 @@ end $$;
 -- here and outside every anchor above; with it applied the capture's two md5s
 -- follow it (its predecessor rebuilt here carries that one line too). Every
 -- other md5 is this migration's own.
+-- 20261122200000 (D-166, the public appeal) does the same for the appeal's
+-- resolution, at a line outside both of its anchors here; with it applied the
+-- resolution's two md5s follow it in the same way.
 create function pg_temp.d166(p_md5 text) returns text language sql as $$
- select case when position('20261122190000 (D-166)' in pg_get_functiondef(
-   'private.export_account_ordinary_readable_authority_v1(jsonb,text,uuid)'::regprocedure))=0 then p_md5
-  when p_md5='5c9fee7018806a025ad537664cd23b69' then '2fb0181f5c393cf7283cb9e33704789a'
-  when p_md5='583e9efa4a60f086e3875fc40e03f491' then '1ee6b7092b77885fe752b324766bc844' else p_md5 end $$;
+ select case
+  when p_md5='5c9fee7018806a025ad537664cd23b69' and position('20261122190000 (D-166)' in pg_get_functiondef(
+   'private.export_account_ordinary_readable_authority_v1(jsonb,text,uuid)'::regprocedure))>0 then '2fb0181f5c393cf7283cb9e33704789a'
+  when p_md5='583e9efa4a60f086e3875fc40e03f491' and position('20261122190000 (D-166)' in pg_get_functiondef(
+   'private.export_account_ordinary_readable_authority_v1(jsonb,text,uuid)'::regprocedure))>0 then '1ee6b7092b77885fe752b324766bc844'
+  when p_md5='7d7b1f82a7703c625b5695ba2aad57b4' and position('20261122200000 (D-166)' in pg_get_functiondef('private.public_appeal_provisional_binding_v1(uuid)'::regprocedure))>0 then '48f544b2fbec8084fc24913ef173dd01'
+  when p_md5='d4b8500ac4a7e6ac2ff76e642ebd0353' and position('20261122200000 (D-166)' in pg_get_functiondef('private.public_appeal_provisional_binding_v1(uuid)'::regprocedure))>0 then '626f41011c4accd2eb7555f75cd65f83'
+  else p_md5 end $$;
 create function pg_temp.expected(p_which text) returns text language sql as $$
  select string_agg(pg_temp.d166(case when p_which='predecessor' then f.before_md5 else l.after_md5 end),' ' order by x.first)
  from (select target,min(ordinal) first,max(ordinal) last from d165_patches group by target) x
@@ -914,7 +921,7 @@ select is(pg_temp.objects_to('rd-appeal','select pg_temp.bodies(''predecessor'')
  'unresolved-potential no-hold / false | unique-current subject / true',
  '(predecessor) the objection did not resolve to a reviewed-document record and held nothing; an e-signature one it held');
 select is(md5(pg_get_functiondef('private.public_appeal_provisional_binding_v1(uuid)'::regprocedure)),
- (select after_md5 from d165_patches where ordinal=15),'(patched) every probe swapped back');
+ (select pg_temp.d166(after_md5) from d165_patches where ordinal=15),'(patched) every probe swapped back');
 
 select lives_ok('set constraints all immediate','every deferred constraint holds');
 select * from finish();

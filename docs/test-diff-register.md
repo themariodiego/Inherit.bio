@@ -1,3 +1,103 @@
+## 2026-11-22 — D-166, the public appeal: the person's objection resolves to a reviewed-document record after its document's retention ends
+
+One guarded migration, `20261122200000_reviewed_document_person_appeal.sql`. It is not hosted and not applied to the shared local database: every run applied it inside a rolled-back transaction, on top of `20261122190000`, which the coordinator applied forward. No application code or wording changes. Test mode only: both Path B flows need the test jurisdiction. Work on top of `8c6b9878`, uncommitted.
+
+**The decision.** The owner decided on 22 November 2026, "A person keeps their own access after the approved document's retention ends (D-166)": only the uploader's access to a `path-b-reviewed-document` record depends on the approved document still being retained. The coordinator then ruled that the person's objection through the public appeal is a protective right of the person, not the uploader's access. So after the document's retention ends, an objection from the person's own contact must resolve to and hold a reviewed-document record exactly as it does an e-signature record. `20261122190000` had left the appeal's resolution (`private.public_appeal_provisional_binding_v1`) asking the uploader's confirmation read (`private.path_b_subject_v1`). That read needs the document still retained, so once it was not, the objection reached the reviewer as an unresolved match and held nothing.
+
+**What changed.**
+- `private.public_appeal_provisional_binding_v1` (`7d7b1f82…` → `48f544b2fbec8084fc24913ef173dd01`, ACL `{postgres=X/postgres}`), one md5-guarded anchor: its recheck of a Path B record's confirmed binding asks `private.path_b_confirmation_v1(subject_row.owner_account_id,subject_row.id)` instead of `private.path_b_subject_v1(…)`, for the same record and arguments. It compares the same three answers (principal, contact, confirmation signature), which the two reads give alike wherever either answers. Nothing else in the body changes.
+- Pinned, unchanged: the helper (`87d1170f…`) and the uploader's read (`d174a836…`).
+  - The predecessor block requires exactly the five askers of the uploader's read that `20261122190000` left.
+  - The postflight requires that four remain (the uploader's two doors and the two gates), and that the helper is asked by the source authority, the capture and the resolution.
+  - Both lists are written as schema-qualified names, not quoted signatures, so they read as no pin of those bodies to the earlier tests' detector.
+- Register: `policyContracts.appeal-authority-v1.provisionalTargetResolver.subject-objection`, appended text starting `registered-2026-11-22-D-166` (see the amendments list).
+- `docs/evidence/release-4-notes-20261119.md`: a section for `20261122200000` appended at the end (insertion only).
+
+**New tests.**
+- `supabase/tests/reviewed_document_person_appeal.sql` (pgTAP, 27, rolled back). It reuses the D-165 suite's preamble, reviewed-document doors and appeal fixture: a subject objection, prepared with a named reviewer, committed, its evidence session opened and both evidence documents clean, whose verified contact is the person's.
+  - Inside each probe, one record is made for that contact through its own flow's real doors and confirmed by its person: es, an e-signature request to 02; rd, a reviewed permission document for 05, read in full and approved by a named reviewer before 01 may send the request. The person confirms with their own account, or with no account through the request's own session (a `non_account_subject` principal), or not at all.
+  - The document's retention is ended as the code reads it: `retain_until` set one minute in the past, with the "fixed once" guard trigger set aside for that one update. Optionally the retention sweep then shreds its key.
+  - Each answer is the case's match state and held targets, whether that record is held, the document's state and the draft's state. It is taken from the successor and from the predecessor (rebuilt by reversing exactly the migration's anchor).
+  - 0: the successor, its ACL, volatility and config; the two reads unchanged; which bodies ask each read; the resolution asked only when an appeal's evidence completes.
+  - 1 (retained, account): rd and es both `unique-current subject / true`, from either body.
+  - 2 (ended, account):
+    - the predecessor gave `unresolved-potential no-hold / false` for rd (D-166 as it was) while es still resolved;
+    - the successor resolves and holds rd exactly as es;
+    - after the sweep, the successor still resolves rd, and the predecessor still gave nothing.
+  - 3 (no account): retained, both resolve; ended, the predecessor no longer resolved rd, and the successor resolves both.
+  - 4 (unanswered): a request never answered resolves to nothing (`unresolved-potential no-hold`), for either flow, from either body. Its document has no retention deadline before acceptance, so none can end.
+  - The body is swapped back to its successor.
+- `scripts/reviewed-document-person-appeal-migration.test.ts` (12):
+  - the guarded header, its order, and the release notes naming it;
+  - nothing created and one patch through one loop;
+  - no later rewrite;
+  - the resolution rebuilt from `20261009224500` with `20261122180000`'s two patches replayed (`7d7b1f82…`), the helper from `20261122190000` (`87d1170f…`) and the uploader's read from `20261016190000` (`d174a836…`), each md5 recomputed and pinned with its ACL;
+  - since `20261122180000` only `20261122190000` named the resolution, and only to pin it;
+  - the askers lists: the predecessor block's equals `20261122190000`'s postflight list, and the postflight drops the resolution from the uploader's read and adds it to the helper's;
+  - no list names a body as a quoted signature;
+  - the patch replayed to its successor;
+  - it changes only that one call, for the same record and arguments, and the recheck still refuses on any refusal or any difference in principal, contact or signature;
+  - the two reads return the same object, and the helper has no retention clause;
+  - the register statement is marked;
+  - the suite carries the patch row byte for byte.
+
+**Changed assertions (old, new, why).**
+- `scripts/path-b-reviewed-document-readers-migration.test.ts` › "is the last word on what it patches: no later migration restates or patches those bodies".
+  - Old: `allowed` was `20261122190000` for the capture and the appeal's resolution.
+  - New: also `20261122200000` for the resolution alone. The case asserts that it never restates the body and names it exactly three times (its pin, its one patch row, its postflight). It pins it at, and patches it as ordinal 1 from, this migration's successor (`7d7b1f82…`), through the one-anchor guard, at an anchor that contains neither of this migration's two appeal anchors.
+  - Why: the D-166 appeal fix is an md5-guarded in-place patch of D-165's successor. The two-substring heuristic cannot tell it from a rewrite.
+- `scripts/reviewed-document-person-access-migration.test.ts` › "is the last word on what it patches and creates: no later migration restates or patches those bodies".
+  - Old: no later migration may name any of the four patched bodies or the helper beside `replace(definition`.
+  - New: `20261122200000` is allowed for the helper alone. The case asserts that it never restates the helper, names it exactly three times (pinned in its predecessor block and its postflight at this migration's md5, and once more where its postflight excludes it from the helper's askers), and patches only the appeal's resolution.
+  - Why: the appeal fix calls and pins the helper; it does not change it.
+- `scripts/reviewed-document-person-access-migration.test.ts` › "leaves the uploader's upload rule where the register puts it".
+  - Old: `count(register, "registered-2026-11-22-D-166")` is 1.
+  - New: it is 2, once in the upload rule (as before) and once in `appeal-authority-v1.provisionalTargetResolver.subject-objection`.
+  - Why: the coordinator asked for the appeal's register note to carry the same marker.
+- `supabase/tests/path_b_reviewed_document_readers.sql` › "the fifteen patched bodies carry their pinned successors and unchanged privileges", "(predecessor) swapped in: the fifteen bodies as 20261122170000 left them", "(patched) swapped back: the fifteen successors" and "(patched) every probe swapped back".
+  - Old: `pg_temp.d166(md5)` mapped only the capture's two md5s when the capture carried the `20261122190000 (D-166)` mark; the last assertion compared with ordinal 15's `after_md5` directly.
+  - New: `pg_temp.d166` also maps the resolution's two md5s when it carries the `20261122200000 (D-166)` mark: successor `7d7b1f82…` → `48f544b2…`, and predecessor `d4b8500a…` → `626f41011c4accd2eb7555f75cd65f83` (the D-165 predecessor rebuilt by this suite, which keeps the D-166 line). The last assertion's expected side goes through it too. Every other md5 passes through unchanged.
+  - Why: the appeal fix patches the resolution at a line outside both D-165 anchors, so the swap still works and every behaviour assertion is unchanged. Before the change, with the migration applied, these four failed and the other 89 passed.
+- `supabase/tests/reviewed_document_person_access.sql` › "unchanged: the uploader's confirmation read, what its retention clause asks, the uploader's upload doors and the public appeal", "only the uploader's doors, the uploader's two gates and the public appeal still ask the uploader's confirmation read" and "the person's capture and the source authority ask the record's confirmation".
+  - Old: the resolution pinned at `7d7b1f82…`, listed among the uploader's read's askers, and not among the helper's.
+  - New: when the resolution carries the `20261122200000 (D-166)` mark, it is pinned at `48f544b2…`, drops out of the uploader's read's askers and joins the helper's; otherwise everything is as before. Each description now says "(as 20261122200000 then patched it)", "(until 20261122200000)" or "(and, from 20261122200000, the public appeal)".
+  - Why: the appeal fix moves exactly that one body from one read to the other. Before the change, with the migration applied, these three failed and the other 86 passed.
+- No other earlier test needed an allowance. The full vitest run and the related suites agree.
+
+**Planted defects.** Database plants run the suite inside its own rolled-back transaction, with a frozen copy of the migration applied and then the plant. Source plants edited the migration, made its md5s consistent where the body changed (recomputed against the shared database inside a rolled-back transaction), ran the migration tests and restored the file byte-identical (sha256 `bd0c67d6…` before and after). The numbers below are the new suite's.
+
+| Plant | Caught by |
+|---|---|
+| Database A1, the person still blocked: the resolution asks the uploader's read again | the pin (1) and the askers (3, 4). "(ended) … resolves … and holds it" (16), "(ended) exactly as it does the e-signature record" (17), "(swept) …" (18), "(no account, ended) …" (22). The swap back (26) |
+| Database A2, everyone blocked: the resolution asks the helper for the person's account | the pin (1). Both "(retained)" lines (11, 12) before anything ends, "(predecessor) while it still held the e-signature record" (15), 16, 18, "(no account, retained)" (20), 22, 26 |
+| Database A3, the recheck dropped (the binding taken from the match itself) | "… the appeal's resolution ask the record's confirmation" (4), the pin (1), and the three predecessor lines (14, 19, 21): the swap can no longer rebuild the predecessor; 26 |
+| Database A4, the person still blocked: the helper keeps the retention clause | "unchanged: the record's confirmation …" (2), 16, 17, 18, 22 |
+| Database A5, the recheck no longer compares the signature | the pin (1) and the swap back (26) only: the signature it compares is found by the same conditions, so no record a test can make differs there |
+| Source S1, the patch keeps the uploader's read (comment only), md5s consistent | migration test "asks the record's confirmation in place of the uploader's read, for the same record, and changes nothing else"; "is driven by its pgTAP suite …" |
+| Source S2, the helper asked for the person's account, md5s consistent | the same two |
+| Source S3, the anchor widened to drop the signature comparison, md5s consistent | the same two |
+| Source S4, the postflight still lists the resolution among the uploader's read's askers | migration test "starts from the askers 20261122190000 left and ends with the appeal asking the record's confirmation" |
+| Source S5, the predecessor block pins another helper md5 | migration test "pins the body it patches and the two reads …"; and `reviewed-document-person-access-migration.test.ts` "is the last word on what it patches and creates" (its allowance requires the helper pinned at its own md5) |
+
+**Runs.**
+- Related pgTAP suites. Every related suite was run without this migration (the shared database holds `20261122190000`) and with it applied inside the suite's own rolled-back transaction, comparing every ok/not-ok line and every error. That is 168 suites: every one naming Path B, an export, the archive, Copilot, a transfer, a withdrawal, a public appeal, the mitigation decision, an acceptance, a reviewed or permission document or a held upload, this one included.
+  - 166 gave identical results both ways. The other two:
+    - This suite: 27/27 with the migration; without it, 19/27, failing exactly its D-166 lines.
+    - `public_appeal_evidence_session`, which fails both ways from the shared database's state. Its one differing line, "completion does not extend the original30day deadline", reads `private.new_public_appeal_intakes limit 1` while another run's committed intake is in the table. An ad hoc probe showed that `limit 1` returned that foreign row in every failing run. Repeated runs failed with the migration as well as without it, so the result follows the row order, not this change.
+  - Passing both ways include:
+    - `path_b_reviewed_document_readers` 93/93 and `reviewed_document_person_access` 89/89 (each after its amendment);
+    - `reviewed_document_decision` 51/51 and `path_b_reviewed_document` 85/85;
+    - `transferred_record_exports` 57/57 and `adult_acceptance_hold_and_renotice` 112/112;
+    - `subject_copilot_path_b` 52/52, `subject_transfer` 118/118 and `uploader_withdrawal_hand_over` 85/85.
+  - 22 suites fail with and without the migration from the shared local database's state, including the two appeal suites `new_public_appeal_intake` and `public_appeal_evidence_session`, which fail identically except for the line above.
+  - The 22: `account_archive_readable_graph`, `account_deletion_cohort_notices`, `adult_subject_rights_activation`, `declared_chromosomal_sex`, `family_sharing`, `file_ready_mail_target_guard`, `future_person_claim_review`, `future_person_keyless_account_objection`, `future_person_keyless_owner_objection`, `future_person_native_keyless_release`, `historical_account_request`, `mail_outbox`, `new_public_appeal_intake`, `own_upload_consent_withdrawal`, `path_b_confirmed_array_normalization`, `path_b_queued_reports`, `public_appeal_evidence_session`, `rls_cross_account_attack`, `subject_delete`, `subject_delete_adult`, `subject_delete_embryo`, `subject_delete_reviewed_document`.
+  - Before their change, with the migration applied, the two amended suites failed only at the md5 and askers assertions named above (89/93 and 86/89); after it, both pass in full both ways.
+- Without the migration (the shared database has `20261122190000`), the new suite fails exactly its D-166 lines: the pin (1), the askers (3, 4), "(ended)" (16, 17), "(swept)" (18), "(no account, ended)" (22) and the swap back (26). The other 19 pass.
+- Pre-check (release notes): before, 3 / true and both contexts 0, under the default search path and `search_path=''`. With the migration inside a rolled-back transaction: 2 / false. Duration 79 to 91 ms.
+- `pnpm typecheck`, `pnpm lint --ignore-pattern ".claude/**"`, and the routes, secrets, readability, sql-includes, browser-discovery and names gates: pass.
+- Full `npx vitest run`: 15,316 passed and 38 failed of 15,354 (2,521 suites in 867 files). The 38 are exactly the host-dependent ones that fail on the untouched tip in this container: `scripts/ci-browser-runtime.test.ts` (21), `scripts/comprehension/owned-lifecycle.test.ts` (7), `scripts/comprehension/manual-reconciliation.test.ts` (5), `scripts/owned-linux-runtime.test.ts` (3) and `scripts/account-archive-root/checkpoint.test.ts` (2).
+- The shared local database was not reset, restarted or migrated: it holds 301 migrations through `20261122190000`, as the coordinator left it. This migration was never committed to it.
+
 ## 2026-11-22 — D-166: a person keeps their own access after the approved document's retention ends; only the uploader's access needs it
 
 One guarded migration, `20261122190000_reviewed_document_person_access.sql` (not hosted, not applied to the shared local database; every run applied it inside a rolled-back transaction). No application code or wording changes. Test mode only: both Path B flows need the test jurisdiction. Work on top of `3ba75cfb`, uncommitted.
