@@ -1,3 +1,68 @@
+## 2026-11-22 — D-156 (follow-up): the hold and the reminder also cover the inviter's account archive
+
+D-156, owner decision of 22 November 2026, "The 72-hour hold covers an inviter's reads of the invited adult's own record" (`docs/protocol/decisions.md`): during either window the inviter sees nothing the adult shares with them. `20261122110000` held the Family readers and Copilot. The inviter's own account archive is another read of what the adult shares: through `export.share-link` and `raw.export` the native complete archive carries the adult's saved reports, scores, ancestry and raw genotypes. Test mode only: the native complete archive runs only while `private.account_archive_r2_configuration` is enabled (off by default and in production), and Path A's own-account acceptance needs the test jurisdiction.
+
+**What changed.** Migration `20261122140000_adult_acceptance_inviter_archive_reads.sql` (guarded, not hosted) creates nothing. It patches four bodies of `20261010190500` in place, md5-guarded with their reviewed ACL, one anchor each, successor md5, ACL, volatility and owner asserted. Each asks the unchanged `private.adult_acceptance_inviter_held_v1(account, record)` (pinned at `bd8cde3a947a35f7ae07d24175418515`) and answers exactly as with no grant from the adult:
+- `private.account_archive_complete_subjects_v1` (`43920b19…` → `f63e4c49…`): the adult's record is not listed through its grants to the inviter. A record listed by another link (own, owned, embryo cohort, family pair) still is.
+- `private.account_archive_complete_subject_authority_v1` (`5ee7f9ac…` → `6982e98c…`): a listed record the inviter is held from is `excluded`, `export-recipient-consent-required`, with no raw authority, as with no export permission. This is the family-pair case.
+- `private.account_archive_export_recipient_v1` (`26872ed7…` → `8ca5bc23…`) and `private.account_archive_raw_authority_v1` (`13ee8d5c…` → `4100fff7…`): 42501 `not_found`, their no-grant answer. Every member page, raw file read, original and prepared member re-asks them.
+
+An archive already queued, building or ready when a hold or a due reminder starts needs nothing new. Its authority receipt is the digest of the whole capture. The build door, the status check and download opening, readiness and completion, delivery, every manifest page and every chunk (checked before and after the stored bytes are read, then on issue and acknowledgement) all recompute that capture through `private.export_archive_current_v1`. That function refuses a receipt that no longer matches. While the inviter is held, a capture made while the adult's export was permitted no longer matches, so the archive cannot be finished or downloaded. Once the reminder is accepted the capture is byte-identical again, and the same archive is current with no job run. The preserved export (the native archive off) is unchanged: it refuses any account holding a live recipient grant. No application code, wording, table or job changes.
+
+**New tests.**
+- `supabase/tests/adult_acceptance_inviter_archive_reads.sql` (pgTAP, 36, rolled back). It uses the real doors throughout: a Path A invitation opened through its mailed token and accepted by an account created after it; B's own upload signatures, a normalized genome file and grants of `export.share-link` and `raw.export` to A (the inviter) and C (a third account) through the real grant door; notices sent through the retention executor and the mail worker's claim and completion; a real archive request (`capture`, `create`) and the worker's `begin`. The four successor md5s, their ACL and volatility, and that no client role can call them. During the hold:
+  - A's archive covers A's own record only.
+  - The recipient, raw and source authorities refuse A.
+  - What A's archive reads equals, as a whole, what it reads when B's grants to A are deleted (inside a savepoint).
+  - The one difference is A's own class of grants received (`directional_grants` 2/0), whose rows carry no purpose and name no record.
+  - Asked about B's record, the subject authority excludes it with the no-permission reason and no raw authority.
+  - C gets B's record with its raw file, and every authority answers C.
+  - B's own archive is unaffected.
+  - With a family pair (A turns on Portrait with B), B's record is listed through the pair and excluded.
+  - With the native archive off, the preserved export refuses A as before.
+
+  At 72 hours with the second notice queued but not accepted, nothing changes. Once it is accepted, A's archive covers B's record, its export permission and its raw file with no job run. At 29 d 23 h 59 m A requests an archive covering both records; it builds and is current. At 30 days:
+  - A's archive covers A's own record only, every authority refuses, and a new request covers A's own record only.
+  - The archive requested a minute earlier can no longer be built (`not_found`) nor delivered (`export_archive_current_v1` `not_found`).
+  - C is unaffected.
+
+  With the reminder queued, still refused. Once it is accepted, A's capture equals the one the archive was requested from, byte for byte, and the same archive is current and builds again with no job run.
+- `scripts/adult-acceptance-inviter-archive-reads-migration.test.ts` (8):
+  - the guarded header and its order after `20261010190500` and `20261122110000`, and that the release notes name it;
+  - no function, table, trigger, policy, constraint, grant or row write, only four patches;
+  - nothing another change of 22 November owns is touched, and the question is only pinned;
+  - no later migration rewrites the four bodies;
+  - the four predecessors and the question are rebuilt from the migrations that defined them, and the five pinned md5s are recomputed;
+  - each patch replays to the successor that the migration and the pgTAP suite assert;
+  - each patch keeps every predecessor line and adds exactly one call;
+  - the pgTAP suite's coverage.
+
+**Changed assertions (old, new, why).**
+- `scripts/adult-acceptance-inviter-reads-migration.test.ts` › "is the last word on what it patches and adds: no later migration restates or patches those bodies".
+  - Old: for every name it patches or adds (the question included), `expect(files.filter(file => file > NAME && rewrites(file, qualified)), qualified).toEqual([])`. Here `rewrites` flags a later file that creates the function, or that both quotes `'<name>(` and contains `replace(definition`.
+  - New: the same, except that the pair (`20261122140000_adult_acceptance_inviter_archive_reads.sql`, `private.adult_acceptance_inviter_held_v1`) is not flagged. For that file the case asserts instead that:
+    - the quoted name occurs only inside its `$predecessor$` block;
+    - that block pins the question at `bd8cde3a947a35f7ae07d24175418515`;
+    - the file has no `create [or replace] function … adult_acceptance_inviter_held_v1(`.
+
+    Every other name and every other later file is checked exactly as before.
+  - Why: the new migration pins the question in its pre-check and patches four other bodies with `replace(definition…)`. The two-substring heuristic therefore flags a file that only reads the question. The replacement assertions keep the rule's intent (nothing later restates or patches the question). A source plant that makes the migration name the question outside its pre-check fails this case (below).
+- There is no "newest file" rule in that test (it was never `files.at(-1)`), so nothing else changed.
+
+**Planted defects** (database plants inside the suite's own rolled-back transaction, with the four live successor md5s read back unchanged after each run; source plants restored byte-identical by sha256, and the migration's recorded md5 `6785897b9e3282c23108a4393f235b7d` still equals the file).
+
+| Plant | Caught by |
+|---|---|
+| The subject list does not ask (its call removed) | pgTAP "(hold) A's archive covers A's own record only …", "(hold) what A's archive reads is exactly what it reads when B has granted A nothing", "(hold) the one difference is A's own class of grants received …", "(72 h) queued but not yet accepted …", "(30 d) from 30 days A's archive covers A's own record only again", "(30 d) a new request covers A's own record only" (and the md5 pin) |
+| The subject authority does not ask | pgTAP "(hold) asked about B's record, A's archive excludes it with the reason a missing export permission gives, and no raw authority", "(hold, pair) B's record, listed through the pair, is excluded and nothing raw is read" (and the md5 pin) |
+| The export recipient authority does not ask | pgTAP "(hold) the recipient, raw and source authorities refuse A as they do with no grant", "(30 d) and every authority refuses A" (and the md5 pin) |
+| The raw authority does not ask | the same two pgTAP lines (and the md5 pin) |
+| Source: the authority patch loses its question | migration test "replays each patch … to exactly the successor …", "only adds the question …" |
+| Source: the migration names the question outside its pre-check | migration test "touches nothing another change of 22 November owns, and leaves the question … alone"; the adjusted "is the last word on what it patches and adds" in `adult-acceptance-inviter-reads-migration.test.ts` |
+| Source: the recipient patch answers `null` instead of `not_found` | migration test "replays each patch …", "only adds the question …" |
+
+**Other suites.** Each suite that reads the archive, the export doors, the acceptance clocks or the record withdrawals was run before the forward apply, once without this migration and once with it applied inside the suite's own transaction. That is 102 suites (`account_archive_*`, `export_*`, `account_export_due`, `account_deletion*`, `adult_acceptance_*`, `future_person_*`, `own_*`, `subject_export*`, `self_withdrawal_deletes_exports`, `other_adult_*`). Each gave identical results both ways. After the forward apply, `adult_acceptance_inviter_reads.sql` 77/77, `account_archive_complete.sql` 284/284 and `account_archive_test_completion.sql` 56/56. Failures that are identical with and without this migration, in the shared database (not this change): `account_archive_readable_graph`, `account_deletion`, `account_deletion_own_grant_nonces`, `account_deletion_purge`, `future_person_claim_review`, `future_person_keyless_account_objection`, `future_person_keyless_objection_decisions`, `future_person_keyless_owner_objection`, `future_person_native_keyless_release`, `other_adult_upload_consent_withdrawal`, `own_upload_consent_withdrawal`, `own_upload_finalization`, `own_upload_retention`, `self_withdrawal_deletes_exports`.
+
 ## 2026-11-22 — D-152: only a live download copy blocks deleting one file, and the own-file withdrawal ends a finished whole-account copy
 
 The owner decided both halves of D-152 today: "Only a live download copy blocks deleting a single file" and "Withdrawing consent for one's own file ends a finished download copy too" (`docs/protocol/decisions.md`). Deleting one file from Files was refused for good while the record had any download copy the self emptying had not retired, expired, failed and ended ones included; and the own-file withdrawal revoked the account's whole-account copies only while queued or building, leaving a READY one READY.

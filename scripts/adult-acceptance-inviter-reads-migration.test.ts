@@ -133,11 +133,25 @@ describe("the release it belongs to", () => {
       return new RegExp(`create\\s+(?:or\\s+replace\\s+)?function\\s+(?:\\w+\\.)?${local}\\s*\\(`, "iu").test(sql)
         || (sql.includes(`'${qualified}(`) && sql.includes("replace(definition"));
     };
+    // 2026-11-22: 20261122140000 (D-156, the inviter's account archive) names the
+    // question in its predecessor block, pinned at the md5 this migration
+    // creates, and patches four archive bodies with replace(definition), so the
+    // two-substring heuristic flags it for the question alone. For that one
+    // file and that one name the case checks instead that the name occurs only
+    // in its predecessor block and that nothing there creates the question.
+    const ARCHIVE = "20261122140000_adult_acceptance_inviter_archive_reads.sql";
     for (const qualified of [...TARGETS.map(target => target.slice(0, target.indexOf("("))),
       "private.adult_acceptance_inviter_held_v1", "public.adult_acceptance_inviter_held_subjects_v1",
       "private.adult_acceptance_clock_state_v1"]) {
-      expect(files.filter(file => file > NAME && rewrites(file, qualified)), qualified).toEqual([]);
+      expect(files.filter(file => file > NAME && rewrites(file, qualified)
+        && !(file === ARCHIVE && qualified === "private.adult_acceptance_inviter_held_v1")), qualified).toEqual([]);
     }
+    const archive = read(`supabase/migrations/${ARCHIVE}`);
+    const archivePreflight = between(archive, "do $predecessor$", "$predecessor$;");
+    expect(archive.replace(archivePreflight, "").includes("'private.adult_acceptance_inviter_held_v1(")).toBe(false);
+    expect(archivePreflight).toContain("to_regprocedure('private.adult_acceptance_inviter_held_v1(uuid,uuid)')\n"
+      + "   and md5(pg_get_functiondef(p.oid))='bd8cde3a947a35f7ae07d24175418515'");
+    expect(archive).not.toMatch(/create\s+(?:or\s+replace\s+)?function\s+(?:\w+\.)?adult_acceptance_inviter_held_v1\s*\(/iu);
   });
 });
 

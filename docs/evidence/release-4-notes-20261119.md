@@ -960,3 +960,67 @@ Nothing changes in production, where no copy of a person's record or account exi
 ## Browser runs
 
 None. No browser spec deletes a single file while the record has a copy, or withdraws while a copy exists: the browser suite has no generation capability (`e2e/subject-export.spec.ts` asserts no copy is made), and `e2e/file-deletion.spec.ts`, `e2e/own-file-controls.spec.ts` and the withdrawal specs make none. The two pgTAP suites above drive every state through the database's doors.
+
+# Release notes: `20261122140000_adult_acceptance_inviter_archive_reads.sql`
+
+Local work only. Nothing here was run against production or any hosted database. D-156 (`docs/protocol/defects.md`), owner decision of 22 November 2026, "The 72-hour hold covers an inviter's reads of the invited adult's own record" (`docs/protocol/decisions.md`): during either window the inviter sees nothing the adult shares with them. `20261122110000` (above) held the Family readers and Copilot; this migration holds the third read of what the adult shares, the inviter's own account archive. Through `export.share-link` and `raw.export` the native complete archive carries another person's saved reports, scores, ancestry and raw genotypes; for the held inviter it now answers exactly as when the adult has granted them nothing. The native complete archive runs only while `private.account_archive_r2_configuration` is enabled (the TEST archive, off by default and off in production), and Path A's own-account acceptance is reached only under the test jurisdiction: in production no acceptance clock exists and no archive meets one.
+
+## What it changes
+
+- No new function. Four bodies of the native complete archive (`20261010190500`) patched in place under the md5-guarded convention (the exact predecessor md5 and ACL `{postgres=X/postgres}`, one anchor each, the successor md5 and unchanged ACL, volatility and owner asserted, 55000 otherwise). Each asks `private.adult_acceptance_inviter_held_v1(account, record)` (unchanged; pinned at `bd8cde3a947a35f7ae07d24175418515`) at its existing grant checkpoint:
+  - `private.account_archive_complete_subjects_v1(jsonb)` (`43920b19954c11add72cf3a2949cdaa1` → `f63e4c494c07b5c2055a6570df1f4a13`): the adult's record is not listed through its grants to the inviter. A record listed by another link (the inviter's own, one the inviter owns, an embryo cohort, a family pair) is still listed, as it would be with no grant.
+  - `private.account_archive_complete_subject_authority_v1(jsonb,uuid,jsonb)` (`5ee7f9ac82e3bb982e213f675bdb2e43` → `6982e98c2b441d2e7eda98eabd5a002d`): a listed record the inviter is held from has no live export permission: `excluded`, reason `export-recipient-consent-required`, no raw authority, as with none. This is the case of a family pair: when either person's Portrait choice lists the adult's record, its member counts appear as excluded, exactly as for a pair with no grant from the adult.
+  - `private.account_archive_export_recipient_v1(jsonb,uuid)` (`26872ed747d7fd37b3824d61a7fa563d` → `8ca5bc23ad2ae076b417ef39f414dd99`) and `private.account_archive_raw_authority_v1(jsonb,uuid)` (`13ee8d5c3055d3dd2aef841fb14060ed` → `4100fff709c7e10d486d135b5f418a6d`): 42501 `not_found`, the answer each gives when no grant is found. The member census and every member page (through `private.account_archive_complete_member_rows_v1` and its related science rows) re-ask the recipient authority; the raw file inventory, raw file rows, originals and prepared members (through `private.account_archive_raw_source_v1`) re-ask the raw authority.
+- **An archive already queued, building or ready when a hold or a due reminder starts.** Nothing is added for it: the archive's own currentness rule already refuses it. The archive's authority receipt is the digest of the whole capture (`private.account_archive_complete_capture_v1`: its record list, every record's authority, the censuses and the files). Every build call (`public.export_archive_account_complete_v1`) recomputes the capture and refuses a different one; the status check, the download opening (`public.export_archive_request_v1` `check` and `open-ready`), readiness and completion (`private.account_archive_test_ready_v1`, `private.complete_test_account_archive_v1`), delivery (`private.account_archive_test_delivery_context_v1`, `…_download_context_v1`), every manifest page (`private.account_archive_test_manifest_page_v1`) and every chunk (`private.current_account_archive_test_object_v1`, asked before and again after the stored bytes are read, then `private.issue_account_archive_test_chunk_v1` and `private.ack_account_archive_test_chunk_v1`) recompute it through `private.export_archive_current_v1`, which answers 42501 `not_found` when the receipt no longer matches. A capture made while the adult's export was permitted (the 30-day window starts after such an archive could have been made) no longer matches while the inviter is held, so that archive can neither finish nor be downloaded: no chunk leaves the server during the window. Once the reminder is accepted the same capture is current again, byte for byte, and the same archive builds and downloads with no job run. Only a chunk whose last check (the issue) passed before the boundary is still sent.
+- **Unchanged.** The preserved account export (the native archive off) reads nothing another account shares: it refuses any account holding a live recipient grant (0A000 `export_partition_projection_unavailable`), held or not. The inviter's own class of grants received (`directional_grants` in the account's class census and rows) still counts the adult's grants to them: those rows carry no purpose and name no record, and the pgTAP suite proves they are the one difference from an archive with no grant. The adult's own archive, and every other recipient's, are unchanged.
+- No table, column, constraint, trigger, grant, queue, job or wording changes. Fingerprint effect: 4 `def_md5` values change; the `functions` and `tables` counts are unchanged.
+
+## Which releases must come first
+
+1. `20261010190500_account_archive_complete.sql`, carried by the PR 323 guarded apply (`docs/evidence/pr323-production-apply-20261016/`): the four bodies this migration patches, at the predecessor md5s above. No later migration patches them, and the production fingerprint recorded after that apply (`results/run-2026-10-22/fp-after-merge.json`) carries all four.
+2. `20261122110000` (above): the question it asks. Without it the predecessor block refuses (55000, `adult acceptance inviter archive reads prerequisite differs`).
+3. This migration. It does not touch the objects of `20261122120000` (the record transfer opens) or `20261122130000` (single-file delete), both of the same day; locally it was applied forward after both, which other sessions had already applied, and recorded.
+
+## Read-only pre-checks (one SELECT; the release session and its `search_path`)
+
+Stop unless every `must_be_*` holds.
+
+```sql
+select
+ (select count(distinct x.signature) from pg_proc p join (values
+   ('private.account_archive_complete_subjects_v1(jsonb)','43920b19954c11add72cf3a2949cdaa1'),
+   ('private.account_archive_complete_subject_authority_v1(jsonb,uuid,jsonb)','5ee7f9ac82e3bb982e213f675bdb2e43'),
+   ('private.account_archive_export_recipient_v1(jsonb,uuid)','26872ed747d7fd37b3824d61a7fa563d'),
+   ('private.account_archive_raw_authority_v1(jsonb,uuid)','13ee8d5c3055d3dd2aef841fb14060ed'),
+   ('private.adult_acceptance_inviter_held_v1(uuid,uuid)','bd8cde3a947a35f7ae07d24175418515')
+  ) as x(signature,body) on p.oid=to_regprocedure(x.signature) and md5(pg_get_functiondef(p.oid))=x.body
+   and p.proacl::text='{postgres=X/postgres}') as must_be_5_bodies_as_reviewed,
+ (select coalesce(bool_or(enabled),false) from private.account_archive_r2_configuration) as context_native_archive_enabled,
+ (select count(*) from public.generated_exports where target_kind='account' and status in ('queued','building','ready'))
+   as context_open_account_archives,
+ (select count(*) from public.subject_invitations i where i.invitation_kind='adult_subject' and i.status='accepted'
+   and not exists(select 1 from public.adult_subject_drafts d where d.subject_id=i.target_id)) as context_accepted_path_a_invitations,
+ current_user as context_current_user,
+ current_setting('search_path') as context_search_path;
+```
+
+Locally, before the forward apply, `must_be_5_bodies_as_reviewed` was 5 (and 1 after the migration, inside a rolled-back transaction: only the question still matches); the context was `false`, 0 and 11. The five md5s are also recomputed from source by `scripts/adult-acceptance-inviter-archive-reads-migration.test.ts`. No pinned header prints a `public` or `private` type, so the md5s do not depend on `search_path`. `context_native_archive_enabled` is expected to be `false` and both counts 0 in production; with the native archive off nothing this migration patches is reached.
+
+## Locks and duration
+
+Catalog work only: four `create or replace function` through `execute`, each taking a lock on its own `pg_proc` row; no table is locked or scanned. Measured locally inside a rolled-back transaction: about 15 ms, the pre-checks included.
+
+## Deployed code between apply and deploy
+
+No application code changes with this migration: the archive is built, delivered and checked entirely through the database doors above. Applied, every window answers as described; not applied, the archive answers as before. Nothing changes in production, where the native archive is off and no acceptance clock exists.
+
+## What a person sees
+
+Only in test mode, with the TEST archive on. No new wording.
+
+- **The inviter, during either window.** A new account archive covers what the inviter would get if the adult had shared nothing: their own data, records they own, and their own list of grants received (which names no record and no purpose). An archive the inviter requested before the hold or before the 30-day point, not yet finished or ready and not yet downloaded, cannot be finished, opened or downloaded until the clock clears: its status check, its download opening and every chunk are refused as not found, so the settings page shows the export control's existing failure wording and no file is written. When the reminder is accepted the same archive is current again and can be downloaded until it expires; the inviter can also request a new one.
+- **The adult, and anyone else the adult shares with.** Nothing changes.
+
+## Pinned tests (local, this container)
+
+`supabase/tests/adult_acceptance_inviter_archive_reads.sql` (36 tests) builds a Path A account acceptance with the adult's own upload and grants of `export.share-link` and `raw.export` to the inviter and to a third account, and drives the archive through the hold, a family pair, the preserved export, the release at 72 hours and the second notice, a real archive requested a minute before 30 days and built, the 30-day boundary (the same archive can no longer be built or delivered), and the reminder (the capture is equal byte for byte and the archive is current again with no job run). `scripts/adult-acceptance-inviter-archive-reads-migration.test.ts` (8) rebuilds the four predecessors and the question from their migrations, recomputes the five pinned md5s and replays each patch to its successor. Every suite that reads the archive or the export doors (102 others) gives the same result with and without this migration. No browser journey drives an archive download during a hold: a held acceptance needs an account created after the invitation and its clocks aged, which the suite does through the same database doors.
