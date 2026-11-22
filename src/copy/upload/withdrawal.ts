@@ -8,12 +8,14 @@
  * family links built on them, keeps a record of the consent marked withdrawn,
  * and keeps the account.
  *
- * NOT APPROVED. The decision says the wording of the control, the
- * confirmation, the receipt and the email is shown to the owner before it
- * ships. Every string here is a draft for that review, listed verbatim with
- * where it appears; none changes the consent text itself
- * (content/legal/consent.upload-self/v1.md), which already says "You can
- * withdraw this permission and ask to delete your file."
+ * APPROVED on 22 November 2026 (docs/protocol/decisions.md, "The wording of
+ * the own-file consent withdrawal is approved"), with the last two lines of
+ * `deletes` added under "The own-file withdrawal's optional changes are left
+ * to engineering". Every string is listed verbatim with where it appears in
+ * docs/evidence/consent-withdrawal-design-20261119/own-file-wording.md; none
+ * changes the consent text itself (content/legal/consent.upload-self/v1.md),
+ * which already says "You can withdraw this permission and ask to delete your
+ * file."
  *
  * "Working…" is the pending word the other settings controls already use.
  */
@@ -37,6 +39,8 @@ export const OWN_UPLOAD_WITHDRAWAL_COPY = {
     "Every result and report made from them, and your Copilot chats about them.",
     "What you share with family, and the family links built on your files.",
     "The copies that people you shared with can see.",
+    "Every permission you gave for your DNA ends.",
+    "Any copy of your record we prepared for you to download. Its download link stops working.",
   ],
   keepsHeading: "What we keep",
   keeps: [

@@ -17,7 +17,7 @@ import { LOCAL_MODEL_ORIGIN } from "../scripts/ci-browser-config";
 import { allowCopilot, CAFFEINE_SLUG, lastToolResult, saveCopilotProvider, startCopilotFixture, type CopilotFixture }
   from "./fixtures/canonical-copilot-browser";
 import { FAMILY_EMPTY_NOTE, FAMILY_SCOPE_LABEL, familyMemberLine } from "../src/copy/copilot/group-scopes";
-import { COPILOT_LOCAL_ONLY } from "../src/copy/family/person";
+import { COPILOT_LOCAL_ONLY, GATE_BUTTON, GATE_CHECKBOX_LABEL } from "../src/copy/family/person";
 import { PERMISSION_ROWS } from "../src/copy/family/permissions";
 import { NOT_DIAGNOSTIC } from "../src/copy/reports/strings";
 import { accountCsrf, signOut } from "./helpers/session-csrf";
@@ -183,6 +183,14 @@ test.describe("the Family group scope, end to end on the local model", () => {
     await expect(pageA.getByRole("region", { name: "Copilot permission", exact: true }))
       .toContainText("This model runs beside your self-hosted Inherit server.");
     await allowCopilot(pageA);
+    // A acknowledges the Family domain's one Tier-2 gate on B's person page,
+    // as e2e/family.spec.ts passes it, before asking: since D-157 the Family
+    // group scope asks for it too, like the one-record scope.
+    await pageA.goto(`/family/s-${invitedSubjectB}`);
+    const gate = pageA.locator('[data-slot="result-gate"]');
+    await gate.getByRole("checkbox", { name: GATE_CHECKBOX_LABEL, exact: true }).check();
+    await gate.getByRole("button", { name: GATE_BUTTON, exact: true }).click();
+    await expect(gate).toHaveCount(0);
   });
 
   test.afterAll(async () => {

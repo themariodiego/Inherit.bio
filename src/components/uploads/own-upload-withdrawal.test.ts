@@ -92,6 +92,26 @@ describe("the own-upload withdrawal control", () => {
     }
   });
 
+  it("lists exactly the approved six things it deletes, in order, as the confirmation's first list", () => {
+    // Owner decisions of 22 November 2026: the wording is approved, with the
+    // last two lines added ("The own-file withdrawal's optional changes are
+    // left to engineering"). Pinned verbatim, not read back from the module.
+    const approved = [
+      "Every DNA file you added to your own record.",
+      "Every result and report made from them, and your Copilot chats about them.",
+      "What you share with family, and the family links built on your files.",
+      "The copies that people you shared with can see.",
+      "Every permission you gave for your DNA ends.",
+      "Any copy of your record we prepared for you to download. Its download link stops working.",
+    ];
+    expect(COPY.deletes).toEqual(approved);
+    const html = render(live("ready"), { phase: "confirming", failure: null });
+    const lists = [...html.matchAll(/<h4[^>]*>([^<]*)<\/h4><ul[^>]*>(.*?)<\/ul>/gu)];
+    expect(lists.map(list => list[1])).toEqual([COPY.deletesHeading, COPY.keepsHeading]);
+    const items = [...lists[0]![2]!.matchAll(/<li>(.*?)<\/li>/gu)].map(item => text(item[1]!).trim());
+    expect(items).toEqual(approved);
+  });
+
   it("holds both buttons while the request is in flight", () => {
     const { byTestId, tree } = wiring(live("ready"), { phase: "sending", failure: null });
     expect(byTestId("own-upload-withdrawal-confirm")[0]?.props.disabled).toBe(true);

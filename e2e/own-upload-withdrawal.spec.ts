@@ -87,6 +87,10 @@ async function withdrawFromHere(page: Page, subjectId: string) {
   const dialog = section.getByRole("alertdialog", { name: COPY.confirmHeading });
   await expect(dialog).toBeVisible();
   for (const line of [...COPY.deletes, ...COPY.keeps, COPY.afterwards, COPY.irreversible]) await expect(dialog).toContainText(line);
+  // What we delete, whole and in order: the six approved lines (owner decisions of 22 November 2026).
+  const deletes = dialog.getByRole("list").first().getByRole("listitem");
+  await expect(deletes).toHaveCount(6);
+  await expect(deletes).toHaveText([...COPY.deletes]);
   expect(sent).toBe(0);
   // Cancelling closes it and sends nothing.
   await dialog.getByRole("button", { name: COPY.cancelButton, exact: true }).click();

@@ -8,6 +8,7 @@ import { isSameOrigin } from '@/lib/account-deletion';
 import { providerKeyFor } from '@/lib/llm';
 import { resolveSubjectForAccount } from '@/lib/subjects';
 import { currentOwnUploadAccount } from '@/lib/uploads/own-upload-context';
+import { acknowledged } from '@/lib/family/tier2';
 import { refusalFor, type RefusalId } from '@/copy/copilot/refusals';
 import { FAMILY_SCOPE_LABEL } from '@/copy/copilot/group-scopes';
 import { familySystemMessage } from '@/copy/copilot/system-prompts';
@@ -27,14 +28,16 @@ import { captureFamilyReports, checkFamilyTurn, familyChatHistorySchema, familyC
  * chat-scope-v1, scope-derived-v1 `family:individual-risks`).
  *
  * The request carries only `{contextToken, message}` or `{chatId, message}`.
- * The intent gate runs before anything is read. The group is resolved again
- * for this turn from the database; the context token only proves the page
- * showed this same group to this same session. Every tool result, the pinned
- * model connection and the final commit recheck the whole turn: session,
- * both Family capabilities for everyone, every member's exact grants, the
- * asker's own local model permission, and every captured read. A member who
- * pauses or withdraws mid-conversation is gone from the next turn, and the
- * turn in flight fails closed without writing anything.
+ * The Tier-2 acknowledgement (brief §7.2; D-157) and the intent gate run
+ * before anything is read. The group is resolved again for this turn from
+ * the database; the context token only proves the page showed this same
+ * group to this same session. Every tool result, the pinned model connection
+ * and the final commit recheck the whole turn: session, both Family
+ * capabilities for everyone, this session's Tier-2 acknowledgement, every
+ * member's exact grants, the asker's own local model permission, and every
+ * captured read. A member who pauses or withdraws mid-conversation is gone
+ * from the next turn, and the turn in flight fails closed without writing
+ * anything.
  *
  * There is no genotype tool in this scope. The model reads each person's
  * saved reports for the layers they shared, attributed to that person.
@@ -73,8 +76,8 @@ export async function familyChatResponse(request: Request, body: unknown, option
   try {
     // api.chat's registered order: live jurisdiction, then the transport (a
     // true non-self scope runs on a server-attested same-host model or not at
-    // all), then the model endpoint and the live scope grants, then the
-    // intent gate, all before any result is read.
+    // all), then the model endpoint, the Tier-2 acknowledgement and the live
+    // scope grants, then the intent gate, all before any result is read.
     if (!await familyJurisdictionPermits(actor)) return denied();
     if (!modelRuntime().localAllowed) return transportUnavailable();
     const self = await resolveSubjectForAccount(actor.accountId, 'me');
@@ -82,6 +85,8 @@ export async function familyChatResponse(request: Request, body: unknown, option
     if (!self || !provider) return denied();
     if (provider.authority.providerClass !== 'local') return transportUnavailable();
     if (token && snapshotHash(provider.authority) !== token.providerHash) return denied();
+    // The Family domain's one Tier-2 gate, as the one-record scope asks for it (D-157).
+    if (!await acknowledged({ id: actor.accountId })) return denied();
     const resolved = await resolveFamilyMembers(actor);
     // The people this thread may name are read as persons by both gates.
     const people = resolved.map(member => member.displayLabel);

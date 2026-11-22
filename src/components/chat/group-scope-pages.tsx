@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import type { ReactNode } from "react";
 import { BlockingState } from "@/components/embryo/states";
 import { OwnChatPanel } from "@/components/chat/own-chat-panel";
+import { ResultGate } from "@/components/family/result-gate";
 import {
   COHORT_COPILOT_LEDE,
   COHORT_EMBRYOS_HEADING,
@@ -58,7 +59,12 @@ export function LocalTransportUnavailable() {
   );
 }
 
-/** `/copilot/family`: the Family group scope, in the register's order of checks. */
+/**
+ * `/copilot/family`: the Family group scope, in the register's order of
+ * checks. Past the asker's own local model, the Family domain's one Tier-2
+ * gate, the same `ResultGate` `/family/[person]` renders (D-157), before any
+ * member, conversation or composer.
+ */
 export async function FamilyCopilotPage() {
   const view = await prepareFamilyCopilotChat();
   if (!view) notFound();
@@ -86,6 +92,14 @@ export async function FamilyCopilotPage() {
           <p className="max-w-measure text-sm leading-relaxed text-ink-muted">{COPILOT_LOCAL_ONLY}</p>
         </div>
         <p><Link href={route("settings.copilot")} className="link-target quiet-link">{REVIEW_SETTINGS_BUTTON}</Link></p>
+      </div>
+    );
+  }
+  if (view.kind === "gated") {
+    return (
+      <div className="page-stack rec-column stack-blocks" data-slot="copilot-family-gated">
+        {header}
+        <ResultGate />
       </div>
     );
   }

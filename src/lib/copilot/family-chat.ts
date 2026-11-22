@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { familyCapability } from '@/lib/family/access';
 import { listFamilyPeople } from '@/lib/family/graph';
 import { loadSharedReportSnapshot, type SharedReportResult } from '@/lib/family/shared-report-results';
+import { acknowledged } from '@/lib/family/tier2';
 import { providerKeyFor } from '@/lib/llm';
 import { resolveSubjectForAccount } from '@/lib/subjects';
 import { createAdminClient } from '@/lib/supabase/admin';
@@ -24,8 +25,11 @@ import { snapshotHash } from './own-chat-token';
  * runs only on a server-attested same-host model) before anything is read;
  * then the asker's jurisdiction; then the asker's own local Copilot
  * configuration and permission, which names the one model recipient; then
- * the group, which the database resolves member by member from current
- * directional grants. Each member is also held to both jurisdictions.
+ * the Tier-2 acknowledgement, which brief §7.2 requires for any result about
+ * another adult and `/family/[person]` and the one-record scope already ask
+ * for (D-157); then the group, which the database resolves member by member
+ * from current directional grants. Each member is also held to both
+ * jurisdictions.
  */
 type Actor = { accountId: string; sessionId: string };
 type Rpc = (name: string, args: Record<string, unknown>) => PromiseLike<{ data: unknown; error: unknown }>;
@@ -122,6 +126,7 @@ export async function checkFamilyTurn(actor: Actor, selfSubjectId: string, provi
   const now = await currentOwnUploadAccount();
   if (!now || now.accountId !== actor.accountId || now.sessionId !== actor.sessionId) throw new Error('copilot_unavailable');
   if (!await familyJurisdictionPermits(actor, members.map(member => member.authority.accountId))) throw new Error('copilot_unavailable');
+  if (!await acknowledged({ id: actor.accountId })) throw new Error('copilot_unavailable');
   if (await familyChatRpc('check', actor, null, { members: members.map(member => member.authority) }) !== true) throw new Error('copilot_unavailable');
   if (!await assertOwnCopilotAuthority(actor, selfSubjectId, provider)) throw new Error('copilot_unavailable');
   if (!await confirm()) throw new Error('copilot_unavailable');
@@ -131,12 +136,17 @@ export type FamilyCopilotView =
   | { kind: 'transport_unavailable' }
   | { kind: 'jurisdiction_unavailable'; copy: string }
   | { kind: 'provider_required' }
+  | { kind: 'gated' }
   | { kind: 'ready'; contextToken: string | null; contextHash: string;
     providerInfo: { configured: true; provider: 'anthropic' | 'openai_compatible'; providerKey: string; model: string; local: true; hasConsent: true };
     chats: Array<{ id: string; createdAt: string }>;
     members: Array<{ displayLabel: string; layers: FamilyScopeMember['layers'] }> };
 
-/** The page's state, in the register's order; no group data is read before the transport and jurisdiction pass. Null is 404. */
+/**
+ * The page's state, in the register's order; no group data is read before
+ * the transport, the jurisdiction, the asker's local model and the Tier-2
+ * acknowledgement pass. Null is 404.
+ */
 export async function prepareFamilyCopilotChat(): Promise<FamilyCopilotView | null> {
   const actor = await currentOwnUploadAccount();
   if (!actor) return null;
@@ -151,6 +161,9 @@ export async function prepareFamilyCopilotChat(): Promise<FamilyCopilotView | nu
     const self = await resolveSubjectForAccount(actor.accountId, 'me');
     const provider = self ? await prepareOwnCopilotProvider(self.id) : null;
     if (!provider || provider.authority.providerClass !== 'local') return { kind: 'provider_required' };
+    // The Family domain's one Tier-2 gate (D-157): until this session has
+    // acknowledged it, the page renders the gate and reads nothing of the group.
+    if (!await acknowledged({ id: actor.accountId })) return { kind: 'gated' };
     const members = await resolveFamilyMembers(actor);
     const chats = z.array(z.object({ id: z.uuid(), created_at: z.string() }).strict()).max(50)
       .parse(await familyChatRpc('list', actor, null, {}));
@@ -193,6 +206,9 @@ export async function readFamilyChatHistory(chatId: string) {
   const actor = await currentOwnUploadAccount();
   if (!actor || !copilotGroupScopes().family || !modelRuntime().localAllowed || !await isFamilyGroupChat(actor, chatId)) return null;
   if (!await familyJurisdictionPermits(actor)) return null;
+  // The stored answers quote other adults' results, so this session must have
+  // passed the Tier-2 gate, as the one-record and cohort history readers require.
+  if (!await acknowledged({ id: actor.accountId })) return null;
   const self = await resolveSubjectForAccount(actor.accountId, 'me');
   const provider = self ? await prepareOwnCopilotProvider(self.id) : null;
   if (!provider || provider.authority.providerClass !== 'local') return null;

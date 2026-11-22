@@ -7,18 +7,20 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
  * replaced at their module boundaries; the module's own logic is real.
  */
 const mocks = vi.hoisted(() => ({ actor: vi.fn(), rpc: vi.fn(), people: vi.fn(), capability: vi.fn(), assert: vi.fn(),
-  prepare: vi.fn(), subject: vi.fn(), snapshot: vi.fn(), localAllowed: vi.fn(), built: vi.fn(), from: vi.fn() }));
+  prepare: vi.fn(), subject: vi.fn(), snapshot: vi.fn(), localAllowed: vi.fn(), built: vi.fn(), from: vi.fn(),
+  acknowledged: vi.fn(), mint: vi.fn() }));
 vi.mock("@/lib/uploads/own-upload-context", () => ({ currentOwnUploadAccount: mocks.actor }));
 vi.mock("@/lib/supabase/admin", () => ({ createAdminClient: () => ({ rpc: mocks.rpc, from: mocks.from }) }));
 vi.mock("@/lib/family/graph", () => ({ listFamilyPeople: mocks.people }));
 vi.mock("@/lib/family/access", () => ({ familyCapability: mocks.capability }));
 vi.mock("@/lib/family/shared-report-results", () => ({ loadSharedReportSnapshot: mocks.snapshot }));
+vi.mock("@/lib/family/tier2", () => ({ acknowledged: mocks.acknowledged }));
 vi.mock("@/lib/subjects", () => ({ resolveSubjectForAccount: mocks.subject }));
 vi.mock("./own-provider-authority", async () => ({ ...await vi.importActual<object>("./own-provider-authority"),
   assertOwnCopilotAuthority: mocks.assert, prepareOwnCopilotProvider: mocks.prepare }));
 vi.mock("./model-endpoint", () => ({ modelRuntime: () => ({ localAllowed: mocks.localAllowed() }) }));
 vi.mock("./group-scopes", () => ({ copilotGroupScopes: () => ({ family: mocks.built(), cohort: false }) }));
-vi.mock("./family-chat-token", () => ({ mintFamilyChatToken: () => "minted-family-token" }));
+vi.mock("./family-chat-token", () => ({ mintFamilyChatToken: mocks.mint }));
 import { captureFamilyReports, checkFamilyTurn, prepareFamilyCopilotChat, readFamilyChatHistory, resolveFamilyMembers } from "./family-chat";
 
 const accountId = "80000000-0000-4000-8000-000000000001", sessionId = "80000000-0000-4000-8000-000000000002";
@@ -48,6 +50,8 @@ beforeEach(() => {
   mocks.localAllowed.mockReturnValue(true);
   mocks.built.mockReturnValue(true);
   mocks.capability.mockResolvedValue(permitted);
+  mocks.acknowledged.mockResolvedValue(true);
+  mocks.mint.mockReturnValue("minted-family-token");
   mocks.assert.mockResolvedValue(true);
   mocks.subject.mockResolvedValue({ id: selfId });
   mocks.prepare.mockResolvedValue({ authority: provider, settings: { provider: "openai_compatible", base_url: "http://127.0.0.1:8127/v1", model: "synthetic" } });
@@ -119,6 +123,7 @@ describe("the recheck every turn repeats", () => {
     ["the session changed", () => mocks.actor.mockResolvedValue({ accountId, sessionId: "80000000-0000-4000-8000-0000000000ff" })],
     ["the asker's own model permission changed", () => mocks.assert.mockResolvedValue(false)],
     ["a captured read no longer confirms", () => { confirmed = false; }],
+    ["this session's Tier-2 acknowledgement is not current (D-157)", () => mocks.acknowledged.mockResolvedValue(false)],
     ["the deployment can no longer run a local model", () => mocks.localAllowed.mockReturnValue(false)],
   ])("throws when %s", async (_label, change) => {
     const check = await turn();
@@ -159,6 +164,24 @@ describe("the page's states, in the register's order", () => {
     expect(await prepareFamilyCopilotChat()).toEqual({ kind: "provider_required" });
     expect(mocks.rpc).not.toHaveBeenCalled();
   });
+  it("renders the Tier-2 gate after the provider and before the group, reading nothing about anyone (D-157)", async () => {
+    mocks.acknowledged.mockResolvedValue(false);
+    expect(await prepareFamilyCopilotChat()).toEqual({ kind: "gated" });
+    expect(mocks.acknowledged).toHaveBeenCalledWith({ id: accountId });
+    // No group, no member's name, no report, no conversation list and no context token.
+    expect(mocks.rpc).not.toHaveBeenCalled();
+    expect(mocks.people).not.toHaveBeenCalled();
+    expect(mocks.snapshot).not.toHaveBeenCalled();
+    expect(mocks.from).not.toHaveBeenCalled();
+    expect(mocks.mint).not.toHaveBeenCalled();
+    // The checks before it still come first: an asker without a local model is asked for one, not shown the gate.
+    mocks.prepare.mockResolvedValueOnce(null);
+    expect(await prepareFamilyCopilotChat()).toEqual({ kind: "provider_required" });
+    // With the acknowledgement, the page is the thread, unchanged.
+    mocks.acknowledged.mockResolvedValue(true);
+    expect(await prepareFamilyCopilotChat()).toMatchObject({ kind: "ready", contextToken: "minted-family-token" });
+    expect(mocks.mint).toHaveBeenCalledOnce();
+  });
   it("mints a context only when someone shares, and shows only names and report types", async () => {
     const ready = await prepareFamilyCopilotChat();
     expect(ready).toMatchObject({ kind: "ready", contextToken: "minted-family-token",
@@ -183,6 +206,13 @@ describe("history", () => {
     expect(await readFamilyChatHistory(chatId)).toBeNull();
     expect(mocks.rpc).toHaveBeenCalledWith("family_copilot_chat_v1", expect.objectContaining({ p_operation: "history", p_chat_id: chatId,
       p_payload: { provider } }));
+  });
+  it("reads nothing while this session has not passed the Tier-2 gate (the stored answers quote other adults' results)", async () => {
+    mocks.acknowledged.mockResolvedValue(false);
+    mocks.rpc.mockResolvedValue({ data: { messages: [] }, error: null });
+    expect(await readFamilyChatHistory(chatId)).toBeNull();
+    expect(mocks.acknowledged).toHaveBeenCalledWith({ id: accountId });
+    expect(mocks.rpc).not.toHaveBeenCalled();
   });
   it("reads nothing for a chat that is not a family group chat", async () => {
     mocks.from.mockReturnValue({ select: vi.fn().mockReturnThis(), eq: vi.fn().mockReturnThis(),
