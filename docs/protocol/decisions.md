@@ -6169,3 +6169,41 @@ mail provider, and from 30 days until the reminder has been accepted, the
 inviter sees nothing the new adult shares with them, through every Family
 reader and Copilot. The adult's own use of their record is not held. This
 closes D-156 when built. Test mode only today.
+
+## 2026-11-22 — The transfer notices are approved, with one added line, and the transfer is switched on
+
+Owner decision (clickable chat answers). Asked: when a record moves to the
+adult it is about (their own act, or an uploader's withdrawal), do you
+approve the emails to the adult, to the uploader and to any other account
+that lost access, and the uploader's card, shown in full? Offered: "Approve,
+with my picks below", "Not yet, I want changes". Chosen: "Approve, with my
+picks below". Asked: which adjustments? Offered (any): "Say exports end",
+"Mention deleted files only if any", "No email to the uploader who withdrew",
+"Drop the password line". Chosen: "Say exports end" only. Asked: once the
+wording is approved, switch the move on, which also opens an adult's own
+"move this record into my account" action (both test mode only today)?
+Offered: "Yes, switch it on", "Not yet". Chosen: "Yes, switch it on".
+
+The strings in `docs/evidence/uploader-hand-over-20261122/transfer-wording.md`
+are approved as shown, and the adult's emails (both versions) gain one line:
+"Any download copy of this record has stopped working. You can make a new
+one." The sentence about unconfirmed files is sent whether or not there were
+any; the password line and the email to an uploader who withdrew stay. One
+guarded migration opens `private.subject_transfer_open_v1()` for both acts,
+with these notices. Nothing changes in production, where such records cannot
+exist yet.
+
+## 2026-11-22 — Only a live download copy blocks deleting a single file
+
+Owner decision (clickable chat answer, "Yes, only live copies block"). Asked:
+deleting a single file from Files is refused for good while the record has
+any download copy, even an expired one (D-152), and the register states this
+rule; should an expired or already-ended copy stop blocking? Offered: "Yes,
+only live copies block", "Keep the rule as it is". Chosen: "Yes, only live
+copies block".
+
+An expired, failed or ended copy no longer blocks deleting one file. A copy
+that is still being made or can still be downloaded keeps blocking. The
+register's `file-delete-v1` refusal is amended to say so. This closes the
+first half of D-152 when built; whether a ready whole-account export should
+end with the own-file withdrawal stays open.
