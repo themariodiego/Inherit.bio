@@ -6048,3 +6048,69 @@ personal access token (it starts `sbp_`) entered by the owner in the secure
 form or in the environment's settings; the value saved for `api.supabase.com`
 on 19 November is still refused (401). The connector read is an early check,
 not the runbook's step 4, which is run again with the kit when the token works.
+
+## 2026-11-22 — The wording of the own-file consent withdrawal is approved
+
+Owner decision (clickable chat answer, "Approve as written"). Asked: the
+withdrawal of a person's consent to store their own DNA file is built and
+passing; do you approve its wording (the page text, the confirmation, the
+receipt and the email, shown in full)? Offered: "Approve as written", "Not
+yet, I want changes". Chosen: "Approve as written".
+
+The strings of `src/copy/upload/withdrawal.ts` as listed in
+`docs/evidence/consent-withdrawal-design-20261119/own-file-wording.md` are
+approved, with the additions of the next entry.
+
+## 2026-11-22 — The own-file withdrawal's optional changes are left to engineering
+
+Owner answer, in the owner's own words, to "Which of these optional changes
+do you want on that withdrawal?" (offered, any or none: "Say that
+permissions end", "Say that exports go", "Require typing to confirm", "Drop
+the password line"): "You decide based on what is best from my intent".
+
+Engineering's choice under that delegation, from the intent the owner has
+stated (a withdrawal deletes the files and everything made from them, and a
+person is told plainly what goes and what stays):
+- Add both lines to the confirmation's list of what is deleted: "Every
+  permission you gave for your DNA ends." and "Any copy of your record we
+  prepared for you to download. Its download link stops working." Both are
+  true of what the withdrawal does (the emptying revokes every permission on
+  the record, and since D-144 it ends the record's exports), and a list that
+  leaves them out undersells what is deleted.
+- No typed confirmation. The account stays and the step is reversible by
+  uploading again with a new consent; a typed step would add friction to a
+  right the consent text promises ("You can withdraw this permission"), and
+  the two-step confirmation matches "Stop sharing".
+- Keep the email's last line, "If you did not do this, change your password
+  now." It is the one protection a person has if someone else used their
+  account to delete their data.
+
+## 2026-11-22 — An uploader's withdrawal hands a record its adult holds to that adult
+
+Owner decision (clickable chat answer, "Hand it to the adult"). Asked: when
+an uploader withdraws their permission for another adult's file and that
+adult has taken the record over with their own account, the decision of 19
+November says the record stays theirs and the uploader keeps no access; who
+owns the record afterwards? Offered: "Hand it to the adult", "Keep refusing
+for now", "Uploader stays owner, locked". Chosen: "Hand it to the adult".
+
+The withdrawal moves the record and the files the adult confirmed to the
+adult through the existing transfer rules (`subject-ownership-transfer-v1`),
+on the uploader's act; the uploader's consent ends, unconfirmed files are
+deleted and the uploader keeps no access. The transfer is closed until its
+three notices are worded and approved, so this branch stays refused until
+engineering brings the owner that wording and the owner approves it. Test
+mode only today.
+
+## 2026-11-22 — G8.5: the reviewer chunk-acknowledgement address accepts either kind of session
+
+Owner decision (clickable chat answer, "Yes, same pattern"). Asked: one
+route is still off the one-time security token, a test-only archive
+acknowledgement that shares its address with a reviewer route; moving it
+means that address accepts either a reviewer session or an account session,
+the pattern approved for "object to a claim"; apply it here too? Offered:
+"Yes, same pattern", "Leave it as it is". Chosen: "Yes, same pattern".
+
+`api.claim-review-chunk-acknowledgement` checks the reviewer session first
+and then the account, and spends a one-time token of whichever it finds;
+nothing changes for people. `csrfOwnDesign` then has no row.
