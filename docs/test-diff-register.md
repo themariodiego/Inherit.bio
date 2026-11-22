@@ -1,3 +1,102 @@
+## 2026-11-22 — D-165: every Path B reader takes a confirmed record of either flow, so a reviewed-document record reaches each as an e-signature record does
+
+One guarded migration, `20261122180000_path_b_reviewed_document_readers.sql` (not hosted; it creates nothing), and one app line. Test mode only: both Path B flows need the test jurisdiction.
+
+**The defect (D-165).** Path B readers other than the mitigation decision joined drafts of `path-b-subject-esignature` only, so a record confirmed through a reviewed permission document (`path-b-reviewed-document`) reached none of them:
+- its person could not share with the uploader from their choices page;
+- its held files, the uploader's Copilot and the account export did not see it;
+- before and after a transfer the person could export neither the record nor their whole account, so the approved line "You can make a new one." was not true for it;
+- the held-upload job and the purged-grant cleanup skipped it.
+
+**What changed.** Fifteen bodies are patched in place at sixteen anchors, each md5-guarded with its reviewed ACL, one anchor each, the successor md5, ACL, volatility and owner asserted. Each anchor turns the e-signature flow into either Path B flow (or, where paired with the evidence kind, either pair) and nothing else:
+- `private.path_b_person_v1`, `private.path_b_person_choices_v1`, `private.path_b_uploader_shares_v1`, `private.path_b_report_metadata_v1`, `private.subject_held_files_v1`, `private.subject_copilot_authority_v1`;
+- `private.export_account_path_b_file_v1`, `private.export_account_path_b_snapshot_v1`, `private.export_account_ordinary_readable_authority_v1` (flow-specific: its draft read paired the flow with `esignature`), `private.transferred_export_person_v1`, `private.transferred_export_confirmation_v1`;
+- `public.expire_due_other_adult_held_uploads_v1` (its first pass only) and `private.end_purged_path_b_grants_v1`;
+- two readers the defect row did not name, found by searching every function body for the e-signature flow: `private.public_appeal_provisional_binding_v1` (two anchors) and `private.assert_account_path_b_deletion_supported_v1`.
+
+Not widened: the held-upload job's last pass, which expires e-signature drafts never requested (a reviewed-document draft has its own sweep). Pinned, unchanged: the reviewed-document basis check, the approval read, the review-finality guard, `private.path_b_subject_v1`, and the draft table's flow, flow-pairing and state checks. The app's subject-route classifier (`isPathBSubject`, `src/lib/uploads/path-b-report-reader.ts`) asks for a draft of either Path B flow.
+
+**What "confirmed" means for a reviewed document.** Its draft reaches `confirmed` only in the two confirmation transactions, after `private.path_b_reviewed_document_basis_current_v1` holds: the request is bound to the exact clean document and to the named reviewer's approval of its exact hash and revision. The request can be sent only after that approval, and a decided review is final. A refused document cancels the draft and purges the record. A document not yet approved, or a request not answered, leaves the draft `draft` or `invited`. Every lookup takes such a draft exactly where it took a confirmed e-signature draft (the pattern of D-154's widened lookup). Where the e-signature lookup named no state, none is added.
+
+**New tests.**
+- `supabase/tests/path_b_reviewed_document_readers.sql` (pgTAP, 93, rolled back). Setup goes through the real doors. es is an e-signature request from 01 to 02. rd is a reviewed permission document for 05: uploaded, scanned, read in full and approved by a named reviewer in an MFA session, finalized, mailed and opened. Each person confirms with their own account, which predates the request. Each shares one report layer with 01 and keeps one, 01 holds a file the person confirms, the Path B workers' doors normalize it and complete every saved result, and each person turns Copilot on for 01. Through the same doors it also makes a request not answered (each flow), a document approved but never sent, and a document refused.
+  - The fifteen bodies carry their successors and ACLs; the suite's patch rows are the migration's, byte for byte.
+  - Each draft's state: confirmed only for es and rd; `invited`, `draft` and `cancelled` for the others. rd's confirmed request is bound to the reviewer's approval of the exact document.
+  - With the fifteen predecessors swapped in (each rebuilt by reversing exactly the migration's anchors, md5 checked, then swapped back): es reaches all nine readers and rd none (D-165); rd's person cannot share, the held-upload job leaves rd, a purged rd keeps its three grants and its uploader relationship, the deletion refusal does not see a grant on rd, and an objection does not resolve to rd.
+  - From the successors, rd and es answer alike, compared whole with ids, times and digests made generic: the choices page and every choice made through the door; the uploader's shares and the uploader's and person's saved-results metadata; the held files; the uploader's Copilot scope (state, case, account, Copilot grant and layer); an outsider refused.
+  - The export: the per-record and whole-account capture with the complete archive off and on (each probe states which), the uploader and an outsider refused, "Download your data" empty before a transfer. After the person's own move: copies made before have stopped working; new captures, archive off and on; new copies that open; "Download your data" lists the file through the exact object the transfer recorded and reads its variants; the former uploader refused; then after the relocation worker's swap, the same, the file under its new object. After the uploader's hand-over: the same.
+  - Not confirmed: the uploader's lists hold only the two confirmed records; with each confirmed draft set back to `invited`, `draft`, `cancelled` or `expired` (synthetic: no door does this), neither record reaches any reader and its person cannot share.
+  - The held-upload job (the person asks to delete their account) and the person's own delete: the record purged, its file ended, its grants and the uploader relationship ended, identically for both.
+  - The deletion refusal: a grant on either record (through the directional door, to 09) refuses 09's deletion.
+  - The public appeal: an objection whose contact is the person's resolves to the record and holds it provisionally (`unique-current`), identically for both; with the predecessors it was `unresolved-potential` with no hold for rd.
+- `scripts/path-b-reviewed-document-readers-migration.test.ts` (9):
+  - the guarded header, its order after every migration whose bodies it patches or pins, and that the release notes name it;
+  - no function, table, trigger, policy, grant or row write, sixteen patches on fifteen bodies through one loop;
+  - it names no body an earlier migration only pins, and never writes `pg_get_functiondef('…`;
+  - no later migration rewrites what it patches;
+  - every predecessor and pinned body rebuilt from the migration that defined it (the two export bodies with `20261122160000`'s patches replayed), each md5 recomputed, and the three constraint md5s recomputed from their printed text, with each source line checked;
+  - each patch replayed to its successor, and the postflight's md5s;
+  - each anchor only widens the flow, keeps the confirmed state exactly where the e-signature lookup had it, and leaves every other line; the job's last pass still e-signature only;
+  - only the two confirmation transactions write `confirmed`, after the basis check; the request is sent only after the approval;
+  - the suite carries the migration's rows byte for byte and covers each reader.
+- `src/lib/uploads/path-b-subject-classifier.test.ts` (3): the classifier asks for either Path B flow; no draft is not Path B; a failed query throws.
+
+**Changed assertions (old, new, why).**
+- `supabase/tests/transferred_record_exports.sql` › "the five bodies are as 20261122160000 left them, each with its ACL".
+  - Old: the export capture at `583e9efa4a60f086e3875fc40e03f491` and the snapshot at `b9ae87c681a443f9ac3fb1846a69520b`, with the other three bodies as before.
+  - New: "the five bodies are as 20261122160000 left them (the two export bodies as 20261122180000 then widened them), each with its ACL". The two export bodies are `5c9fee7018806a025ad537664cd23b69` and `e2d07abe4aa844c3c3a913e18be72015` when the capture's body carries the `20261122180000 (D-165)` mark, else `583e9efa…` and `b9ae87c6…` as before; the other three are unchanged.
+  - Why: `20261122180000` patches both bodies in place, md5-guarded from exactly these successors. The suite's other 56 assertions run unchanged and pass with and without it. Both old md5s stay in the suite, as `scripts/transferred-record-exports-migration.test.ts` requires.
+- `supabase/tests/other_adult_held_upload.sql` › "only the exact installed account Path B refusal helper may join the lifecycle census, with every API role denied".
+  - Old: `md5(prosrc)='cd6a5921924d50f1857ac8d8b545b30d'`.
+  - New: `4a3a4243350f9e62321a9c8208437f8d` when the body carries the `20261122180000 (D-165)` mark, else `cd6a5921…` as before. The comment above it says why.
+  - Why: the same migration widens the helper's grant clause in place, md5-guarded from exactly this body. The other 178 assertions run unchanged and pass with and without it.
+- `scripts/subject-copilot-scope-migration.test.ts` › "is a guarded production release that follows every migration whose objects it calls, pins or patches".
+  - Old: no later migration may restate any of the six functions `20261120130000` creates, or name one beside `replace(definition`.
+  - New: the same, except that `20261122180000` is not flagged for `subject_copilot_authority_v1` alone. For that file and that function the case asserts instead that it names the function exactly three times (its pin, its one patch row and its postflight), pins it at `835e5f67cb5ef03e9f97735de1aeeb10` (this migration's body), patches it as ordinal 6 from exactly that md5, and does so through the one-anchor guard. Every other function and every other later file is checked as before.
+  - Why: the D-165 fix is an md5-guarded in-place patch of the body this migration created. The two-substring heuristic cannot tell a guarded patch from a rewrite.
+- No other earlier test needed an allowance. The other "last word" rules (`adult-acceptance-hold-migration`, `adult-acceptance-inviter-reads-migration`, `adult-acceptance-inviter-archive-reads-migration`, `inviter-grants-and-reviewed-document-migration`, `transferred-record-exports-migration`, `path-b-future-rights-bridge`, `account-path-b-request-refusal`) do not cover a body this migration patches, and it names none of the bodies they hold as pinned-only.
+
+**Planted defects.** Database plants run the suite inside its own rolled-back transaction, with the migration applied and then the plant, against a frozen copy of the migration. Source plants edited the files, ran the migration tests and were restored byte-identical (sha256 checked).
+
+| Plant | Caught by |
+|---|---|
+| Database, each reader left narrow (its anchors reversed), 15 plants | every one: the successor pin (1) and the swap back (24), and in addition: |
+| the person read | the fixture stops: rd's person cannot share (42501 at the share door) |
+| the choices page | "(rd) … reaches every reader"; both "(choices)" lines |
+| the uploader's shares | "(rd) … reaches every reader"; both "(shares)" lines; "(unconfirmed) the uploader's shares list the two confirmed records only" |
+| the saved-results metadata | "(rd) … reaches every reader"; the three "(metadata)" lines; "(unconfirmed) as do the uploader's saved results" |
+| the held files | "(rd) … reaches every reader"; both "(held files)" lines |
+| the Copilot authority | "(rd) … reaches every reader", then the suite stops at the Copilot comparison (42501) |
+| the export file test, the snapshot, the capture (one plant each) | "(rd) … reaches every reader"; both "(export)" lines before a transfer; both "(handed over)" export lines; the move section stops at a copy (42501) |
+| the transferred person, the transferred confirmation (one plant each) | both "(moved)" export lines and both "(handed over)" export lines; the move section stops at a new copy (42501) |
+| the held-upload job | both "(held-upload job)" lines |
+| the purged-grant cleanup | both "(held-upload job)" lines and both "(purged-grant cleanup)" lines |
+| the appeal binding | both "(appeal)" lines; "(patched) every probe swapped back" |
+| the deletion refusal | both "(deletion)" lines after the first |
+| Database, a widening that admits a reviewed-document draft in any state, 13 plants | every one: the successor pin (1), the predecessor rebuild (17) and the swap back (24), and in addition: |
+| the person read | "(predecessor)" share and purge lines, both "(choices)" lines, both "(shares)" lines, "(unconfirmed) and its person cannot share from it", both "(cleanup)" lines before anything ends |
+| the choices page, the uploader's shares, the held files, the export file test (one plant each) | "(predecessor) D-165 …" and the four set-back lines: "(unconfirmed) a draft still awaiting the person's answer …", "… never sent", "(refused) nor a cancelled draft …", "… nor an expired one" |
+| the metadata, Copilot, the snapshot, the capture, the two transfer helpers, the held-upload job, the appeal binding (one plant each) | the body pins only (with, for the job and the appeal, the predecessor's job line and "every probe swapped back"). On each path another check (the decision, the person read or the file test) already refuses a draft that is not confirmed, so the widening has no effect a test can see |
+| Source: the held-files row dropped from the migration | migration test "creates nothing and patches fifteen bodies at sixteen anchors", "pins every body …", "reaches 'confirmed' only …", "is driven by its pgTAP suite …" |
+| Source: the choices lookup widened to `invited` drafts, md5s made consistent in the migration and the suite | migration test "widens only the flow, exactly where the e-signature lookup stood …" |
+| Source: the person read widened to a reviewed-document draft in any state, md5s made consistent | the same |
+| Source: the job's last pass widened (a 17th row) | migration test "creates nothing …", "replays each patch …", "widens only the flow …", "reaches 'confirmed' only …", "is driven by its pgTAP suite …" |
+| Source: the decision pinned in the predecessor block | `adult-acceptance-hold-migration.test.ts` "is the last word on nothing it pins"; `inviter-grants-and-reviewed-document-migration.test.ts` "is the last word on what it patches"; migration test "names no body an earlier migration only pins …" |
+| Source: the Copilot authority patched from another predecessor md5 | migration test "pins every body …", "replays each patch …", "is driven by its pgTAP suite …"; the adjusted case in `subject-copilot-scope-migration.test.ts` |
+| Source: the route classifier left on the e-signature flow | `path-b-subject-classifier.test.ts` "asks for the record's draft of either Path B flow, and nothing else" |
+
+**Runs.**
+- Before the forward apply, 167 related suites (every suite naming Path B, an export, the archive, Copilot, a transfer, a withdrawal, a public appeal, the decision, the acceptance clocks or a reviewed document, or including `path_b_source_setup.inc`) were each run without the migration and with it applied inside the suite's own transaction, comparing every ok/not-ok line and every error.
+  - 165 gave identical results both ways. The other two are the two changed assertions above; after the change both are identical both ways (179/179, 57/57).
+  - 21 fail identically both ways, from the shared local database's state, not this change: `account_archive_readable_graph`, `account_deletion_cohort_notices`, `account_deletion_purge`, `adult_subject_rights_activation`, `declared_chromosomal_sex`, `embryo_ingest_sessions`, `family_sharing`, `future_person_claim_review`, `future_person_keyless_account_objection`, `future_person_keyless_owner_objection`, `future_person_native_keyless_release`, `invitation_attempt_quotas`, `new_public_appeal_intake`, `own_upload_consent_withdrawal`, `path_b_confirmed_array_normalization`, `path_b_queued_reports`, `public_appeal_evidence_session`, `subject_delete`, `subject_delete_adult`, `subject_delete_embryo`, `subject_delete_reviewed_document`.
+  - The new suite: 93/93 with the migration; without it, it stops at the fixture's share door after 6 of 7 (D-165).
+  - Runs that may have read the migration file while the source plants had it planted (seven related-suite runs and fourteen database-plant runs) were discarded and rerun against a frozen copy of the migration (sha256 equal to the file); every later run used the frozen copy. The reruns are the results above.
+- Forward apply: applied to the shared database in one transaction and recorded in `supabase_migrations.schema_migrations` as one statement whose text is the file's (md5 `aed3b63f2a63585ccfb70a0542f35cd8`, equal to the file; 300 rows for 300 files). After it: this suite 93/93; with the migration undone in reverse inside its transaction it stops at the share door, as without it. Also `reviewed_document_decision` 51/51, `transferred_record_exports` 57/57, `other_adult_held_upload` 179/179, `subject_copilot_path_b` 52/52, `subject_copilot_scope` 65/65, `path_b_reading_layer` 52/52, `path_b_account_branch` 52/52, `path_b_reviewed_document` 85/85, `subject_transfer` 118/118, `uploader_withdrawal_hand_over` 85/85, `account_path_b_request_refusal` 48/48, `adult_acceptance_hold_and_renotice` 112/112, `path_b_no_account_uploader_gate` 37/37, `inviter_grants_received` 25/25, `adult_acceptance_inviter_archive_reads` 36/36, `other_adult_upload_consent_withdrawal` 51/51.
+- Pre-check: 19 and true before the apply (under the default and the empty search path); 4 with the migration applied inside a rolled-back transaction; 19 again with it then undone; every context count 0. Duration from the predecessor state: 15 to 20 ms.
+- Browser, against the migrated database and a build with the new classifier: `e2e/other-adult-upload.spec.ts` at lines 338, 496 and 657 (the queued-reports test, in which the person shares with the uploader and each reads the saved results, with the two tests it depends on): 3 passed, no skips, no retries. A first attempt that selected the queued-reports test alone failed at its first draft (409), because it depends on its serial predecessors' setup; the three together passed.
+- `pnpm typecheck`, `pnpm lint --ignore-pattern ".claude/**"`, and the routes, secrets, readability, sql-includes, browser-discovery and names gates: pass.
+- Full `npx vitest run`: 15,294 passed and 38 failed of 15,332 in 2,511 files. The 38 are exactly the host-dependent ones that fail on the untouched tip in this container: `scripts/ci-browser-runtime.test.ts` (21), `scripts/comprehension/owned-lifecycle.test.ts` (7), `scripts/comprehension/manual-reconciliation.test.ts` (5), `scripts/owned-linux-runtime.test.ts` (3) and `scripts/account-archive-root/checkpoint.test.ts` (2).
+
 ## 2026-11-22 — G8.5: the transfer switched on with its notices approved, and a transferred record is the person's to export
 
 Owner decisions of 22 November 2026: "The transfer notices are approved, with one added line, and the transfer is switched on" and "A hand-over refused for now says to try later (D-158)". Defect rows D-159, D-161, D-162 and D-163 are fixed in source. Test mode only. Work on top of `beff9d60` (rebased from `283020b9`, then `9e4ab372`), uncommitted.

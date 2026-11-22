@@ -82,15 +82,28 @@ describe("the release it belongs to", () => {
     // names its trigger (its pins and its patch are held by the "last word"
     // test below).
     expect(files).toContain(NAME);
+    // 2026-11-22: 20261122180000 (D-165) patches subject_copilot_authority_v1
+    // in place, md5-guarded from exactly the body created here, so that the
+    // uploader case takes a confirmed draft of either Path B flow. It is the
+    // only later migration allowed to name that one function beside a patch;
+    // for it the case checks instead that it never restates the function and
+    // patches it once, through the one-anchor guard, from this body's md5.
+    const D165 = "20261122180000_path_b_reviewed_document_readers.sql";
     for (const file of files.filter(file => file > NAME)) {
       const sql = read(`supabase/migrations/${file}`);
       for (const created of ["subject_copilot_uploader_grant_v1", "subject_copilot_authority_v1", "subject_copilot_scope_v1",
         "subject_copilot_prune_v1", "subject_copilot_chat_v1", "purge_subject_copilot_chats_v1"]) {
+        const guardedPatch = file === D165 && created === "subject_copilot_authority_v1";
         expect(new RegExp(`create\\s+(?:or\\s+replace\\s+)?function\\s+(?:\\w+\\.)?${created}\\s*\\(`, "iu").test(sql)
-          || (sql.includes(`.${created}(`) && sql.includes("replace(definition")), `${file}: ${created}`).toBe(false);
+          || (!guardedPatch && sql.includes(`.${created}(`) && sql.includes("replace(definition")), `${file}: ${created}`).toBe(false);
       }
       expect(sql.includes("purge_subject_copilot_chats"), file).toBe(false);
     }
+    const d165 = read(`supabase/migrations/${D165}`);
+    expect(count(d165, "private.subject_copilot_authority_v1(")).toBe(3); // its pin, its one patch row and its postflight
+    expect(d165).toContain("('private.subject_copilot_authority_v1(uuid,uuid,uuid)','835e5f67cb5ef03e9f97735de1aeeb10','{postgres=X/postgres}'),");
+    expect(d165).toContain("(6,'private.subject_copilot_authority_v1(uuid,uuid,uuid)','835e5f67cb5ef03e9f97735de1aeeb10',");
+    expect(d165).toContain("if (length(definition)-length(replace(definition,item.old_fragment,'')))/length(item.old_fragment)<>1 then");
     expect(read("docs/evidence/release-4-notes-20261119.md")).toContain(NAME);
   });
 

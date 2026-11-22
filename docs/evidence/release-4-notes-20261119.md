@@ -1365,3 +1365,134 @@ Only in test mode. No new wording.
 - `supabase/tests/adult_acceptance_inviter_archive_reads.sql` now asserts that the held inviter's class census is the one with no grant. Its old assertion said the class still counted the adult's two grants.
 
 Before the forward apply, every suite that reads the archive, the exports, the class projection, Path B, the decision or the acceptance clocks (120 suites) was run without this migration and with it applied inside the suite's own transaction. 117 gave identical results both ways; the other three are this change's own suites and the archive suite whose assertion changed, which pass only with it. Twenty suites fail identically with and without it, from the shared local database's state, not from this change. After the forward apply: `inviter_grants_received` 25/25, `reviewed_document_decision` 51/51, `adult_acceptance_inviter_archive_reads` 36/36, `adult_acceptance_hold_and_renotice` 112/112, `path_b_no_account_uploader_gate` 37/37, `adult_acceptance_inviter_reads` 77/77 and `path_b_reviewed_document` 85/85.
+
+# Release notes: `20261122180000_path_b_reviewed_document_readers.sql`
+
+Local work only. Nothing here was run against production or any hosted database. One defect row of 22 November 2026, D-165 (`docs/protocol/defects.md`): Path B readers other than the mitigation decision recognised only e-signature records. Path B has two confirmation flows, `path-b-subject-esignature` and `path-b-reviewed-document` (`20261016190000`: a permission document the person signed, read in full and approved by a named reviewer before any request is sent). Each reader below joined drafts of the e-signature flow only, so a reviewed-document record reached none of them:
+
+- its person could not share with the uploader from their choices page, so the uploader's reads stopped there;
+- its held files, the uploader's one-record Copilot and the account export did not see it;
+- before and after a transfer the person could export neither the record nor their whole account, so the approved transfer line "Any download copy of this record has stopped working. You can make a new one." was not true for it (`20261122160000`, above, made it true for e-signature records only);
+- the held-upload job and the purged-grant cleanup skipped it.
+
+Release 4 waited for this fix. Both Path B flows need the test jurisdiction, so nothing here is reachable in production (below).
+
+## What "confirmed" means for a reviewed document
+
+A reviewed-document draft reaches state `confirmed` only in the two confirmation transactions (`private.confirm_path_b_subject_v1` and its account branch), and only after `private.path_b_reviewed_document_basis_current_v1` holds: the request is bound to the exact clean document and to the named reviewer's approval of its exact hash and revision (`private.path_b_reviewed_document_approval_v1`). The uploader can send the request (draft → `invited`) only after that approval, and a decided review is final (`private.guard_permission_document_transition_v1`). A refused document cancels the draft and purges the record. A document not yet approved, or a request the person has not answered, leaves the draft `draft` or `invited`. So a confirmed reviewed-document draft is one whose person confirmed a document a reviewer approved. Every lookup here takes it exactly where it took a confirmed e-signature draft, the pattern of the decision's own widening (`20261122170000`, D-154). Where the e-signature lookup named no state (the purged-grant cleanup, the deletion refusal of a grant, the appeal's recheck, which then asks the confirmed binding), the widened lookup names none either. Where a body pairs the flow with its evidence kind, the reviewed-document flow is paired with its own (`uploaded_document`), as `private.path_b_subject_v1` pairs them.
+
+## What it changes
+
+- **Fifteen bodies patched in place at sixteen anchors**, each with the exact predecessor md5 and ACL, one anchor, the successor md5 and unchanged ACL, volatility and owner asserted (55000 otherwise). Each anchor turns `adult_flow='path-b-subject-esignature'` into `adult_flow in('path-b-subject-esignature','path-b-reviewed-document')` (or, where paired with the evidence kind, into either pair) and changes nothing else in the body:
+  - `private.path_b_person_v1(uuid,uuid,uuid)` (`9f0434499b394a5c8ece4151838918e3` → `d4293c9003c615825bb81ca391067ca9`): the person's own read, which sharing (`api.consents`, Path B), the person's saved results and the export capture ask.
+  - `private.path_b_person_choices_v1(uuid,uuid,boolean)` (`88fdc054ac411342681e08a38834996f` → `8f21a23d1a1a16360c0107d6fb26a06c`): the person's choices page.
+  - `private.path_b_uploader_shares_v1(uuid,uuid,boolean)` (`4791a74ac0dd7f919a69cd4899f7a158` → `b9439ab870b3699821089de38c4b4d6a`): the uploader's list of what each person shared.
+  - `private.path_b_report_metadata_v1(uuid,uuid,uuid,boolean)` (`057612020df71da9eeedc4e4212e546a` → `f62bef1989ac48e4c55ec42710b6d235`): the saved-results metadata, for the uploader and the person.
+  - `private.subject_held_files_v1(uuid,uuid,boolean)` (`807a31dda5b3c9ed7a674ad37996e519` → `4d4ed19c94e72ab160882b759470954e`): the person's held files.
+  - `private.subject_copilot_authority_v1(uuid,uuid,uuid)` (`835e5f67cb5ef03e9f97735de1aeeb10` → `6e29a3a6e809e5d0b1db9df42847abe5`): the uploader's one-record Copilot.
+  - `private.export_account_path_b_file_v1(uuid)` (`71e1c10e7b5410f4cb4b77c7ccc10577` → `e061731060ee8f717c4f97409c7706dc`, still STABLE): the account export's Path B test of a file.
+  - `private.export_account_path_b_snapshot_v1(jsonb,uuid)` (`b9ae87c681a443f9ac3fb1846a69520b` → `e2d07abe4aa844c3c3a913e18be72015`): the person's saved results of the record, in either capture.
+  - `private.export_account_ordinary_readable_authority_v1(jsonb,text,uuid)` (`583e9efa4a60f086e3875fc40e03f491` → `5c9fee7018806a025ad537664cd23b69`): the per-record and whole-account capture of the record (flow-specific: its draft read paired the flow with `esignature`).
+  - `private.transferred_export_person_v1(uuid,uuid,uuid)` (`80421178d9b4e5fc38f5090756770096` → `5b185a02a35c00b04a43457f2cd08f6e`) and `private.transferred_export_confirmation_v1(uuid)` (`0f903e4ee3b7eaf66f226174a7030a80` → `4010fc23e2ff05c5fe3c29a774fdc3a9`): the two helpers `20261122160000` added for a transferred record.
+  - `public.expire_due_other_adult_held_uploads_v1()` (`5120605e1f785010cbc13deffcbbe5aa` → `591682cc0b9c9377cb8dbeeef44b18b5`): its first pass, which deletes the Path B records of a person who asked to delete their account.
+  - `private.end_purged_path_b_grants_v1()` (`0add773cff4bad835ea35bcf80d7a4fc` → `5163b00a8509ac4a28f9708ae1118258`): the trigger that ends a purged record's grants and its uploader relationship.
+  - Two more readers found by searching every function body for the e-signature flow:
+    - `private.public_appeal_provisional_binding_v1(uuid)` (`d4b8500ac4a7e6ac2ff76e642ebd0353` → `e05639a338708b169bb878a8d8e6ca0a` → `7d7b1f82a7703c625b5695ba2aad57b4`, two anchors): the public appeal's resolution of a subject objection, which now resolves to a reviewed-document record and holds it, as it does an e-signature one;
+    - `private.assert_account_path_b_deletion_supported_v1(uuid)` (`8ef417e756e4b632b6a97c39538c7ee4` → `4f06febdcbf2b30205cdc312045c98ce`): account deletion's refusal of an account that holds a grant on a Path B record.
+- **Not changed.** The held-upload job's last pass, which expires e-signature drafts never requested: a reviewed-document draft has its own sweep (`public.expire_due_path_b_reviewed_documents_v1`), so it is not widened to unconfirmed drafts. The e-signature flow's own doors (its draft and request). The readers that already read both flows: the original download authority, the account export gate (its `owner_account_id` test), the decision, the transfer, the withdrawal and its readiness read, the delete door, the upload list, the signing target and `private.path_b_subject_v1`.
+- **Pinned, not changed:** `private.path_b_reviewed_document_basis_current_v1` (`43f3bf4e7782e176523b12851fa6b97b`), `private.path_b_reviewed_document_approval_v1` (`ab0681555da11ebc1f9c3c456d95e76e`), `private.guard_permission_document_transition_v1` (`8631df4b82bcc03e8acfa8de6f07798d`), `private.path_b_subject_v1` (`d174a83682e35479797ac7e738a65d79`), and the draft table's flow, flow-pairing and state checks (constraint md5s `5c8b24f18ac62ac45cd1c1647bdd2466`, `40cf5a7d87b6855d74985956133cc797`, `1b051566996b3857dcc34e514d4185e0`). The predecessor block refuses otherwise (55000 `path b reviewed document readers prerequisite differs`); the postflight asserts the fifteen successors with their ACLs (55000 `path b reviewed document readers successor differs`).
+- No table, column, constraint, trigger, grant, queue, job or wording changes. Fingerprint effect: 15 `def_md5` values change; the `functions` and `tables` counts are unchanged.
+- **App, with this migration.** The subject route's Path B classifier (`isPathBSubject`, `src/lib/uploads/path-b-report-reader.ts`) asked for an e-signature draft only, so a reviewed-document record's saved-results pages went to the ordinary own-record resolver instead of the dedicated Path B reader. It now asks for a draft of either Path B flow.
+- **Register.** One statement amended, `policyContracts.other-adult-mitigation-state-v1.subjectSource` (appended text starting `registered-2026-11-22-D-165`): every reader behind the decision's checkpoints resolves a Path B subject the same way, and a reviewed-document draft is confirmed only once its person confirmed a request bound to the named reviewer's approval.
+
+## Which releases must come first
+
+1. The earlier migrations that defined the bodies it patches or pins: `20260930210000`, `20260930220000`, `20260930236000`, `20261001039000` (carried by the PR 323 guarded apply), `20261009224500` and `20261016190000` (the reviewed-document flow, release 1, PR 324). The migration test rebuilds each body from them and recomputes the md5 pinned here.
+2. In this release, in file order: `20261120130000` (the Copilot authority at `835e5f67…`), `20261122160000` (the two export bodies and the two transfer helpers at the md5s above), and `20261122170000` (the decision, which already reads both flows; not pinned here, but the readers' checkpoints rely on it). Without them the predecessor block refuses.
+3. This migration. Locally it was applied forward to the shared database after `20261122170000` and recorded in `supabase_migrations.schema_migrations` as one statement whose text is the file's (md5 `aed3b63f2a63585ccfb70a0542f35cd8`, equal to the file's).
+
+## Read-only pre-checks (one SELECT; the release session and its `search_path`)
+
+Stop unless every `must_be_*` holds.
+
+```sql
+select
+ (select count(distinct x.signature) from pg_proc p join (values
+   ('private.path_b_person_v1(uuid,uuid,uuid)','9f0434499b394a5c8ece4151838918e3','{postgres=X/postgres}'),
+   ('private.path_b_person_choices_v1(uuid,uuid,boolean)','88fdc054ac411342681e08a38834996f','{postgres=X/postgres,service_role=X/postgres}'),
+   ('private.path_b_uploader_shares_v1(uuid,uuid,boolean)','4791a74ac0dd7f919a69cd4899f7a158','{postgres=X/postgres,service_role=X/postgres}'),
+   ('private.path_b_report_metadata_v1(uuid,uuid,uuid,boolean)','057612020df71da9eeedc4e4212e546a','{postgres=X/postgres,service_role=X/postgres}'),
+   ('private.subject_held_files_v1(uuid,uuid,boolean)','807a31dda5b3c9ed7a674ad37996e519','{postgres=X/postgres,service_role=X/postgres}'),
+   ('private.subject_copilot_authority_v1(uuid,uuid,uuid)','835e5f67cb5ef03e9f97735de1aeeb10','{postgres=X/postgres}'),
+   ('private.export_account_path_b_file_v1(uuid)','71e1c10e7b5410f4cb4b77c7ccc10577','{postgres=X/postgres}'),
+   ('private.export_account_path_b_snapshot_v1(jsonb,uuid)','b9ae87c681a443f9ac3fb1846a69520b','{postgres=X/postgres}'),
+   ('private.export_account_ordinary_readable_authority_v1(jsonb,text,uuid)','583e9efa4a60f086e3875fc40e03f491','{postgres=X/postgres}'),
+   ('private.transferred_export_person_v1(uuid,uuid,uuid)','80421178d9b4e5fc38f5090756770096','{postgres=X/postgres}'),
+   ('private.transferred_export_confirmation_v1(uuid)','0f903e4ee3b7eaf66f226174a7030a80','{postgres=X/postgres}'),
+   ('public.expire_due_other_adult_held_uploads_v1()','5120605e1f785010cbc13deffcbbe5aa','{postgres=X/postgres,service_role=X/postgres}'),
+   ('private.end_purged_path_b_grants_v1()','0add773cff4bad835ea35bcf80d7a4fc','{postgres=X/postgres}'),
+   ('private.public_appeal_provisional_binding_v1(uuid)','d4b8500ac4a7e6ac2ff76e642ebd0353','{postgres=X/postgres}'),
+   ('private.assert_account_path_b_deletion_supported_v1(uuid)','8ef417e756e4b632b6a97c39538c7ee4','{postgres=X/postgres}'),
+   ('private.path_b_reviewed_document_basis_current_v1(uuid,uuid)','43f3bf4e7782e176523b12851fa6b97b','{postgres=X/postgres}'),
+   ('private.path_b_reviewed_document_approval_v1(uuid,uuid,uuid)','ab0681555da11ebc1f9c3c456d95e76e','{postgres=X/postgres}'),
+   ('private.guard_permission_document_transition_v1()','8631df4b82bcc03e8acfa8de6f07798d','{postgres=X/postgres}'),
+   ('private.path_b_subject_v1(uuid,uuid)','d174a83682e35479797ac7e738a65d79','{postgres=X/postgres,service_role=X/postgres}')
+  ) as x(signature,body,acl) on p.oid=to_regprocedure(x.signature) and md5(pg_get_functiondef(p.oid))=x.body
+   and p.proacl::text=x.acl) as must_be_19_bodies_as_reviewed,
+ (select string_agg(c.conname||' '||md5(pg_get_constraintdef(c.oid)),',' order by c.conname) from pg_constraint c
+   where c.conrelid='public.adult_subject_drafts'::regclass and c.contype='c' and c.convalidated
+    and c.conname in('adult_subject_drafts_adult_flow_check','adult_subject_drafts_flow_check','adult_subject_drafts_state_check'))
+   ='adult_subject_drafts_adult_flow_check 5c8b24f18ac62ac45cd1c1647bdd2466,adult_subject_drafts_flow_check 40cf5a7d87b6855d74985956133cc797,'
+    ||'adult_subject_drafts_state_check 1b051566996b3857dcc34e514d4185e0' as must_be_true_draft_checks_as_reviewed,
+ (select count(*) from public.adult_subject_drafts where adult_flow='path-b-reviewed-document' and state='confirmed')
+   as context_confirmed_reviewed_document_records,
+ (select count(*) from public.subjects s join public.adult_subject_drafts d on d.subject_id=s.id
+   where d.adult_flow='path-b-reviewed-document' and d.state='confirmed' and s.ownership_transferred_at is not null)
+   as context_transferred_reviewed_document_records,
+ (select count(*) from public.purpose_grants g join public.adult_subject_drafts d on d.subject_id=g.target_id
+   where g.target_kind='subject' and d.adult_flow='path-b-reviewed-document' and g.revoked_at is null) as context_live_grants_on_them,
+ current_user as context_current_user,
+ current_setting('search_path') as context_search_path;
+```
+
+Locally, before the forward apply, `must_be_19_bodies_as_reviewed` was 19 and `must_be_true_draft_checks_as_reviewed` true, under the default search path and under `search_path=''` alike; with the migration applied inside a rolled-back transaction the count was 4 (the four pinned bodies still match), and with it then undone in reverse it was 19 again. Every `context_*` count was 0. The nineteen md5s and the three constraint md5s are recomputed from source by `scripts/path-b-reviewed-document-readers-migration.test.ts`. No pinned header prints a `public` or `private` type except the approval read's return type, which `pg_get_functiondef` qualifies under either search path, so the md5s do not depend on `search_path`. Every `context_*` count is expected to be 0 in production. A non-zero `context_confirmed_reviewed_document_records` means reviewed-document records that every reader patched here now reaches.
+
+## Locks and duration
+
+Catalog work only: sixteen `create or replace function` through `execute`, each taking a lock on its own `pg_proc` row; no table is locked or scanned. Measured locally inside a rolled-back transaction on an idle database: 15 to 20 ms over three runs from the rebuilt predecessor state, the predecessor block and the postflight included. Every call that starts after the commit reads the new bodies.
+
+## Deployed code between apply and deploy
+
+- **Migration applied, code not yet deployed (the expected order).** Every database reader answers for a reviewed-document record at once. The deployed route classifier still sends that record's saved-results pages to the ordinary own-record resolver, as before, so those pages stay as they were until the deploy; every other page reads the database directly.
+- **Code deployed, migration not yet applied.** The classifier sends a reviewed-document record's saved-results pages to the Path B reader, whose metadata does not list the record yet, so the page answers not found, as the rest of the product already treats that record.
+- **Both.** As described above. In production Path B is not open, so none of this is reachable in any window.
+
+## Production reachability
+
+Nothing here is reachable in production: a Path B record of either flow is created only under the test jurisdiction (`next.config.ts` refuses a production build with `INHERIT_TEST_JURISDICTION=1`), and every real jurisdiction is unreviewed for the capabilities that create an adult-subject invitation. The pre-check's `context_confirmed_reviewed_document_records` is the receipt on the day of the release.
+
+## What a person sees
+
+Only under the test jurisdiction. No new wording.
+
+- **The person on a reviewed-document record**, with their own account, sees what the person on an e-signature record sees: the record on their choices page with each layer and its Copilot choice, and they can share with the uploader from there; their held files; their own saved results; a new export of the record and of their whole account, with the complete archive off and on. After their own move or the uploader's hand-over, any earlier copy has stopped working and a new one can be made, before and after the relocation worker's swap, and "Download your data" lists the file. The approved line "Any download copy of this record has stopped working. You can make a new one." is now true for this record too.
+- **The uploader** sees what the person shared and their saved results of it, and can ask Copilot about that one record once the person turns it on, exactly as for an e-signature record. A request not yet answered, a document approved but never sent and a refused document show none of this, for either flow.
+- **When the person asks to delete their account**, the held-upload job deletes the record, and its grants and the uploader relationship end, as for an e-signature record. A purged record's grants end with it.
+- **An adult who holds a grant on such a record** cannot delete their account (unsupported graph), as for an e-signature record.
+- **A public objection** from the person's own contact now resolves to the record and holds it provisionally, as for an e-signature record; before, it went to the reviewer as an unresolved match and held nothing.
+
+## For the owner
+
+- Some paths also ask `private.path_b_subject_v1` (unchanged since `20261016190000`: the record's confirmation as the uploader holds it), which for a reviewed-document record needs its approved document still retained. That retention ends 730 days after acceptance. A one-off probe, not part of the suite, set the reviewed document's retention as ended inside a rolled-back transaction. The record then still reached the choices page, the held files, the uploader's shares and the export's file test. But the uploader's and the person's own saved results, the uploader's Copilot, and the person's export of the record and of their whole account all stopped, while the e-signature record kept every one. For the uploader that matches the register's upload basis for this flow. For the person's own results and exports it is a difference from an e-signature record that D-165 did not name. It is not changed here; it may need its own defect row and an owner decision.
+- Two readers were widened that the defect row did not name, both found by the search it asked for: the public appeal's resolution and account deletion's refusal of a grant. Each now treats a reviewed-document record as an e-signature one.
+
+## Pinned tests (local, this container)
+
+- `supabase/tests/path_b_reviewed_document_readers.sql` (93 tests) builds one confirmed record of each flow through the real doors. The reviewed document is uploaded, scanned, read in full and approved by a named reviewer, then the request is finalized, mailed, opened and confirmed by the person with their own account. Each person then shares, a file is held and confirmed, the workers' doors normalize it and complete every saved result, and the person turns Copilot on. It also makes, through the same doors, a request not answered (each flow), a document approved but never sent and a document refused.
+  - With the fifteen predecessors swapped in (each rebuilt by reversing exactly this migration's anchors), the reviewed-document record reaches none of the readers (D-165) while the e-signature one reaches all of them.
+  - From the successors, the two records answer alike at every reader, compared whole: choices and sharing, shares and saved-results metadata, held files, Copilot, the per-record and whole-account export with the archive off and on, before and after the person's move and the uploader's hand-over and the relocation swap, "Download your data", the held-upload job, the purged-grant cleanup, the deletion refusal and the public appeal.
+  - A confirmed record whose draft is set back to any other state (synthetic) reaches no reader, for either flow.
+- `scripts/path-b-reviewed-document-readers-migration.test.ts` (9 tests) rebuilds every predecessor and pinned body from source, recomputes each md5, replays each patch, checks that each anchor only widens the flow and keeps the confirmed state where the e-signature lookup had it, that only the two confirmation transactions write the confirmed state and only after the approval is rechecked, and that the pgTAP suite carries this migration's patch rows byte for byte.
+- `src/lib/uploads/path-b-subject-classifier.test.ts` (3 tests): the route classifier asks for either Path B flow.
+- Planted defects, each caught. Database plants ran inside the suite's own rolled-back transaction: each of the fifteen readers left narrow (its anchors reversed), and thirteen widenings that admit a reviewed-document draft in any state. Five of those thirteen (the person read, the choices page, the uploader's shares, the held files and the export's file test) are also caught by the not-confirmed tests or the share and cleanup lines. The other eight (the saved-results metadata, Copilot, the snapshot, the capture, the two transfer helpers, the held-upload job and the appeal binding) are caught only by the suite's body pins and its predecessor rebuild: on each of those paths another check (the decision, the person read or the file test) already refuses a draft that is not confirmed, so the widening changes nothing a test can see. Source plants were restored byte-identical (sha256 checked): one reader left out of the migration; a widening to `invited` drafts and one to a reviewed-document draft in any state, each with its md5s made consistent; the job's last pass widened; a pinned-only body pinned; the Copilot authority patched from another predecessor; and the route classifier left on the e-signature flow.
+- Before the forward apply, every related suite (167: every suite naming Path B, an export, the archive, Copilot, a transfer, a withdrawal, a public appeal, the decision, the acceptance clocks or a reviewed document, or including `path_b_source_setup.inc`) was run without this migration and with it applied inside the suite's own transaction. 165 gave identical results both ways. The other two pin a patched body's md5 (`transferred_record_exports`, `other_adult_held_upload`); their assertions now also accept the D-165 successor, and with that change they too are identical both ways. 21 suites fail identically with and without the migration, from the shared local database's state, not from this change. After the forward apply: this suite 93/93 (with the migration undone inside its transaction it stops at the share door, as D-165), `reviewed_document_decision` 51/51, `transferred_record_exports` 57/57, `other_adult_held_upload` 179/179, `subject_copilot_path_b` 52/52, `subject_transfer` 118/118, `uploader_withdrawal_hand_over` 85/85, `path_b_reviewed_document` 85/85, and eight more Path B, Copilot and acceptance suites, all passing. In the browser, the three Path B tests of `e2e/other-adult-upload.spec.ts` (the person shares with the uploader, who reads the saved results) passed against the migrated database and a build with the new classifier.

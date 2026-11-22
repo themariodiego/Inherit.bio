@@ -252,8 +252,13 @@ select is((select string_agg(md5(pg_get_functiondef(p.oid))||' '||p.proacl::text
  where p.oid in ('private.export_account_ordinary_readable_authority_v1(jsonb,text,uuid)'::regprocedure,
   'private.export_account_path_b_snapshot_v1(jsonb,uuid)'::regprocedure,'private.own_export_source_v1(uuid,uuid,uuid)'::regprocedure,
   'private.transfer_subject_v1(uuid,uuid,uuid,text,timestamptz)'::regprocedure,'private.legal_audit_person_event_v1(text,text)'::regprocedure)),
- '583e9efa4a60f086e3875fc40e03f491 {postgres=X/postgres}, b9ae87c681a443f9ac3fb1846a69520b {postgres=X/postgres}, f06ad94838f724581b457e800162a6bb {postgres=X/postgres}, a8000a6cccd2fce9c2b285ab268ed642 {postgres=X/postgres,service_role=X/postgres}, 0bb151e8b9849da4f6671237efc3d4c4 {postgres=X/postgres}',
- 'the five bodies are as 20261122160000 left them, each with its ACL');
+ -- 20261122180000 (D-165) widens the two export bodies in place to either
+ -- Path B flow, md5-guarded from exactly these successors.
+ case when position('20261122180000 (D-165)' in pg_get_functiondef('private.export_account_ordinary_readable_authority_v1(jsonb,text,uuid)'::regprocedure))>0
+  then '5c9fee7018806a025ad537664cd23b69 {postgres=X/postgres}, e2d07abe4aa844c3c3a913e18be72015 {postgres=X/postgres}, '
+  else '583e9efa4a60f086e3875fc40e03f491 {postgres=X/postgres}, b9ae87c681a443f9ac3fb1846a69520b {postgres=X/postgres}, ' end
+ ||'f06ad94838f724581b457e800162a6bb {postgres=X/postgres}, a8000a6cccd2fce9c2b285ab268ed642 {postgres=X/postgres,service_role=X/postgres}, 0bb151e8b9849da4f6671237efc3d4c4 {postgres=X/postgres}',
+ 'the five bodies are as 20261122160000 left them (the two export bodies as 20261122180000 then widened them), each with its ACL');
 select ok((select bool_and(not has_function_privilege(r,f,'execute')) from unnest(array['service_role','authenticated','anon','inherit_upload_only']) r
  cross join unnest(array['private.transferred_export_person_v1(uuid,uuid,uuid)','private.transferred_export_confirmation_v1(uuid)']) f),
  'no API role may call either new helper');

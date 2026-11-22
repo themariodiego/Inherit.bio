@@ -541,8 +541,11 @@ select ok((select md5(prosrc)='7c176e100123ecbdf9aedd8ee41b0539' from pg_proc
  'the exact held, keyless, evidence, notice and information bodies form the reviewed service door; every preserved delegate remains API-denied');
 -- 20261016190000_path_b_reviewed_document.sql extends this exact helper to the
 -- reviewed-document flow's graph; the pin follows the reviewed body.
+-- 20261122180000 (D-165) widens its grant clause in place to either Path B
+-- flow, md5-guarded from exactly this body; the pin follows that body too.
 select ok(to_regprocedure('private.assert_account_path_b_deletion_supported_v1(uuid)') is null
- or ((select md5(prosrc)='cd6a5921924d50f1857ac8d8b545b30d' from pg_proc
+ or ((select md5(prosrc)=case when position('20261122180000 (D-165)' in prosrc)>0 then '4a3a4243350f9e62321a9c8208437f8d'
+   else 'cd6a5921924d50f1857ac8d8b545b30d' end from pg_proc
     where oid=to_regprocedure('private.assert_account_path_b_deletion_supported_v1(uuid)'))
    and not exists(select 1 from unnest(array['anon','authenticated','inherit_upload_only','service_role'])r
     where has_function_privilege(r,to_regprocedure('private.assert_account_path_b_deletion_supported_v1(uuid)'),'execute'))),
