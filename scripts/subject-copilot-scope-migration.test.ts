@@ -141,8 +141,15 @@ describe("the release it belongs to", () => {
     // the reader is the inviter of a held Path A acceptance. It is the only
     // later migration allowed to, and only for those two.
     const D156 = "20261122110000_adult_acceptance_inviter_reads.sql";
+    // 2026-11-22: 20261122190000 (D-166) patches the Path B read decision in
+    // place, md5-guarded from exactly the predecessor pinned here and with every
+    // line of it kept, so that any reader but the person (the uploader, whose
+    // one-record Copilot asks it) still needs the uploader's confirmation read.
+    // It is the only later migration allowed to, and only for that body.
+    const D166 = "20261122190000_reviewed_document_person_access.sql";
     const allowed: Record<string, string[]> = {
-      "private.family_copilot_turn_state_v1": [D156], "private.family_report_recipient_v1": [D156] };
+      "private.family_copilot_turn_state_v1": [D156], "private.family_report_recipient_v1": [D156],
+      "private.path_b_result_read_v1": [D166] };
     for (const qualified of ["private.grant_path_b_purpose_v1", "private.other_adult_mitigation_v1",
       "private.family_copilot_directional_grant_v1", "private.family_copilot_turn_state_v1", "private.family_report_recipient_v1",
       "private.family_report_endpoints_v1", "private.path_b_result_read_v1", "private.delete_pair_derived_rows_v1"]) {
@@ -152,6 +159,13 @@ describe("the release it belongs to", () => {
     expect(d156).toContain("(1,'private.family_report_recipient_v1(uuid,uuid,uuid,text)','692a52e391045b96addc465c8afbce0e',");
     expect(d156).toContain("(5,'private.family_copilot_turn_state_v1(uuid,uuid,uuid)','ecaa3458595f82351127ec80e26cd4c2',");
     expect(d156).toContain("if (length(definition)-length(replace(definition,item.old_fragment,'')))/length(item.old_fragment)<>1 then");
+    const d166 = read(`supabase/migrations/${D166}`);
+    expect(d166).not.toMatch(/create\s+(?:or\s+replace\s+)?function\s+(?:\w+\.)?path_b_result_read_v1\s*\(/iu);
+    // Its pin, its one patch row, its postflight and its list of the uploader's read's callers.
+    expect(count(d166, "'private.path_b_result_read_v1(")).toBe(4);
+    expect(d166).toContain("   ('private.path_b_result_read_v1(uuid,uuid,text)','d39c35dab17636d453a18f41bde4ede4','{postgres=X/postgres}'),");
+    expect(d166).toContain("  (2,'private.path_b_result_read_v1(uuid,uuid,text)','d39c35dab17636d453a18f41bde4ede4',");
+    expect(d166).toContain("if (length(definition)-length(replace(definition,item.old_fragment,'')))/length(item.old_fragment)<>1 then");
   });
 });
 

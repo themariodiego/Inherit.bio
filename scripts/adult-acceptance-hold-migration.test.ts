@@ -155,8 +155,16 @@ describe("the release it belongs to", () => {
     // the one-anchor md5 guard from this successor, and that the core occurs
     // only in its predecessor block, pinned at this successor.
     const D154 = "20261122170000_inviter_grants_and_reviewed_document_decision.sql";
-    const exempt = (file: string, qualified: string) => file === D154 && (qualified === "private.other_adult_mitigation_before_public_appeal_v1"
-      || qualified === "private.confirm_path_b_subject_account_core_v1");
+    // 2026-11-22: 20261122190000 (D-166) patches the normalization authority in
+    // place, md5-guarded from exactly this migration's successor, so that it asks
+    // the record's confirmation (private.path_b_confirmation_v1) in place of the
+    // uploader's. For that one file and that one body the case checks instead
+    // that it never restates the body and patches it once, through the
+    // one-anchor md5 guard, from this successor.
+    const D166 = "20261122190000_reviewed_document_person_access.sql";
+    const exempt = (file: string, qualified: string) => (file === D154 && (qualified === "private.other_adult_mitigation_before_public_appeal_v1"
+      || qualified === "private.confirm_path_b_subject_account_core_v1"))
+      || (file === D166 && qualified === "private.path_b_normalization_authority_v1");
     for (const qualified of ["private.adult_subject_invitation_response_v1", "private.confirm_path_b_subject_account_core_v1",
       "private.other_adult_mitigation_before_public_appeal_v1", "private.path_b_normalization_authority_v1",
       "public.claim_invitation_terminal_mail_v1", "public.authorize_invitation_terminal_mail_v1",
@@ -173,6 +181,13 @@ describe("the release it belongs to", () => {
     expect(d154.replace(d154Preflight, "").includes("'private.confirm_path_b_subject_account_core_v1(")).toBe(false);
     expect(d154Preflight).toContain("to_regprocedure('private.confirm_path_b_subject_account_core_v1(text,text,integer,text,text[],bytea,uuid,uuid,text,boolean)')\n"
       + "   and md5(pg_get_functiondef(p.oid))='63c6c510a724cbe747af5db354cb344b' and p.proacl::text='{postgres=X/postgres}')");
+    const d166 = read(`supabase/migrations/${D166}`);
+    expect(d166).not.toMatch(/create\s+(?:or\s+replace\s+)?function\s+(?:\w+\.)?path_b_normalization_authority_v1\s*\(/iu);
+    // Its pin, its list of the uploader's read's callers, its one patch row and its postflight.
+    expect(count(d166, "'private.path_b_normalization_authority_v1(")).toBe(4);
+    expect(d166).toContain("   ('private.path_b_normalization_authority_v1(uuid,text)','591fc9f913fb7177ed86144a7ce654f4','{postgres=X/postgres}'),");
+    expect(d166).toContain("  (1,'private.path_b_normalization_authority_v1(uuid,text)','591fc9f913fb7177ed86144a7ce654f4',");
+    expect(d166).toContain("if (length(definition)-length(replace(definition,item.old_fragment,'')))/length(item.old_fragment)<>1 then");
   });
 });
 

@@ -574,15 +574,25 @@ begin
  return (select string_agg(md5(pg_get_functiondef(p.oid)),' ' order by x.first) from (select target,min(ordinal) first
   from d165_patches group by target) x join pg_proc p on p.oid=x.target::regprocedure);
 end $$;
+-- 20261122190000 (D-166) then has the capture ask the record's confirmation
+-- (private.path_b_confirmation_v1), md5-guarded from exactly its successor
+-- here and outside every anchor above; with it applied the capture's two md5s
+-- follow it (its predecessor rebuilt here carries that one line too). Every
+-- other md5 is this migration's own.
+create function pg_temp.d166(p_md5 text) returns text language sql as $$
+ select case when position('20261122190000 (D-166)' in pg_get_functiondef(
+   'private.export_account_ordinary_readable_authority_v1(jsonb,text,uuid)'::regprocedure))=0 then p_md5
+  when p_md5='5c9fee7018806a025ad537664cd23b69' then '2fb0181f5c393cf7283cb9e33704789a'
+  when p_md5='583e9efa4a60f086e3875fc40e03f491' then '1ee6b7092b77885fe752b324766bc844' else p_md5 end $$;
 create function pg_temp.expected(p_which text) returns text language sql as $$
- select string_agg(case when p_which='predecessor' then f.before_md5 else l.after_md5 end,' ' order by x.first)
+ select string_agg(pg_temp.d166(case when p_which='predecessor' then f.before_md5 else l.after_md5 end),' ' order by x.first)
  from (select target,min(ordinal) first,max(ordinal) last from d165_patches group by target) x
  join d165_patches f on f.ordinal=x.first join d165_patches l on l.ordinal=x.last $$;
 
 -- 0. The migration --------------------------------------------------------------------
 select is((select string_agg(md5(pg_get_functiondef(p.oid))||' '||p.proacl::text,', ' order by x.first)
   from (select target,min(ordinal) first from d165_patches group by target) x join pg_proc p on p.oid=x.target::regprocedure),
- (select string_agg(l.after_md5||' '||l.acl,', ' order by x.first) from (select target,min(ordinal) first,max(ordinal) last
+ (select string_agg(pg_temp.d166(l.after_md5)||' '||l.acl,', ' order by x.first) from (select target,min(ordinal) first,max(ordinal) last
   from d165_patches group by target) x join d165_patches l on l.ordinal=x.last),
  'the fifteen patched bodies carry their pinned successors and unchanged privileges');
 select is((select count(*) from d165_patches),16::bigint,'sixteen anchors in fifteen bodies');

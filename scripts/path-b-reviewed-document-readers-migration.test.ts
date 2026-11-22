@@ -216,9 +216,42 @@ describe("the release it belongs to", () => {
   });
 
   it("is the last word on what it patches: no later migration restates or patches those bodies", () => {
+    // 2026-11-22: 20261122190000 (D-166) patches the capture in place, md5-guarded
+    // from exactly this migration's successor and at a line no anchor here touches,
+    // so that it asks the record's confirmation (private.path_b_confirmation_v1) in
+    // place of the uploader's; it pins the appeal's resolution, unchanged, as one
+    // of the uploader's read's callers. It is the only later migration allowed to
+    // name either, and only those two; for it the case checks instead that it never
+    // restates either body, patches the capture once, through the one-anchor md5
+    // guard, from this successor, and only pins the appeal's at this successor.
+    const D166 = "20261122190000_reviewed_document_person_access.sql";
+    const APPEAL_TARGET = "private.public_appeal_provisional_binding_v1(uuid)";
+    const allowed: Record<string, string[]> = { "private.export_account_ordinary_readable_authority_v1": [D166],
+      "private.public_appeal_provisional_binding_v1": [D166] };
     for (const qualified of TARGETS.map(target => target.slice(0, target.indexOf("(")))) {
-      expect(files.filter(file => file > NAME && rewrites(file, qualified)), qualified).toEqual([]);
+      expect(files.filter(file => file > NAME && rewrites(file, qualified)), qualified).toEqual(allowed[qualified] ?? []);
     }
+    const d166 = read(`supabase/migrations/${D166}`);
+    expect(d166).not.toMatch(/create\s+(?:or\s+replace\s+)?function\s+(?:\w+\.)?export_account_ordinary_readable_authority_v1\s*\(/iu);
+    // Its pin, its list of the uploader's read's callers, its one patch row and its postflight.
+    expect(count(d166, "'private.export_account_ordinary_readable_authority_v1(")).toBe(4);
+    const capture = md5(successors.get(READABLE_TARGET)!);
+    expect(d166).toContain(`   ('${READABLE_TARGET}','${capture}','{postgres=X/postgres}'),`);
+    expect(d166).toContain(`  (4,'${READABLE_TARGET}','${capture}',`);
+    expect(d166).toContain("if (length(definition)-length(replace(definition,item.old_fragment,'')))/length(item.old_fragment)<>1 then");
+    // Its anchor is none of this migration's.
+    const anchor = between(d166, `  (4,'${READABLE_TARGET}'`, "$old$,");
+    for (const patch of patches.filter(patch => patch.target === READABLE_TARGET)) expect(anchor.includes(patch.next.trim()), patch.label).toBe(false);
+    // The appeal's resolution: pinned in its predecessor block and its postflight, each at
+    // this successor and in its list of the uploader's read's callers; in no patch row.
+    expect(d166).not.toMatch(/create\s+(?:or\s+replace\s+)?function\s+(?:\w+\.)?public_appeal_provisional_binding_v1\s*\(/iu);
+    expect(count(d166, "'private.public_appeal_provisional_binding_v1(")).toBe(4);
+    const appeal = md5(successors.get(APPEAL_TARGET)!);
+    for (const block of [between(d166, "do $predecessor$", "$predecessor$;"), between(d166, "do $postflight$", "$postflight$;")]) {
+      expect(block).toContain(`   ('${APPEAL_TARGET}','${appeal}','{postgres=X/postgres}')`);
+      expect(block).toContain(`    '${APPEAL_TARGET}']) x order by 1)`);
+    }
+    expect(between(d166, "do $patch_access$", "$patch_access$;")).not.toContain("public_appeal_provisional_binding_v1");
   });
 });
 

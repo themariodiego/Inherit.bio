@@ -1496,3 +1496,119 @@ Only under the test jurisdiction. No new wording.
 - `src/lib/uploads/path-b-subject-classifier.test.ts` (3 tests): the route classifier asks for either Path B flow.
 - Planted defects, each caught. Database plants ran inside the suite's own rolled-back transaction: each of the fifteen readers left narrow (its anchors reversed), and thirteen widenings that admit a reviewed-document draft in any state. Five of those thirteen (the person read, the choices page, the uploader's shares, the held files and the export's file test) are also caught by the not-confirmed tests or the share and cleanup lines. The other eight (the saved-results metadata, Copilot, the snapshot, the capture, the two transfer helpers, the held-upload job and the appeal binding) are caught only by the suite's body pins and its predecessor rebuild: on each of those paths another check (the decision, the person read or the file test) already refuses a draft that is not confirmed, so the widening changes nothing a test can see. Source plants were restored byte-identical (sha256 checked): one reader left out of the migration; a widening to `invited` drafts and one to a reviewed-document draft in any state, each with its md5s made consistent; the job's last pass widened; a pinned-only body pinned; the Copilot authority patched from another predecessor; and the route classifier left on the e-signature flow.
 - Before the forward apply, every related suite (167: every suite naming Path B, an export, the archive, Copilot, a transfer, a withdrawal, a public appeal, the decision, the acceptance clocks or a reviewed document, or including `path_b_source_setup.inc`) was run without this migration and with it applied inside the suite's own transaction. 165 gave identical results both ways. The other two pin a patched body's md5 (`transferred_record_exports`, `other_adult_held_upload`); their assertions now also accept the D-165 successor, and with that change they too are identical both ways. 21 suites fail identically with and without the migration, from the shared local database's state, not from this change. After the forward apply: this suite 93/93 (with the migration undone inside its transaction it stops at the share door, as D-165), `reviewed_document_decision` 51/51, `transferred_record_exports` 57/57, `other_adult_held_upload` 179/179, `subject_copilot_path_b` 52/52, `subject_transfer` 118/118, `uploader_withdrawal_hand_over` 85/85, `path_b_reviewed_document` 85/85, and eight more Path B, Copilot and acceptance suites, all passing. In the browser, the three Path B tests of `e2e/other-adult-upload.spec.ts` (the person shares with the uploader, who reads the saved results) passed against the migrated database and a build with the new classifier.
+
+# Release notes: `20261122190000_reviewed_document_person_access.sql` (D-166)
+
+Local work only. Nothing here was run against production or any hosted database. Owner decision of 22 November 2026, "A person keeps their own access after the approved document's retention ends (D-166)" (`docs/protocol/decisions.md`), on defect row D-166 (`docs/protocol/defects.md`). A Path B record can be confirmed by e-signature (`path-b-subject-esignature`) or through a permission document a named reviewer approved (`path-b-reviewed-document`). For a reviewed-document record, `private.path_b_subject_v1` (the record's confirmation as the uploader holds it) requires the approved document still retained, and that retention (`legal-evidence.adult-permission-24mo`) ends 730 days after acceptance. After it ended, the person's own saved results and their export of the record and of their whole account stopped together with the uploader's access, while an e-signature record's person kept both. Now only the uploader's access depends on the retained document.
+
+Both Path B flows need the test jurisdiction, so nothing here is reachable in production (below).
+
+## Which paths ask the uploader's read, and whose they are
+
+`private.path_b_subject_v1` had five callers. Every path through it goes through one of them:
+
+- **The uploader's held upload** (`private.other_adult_upload_store_authority_v1`: behind the held-upload issue, the upload-session and storage checks and the finalization's own authority) and **the uploader's finalization of a held file** (`private.complete_own_upload_finalization_v1`). Both ask it for the uploader's own account. The uploader's: unchanged.
+- **The public appeal's resolution of a subject objection** (`private.public_appeal_provisional_binding_v1`). An unauthenticated intake matched by contact digests: neither the person's own read or export nor the uploader's. Unchanged (see "For the owner").
+- **The account capture of a Path B record** (`private.export_account_ordinary_readable_authority_v1`). It loops only over records whose `subject_account_id` is the exporting account, so only the person reaches it: their export of the record and of their whole account, and every copy's currency check. The person's.
+- **The Path B source authority** (`private.path_b_normalization_authority_v1`): a held file's confirmed source, with no reader in it. Every saved result of either side reaches it through one of two readers that know whose it is:
+  - the read decision (`private.path_b_result_read_v1`): the reader's mitigation decision is `subject-own-right-only` only when the reader is the person's own account, and `allow` only for the uploader. It serves the person's choices page and saved-results list, the uploader's shares and saved-results list, and the uploader's one-record Copilot (which asks it for each layer);
+  - the report authority (`private.path_b_report_authority_v1`): the grant's direction is `self` for the person's own layer and `subject_to_recipient` for a layer shared with the uploader. It serves the report worker and its enqueue, the saved-result reads and readiness check, and the person's export of their saved results (`self` only).
+  The normalization worker and its enqueue reach it with no reader.
+
+## What it changes
+
+- **One new helper**, `private.path_b_confirmation_v1(uuid,uuid)` (md5 `87d1170f0ed36bd81845c4cbfd1ac622`, `{postgres=X/postgres}`, `security definer`, volatile, `search_path=pg_catalog, private`; callable by no API role): what `private.path_b_subject_v1` answers, line for line, without its retention clause. It takes a confirmed draft of either flow, each with its own evidence, as `20261122180000` reads it everywhere else.
+- **Four bodies patched in place**, each with the exact predecessor md5 and ACL, one anchor, the successor md5 and unchanged ACL, volatility and owner asserted (55000 otherwise):
+  - `private.path_b_normalization_authority_v1(uuid,text)` (`591fc9f913fb7177ed86144a7ce654f4` → `b08c6d4602197f532a3d578eebff4c6b`): asks the helper in place of the uploader's read.
+  - `private.export_account_ordinary_readable_authority_v1(jsonb,text,uuid)` (`5c9fee7018806a025ad537664cd23b69` → `2fb0181f5c393cf7283cb9e33704789a`): asks the helper in place of the uploader's read.
+  - `private.path_b_result_read_v1(uuid,uuid,text)` (`d39c35dab17636d453a18f41bde4ede4` → `e165f72a2ea253503f0f433284b8a3dd`): for any reader but the person, it still asks the uploader's read. It asks right after the source authority, inside the same `insufficient_privilege` handler that caught the source authority's refusal before, so the uploader's answer is what it was.
+  - `private.path_b_report_authority_v1(uuid,uuid,text)` (`a77b3f10be091726b10930ba06b82680` → `689beb777fa9a4d1356e3689f9576eff`): for any layer but the person's own, it still asks the uploader's read, after the source authority and the grant's own checks. Every refusal there is the same 42501 `not_found` the source authority raised before.
+- **Pinned, not changed:** `private.path_b_subject_v1` (`d174a83682e35479797ac7e738a65d79`), `private.path_b_reviewed_document_retained_v1` (`a8e15740ad618a999aa73a1c9f909817`), `private.permission_document_live_v1` (`39de6ef674864bbcd2283003f72c0625`), the uploader's held upload (`b8e13301350522ce9933d646c273d421`) and finalization (`50b661f2167a28ba458a5153bb71ace3`), and the public appeal's resolution (`7d7b1f82a7703c625b5695ba2aad57b4`). The predecessor block also requires that exactly those five bodies call the uploader's read and that the helper does not exist yet (55000 `reviewed document person access prerequisite differs`). The postflight asserts the four successors, the helper and the six pinned bodies with their ACLs, and that exactly the uploader's two doors, the two gates and the appeal now call the uploader's read (55000 `reviewed document person access successor differs`).
+- No table, column, constraint, trigger, grant, queue, job or wording changes. Fingerprint effect: 4 `def_md5` values change and one function is added.
+- **Register.** One statement amended: `policyResolvers.upload-class-v1.cases.other_adult.actorRelationshipCases.uploader-or-grantee.flowBasisCases.path-b-reviewed-document` (appended text starting `registered-2026-11-22-D-166`). The approved document remaining current binds only the uploader. Once its retention ends, the confirmed person's own saved results (with the source reads and derived writes they need) and their export of the record and of their whole account continue exactly as for an e-signature record.
+
+## Which releases must come first
+
+1. The earlier migrations that defined the bodies it patches or pins: `20260928150000` and `20261010063629` (the uploader's held upload and finalization), `20260930231000` and `20260930234000` (the source authority, the read decision and the report authority), `20261001039000` (the capture; PR 323), `20261009224500` (the appeal) and `20261016190000` (the reviewed-document flow, release 1, PR 324). The migration test rebuilds each body from them and recomputes the md5 pinned here.
+2. In this release, in file order: `20261120120000` (the source authority at `591fc9f9…`), `20261122160000` and `20261122180000` (the capture at `5c9fee70…`, the appeal at `7d7b1f82…`). Without them the predecessor block refuses.
+3. This migration, after `20261122180000`. It was not applied forward to the shared local database: every run applied it inside a rolled-back transaction.
+
+## Read-only pre-checks (one SELECT; the release session and its `search_path`)
+
+Stop unless every `must_be_*` holds.
+
+```sql
+select
+ (select count(distinct x.signature) from pg_proc p join (values
+   ('private.path_b_normalization_authority_v1(uuid,text)','591fc9f913fb7177ed86144a7ce654f4','{postgres=X/postgres}'),
+   ('private.path_b_result_read_v1(uuid,uuid,text)','d39c35dab17636d453a18f41bde4ede4','{postgres=X/postgres}'),
+   ('private.path_b_report_authority_v1(uuid,uuid,text)','a77b3f10be091726b10930ba06b82680','{postgres=X/postgres}'),
+   ('private.export_account_ordinary_readable_authority_v1(jsonb,text,uuid)','5c9fee7018806a025ad537664cd23b69','{postgres=X/postgres}'),
+   ('private.path_b_subject_v1(uuid,uuid)','d174a83682e35479797ac7e738a65d79','{postgres=X/postgres,service_role=X/postgres}'),
+   ('private.path_b_reviewed_document_retained_v1(uuid)','a8e15740ad618a999aa73a1c9f909817','{postgres=X/postgres}'),
+   ('private.permission_document_live_v1(private.permission_documents)','39de6ef674864bbcd2283003f72c0625','{postgres=X/postgres}'),
+   ('private.other_adult_upload_store_authority_v1(uuid,uuid,uuid)','b8e13301350522ce9933d646c273d421','{postgres=X/postgres,service_role=X/postgres}'),
+   ('private.complete_own_upload_finalization_v1(uuid,uuid,uuid,uuid,uuid,text,text)','50b661f2167a28ba458a5153bb71ace3','{postgres=X/postgres,service_role=X/postgres}'),
+   ('private.public_appeal_provisional_binding_v1(uuid)','7d7b1f82a7703c625b5695ba2aad57b4','{postgres=X/postgres}')
+  ) as x(signature,body,acl) on p.oid=to_regprocedure(x.signature) and md5(pg_get_functiondef(p.oid))=x.body
+   and p.proacl::text=x.acl) as must_be_10_bodies_as_reviewed,
+ (select array(select p.oid from pg_proc p where p.prosrc ~ '[^a-z_]path_b_subject_v1\s*\('
+    and p.oid<>'private.path_b_subject_v1(uuid,uuid)'::regprocedure order by p.oid)
+   =array(select x::regprocedure::oid from unnest(array[
+    'private.complete_own_upload_finalization_v1(uuid,uuid,uuid,uuid,uuid,text,text)',
+    'private.export_account_ordinary_readable_authority_v1(jsonb,text,uuid)',
+    'private.other_adult_upload_store_authority_v1(uuid,uuid,uuid)',
+    'private.path_b_normalization_authority_v1(uuid,text)',
+    'private.public_appeal_provisional_binding_v1(uuid)']) x order by 1)) as must_be_true_five_callers_of_the_uploader_read,
+ (to_regprocedure('private.path_b_confirmation_v1(uuid,uuid)') is null) as must_be_true_no_helper_yet,
+ (select count(*) from public.adult_subject_drafts where adult_flow='path-b-reviewed-document' and state='confirmed')
+   as context_confirmed_reviewed_document_records,
+ (select count(*) from public.adult_subject_drafts d join public.subjects s on s.id=d.subject_id
+   where d.adult_flow='path-b-reviewed-document' and d.state='confirmed' and s.lifecycle='active'
+    and not private.path_b_reviewed_document_retained_v1(s.id)) as context_records_whose_document_is_no_longer_retained,
+ current_user as context_current_user,
+ current_setting('search_path') as context_search_path;
+```
+
+Locally, under the default search path and under `search_path=''` alike: `must_be_10_bodies_as_reviewed` 10, both `must_be_true_*` true, every `context_*` count 0. With the migration applied inside a rolled-back transaction the same query reads 6 (the six pinned bodies still match), false and false. The ten md5s are recomputed from source by `scripts/reviewed-document-person-access-migration.test.ts`. No pinned header prints a `public` or `private` type, so the md5s do not depend on `search_path`. Every `context_*` count is expected to be 0 in production. A non-zero `context_records_whose_document_is_no_longer_retained` means reviewed-document records whose person gets their own saved results and exports back with this migration.
+
+## Locks and duration
+
+Catalog work only: one `create function` and four `create or replace function` through `execute`, each taking a lock on its own `pg_proc` row; no table is locked or scanned. Measured locally inside a rolled-back transaction: 64 to 190 ms over three runs from the predecessor state, the predecessor block and the postflight included (a suite run was using the database at the same time). Every call that starts after the commit reads the new bodies.
+
+## Deployed code between apply and deploy
+
+No application code changes. Every reader is in the database, so the change takes effect at the commit, in any order with the deploy.
+
+## Production reachability
+
+Nothing here is reachable in production: a Path B record of either flow is created only under the test jurisdiction (`next.config.ts` refuses a production build with `INHERIT_TEST_JURISDICTION=1`), and every real jurisdiction is unreviewed for the capabilities that create an adult-subject invitation. The pre-check's `context_confirmed_reviewed_document_records` is the receipt on the day of the release.
+
+## What a person sees
+
+Only under the test jurisdiction, and only 730 days after a reviewed-document record was accepted. No new wording.
+
+- **The person**, with their own account, keeps what the person on an e-signature record keeps: their own saved results (listed, ready and readable on their choices page and results pages), new results of their own layers on a file confirmed later, and their export of the record and of their whole account, with the complete archive off and on. Copies made before keep working and new ones can be made. "Download your data" lists the record's files after their own move or the uploader's hand-over, as before.
+- **The uploader** loses exactly what they lost before: the record leaves their upload card, they can hold no new file for it, their saved results of it and every layer shared with them stop (no new result is made for them), and their one-record Copilot answers that permission is missing. Their shares list still names the record, with each shared layer's read gate closed.
+- Before the document's retention ends, nothing changes for anyone. An e-signature record is not affected at any time.
+
+## For the owner
+
+- **The public appeal is unchanged.** It still asks the uploader's read, so once a reviewed-document record's document is no longer retained, an objection whose contact is the person's no longer resolves to that record: it goes to the reviewer as an unresolved match and holds nothing. An e-signature record's objection still resolves and holds. It is neither the person's own read or export nor the uploader's access, so it was left as it is; whether it should also stop depending on the document is an owner question.
+- **The person's choices page still offers sharing with the uploader** after the document's retention ends (the decision answers `allow` for the uploader at `purpose-grant-create`), but the uploader can no longer read anything shared. That was already so before this change, and it is unchanged.
+- **The source of a file confirmed after the retention ends** is now normalized, so the person's own layers get results on it, as for an e-signature record. The uploader still gets none.
+
+## Pinned tests (local, this container)
+
+- `supabase/tests/reviewed_document_person_access.sql` (89 tests, rolled back) builds the D-165 fixture through the real doors: one confirmed record of each flow, each person sharing a layer with the uploader and keeping one, a held file confirmed and its saved results completed by the workers' doors, Copilot on for the uploader, and a second file held for each and not yet answered. The document's retention is ended as the code reads it: its fixed `retain_until` set one minute in the past (its guard trigger set aside for that one update, since the clock cannot move).
+  - Before the retention ends, every answer about both records, for both sides, is the same from the predecessor bodies (rebuilt by reversing exactly this migration's anchors) and from the successors, and the two records answer alike.
+  - With the predecessors and the retention ended: the record reaches only the choices page, the held files, the uploader's shares and the export's file test; the person exports neither the record nor their account, and their earlier copies stop (D-166).
+  - From the successors: the person's choices page, own saved results (listed, ready, read), per-record and whole-account export (complete archive off and on), earlier and new copies all answer as the e-signature record's person's do. Every uploader path (read decision, shares, saved results listed and read, Copilot, upload authority, a new held file, the upload card, an export) answers exactly as from the predecessors: nothing.
+  - A second file held before and confirmed after: normalized, the person's own result made and readable, and none for the uploader (the e-signature record gets both). With the predecessors it was never normalized.
+  - After the retention sweep shreds the document's key: the same.
+  - After the person's own move and after the uploader's hand-over: exports and "Download your data" as for the e-signature record, from either set of bodies.
+  - The e-signature record answers the same throughout, from either set of bodies, and as before the retention ended.
+- `scripts/reviewed-document-person-access-migration.test.ts` (12 tests) rebuilds every patched and pinned body from source (with every later in-place patch replayed), recomputes each md5, replays each patch, checks that the helper is the uploader's read line for line without its retention clause, that each patch changes only its one line, that only the uploader's doors, the two gates and the appeal ask the uploader's read, that the gates exempt exactly the person and the person's own layer, the register amendment, and that the pgTAP suite carries this migration's patch rows byte for byte.
+- Three earlier migration tests got one exact allowance each (`adult-acceptance-hold-migration`, `path-b-reviewed-document-readers-migration`, `subject-copilot-scope-migration`), and three pgTAP suites accept the D-166 successor md5 when the body carries its mark (`adult_acceptance_hold_and_renotice`, `path_b_reviewed_document_readers`, `transferred_record_exports`); see the test-diff register.
+- Planted defects, each caught: nine database plants (the person still blocked at the helper, the capture, the source authority, the read decision or the report authority; the uploader admitted at the read decision or the report authority, by dropping either gate or pointing it at the helper) and six source plants. Every file was restored byte-identical (sha256 checked).
+- Every related suite (167: every suite naming Path B, an export, the archive, Copilot, a transfer, a withdrawal, a public appeal, the mitigation decision, an acceptance, a reviewed or permission document or a held upload, this one included) was run without this migration and with it applied inside the suite's own rolled-back transaction, comparing every ok/not-ok line and every error. 166 gave identical results both ways; the other is this suite (89/89 with it; without it, it stops at its first assertion: the helper does not exist). Among them `path_b_reviewed_document_readers` 93/93, `transferred_record_exports` 57/57, `adult_acceptance_hold_and_renotice` 112/112, `reviewed_document_decision` 51/51, `subject_copilot_path_b` 52/52, `subject_copilot_scope` 65/65, `subject_transfer` 118/118, `uploader_withdrawal_hand_over` 85/85, `path_b_reviewed_document` 85/85, `subject_export` 307/307 and `account_archive_complete` 284/284, each both ways. 22 suites fail identically with and without the migration, from the shared local database's state, not this change.
