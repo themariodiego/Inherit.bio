@@ -10,6 +10,22 @@ import { BrowserPreparationError, prepareSubjectFile } from "@/lib/uploads/subje
 import { route } from "@/lib/primary-routes";
 import { PreparationRecovery } from "./preparation-recovery";
 
+/**
+ * What the row shows of a failed Process answer: the body, as before. Since
+ * 22 November 2026 api.file-process answers a signed-out request with
+ * authenticated-api-v1's JSON 401 rather than a plain-text "Unauthorized"
+ * (G8.5); the row shows the words it showed for that answer, so nothing a
+ * person reads changes. A sentence of its own would be new wording.
+ */
+export function processDetail(status: number, body: string): string {
+  if (status !== 401) return body;
+  try {
+    const parsed: unknown = JSON.parse(body);
+    if (parsed !== null && typeof parsed === "object" && (parsed as { error?: unknown }).error === "unauthenticated") return "Unauthorized";
+  } catch { /* not JSON: shown as it is */ }
+  return body;
+}
+
 export function FileRowActions({
   fileId,
   status,
@@ -67,7 +83,7 @@ export function FileRowActions({
             })).catch(() => null);
             clearTimeout(earlyRefresh);
             if (!res?.ok) {
-              const detail = res ? await res.text().catch(() => "") : "";
+              const detail = res ? processDetail(res.status, await res.text().catch(() => "")) : "";
               setError(
                 detail.slice(0, 300) ||
                   `Processing failed${res ? ` (${res.status})` : ""}`,

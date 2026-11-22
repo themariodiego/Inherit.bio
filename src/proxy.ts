@@ -9,6 +9,7 @@ import {testAppealIntakeOpen} from "@/lib/future-person/appeals-open";
 import {applyAppealIntakeHeaders} from "@/lib/future-person/appeal-intake-response";
 import { AUTH_FORM_PAGES, AUTH_FORM_TOKEN_HEADER, authFormSecret, mintAuthForm } from "@/lib/auth/auth-form";
 import { unavailable } from "@/lib/embryos/api";
+import { isStrictSameOrigin, sameOriginRefusal, sameOriginRequiredRoute } from "@/lib/security/same-origin";
 import { AUTH_UNAVAILABLE_HEADER, AUTH_UNAVAILABLE_PATH, checkUser } from "@/lib/supabase/auth-check";
 
 /**
@@ -320,6 +321,19 @@ export async function proxy(request: NextRequest) {
     request.headers.get("x-vercel-ip-country-region"),
   )) {
     return locationUnavailable(request.nextUrl.pathname);
+  }
+
+  // policy.sameOriginRequired (owner decision of 22 November 2026, "Change
+  // requests are refused without the browser's same-origin marker, before the
+  // account is read"): a request to a bound route and method whose
+  // Sec-Fetch-Site is not same-origin, or whose Origin is another site's, gets
+  // the route's registered refusal here, before the session check below reads
+  // the account. The route's CSRF wrapper applies the same rule from the same
+  // list (`@/lib/security/same-origin`).
+  if (sameOriginRequiredRoute(request.method, request.nextUrl.pathname) !== null && !isStrictSameOrigin(request)) {
+    const refusal = sameOriginRefusal();
+    return withSensitiveHeaders(new NextResponse(refusal.body, { status: refusal.status, headers: refusal.headers }),
+      request.nextUrl.pathname);
   }
 
   // The error surface a failed sign-in check is rewritten to renders only for

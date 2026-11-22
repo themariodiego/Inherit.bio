@@ -50,7 +50,9 @@ async function handlePost(
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return new Response("Unauthorized", { status: 401 });
+  // authenticated-api-v1.unauthenticated, as this route's other JSON answers
+  // are built (G8.5, 22 November 2026; it answered a plain-text "Unauthorized").
+  if (!user) return ownUploadJson({ error: "unauthenticated" }, 401);
 
   // RLS-scoped read proves ownership.
   const { data: file } = await supabase

@@ -25,8 +25,10 @@ const original = { token, bucket: "genomes", name: "db-owned-object" };
 const plan = { version: "own-prepared-file-cleanup-v1", original, cleanupId: null, preparedComplete: true };
 /** The value the Files page renders for this account, session and file. */
 const fresh = () => mintPersonOperationNonce({ accountId: owner, sessionId: session, operation: "file_delete", targetId: id });
+// The browser's own request: since 22 November 2026 the route requires its
+// `Sec-Fetch-Site: same-origin` too (policy.sameOriginRequired, strictly).
 const call = (origin = "http://localhost") => DELETE(new Request(`http://localhost/api/files/${id}`, { method: "DELETE",
-  headers: { origin, "x-inherit-operation-nonce": fresh() } }), { params: Promise.resolve({ id }) });
+  headers: { origin, "sec-fetch-site": "same-origin", "x-inherit-operation-nonce": fresh() } }), { params: Promise.resolve({ id }) });
 beforeEach(() => {
   vi.resetAllMocks();
   mocks.context.mockResolvedValue({ user: { id: owner }, sessionId: session });
@@ -69,7 +71,8 @@ describe("owner-authorized file deletion", () => {
     const signedOut = await call();
     expect([signedOut.status, await signedOut.json()]).toEqual([401, { error: "unauthenticated" }]);
     mocks.context.mockResolvedValue({ user: { id: owner }, sessionId: session });
-    const malformed = await DELETE(new Request("http://localhost/api/files/not-a-file", { method: "DELETE", headers: { origin: "http://localhost" } }),
+    const malformed = await DELETE(new Request("http://localhost/api/files/not-a-file", { method: "DELETE",
+      headers: { origin: "http://localhost", "sec-fetch-site": "same-origin" } }),
       { params: Promise.resolve({ id: "not-a-file" }) });
     expect([malformed.status, await malformed.json()]).toEqual([404, { error: "not_found" }]);
     expect(mocks.rpc).not.toHaveBeenCalled();
@@ -96,6 +99,19 @@ describe("owner-authorized file deletion", () => {
     expect(mocks.rpc).not.toHaveBeenCalled();
     expect(mocks.remove).not.toHaveBeenCalled();
   });
+  // Owner decision of 22 November 2026 ("Change requests are refused without
+  // the browser's same-origin marker, before the account is read"): the
+  // handler's own check is the strict one too, so the right Origin alone no
+  // longer passes it.
+  it.each([[null], ["same-site"], ["cross-site"], ["none"], ["Same-Origin"]])(
+    "answers the right Origin with Sec-Fetch-Site %s with request_forbidden, reading nothing", async (site) => {
+      const headers: Record<string, string> = { origin: "http://localhost", "x-inherit-operation-nonce": fresh() };
+      if (site !== null) headers["sec-fetch-site"] = site;
+      const response = await DELETE(new Request(`http://localhost/api/files/${id}`, { method: "DELETE", headers }), { params: Promise.resolve({ id }) });
+      expect([response.status, await response.json()]).toEqual([403, { error: "request_forbidden" }]);
+      expect(mocks.context).not.toHaveBeenCalled();
+      expect(mocks.rpc).not.toHaveBeenCalled();
+    });
   it.each(["file_delete_not_found", "file_delete_processing", "file_delete_subject_unavailable", "file_delete_shared_graph"])("does not touch Storage on %s", async (message) => {
     mocks.rpc.mockResolvedValue({ data: null, error: { message } });
     const response = await call();

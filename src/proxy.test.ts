@@ -1,4 +1,6 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
+import { dirname } from "node:path";
+import { isValidElement } from "react";
 import { AuthRetryableFetchError, AuthSessionMissingError } from "@supabase/supabase-js";
 import { NextRequest } from "next/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -843,7 +845,12 @@ describe("the strictest referrer setting applies to the whole route (D-138 (b) a
   const original = (response: Response, label: string) => {
     for (const [name, value] of Object.entries(SENSITIVE_RESPONSE_HEADERS)) expect(response.headers.get(name), `${label} ${name}`).toBe(value);
   };
-  const call = (method: string, path: string) => proxy(new NextRequest(`https://inherit.bio${path}`, { method }));
+  // A browser's own request, with its same-origin marker: since 22 November
+  // 2026 the proxy refuses a change request to a route bound to
+  // policy.sameOriginRequired without it (POST /api/uploads here; that rule is
+  // held below, in "policy.sameOriginRequired at the proxy").
+  const call = (method: string, path: string) => proxy(new NextRequest(`https://inherit.bio${path}`,
+    { method, headers: { origin: "https://inherit.bio", "sec-fetch-site": "same-origin" } }));
   const ID = "12345678-1234-4234-8234-00000000000b";
 
   /** Every registered method of the 24 endpoints the register names no-referrer for on some answers only. */
@@ -1137,16 +1144,23 @@ describe("pages and the endpoints outside /api/: the register's referrer and hea
   const UNROUTED_PAGE_BINDINGS: Readonly<Record<string, string>> = {
     "pageAuthContract.authenticatedSignedOut.responseContract": "the sign-in redirect: the proxy builds it and gives it no-referrer exactly",
     "pageAuthContract.tokenInvalidOrExpired": "a token page's not-found: every token page is in the set (asserted)",
-    "responseContractBindings.resourceAuthorizationBindings.page": "OPEN: a resource-authorized page's not-found (resource-not-found-page-v1); RESOURCE_ONLY below",
+    "responseContractBindings.resourceAuthorizationBindings.page":
+      "a resource-authorized page's not-found (resource-not-found-page-v1): that answer only, by the amended rule; RESOURCE_ONLY below",
     "resourceAuthorizationBindings.failureContractBySurface.page": "the same binding, stated in resourceAuthorizationBindings",
   };
   /**
-   * OPEN, for the owner. These pages are bound in `resourceAuthorizationBindings`,
-   * whose failure contract for a page, resource-not-found-page-v1, names
-   * no-referrer; nothing else the register states about them does. The
-   * whole-route rule as registered reads profiles and `responseContractBindings.routes`
-   * only, so their documents keep same-origin (asserted below), and their
-   * not-found answers do too.
+   * The pages bound in `resourceAuthorizationBindings`, whose failure contract
+   * for a page, resource-not-found-page-v1, names no-referrer, and about which
+   * nothing else the register states does. Until 22 November 2026 this was
+   * OPEN, for the owner. By the owner's decision of that day ("Twenty signed-in
+   * pages keep `same-origin`; the not-found contract's header binds its own
+   * answer") the register's `wholeRouteReferrerRuleOutsideApi` says a contract
+   * bound through `resourceAuthorizationBindings` sets its headers on the
+   * answer it describes only: their documents and the proxy's answers keep
+   * same-origin (asserted below), and their not-found answer, which the
+   * `(app)` group's not-found boundary renders, sets no-referrer for itself
+   * (asserted in "holds the amended rule" below; in a browser by
+   * `e2e/response-headers.spec.ts`).
    */
   const RESOURCE_ONLY = ["app.overview", "embryos.request-data", "embryos.upload", "family.health-picture", "family.invite", "family.permissions",
     "family.person", "files.index", "files.upload", "genome.ancestry", "genome.browser", "genome.carrier", "genome.data", "genome.report",
@@ -1359,9 +1373,42 @@ describe("pages and the endpoints outside /api/: the register's referrer and hea
     }
     for (const [id, method, path] of ENDPOINTS) expect(byId(id), id).toMatchObject({ kind: "endpoint", path, methods: [method] });
     for (const id of [...Object.keys(NAMESPACE_PAGES), ...Object.keys(FORM_PAIR_PAGES)]) expect(byId(id), id).toBeDefined();
-    // OPEN: the pages whose only no-referrer statement is the resource-authorization failure contract (asserted same-origin above).
+    // The pages whose only no-referrer statement is the resource-authorization failure contract: their
+    // documents and the proxy's answers keep same-origin (asserted above), as the amended rule says (below).
     expect(Object.keys(register.resourceAuthorizationBindings.routes)
       .filter(id => byId(id) !== undefined && byId(id).kind === "page" && !wholeRoute.has(id)).sort()).toEqual(RESOURCE_ONLY);
+  });
+
+  /** The `content` of every `<meta name="referrer">` in a rendered element tree. */
+  const referrerMeta = (node: unknown): string[] => {
+    if (Array.isArray(node)) return node.flatMap(referrerMeta);
+    if (!isValidElement<{ name?: string; content?: string; children?: unknown }>(node)) return [];
+    const own = node.type === "meta" && node.props.name === "referrer" ? [String(node.props.content)] : [];
+    return [...own, ...referrerMeta(node.props.children)];
+  };
+
+  // Owner decision of 22 November 2026 ("Twenty signed-in pages keep `same-origin`; the not-found
+  // contract's header binds its own answer"), as the register now states it.
+  it("holds the amended rule: a contract bound through resourceAuthorizationBindings sets its headers on its own answer only", async () => {
+    const rule = register.sensitiveResponseHeaderBindings.wholeRouteReferrerRuleOutsideApi as string;
+    expect(rule).toContain("registered-2026-11-22-G8.5");
+    expect(rule).toContain("a-response-contract-bound-to-a-page-through-resourceAuthorizationBindings");
+    expect(rule).toContain("sets-its-headers-on-the-answer-it-describes, the-page's-not-found-answer, only, and-not-on-every-answer-of-the-page");
+    // The binding the twenty pages have names one contract, which names no-referrer for the not-found answer.
+    const contract = register.resourceAuthorizationBindings.failureContractBySurface.page;
+    expect(register.responseContractBindings.resourceAuthorizationBindings.page).toBe(contract);
+    expect(contract).toBe("resource-not-found-page-v1");
+    expect(noReferrerContracts.has(contract)).toBe(true);
+    expect(RESOURCE_ONLY).toHaveLength(20);
+    // Each of them renders its not-found answer inside the (app) group, whose boundary is the nearest one,
+    // and that boundary sets no-referrer for the document it renders.
+    const { default: NotFound } = await import("@/app/(app)/not-found");
+    expect(referrerMeta(NotFound())).toEqual(["no-referrer"]);
+    for (const id of RESOURCE_ONLY) {
+      const directory = `src/app/(app)${byId(id).path}`;
+      expect(existsSync(`${directory}/page.tsx`), `${id}: ${directory}/page.tsx`).toBe(true);
+      for (let at = directory; at !== "src/app/(app)"; at = dirname(at)) expect(existsSync(`${at}/not-found.tsx`), `${id}: ${at}`).toBe(false);
+    }
   });
 
   /**
@@ -1493,5 +1540,104 @@ describe("api.rights-reissue keeps the authOrRecovery policy (D-138 (e))", () =>
     }
     for (const id of Object.keys(NO_NONCE_POLICY)) expect(endpoints.some(route => route.id === id), id).toBe(true);
     expect(endpoints.some(route => route.id === "api.rights-reissue")).toBe(true);
+  });
+});
+
+/**
+ * policy.sameOriginRequired at the proxy (owner decision of 22 November 2026,
+ * "Change requests are refused without the browser's same-origin marker,
+ * before the account is read"). The proxy reads the session and the profile
+ * for every other /api/ request, so a request to a bound route and method
+ * whose Sec-Fetch-Site is not same-origin, or whose Origin is another site's,
+ * gets the route's registered refusal (authenticated-mutation-v1's 403
+ * request_forbidden) before that read, whoever is signed in. The set is the
+ * register's; the CSRF wrapper's half is in src/lib/security/same-origin.test.ts.
+ */
+describe("policy.sameOriginRequired at the proxy", () => {
+  type Route = { id: string; kind: string; path: string; methods?: string[]; policy?: { sameOriginRequired?: string };
+    parameterContract?: Record<string, { const?: string } | string> };
+  const register = JSON.parse(readFileSync("docs/route-register.json", "utf8")) as { routes: Route[] };
+  const ID = "12345678-1234-4234-8234-00000000000d";
+  const ORIGIN = "https://inherit.bio";
+  const SIGNED_IN = { id: "12345678-1234-4234-8234-000000000001" };
+  const DECLARED = { deletion_requested_at: null, jurisdiction_code: "GB" };
+  const NOTICE = { deletion_requested_at: "2026-09-25T00:00:00Z", jurisdiction_code: "GB" };
+  const concrete = (route: Route) => route.path.replace(/\[([^\]]+)\]/g, (_all, name: string) => {
+    const contract = route.parameterContract?.[name];
+    return typeof contract === "object" && contract.const !== undefined ? contract.const
+      : name === "sequence" ? "0" : name === "person" ? `s-${ID}` : ID;
+  });
+  const bound = register.routes.filter(route => route.policy?.sameOriginRequired !== undefined);
+  const send = (method: string, path: string, headers: Record<string, string>) =>
+    proxy(new NextRequest(`${ORIGIN}${path}`, { method, headers }));
+  const REFUSED: Readonly<Record<string, Record<string, string>>> = {
+    "the right Origin with no marker": { origin: ORIGIN },
+    "neither header": {},
+    "cross-site": { origin: "https://foreign.example", "sec-fetch-site": "cross-site" },
+    "same-site": { origin: ORIGIN, "sec-fetch-site": "same-site" },
+    "none": { origin: ORIGIN, "sec-fetch-site": "none" },
+    "another Origin with the marker": { origin: "https://foreign.example", "sec-fetch-site": "same-origin" },
+    "another Origin named by X-Forwarded-Host too": { origin: "https://foreign.example", "sec-fetch-site": "same-origin",
+      "x-forwarded-host": "foreign.example" },
+  };
+  const ADMITTED: Readonly<Record<string, Record<string, string>>> = {
+    "the browser's own request": { origin: ORIGIN, "sec-fetch-site": "same-origin" },
+    "no Origin with the marker": { "sec-fetch-site": "same-origin" },
+  };
+  const cases = (variants: Readonly<Record<string, Record<string, string>>>) => bound.flatMap(route => (route.methods ?? ["GET"])
+    .flatMap(method => Object.entries(variants).map(([label, headers]) => [route.id, method, concrete(route), label, headers] as const)));
+
+  it("is bound to the two routes the register binds", () => {
+    expect(bound.map(route => route.id).sort()).toEqual(["api.file-delete", "api.subject-upload-issue"]);
+  });
+
+  it.each(cases(REFUSED))("%s %s %s: refuses %s before reading any session, signed in, signed out or in the deletion notice",
+    async (id, method, path, label, headers) => {
+      for (const [user, profile] of [[SIGNED_IN, DECLARED], [null, null], [SIGNED_IN, NOTICE]] as const) {
+        mocks.user = user; mocks.profile = profile; mocks.sessionReads = 0; mocks.selected = [];
+        const response = await send(method, path, headers);
+        const at = `${id} ${label} ${user ? "signed in" : "signed out"}`;
+        expect(response.status, at).toBe(403);
+        expect(await response.json(), at).toEqual({ error: "request_forbidden" });
+        // The sensitive set, with the route's own referrer policy (api.subject-upload-issue's is no-referrer).
+        for (const [name, value] of Object.entries(SENSITIVE_RESPONSE_HEADERS)) {
+          if (name === "Referrer-Policy") expect(response.headers.get(name), at).toBe(path === "/api/uploads" ? "no-referrer" : "same-origin");
+          else expect(response.headers.get(name), `${at}: ${name}`).toBe(value);
+        }
+        expect(mocks.sessionReads, `${at}: no session read`).toBe(0);
+        expect(mocks.selected, `${at}: no profile read`).toEqual([]);
+      }
+    });
+
+  it.each(cases(ADMITTED))("%s %s %s: lets %s through to the session check", async (id, method, path, label, headers) => {
+    mocks.user = SIGNED_IN; mocks.profile = DECLARED;
+    const response = await send(method, path, headers);
+    expect(response.status, `${id} ${label}`).toBe(200);
+    expect(mocks.sessionReads, `${id} ${label}`).toBe(1);
+    // Past the rule the proxy's own checks apply as before.
+    mocks.profile = NOTICE;
+    expect((await send(method, path, headers)).status, `${id} ${label} deletion notice`).toBe(423);
+  });
+
+  it("refuses an embargoed connection with the location answer first, as it does everything", async () => {
+    const response = await send("DELETE", `/api/files/${ID}`, { "x-vercel-ip-country": "IR" });
+    expect(response.status).toBe(451);
+    expect(mocks.sessionReads).toBe(0);
+  });
+
+  it("applies to the bound routes on their registered methods only, and to no other registered route", async () => {
+    mocks.user = SIGNED_IN; mocks.profile = DECLARED;
+    const methods = [...new Set(register.routes.flatMap(route => route.methods ?? ["GET"]))];
+    const refusedAt: string[] = [];
+    for (const route of register.routes.filter(candidate => candidate.path.startsWith("/api/"))) {
+      for (const method of methods) {
+        const response = await send(method, concrete(route), REFUSED["the right Origin with no marker"]!);
+        if (response.status === 403) refusedAt.push(`${method} ${route.path}`);
+        else expect(response.status, `${route.id} ${method}`).toBe(200);
+      }
+    }
+    expect(refusedAt.sort()).toEqual(bound.flatMap(route => (route.methods ?? ["GET"]).map(method => `${method} ${route.path}`)).sort());
+    // The static route beside api.file-delete's dynamic one is its own route.
+    expect((await send("DELETE", "/api/files/upload-session", REFUSED["the right Origin with no marker"]!)).status).toBe(200);
   });
 });

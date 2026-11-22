@@ -95,6 +95,14 @@ const CASES: Case[] = [
     load: () => import("@/app/api/family/[person]/sharing/route"), body: json({ operation: "pause", nonce: "n" }) },
   { id: "api.chromosomal-sex", method: "POST", path: "/api/chromosomal-sex", load: () => import("@/app/api/chromosomal-sex/route"),
     body: json({ subjectId: ID, chromosomalSex: null }) },
+  // G8.5, 22 November 2026: the four that answered a plain-text "Unauthorized".
+  { id: "api.export", method: "GET", path: "/api/export", load: () => import("@/app/api/export/route") },
+  { id: "api.file-download", method: "GET", path: `/api/files/${ID}/download`, params: { id: ID },
+    load: () => import("@/app/api/files/[id]/download/route") },
+  { id: "api.file-process", method: "POST", path: `/api/files/${ID}/process`, params: { id: ID },
+    load: () => import("@/app/api/files/[id]/process/route") },
+  { id: "api.account-delete", method: "POST", path: "/api/account/delete", load: () => import("@/app/api/account/delete/route"),
+    body: json({ confirmation: "account.delete.confirmation", nonce: "n".repeat(32) }) },
   // machine-api-v1: no credential, and a wrong one.
   ...(["GET", "POST"] as const).flatMap(method => [
     { id: "jobs.annotation-refresh", method, path: "/api/jobs/annotation-refresh", load: () => import("@/app/api/jobs/annotation-refresh/route") },
@@ -109,6 +117,8 @@ type Contract = { status: number; contentType: string; body: { error: { const: s
 const register = JSON.parse(readFileSync("docs/route-register.json", "utf8")) as {
   contractDefaults: Record<string, string>;
   authContracts: Record<string, Record<string, unknown>>;
+  sensitiveResponseHeaders: Record<string, Record<string, string>>;
+  sensitiveResponseHeaderBindings: Record<string, unknown>;
   routes: { id: string; kind: string; auth: string; methods?: string[] }[];
 };
 
@@ -168,6 +178,27 @@ describe("a request without a session or job credential gets the register's JSON
       await expectOwed(entry, await send(entry));
     });
 
+  /**
+   * G8.5, 22 November 2026: the four that answered a plain-text "Unauthorized"
+   * answer the JSON 401 above, and at the route itself carry every header of
+   * each sensitive profile the register binds them to (downloadOrExport for
+   * api.export and api.file-download); the other two are bound to none.
+   */
+  const MOVED = ["api.export", "api.file-download", "api.file-process", "api.account-delete"];
+  it.each(MOVED)("%s answers its 401 with every header of the profiles the register binds it to", async (id) => {
+    const entry = CASES.find(candidate => candidate.id === id)!;
+    const profiles = Object.entries(register.sensitiveResponseHeaderBindings)
+      .filter(([name, ids]) => name in register.sensitiveResponseHeaders && Array.isArray(ids) && ids.includes(id)).map(([name]) => name);
+    expect(profiles, id).toEqual(id === "api.export" || id === "api.file-download" ? ["downloadOrExport"] : []);
+    const response = await send(entry);
+    await expectOwed(entry, response.clone());
+    for (const profile of profiles) {
+      for (const [name, value] of Object.entries(register.sensitiveResponseHeaders[profile]!)) {
+        expect(response.headers.get(name), `${id}: ${profile} ${name}`).toBe(value);
+      }
+    }
+  });
+
   it("answers the embryo bodies of api.consents with the same 401 when the account context is gone", async () => {
     const { embryoConsent } = await import("@/lib/embryos/consents");
     const entry = CASES.find(candidate => candidate.id === "api.consents")!;
@@ -192,21 +223,16 @@ describe("a request without a session or job credential gets the register's JSON
 });
 
 /**
- * No route handler or library builds a plain-text 401 except the four listed
- * here. Three are left because a person would read the change: the Files page
- * prints api.file-process's error body as it is, and api.file-download and the
- * legacy GET of api.export are opened by a link, so the browser shows the
- * body. The fourth, api.account-delete, is frozen to a historical source by
- * `scripts/tools/historical-account-authority.test.ts`. Moving one of them is
- * the owner's call; adding one fails here.
+ * No route handler or library builds a plain-text 401. Until 22 November 2026
+ * four were left here (api.account-delete, the legacy GET of api.export,
+ * api.file-download and api.file-process); they answer the JSON 401 above
+ * now (G8.5). The Files page shows a Process 401 with the words it showed
+ * before (`processDetail`, `src/components/uploads/file-row-actions.tsx`);
+ * the frozen account-deletion source names the change
+ * (`scripts/tools/historical-account-authority.test.ts`). Adding one fails here.
  */
 describe("plain-text 401s", () => {
-  const LEFT: Readonly<Record<string, string>> = {
-    "src/app/api/account/delete/route.ts": "its source is pinned to commit 59c97152 but for the CSRF wrap",
-    "src/app/api/export/route.ts": "the Data page links to it; a signed-out browser shows the body",
-    "src/app/api/files/[id]/download/route.ts": "the Files page links to it; a signed-out browser shows the body",
-    "src/app/api/files/[id]/process/route.ts": "the Files page prints the error body it receives",
-  };
+  const LEFT: Readonly<Record<string, string>> = {};
   const files = (directory: string): string[] => readdirSync(directory).flatMap(name => {
     const full = path.join(directory, name);
     return statSync(full).isDirectory() ? files(full) : /\.tsx?$/u.test(name) && !/\.test\.tsx?$|test-support/u.test(name) ? [full] : [];

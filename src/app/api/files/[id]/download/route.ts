@@ -7,6 +7,7 @@ import { getSensitiveAccountContext } from "@/lib/account-deletion";
 import { assertPreparedMetadataBounds } from "@/lib/genome/prepared-source/canonical-manifest";
 import { preparedOriginalDownloadSourceSchema, streamPreparedOriginalDownload } from "@/lib/uploads/prepared-original-download";
 import { originalDownloadName } from "@/lib/uploads/original-download-name";
+import { downloadUnauthenticated } from "@/lib/uploads/subject-original-download";
 
 export const maxDuration = 300;
 const stateSchema = z.object({ version: z.literal("own-original-download-state-v1"), fileId: z.uuid(),
@@ -19,7 +20,9 @@ export async function GET(request: Request, ctx: { params: Promise<{ id: string 
   const { id } = await ctx.params;
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return failure("Unauthorized", 401);
+  // authenticated-api-v1.unauthenticated with the downloadOrExport headers
+  // (G8.5, 22 November 2026; both 401s answered a plain-text "Unauthorized").
+  if (!user) return downloadUnauthenticated();
   const { data: file } = await supabase.from("genome_files").select("bucket_path, original_name, file_type, sha256, source_sha256").eq("id", id).maybeSingle();
   if (!file) return failure("Not found", 404);
   const admin = createAdminClient(), rpc = admin.rpc.bind(admin) as unknown as Rpc;
@@ -39,7 +42,7 @@ export async function GET(request: Request, ctx: { params: Promise<{ id: string 
       return NextResponse.redirect(data.signedUrl);
     }
     const actor = await getSensitiveAccountContext();
-    if (!actor || actor.user.id !== user.id) return failure("Unauthorized", 401);
+    if (!actor || actor.user.id !== user.id) return downloadUnauthenticated();
     const args = { p_account_id: actor.user.id, p_session_id: actor.sessionId, p_file_id: id };
     async function authorize(expected: unknown, signal: AbortSignal) {
       const response = await rpc("authorize_own_prepared_original_v1", { ...args, p_expected: expected }).abortSignal(signal);

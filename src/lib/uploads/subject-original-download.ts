@@ -60,7 +60,13 @@ function json(body: unknown, status: number, extra?: Record<string, string>): Re
   return Response.json(body, { status, headers: { ...DOWNLOAD_HEADERS, ...(extra ?? {}) } });
 }
 export const downloadNotFound = () => json({ error: "not_found" }, 404);
-const unauthenticated = () => json({ error: "unauthenticated" }, 401);
+/**
+ * `authenticated-api-v1.unauthenticated` with the downloadOrExport headers:
+ * this route's answer, and since 22 November 2026 api.file-download's and the
+ * legacy GET of api.export's, which answered a plain-text `Unauthorized`.
+ */
+export const downloadUnauthenticated = () => json({ error: "unauthenticated" }, 401);
+const unauthenticated = downloadUnauthenticated;
 const invalid = (issues: string[]) => json({ error: "invalid_request", issues }, 422);
 const unavailable = () => json({ error: "unavailable" }, 503);
 

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { getSensitiveAccountContext, isSameOrigin } from "@/lib/account-deletion";
+import { getSensitiveAccountContext } from "@/lib/account-deletion";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { prepareFileCleanup, type FileCleanupSpend } from "@/lib/genome/prepared-source/cleanup-integration";
 import {
@@ -10,6 +10,7 @@ import {
   personOperationNonceFrom,
   type PersonOperationContext,
 } from "@/lib/person-operation-nonce";
+import { isStrictSameOrigin } from "@/lib/security/same-origin";
 import { withAccountCsrf } from "@/lib/security/session-csrf";
 
 export const maxDuration = 60;
@@ -25,14 +26,15 @@ const codeOf = (error: unknown) => error && typeof error === "object" && "code" 
 /**
  * `DELETE /api/files/[id]` (register api.file-delete).
  *
- * Order of refusals, as the register puts them: a request from another
- * origin is refused (`authenticated-mutation-v1`'s 403 `request_forbidden`;
- * owner decision of 19 November 2026) by the CSRF wrapper before the account
- * context is read or the session's token is spent (`originFirst`;
- * `policy.sameOriginRequired`); then the session token; then here a route id
- * that is not a UUID (404), no account (401), and a missing, malformed,
- * expired or foreign one-time value (403), before anything is read from or
- * written to the database.
+ * Order of refusals, as the register puts them: a request without the
+ * browser's `Sec-Fetch-Site: same-origin`, or from another `Origin`, is
+ * refused (`authenticated-mutation-v1`'s 403 `request_forbidden`; owner
+ * decisions of 19 and 22 November 2026) before the account context is read or
+ * the session's token is spent, by the proxy and again by the CSRF wrapper
+ * (`policy.sameOriginRequired`, `@/lib/security/same-origin`); then the
+ * session token; then here a route id that is not a UUID (404), no account
+ * (401), and a missing, malformed, expired or foreign one-time value (403),
+ * before anything is read from or written to the database.
  *
  * The one-time value (G8.5, 20 November 2026, "where the register is
  * stricter, engineering codes to it"; `authenticated-mutation-v1
@@ -49,12 +51,12 @@ const codeOf = (error: unknown) => error && typeof error === "object" && "code" 
  * is still verified for this account, session, operation and file and its
  * expiry, but not yet spent. Only the door's absence falls back.
  */
-export const DELETE = withAccountCsrf("api.file-delete", handleDelete, { originFirst: true });
+export const DELETE = withAccountCsrf("api.file-delete", handleDelete);
 async function handleDelete(request: Request, context: { params: Promise<{ id: string }> }) {
   // `authenticated-mutation-v1`'s refusal, the same body the CSRF wrapper
   // gives (owner decision of 19 November 2026, "a cross-site file delete is
-  // refused with the register's code").
-  if (!isSameOrigin(request)) return failure("request_forbidden", 403);
+  // refused with the register's code"), under the strict rule of 22 November.
+  if (!isStrictSameOrigin(request)) return failure("request_forbidden", 403);
   const { id } = await context.params;
   // `resource-not-found-v1` and `authenticated-api-v1.unauthenticated`.
   if (!z.string().uuid().safeParse(id).success) return failure("not_found", 404);

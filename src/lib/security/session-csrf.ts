@@ -1,6 +1,6 @@
 import "server-only";
 
-import { getSensitiveAccountContext, isSameOrigin } from "@/lib/account-deletion";
+import { getSensitiveAccountContext } from "@/lib/account-deletion";
 import { authNotFound } from "@/lib/auth/auth-response";
 import { readResetSessionHash } from "@/lib/auth/reset-session";
 import { notFound } from "@/lib/embryos/api";
@@ -10,6 +10,7 @@ import { readRightsCandidateHash } from "@/lib/embryos/rights-activation";
 import { readRightsSessionHash } from "@/lib/embryos/rights-session";
 import { claimSessionHash, readEvidenceCookieHash } from "@/lib/future-person/evidence-session";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { isStrictSameOrigin, requiresSameOrigin } from "./same-origin";
 import {
   SESSION_CSRF_HEADER,
   SESSION_CSRF_ROUTES,
@@ -175,26 +176,31 @@ export interface CsrfOptions {
   rotate?: boolean | ((response: Response) => boolean);
   /** Also require the request's Origin to be this origin exactly, before any token is spent. */
   exactOrigin?: boolean;
-  /**
-   * Refuse a request the route's own same-origin check (`isSameOrigin`)
-   * refuses, with the register's answer, before the session is read or any
-   * token is spent: for a route whose register policy puts that refusal
-   * before the account context is read (`api.file-delete`,
-   * `policy.sameOriginRequired`; G8.5, 20 November 2026). The check itself
-   * is the route's, unchanged; only its place moves.
-   */
-  originFirst?: boolean;
 }
 
 function exactOrigin(request: Request): boolean {
   return request.headers.get("origin") === new URL(request.url).origin;
 }
 
+/**
+ * A route the register binds to `policy.sameOriginRequired` (`./same-origin`)
+ * refuses a request without the browser's same-origin marker, or from another
+ * `Origin`, with the register's answer before the session is read or any
+ * token is spent (owner decision of 22 November 2026, "Change requests are
+ * refused without the browser's same-origin marker, before the account is
+ * read"). The route's id decides, so no route opts in or out by itself. Until
+ * that decision api.file-delete alone opted in, with the looser
+ * `isSameOrigin` (`originFirst`, G8.5, 20 November 2026).
+ */
+function sameOriginRefused(request: Request, route: CsrfRoute): boolean {
+  return requiresSameOrigin(route) && !isStrictSameOrigin(request);
+}
+
 /** One request's admission for one session: refused, or admitted with the successor. */
 export async function admitSessionCsrf(request: Request, session: CsrfSession, route: CsrfRoute,
   options: CsrfOptions = {}): Promise<Exclude<CsrfAdmission, { kind: "unbound" }>> {
   if (!acceptsSessionKind(route, session.kind) || (options.exactOrigin && !exactOrigin(request))
-    || (options.originFirst && !isSameOrigin(request)) || !(await spend(request, session, route))) {
+    || sameOriginRefused(request, route) || !(await spend(request, session, route))) {
     return { kind: "refused", response: refusal(route) };
   }
   // A chunk stream keeps the value it presented; nothing is issued.
@@ -232,7 +238,7 @@ export async function currentReviewerCsrfSession(): Promise<CsrfSession | null> 
 /** The admission of an authenticated route's request; `unbound` when nobody is signed in. */
 export async function admitAccountCsrf(request: Request, route: CsrfRoute,
   options: CsrfOptions = {}): Promise<CsrfAdmission> {
-  if ((options.exactOrigin && !exactOrigin(request)) || (options.originFirst && !isSameOrigin(request))) {
+  if ((options.exactOrigin && !exactOrigin(request)) || sameOriginRefused(request, route)) {
     return { kind: "refused", response: refusal(route) };
   }
   const session = await currentAccountCsrfSession();

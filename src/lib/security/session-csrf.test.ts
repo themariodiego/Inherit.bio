@@ -102,31 +102,39 @@ describe("withAccountCsrf", () => {
     expect(response.headers.get("x-inherit-csrf"), "rotate: false").toBeNull();
   });
 
-  // G8.5, 20 November 2026: api.file-delete's policy.sameOriginRequired puts
-  // the origin refusal before the account context is read. The check is the
-  // route's own isSameOrigin, moved in front of the session read.
-  it("refuses what isSameOrigin refuses before reading the session, when asked to, and only then", async () => {
+  // G8.5, 20 November 2026: api.file-delete's policy.sameOriginRequired put
+  // the origin refusal before the account context is read, with the route's
+  // own isSameOrigin, when the route asked (`originFirst`). Owner decision of
+  // 22 November 2026 ("Change requests are refused without the browser's
+  // same-origin marker, before the account is read"): the strict rule, on
+  // every route the register binds, by the route's id (`./same-origin`); the
+  // option is gone. Every bound route and variant is in ./same-origin.test.ts.
+  it("refuses what the strict rule refuses before reading the session, on a bound route, and only there", async () => {
     const accountDeletion = await import("@/lib/account-deletion");
     const read = vi.mocked(accountDeletion.getSensitiveAccountContext);
     const { withAccountCsrf } = await import("./session-csrf");
     const handler = vi.fn(async () => new Response(null, { status: 204 }));
-    const route = withAccountCsrf("api.file-delete", handler, { originFirst: true });
+    const route = withAccountCsrf("api.file-delete", handler);
     const token = mintSessionCsrf(accountSession, "api.file-delete");
     read.mockClear();
     for (const origin of ["https://other.test", "http://inherit.test"]) expect((await route(post(token, origin))).status).toBe(403);
     expect((await route(post(token, null))).status, "no Origin and no Sec-Fetch-Site").toBe(403);
+    expect((await route(post(token))).status, "the right Origin and no Sec-Fetch-Site").toBe(403);
     expect(read, "the session was never read").not.toHaveBeenCalled();
     expect(state.calls, "no token was spent").toEqual([]);
     expect(handler).not.toHaveBeenCalled();
-    // isSameOrigin's own rule, unchanged: no Origin with Sec-Fetch-Site same-origin passes to the token check.
+    // No Origin with Sec-Fetch-Site same-origin passes to the token check, as before.
     const noOrigin = post(token, null);
     noOrigin.headers.set("sec-fetch-site", "same-origin");
     expect((await route(noOrigin)).status).toBe(204);
-    expect((await route(post(mintSessionCsrf(accountSession, "api.file-delete")))).status).toBe(204);
-    // Without the option the wrapper reads the session first, as every other route's does.
+    // The browser's own request: the right Origin and the marker.
+    const browser = post(mintSessionCsrf(accountSession, "api.file-delete"));
+    browser.headers.set("sec-fetch-site", "same-origin");
+    expect((await route(browser)).status).toBe(204);
+    // A route the register does not bind reads the session first, as before, whatever the headers say.
     read.mockClear();
-    const plain = withAccountCsrf("api.file-delete", handler);
-    expect((await plain(post(mintSessionCsrf(accountSession, "api.file-delete"), "https://other.test"))).status).toBe(204);
+    const unbound = withAccountCsrf("api.jurisdiction", handler);
+    expect((await unbound(post(mintSessionCsrf(accountSession, "api.jurisdiction"), "https://other.test"))).status).toBe(204);
     expect(read).toHaveBeenCalled();
   });
 

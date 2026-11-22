@@ -121,3 +121,41 @@ describe("the Files page row's Delete", () => {
     expect(harness.state[0]).toBe(false);
   });
 });
+
+/**
+ * The row's Process (api.file-process). G8.5, 22 November 2026: the route
+ * answers a signed-out request with authenticated-api-v1's JSON 401, not a
+ * plain-text "Unauthorized", and the row, which shows a failed answer's body
+ * as it is, shows the words it showed for that answer, so nothing a person
+ * reads changes. Every other answer is shown as before.
+ */
+describe("the Files page row's Process", () => {
+  async function clickProcess() {
+    harness.cursor = 0;
+    harness.refCursor = 0;
+    const tree = FileRowActions({ fileId: FILE, status: "uploaded", tier: 1, deleteNonce: null });
+    const [button] = elements(tree).filter(node => node.type === "button" && node.props.children === "Process");
+    await (button!.props.onClick as () => Promise<void>)();
+  }
+
+  it.each([
+    ["authenticated-api-v1's JSON 401", () => Response.json({ error: "unauthenticated" }, { status: 401 })],
+    ["the plain-text 401 it replaced", () => new Response("Unauthorized", { status: 401 })],
+  ] as const)("shows %s as the words the row showed before", async (_label, answer) => {
+    harness.fetch.mockResolvedValueOnce(answer());
+    await clickProcess();
+    expect(sent()).toEqual([{ url: `/api/files/${FILE}/process`, method: "POST", headers: { "X-Inherit-CSRF": CSRF } }]);
+    expect(shownError()).toBe("Unauthorized");
+  });
+
+  it.each([
+    [409, () => new Response("This file is not ready for another processing run.", { status: 409 }), "This file is not ready for another processing run."],
+    [403, () => Response.json({ error: "request_forbidden" }, { status: 403 }), '{"error":"request_forbidden"}'],
+    [401, () => Response.json({ error: "other" }, { status: 401 }), '{"error":"other"}'],
+    [500, () => new Response("", { status: 500 }), "Processing failed (500)"],
+  ] as const)("shows any other failed %s answer as before", async (_status, answer, shown) => {
+    harness.fetch.mockResolvedValueOnce(answer());
+    await clickProcess();
+    expect(shownError()).toBe(shown);
+  });
+});

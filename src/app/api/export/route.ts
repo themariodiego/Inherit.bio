@@ -11,6 +11,7 @@ import { writerlessClassesEmpty } from "@/lib/export/writerless-classes";
 import { originalDownloadName, originalFileExtension } from "@/lib/uploads/original-download-name";
 import { assertPreparedMetadataBounds } from "@/lib/genome/prepared-source/canonical-manifest";
 import { preparedOriginalDownloadSourceSchema, streamPreparedOriginalDownload } from "@/lib/uploads/prepared-original-download";
+import { downloadUnauthenticated } from "@/lib/uploads/subject-original-download";
 import {
   getGenotypesByRsid,
   getProcessedFiles,
@@ -370,7 +371,9 @@ export async function GET(request?:Request) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return new Response("Unauthorized", { status: 401 });
+  // authenticated-api-v1.unauthenticated with the downloadOrExport headers
+  // (G8.5, 22 November 2026; it answered a plain-text "Unauthorized").
+  if (!user) return downloadUnauthenticated();
 
   const admin = createAdminClient();
   let stopped = false;
@@ -378,7 +381,7 @@ export async function GET(request?:Request) {
   const assertActive = () => { if (stopped) throw new Error("export unavailable"); };
   const { data: claimsData } = await supabase.auth.getClaims();
   if (claimsData?.claims?.sub !== user.id || typeof claimsData.claims.session_id !== "string") {
-    return new Response("Unauthorized", { status: 401 });
+    return downloadUnauthenticated();
   }
   const exportActor = { accountId: user.id, sessionId: claimsData.claims.session_id };
   const ownContent = ownSubjectExportContent(admin.rpc.bind(admin) as unknown as OwnExportRpc,
