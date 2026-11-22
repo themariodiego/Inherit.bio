@@ -867,3 +867,96 @@ Those sentences say the adult has not shared, which is not so during the hold; t
 ## Browser runs (local, this container)
 
 One production build of this change (test jurisdiction on), served by the standard runner (`scripts/run-upload-browser.mts --full`, the real Storage provider proxy) on the shared local database with this migration applied. `e2e/family.spec.ts`, whose Path A journey's invited adult has an account created before the invitation (no hold, and well inside 30 days), 13 of 13; `e2e/family-health-picture.spec.ts` 15 of 15; `e2e/portrait-no-file.spec.ts` (the Portrait pair read) 3 of 3; each "E2E contract passed … no skips, no retries". A first run of all three specs in one invocation passed `portrait-no-file` and the first four `family` tests, then stopped `family` and `family-health-picture` at the same early step: the invited adult's mailed review link answered "This link is unavailable. It may have expired or already been used." on `/withdraw/request`, before the acceptance and before anything this change reads. Both passed whole when run again, each on its own; the cause of that first refusal was not found. No browser journey drives the hold itself: a held acceptance needs an account created after the invitation and its clocks aged by 72 hours or 30 days, which `supabase/tests/adult_acceptance_inviter_reads.sql` does through the same database doors and `src/lib/family/graph-read.test.ts` checks on the application side.
+
+# Release notes: `20261122130000_file_delete_live_exports_only.sql` (D-152, both halves)
+
+Local work only. Nothing here was run against production or any hosted database. Two owner decisions of 22 November 2026 (`docs/protocol/decisions.md`) close D-152 (`docs/protocol/defects.md`):
+
+- "Only a live download copy blocks deleting a single file": deleting one file from Files (`api.file-delete`) was refused for good while the record had any download copy the self emptying had not retired, expired, failed and ended ones included. Now only a live copy blocks.
+- "Withdrawing consent for one's own file ends a finished download copy too": the own-file withdrawal ended the account's whole-account copies only while queued or building, so a finished (READY) one that includes the file stayed READY. Now it ends at once too.
+
+## What it changes
+
+Two bodies, each patched once in place, md5-guarded, one anchor per patch, successor md5 and unchanged ACL asserted.
+
+- `private.prepare_genome_file_deletion_body_v1`, the per-file guard (`c78d66691786e656a063b2dfe7b78a28` → `9753a5d9d38d09f6b17664826247f070`, `{postgres=X/postgres}`). Only the export clause changes. A copy of the record (a `public.generated_exports` row whose target is the record, `target_kind='subject'`, from either door that makes one: the record's own export, `api.subject-export`, or an approved claimant's, `api.future-person-export`) blocks the file shortcut (`file_delete_shared_graph`, the route's 409 `file_delete_subject_unavailable`) only while it is live: it has its job (`private.export_archive_jobs`), the job's deadline is ahead, and it is `queued` or `building` (being made) or `ready` with `expires_at` ahead (downloadable). A `failed`, `revoked`, `expired` or `purged` copy, any copy past its job's deadline, a READY copy past its expiry and a row with no job no longer block. Before (D-144), every copy blocked unless it was `revoked` with no attempt still `writing` or `bytes_complete`.
+- `private.empty_self_subject_v1`, the self emptying the own-file withdrawal runs (`5c35b1a9eafbfe7fd3e16f54b648dee7` → `768b5433d639f9c8578fbd59a5a0d703`, `{postgres=X/postgres}`). Before the record's own copies end (D-144) and before the files are prepared, every whole-account copy of the account (`target_kind='account'`, `target_id` the account) whose parts (`subject_partitions`) include the record and that is `queued`, `building` or `ready` is locked; each of its attempts still `writing` or `bytes_complete` is stopped through `public.export_archive_cleanup_v1('stop')` (objects queued for disposal behind the attempt's own fence, the lease plus 30 seconds; its download rows revoked; a READY completion cleared; a worker refused at its next step), as D-144 ends the record's copies and D-151 a transferred record's; then the copy is `revoked`, and any `download_sessions` row bound to it (`target_kind='export'`, the legacy form) is revoked. The old statement that revoked the account's `queued` or `building` copies by status alone stays, after it, unchanged. A copy whose parts do not include the record, and a failed or already revoked one, is not touched by the new step. Nothing is deleted; the audit event and its payload are unchanged.
+- Where "live" is read from, each door pinned and not changed:
+  - `private.export_archive_current_v1` (`707ebdae8b497640dafeb37e666d01f6`), which every worker step, poll, open and chunk read runs, refuses a copy with no job, in any status but `queued`, `building` or `ready`, or past its job's deadline;
+  - opening a READY copy is refused at or past `expires_at`: `public.export_archive_request_v1` 'open-ready' (`f22a82e34511040aab5f8b8f68f671d0`) and `private.future_person_ready_export_v1` (body `b46d1c068bf5d0121187fc76d00fee27`); a download session never outlives its copy;
+  - every READY chunk issue and acknowledgement passes `private.account_archive_r2_completed_context_v1` (body `34ecde85fc7566b3f775ce953834a092`), which refuses past `expires_at` or the deadline, and a copy no longer READY; completion sets `expires_at` no later than the deadline;
+  - the legacy session authorizer `private.download_target_authorized_v1` (`23296f5b259f177732c47a43bf4ef20f`) needs READY and `expires_at` ahead; only `private.authorize_download_range_v1` calls it, nothing calls that, and the `private` schema is not exposed by the API;
+  - nothing turns a copy live again: the only status writes are `building` (begin, from queued or building), `ready` (completion, from building), `failed` (the cleanup door's stop) and `revoked`; no statement moves a job's deadline; `expires_at` is written only by completion and cleared by the stop (`scripts/file-delete-live-exports-migration.test.ts` lists every such write in every migration).
+  - Two of these are pinned by their body (`md5(prosrc)`), because their headers print table types the search path qualifies or not; the two patched bodies and the other doors are pinned by `pg_get_functiondef`, whose headers print no `public` or `private` type.
+- Also pinned, not changed: `public.export_archive_cleanup_v1(text,uuid,uuid,jsonb)` (`25fa3ce71b73fb0c371d1bb9af836bd7`, `{postgres=X/postgres,service_role=X/postgres}`), unchanged since `20260923123240`, which the emptying calls; and `private.own_export_source_v1` (`27abc582be0eb4a227a7cdeb57c29d6f`), which the race rests on.
+- The race (no lock added or reordered): every door of an account's own copies, of a record or of the whole account, reaches `private.own_export_source_v1` through the currentness check. It locks the account's profile row FOR UPDATE, the row the guard locks first, so creating, building, completing, opening or reading a copy is serialised with preparing and finishing a file deletion on the same account. A copy committed first is seen by the guard and, while live, refuses the deletion. Once a deletion is prepared, the file's stored object is `purge_queued`, `own_export_source_v1` answers null for it and every capture refuses (55000 `export_source_unavailable`), so no copy of the record or of the account can start while the file waits for its finish; the finish runs the guard again; and no copy the guard read as not live can become live. A copy started after the check therefore never includes a file being deleted. An approved claimant's copy is of a record whose one file no account holds, so it never meets this guard's file.
+- Mid-download: an ended copy's download rows are revoked and the delivery, issue and acknowledgement of every chunk refuse it (`42501`). A chunk issue holds the copy's row lock through its storage read, so a withdrawal arriving then waits for that one chunk's issue to commit; that chunk may finish streaming, its acknowledgement is refused, and no further chunk is issued.
+- A whole-account copy is not read by the guard, before or after (see "For the owner").
+- No table, column, constraint, trigger, grant, function, audit event, route or wording changes. Fingerprint effect: 2 `def_md5` change; `functions` row count and `tables` unchanged.
+
+## Which releases must come first
+
+1. The migrations that last defined the pinned doors and the two bodies' base: `20260831224124`, `20260909001117`, `20260923123240`, `20261016181000`, `20261016196000` and `20261016211000`, all in earlier releases.
+2. In this release, `20261120100000` (D-144), whose successors of the guard and the emptying are this migration's patch predecessors. Applied before it, this migration refuses (55000 `file delete live exports prerequisite differs`) and changes nothing. No migration pins either body at D-144's successor (`20261120110000` neither calls nor pins the guard; `20261119150000` pins their earlier bodies and runs before D-144), so nothing in the release refuses because this one ran.
+3. The 22 November migrations (`20261122100000`, and the locally recorded `20261122110000` and `20261122120000`) patch none of what it pins, in any order. Locally it was applied forward to the shared database after `20261122120000`, in one transaction, and recorded in `supabase_migrations.schema_migrations` with the file's text as its one statement. (An earlier local version of this migration, the guard's patch alone, was applied the same way; it was undone in one transaction, each body checked back to its predecessor md5, its history row removed, and this version applied and recorded in the same transaction.)
+
+## Read-only pre-checks (one SELECT; the release session and its `search_path`)
+
+Stop unless every `must_be_*` holds.
+
+```sql
+select
+ (select count(distinct x.signature) from pg_proc p join (values
+   ('private.prepare_genome_file_deletion_body_v1(uuid,uuid)','def','c78d66691786e656a063b2dfe7b78a28','{postgres=X/postgres}'),
+   ('private.empty_self_subject_v1(uuid,uuid)','def','5c35b1a9eafbfe7fd3e16f54b648dee7','{postgres=X/postgres}'),
+   ('public.export_archive_cleanup_v1(text,uuid,uuid,jsonb)','def','25fa3ce71b73fb0c371d1bb9af836bd7','{postgres=X/postgres,service_role=X/postgres}'),
+   ('private.export_archive_current_v1(uuid,text)','def','707ebdae8b497640dafeb37e666d01f6','{postgres=X/postgres}'),
+   ('public.export_archive_request_v1(text,jsonb,text,uuid,jsonb,text)','def','f22a82e34511040aab5f8b8f68f671d0','{postgres=X/postgres,service_role=X/postgres}'),
+   ('private.future_person_ready_export_v1(text,uuid,text)','src','b46d1c068bf5d0121187fc76d00fee27','{postgres=X/postgres}'),
+   ('private.account_archive_r2_completed_context_v1(uuid,text,boolean)','src','34ecde85fc7566b3f775ce953834a092','{postgres=X/postgres}'),
+   ('private.download_target_authorized_v1(uuid,text,uuid,text,bigint,bigint)','def','23296f5b259f177732c47a43bf4ef20f','{postgres=X/postgres,service_role=X/postgres}'),
+   ('private.own_export_source_v1(uuid,uuid,uuid)','def','27abc582be0eb4a227a7cdeb57c29d6f','{postgres=X/postgres,service_role=X/postgres}')
+  ) as x(signature,kind,body,acl) on p.oid=to_regprocedure(x.signature)
+   and (case x.kind when 'def' then md5(pg_get_functiondef(p.oid)) else md5(p.prosrc) end)=x.body
+   and p.proacl::text=x.acl) as must_be_9_bodies_as_reviewed,
+ (select count(*) from pg_class where oid=to_regclass('private.export_archive_jobs')) as must_be_1_job_table,
+ (select count(*) from public.generated_exports e join public.subjects s on s.id=e.target_id
+   where e.target_kind='subject' and s.subject_class='self') as context_self_record_copies,
+ (select count(*) from public.generated_exports e join public.subjects s on s.id=e.target_id
+   join private.export_archive_jobs j on j.export_id=e.id
+   where e.target_kind='subject' and s.subject_class='self' and j.deadline>clock_timestamp()
+    and (e.status in ('queued','building') or (e.status='ready' and e.expires_at>clock_timestamp()))) as context_live_self_record_copies,
+ (select count(*) from public.generated_exports e left join private.export_archive_jobs j on j.export_id=e.id
+   where e.target_kind='subject' and j.export_id is null and e.status in ('queued','building')) as context_jobless_copies_being_made,
+ (select count(*) from public.generated_exports where target_kind='account' and status='ready') as context_ready_account_copies,
+ (select count(*) from private.genome_file_deletions) as context_pending_file_deletions,
+ current_user as context_current_user,
+ current_setting('search_path') as context_search_path;
+```
+
+Locally, on the predecessor state rebuilt inside a rolled-back transaction (both patches undone on the live bodies, each md5 checked back to its predecessor): `must_be_9_bodies_as_reviewed` 9, `must_be_1_job_table` 1 and every `context_*` count 0, under the default search path and under `search_path=''` alike; the md5s are also recomputed from source by `scripts/file-delete-live-exports-migration.test.ts`. The counts say how many records the change reaches at once: `context_self_record_copies` is every self record with a copy, `context_live_self_record_copies` those whose files would still be refused, `context_jobless_copies_being_made` legacy rows that blocked before and no longer do, `context_ready_account_copies` the finished whole-account copies a withdrawal would now end. `api.subject-export` and `api.export` answer 503 before they create anything unless a generation capability is configured, and only the TEST one exists (`approvedAccountArchiveGeneration()` returns null), so all are expected to be 0 in production.
+
+## Locks and duration
+
+Catalog work only: two `create or replace function` statements run from the patch block, and catalog reads. No lock on any table (checked: the session held only `AccessShareLock` on `pg_proc` and its indexes and `RowExclusiveLock` on `pg_proc`'s TOAST relation and index). Measured locally inside rolled-back transactions: 7 to 12 ms in four runs, the predecessor checks and postflight included. At run time the guard reads the job of each copy of the record under the locks it already holds and takes no new lock; the emptying additionally locks the account's whole-account copies that include the record, in id order, then each job and attempt it stops, in the order every export worker and the cleanup sweep take them (export, job, attempt), after the subject it already holds and before the record's own copies.
+
+## Deployed code between apply and deploy
+
+This migration ships no application code and changes no route, page or string, so either order gives the same two windows, and the deployed code of either side behaves the same in each:
+
+- **Migration not yet applied.** As before: one file is refused while the record has any copy the emptying has not retired; the withdrawal revokes the account's queued or building whole-account copies and leaves a READY one READY.
+- **Migration applied.** One file is refused only while a copy of the record is live. The withdrawal also ends every READY whole-account copy that includes the record. Every other answer of `api.file-delete` and of the withdrawal is unchanged.
+
+## What a person sees
+
+Nothing changes in production, where no copy of a person's record or account exists (exports are made only in test mode; the `context_*` counts are expected to be 0). Under the test jurisdiction: a person whose record has only an expired, failed or ended copy can now delete one file from Files; while a copy is being made or can still be downloaded, Delete still answers "This file cannot be deleted here. It was not deleted." That sentence gives no reason, so it stays true. A person who withdraws consent for their own file now also loses any finished whole-account copy, as the confirmation already says: "Any copy of your record we prepared for you to download. Its download link stops working." No wording changed.
+
+## For the owner (not changed here)
+
+- A live whole-account copy does not block deleting one file, before or after this migration, and deleting the file then stops that copy: its currentness check refuses while the file waits for its finish (55000 `export_source_unavailable`) and after it (42501 `not_found`), so it cannot be built further or opened, and an open download of it serves nothing more. `supabase/tests/file_delete_live_exports_only.sql` shows it for a queued and an opened READY whole-account copy. Unlike the withdrawal, the single-file deletion does not end the copy (it stays READY and its objects wait for the deadline sweep). Whether a live whole-account copy should block deleting one file, like the record's own, or be ended by it, is not decided.
+- Found while building the second half: before this migration, a READY whole-account copy already stopped serving after the withdrawal, for the same reason (its capture no longer matched once the record's files were prepared), but it stayed READY, its download rows and any legacy download session stayed active, and its stored objects waited for the deadline sweep. `supabase/tests/self_withdrawal_ends_finished_copies.sql`, run on the predecessor state, shows exactly that (the refusals come as 55000 `export_source_unavailable` instead of 42501, the row stays READY). Now the copy is ended explicitly and its objects are queued for disposal at once.
+- Read from the code, not exercised concurrently: a capture takes the record's `subjects` row FOR SHARE before the profile, the deletion the profile before the record. When both run at once on one account the capture waits at most its 250 ms lock timeout and is refused (55P03); it never makes a copy with a file being deleted.
+
+## Browser runs
+
+None. No browser spec deletes a single file while the record has a copy, or withdraws while a copy exists: the browser suite has no generation capability (`e2e/subject-export.spec.ts` asserts no copy is made), and `e2e/file-deletion.spec.ts`, `e2e/own-file-controls.spec.ts` and the withdrawal specs make none. The two pgTAP suites above drive every state through the database's doors.

@@ -294,8 +294,10 @@ select ok((select revocation_reason='withdrawn' from public.subject_consents whe
 -- 2026-11-20 (D-144): 20261120100000 patches the self emptying, from exactly
 -- the body this migration pinned (its patch predecessor there), so the
 -- reviewed body is now that patch's successor.
-select is((select md5(pg_get_functiondef('private.empty_self_subject_v1(uuid,uuid)'::regprocedure))),'5c35b1a9eafbfe7fd3e16f54b648dee7',
- 'the self emptying is the reviewed body: as 20261016181000 wrote it, patched by 20261120100000');
+-- 2026-11-22 (D-152): 20261122130000 patches that successor
+-- (5c35b1a9eafbfe7fd3e16f54b648dee7) once more, in its whole-account copies only.
+select is((select md5(pg_get_functiondef('private.empty_self_subject_v1(uuid,uuid)'::regprocedure))),'768b5433d639f9c8578fbd59a5a0d703',
+ 'the self emptying is the reviewed body: as 20261016181000 wrote it, patched by 20261120100000 and 20261122130000');
 
 select * from finish();
 rollback;

@@ -85,13 +85,26 @@ describe("the release it belongs to", () => {
     // guaranteed is that every later body starts from the reviewed one: the
     // only later patch names exactly the md5s pinned here as its predecessors.
     const D144 = "20261120100000_self_withdrawal_deletes_exports.sql";
+    // 2026-11-22 (D-152): 20261122130000 patches both bodies once more (the
+    // guard's export clause, the emptying's whole-account copies), each only
+    // from D-144's successor, so the chain still starts from the bodies pinned
+    // here. Nothing else may follow either body.
+    const D152 = "20261122130000_file_delete_live_exports_only.sql";
     for (const qualified of ["private.empty_self_subject_v1", "private.prepare_genome_file_deletion_body_v1"]) {
       expect(files.filter(file => file > "20261016181000_subject_delete.sql" && file !== NAME && rewrites(file, qualified)),
-        qualified).toEqual([D144]);
+        qualified).toEqual([D144, D152]);
     }
     const later = read(`supabase/migrations/${D144}`);
     expect(later).toContain("(1,'private.empty_self_subject_v1(uuid,uuid)','85a9ab8159fa7e5bfb18deada62c1215',");
-    expect(later).toContain("(4,'private.prepare_genome_file_deletion_body_v1(uuid,uuid)','e9f3f4692f0c6d10f6827410db8a0102',");
+    expect(later).toContain("(3,'private.empty_self_subject_v1(uuid,uuid)','022d38406f5ff240d32cdd460ebc4e96',\n"
+      + "   '5c35b1a9eafbfe7fd3e16f54b648dee7',");
+    expect(later).toContain("(4,'private.prepare_genome_file_deletion_body_v1(uuid,uuid)','e9f3f4692f0c6d10f6827410db8a0102',\n"
+      + "   'c78d66691786e656a063b2dfe7b78a28',");
+    const d152 = read(`supabase/migrations/${D152}`);
+    expect([...d152.matchAll(/\((\d+),'([^']+)','([0-9a-f]{32})',/gu)].map(match => [match[1], match[2], match[3]]))
+      .toEqual([["1", "private.prepare_genome_file_deletion_body_v1(uuid,uuid)", "c78d66691786e656a063b2dfe7b78a28"],
+        ["2", "private.empty_self_subject_v1(uuid,uuid)", "5c35b1a9eafbfe7fd3e16f54b648dee7"]]);
+    expect(d152).toContain("raise exception using errcode='55000',message=item.label||' predecessor differs'");
   });
 });
 
@@ -201,9 +214,14 @@ describe("the door and the email", () => {
   it("is driven by its pgTAP suite through every refusal, the withdrawal, the email and the consent given again", () => {
     // 2026-11-20 (D-144): the suite now pins the self emptying at
     // 20261120100000's successor, which patches the body pinned here.
+    // 2026-11-22 (D-152): and now at 20261122130000's successor, which patches
+    // exactly that one (5c35b1a9eafbfe7fd3e16f54b648dee7, held above).
+    const d152After = [...read("supabase/migrations/20261122130000_file_delete_live_exports_only.sql")
+      .matchAll(/\(2,'private\.empty_self_subject_v1\(uuid,uuid\)','5c35b1a9eafbfe7fd3e16f54b648dee7',\s*'([0-9a-f]{32})',/gu)].map(match => match[1]);
+    expect(d152After).toHaveLength(1);
     for (const fragment of ["'subject_delete_processing'", "'subject_delete_unsupported_graph'", "'file_delete_processing'",
       "'withdrawal_notice_recipient_stale'", "'withdrawal_notice_unavailable'", "'invalid_operation_nonce'",
-      "public.authorize_mail_submission_v1(", "public.claim_mail_outbox()", "'5c35b1a9eafbfe7fd3e16f54b648dee7'"]) {
+      "public.authorize_mail_submission_v1(", "public.claim_mail_outbox()", `'${d152After[0]}'`]) {
       expect(pgtap, fragment).toContain(fragment);
     }
     expect(pgtap.startsWith("begin;\n")).toBe(true);

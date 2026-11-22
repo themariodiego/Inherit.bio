@@ -24,3 +24,14 @@ Not amended, because the code now does what they say:
 - `authenticated-mutation-v1.failure` and `responseContractBindings.routes[api.file-delete]`: the refusal is the auth contract's 403; no response contract is added.
 
 Not amended, and not the owner's decision to make here: the brief (`docs/inherit-v2-brief.md`) is unchanged; nothing in it names the file delete's transport.
+
+## Note, 22 November 2026: only a live download copy blocks deleting one file (D-152)
+
+Rule: owner decision of 22 November 2026, "Only a live download copy blocks deleting a single file" (`docs/protocol/decisions.md`), built by `20261122130000_file_delete_live_exports_only.sql`. One existing register sentence changes; it is marked `registered-2026-11-22-D-152`. `docs/route-register.json` was edited by hand (one value), never re-serialised; it still parses. The three additions above are unchanged.
+
+4. `responseContracts.file-delete-v1.subjectUnavailable.when`
+   - Old: "the-database-refuses-the-deletion-because-the-file-is-not-on-the-caller's-own-active-self-record (file_delete_subject_unavailable) or-that-record-has-shared-or-generated-material-that-needs-its-subject-level-disposition-a-pending-or-current-family-pair-or-one-with-joint-results-a-current-relationship-to-another-account-a-generated-export-a-report-artifact-an-embryo-variant-from-this-file-or-an-unattributed-legacy-chat (file_delete_shared_graph)".
+   - New: the same, with "a-generated-export" replaced by "a-live-download-copy-of-the-record (registered-2026-11-22-D-152: a-generated-export-of-the-record-still-being-made-(queued-or-building)-or-still-downloadable-(ready-before-its-expiry), either-before-its-job's-deadline; an-expired-failed-revoked-or-otherwise-ended-copy-no-longer-blocks)".
+   - Why: the guard now refuses only while a copy of the record is live; "a generated export" stated the old rule, under which any copy blocked for good (D-152). The status, body, `effects` and `registeredBy` are unchanged, and so is the answer a person gets (409 `file_delete_subject_unavailable`, "This file cannot be deleted here. It was not deleted.").
+
+No other register sentence states or repeats the export rule of `file_delete_shared_graph`: `routes[api.file-delete]` names no refusal, and `scripts/route-gate.ts` cites that refusal only for a family pair. The same migration also makes the own-file withdrawal end every whole-account copy that includes the record, a finished one too (the owner's decision of the same day, "Withdrawing consent for one's own file ends a finished download copy too"); no register sentence described which copies that withdrawal ended (`routes[api.subject-delete].policy.cases.self.withdrawal` and `routes[api.consent-revoke].policy.withdrawalRoutes.cases.self-upload-class-consent.how` list files, results, conversations, sharing and consents, not copies), so nothing is amended for it.

@@ -22,6 +22,8 @@ const md5 = (text: string) => createHash("md5").update(text, "utf8").digest("hex
 const count = (text: string, fragment: string) => text.split(fragment).length - 1;
 
 const NAME = "20261120100000_self_withdrawal_deletes_exports.sql";
+/** The one later migration that patches a body this one patches: the per-file guard (D-152). */
+const D152 = "20261122130000_file_delete_live_exports_only.sql";
 const migration = read(`supabase/migrations/${NAME}`);
 const pgtap = read("supabase/tests/self_withdrawal_deletes_exports.sql");
 const files = readdirSync(path.join(root, "supabase/migrations")).filter(file => file.endsWith(".sql")).sort();
@@ -122,10 +124,31 @@ describe("the release it belongs to", () => {
       return new RegExp(`create\\s+(?:or\\s+replace\\s+)?function\\s+(?:\\w+\\.)?${local}\\s*\\(`, "iu").test(sql)
         || (sql.includes(`'${qualified}(`) && sql.includes("replace(definition"));
     };
-    for (const qualified of ["private.empty_self_subject_v1", "private.prepare_genome_file_deletion_body_v1",
-      "public.self_subject_withdrawal_readiness_v1", "public.export_archive_cleanup_v1"]) {
-      expect(files.filter(file => file > NAME && rewrites(file, qualified)), qualified).toEqual([]);
+    expect(files.filter(file => file > NAME && rewrites(file, "public.self_subject_withdrawal_readiness_v1"))).toEqual([]);
+    // 2026-11-22 (D-152): 20261122130000 names the cleanup door with
+    // replace(definition) in the same file, as this migration does, only to
+    // pin it at the md5 pinned here; it neither restates nor patches it.
+    expect(files.filter(file => file > NAME && rewrites(file, "public.export_archive_cleanup_v1"))).toEqual([D152]);
+    expect(read(`supabase/migrations/${D152}`)).not.toMatch(/\(\d+,'public\.export_archive_cleanup_v1\(/u);
+    expect(read(`supabase/migrations/${D152}`)).toContain("to_regprocedure('public.export_archive_cleanup_v1(text,uuid,uuid,jsonb)')\n"
+      + "   and md5(pg_get_functiondef(p.oid))='25fa3ce71b73fb0c371d1bb9af836bd7'");
+    // 2026-11-22 (D-152): 20261122130000 patches the per-file guard again (its
+    // export clause) and the self emptying again (the account's whole-account
+    // copies), each from exactly this migration's successor. It is the one
+    // later migration allowed to, and only for those two bodies.
+    for (const qualified of ["private.prepare_genome_file_deletion_body_v1", "private.empty_self_subject_v1"]) {
+      expect(files.filter(file => file > NAME && rewrites(file, qualified)), qualified).toEqual([D152]);
     }
+    const d152 = read(`supabase/migrations/${D152}`);
+    const last = (target: string) => patches.filter(patch => patch.target === target).at(-1)!;
+    expect([...d152.matchAll(/\((\d+),'([^']+)','([0-9a-f]{32})',/gu)].map(match => [match[2], match[3]]))
+      .toEqual([[GUARD_TARGET, last(GUARD_TARGET).after], [EMPTY_TARGET, last(EMPTY_TARGET).after]]);
+    // The guard's anchor is this migration's clause; the emptying's is the
+    // account-level statement this migration kept, and its own block stays.
+    expect(count(d152, last(GUARD_TARGET).next)).toBe(1);
+    expect(d152).toContain("$old$ update public.generated_exports set status='revoked'\n"
+      + "  where status in ('queued','building') and target_kind='account' and target_id=p_account_id;\n$old$");
+    expect(d152).not.toContain("-- 20261120100000 (D-144): every export of the record ends with it.");
     // The cleanup door it calls has never been restated since 20260923123240.
     expect(files.filter(file => file !== "20260923123240_export_archive_persistence.sql"
       && /function\s+public\.export_archive_cleanup_v1\s*\(/iu.test(read(`supabase/migrations/${file}`)))).toEqual([]);
@@ -223,6 +246,8 @@ describe("what the patched bodies do", () => {
   });
 
   it("lets every export block a single file unless the emptying has retired it", () => {
+    // This migration's own clause. 20261122130000 (D-152) replaces it with the
+    // live-copy clause; scripts/file-delete-live-exports-migration.test.ts holds that.
     const marker = "\n    -- 20261120100000 (D-144)";
     const clause = between(guard, marker, "\n    or exists (select 1 from public.report_artifacts");
     expect(clause).toContain("and (e.status<>'revoked' or exists (select 1 from private.export_archive_attempts a\n"
@@ -248,7 +273,15 @@ describe("what the patched bodies do", () => {
       // The account-level statement twice: the anchor of patch 3, in its old and its new fragment.
       [NAME]: [...Array(2).fill("update public.generated_exports set status='revoked' where status in ('queued','building') and target_kind='account' and target_id=p_account_id;"),
         "update public.generated_exports set status='revoked' where id=any(v_exports) and status<>'revoked';"],
+      // 2026-11-22 (D-152): the account-level statement as its anchor and kept
+      // in its new fragment, and the revocation of the account's whole-account
+      // copies that include the record (v_exports is selected there with
+      // target_kind='account', held by scripts/file-delete-live-exports-migration.test.ts).
+      [D152]: ["update public.generated_exports set status='revoked' where status in ('queued','building') and target_kind='account' and target_id=p_account_id;",
+        "update public.generated_exports set status='revoked' where id=any(v_exports) and status<>'revoked';",
+        "update public.generated_exports set status='revoked' where status in ('queued','building') and target_kind='account' and target_id=p_account_id;"],
     });
+    expect(read(`supabase/migrations/${D152}`)).toContain("v_exports:=array(select e.id from public.generated_exports e where e.target_kind='account' and e.target_id=p_account_id\n");
     // The claimant erasure's record is a claimed one, and the transfer's an adult record.
     expect(read("supabase/migrations/20260930245000_future_person_claimant_erasure.sql")).toContain("claimed");
     expect(read("supabase/migrations/20261016221000_subject_transfer.sql"))
@@ -270,14 +303,26 @@ describe("its tests and its notes", () => {
       "\\gset", ":'door_state'::jsonb", "'subject_delete_unsupported_graph'", "'file_delete_shared_graph'",
       "public.finish_genome_file_deletion_v1(", "'upload-consent-withdrawn'", "'subject.emptied'",
       "private.claim_account_archive_r2_disposal_v1(", "private.complete_account_archive_r2_write_v1(",
-      ...[EMPTY_TARGET, GUARD_TARGET, READY_TARGET].map(target => `'${patches.filter(patch => patch.target === target).at(-1)!.after}'`),
+      ...[READY_TARGET].map(target => `'${patches.filter(patch => patch.target === target).at(-1)!.after}'`),
       `'${md5(CLEANUP)}'`]) {
       expect(pgtap, fragment).toContain(fragment);
     }
+    // 2026-11-22 (D-152): the suite pins the per-file guard and the self
+    // emptying at 20261122130000's successors, which patch exactly this
+    // migration's successors (held by the "last word" test above), and names
+    // those predecessors; so does the own-upload withdrawal suite for the emptying.
+    const d152After = Object.fromEntries([...read(`supabase/migrations/${D152}`)
+      .matchAll(/\((\d+),'([^']+)','[0-9a-f]{32}',\s*'([0-9a-f]{32})',/gu)].map(match => [match[2], match[3]]));
+    expect(Object.keys(d152After)).toEqual([GUARD_TARGET, EMPTY_TARGET]);
+    for (const target of [GUARD_TARGET, EMPTY_TARGET]) {
+      expect(pgtap, target).toContain(`'${target}'::regprocedure))),'${d152After[target]}'`);
+      expect(pgtap, target).toContain(patches.filter(patch => patch.target === target).at(-1)!.after);
+    }
     expect(pgtap.startsWith("begin;\n")).toBe(true);
     expect(pgtap.trimEnd().endsWith("rollback;")).toBe(true);
-    expect(read("supabase/tests/own_upload_consent_withdrawal.sql"))
-      .toContain(`'${patches.filter(patch => patch.target === EMPTY_TARGET).at(-1)!.after}'`);
+    const ownWithdrawal = read("supabase/tests/own_upload_consent_withdrawal.sql");
+    expect(ownWithdrawal).toContain(`'${d152After[EMPTY_TARGET]}'`);
+    expect(ownWithdrawal).toContain(patches.filter(patch => patch.target === EMPTY_TARGET).at(-1)!.after);
   });
 
   it("is in the release notes of the guarded release it joins", () => {

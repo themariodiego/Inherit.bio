@@ -165,22 +165,25 @@ select throws_ok($$select public.subject_export_request_v1('check',pg_temp.origi
 select is(pg_temp.ready(),'ready','a record whose only obstacle was its exports reads ready');
 
 -- The per-file guard, shared with api.file-delete -----------------------------------
--- api.file-delete is unchanged on a record that has not been emptied: any
--- export of it still blocks deleting one file, as the register's
--- file-delete-v1 says. Only an export the emptying retired stops counting.
+-- 2026-11-22 (D-152, 20261122130000): only a live download copy of the
+-- record blocks deleting one file, as the register's file-delete-v1 now
+-- says. None of the three here is live (the expired one is past its job's
+-- deadline, the revoked one and the swept one have ended), so each step
+-- below lets the file go; a live one still blocks (Case 1), and
+-- supabase/tests/file_delete_live_exports_only.sql covers every state.
 savepoint file_shortcut;
-select throws_ok($$select public.prepare_genome_file_deletion_v1((select alpha from fx),(select alpha_session from fx),(select file from fx))$$,
- '55000','file_delete_shared_graph','one file still cannot be deleted alone while the record has exports');
+select lives_ok($$select public.prepare_genome_file_deletion_v1((select alpha from fx),(select alpha_session from fx),(select file from fx))$$,
+ 'one file can be deleted alone while the record has only an expired, a revoked and an already-swept export (D-152)');
 select public.export_archive_cleanup_v1('stop',pg_temp.export_id('expired'),(select attempt from ex where label='expired'));
 select public.export_archive_cleanup_v1('stop',pg_temp.export_id('revoked'),(select attempt from ex where label='revoked'));
 select is((select count(*) from private.export_archive_attempts a join public.generated_exports e on e.id=a.export_id
   where e.target_kind='subject' and e.target_id=(select alpha_subject from fx) and a.state in ('writing','bytes_complete')),0::bigint,
  'fixture: the sweep has stopped every export of the record, so none holds objects not queued');
-select throws_ok($$select public.prepare_genome_file_deletion_v1((select alpha from fx),(select alpha_session from fx),(select file from fx))$$,
- '55000','file_delete_shared_graph','nor once the sweep has stopped them: an expired or failed export still blocks it, as before');
+select lives_ok($$select public.prepare_genome_file_deletion_v1((select alpha from fx),(select alpha_session from fx),(select file from fx))$$,
+ 'nor once the sweep has stopped them: an expired or failed export no longer blocks it (D-152)');
 update public.generated_exports set status='revoked' where id=pg_temp.export_id('swept');
-select throws_ok($$select public.prepare_genome_file_deletion_v1((select alpha from fx),(select alpha_session from fx),(select file from fx))$$,
- '55000','file_delete_shared_graph','while any export of the record is not revoked, it still blocks');
+select lives_ok($$select public.prepare_genome_file_deletion_v1((select alpha from fx),(select alpha_session from fx),(select file from fx))$$,
+ 'whether or not every export of the record is revoked (D-152)');
 update public.generated_exports set status='revoked' where target_kind='subject' and target_id=(select alpha_subject from fx);
 select lives_ok($$select public.prepare_genome_file_deletion_v1((select alpha from fx),(select alpha_session from fx),(select file from fx))$$,
  'an export revoked with nothing left to queue, as the emptying leaves every one, no longer holds the file');
@@ -234,6 +237,8 @@ insert into public.download_sessions(id,account_id,auth_session_id,principal_id,
 select '7d144000-0000-4000-8000-000000000034',alpha,alpha_session,(select (capture->>'principalId')::uuid from ex where label='ready'),
  'export',pg_temp.export_id('ready'),'raw.export','7d144000-0000-4000-8000-000000000033',1,1,repeat('a',64),3,
  clock_timestamp()+interval '1 hour' from fx;
+select throws_ok($$select public.prepare_genome_file_deletion_v1((select alpha from fx),(select alpha_session from fx),(select file from fx))$$,
+ '55000','file_delete_shared_graph','while that READY export can still be downloaded, one file still cannot be deleted alone (D-152)');
 select is(pg_temp.ready(),'ready','with a live export as well, the record reads ready');
 
 -- What the cleanup door itself writes when it stops every attempt of the
@@ -374,10 +379,16 @@ reset role;
 rollback to queued_case;
 
 -- The bodies are the reviewed successors ---------------------------------------------
-select is((select md5(pg_get_functiondef('private.empty_self_subject_v1(uuid,uuid)'::regprocedure))),'5c35b1a9eafbfe7fd3e16f54b648dee7',
- 'the self emptying is the reviewed successor');
-select is((select md5(pg_get_functiondef('private.prepare_genome_file_deletion_body_v1(uuid,uuid)'::regprocedure))),'c78d66691786e656a063b2dfe7b78a28',
- 'the per-file guard is the reviewed successor');
+-- 2026-11-22 (D-152): 20261122130000 patches this migration's successor of
+-- the self emptying (5c35b1a9eafbfe7fd3e16f54b648dee7) so that it also ends
+-- the account's whole-account copies that include the record; this suite
+-- makes none, and supabase/tests/self_withdrawal_ends_finished_copies.sql covers them.
+select is((select md5(pg_get_functiondef('private.empty_self_subject_v1(uuid,uuid)'::regprocedure))),'768b5433d639f9c8578fbd59a5a0d703',
+ 'the self emptying is the reviewed successor of 20261122130000 (D-152)');
+-- 2026-11-22 (D-152): 20261122130000 patches this migration's successor of
+-- the per-file guard (c78d66691786e656a063b2dfe7b78a28) in its export clause.
+select is((select md5(pg_get_functiondef('private.prepare_genome_file_deletion_body_v1(uuid,uuid)'::regprocedure))),'9753a5d9d38d09f6b17664826247f070',
+ 'the per-file guard is the reviewed successor of 20261122130000 (D-152)');
 select is((select md5(pg_get_functiondef('public.self_subject_withdrawal_readiness_v1(uuid,uuid)'::regprocedure))),'963586dade86d48a3f61d03b2403d41a',
  'the page''s read is the reviewed successor');
 select is((select md5(pg_get_functiondef('public.export_archive_cleanup_v1(text,uuid,uuid,jsonb)'::regprocedure))),'25fa3ce71b73fb0c371d1bb9af836bd7',

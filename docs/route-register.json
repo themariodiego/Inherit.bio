@@ -13757,7 +13757,7 @@
             "const": "file_delete_subject_unavailable"
           }
         },
-        "when": "the-database-refuses-the-deletion-because-the-file-is-not-on-the-caller's-own-active-self-record (file_delete_subject_unavailable) or-that-record-has-shared-or-generated-material-that-needs-its-subject-level-disposition-a-pending-or-current-family-pair-or-one-with-joint-results-a-current-relationship-to-another-account-a-generated-export-a-report-artifact-an-embryo-variant-from-this-file-or-an-unattributed-legacy-chat (file_delete_shared_graph)",
+        "when": "the-database-refuses-the-deletion-because-the-file-is-not-on-the-caller's-own-active-self-record (file_delete_subject_unavailable) or-that-record-has-shared-or-generated-material-that-needs-its-subject-level-disposition-a-pending-or-current-family-pair-or-one-with-joint-results-a-current-relationship-to-another-account-a-live-download-copy-of-the-record (registered-2026-11-22-D-152: a-generated-export-of-the-record-still-being-made-(queued-or-building)-or-still-downloadable-(ready-before-its-expiry), either-before-its-job's-deadline; an-expired-failed-revoked-or-otherwise-ended-copy-no-longer-blocks) a-report-artifact-an-embryo-variant-from-this-file-or-an-unattributed-legacy-chat (file_delete_shared_graph)",
         "effects": "nothing-is-deleted-or-made-unreadable",
         "unknownFieldsRecursively": "forbidden"
       },
