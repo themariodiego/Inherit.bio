@@ -6261,3 +6261,21 @@ let it run out". Chosen: "Yes, end it too".
 A finished copy that includes the withdrawn file stops working at once; the
 person can make a new one. This makes the confirmation's existing line true
 as written and closes the second half of D-152 when built.
+
+## 2026-11-22 — A person keeps their own access after the approved document's retention ends (D-166)
+
+Owner decision (clickable chat answer, "Yes, the person keeps access").
+Asked: an adult can confirm a DNA file someone else uploaded by e-signature
+or through a permission document a named reviewer approved; the approved
+document is kept for 730 days after acceptance, and when it is gone the
+adult also loses their own saved results and downloads of the record and
+their account, while an e-signature confirmation keeps both; the uploader
+losing access then matches the register; should the adult keep their own
+access after the document is gone? Offered: "Yes, the person keeps access",
+"No, both lose access". Chosen: "Yes, the person keeps access".
+
+Only the uploader's access to a `path-b-reviewed-document` record depends on
+the approved document still being retained. The person's own saved results
+and their downloads of the record and of their account continue after its
+retention ends, as after an e-signature. Test mode only today. This closes
+D-166 when built.
