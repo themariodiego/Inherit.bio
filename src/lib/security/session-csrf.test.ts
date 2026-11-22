@@ -305,6 +305,56 @@ describe("the claim-objection address, which takes either kind of session", () =
   });
 });
 
+/**
+ * Owner decision of 22 November 2026, "G8.5: the reviewer chunk-acknowledgement
+ * address accepts either kind of session".
+ */
+describe("the reviewer chunk-acknowledgement address, which takes either kind of session", () => {
+  const ROUTE = "api.claim-review-chunk-acknowledgement" as const;
+  const reviewerSession = { kind: "reviewer" as const, accountId: ACCOUNT, sessionId: SESSION };
+
+  it("spends a reviewer token for the reviewer first and an account token for the account second, and tells the handler which", async () => {
+    const { withReviewerOrAccountCsrf } = await import("./session-csrf");
+    const seen: (string | null)[] = [];
+    const route = withReviewerOrAccountCsrf(ROUTE, async (_request, session) => {
+      seen.push(session?.kind ?? null); return new Response(null, { status: 204 });
+    });
+    const reviewerAnswer = await route(post(mintSessionCsrf(reviewerSession, ROUTE)));
+    const accountAnswer = await route(post(mintSessionCsrf(accountSession, ROUTE)));
+    expect([reviewerAnswer.status, accountAnswer.status]).toEqual([204, 204]);
+    expect(seen).toEqual(["reviewer", "authenticated"]);
+    expect(state.calls.map(call => call.p_session_kind)).toEqual(["reviewer", "authenticated"]);
+    expect(state.names).toEqual(["consume_session_csrf_v2", "consume_session_csrf_v1"]);
+    // Each answer's successor is minted for the kind it spent, so each chain stays its own.
+    expect(verifySessionCsrf(reviewerAnswer.headers.get("x-inherit-csrf"), reviewerSession, ROUTE)).not.toBeNull();
+    expect(verifySessionCsrf(accountAnswer.headers.get("x-inherit-csrf"), accountSession, ROUTE)).not.toBeNull();
+    expect(verifySessionCsrf(accountAnswer.headers.get("x-inherit-csrf"), reviewerSession, ROUTE)).toBeNull();
+  });
+
+  it("refuses a missing, foreign, other-route or other-kind token with the route's 404, and leaves a signed-out request to the handler", async () => {
+    const { withReviewerOrAccountCsrf } = await import("./session-csrf");
+    const handler = vi.fn(async () => new Response(null, { status: 204 }));
+    const route = withReviewerOrAccountCsrf(ROUTE, handler);
+    const foreign = "5b000000-0000-4000-8000-000000000012";
+    for (const token of [undefined, "0".repeat(64),
+      mintSessionCsrf({ ...reviewerSession, sessionId: foreign }, ROUTE), mintSessionCsrf({ ...accountSession, sessionId: foreign }, ROUTE),
+      mintSessionCsrf(reviewerSession, "api.claim-review-receipt"), mintSessionCsrf(accountSession, "api.export"),
+      mintSessionCsrf(accountSession, "api.future-person-claim-objection")]) {
+      const response = await route(post(token));
+      expect(response.status).toBe(404);
+      expect(await response.json()).toEqual({ error: "not_found" });
+    }
+    expect(handler).not.toHaveBeenCalled();
+    expect(state.calls).toEqual([]);
+    state.context = null;
+    expect((await route(post())).status).toBe(204);
+    expect(handler).toHaveBeenCalledWith(expect.any(Request), null);
+    expect(state.calls).toEqual([]);
+    expect(() => withReviewerOrAccountCsrf("api.appeal-review", handler)).toThrow("does not take a reviewer or an account session");
+    expect(() => withReviewerOrAccountCsrf("api.future-person-claim-objection", handler)).toThrow("does not take a reviewer or an account session");
+  });
+});
+
 describe("the rendered tokens", () => {
   it("mints one token per shell route for the live session, and none for a signed-out request", async () => {
     const { SHELL_CSRF_ROUTES, accountCsrfTokens } = await import("./session-csrf");

@@ -1,3 +1,134 @@
+## 2026-11-22 — G8.5: the reviewer chunk-acknowledgement address accepts either kind of session, and `csrfOwnDesign` has no row
+
+This change follows the owner's decision of today, "G8.5: the reviewer chunk-acknowledgement address accepts either kind of session", and the principles of 19 November for the CSRF register amendments. It moves the last `csrfOwnDesign` row. That row was a branch row: the TEST account archive's acknowledgement shares api.claim-review-chunk-acknowledgement's path and kept its own per-chunk value in `X-Inherit-CSRF`.
+
+**What changed.**
+- **The gate.** `SESSION_CSRF_SECOND_KINDS` now declares `api.claim-review-chunk-acknowledgement: authenticated` beside the claim objection's entry. These are the only two entries. A new wrapper, `withReviewerOrAccountCsrf` (`src/lib/security/session-csrf.ts`), reads the signed-in session once. It checks the request's token as the reviewer's first and as the account's second, spends the token of whichever it finds, and refuses anything else with the route's 404 before the handler runs. It passes the admitted session to the handler. A signed-out request reaches the handler, which answers 404, as before. `requireReviewerCsrf`, the inline reviewer check this route alone used, is deleted.
+- **The route** (`src/app/api/downloads/[session]/chunks/[sequence]/acknowledge/route.ts`). The whole route is wrapped. An account token runs the TEST account archive's branch only. When that branch answers NULL (another native target, or TEST off), the route answers 404 and never falls to the reviewer's branch. A reviewer token runs the reviewer's branch only, and the archive's native seams are never asked. Before this change the archive's branch answered first, for every request, with its own value. The reviewer's branch itself (`acknowledge`) is byte-identical.
+- **The archive's own value (principle 2).** The per-chunk acknowledgement proof keeps the same keyed derivation (`account-export-chunk-csrf-v1`) and the same constant-time check. It now travels in `X-Inherit-Operation-Proof` both ways (`CHUNK_ACKNOWLEDGEMENT_PROOF_HEADER`, `src/lib/exports/account-export-delivery-contract.ts`). The chunk's GET answer hands it over in that header and no longer sets `X-Inherit-CSRF`, and the acknowledgement sends it back in the same header.
+- **Not a stream (principle 3).** Principle 3 names uploads. The archive's acknowledgements go one after another (GET chunk, write, acknowledge, then the next chunk), exactly as the reviewer's do. In the migration stage the reviewer's were judged not a stream for that reason. So each archive acknowledgement spends a one-time account token and carries the previous answer's successor, and `SESSION_CSRF_STREAM_ROUTES` is still `api.evidence-chunk` alone.
+- **The browser.** `downloadAccountArchive` takes the page's handle (`acknowledge: CsrfHandle`) and sends each acknowledgement through `csrf.send`. `AccountExport` reads the handle with `useCsrf("api.claim-review-chunk-acknowledgement")`. The settings data page wraps its two export sections in a `CsrfProvider` holding the account's token for that route (`accountArchiveAcknowledgementCsrf`). The token is minted only while the route's own TEST gate is on (`INHERIT_TEST_JURISDICTION` and `INHERIT_TEST_ACCOUNT_ARCHIVE_R2=1`); otherwise the provider is empty and the page renders nothing new. No other gate changed.
+- **No migration.** `consume_session_csrf_v1` spends an `authenticated` token for any registered route id, and no route-kind pairing exists in the database.
+- **Register.** Three statements, each marked `registered-2026-11-22-G8.5`: `/routes/171/policy/sessionCsrf` (new), `/routes/171/policy/archiveAcknowledgementProof` (new), and `/routes/148/policy/sessionCsrf` (changed, because it said "no-other-route-takes-two-kinds"). The old and new text is in the list for the owner.
+- **Ledger.** The row is removed, and `csrfOwnDesign` is `[]`. `csrfOwnDesignNote` gains a dated sentence, and the branch sentence of `csrfTransportNote` is rewritten.
+
+No wording a person reads changed.
+
+**New tests.**
+- `src/app/api/downloads/[session]/chunks/[sequence]/acknowledge/route.test.ts`, new file, 24 tests. Each goes through the real handler and the real gate. The spend is a one-spend-per-hash double with the live auth-session check. Every read past the gate is counted: the body, the reviewer's RPCs, and the archive's actor, context, read and acknowledge seams.
+  - The reviewer's acknowledgement:
+    - A reviewer token is spent through v2. Only the reviewer's branch runs, and the successor is the reviewer's.
+    - Refused before any read: a missing token, another auth session's token, another route's token (api.claim-review-receipt), a correctly MAC'd rights-kind token, a correctly MAC'd upload-session-kind token, and the acknowledgement nonce placed in `X-Inherit-CSRF`.
+    - A spent token is refused before any read.
+    - The body nonce is still required: a malformed nonce, another sequence's nonce, or another auth session's nonce is refused before the native acknowledgement.
+  - The TEST account archive's acknowledgement (the chunk is fetched through the real GET handler):
+    - An account token is spent through v1. Only the archive's branch runs, and the proof is taken from `X-Inherit-Operation-Proof`.
+    - Refused before any read: a missing token, another auth session's token, another route's token (api.export), the claim objection's account token, a correctly MAC'd rights-kind token, and a correctly MAC'd claim-session-kind token.
+    - A spent token is refused, and so is a token whose auth session has ended.
+    - The proof is still enforced in its new header: no proof, a wrong proof, another GET's proof, or the proof sent twice is refused before the native acknowledgement.
+    - The old position is refused before any read: the proof in `X-Inherit-CSRF` alone, and the proof and the token swapped.
+  - Each branch runs only for its own principal:
+    - A complete reviewer acknowledgement under an account token reaches no reviewer RPC.
+    - The same with TEST off reaches nothing.
+    - A complete archive acknowledgement under a reviewer token reaches no archive seam.
+    - A signed-out request spends and reads nothing.
+- `src/lib/security/session-csrf-routes.test.ts`, 10 new (414 in the file):
+  - The route's second CASES entry, under the account's token, has the same five tests as every case: missing, spent, other session and other purpose refused before the handler; fresh admitted, spent once, with its successor.
+  - New describe "the second kind stays on its own two routes", 4 tests:
+    - The forger matches the core's mint.
+    - A correctly MAC'd account token is refused on each of the 8 ordinary reviewer routes before the handler.
+    - Third-kind tokens (rights, claim session, reset session) are refused on the acknowledgement route, each with its own cookie present.
+    - The claim objection's account token is refused on the acknowledgement route, and the acknowledgement's account token on the objection.
+  - "finds no source that reads X-Inherit-CSRF of its own design, now that the ledger has no row". Under `src/`, the readers of that header (outside tests) are exactly the gate, the browser chain and `appeal-form.ts`. `appeal-form.ts` is the reader for api.subject-access-request, a public route outside csrfTransport's binding, whose register `requiredSignals` names its own public form token.
+- `src/lib/security/session-csrf-core.test.ts`, 1 new (15): the acknowledgement's reviewer and account tokens each verify only under their own kind and only on this route; a rights token cannot be minted for it.
+- `src/lib/security/session-csrf.test.ts`, 2 new (18), on `withReviewerOrAccountCsrf`:
+  - A reviewer token is spent first through v2 and an account token second through v1. The handler is told which, and each successor is minted for its own kind.
+  - A missing, malformed, foreign-session (either kind), other-route or claim-objection token gets the route's 404, and the handler is not run. A signed-out request reaches the handler with `null`. The wrapper refuses to wrap api.appeal-review or the claim objection.
+- `src/lib/exports/account-archive-chunk-http.test.ts`, 4 new (35):
+  - Two new `never ACKs` cases: "missing-proof", and "proof-in-x-inherit-csrf" (the old position alone).
+  - "never takes an account acknowledgement to the reviewer's branch, even where native names no account target".
+  - "never takes a reviewer acknowledgement to the account archive's branch, even on an account target".
+  - `delivered()` now also asserts that the chunk's answer carries the proof in `X-Inherit-Operation-Proof` and sets no `X-Inherit-CSRF`.
+- `src/lib/exports/account-archive-download.test.ts`, 2 new (17):
+  - "sends the acknowledgements one after another through the account token's chain, never the proof as the token".
+  - The new fault "proof-in-x-inherit-csrf": a chunk answer that hands the proof over in the old header only is refused.
+
+**Changed test setup.**
+- `session-csrf.test-support.ts` adds the pass-through `withReviewerOrAccountCsrf`. It hands the handler the account's session when the request carries a verifying account token for the route, and the reviewer's otherwise. It spends nothing. It drops `requireReviewerCsrf`, whose function is deleted.
+- In `account-archive-chunk-http.test.ts`, the `post` helper sends the proof in `X-Inherit-Operation-Proof` (or nothing, given null) where it sent it in `X-Inherit-CSRF`. The route-level account cases also send the account's token (`accountToken(f)`) in `X-Inherit-CSRF`, which is what selects the archive's branch.
+- In `account-archive-download.test.ts`, the fixture's GET answers hand a per-chunk proof (`"0"*64`, `"1"*64`) over in `X-Inherit-Operation-Proof`, and the acknowledgement answers carry a successor token.
+
+**Changed assertions (old, new, why).** None is weakened. Each removed property is asserted where named.
+- `session-csrf-routes.test.ts`, `INLINE`.
+  - Old: `["api.consents", "api.subject-drafts", "api.claim-review-chunk-acknowledgement"]`.
+  - New: the first two only.
+  - Why: the whole route is wrapped now. Its refusals are held to the stricter rule (zero reads, not "no more than the same request without a token"), and its guard symbol is checked with every other wrapped route.
+- `session-csrf-routes.test.ts`, the route-file anchor.
+  - Old: the file must contain `if(archive)return archive;\n  const admitted=await requireReviewerCsrf(request,"api.claim-review-chunk-acknowledgement");\n  if(admitted instanceof Response)return admitted;`.
+  - New: it must export `POST=withReviewerOrAccountCsrf("api.claim-review-chunk-acknowledgement",`, contain the exact branch selection (the account branch, NULL to 404, otherwise only the reviewer's), and contain neither `requireReviewerCsrf` nor a literal `.get("x-inherit-csrf")`.
+  - Why: the owner's decision.
+- `session-csrf-routes.test.ts`, accounting.
+  - Old: branch rows `["api.claim-review-chunk-acknowledgement"]`.
+  - New: `[]`, and the ledger's length is 0.
+  - Why: the row moved. `bound` (75), `ownWhole` (0), the aliases and the both-directions equality are unchanged.
+- `session-csrf-core.test.ts`.
+  - Old: describe "the one route that takes two kinds of session", test "is declared for api.future-person-claim-objection alone, rights first and account second", `SESSION_CSRF_SECOND_KINDS` toEqual `{ "api.future-person-claim-objection": "authenticated" }`.
+  - New: describe "the two routes that take two kinds of session", test "declares api.future-person-claim-objection, rights first and account second", toEqual the two entries. In "does not let any other route take a second kind", the acknowledgement's accepted kinds are `["authenticated", "reviewer"]`, every other route's are unchanged, and two new lines assert that an account token cannot be minted for api.claim-review-receipt or api.appeal-review.
+  - Why: the owner's decision. The rest of both tests is unchanged.
+- `account-archive-chunk-http.test.ts`, "keeps a genuine nonproduction reviewer ACK in its unchanged bound receipt and native dispatcher".
+  - Old: `expect(f.context).toHaveBeenCalledExactlyOnceWith({actor:f.actor,sessionId:f.session,downloadHash:null},expect.any(AbortSignal))`. The archive's native discriminator was asked first and answered NULL.
+  - New: `expect(f.context).not.toHaveBeenCalled()`.
+  - Why: the admitted token's kind now chooses the branch, so a reviewer's acknowledgement never reaches the archive's branch, its discriminator included. The property the old assertion protected was that an account target never falls into the reviewer's flow. It is now held by "never takes an account acknowledgement to the reviewer's branch" (both files) and by the reviewer's own native authorizer refusing an archive download (`route.test.ts`). Its RPC-sequence assertions are unchanged.
+- `account-archive-chunk-http.test.ts`, the `never ACKs` table.
+  - Old: case "csrf" (a 64-zero value in `X-Inherit-CSRF`).
+  - New: case "proof" (the same value in `X-Inherit-Operation-Proof`), plus the two new cases.
+  - Why: principle 2.
+- `account-archive-chunk-http.test.ts`, "never falls through an actual account target", "refuses a native context failure…" and "refuses a replay…".
+  - Old: the 64-zero value, or the real proof, in `X-Inherit-CSRF`.
+  - New: the same value in `X-Inherit-Operation-Proof`, with the account's token in `X-Inherit-CSRF`.
+  - Why: the request is the account's. Every expectation (statuses, `f.context` twice, no reviewer RPC, one acknowledgement) is unchanged.
+- `account-archive-download.test.ts`, the acknowledgement's headers.
+  - Old: `{"Content-Type":"application/json","X-Inherit-CSRF":"c".repeat(64)}`.
+  - New: `{"Content-Type":"application/json","X-Inherit-CSRF":<the chain's token>,"X-Inherit-Operation-Proof":<this chunk's proof>}`.
+  - Why: principles 1 and 2.
+  - The fault "missing-csrf" (the answer without `x-inherit-csrf`) is renamed "missing-proof" (without `x-inherit-operation-proof`), with the same refusal.
+
+**Planted defects.** Each was applied, run against `src/lib/security`, `src/lib/exports`, `src/app/api/downloads`, `src/lib/future-person` and both correspondence tests, then reverted byte-identically (sha256 checked). Each run had 2810 tests.
+1. **An ordinary reviewer route admits an account token.** `SESSION_CSRF_SECOND_KINDS` declares api.appeal-review too, and its route is wrapped with `withReviewerOrAccountCsrf`. 5 failed:
+   - `session-csrf-routes.test.ts`, "refuses an account token on every ordinary reviewer route before its handler runs".
+   - `session-csrf-core.test.ts`, 3: "declares api.future-person-claim-objection…", "does not let any other route take a second kind…", and "keeps a reviewer token and an account token apart".
+   - `session-csrf.test.ts`, "refuses a missing, foreign, other-route or other-kind token…", which asserts that the wrapper refuses api.appeal-review.
+2. **The account branch is reached with a reviewer token.** The handler calls the archive's branch first for every admitted session, as before the change. 8 failed:
+   - `route.test.ts`, 5: "spends a reviewer token, runs the reviewer's branch alone…", "still requires its own one-time acknowledgement nonce…", "never takes a reviewer token to the archive's branch…", "never takes an account token to the reviewer's branch…" and "leaves a signed-out request…".
+   - `account-archive-chunk-http.test.ts`, 3: "keeps a genuine nonproduction reviewer ACK…", "never takes a reviewer acknowledgement to the account archive's branch…" and "never takes an account acknowledgement to the reviewer's branch…".
+3. **The archive's proof is read from `X-Inherit-CSRF` again.** 8 failed:
+   - `account-archive-chunk-http.test.ts`, 5: "issues one secret-bound exact chunk…", "never ACKs … proof-in-x-inherit-csrf", "… refused", "… lost-response" and "refuses a replay…".
+   - `route.test.ts`, 2: "spends an account token, runs the archive's branch alone…" and "refuses a spent account token…".
+   - `session-csrf-routes.test.ts`, "finds no source that reads X-Inherit-CSRF of its own design…".
+4. **The ledger row is removed while the route still reads its own design.** The route and `account-archive-chunk-http.ts` are as at 499f91fb, with the inline `requireReviewerCsrf` they import restored. 45 failed:
+   - `session-csrf-routes.test.ts`, 4: "wraps every whole route it guards…", "finds no source that reads X-Inherit-CSRF of its own design…", and the account CASES entry's "refuses a token that was already spent" and "admits the same request with a fresh token…".
+   - `route.test.ts`, 23 of 24.
+   - `account-archive-chunk-http.test.ts`, 14.
+   - `public-appeal-download-scope.test.ts`, 4.
+5. **The two-kind declaration made global.** `acceptsSessionKind` accepts any declared second kind on every route. 3 failed in `session-csrf-core.test.ts`: "does not let any other route take a second kind…", "refuses a token minted for another route, and will not mint one for a route of another session kind", and "keeps a reviewer token and an account token apart". The same run also failed `account-archive-worker.test.ts` "complete consumed-account unpublished archive executor…", which hit its 5 s timeout (5058 ms) under the load of the parallel run. That file is not touched by the plant or by this change, and it passes in the final run.
+
+**Browser specs.**
+- **Run here, on a faithful production build of this tree:** `e2e/future-person-review.spec.ts` (2 tests) and `e2e/future-person-keyless-review.spec.ts` (2 tests). These are the specs outside isolated CI that acknowledge review chunks.
+  - In a quiet window: 4 passed, "E2E contract passed: 4 result(s), no skips, no retries".
+  - The runner's trailing "No browser upload crossed the actual provider proxy" is its whole-suite invariant, not a test result. These specs upload nothing through the Storage provider proxy.
+  - The earlier attempts on the same build failed before any acknowledgement, because the shared database was busy:
+    - The claim start and completion answered 503. The cause was statement timeouts and deadlocks on the legal-audit advisory lock (1229866068, 1) against other sessions' pgTAP transactions.
+    - One review page answered 404 in that window.
+    - One document read was still "Reading file…" after 5 s while a vitest run shared the CPU.
+    - Once, another browser run held the ports.
+- **Not runnable here:**
+  - `scripts/account-archive-root/complete.spec.ts` (`playwright.account-archive-root.config.ts`). This is the one browser journey that acknowledges TEST account archive chunks. It needs Root's admitted private R2 TEST fixture (`assertTestAccountArchiveFixtureAdmission`, `INHERIT_TEST_ACCOUNT_ARCHIVE_R2=1`, the provider proxy and the signer). It clicks "Save complete export" on `/settings/data` after a reload, so it uses the page's new account token and the new proof header with no spec change.
+  - Isolated CI only (`CI` and `INHERIT_CI_BROWSER_RUNTIME=ready`): `e2e/reviews-keyless-owner-notice-journey.spec.ts` and `e2e/future-person-claimed-record-journey.spec.ts`. Both open review documents (`openSyntheticReviewPdf`) and so acknowledge review chunks.
+  - The density claim-review and appeal-review fixtures (`e2e/helpers/density-claim-review-state-fixtures.ts`, `density-appeal-review-state-fixtures.ts`) acknowledge review chunks. They run only under Root's owned density capture (`scripts/density-owned-capture.ts`, `INHERIT_DENSITY_CAPTURE`), which is not a test.
+- No spec changed: the review pages already send each acknowledgement through their token chain, and no spec reads or sets the archive's headers.
+
+**Unit counts (final run).** `src/lib/security`, `src/lib/exports`, `src/lib/future-person`, `src/app/api/downloads`, `scripts/route-gate.test.ts`, both correspondence tests and `scripts/env-gate.test.ts`: 134 files, 2919 passed, 0 failed. The untouched base had 2876 passed, 0 failed. `scripts/account-archive-root/checkpoint.test.ts` fails 2 of 12 (`root_account_archive_checkpoint_unavailable`), identically on the untouched base.
+
 ## 2026-11-22 — G8.5: an uploader's withdrawal hands a record its adult holds to that adult, behind the transfer's closed switch
 
 The owner decided today ("An uploader's withdrawal hands a record its adult holds to that adult") what the account-held branch of the uploader's withdrawal (entry "G8.5: withdrawing an uploader's consent for another adult's file…", 19 November) does: the record and the files the adult confirmed move to the adult through the existing transfer (`subject-ownership-transfer-v1`), on the uploader's act; the uploader's consent ends, unconfirmed files are deleted and the uploader keeps no access; and the branch stays refused until the transfer's three notices are worded and approved. This change builds all of it behind the transfer's one switch, `private.subject_transfer_open_v1()`, which still answers false and is not touched, so nothing changes for anyone. Test mode only.

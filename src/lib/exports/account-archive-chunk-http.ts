@@ -5,7 +5,9 @@ import {hmacSecret} from "@/lib/crypto";
 import {hasEmptyRequestBody} from "@/lib/empty-request-body";
 import {isTestJurisdictionEnabled} from "@/lib/legal/jurisdictions";
 import {applicationOrigin} from "@/lib/app-origin";
+import {accountCsrfTokens,type CsrfTokens} from "@/lib/security/session-csrf";
 import {currentAccountExportActor} from "./account-export-http";
+import {CHUNK_ACKNOWLEDGEMENT_PROOF_HEADER} from "./account-export-delivery-contract";
 import {accountExportActor,type AccountExportActor} from "./account-export-session";
 import {accountArchiveReadySchema,readTestAccountArchiveChunk,type TestAccountArchiveReady} from "./account-archive-test-publication";
 import {withAccountArchiveR2Owner} from "./account-archive-r2";
@@ -35,7 +37,13 @@ function cookieHash(request:Request){
   ||Buffer.from(raw,"base64url").toString("base64url")!==raw)return null;
  return createHash("sha256").update(raw).digest("hex");
 }
-function csrf(input:Input,ordinal:number,challengeHash:string,sha256:string,sizeBytes:number){
+/** The chunk's acknowledgement proof: a keyed digest of the account, the
+ * download, its cookie, the ordinal and the chunk's challenge, digest and size.
+ * Its derivation is unchanged; only its header moved (G8.5, 22 November 2026,
+ * principle 2): X-Inherit-Operation-Proof, where X-Inherit-CSRF carried it,
+ * which now carries the account session's one-time token, spent by the
+ * route's gate before this branch runs. */
+function acknowledgementProof(input:Input,ordinal:number,challengeHash:string,sha256:string,sizeBytes:number){
  return hmacSecret(JSON.stringify([accountExportActor.parse(input.actor),input.sessionId,input.downloadHash,
   ordinal,challengeHash,sha256,sizeBytes]),"account-export-chunk-csrf-v1");
 }
@@ -101,9 +109,15 @@ export async function getAccountArchiveChunk(request:Request,params:{session:str
   lease=undefined;
   return new Response(body,{status:200,headers:{...headers,"Content-Type":"application/octet-stream","Content-Encoding":"identity",
    "Content-Length":String(expected),"X-Inherit-Chunk-Sha256":sha256,"X-Inherit-Chunk-Receipt":receipt,
-   "X-Inherit-CSRF":csrf(current.input,current.ordinal,challengeHash,sha256,expected)}});
+   [CHUNK_ACKNOWLEDGEMENT_PROOF_HEADER]:acknowledgementProof(current.input,current.ordinal,challengeHash,sha256,expected)}});
  }catch{return missing();}finally{if(lease)await lease.release();}
 }
+/** The TEST account archive's acknowledgement, which the route runs only for a
+ * request its gate admitted under the signed-in account's one-time token
+ * (G8.5, owner decision of 22 November 2026); the route answers NULL (another
+ * native target, or TEST off) with its 404 and never with the reviewer's
+ * branch. The chunk's own acknowledgement proof is required in
+ * X-Inherit-Operation-Proof. */
 export async function acknowledgeAccountArchiveChunk(request:Request,params:{session:string;sequence:string},deps:AccountArchiveChunkDependencies):Promise<Response|null>{
  if(!deps.enabled)return null;
  try{
@@ -114,10 +128,19 @@ export async function acknowledgeAccountArchiveChunk(request:Request,params:{ses
    .parse(await acknowledgementBody(request));
   if(Buffer.from(value.receipt,"base64url").byteLength!==32||Buffer.from(value.receipt,"base64url").toString("base64url")!==value.receipt)throw unavailable();
   const challengeHash=createHash("sha256").update(value.receipt).digest("hex");
-  if(!sameHash(request.headers.get("x-inherit-csrf"),csrf(current.input,current.ordinal,challengeHash,value.sha256,value.sizeBytes)))throw unavailable();
+  if(!sameHash(request.headers.get(CHUNK_ACKNOWLEDGEMENT_PROOF_HEADER),acknowledgementProof(current.input,current.ordinal,challengeHash,value.sha256,value.sizeBytes)))throw unavailable();
   if(await deps.acknowledge({...current.input,ordinal:current.ordinal,challengeHash,sha256:value.sha256,sizeBytes:value.sizeBytes},request.signal)!==true)throw unavailable();
   return new Response(null,{status:204,headers});
  }catch{return missing();}
+}
+/** The token a page that offers the TEST archive download renders for its
+ * chunk acknowledgements: the signed-in account's one-time X-Inherit-CSRF
+ * token for api.claim-review-chunk-acknowledgement (its second kind, owner
+ * decision of 22 November 2026), minted, never stored, and only while this
+ * branch is on under the route's own TEST gate. Nothing otherwise. */
+export async function accountArchiveAcknowledgementCsrf(
+ deps:Pick<AccountArchiveChunkDependencies,"enabled">=accountArchiveChunkDependencies()):Promise<CsrfTokens>{
+ return deps.enabled?accountCsrfTokens(["api.claim-review-chunk-acknowledgement"]):{};
 }
 export function accountArchiveChunkDependencies(env:Readonly<Record<string,string|undefined>>=process.env):AccountArchiveChunkDependencies{
  const enabled=isTestJurisdictionEnabled(env)&&env.INHERIT_TEST_ACCOUNT_ARCHIVE_R2==="1";

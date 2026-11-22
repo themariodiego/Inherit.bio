@@ -1,31 +1,44 @@
-import {createHash,randomUUID} from "node:crypto";
+import {createHash,randomBytes,randomUUID} from "node:crypto";
 import {afterEach,describe,expect,it,vi} from "vitest";
 import {downloadAccountArchive} from "./account-archive-download";
 import type {AccountExportDownload} from "./account-export-delivery-contract";
+import {csrfHandle} from "@/lib/security/session-csrf-client";
 
 afterEach(()=>vi.useRealTimers());
 const sha=(bytes:Uint8Array)=>createHash("sha256").update(bytes).digest("hex");
+/** A value in the one-time session token's shape (session-csrf-core): the page's, or an answer's successor. */
+const sessionToken=()=>`${Date.now()+60_000}.${randomBytes(32).toString("base64url")}.${randomBytes(32).toString("hex")}`;
 function fixture(){
  const bytes=Uint8Array.from({length:4_000_017},(_,index)=>index%251),session=randomUUID(),events:string[]=[];
  const download:AccountExportDownload={session,filename:"inherit-account-export.zip",sizeBytes:bytes.length,sha256:sha(bytes),
   chunkBytes:4_000_000,chunkCount:2,chunkRoute:`/api/downloads/${session}/chunks/{sequence}`};
  const written:Uint8Array[]=[],sink={write:vi.fn(async(value:Uint8Array)=>{events.push("write");written.push(value.slice());}),
   close:vi.fn(async()=>{events.push("close");}),abort:vi.fn(async()=>{events.push("abort");})};
+ // 2026-11-22 (G8.5, owner decision "the reviewer chunk-acknowledgement address accepts
+ // either kind of session"): each acknowledgement carries the account's one-time token for
+ // api.claim-review-chunk-acknowledgement, the page's rendered value first and then each
+ // answer's successor, and the chunk's own proof in X-Inherit-Operation-Proof.
+ const tokens=[sessionToken(),sessionToken(),sessionToken()],acknowledge=csrfHandle(tokens[0]);
  const transport=vi.fn(async(url:string,init:RequestInit)=>{
   events.push(init.method!);const number=Number(url.match(/\/chunks\/(\d+)/u)?.[1]);
   expect(url).toBe(`/api/downloads/${session}/chunks/${number}${init.method==="POST"?"/acknowledge":""}`);
   expect(init).toMatchObject({cache:"no-store",credentials:"same-origin",redirect:"error"});
   if(init.method==="POST"){
-   expect(init.headers).toEqual({"Content-Type":"application/json","X-Inherit-CSRF":"c".repeat(64)});
+   // Old (before 22 November 2026): {"Content-Type":"application/json","X-Inherit-CSRF":"c".repeat(64)}, the
+   // chunk's proof in X-Inherit-CSRF. New: the proof, unchanged, in X-Inherit-Operation-Proof, and
+   // X-Inherit-CSRF the chain's one-time token. Why: principles 1 and 2 (G8.5, 19 November 2026).
+   expect(init.headers).toEqual({"Content-Type":"application/json","X-Inherit-CSRF":tokens[number],
+    "X-Inherit-Operation-Proof":`${number}`.repeat(64)});
    expect(JSON.parse(String(init.body))).toEqual({receipt:Buffer.alloc(32,number+1).toString("base64url"),
     sha256:sha(bytes.slice(number*4_000_000,(number+1)*4_000_000)),sizeBytes:Math.min(4_000_000,bytes.length-number*4_000_000)});
-   return new Response(null,{status:204});
+   return new Response(null,{status:204,headers:{"X-Inherit-CSRF":tokens[number+1]}});
   }
   const chunk=bytes.slice(number*4_000_000,(number+1)*4_000_000);
   return new Response(chunk,{headers:{"Content-Type":"application/octet-stream","Content-Encoding":"identity","Content-Length":String(chunk.length),
-   "X-Inherit-Chunk-Sha256":sha(chunk),"X-Inherit-Chunk-Receipt":Buffer.alloc(32,number+1).toString("base64url"),"X-Inherit-CSRF":"c".repeat(64)}});
+   "X-Inherit-Chunk-Sha256":sha(chunk),"X-Inherit-Chunk-Receipt":Buffer.alloc(32,number+1).toString("base64url"),
+   "X-Inherit-Operation-Proof":`${number}`.repeat(64)}});
  });
- return {bytes,download,sink,written,events,transport,signal:new AbortController().signal};
+ return {bytes,download,sink,written,events,transport,acknowledge,tokens,signal:new AbortController().signal};
 }
 describe("one complete streaming account download",()=>{
  it("verifies every actual chunk and sink write before its receipt, then exact total SHA before one close",async()=>{
@@ -33,7 +46,16 @@ describe("one complete streaming account download",()=>{
   expect(f.events).toEqual(["GET","write","POST","GET","write","POST","close"]);
   expect(Buffer.concat(f.written).equals(Buffer.from(f.bytes))).toBe(true);expect(f.sink.abort).not.toHaveBeenCalled();
  });
- it.each(["truncated","overrun","hash","encoding","missing-receipt","missing-csrf","redirect","ack-refusal","total-hash"])("aborts %s without a successful file or sequence retry",async fault=>{
+ it("sends the acknowledgements one after another through the account token's chain, never the proof as the token",async()=>{
+  const f=fixture();await downloadAccountArchive(f);
+  const sent=f.transport.mock.calls.filter(([,init])=>init.method==="POST").map(([,init])=>init.headers as Record<string,string>);
+  expect(sent.map(headers=>headers["X-Inherit-CSRF"])).toEqual([f.tokens[0],f.tokens[1]]);
+  for(const headers of sent)expect(headers["X-Inherit-CSRF"]).not.toBe(headers["X-Inherit-Operation-Proof"]);
+ });
+ // 2026-11-22 (G8.5): "missing-csrf" (the chunk answer without its X-Inherit-CSRF proof) is now
+ // "missing-proof" (without X-Inherit-Operation-Proof), the same refusal; "proof-in-x-inherit-csrf"
+ // is new: an answer that hands the proof over in the old header only is refused.
+ it.each(["truncated","overrun","hash","encoding","missing-receipt","missing-proof","proof-in-x-inherit-csrf","redirect","ack-refusal","total-hash"])("aborts %s without a successful file or sequence retry",async fault=>{
   const f=fixture(),base=f.transport.getMockImplementation()!;
   if(fault==="total-hash")f.download.sha256="f".repeat(64);
   f.transport.mockImplementation(async(url,init)=>{
@@ -44,7 +66,10 @@ describe("one complete streaming account download",()=>{
    if(fault==="hash")value.headers.set("x-inherit-chunk-sha256","0".repeat(64));
    if(fault==="encoding")value.headers.set("content-encoding","gzip");
    if(fault==="missing-receipt")value.headers.delete("x-inherit-chunk-receipt");
-   if(fault==="missing-csrf")value.headers.delete("x-inherit-csrf");return value;
+   if(fault==="missing-proof")value.headers.delete("x-inherit-operation-proof");
+   if(fault==="proof-in-x-inherit-csrf"){value.headers.set("x-inherit-csrf",value.headers.get("x-inherit-operation-proof")!);
+    value.headers.delete("x-inherit-operation-proof");}
+   return value;
   });
   await expect(downloadAccountArchive(f)).rejects.toThrow();expect(f.sink.close).not.toHaveBeenCalled();expect(f.sink.abort).toHaveBeenCalledTimes(1);
   const calls=f.transport.mock.calls.map(([url,init])=>`${init.method}:${url}`);expect(new Set(calls).size).toBe(calls.length);

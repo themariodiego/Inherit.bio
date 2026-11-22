@@ -43,6 +43,11 @@ import {
  *
  *   export const POST = withPurposeCsrf("api.withdraw", readRightsCsrfSession, handler);
  *
+ * The two routes that take either of two kinds of session
+ * (`SESSION_CSRF_SECOND_KINDS`) use `withRightsOrAccountCsrf` and
+ * `withReviewerOrAccountCsrf`, whose handler is told which session was
+ * admitted.
+ *
  * The wrapper reads the session from the request itself. A request with no
  * session for the route to bind reaches the handler unchanged, so every
  * route keeps its own unauthenticated answer. Otherwise the token must verify
@@ -246,21 +251,6 @@ export async function requireAccountCsrf(request: Request, route: CsrfRoute,
   return admission.kind === "refused" ? admission.response : refusal(route);
 }
 
-/**
- * The same for a reviewer route's branch: api.claim-review-chunk-acknowledgement
- * answers a TEST account archive's acknowledgement first, with that branch's
- * own value, and checks the reviewer's token in the branch it answers itself.
- * A request with nobody signed in is refused with the same 404 its handler
- * gives.
- */
-export async function requireReviewerCsrf(request: Request, route: CsrfRoute,
-  options: CsrfOptions = {}): Promise<Response | Extract<CsrfAdmission, { kind: "admitted" }>> {
-  const session = await currentReviewerCsrfSession();
-  if (!session) return refusal(route);
-  const admission = await admitSessionCsrf(request, session, route, options);
-  return admission.kind === "admitted" ? admission : admission.response;
-}
-
 type Handler<Args extends unknown[]> = (request: Request, ...args: Args) => Promise<Response> | Response;
 
 function guarded<Args extends unknown[]>(route: CsrfRoute, admit: (request: Request, args: Args) => Promise<CsrfAdmission>,
@@ -305,7 +295,7 @@ export function withPurposeCsrf<Args extends unknown[]>(route: CsrfRoute,
 }
 
 /**
- * The route that takes either kind of session (`SESSION_CSRF_SECOND_KINDS`;
+ * The first route that takes either kind of session (`SESSION_CSRF_SECOND_KINDS`;
  * owner decision of 19 November 2026, "G8.5: the claim-objection address
  * accepts either kind of session"): the rights session of the request's
  * rights cookie is checked first, and the signed-in account second. The
@@ -329,6 +319,39 @@ export function withRightsOrAccountCsrf(route: CsrfRoute,
     const admission = await admitSessionCsrf(request, session, route);
     if (admission.kind === "refused") return admission.response;
     return admission.rotate(await handler(request, session));
+  };
+  Object.defineProperty(wrapped, SESSION_CSRF_GUARD, { value: route });
+  return wrapped;
+}
+
+/**
+ * The second route that takes either kind of session (`SESSION_CSRF_SECOND_KINDS`;
+ * owner decision of 22 November 2026, "G8.5: the reviewer chunk-acknowledgement
+ * address accepts either kind of session"): api.claim-review-chunk-acknowledgement.
+ * The signed-in session is checked as the reviewer's first and as the
+ * account's second: the token is spent for the reviewer's session when it was
+ * minted for it, and otherwise for the account's, so anything that is not an
+ * account token of this route either is refused with the route's 404. A
+ * request with nobody signed in reaches the handler unchanged, as on every
+ * reviewer route. The handler is told which session was admitted, so the
+ * reviewer's branch runs only under a reviewer token and the TEST account
+ * archive's branch only under an account token. Nothing but the request's
+ * headers and the signed-in session is read before the spend.
+ */
+export function withReviewerOrAccountCsrf<Args extends unknown[]>(route: CsrfRoute,
+  handler: (request: Request, session: CsrfSession | null, ...args: Args) => Promise<Response> | Response) {
+  if (SESSION_CSRF_ROUTES[route] !== "reviewer" || SESSION_CSRF_SECOND_KINDS[route] !== "authenticated") {
+    throw new Error(`${route} does not take a reviewer or an account session`);
+  }
+  const wrapped = async (request: Request, ...args: Args): Promise<Response> => {
+    const context = await getSensitiveAccountContext();
+    if (!context) return handler(request, null, ...args);
+    const reviewer: CsrfSession = { kind: "reviewer", accountId: context.user.id, sessionId: context.sessionId };
+    const account: CsrfSession = { kind: "authenticated", accountId: context.user.id, sessionId: context.sessionId };
+    const session = verifySessionCsrf(request.headers.get(SESSION_CSRF_HEADER), reviewer, route) ? reviewer : account;
+    const admission = await admitSessionCsrf(request, session, route);
+    if (admission.kind === "refused") return admission.response;
+    return admission.rotate(await handler(request, session, ...args));
   };
   Object.defineProperty(wrapped, SESSION_CSRF_GUARD, { value: route });
   return wrapped;

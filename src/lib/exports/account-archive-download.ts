@@ -1,5 +1,6 @@
 import {createSHA256} from "hash-wasm";
-import {accountExportDownload,type AccountExportDownload} from "./account-export-delivery-contract";
+import type {CsrfHandle} from "@/lib/security/session-csrf-client";
+import {CHUNK_ACKNOWLEDGEMENT_PROOF_HEADER,accountExportDownload,type AccountExportDownload} from "./account-export-delivery-contract";
 
 export type AccountArchiveDownloadSink=Readonly<{
  write(bytes:Uint8Array):Promise<void>;close():Promise<void>;abort():Promise<void>;
@@ -17,9 +18,15 @@ async function settle(operation:Promise<unknown>){
 /** The one archive is assembled into an explicit user-selected streaming sink.
  * At most one bounded chunk is retained. Every actual EOF/hash and sink write
  * precedes its once-only receipt; total ZIP bytes/SHA precede final sink close.
- * Refusal/cancellation aborts the partial sink and never retries a sequence. */
+ * Refusal/cancellation aborts the partial sink and never retries a sequence.
+ * `acknowledge` is the page's one-time X-Inherit-CSRF handle for
+ * api.claim-review-chunk-acknowledgement, bound to the signed-in account (G8.5,
+ * owner decision of 22 November 2026): the acknowledgements go one after
+ * another, each carrying the previous answer's successor, and each sends its
+ * chunk's own acknowledgement proof back in X-Inherit-Operation-Proof, where
+ * the chunk's answer handed it over. */
 export async function downloadAccountArchive(options:{download:AccountExportDownload;sink:AccountArchiveDownloadSink;
- signal:AbortSignal;transport?:Transport}){
+ signal:AbortSignal;acknowledge:CsrfHandle;transport?:Transport}){
  let finished=false,abort:Promise<void>|undefined,closing:Promise<void>|undefined;
  const abortSink=()=>abort??=Promise.resolve().then(()=>options.sink.abort());
  try{
@@ -39,10 +46,11 @@ export async function downloadAccountArchive(options:{download:AccountExportDown
      method:"GET",cache:"no-store",credentials:"same-origin",redirect:"error",signal});
     void pending.then(value=>{if(signal.aborted)void value.body?.cancel().catch(()=>{});},()=>{});
     response=await Promise.race([pending,canceled]);
-    const sha=response.headers.get("x-inherit-chunk-sha256"),receipt=response.headers.get("x-inherit-chunk-receipt"),csrf=response.headers.get("x-inherit-csrf");
+    const sha=response.headers.get("x-inherit-chunk-sha256"),receipt=response.headers.get("x-inherit-chunk-receipt"),
+     proof=response.headers.get(CHUNK_ACKNOWLEDGEMENT_PROOF_HEADER);
     if(response.status!==200||response.redirected||response.headers.get("content-type")!=="application/octet-stream"
      ||response.headers.get("content-encoding")!=="identity"||response.headers.get("content-length")!==String(expected)
-     ||!sha||!digestPattern.test(sha)||!receipt||!receiptPattern.test(receipt)||!csrf||!digestPattern.test(csrf)||!response.body)throw unavailable();
+     ||!sha||!digestPattern.test(sha)||!receipt||!receiptPattern.test(receipt)||!proof||!digestPattern.test(proof)||!response.body)throw unavailable();
     reader=response.body.getReader();let count=0;
     for(;;){const next=await Promise.race([reader.read(),canceled]);if(next.done)break;
      if(!(next.value instanceof Uint8Array)||next.value.byteLength===0||count+next.value.byteLength>expected)throw unavailable();
@@ -53,9 +61,10 @@ export async function downloadAccountArchive(options:{download:AccountExportDown
     writeSettled=false;write=Promise.resolve().then(()=>options.sink.write(bytes)).finally(()=>{writeSettled=true;});
     await Promise.race([write,canceled]);
     if(signal.aborted)throw unavailable();
-    const ack=await Promise.race([transport(`/api/downloads/${download.session}/chunks/${sequence}/acknowledge`,{
+    const ack=await Promise.race([options.acknowledge.send(token=>transport(`/api/downloads/${download.session}/chunks/${sequence}/acknowledge`,{
      method:"POST",cache:"no-store",credentials:"same-origin",redirect:"error",signal,
-     headers:{"Content-Type":"application/json","X-Inherit-CSRF":csrf},body:JSON.stringify({receipt,sha256:sha,sizeBytes:count})}),canceled]);
+     headers:{"Content-Type":"application/json","X-Inherit-CSRF":token,[CHUNK_ACKNOWLEDGEMENT_PROOF_HEADER]:proof},
+     body:JSON.stringify({receipt,sha256:sha,sizeBytes:count})})),canceled]);
     try{
      if(ack.status!==204||ack.redirected||ack.headers.has("location")||ack.headers.has("set-cookie"))throw unavailable();
      if(ack.body){const ackReader=ack.body.getReader();try{const eof=await Promise.race([ackReader.read(),canceled]);if(!eof.done)throw unavailable();}

@@ -18,6 +18,8 @@ import { deletionControlState } from "@/lib/account-deletion-state";
 import { route } from "@/lib/primary-routes";
 import {AccountExport} from "@/components/settings/account-export";
 import {accountExportControls} from "@/lib/exports/account-export-controls";
+import {accountArchiveAcknowledgementCsrf} from "@/lib/exports/account-archive-chunk-http";
+import { CsrfProvider } from "@/components/security/csrf-provider";
 import {SubjectExports} from "@/components/settings/subject-exports";
 import {subjectExportControls} from "@/lib/exports/subject-export-controls";
 import { RecordKeyCards } from "@/components/settings/record-key-cards";
@@ -33,11 +35,15 @@ export default async function DataSettingsPage({searchParams}:PageProps<"/settin
   const dispositionAfter=typeof query.dispositionAfter==="string"?query.dispositionAfter:query.dispositionAfter?"invalid":null;
   const objectionAfter=typeof query.objectionAfter==="string"?query.objectionAfter:query.objectionAfter?"invalid":null;
   const keyCardAfter=typeof query.keyCardAfter==="string"?query.keyCardAfter:query.keyCardAfter?"invalid":null;
-  const [deletion,profiles,dispositions,objections,exports,keyCards,subjectExports] = await Promise.all([
+  const [deletion,profiles,dispositions,objections,exports,keyCards,subjectExports,archiveCsrf] = await Promise.all([
     deletionControlState(),identityProfileControls(after),embryoDispositionControls(dispositionAfter),ownerAccountObjectionControls(objectionAfter),
     accountExportControls(),
     recordKeyCardControls(keyCardAfter),
     subjectExportControls(),
+    // G8.5 (owner decision of 22 November 2026): the account's one-time token for
+    // each archive chunk's acknowledgement, rendered only while the TEST archive
+    // delivery is on; empty otherwise.
+    accountArchiveAcknowledgementCsrf(),
   ]);
   return (
     <div className="page-stack rec-column stack-sections">
@@ -45,6 +51,7 @@ export default async function DataSettingsPage({searchParams}:PageProps<"/settin
         <p className="eyebrow">Settings</p>
         <h1 className="display">Your data</h1>
       </header>
+      <CsrfProvider tokens={archiveCsrf}>
       <section className="surface surface-pad rec-stack">
         <h2 className="title">{DATA_EXPORT_HEADING}</h2>
         <p className="max-w-measure text-sm leading-relaxed text-ink-muted">{DATA_EXPORT_BODY}</p>
@@ -53,6 +60,7 @@ export default async function DataSettingsPage({searchParams}:PageProps<"/settin
         <AccountExport control={exports}/>
       </section>
       {subjectExports?.length?<SubjectExports items={subjectExports}/>:null}
+      </CsrfProvider>
       <DangerZone deletion={deletion} />
       {keyCards ? <section className="space-y-4 rounded-2xl border border-line bg-card p-5" aria-labelledby="record-key-cards-heading">
         <h2 id="record-key-cards-heading" className="font-medium">{RECORD_KEY_CARDS_HEADING}</h2>

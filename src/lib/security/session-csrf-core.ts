@@ -121,6 +121,7 @@ export const SESSION_CSRF_ROUTES = Object.freeze({
   "api.future-person-claim-objection-review": "reviewer",
   "api.future-person-correction-review": "reviewer",
   "api.claim-review-receipt": "reviewer",
+  // Its TEST account archive branch's token is the second kind SESSION_CSRF_SECOND_KINDS declares.
   "api.claim-review-chunk-acknowledgement": "reviewer",
   "api.embryo-ingest-configure": "upload-session",
   "api.embryo-ingest-mapping": "upload-session",
@@ -138,16 +139,22 @@ export type CsrfRoute = keyof typeof SESSION_CSRF_ROUTES;
 export type CsrfSessionKind = (typeof SESSION_CSRF_ROUTES)[CsrfRoute];
 
 /**
- * The one route whose token may be bound to either of two kinds of session
- * (owner decision of 19 November 2026, "G8.5: the claim-objection address
- * accepts either kind of session"): api.future-person-claim-objection checks
- * the emailed link's rights session first and then the signed-in account,
- * and spends a one-time token of whichever it finds. Its register `auth` is
- * the first kind (`SESSION_CSRF_ROUTES`); the second is declared here and
- * nowhere else, so every other route accepts its own kind only.
+ * The two routes whose token may be bound to either of two kinds of session.
+ * Each checks its first kind, its register `auth` (`SESSION_CSRF_ROUTES`),
+ * and then the second declared here, and spends a one-time token of whichever
+ * it finds; the second kind is declared here and nowhere else, so every other
+ * route accepts its own kind only.
+ * - api.future-person-claim-objection (owner decision of 19 November 2026,
+ *   "G8.5: the claim-objection address accepts either kind of session"): the
+ *   emailed link's rights session first, the signed-in account second.
+ * - api.claim-review-chunk-acknowledgement (owner decision of 22 November
+ *   2026, "G8.5: the reviewer chunk-acknowledgement address accepts either
+ *   kind of session"): the signed-in reviewer first, the signed-in account
+ *   second, for the TEST account archive's acknowledgement on the same path.
  */
 export const SESSION_CSRF_SECOND_KINDS: Readonly<Partial<Record<CsrfRoute, CsrfSessionKind>>> = Object.freeze({
   "api.future-person-claim-objection": "authenticated",
+  "api.claim-review-chunk-acknowledgement": "authenticated",
 });
 
 /** Whether a token of `kind` may be minted for and verified on `route`. */
@@ -165,7 +172,11 @@ export function acceptsSessionKind(route: CsrfRoute, kind: CsrfSessionKind): boo
  * route's own one-time reservation of each chunk is the replay guard
  * (api.evidence-chunk `requestContract.chunkAuthority`: each session and
  * sequence is reserved once). api.embryo-ingest-chunk carries no token at
- * all (`csrfTransport.requiredFor`).
+ * all (`csrfTransport.requiredFor`). api.claim-review-chunk-acknowledgement
+ * is not a stream, for either of its two kinds: principle 3 names uploads,
+ * and the acknowledgements of one download (a review document's, or a TEST
+ * account archive's) go one after another, so each spends a one-time token
+ * and carries the previous answer's successor.
  */
 export const SESSION_CSRF_STREAM_ROUTES: ReadonlySet<CsrfRoute> = new Set<CsrfRoute>(["api.evidence-chunk"]);
 

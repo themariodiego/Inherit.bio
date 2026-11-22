@@ -20,16 +20,22 @@ function fixture(){
  const params={session,sequence:"0"};
  const get=(headers:Record<string,string>={},url=`https://test.e2e.local/api/downloads/${session}/chunks/0`)=>new Request(url,{
   headers:{cookie:`__Host-inherit-download=${cookie}`,"sec-fetch-site":"same-origin",...headers}});
- const post=(value:unknown,csrf:string,headers:Record<string,string>={})=>new Request(`https://test.e2e.local/api/downloads/${session}/chunks/0/acknowledge`,{
+ // 2026-11-22 (G8.5, owner decision "the reviewer chunk-acknowledgement address accepts either
+ // kind of session"): the chunk's proof travels in X-Inherit-Operation-Proof (it was the
+ // "x-inherit-csrf" header here); null sends none. X-Inherit-CSRF, the route's one-time
+ // session token, is set through `headers` by the route-level tests below.
+ const post=(value:unknown,proof:string|null,headers:Record<string,string>={})=>new Request(`https://test.e2e.local/api/downloads/${session}/chunks/0/acknowledge`,{
   method:"POST",headers:{cookie:`__Host-inherit-download=${cookie}`,origin:"https://test.e2e.local","sec-fetch-site":"same-origin",
-   "content-type":"application/json","x-inherit-csrf":csrf,...headers},body:JSON.stringify(value)});
+   "content-type":"application/json",...(proof===null?{}:{"x-inherit-operation-proof":proof}),...headers},body:JSON.stringify(value)});
  return {actor,session,bytes,cookie,downloadHash,ready,context,release,read,acknowledge,deps,params,get,post};
 }
 async function delivered(f:ReturnType<typeof fixture>){
  const result=(await getAccountArchiveChunk(f.get(),f.params,f.deps))!;
  expect(result.status).toBe(200);expect(new Uint8Array(await result.arrayBuffer())).toEqual(f.bytes);
+ // The chunk's answer hands its proof over in X-Inherit-Operation-Proof and sets no X-Inherit-CSRF (principle 1).
+ expect(result.headers.get("x-inherit-operation-proof")).toMatch(/^[a-f0-9]{64}$/u);expect(result.headers.has("x-inherit-csrf")).toBe(false);
  return {receipt:result.headers.get("x-inherit-chunk-receipt")!,sha256:digest(f.bytes),sizeBytes:f.bytes.length,
-  csrf:result.headers.get("x-inherit-csrf")!};
+  proof:result.headers.get("x-inherit-operation-proof")!};
 }
 describe("native-current TEST account chunk delivery",()=>{
  it("issues one secret-bound exact chunk, releases its owner at real EOF, and ACKs only its separately supplied receipt",async()=>{
@@ -37,7 +43,7 @@ describe("native-current TEST account chunk delivery",()=>{
   expect(f.acknowledge).not.toHaveBeenCalled();
   expect(f.read.mock.calls[0][0]).toEqual({actor:f.actor,sessionId:f.session,downloadHash:f.downloadHash,ready:f.ready,ordinal:0,
    challengeHash:digest(Buffer.from(value.receipt))});
-  const {csrf,...body}=value,result=await acknowledgeAccountArchiveChunk(f.post(body,csrf),f.params,f.deps);
+  const {proof,...body}=value,result=await acknowledgeAccountArchiveChunk(f.post(body,proof),f.params,f.deps);
   expect(result!.status).toBe(204);expect((await result!.arrayBuffer()).byteLength).toBe(0);
   expect(f.acknowledge).toHaveBeenCalledTimes(1);expect(f.acknowledge.mock.calls[0][0]).toEqual({actor:f.actor,sessionId:f.session,
    downloadHash:f.downloadHash,ordinal:0,challengeHash:digest(Buffer.from(value.receipt)),sha256:body.sha256,sizeBytes:3});
@@ -61,9 +67,14 @@ describe("native-current TEST account chunk delivery",()=>{
   if(fault==="extra-ready")deps={...deps,context:async()=>({sessionId:f.session,nextSequence:0,ready:{...f.ready,url:"https://foreign.e2e.local"}})};
   expect((await getAccountArchiveChunk(request,params,deps))!.status).toBe(404);expect(f.read).not.toHaveBeenCalled();
  });
- it.each(["csrf","receipt","size","hash","actor","cookie","refused","lost-response"])("never ACKs or retries a %s mismatch",async fault=>{
-  const f=fixture(),value=await delivered(f),{csrf,...body}=value;let selected=csrf,deps=f.deps,headers={};
-  if(fault==="csrf")selected="0".repeat(64);
+ // 2026-11-22 (G8.5): the "csrf" case (a wrong value in X-Inherit-CSRF) is now "proof" (the same
+ // wrong value in X-Inherit-Operation-Proof), the same refusal. Two cases are new: no proof at all,
+ // and the right proof in the old header, X-Inherit-CSRF, alone ("the old position").
+ it.each(["proof","missing-proof","proof-in-x-inherit-csrf","receipt","size","hash","actor","cookie","refused","lost-response"])("never ACKs or retries a %s mismatch",async fault=>{
+  const f=fixture(),value=await delivered(f),{proof,...body}=value;let selected:string|null=proof,deps=f.deps,headers={};
+  if(fault==="proof")selected="0".repeat(64);
+  if(fault==="missing-proof")selected=null;
+  if(fault==="proof-in-x-inherit-csrf"){selected=null;headers={"x-inherit-csrf":proof};}
   if(fault==="receipt")body.receipt=randomBytes(32).toString("base64url");
   if(fault==="size")body.sizeBytes=2;
   if(fault==="hash")body.sha256="0".repeat(64);
@@ -94,6 +105,7 @@ import {GET as mixedDownloadGet} from "@/app/api/downloads/[session]/chunks/[seq
 import {POST as mixedDownloadAck} from "@/app/api/downloads/[session]/chunks/[sequence]/acknowledge/route";
 import {DOWNLOAD_COOKIE} from "@/lib/future-person/review";
 import {mintReceiptAckNonce,readReceiptAckNonce,chunkReceiptProof} from "@/lib/future-person/review-receipt";
+import {mintSessionCsrf} from "@/lib/security/session-csrf-core";
 vi.mock("@/lib/security/session-csrf",async importOriginal=>(await import("@/lib/security/session-csrf.test-support")).admitEverySessionCsrf(await importOriginal()));
 
 const legacy=vi.hoisted(()=>({account:vi.fn(),own:vi.fn(),admin:vi.fn(),store:vi.fn(),key:vi.fn(),open:vi.fn()}));
@@ -126,6 +138,13 @@ function legacyRouteFixture(f:ReturnType<typeof fixture>){
  vi.spyOn(accountChunk,"accountArchiveChunkDependencies").mockReturnValue(f.deps);
  return {rpc,context:{params:Promise.resolve(f.params)}};
 }
+/** 2026-11-22 (G8.5, owner decision "the reviewer chunk-acknowledgement address accepts either kind
+ * of session"): the signed-in account's token for the route, which selects the TEST account archive's
+ * branch (the pass-through gate hands the handler the session the real gate admits; the real gate is
+ * driven in session-csrf-routes.test.ts and the route's own route.test.ts). Without one, the request
+ * is the reviewer's. */
+const accountToken=(f:ReturnType<typeof fixture>)=>mintSessionCsrf({kind:"authenticated",accountId:f.actor.accountId,
+ sessionId:f.actor.sessionId},"api.claim-review-chunk-acknowledgement");
 
 describe("mixed native account and original reviewer download families",()=>{
  it("keeps a genuine nonproduction reviewer GET in its original native-authorized byte dispatcher",async()=>{
@@ -148,9 +167,16 @@ describe("mixed native account and original reviewer download families",()=>{
   // 2026-11-19 (G8.5, the migration stage): the reviewer's branch carries the reviewer's one-time token
   // (its gate is driven in session-csrf-routes.test.ts), where it carried the receipt digest.
   const proof=chunkReceiptProof("a".repeat(64),f.bytes),csrf="reviewer-session-token-checked-by-the-gate";
-  const response=await mixedDownloadAck(f.post({nonce,proof},csrf,{cookie:`${DOWNLOAD_COOKIE}=${f.cookie}`}),original.context);
+  const response=await mixedDownloadAck(f.post({nonce,proof},null,{cookie:`${DOWNLOAD_COOKIE}=${f.cookie}`,"x-inherit-csrf":csrf}),original.context);
   expect(response.status).toBe(204);expect((await response.arrayBuffer()).byteLength).toBe(0);
-  expect(f.context).toHaveBeenCalledExactlyOnceWith({actor:f.actor,sessionId:f.session,downloadHash:null},expect.any(AbortSignal));
+  // 2026-11-22 (G8.5, owner decision "the reviewer chunk-acknowledgement address accepts either kind
+  // of session"). Old: the account archive's native discriminator was asked first and answered NULL,
+  //   expect(f.context).toHaveBeenCalledExactlyOnceWith({actor:f.actor,sessionId:f.session,downloadHash:null},expect.any(AbortSignal));
+  // New: the gate admitted a reviewer token, so only the reviewer's branch runs and the archive's
+  // branch, its discriminator included, is never reached. Why: each branch runs only for its own
+  // principal; an account target with a reviewer token is refused by the reviewer's own native
+  // authorizer (route.test.ts), and an account token never reaches this branch (below).
+  expect(f.context).not.toHaveBeenCalled();
   expect(original.rpc.mock.calls).toEqual([
    ["authorize_claim_review_chunk_v1",{p_session_id:f.session,p_cookie_hash:f.downloadHash,p_sequence:0}],
    ["acknowledge_claim_review_chunk_v1",{p_session_id:f.session,p_cookie_hash:f.downloadHash,p_sequence:0,
@@ -167,7 +193,10 @@ describe("mixed native account and original reviewer download families",()=>{
    fault==="duplicate"?`__Host-inherit-download=${f.cookie}; __Host-inherit-download=${f.cookie}`:
    fault==="malformed"?"__Host-inherit-download=invalid":`inherit-download=${f.cookie}`;
   expect((await mixedDownloadGet(f.get({cookie}),original.context)).status).toBe(404);
-  expect((await mixedDownloadAck(f.post({nonce:"synthetic-unused",proof:"a".repeat(64)},"0".repeat(64),{cookie}),original.context)).status).toBe(404);
+  // 2026-11-22 (G8.5): the acknowledgement is the account's, so it carries the account's token in
+  // X-Inherit-CSRF, and the 64-zero value moved to X-Inherit-Operation-Proof (it was X-Inherit-CSRF).
+  expect((await mixedDownloadAck(f.post({nonce:"synthetic-unused",proof:"a".repeat(64)},"0".repeat(64),
+   {cookie,"x-inherit-csrf":accountToken(f)}),original.context)).status).toBe(404);
   expect(f.context).toHaveBeenCalledTimes(2);expect(original.rpc).not.toHaveBeenCalled();
   expect(f.read).not.toHaveBeenCalled();expect(f.acknowledge).not.toHaveBeenCalled();
  });
@@ -177,16 +206,41 @@ describe("mixed native account and original reviewer download families",()=>{
    else f.context.mockResolvedValue({sessionId:f.session,nextSequence:0,ready:{...f.ready,foreign:true}});
    const original=legacyRouteFixture(f);
    expect((await mixedDownloadGet(f.get(),original.context)).status).toBe(404);
-   expect((await mixedDownloadAck(f.post({nonce:"synthetic-unused",proof:"a".repeat(64)},"0".repeat(64)),original.context)).status).toBe(404);
+   // 2026-11-22 (G8.5): with the account's token, as above.
+   expect((await mixedDownloadAck(f.post({nonce:"synthetic-unused",proof:"a".repeat(64)},"0".repeat(64),
+    {"x-inherit-csrf":accountToken(f)}),original.context)).status).toBe(404);
    expect(original.rpc).not.toHaveBeenCalled();expect(f.read).not.toHaveBeenCalled();expect(f.acknowledge).not.toHaveBeenCalled();
   }
  });
  it("refuses a replay after the exact account sequence advanced without selecting the legacy authority",async()=>{
-  const f=fixture(),value=await delivered(f),{csrf,...body}=value;let nextSequence=0;
+  const f=fixture(),value=await delivered(f),{proof,...body}=value;let nextSequence=0;
   f.context.mockImplementation(async()=>({sessionId:f.session,nextSequence,ready:f.ready}));
   f.acknowledge.mockImplementation(async()=>{nextSequence++;return true;});const original=legacyRouteFixture(f);
-  expect((await mixedDownloadAck(f.post(body,csrf),original.context)).status).toBe(204);
-  expect((await mixedDownloadAck(f.post(body,csrf),original.context)).status).toBe(404);
+  // 2026-11-22 (G8.5): the proof in X-Inherit-Operation-Proof and the account's token in X-Inherit-CSRF
+  // (the gate here spends nothing, so the replay is refused by the archive's own sequence, as before).
+  const token=accountToken(f);
+  expect((await mixedDownloadAck(f.post(body,proof,{"x-inherit-csrf":token}),original.context)).status).toBe(204);
+  expect((await mixedDownloadAck(f.post(body,proof,{"x-inherit-csrf":token}),original.context)).status).toBe(404);
   expect(f.acknowledge).toHaveBeenCalledTimes(1);expect(f.read).toHaveBeenCalledTimes(1);expect(original.rpc).not.toHaveBeenCalled();
+ });
+ // 2026-11-22 (G8.5, owner decision "the reviewer chunk-acknowledgement address accepts either kind
+ // of session"): each branch runs only for its own principal.
+ it("never takes an account acknowledgement to the reviewer's branch, even where native names no account target",async()=>{
+  const f=fixture();f.context.mockResolvedValue(null);const original=legacyRouteFixture(f);
+  const nonce=mintReceiptAckNonce(f.session,0,f.downloadHash,f.actor.accountId,f.actor.sessionId);
+  // A complete, valid reviewer acknowledgement in every other respect.
+  const response=await mixedDownloadAck(f.post({nonce,proof:chunkReceiptProof("a".repeat(64),f.bytes)},null,
+   {cookie:`${DOWNLOAD_COOKIE}=${f.cookie}`,"x-inherit-csrf":accountToken(f)}),original.context);
+  expect(response.status).toBe(404);expect(await response.json()).toEqual({error:"not_found"});
+  expect(f.context).toHaveBeenCalledTimes(1);expect(original.rpc).not.toHaveBeenCalled();
+  expect(f.read).not.toHaveBeenCalled();expect(f.acknowledge).not.toHaveBeenCalled();
+ });
+ it("never takes a reviewer acknowledgement to the account archive's branch, even on an account target",async()=>{
+  const f=fixture(),value=await delivered(f),{proof,...body}=value;const original=legacyRouteFixture(f);
+  f.context.mockClear();f.read.mockClear();
+  // The archive's complete acknowledgement, proof in its carrier, under no account token: the reviewer's.
+  const response=await mixedDownloadAck(f.post(body,proof),original.context);
+  expect(response.status).toBe(404);
+  expect(f.context).not.toHaveBeenCalled();expect(f.read).not.toHaveBeenCalled();expect(f.acknowledge).not.toHaveBeenCalled();
  });
 });

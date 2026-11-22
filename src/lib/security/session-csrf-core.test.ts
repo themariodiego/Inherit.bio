@@ -162,11 +162,20 @@ describe("the five later session kinds", () => {
 /**
  * Owner decision of 19 November 2026, "G8.5: the claim-objection address
  * accepts either kind of session": one route takes a rights or an account
- * session's token. Every other route takes its own kind only.
+ * session's token. Owner decision of 22 November 2026, "G8.5: the reviewer
+ * chunk-acknowledgement address accepts either kind of session": a second
+ * takes a reviewer or an account session's token. Every other route takes its
+ * own kind only.
  */
-describe("the one route that takes two kinds of session", () => {
-  it("is declared for api.future-person-claim-objection alone, rights first and account second", () => {
-    expect(SESSION_CSRF_SECOND_KINDS).toEqual({ "api.future-person-claim-objection": "authenticated" });
+describe("the two routes that take two kinds of session", () => {
+  it("declares api.future-person-claim-objection, rights first and account second", () => {
+    // Old (19 November): toEqual({ "api.future-person-claim-objection": "authenticated" }), the one
+    // route. New (22 November): the chunk acknowledgement's account kind is the second entry, by the
+    // owner's decision of that day; nothing else.
+    expect(SESSION_CSRF_SECOND_KINDS).toEqual({
+      "api.future-person-claim-objection": "authenticated",
+      "api.claim-review-chunk-acknowledgement": "authenticated",
+    });
     expect(SESSION_CSRF_ROUTES["api.future-person-claim-objection"]).toBe("token");
     const accountToken = mintSessionCsrf(account, "api.future-person-claim-objection", NOW);
     const rightsToken = mintSessionCsrf(rights, "api.future-person-claim-objection", NOW);
@@ -176,14 +185,39 @@ describe("the one route that takes two kinds of session", () => {
     expect(verifySessionCsrf(rightsToken, account, "api.future-person-claim-objection", NOW + 1)).toBeNull();
   });
 
+  it("declares api.claim-review-chunk-acknowledgement, reviewer first and account second, each token verifying under its own kind only", () => {
+    const route = "api.claim-review-chunk-acknowledgement";
+    expect(SESSION_CSRF_ROUTES[route]).toBe("reviewer");
+    const reviewer: CsrfSession = { ...account, kind: "reviewer" } as CsrfSession;
+    const accountToken = mintSessionCsrf(account, route, NOW);
+    const reviewerToken = mintSessionCsrf(reviewer, route, NOW);
+    expect(verifySessionCsrf(accountToken, account, route, NOW + 1)).not.toBeNull();
+    expect(verifySessionCsrf(reviewerToken, reviewer, route, NOW + 1)).not.toBeNull();
+    // The same account and auth session under the other kind never verifies: the kind is in the MAC.
+    expect(verifySessionCsrf(accountToken, reviewer, route, NOW + 1)).toBeNull();
+    expect(verifySessionCsrf(reviewerToken, account, route, NOW + 1)).toBeNull();
+    // Nor does either on another reviewer route, or on another route that takes an account token.
+    for (const other of ["api.claim-review-receipt", "api.appeal-review", "api.future-person-claim-objection", "api.export"] as const) {
+      expect(verifySessionCsrf(accountToken, account, other, NOW + 1), other).toBeNull();
+      expect(verifySessionCsrf(reviewerToken, reviewer, other, NOW + 1), other).toBeNull();
+    }
+    expect(() => mintSessionCsrf(rights, route, NOW)).toThrow("session_csrf_context_invalid");
+  });
+
   it("does not let any other route take a second kind: each refuses every kind but its own", () => {
     const kinds = ["authenticated", "token", "token-candidate", "reviewer", "upload-session", "claim-session", "evidence-session", "reset-session"] as const;
     for (const route of Object.keys(SESSION_CSRF_ROUTES) as (keyof typeof SESSION_CSRF_ROUTES)[]) {
       const accepted = kinds.filter(kind => acceptsSessionKind(route, kind));
+      // 2026-11-22: api.claim-review-chunk-acknowledgement takes ["authenticated", "reviewer"]
+      // (owner decision of that day); every other route but the claim objection, its own kind alone.
       expect(accepted, route).toEqual(route === "api.future-person-claim-objection"
-        ? ["authenticated", "token"] : [SESSION_CSRF_ROUTES[route]]);
+        ? ["authenticated", "token"] : route === "api.claim-review-chunk-acknowledgement"
+          ? ["authenticated", "reviewer"] : [SESSION_CSRF_ROUTES[route]]);
     }
     expect(() => mintSessionCsrf(account, "api.withdraw", NOW)).toThrow("session_csrf_context_invalid");
     expect(() => mintSessionCsrf(rights, "api.future-person-claimant-bind", NOW)).toThrow("session_csrf_context_invalid");
+    // An account token for an ordinary reviewer route cannot be minted (2026-11-22).
+    expect(() => mintSessionCsrf(account, "api.claim-review-receipt", NOW)).toThrow("session_csrf_context_invalid");
+    expect(() => mintSessionCsrf(account, "api.appeal-review", NOW)).toThrow("session_csrf_context_invalid");
   });
 });

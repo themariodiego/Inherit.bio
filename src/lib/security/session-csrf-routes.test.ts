@@ -1,7 +1,8 @@
 import crypto from "node:crypto";
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { csrfHeaderRequired as csrfHeaderRequiredOf } from "../../../scripts/form-contract-census";
+import { hmacSecret } from "../crypto";
 import { SESSION_CSRF_ROUTES, SESSION_CSRF_STREAM_ROUTES, mintSessionCsrf, verifySessionCsrf, type CsrfRoute, type CsrfSession,
   type CsrfSessionKind } from "./session-csrf-core";
 
@@ -215,6 +216,10 @@ const CASES: Case[] = [
   { route: "auth.reset-password-submit", method: "POST", path: "/api/auth/reset-password", load: () => import("@/app/api/auth/reset-password/route") },
   { route: "api.future-person-claim-objection", label: "api.future-person-claim-objection (the emailed link's rights session)", method: "POST", path: "/api/future-person/claim/session/objection", load: () => import("@/app/api/future-person/claim/session/objection/route") },
   { route: "api.future-person-claim-objection", kind: "authenticated", label: "api.future-person-claim-objection (the signed-in account, from Settings)", method: "POST", path: "/api/future-person/claim/session/objection", load: () => import("@/app/api/future-person/claim/session/objection/route") },
+  // 2026-11-22 (owner decision "G8.5: the reviewer chunk-acknowledgement address accepts either kind
+  // of session"): the route's second kind, for the TEST account archive's acknowledgement on the
+  // same path (the reviewer's is the entry above, unchanged).
+  { route: "api.claim-review-chunk-acknowledgement", kind: "authenticated", label: "api.claim-review-chunk-acknowledgement (the signed-in account, the TEST account archive's acknowledgement)", method: "POST", path: `/api/downloads/${ID}/chunks/0/acknowledge`, params: { session: ID, sequence: "0" }, load: () => import("@/app/api/downloads/[session]/chunks/[sequence]/acknowledge/route") },
 ];
 
 const kindOf = (route: CsrfRoute): Kind => SESSION_CSRF_ROUTES[route];
@@ -296,8 +301,13 @@ async function expectRefused(entry: Case, response: Response) {
   }
 }
 
-/** The two branches that spend the token inside the handler, after reading their own request. */
-const INLINE = new Set<CsrfRoute>(["api.consents", "api.subject-drafts", "api.claim-review-chunk-acknowledgement"]);
+/**
+ * The two branches that spend the token inside the handler, after reading their own request.
+ * 2026-11-22: api.claim-review-chunk-acknowledgement left this set (it was the third). Its whole
+ * route is wrapped (`withReviewerOrAccountCsrf`), so its refusals are now held to the stricter
+ * rule of a wrapped route: nothing at all reached before the refusal.
+ */
+const INLINE = new Set<CsrfRoute>(["api.consents", "api.subject-drafts"]);
 /** The kinds 20261024220000's door spends; the five later ones go to public.consume_session_csrf_v2. */
 const V1_KINDS = new Set<Kind>(["authenticated", "token", "token-candidate"]);
 
@@ -492,11 +502,72 @@ describe("every bound route requires and spends its one-time X-Inherit-CSRF toke
     for (const file of ["src/app/api/consents/route.ts", "src/app/api/subject-drafts/route.ts"]) {
       expect(readFileSync(file, "utf8")).toMatch(/(?:requireAccountCsrf|admitAccountCsrf)\(request, "api\.(?:consents|subject-drafts)"\)/u);
     }
-    // 2026-11-19 (G8.5, the migration stage): the reviewer's branch of the
-    // chunk acknowledgement checks its token before anything of its own; the
-    // TEST account archive's branch answers first with its own value.
-    expect(readFileSync("src/app/api/downloads/[session]/chunks/[sequence]/acknowledge/route.ts", "utf8"))
-      .toMatch(/if\(archive\)return archive;\n  const admitted=await requireReviewerCsrf\(request,"api\.claim-review-chunk-acknowledgement"\);\n  if\(admitted instanceof Response\)return admitted;/u);
+    // 2026-11-22 (owner decision "G8.5: the reviewer chunk-acknowledgement address accepts either
+    // kind of session"). Old (19 November): the route file had to read
+    //   if(archive)return archive;\n  const admitted=await requireReviewerCsrf(request,"api.claim-review-chunk-acknowledgement");\n  if(admitted instanceof Response)return admitted;
+    // (the TEST account archive's branch answered first with its own value, and the reviewer's
+    // branch checked its token inline). New: the whole route is wrapped, which the loop above now
+    // checks by its guard, and its handler runs each branch only under its own kind's token.
+    // Why: the owner's decision; neither branch keeps a value of its own design in X-Inherit-CSRF.
+    const acknowledgement = readFileSync("src/app/api/downloads/[session]/chunks/[sequence]/acknowledge/route.ts", "utf8");
+    expect(acknowledgement).toMatch(/export const POST=withReviewerOrAccountCsrf\("api\.claim-review-chunk-acknowledgement",/u);
+    expect(acknowledgement).toContain([
+      `    if(session?.kind==="authenticated"){`,
+      `      // A target that is not a TEST account archive never falls to the reviewer's branch.`,
+      `      return await acknowledgeAccountArchiveChunk(request,{session:download,sequence},accountArchiveChunkDependencies())??notFound();`,
+      `    }`,
+      `    if(session?.kind!=="reviewer")return notFound();`,
+      `    return acknowledge(request,download,sequence);`,
+    ].join("\n"));
+    expect(acknowledgement).not.toMatch(/requireReviewerCsrf|\.get\(\s*["'`]x-inherit-csrf["'`]\s*\)/iu);
+  });
+});
+
+/**
+ * A token in the exact format and MAC of `mintSessionCsrf`, for a kind and route that
+ * `mintSessionCsrf` refuses to pair: what an ordinary route would admit if a second kind leaked
+ * onto it. The binding is the core's (`bindingFor`), checked below against a real mint.
+ */
+function forgedToken(binding: string, route: CsrfRoute): string {
+  const expiresAt = Date.now() + 60_000, random = crypto.randomBytes(32).toString("base64url");
+  return `${expiresAt}.${random}.${hmacSecret([binding, route, String(expiresAt), random].join("|"), "session-csrf-v1")}`;
+}
+
+/**
+ * 2026-11-22 (owner decision "G8.5: the reviewer chunk-acknowledgement address accepts either kind
+ * of session"): the second kind is the chunk acknowledgement's alone.
+ */
+describe("the second kind stays on its own two routes", () => {
+  it("forges exactly what the core mints, so the refusals below are not a format error", () => {
+    const token = forgedToken(`reviewer|${ACCOUNT}|${SESSION}`, "api.appeal-review");
+    expect(verifySessionCsrf(token, sessionFor("reviewer"), "api.appeal-review")).not.toBeNull();
+  });
+
+  it("refuses an account token on every ordinary reviewer route before its handler runs", async () => {
+    const ordinary = CASES.filter(entry => kindOf(entry.route) === "reviewer" && entry.route !== "api.claim-review-chunk-acknowledgement");
+    expect(ordinary).toHaveLength(8);
+    for (const entry of ordinary) {
+      state.consumeCalls.length = 0;
+      await expectRefusedBeforeHandler(entry, forgedToken(`authenticated|${ACCOUNT}|${SESSION}`, entry.route));
+      expect(state.consumeCalls, entry.route).toHaveLength(0);
+    }
+  });
+
+  it("refuses a token of a third kind on the two-kind acknowledgement route before its handler runs", async () => {
+    const entry = CASES.find(candidate => candidate.route === "api.claim-review-chunk-acknowledgement" && !candidate.kind)!;
+    // Each request also carries that kind's own cookie, so its session is there to be (wrongly) bound.
+    for (const kind of ["token", "claim-session", "reset-session"] as const) {
+      await expectRefusedBeforeHandler({ ...entry, kind }, forgedToken(`${kind}|${sha256(COOKIE_OF[kind]!)}`, entry.route));
+    }
+    expect(state.consumeCalls).toHaveLength(0);
+  });
+
+  it("refuses the claim objection's account token on the acknowledgement route, and the acknowledgement's on the objection", async () => {
+    const acknowledgement = CASES.find(candidate => candidate.route === "api.claim-review-chunk-acknowledgement" && candidate.kind)!;
+    const objection = CASES.find(candidate => candidate.route === "api.future-person-claim-objection" && candidate.kind)!;
+    await expectRefusedBeforeHandler(acknowledgement, mintSessionCsrf(sessionFor("authenticated"), "api.future-person-claim-objection"));
+    await expectRefusedBeforeHandler(objection, mintSessionCsrf(sessionFor("authenticated"), "api.claim-review-chunk-acknowledgement"));
+    expect(state.consumeCalls).toHaveLength(0);
   });
 });
 
@@ -549,9 +620,37 @@ describe("every route the register binds to csrfTransport is accounted for", () 
     // and api.future-person-claim-objection moved under the owner's decision that it takes either kind.
     expect(ownWhole).toHaveLength(0);
     // 1 since the migration stage: the reviewer's branch of api.claim-review-chunk-acknowledgement
-    // moved, and the TEST account archive's acknowledgement on the same path keeps its own
+    // moved, and the TEST account archive's acknowledgement on the same path kept its own
     // per-chunk value (0 before: the whole route was one row).
-    expect(own.filter(row => row.branch).map(row => row.routeId)).toEqual(["api.claim-review-chunk-acknowledgement"]);
+    // 0 since 2026-11-22 (owner decision "G8.5: the reviewer chunk-acknowledgement address accepts
+    // either kind of session"). Old: toEqual(["api.claim-review-chunk-acknowledgement"]). New: the
+    // archive's branch spends the signed-in account's one-time token and its per-chunk proof moved to
+    // X-Inherit-Operation-Proof, so the ledger has no row at all.
+    expect(own.filter(row => row.branch).map(row => row.routeId)).toEqual([]);
+    expect(own).toHaveLength(0);
+  });
+
+  it("finds no source that reads X-Inherit-CSRF of its own design, now that the ledger has no row", () => {
+    // 2026-11-22. With csrfOwnDesign empty, the header is read by the gate (session-csrf.ts) and the
+    // browser's chain (session-csrf-client.ts), by constant, and by one route outside csrfTransport's
+    // binding: api.subject-access-request (register auth public; requiredSignals name its own
+    // one-time public form token in X-Inherit-CSRF), whose reader is appeal-form.ts. Any other reader,
+    // such as a branch going back to a value of its own in this header, fails here until it is
+    // recorded in csrfOwnDesign.
+    const reads = /\.get\(\s*(?:["'`]x-inherit-csrf["'`]|(?:SESSION_)?CSRF_HEADER)\s*\)/iu;
+    const files = (readdirSync("src", { recursive: true }) as string[])
+      .map(file => `src/${file.split("\\").join("/")}`)
+      .filter(file => /\.(?:ts|tsx|mts)$/u.test(file) && !/\.test\.|test-support/u.test(file))
+      .filter(file => reads.test(readFileSync(file, "utf8")));
+    expect(files.sort()).toEqual([
+      "src/lib/future-person/appeal-form.ts",
+      "src/lib/security/session-csrf-client.ts",
+      "src/lib/security/session-csrf.ts",
+    ]);
+    const publicForm = routes.find(route => route.id === "api.subject-access-request") as RegisterRoute & { requestContract?: { requiredSignals?: string[] } };
+    expect(publicForm.auth).toBe("public");
+    expect(bound.map(route => route.id)).not.toContain("api.subject-access-request");
+    expect(publicForm.requestContract?.requiredSignals).toContain("X-Inherit-CSRF-header-with-one-time-public-form-token-bound-to-the-host-only-cookie");
   });
 
   it("anchors each own-design row to the code it describes", () => {

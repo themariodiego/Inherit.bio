@@ -12,6 +12,10 @@ export function AccountExport({control,route}:{control:AccountExportControl;rout
  const open=control.available?control.open:undefined;
  // The route's one-time X-Inherit-CSRF token from the shell (G8.5).
  const csrf=useCsrf(route?"api.subject-export":"api.export");
+ // The signed-in account's one-time token for each chunk's acknowledgement,
+ // which the page renders only while the TEST archive delivery is on (G8.5,
+ // owner decision of 22 November 2026).
+ const acknowledge=useCsrf("api.claim-review-chunk-acknowledgement");
  const [busy,setBusy]=useState(false),[used,setUsed]=useState(!!open),[exportId,setExportId]=useState<string|null>(open?.exportId??null);
  const [message,setMessage]=useState<string|null>(null),active=useRef<AbortController|null>(null);
  const attempted=useRef(false);
@@ -43,7 +47,7 @@ export function AccountExport({control,route}:{control:AccountExportControl;rout
    sink=await selected;if(stop.signal.aborted)throw new Error("account_export_unavailable");
    const result=await requestAccountExport({operation:"open-ready",control,expectedExportId:open.exportId,signal:stop.signal,route,csrf});
    if(!("session" in result))throw new Error("account_export_unavailable");
-   handedToDownload=true;await downloadAccountArchive({download:result,sink,signal:stop.signal});
+   handedToDownload=true;await downloadAccountArchive({download:result,sink,signal:stop.signal,acknowledge});
    if(!stop.signal.aborted)setMessage("Your complete export has been saved.");
   }catch{if(!stop.signal.aborted)setMessage("We could not confirm the complete download. Reload this page before trying again.");}
   finally{if(sink&&!handedToDownload){let timer:ReturnType<typeof setTimeout>|undefined;

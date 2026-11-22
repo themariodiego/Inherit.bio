@@ -1,0 +1,152 @@
+[
+  {
+    "plant": "p1",
+    "doc": "An ordinary reviewer route (api.appeal-review) admits an account token: the second kind declared for it and the two-kind gate wrapped round it.",
+    "total": 2810,
+    "failed": 5,
+    "failures": [
+      "src/lib/security/session-csrf-core.test.ts > the five later session kinds keeps a reviewer token and an account token apart",
+      "src/lib/security/session-csrf-core.test.ts > the two routes that take two kinds of session declares api.future-person-claim-objection, rights first and account second",
+      "src/lib/security/session-csrf-core.test.ts > the two routes that take two kinds of session does not let any other route take a second kind: each refuses every kind but its own",
+      "src/lib/security/session-csrf-routes.test.ts > the second kind stays on its own two routes refuses an account token on every ordinary reviewer route before its handler runs",
+      "src/lib/security/session-csrf.test.ts > the reviewer chunk-acknowledgement address, which takes either kind of session refuses a missing, foreign, other-route or other-kind token with the route's 404, and leaves a signed-out request to the handler"
+    ],
+    "reverted_byte_identical": true,
+    "sha256": {
+      "src/app/api/downloads/[session]/chunks/[sequence]/acknowledge/route.ts": "d6e1a4db75e7c4f69a1cbae4bc56769e5149196f1e692a7e340345ad59db5f1f",
+      "src/lib/security/session-csrf-core.ts": "f3177529aa6c9cdabb200a15941a837b29b5f49a4e776123433ba294f3238aa6",
+      "src/lib/security/session-csrf.ts": "0ac532613d393f8a7a936e694dd5f9d058a80735f41ac23c6bd2426c9573f254",
+      "src/lib/exports/account-archive-chunk-http.ts": "429e8d3dd5b4d5a0ed704f1c4d88da78a5e391f29b29aa70ac5eecbb997dff03",
+      "src/app/api/reviews/appeals/[id]/route.ts": "a1b3f91bdd3c5a36dc829adf6e7726654a42466ea7707bfea67112e72a97a0ed"
+    }
+  },
+  {
+    "plant": "p2",
+    "doc": "The account archive's branch is reached with a reviewer token (the old order kept for every token).",
+    "total": 2810,
+    "failed": 8,
+    "failures": [
+      "src/lib/exports/account-archive-chunk-http.test.ts > mixed native account and original reviewer download families keeps a genuine nonproduction reviewer ACK in its unchanged bound receipt and native dispatcher",
+      "src/lib/exports/account-archive-chunk-http.test.ts > mixed native account and original reviewer download families never takes an account acknowledgement to the reviewer's branch, even where native names no account target",
+      "src/lib/exports/account-archive-chunk-http.test.ts > mixed native account and original reviewer download families never takes a reviewer acknowledgement to the account archive's branch, even on an account target",
+      "src/app/api/downloads/[session]/chunks/[sequence]/acknowledge/route.test.ts > the reviewer's acknowledgement spends a reviewer token, runs the reviewer's branch alone and answers with the successor",
+      "src/app/api/downloads/[session]/chunks/[sequence]/acknowledge/route.test.ts > the reviewer's acknowledgement still requires its own one-time acknowledgement nonce in the body",
+      "src/app/api/downloads/[session]/chunks/[sequence]/acknowledge/route.test.ts > each branch runs only for its own principal never takes an account token to the reviewer's branch, even with a complete reviewer acknowledgement",
+      "src/app/api/downloads/[session]/chunks/[sequence]/acknowledge/route.test.ts > each branch runs only for its own principal never takes a reviewer token to the archive's branch, even with a complete archive acknowledgement",
+      "src/app/api/downloads/[session]/chunks/[sequence]/acknowledge/route.test.ts > each branch runs only for its own principal leaves a signed-out request to the handler's 404, spending and reading nothing"
+    ],
+    "reverted_byte_identical": true,
+    "sha256": {
+      "src/app/api/downloads/[session]/chunks/[sequence]/acknowledge/route.ts": "d6e1a4db75e7c4f69a1cbae4bc56769e5149196f1e692a7e340345ad59db5f1f",
+      "src/lib/security/session-csrf-core.ts": "f3177529aa6c9cdabb200a15941a837b29b5f49a4e776123433ba294f3238aa6",
+      "src/lib/security/session-csrf.ts": "0ac532613d393f8a7a936e694dd5f9d058a80735f41ac23c6bd2426c9573f254",
+      "src/lib/exports/account-archive-chunk-http.ts": "429e8d3dd5b4d5a0ed704f1c4d88da78a5e391f29b29aa70ac5eecbb997dff03",
+      "src/app/api/reviews/appeals/[id]/route.ts": "a1b3f91bdd3c5a36dc829adf6e7726654a42466ea7707bfea67112e72a97a0ed"
+    }
+  },
+  {
+    "plant": "p3",
+    "doc": "The archive's per-chunk proof is read from X-Inherit-CSRF again.",
+    "total": 2810,
+    "failed": 8,
+    "failures": [
+      "src/lib/exports/account-archive-chunk-http.test.ts > native-current TEST account chunk delivery issues one secret-bound exact chunk, releases its owner at real EOF, and ACKs only its separately supplied receipt",
+      "src/lib/exports/account-archive-chunk-http.test.ts > native-current TEST account chunk delivery never ACKs or retries a proof-in-x-inherit-csrf mismatch",
+      "src/lib/exports/account-archive-chunk-http.test.ts > native-current TEST account chunk delivery never ACKs or retries a refused mismatch",
+      "src/lib/exports/account-archive-chunk-http.test.ts > native-current TEST account chunk delivery never ACKs or retries a lost-response mismatch",
+      "src/lib/exports/account-archive-chunk-http.test.ts > mixed native account and original reviewer download families refuses a replay after the exact account sequence advanced without selecting the legacy authority",
+      "src/lib/security/session-csrf-routes.test.ts > every route the register binds to csrfTransport is accounted for finds no source that reads X-Inherit-CSRF of its own design, now that the ledger has no row",
+      "src/app/api/downloads/[session]/chunks/[sequence]/acknowledge/route.test.ts > the TEST account archive's acknowledgement spends an account token, runs the archive's branch alone and keeps the chunk's proof in X-Inherit-Operation-Proof",
+      "src/app/api/downloads/[session]/chunks/[sequence]/acknowledge/route.test.ts > the TEST account archive's acknowledgement refuses a spent account token before any read"
+    ],
+    "reverted_byte_identical": true,
+    "sha256": {
+      "src/app/api/downloads/[session]/chunks/[sequence]/acknowledge/route.ts": "d6e1a4db75e7c4f69a1cbae4bc56769e5149196f1e692a7e340345ad59db5f1f",
+      "src/lib/security/session-csrf-core.ts": "f3177529aa6c9cdabb200a15941a837b29b5f49a4e776123433ba294f3238aa6",
+      "src/lib/security/session-csrf.ts": "0ac532613d393f8a7a936e694dd5f9d058a80735f41ac23c6bd2426c9573f254",
+      "src/lib/exports/account-archive-chunk-http.ts": "429e8d3dd5b4d5a0ed704f1c4d88da78a5e391f29b29aa70ac5eecbb997dff03",
+      "src/app/api/reviews/appeals/[id]/route.ts": "a1b3f91bdd3c5a36dc829adf6e7726654a42466ea7707bfea67112e72a97a0ed"
+    }
+  },
+  {
+    "plant": "p4",
+    "doc": "The ledger row is removed while the route still reads its own design: the route and the archive branch as they were at 499f91fb (with the inline reviewer check they import).",
+    "total": 2810,
+    "failed": 45,
+    "failures": [
+      "src/lib/exports/account-archive-chunk-http.test.ts > native-current TEST account chunk delivery issues one secret-bound exact chunk, releases its owner at real EOF, and ACKs only its separately supplied receipt",
+      "src/lib/exports/account-archive-chunk-http.test.ts > native-current TEST account chunk delivery never ACKs or retries a proof mismatch",
+      "src/lib/exports/account-archive-chunk-http.test.ts > native-current TEST account chunk delivery never ACKs or retries a missing-proof mismatch",
+      "src/lib/exports/account-archive-chunk-http.test.ts > native-current TEST account chunk delivery never ACKs or retries a proof-in-x-inherit-csrf mismatch",
+      "src/lib/exports/account-archive-chunk-http.test.ts > native-current TEST account chunk delivery never ACKs or retries a receipt mismatch",
+      "src/lib/exports/account-archive-chunk-http.test.ts > native-current TEST account chunk delivery never ACKs or retries a size mismatch",
+      "src/lib/exports/account-archive-chunk-http.test.ts > native-current TEST account chunk delivery never ACKs or retries a hash mismatch",
+      "src/lib/exports/account-archive-chunk-http.test.ts > native-current TEST account chunk delivery never ACKs or retries a actor mismatch",
+      "src/lib/exports/account-archive-chunk-http.test.ts > native-current TEST account chunk delivery never ACKs or retries a cookie mismatch",
+      "src/lib/exports/account-archive-chunk-http.test.ts > native-current TEST account chunk delivery never ACKs or retries a refused mismatch",
+      "src/lib/exports/account-archive-chunk-http.test.ts > native-current TEST account chunk delivery never ACKs or retries a lost-response mismatch",
+      "src/lib/exports/account-archive-chunk-http.test.ts > mixed native account and original reviewer download families keeps a genuine nonproduction reviewer ACK in its unchanged bound receipt and native dispatcher",
+      "src/lib/exports/account-archive-chunk-http.test.ts > mixed native account and original reviewer download families refuses a replay after the exact account sequence advanced without selecting the legacy authority",
+      "src/lib/exports/account-archive-chunk-http.test.ts > mixed native account and original reviewer download families never takes a reviewer acknowledgement to the account archive's branch, even on an account target",
+      "src/lib/future-person/public-appeal-download-scope.test.ts > ACK keeps fresh native transport and independent feature scope settles a current enabled claim ACK only after reauthorization",
+      "src/lib/future-person/public-appeal-download-scope.test.ts > ACK keeps fresh native transport and independent feature scope settles a current enabled appeal ACK only after reauthorization",
+      "src/lib/future-person/public-appeal-download-scope.test.ts > ACK keeps fresh native transport and independent feature scope refuses a closed claim ACK without recording it",
+      "src/lib/future-person/public-appeal-download-scope.test.ts > ACK keeps fresh native transport and independent feature scope refuses a closed appeal ACK without recording it",
+      "src/lib/security/session-csrf-routes.test.ts > every bound route requires and spends its one-time X-Inherit-CSRF token api.claim-review-chunk-acknowledgement (the signed-in account, the TEST account archive's acknowledgement) refuses a token that was already spent",
+      "src/lib/security/session-csrf-routes.test.ts > every bound route requires and spends its one-time X-Inherit-CSRF token api.claim-review-chunk-acknowledgement (the signed-in account, the TEST account archive's acknowledgement) admits the same request with a fresh token, spends it once and issues the next one",
+      "src/lib/security/session-csrf-routes.test.ts > every bound route requires and spends its one-time X-Inherit-CSRF token wraps every whole route it guards, so the check cannot be skipped by a refactor of one handler",
+      "src/lib/security/session-csrf-routes.test.ts > every route the register binds to csrfTransport is accounted for finds no source that reads X-Inherit-CSRF of its own design, now that the ledger has no row",
+      "src/app/api/downloads/[session]/chunks/[sequence]/acknowledge/route.test.ts > the reviewer's acknowledgement spends a reviewer token, runs the reviewer's branch alone and answers with the successor",
+      "src/app/api/downloads/[session]/chunks/[sequence]/acknowledge/route.test.ts > the reviewer's acknowledgement refuses a missing token before any read",
+      "src/app/api/downloads/[session]/chunks/[sequence]/acknowledge/route.test.ts > the reviewer's acknowledgement refuses a foreign-session token before any read",
+      "src/app/api/downloads/[session]/chunks/[sequence]/acknowledge/route.test.ts > the reviewer's acknowledgement refuses a other-route token before any read",
+      "src/app/api/downloads/[session]/chunks/[sequence]/acknowledge/route.test.ts > the reviewer's acknowledgement refuses a other-kind (rights) token before any read",
+      "src/app/api/downloads/[session]/chunks/[sequence]/acknowledge/route.test.ts > the reviewer's acknowledgement refuses a other-kind (upload session) token before any read",
+      "src/app/api/downloads/[session]/chunks/[sequence]/acknowledge/route.test.ts > the reviewer's acknowledgement refuses a the acknowledgement nonce in X-Inherit-CSRF token before any read",
+      "src/app/api/downloads/[session]/chunks/[sequence]/acknowledge/route.test.ts > the reviewer's acknowledgement refuses a spent reviewer token before any read",
+      "src/app/api/downloads/[session]/chunks/[sequence]/acknowledge/route.test.ts > the reviewer's acknowledgement still requires its own one-time acknowledgement nonce in the body",
+      "src/app/api/downloads/[session]/chunks/[sequence]/acknowledge/route.test.ts > the TEST account archive's acknowledgement spends an account token, runs the archive's branch alone and keeps the chunk's proof in X-Inherit-Operation-Proof",
+      "src/app/api/downloads/[session]/chunks/[sequence]/acknowledge/route.test.ts > the TEST account archive's acknowledgement refuses a missing token before any read",
+      "src/app/api/downloads/[session]/chunks/[sequence]/acknowledge/route.test.ts > the TEST account archive's acknowledgement refuses a foreign-session token before any read",
+      "src/app/api/downloads/[session]/chunks/[sequence]/acknowledge/route.test.ts > the TEST account archive's acknowledgement refuses a other-route token before any read",
+      "src/app/api/downloads/[session]/chunks/[sequence]/acknowledge/route.test.ts > the TEST account archive's acknowledgement refuses a other two-kind route token before any read",
+      "src/app/api/downloads/[session]/chunks/[sequence]/acknowledge/route.test.ts > the TEST account archive's acknowledgement refuses a other-kind (rights) token before any read",
+      "src/app/api/downloads/[session]/chunks/[sequence]/acknowledge/route.test.ts > the TEST account archive's acknowledgement refuses a other-kind (claim session) token before any read",
+      "src/app/api/downloads/[session]/chunks/[sequence]/acknowledge/route.test.ts > the TEST account archive's acknowledgement refuses a spent account token before any read",
+      "src/app/api/downloads/[session]/chunks/[sequence]/acknowledge/route.test.ts > the TEST account archive's acknowledgement refuses an account token once its auth session has ended",
+      "src/app/api/downloads/[session]/chunks/[sequence]/acknowledge/route.test.ts > the TEST account archive's acknowledgement still requires the chunk's own proof, in X-Inherit-Operation-Proof, exactly as strictly",
+      "src/app/api/downloads/[session]/chunks/[sequence]/acknowledge/route.test.ts > the TEST account archive's acknowledgement refuses the proof in its old position, X-Inherit-CSRF",
+      "src/app/api/downloads/[session]/chunks/[sequence]/acknowledge/route.test.ts > each branch runs only for its own principal never takes an account token to the reviewer's branch, even with a complete reviewer acknowledgement",
+      "src/app/api/downloads/[session]/chunks/[sequence]/acknowledge/route.test.ts > each branch runs only for its own principal never takes a reviewer token to the archive's branch, even with a complete archive acknowledgement",
+      "src/app/api/downloads/[session]/chunks/[sequence]/acknowledge/route.test.ts > each branch runs only for its own principal leaves a signed-out request to the handler's 404, spending and reading nothing"
+    ],
+    "reverted_byte_identical": true,
+    "sha256": {
+      "src/app/api/downloads/[session]/chunks/[sequence]/acknowledge/route.ts": "d6e1a4db75e7c4f69a1cbae4bc56769e5149196f1e692a7e340345ad59db5f1f",
+      "src/lib/security/session-csrf-core.ts": "f3177529aa6c9cdabb200a15941a837b29b5f49a4e776123433ba294f3238aa6",
+      "src/lib/security/session-csrf.ts": "0ac532613d393f8a7a936e694dd5f9d058a80735f41ac23c6bd2426c9573f254",
+      "src/lib/exports/account-archive-chunk-http.ts": "429e8d3dd5b4d5a0ed704f1c4d88da78a5e391f29b29aa70ac5eecbb997dff03",
+      "src/app/api/reviews/appeals/[id]/route.ts": "a1b3f91bdd3c5a36dc829adf6e7726654a42466ea7707bfea67112e72a97a0ed"
+    }
+  },
+  {
+    "plant": "p5",
+    "doc": "The two-kind declaration made global: any route accepts any declared second kind.",
+    "total": 2810,
+    "failed": 4,
+    "failures": [
+      "src/lib/exports/account-archive-worker.test.ts > complete consumed-account unpublished archive executor composes the complete native supplement with the original nonempty own report and raw bytes in one exact archive",
+      "src/lib/security/session-csrf-core.test.ts > the one-time X-Inherit-CSRF token (session-csrf-core) refuses a token minted for another route, and will not mint one for a route of another session kind",
+      "src/lib/security/session-csrf-core.test.ts > the five later session kinds keeps a reviewer token and an account token apart",
+      "src/lib/security/session-csrf-core.test.ts > the two routes that take two kinds of session does not let any other route take a second kind: each refuses every kind but its own"
+    ],
+    "reverted_byte_identical": true,
+    "sha256": {
+      "src/app/api/downloads/[session]/chunks/[sequence]/acknowledge/route.ts": "d6e1a4db75e7c4f69a1cbae4bc56769e5149196f1e692a7e340345ad59db5f1f",
+      "src/lib/security/session-csrf-core.ts": "f3177529aa6c9cdabb200a15941a837b29b5f49a4e776123433ba294f3238aa6",
+      "src/lib/security/session-csrf.ts": "0ac532613d393f8a7a936e694dd5f9d058a80735f41ac23c6bd2426c9573f254",
+      "src/lib/exports/account-archive-chunk-http.ts": "429e8d3dd5b4d5a0ed704f1c4d88da78a5e391f29b29aa70ac5eecbb997dff03",
+      "src/app/api/reviews/appeals/[id]/route.ts": "a1b3f91bdd3c5a36dc829adf6e7726654a42466ea7707bfea67112e72a97a0ed"
+    }
+  }
+]
