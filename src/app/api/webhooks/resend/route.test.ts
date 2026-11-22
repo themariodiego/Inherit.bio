@@ -47,14 +47,25 @@ function deliver(body: string, headers: Record<string, string> = sign(body)) {
   }));
 }
 
+// The verifier and sign() both read the clock. Frozen, so a case signed 301
+// seconds early or late is exactly that far outside the 300-second skew when
+// it is verified, however long the run takes (hosted run 45034493592 accepted
+// the "301 seconds ahead" case after more than a second had passed).
+const FROZEN_NOW = new Date("2026-11-22T12:00:00.000Z");
+
 beforeEach(() => {
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(FROZEN_NOW);
   vi.clearAllMocks();
   vi.stubEnv("RESEND_WEBHOOK_SECRET", SECRET);
   vi.stubEnv("RESEND_API_KEY", "synthetic-not-a-provider-key");
   vi.stubEnv("BYOK_ENCRYPTION_KEY", Buffer.alloc(32, 9).toString("base64"));
   mocks.rpc.mockResolvedValue({ data: true, error: null });
 });
-afterEach(() => vi.unstubAllEnvs());
+afterEach(() => {
+  vi.unstubAllEnvs();
+  vi.useRealTimers();
+});
 
 describe("the register describes webhooks.resend (G8.5)", () => {
   const entry = register.routes.find(route => route.id === "webhooks.resend")!;

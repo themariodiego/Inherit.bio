@@ -1,3 +1,11 @@
+## 2026-11-22 — The Resend webhook test freezes the clock, so its stale and early signatures stay outside the skew
+
+Hosted run 45034493592 (`repository-checks` on `ea4b5402`, a commit that changed only `docs/protocol/gates.md`) failed one test: `src/app/api/webhooks/resend/route.test.ts` › "refuses a missing, wrong, stale, early or tampered signature with 401 and writes nothing" received 204 where it expects 401. The case signed 301 seconds ahead was computed from the clock when the test began, and the verifier reads the clock again when each delivery arrives; once more than a second had passed on a loaded runner, the timestamp was 300 seconds or less ahead and was rightly accepted. The product was right; the test depended on its own speed.
+
+**Changed test setup (no assertion changed).** The file's `beforeEach` fakes only `Date` (`vi.useFakeTimers({ toFake: ["Date"] })`) at a fixed instant and `afterEach` restores real timers, so `sign()` and the verifier read the same time and every case is exactly as far from the skew as written. Promises and timers are not faked.
+
+**Proof.** With a real 1.5-second pause added before each delivery (a plant, removed): the old file fails the same case with "expected 204 to be 401", as hosted; the new file passes. Unplanted, the file passes 12 of 12.
+
 ## 2026-11-22 — D-156: the 72-hour hold and the 30-day reminder cover an inviter's reads of the invited adult's own record
 
 D-156, owner decision of 22 November 2026, "The 72-hour hold covers an inviter's reads of the invited adult's own record" (`docs/protocol/decisions.md`): until 72 hours have passed and the second notice has been accepted by the mail provider, and from 30 days until the reminder has been accepted, the inviter sees nothing the new adult shares with them, through every Family reader and Copilot; the adult's own use of their record is not held. After a Path A acceptance the adult's files sit on their own `self` record, which no reader asked about: D-141's decision answers only for the `other_adult` record the invitation created. Test mode only.
